@@ -15,6 +15,16 @@ import ManagerDashboard from "./pages/ManagerDashboard";
 import Products from "./pages/Products";
 import SettingsHub from "./pages/SettingsHub";
 import Terms from "./pages/Terms";
+import OrgBrandingEditor from "./pages/OrgBrandingEditor";
+import GlobalAdmin from "./pages/GlobalAdmin";
+import Meetings from "./pages/Meetings";
+import Insights from "./pages/Insights";
+import FinancialPlanning from "./pages/FinancialPlanning";
+import BehavioralCoach from "./pages/BehavioralCoach";
+import Compliance from "./pages/Compliance";
+import Marketplace from "./pages/Marketplace";
+import Portal from "./pages/Portal";
+import Organizations from "./pages/Organizations";
 
 function Router() {
   return (
@@ -32,6 +42,16 @@ function Router() {
       <Route path={"/calculators"} component={Calculators} />
       <Route path={"/products"} component={Products} />
       <Route path={"/manager"} component={ManagerDashboard} />
+      <Route path={"/org-branding"} component={OrgBrandingEditor} />
+      <Route path={"/admin"} component={GlobalAdmin} />
+      <Route path={"/meetings"} component={Meetings} />
+      <Route path={"/insights"} component={Insights} />
+      <Route path={"/planning"} component={FinancialPlanning} />
+      <Route path={"/coach"} component={BehavioralCoach} />
+      <Route path={"/compliance"} component={Compliance} />
+      <Route path={"/marketplace"} component={Marketplace} />
+      <Route path={"/portal"} component={Portal} />
+      <Route path={"/organizations"} component={Organizations} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>

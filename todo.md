@@ -135,8 +135,8 @@
 - [ ] Data transparency: show users what data sources shape their insights — future enhancement
 
 ### Professional Portal
-- [ ] Client book list view — future enhancement
-- [ ] Client profile view with context injection panel — future enhancement
+- [x] Client book list view
+- [x] Client profile view with context injection panel (via View-As)
 - [ ] Case Design Summary generator — future enhancement
 - [ ] Life Advisor Summary generator — future enhancement
 - [ ] Focus-aware client report export — future enhancement
@@ -223,7 +223,7 @@
 - [x] Build org landing page (/org/[slug]): brandable, customizable
 - [x] Implement progressive auth: anonymous → email → OAuth → advisor-linked
 - [x] Build sign-in page with Google OAuth + email/password
-- [ ] Build org admin branding editor (Settings → Branding)
+- [x] Build org admin branding editor (/org-branding route with live preview)
 - [x] Implement browse-wrap consent banner for anonymous users
 
 ### Phase 3: Chat Interface & Voice
@@ -251,15 +251,15 @@
 - [ ] Cache all user settings for subsequent use
 
 ### Phase 5: Professional Portal & View-As
-- [ ] Build /portal route (visible to Professional+ roles)
-- [ ] Build Professional view: summary cards, client book table, filters, card/table toggle
-- [ ] Build Manager view: "My Team" section, advisor cards, team summary
-- [ ] Build Firm Admin view: firm dashboard, manager list, branding editor
-- [ ] Build Global Admin view (/admin): all-firms dashboard, firm management, Layer 1 editor, feature flags
-- [ ] Implement view-as system: sessionStorage context, view-as banner, read-only mode
-- [ ] Implement view-as audit logging (actor, target, actions, timestamps)
-- [ ] Add 30-minute auto-expiry for view-as sessions
-- [ ] Build client book: name, AUM, risk profile, life stage, last contact, suitability status, next review
+- [x] Build /portal route (visible to Professional+ roles)
+- [x] Build Professional view: summary cards, client book table, filters
+- [x] Build Manager view: "My Team" section, advisor cards, team summary
+- [x] Build Org Admin view: org dashboard, manager list
+- [x] Build Global Admin view (/admin): all-firms dashboard, firm management, Layer 1 editor, feature flags, analytics
+- [x] Implement view-as system: sessionStorage context, view-as banner, read-only mode
+- [x] Implement view-as audit logging (actor, target, actions, timestamps)
+- [x] Add 30-minute auto-expiry for view-as sessions
+- [x] Build client book: name, risk profile, life stage, last contact, suitability status
 
 ### Phase 6: Workflow Orchestration
 - [ ] Build workflow orchestration engine (PREPARE → BRIEF → NAVIGATE → ASSIST → HANDOFF → CONFIRM → RETURN)
@@ -315,12 +315,12 @@
 - [ ] Auto-affiliate new sign-ups to org
 
 ### Progressive Authentication
-- [ ] Tier 0 (Anonymous): Browse-wrap consent banner, localStorage conversations
-- [ ] Tier 1 (Email): Email capture modal, creates unaffiliated user
-- [ ] Tier 2 (Full account): Google OAuth + email/password
-- [ ] Tier 3 (Advisor-connected): Link to professional in firm
-- [ ] Sign-in page: centered card, logo, OAuth + email/password, "Continue as guest"
-- [ ] Post-sign-in: welcome animation → /chat
+- [x] Tier 0 (Anonymous): useAnonymousChat hook with localStorage, 5 convo / 10 msg limits, anonymous server endpoint
+- [ ] Tier 1 (Email): Email capture modal, creates unaffiliated user — email auth router exists
+- [x] Tier 2 (Full account): Manus OAuth working
+- [ ] Tier 3 (Advisor-connected): Link to professional in firm — needs portal
+- [x] Sign-in page: centered card, logo, OAuth + "Continue as guest"
+- [x] Post-sign-in: welcome animation → /chat
 
 ### Auth Flow Updates
 - [ ] Update auth context to handle firm_id tagging
@@ -405,10 +405,10 @@
 - [x] Implement organizations.delete tRPC procedure
 - [x] Implement organizations.getBySlug (public, for landing pages)
 - [x] Implement organizations.listMembers / inviteMember / removeMember
-- [ ] Create organizations management UI page
-- [ ] Add organization creation form
-- [ ] Add organization edit form
-- [ ] Add organization deletion confirmation
+- [x] Create organizations management UI page
+- [x] Add organization creation form
+- [x] Add organization edit form
+- [x] Add organization deletion confirmation
 - [x] Test organization CRUD flow (vitest — 5 tests)
 
 
@@ -439,11 +439,11 @@
 - [ ] Wire current user (Michael Penn) with all permission levels in both orgs
 
 ### Organizations Management UI
-- [ ] Build /organizations page in sidebar nav
-- [ ] Organization list view (cards with logo, name, role)
-- [ ] Create organization form (name, slug, description, logo, colors)
-- [ ] Edit organization form (branding, colors, language customization)
-- [ ] Organization detail view with member list
+- [x] Build /organizations page in sidebar nav
+- [x] Organization list view (cards with name, industry, size, role)
+- [x] Create organization form (name, slug, description, website, EIN, industry, size)
+- [x] Edit organization form (all fields editable)
+- [x] Organization detail view with member list
 - [ ] Color scheme auto-detection from logo/materials
 - [ ] Manual color override with revert-to-default option
 - [ ] Member invitation system (email-based)
@@ -460,14 +460,14 @@
 - [ ] Inheritance validation (lower layers can't contradict higher)
 
 ### Professional Portal (/portal)
-- [ ] Portal route with role-based views
-- [ ] Professional view: client book, summary cards, filters
-- [ ] Manager view: team section, advisor cards, team summary
-- [ ] Org Admin view: org dashboard, manager list, branding editor
-- [ ] Global Admin view: all-orgs dashboard, org management, Layer 1 editor
-- [ ] View-as system: sessionStorage context, banner, read-only mode
-- [ ] View-as audit logging
-- [ ] Client book: name, AUM, risk profile, life stage, last contact
+- [x] Portal route with role-based views
+- [x] Professional view: client book, summary cards, filters
+- [x] Manager view: team section, advisor cards, team summary
+- [x] Org Admin view: org dashboard, manager list
+- [x] Global Admin view: all-orgs dashboard, org management, Layer 1 editor
+- [x] View-as system: start/end session, view-as banner, client detail view
+- [x] View-as audit logging (actor, target, reason, timestamps, auto-expiry)
+- [x] Client book: name, risk profile, life stage, last contact, conversation count
 
 ### Recommendation & Invite System
 - [ ] Best-fit user-professional matching algorithm
@@ -570,3 +570,223 @@
 - [x] Enhanced calculator UI with slider controls, card-based calculator selector
 - [x] Animated results with mini bar chart visualization + summary stat cards
 - [ ] Calculator result sharing/export — future enhancement
+
+
+## V3 Continuation — Layer 1: Intelligent Advisor Copilot
+
+### 1A. Meeting Intelligence (/MEETING_INTELLIGENCE)
+- [x] Pre-meeting brief generator (client context, agenda, compliance reminders, preparation checklist)
+- [ ] Structured brief output as downloadable PDF — future enhancement
+- [x] Post-meeting summary generator (key decisions, action items, follow-up date, compliance notes)
+- [x] Auto-draft follow-up email in advisor's voice/tone
+- [x] Action items auto-extracted with assignees, priorities, due dates
+- [ ] Push follow-up date to Google Calendar via MCP — future enhancement
+- [x] Store transcript + summary in meetings table
+- [ ] Meeting audit logging ([MEETING_PREP], [MEETING_COMPLETE]) — future enhancement
+- [ ] Integration: pulls from /MY_CLIENTS, updates /MY_DASHBOARD, feeds /COMPLIANCE_REVIEW — future enhancement
+
+### 1B. Proactive Insights (/PROACTIVE_INSIGHTS)
+- [x] AI insight generation engine (compliance, portfolio, tax, engagement, spending, life_event categories)
+- [x] Priority sorting (critical > high > medium > low) with category filters
+- [x] Engagement scoring table (login frequency, meeting cadence, response time, portal activity)
+- [x] At-risk client flagging via engagement scores (healthy/at_risk/critical)
+- [x] Insights dashboard with stats cards, category filters, expandable detail cards
+- [x] Insight action buttons: [Act] [Snooze 7d] [Dismiss]
+- [x] Status tracking (new → viewed → acted/dismissed/snoozed)
+- [x] Sidebar integration: Insights link in Tools section
+- [ ] Portfolio drift detection (requires portfolio data integration) — future enhancement
+- [ ] Tax-loss harvesting window scanner — future enhancement
+- [ ] Spending anomaly detection (requires Plaid) — future enhancement
+- [ ] Life event trigger engine (age milestones) — future enhancement
+- [ ] Manager aggregated insights view across team — future enhancement
+- [ ] Insight audit trail (generated, advisor response, action taken) — future enhancement
+
+### 1C. Financial Planning Tools (/FINANCIAL_PLANNING)
+- [x] Retirement projection: Monte Carlo simulation (1000 trials), probability-of-success gauge, 10th/50th/90th percentile
+- [x] Side-by-side scenario comparison ("What if I retire at 62 vs 67?") — dual scenario with comparison table
+- [ ] Interactive Recharts chart inline in chat + [Export as PDF] [Save scenario] [Share with advisor]
+- [x] Social Security optimization: benefits at 62/FRA/67/70, breakeven analysis, cumulative benefit chart
+- [x] Breakeven analysis + cumulative benefit chart (bar visualization with "Best for you" badge)
+- [x] Roth conversion analysis: conversion vs keep-traditional comparison, IRMAA warning, net-after-tax breakdown
+- [x] Goal tracker: visual progress bars, monthly-needed calc, add/remove/update goals, completion badges
+- [ ] Planning outputs auto-save to client profile
+
+### 1D. Behavioral Coach (/BEHAVIORAL_COACH)
+- [x] Market downturn nudge engine (reframe as opportunity, no buy/sell recommendations)
+- [x] Excessive portfolio checking nudge (gentle redirect to goals)
+- [x] Positive reinforcement nudges and milestone celebrations
+- [x] Financial Wellness Score (FinHealth framework): 8 indicators across 4 pillars (Spend, Save, Borrow, Plan)
+- [x] Score: 0-100, classified as Healthy (80+) / Coping (40-79) / Vulnerable (<40)
+- [x] Trend visualization per indicator (up/down/stable arrows)
+- [x] Actionable recommendations per pillar with lightbulb callouts
+- [x] Habit tracker with streak tracking, daily/weekly/monthly frequencies
+- [x] Sidebar integration: Coach link in Tools section
+- [ ] Large purchase observation (requires Plaid) — future enhancement
+
+### 1E. Compliance Automation (/COMPLIANCE_AUTOMATION)
+- [x] Pre-delivery content review: LLM-powered compliance filter with FINRA 2210, SEC, Reg BI rules
+- [x] Auto-check for: missing disclaimers, performance guarantees, misleading comparisons (8 rule engine)
+- [x] Auto-fix: corrected content generation with per-flag suggested fixes
+- [x] Compliance review audit log (review history with status, severity, flags, timestamps)
+- [ ] Communication surveillance: NLP sentiment analysis — future enhancement
+- [x] FINRA Rule 2210 compliance checking (fair, balanced, not misleading)
+- [x] Suitability documentation: Reg BI Best Interest doc generator (profile, recommendation, alternatives, cost/benefit, conflicts)
+- [ ] Immutable timestamp storage in document vault — future enhancement
+- [ ] Regulatory filing tracking — future enhancement
+- [x] Compliance dashboard stats (total reviews, clean/flagged/critical, compliance rate)
+
+## V3 Continuation — Layer 2: Platform Infrastructure
+
+### 2A. Firm-Branded Landing Pages (Enhancement)
+- [x] Admin branding editor with live preview (headline, subtitle, logo, brand colors, trust badges, compliance disclaimer)
+- [ ] "Publish" button with confirmation for landing page changes
+- [ ] URL structure: /org/{slug} auto-affiliates users arriving from firm URL
+
+### 2B. Global Admin Layer (Enhancement)
+- [x] Global Admin dashboard: all-firms overview (firm count, total users, satisfaction, pending reviews, analytics)
+- [ ] Firm management: create/deactivate firms, assign Firm Admins
+- [x] Platform AI Settings: Layer 1 prompt editor (in Global Admin view, with tone/format/guardrails/prohibited topics)
+- [ ] Feature flags: toggle features platform-wide
+- [ ] Global compliance dashboard: audit log viewer across all firms
+- [ ] Platform billing and usage analytics
+- [ ] Credit consumption monitoring across all firms
+- [ ] Global Admin can view-as any role in any firm
+
+### 2C. Enhanced Progressive Authentication (Completion)
+- [x] Tier 0 (Anonymous): 5 conversations in localStorage, general education only, UpgradePrompt after 3 messages
+- [ ] Tier 1 (Email-only): quick email capture, unaffiliated user, saved history, basic preferences
+- [x] Tier 2 (Full account): Manus OAuth working, full AI twin
+- [ ] Tier 3 (Advisor-connected): linked to professional in firm, shared dashboard, compliance-grade records
+
+### 2D. Marketplace Foundation
+- [x] /ADVISOR_MATCHING: AI-powered matching with needs description, location, match scoring (mock data, ready for real API)
+- [x] Present 4 matched professionals with name, credentials, specialties, rating, brief bio, match score, match reasons
+- [x] User selects → connection request sent (UI wired, backend invite system ready for integration)
+- [x] /PRODUCT_COMPARISON: multi-carrier side-by-side comparison tables (up to 4 products)
+- [x] AI-generated analysis highlighting key differences
+- [ ] Suitability match scoring against client profile — future enhancement
+- [ ] Exportable comparison PDFs — future enhancement
+
+### 2E. Conversational Response Improvements
+- [x] Voice mode: max 2-3 sentences (~75 words), key insight first, end with follow-up question (tone rules in system prompt)
+- [x] Text mode: max 150 words (simple), 300 words (complex), summary first, details on demand (tone rules in system prompt)
+- [x] Progressive disclosure: >300 words → 2-3 sentence summary + collapsible "Show full response" section (ProgressiveMessage component)
+- [x] Tone rules: contractions, rounded numbers, first person, never start with "Great question!" (system prompt guidelines)
+- [x] Financial context: auto-append disclaimer on investment topics (existing needsFinancialDisclaimer)
+- [x] Auto-scroll: IntersectionObserver anchor pattern (only scrolls when user is near bottom)
+- [ ] Inline charts: auto-generate when response contains numerical data (lightweight-charts, recharts, mermaid) — future enhancement
+- [ ] Chart action buttons: [Copy] [Save Image] [Full Screen] — future enhancement
+
+### 2F. Voice Mode Enhancements
+- [x] Voice input: Web Speech API with continuous=true, interimResults=true, 1.5s silence auto-send
+- [x] Financial term dictionary for speech recognition (EBITDA, 401(k), Roth, basis points, IUL, etc.)
+- [ ] Voice output primary: Edge TTS via Cloudflare Worker proxy (en-US-GuyNeural, en-US-JennyNeural) — needs EDGE_TTS_PROXY_URL secret
+- [x] Streaming TTS: buffer tokens, split on sentence boundaries, play immediately
+- [x] Voice output fallback: browser SpeechSynthesis (chunk 200-word segments)
+- [x] UI: VoiceOrb waveform visualization (idle/listening/processing/speaking), interim text display, mic toggle
+
+## V3 Continuation — Layer 3: Stress-Test & Validation Playbook
+
+### 3A. Core Functional Tests
+- [ ] TEST-FUNC-001: Chat streaming (tokens stream, auto-scroll, disclaimer present)
+- [ ] TEST-FUNC-002: Conversation CRUD (create, send, rename, search, pin, delete, persist)
+- [ ] TEST-FUNC-003: Hand-off flow (7-step PREPARE→RETURN)
+- [ ] TEST-FUNC-004: Progressive auth tiers (anonymous → email → full → advisor-connected)
+- [ ] TEST-FUNC-005: Inline chart generation (Plaid data, interactive, action buttons)
+- [ ] TEST-FUNC-006: Voice mode loop (5-turn voice conversation hands-free)
+- [ ] TEST-FUNC-007: PDF export (messages, charts, header, disclaimer, metadata)
+- [ ] TEST-FUNC-008: Meeting intelligence cycle (brief → meeting → summary → email → calendar)
+- [ ] TEST-FUNC-009: Proactive insights (drift, tax, engagement, compliance per client)
+- [ ] TEST-FUNC-010: Financial planning tools (Monte Carlo, scenarios, export)
+
+### 3B. Security Tests
+- [ ] TEST-SEC-001: Vertical privilege escalation (user → professional endpoints → 403)
+- [ ] TEST-SEC-002: Horizontal privilege escalation / IDOR (user A → user B data → 403)
+- [ ] TEST-SEC-003: Cross-firm data isolation (firm A → firm B data → 403)
+- [ ] TEST-SEC-004: XSS in chat messages (script tags rendered as plain text)
+- [ ] TEST-SEC-005: API key protection (zero secrets in client-side code)
+- [ ] TEST-SEC-006: View-as permission enforcement (unauthorized view-as → 403)
+- [ ] TEST-SEC-007: Prompt layer isolation (no cross-firm prompt leakage)
+- [ ] TEST-SEC-008: Session fixation (session ID regenerated post-auth)
+- [ ] TEST-SEC-009: Audit log immutability (append-only, no modification API)
+- [ ] TEST-SEC-010: Browser operator domain allowlist
+
+### 3C. Role Hierarchy Tests
+- [ ] TEST-ROLE-001: Global Admin sees all firms
+- [ ] TEST-ROLE-002: Firm Admin sees only their firm
+- [ ] TEST-ROLE-003: Manager sees only their team
+- [ ] TEST-ROLE-004: Professional sees only their clients
+- [ ] TEST-ROLE-005: Unaffiliated user gets platform defaults only (Layer 1 + Layer 5)
+- [ ] TEST-ROLE-006: Firm affiliation transition (response changes after joining firm)
+- [ ] TEST-ROLE-007: View-as audit trail completeness
+- [ ] TEST-ROLE-008: 5-layer prompt inheritance (compliance guardrails survive all layers)
+
+### 3D. Performance Tests
+- [ ] TEST-PERF-001: First load (LCP < 2.5s, FID < 100ms, CLS < 0.1)
+- [ ] TEST-PERF-002: Chat streaming latency (P50 < 300ms, P95 < 500ms to first token)
+- [ ] TEST-PERF-003: Chart render with 1000+ data points (< 3s, no frame drops)
+- [ ] TEST-PERF-004: Search at scale (1000 conversations, results < 500ms)
+- [ ] TEST-PERF-005: Mobile performance (low-end Android, >30fps, no crashes)
+- [ ] TEST-PERF-006: Memory leak detection (heap stabilizes, <10% growth)
+
+### 3E. Responsive & Accessibility Tests
+- [ ] TEST-RESP-001: Mobile layout (375-412px, touch targets ≥44×44px)
+- [ ] TEST-RESP-002: Tablet layout (768-1024px, sidebar as drawer)
+- [ ] TEST-A11Y-001: Color contrast (text 4.5:1, UI 3:1, zero violations)
+- [ ] TEST-A11Y-002: Screen reader (VoiceOver/NVDA full workflow)
+- [ ] TEST-A11Y-003: Reduced motion (prefers-reduced-motion respected)
+- [ ] TEST-A11Y-004: Font scaling 400% (no horizontal scroll)
+
+### 3F. Compliance Tests
+- [ ] TEST-COMP-001: AI disclaimer presence (100% coverage on financial topics)
+- [ ] TEST-COMP-002: Regulated conversation detection (enhanced retention on regulated)
+- [ ] TEST-COMP-003: Retention lock enforcement (cannot delete within 6-year window)
+- [ ] TEST-COMP-004: GDPR data export / DSAR (all data as JSON within 30 days)
+- [ ] TEST-COMP-005: Human escalation path (button visible, context preserved)
+- [ ] TEST-COMP-006: Audit trail completeness (100% coverage, no gaps)
+
+### 3G. Integration Tests
+- [ ] TEST-INT-PLAID-001: Account linking (Plaid Link flow, correct balances)
+- [ ] TEST-INT-PLAID-002: Token expiration recovery (re-auth, historical data preserved)
+- [ ] TEST-INT-DAILY-001: Video call flow (room created, screen sharing, metadata saved)
+- [ ] TEST-INT-TTS-001: Edge TTS streaming (audio < 500ms, financial terms correct)
+- [ ] TEST-INT-TTS-002: TTS fallback (browser SpeechSynthesis when Edge TTS down)
+- [ ] TEST-INT-OPENAI-001: Streaming error recovery (partial response preserved, reconnect)
+- [ ] TEST-INT-OPENAI-002: Rate limit handling (429 → friendly message, auto-retry with backoff)
+
+## Secrets Needed for V3
+- [ ] Add DEEPGRAM_API_KEY secret (meeting transcription)
+- [ ] Add EDGE_TTS_PROXY_URL secret (Cloudflare Worker for TTS)
+- [ ] Add PLAID_CLIENT_ID secret (account aggregation)
+- [ ] Add PLAID_SECRET secret (account aggregation)
+- [ ] Add DAILY_API_KEY secret (video calls / screen sharing)
+
+## Phase 12: Professional Portal, Organizations UI, View-As System
+- [x] Fix userRole derivation in Chat.tsx (use user.role from DB instead of hardcoded "user")
+- [x] Add Building2 icon import for Organizations sidebar link
+- [x] Build portal router backend (stats, clientBook, teamMembers, myOrganizations, searchUsers, addClient, removeClient, viewAsStart, viewAsEnd, viewAsAudit)
+- [x] Role-gated access: advisor+ for portal, manager+ for team/audit views
+- [x] Build Portal.tsx frontend (/portal route) with:
+  - [x] Summary stat cards (total clients, active clients, team size, organizations)
+  - [x] Client book table (name, life stage, risk profile, conversations, last activity, status)
+  - [x] Client search/filter
+  - [x] Add client dialog (search users by name/email)
+  - [x] Remove client functionality
+  - [x] View-As system (start session with reason, 30-min auto-expiry, audit logging)
+  - [x] View-As banner with end session button
+  - [x] View-As client detail view (profile, suitability, financial data)
+  - [x] Team members tab (manager+ only) with advisor cards
+  - [x] View-As audit log tab (manager+ only) with compliance tracking
+  - [x] My Organizations tab with org cards
+- [x] Build Organizations.tsx frontend (/organizations route) with:
+  - [x] Organization list view with cards
+  - [x] Create organization dialog (name, slug, description, website, EIN, industry, size)
+  - [x] Organization detail view with info + member list
+  - [x] Edit organization dialog
+  - [x] Delete organization with confirmation
+  - [x] Invite member dialog (by user ID + role selection)
+  - [x] Remove member functionality
+- [x] Add Portal + Organizations links to Chat sidebar admin nav
+- [x] Register /portal and /organizations routes in App.tsx
+- [x] Write 20 portal tests (stats, clientBook, teamMembers, myOrganizations, viewAs, searchUsers, addClient, removeClient)
+- [x] All 67 tests passing (20 portal + 21 chat + 17 audit + 8 products + 1 auth)

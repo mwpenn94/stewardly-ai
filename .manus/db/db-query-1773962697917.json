@@ -1,0 +1,16 @@
+{
+  "query": "SHOW TABLES LIKE '%view%'; SHOW TABLES LIKE '%portal%'; SHOW TABLES LIKE '%compliance%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SHOW TABLES LIKE '%view%'; SHOW TABLES LIKE '%portal%'; SHOW TABLES LIKE '%compliance%';",
+  "rows": [
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD (%view%)": "review_queue"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD (%view%)": "view_as_audit_log"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_GaKEFERPH576tbv5NzvkMD (%view%)\nreview_queue\nview_as_audit_log\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

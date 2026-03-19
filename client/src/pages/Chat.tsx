@@ -8,20 +8,25 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
-  AlertTriangle, ArrowUp, BarChart3, Bot, Calculator, Check, CheckCircle,
+  AlertTriangle, ArrowUp, BarChart3, Bot, Briefcase, Building2, Calculator, Check, CheckCircle,
   ChevronDown, FileText, Image, Loader2, LogOut, Menu, MessageSquare,
   Mic, MicOff, Monitor, Package, Paperclip, Phone, PhoneOff, Plus,
-  Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User,
-  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp
+  Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
+  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { LiveSession } from "@/components/LiveSession";
+import { VoiceOrb } from "@/components/VoiceOrb";
+import { ProgressiveMessage } from "@/components/ProgressiveMessage";
+import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
+import { useTTS } from "@/hooks/useTTS";
+import { useAnonymousChat } from "@/hooks/useAnonymousChat";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
 import { parseFocusModes, serializeFocusModes } from "@shared/types";
-import { Palette } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────
 const FOCUS_OPTIONS: { value: FocusMode; label: string; icon: React.ReactNode; desc: string }[] = [
@@ -86,21 +91,55 @@ export default function Chat() {
   // ─── HANDS-FREE & VOICE STATE ──────────────────────────────────
   const [handsFreeActive, setHandsFreeActive] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true); // Default ON per spec
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [ttsPlaying, setTtsPlaying] = useState(false); // Guard: true while TTS audio plays
 
   // ─── REFS ──────────────────────────────────────────────────────
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isNearBottomRef = useRef(true);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<any>(null);
-  const ttsGuardRef = useRef(false); // Prevents recognition during TTS
+  const handleSendRef = useRef<(text: string) => void>(() => {});
+
+  // ─── ENHANCED TTS ─────────────────────────────────────────────
+  const tts = useTTS({
+    enabled: ttsEnabled,
+    rate: 1.0,
+    onStart: () => {},
+    onEnd: () => {
+      // In hands-free mode, restart listening after TTS completes
+      if (handsFreeActive) {
+        setTimeout(() => voice.start(), 600);
+      }
+    },
+  });
+
+  // ─── ENHANCED VOICE RECOGNITION ───────────────────────────────
+  const voice = useVoiceRecognition({
+    enabled: handsFreeActive,
+    silenceTimeout: 1500,
+    lang: "en-US",
+    onTranscript: (text) => {
+      // Auto-send in hands-free mode
+      handleSendRef.current(text);
+    },
+    onInterim: (text) => {
+      if (handsFreeActive) setInput(text);
+    },
+    guardRef: tts.guardRef,
+  });
+
+  // Derive voice state for UI
+  const voiceState: "idle" | "listening" | "processing" | "speaking" = 
+    tts.isSpeaking ? "speaking" : 
+    voice.isListening ? "listening" : 
+    isStreaming ? "processing" : "idle";
 
   // ─── ANONYMOUS MODE ──────────────────────────────────────────
-  const isAnonymous = typeof window !== 'undefined' && localStorage.getItem('anonymousMode') === 'true';
+  const isAnonymous = !isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('anonymousMode') === 'true';
   const allowQueries = isAuthenticated || isAnonymous;
+  const anonChat = useAnonymousChat();
+  const anonSendMutation = trpc.anonymousChat.send.useMutation();
 
   // ─── QUERIES ──────────────────────────────────────────────────
   const conversationsQuery = trpc.conversations.list.useQuery(undefined, { enabled: allowQueries });
@@ -127,8 +166,22 @@ export default function Chat() {
     if (messagesQuery.data) setMessages(messagesQuery.data);
   }, [messagesQuery.data]);
 
+  // Auto-scroll only when user is near bottom (IntersectionObserver pattern)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const sentinel = messagesEndRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { isNearBottomRef.current = entry.isIntersecting; },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (isNearBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, isStreaming]);
 
   // Auto-resize textarea
@@ -139,124 +192,22 @@ export default function Chat() {
     }
   }, [input]);
 
-  // ─── TTS (Text-to-Speech) with guard ─────────────────────────
-  const speak = useCallback((text: string) => {
-    if (!ttsEnabled || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const cleaned = text.replace(/[#*_`~\[\]()>|]/g, "").replace(/---[\s\S]*$/m, "").trim();
-    if (!cleaned) return;
-
-    // Set guard BEFORE speaking — prevents recognition from starting
-    ttsGuardRef.current = true;
-    setTtsPlaying(true);
-    setIsSpeaking(true);
-
-    const chunks = cleaned.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [cleaned];
-    chunks.forEach((chunk, i) => {
-      const utterance = new SpeechSynthesisUtterance(chunk.trim());
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      if (i === chunks.length - 1) {
-        utterance.onend = () => {
-          setIsSpeaking(false);
-          setTtsPlaying(false);
-          ttsGuardRef.current = false;
-          // In hands-free mode, start listening AFTER TTS completes (with delay)
-          if (handsFreeActive) {
-            setTimeout(() => {
-              if (!ttsGuardRef.current) startListeningInternal();
-            }, 600); // 600ms guard delay to avoid echo pickup
-          }
-        };
-      }
-      window.speechSynthesis.speak(utterance);
-    });
-  }, [ttsEnabled, handsFreeActive]);
-
-  // ─── SPEECH RECOGNITION ───────────────────────────────────────
-  const startListeningInternal = useCallback(() => {
-    // CRITICAL: Never start recognition while TTS is playing
-    if (ttsGuardRef.current || ttsPlaying) return;
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) { toast.error("Speech recognition not supported in this browser"); return; }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = "en-US";
-
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      if (transcript.trim()) {
-        setInput(transcript);
-        // In hands-free mode, auto-send after recognition
-        if (handsFreeActive) {
-          setTimeout(() => {
-            const fakeEvent = { transcript };
-            handleSendWithText(transcript);
-          }, 200);
-        }
-      }
-    };
-
-    recognition.onerror = (event: any) => {
-      if (event.error !== "no-speech" && event.error !== "aborted") {
-        toast.error(`Speech error: ${event.error}`);
-      }
-      setIsListening(false);
-      // In hands-free, retry listening after a brief pause (unless TTS is playing)
-      if (handsFreeActive && !ttsGuardRef.current) {
-        setTimeout(() => {
-          if (handsFreeActive && !ttsGuardRef.current) startListeningInternal();
-        }, 1000);
-      }
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-  }, [handsFreeActive, ttsPlaying]);
-
-  const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  }, []);
-
   // ─── HANDS-FREE TOGGLE ────────────────────────────────────────
   const toggleHandsFree = useCallback(() => {
     if (handsFreeActive) {
       // Deactivate
       setHandsFreeActive(false);
-      stopListening();
-      window.speechSynthesis?.cancel();
-      ttsGuardRef.current = false;
-      setTtsPlaying(false);
-      setIsSpeaking(false);
+      voice.stop();
+      tts.cancel();
     } else {
       // Activate — play a chime-like confirmation, then start listening
       setHandsFreeActive(true);
       setTtsEnabled(true); // Force TTS on in hands-free
-      // Small audible cue
-      const cue = new SpeechSynthesisUtterance("Hands-free mode active.");
-      cue.rate = 1.1;
-      cue.volume = 0.7;
-      ttsGuardRef.current = true;
-      setTtsPlaying(true);
-      cue.onend = () => {
-        ttsGuardRef.current = false;
-        setTtsPlaying(false);
-        setTimeout(() => startListeningInternal(), 400);
-      };
-      window.speechSynthesis?.speak(cue);
+      tts.speak("Hands-free mode active.");
     }
-  }, [handsFreeActive, stopListening, startListeningInternal]);
+  }, [handsFreeActive, voice, tts]);
 
-  // ─── SEND MESSAGE ─────────────────────────────────────────────
+   // ─── SEND MESSAGE ───────────────────────────────────────────
   const handleSendWithText = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed && attachments.length === 0) return;
@@ -268,7 +219,49 @@ export default function Chat() {
     setIsStreaming(true);
 
     try {
-      // Create conversation if needed
+      // ─── ANONYMOUS PATH ───
+      if (isAnonymous) {
+        // Ensure we have an active anon conversation
+        if (!anonChat.activeConversation) {
+          if (anonChat.atConversationLimit) {
+            toast.error("You've reached the free conversation limit. Sign up to continue!");
+            setIsStreaming(false);
+            return;
+          }
+          anonChat.createConversation();
+        }
+        if (anonChat.atMessageLimit) {
+          toast.error("Message limit reached for this conversation. Start a new one or sign up!");
+          setIsStreaming(false);
+          return;
+        }
+
+        anonChat.addMessage("user", trimmed);
+
+        // Build message history for the anonymous endpoint
+        const anonHistory = [...(anonChat.activeConversation?.messages || []).map(m => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })), { role: "user" as const, content: trimmed }];
+
+        const result = await anonSendMutation.mutateAsync({
+          messages: anonHistory,
+          focus: selectedFocus[0] || "general",
+        });
+
+        anonChat.addMessage("assistant", typeof result.content === 'string' ? result.content : String(result.content));
+        const assistantMsg = {
+          role: "assistant" as const,
+          content: result.content,
+          createdAt: new Date(),
+        };
+        setMessages(prev => [...prev, assistantMsg]);
+
+        if (ttsEnabled) tts.speak(typeof result.content === 'string' ? result.content : String(result.content));
+        return;
+      }
+
+      // ─── AUTHENTICATED PATH ───
       let activeConvId = conversationId;
       if (!activeConvId) {
         const newConv = await createConversation.mutateAsync({ mode, title: trimmed.slice(0, 80) });
@@ -295,9 +288,8 @@ export default function Chat() {
       };
       setMessages(prev => [...prev, assistantMsg]);
 
-      // Auto-speak response if TTS is enabled (hands-free or manual toggle)
       if (ttsEnabled) {
-        speak(result.content);
+        tts.speak(result.content);
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to send message");
@@ -305,9 +297,14 @@ export default function Chat() {
       setIsStreaming(false);
       setAttachments([]);
     }
-  };
+  };;
 
   const handleSend = () => handleSendWithText(input);
+
+  // Keep the ref in sync for voice recognition callback
+  useEffect(() => {
+    handleSendRef.current = handleSendWithText;
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -345,7 +342,7 @@ export default function Chat() {
   };
 
   // ─── ROLE-BASED MODE FILTERING ────────────────────────────────
-  const userRole = "user" as UserRole; // TODO: Implement role-based access control
+  const userRole = (user?.role as UserRole) || "user";
   const availableModes = useMemo(() => {
     return MODE_OPTIONS.filter(m => hasMinRole(userRole, m.minRole));
   }, [userRole]);
@@ -372,10 +369,19 @@ export default function Chat() {
   const toolsNav = [
     { icon: <Calculator className="w-3.5 h-3.5" />, label: "Calculators", href: "/calculators", minRole: "user" as UserRole },
     { icon: <Package className="w-3.5 h-3.5" />, label: "Products", href: "/products", minRole: "user" as UserRole },
+    { icon: <Calendar className="w-3.5 h-3.5" />, label: "Meetings", href: "/meetings", minRole: "user" as UserRole },
+    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Insights", href: "/insights", minRole: "user" as UserRole },
+    { icon: <DollarSign className="w-3.5 h-3.5" />, label: "Planning", href: "/planning", minRole: "user" as UserRole },
+    { icon: <Brain className="w-3.5 h-3.5" />, label: "Coach", href: "/coach", minRole: "user" as UserRole },
+    { icon: <Shield className="w-3.5 h-3.5" />, label: "Compliance", href: "/compliance", minRole: "user" as UserRole },
+    { icon: <Users className="w-3.5 h-3.5" />, label: "Marketplace", href: "/marketplace", minRole: "user" as UserRole },
   ];
 
   const adminNav = [
+    { icon: <Briefcase className="w-3.5 h-3.5" />, label: "Portal", href: "/portal", minRole: "advisor" as UserRole },
+    { icon: <Building2 className="w-3.5 h-3.5" />, label: "Organizations", href: "/organizations", minRole: "advisor" as UserRole },
     { icon: <BarChart3 className="w-3.5 h-3.5" />, label: "Manager Dashboard", href: "/manager", minRole: "manager" as UserRole },
+    { icon: <Globe className="w-3.5 h-3.5" />, label: "Global Admin", href: "/admin", minRole: "admin" as UserRole },
   ];
 
   return (
@@ -574,10 +580,7 @@ export default function Chat() {
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
                   setTtsEnabled(!ttsEnabled);
-                  window.speechSynthesis?.cancel();
-                  ttsGuardRef.current = false;
-                  setTtsPlaying(false);
-                  setIsSpeaking(false);
+                  tts.cancel();
                 }}>
                   {ttsEnabled ? <Volume2 className="w-4 h-4 text-accent" /> : <VolumeX className="w-4 h-4" />}
                 </Button>
@@ -649,7 +652,7 @@ export default function Chat() {
               {messages.map((msg: any, i: number) => (
                 <div key={msg.id || i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
                   {msg.role === "assistant" && (
-                    <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 mt-0.5 ${isSpeaking && i === messages.length - 1 ? "avatar-talking" : ""} ${avatarUrl ? "" : "bg-accent/10"}`}>
+                    <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 mt-0.5 ${tts.isSpeaking && i === messages.length - 1 ? "avatar-talking" : ""} ${avatarUrl ? "" : "bg-accent/10"}`}>
                       {avatarUrl ? <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
                     </div>
                   )}
@@ -661,7 +664,11 @@ export default function Chat() {
                     ) : (
                       <div>
                         <div className="prose-chat text-sm">
-                          <Streamdown>{msg.content}</Streamdown>
+                          <ProgressiveMessage
+                            content={msg.content}
+                            isLatest={i === messages.length - 1}
+                            threshold={300}
+                          />
                           {/* Render inline images if present in metadata */}
                           {msg.metadata?.imageUrl && (
                             <div className="mt-3 rounded-xl overflow-hidden border border-border max-w-md">
@@ -689,7 +696,7 @@ export default function Chat() {
                               <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => handleFeedback(msg.id, "down")}>
                                 <ThumbsDown className="w-3 h-3" />
                               </button>
-                              <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => speak(msg.content)}>
+                              <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.speak(msg.content)}>
                                 <Volume2 className="w-3 h-3" />
                               </button>
                             </div>
@@ -718,23 +725,34 @@ export default function Chat() {
                   </div>
                 </div>
               )}
+              {/* Upgrade prompt for anonymous users */}
+              {isAnonymous && anonChat.shouldPromptUpgrade && (
+                <div className="px-4 py-3">
+                  <UpgradePrompt
+                    targetTier="email"
+                    conversationCount={anonChat.conversations.length}
+                    messageCount={anonChat.totalMessages}
+                    compact
+                  />
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
           )}
         </div>
 
-        {/* Hands-free status bar */}
+        {/* Hands-free status bar with VoiceOrb */}
         {handsFreeActive && (
-          <div className="flex items-center justify-center gap-3 py-2 bg-accent/5 border-t border-accent/20">
-            <div className={`w-2 h-2 rounded-full ${
-              ttsPlaying ? "bg-accent animate-pulse" :
-              isListening ? "bg-red-400 animate-pulse" :
-              isStreaming ? "bg-yellow-400 animate-pulse" :
-              "bg-muted-foreground"
-            }`} />
+          <div className="flex items-center justify-center gap-3 py-2.5 bg-accent/5 border-t border-accent/20">
+            <VoiceOrb state={voiceState} size={32} />
             <span className="text-xs text-muted-foreground">
-              {ttsPlaying ? "Speaking..." : isListening ? "Listening..." : isStreaming ? "Thinking..." : "Ready — speak anytime"}
+              {voiceState === "speaking" ? "Speaking..." : voiceState === "listening" ? "Listening..." : voiceState === "processing" ? "Thinking..." : "Ready — speak anytime"}
             </span>
+            {voice.interimText && (
+              <span className="text-xs text-foreground/60 italic max-w-[200px] truncate">
+                "{voice.interimText}"
+              </span>
+            )}
             <Button variant="ghost" size="sm" className="text-xs h-6" onClick={toggleHandsFree}>End</Button>
           </div>
         )}
@@ -824,7 +842,7 @@ export default function Chat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={handsFreeActive && isListening ? "Listening..." : "Ask anything..."}
+                placeholder={handsFreeActive && voice.isListening ? "Listening..." : "Ask anything..."}
                 className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[40px] max-h-[160px] text-sm py-2 px-1"
                 rows={1}
                 disabled={isStreaming}
@@ -836,14 +854,14 @@ export default function Chat() {
                     <TooltipTrigger asChild>
                       <button
                         className={`p-1.5 rounded-lg transition-colors ${
-                          isListening ? "bg-red-500/20 text-red-400" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
+                          voice.isListening ? "bg-red-500/20 text-red-400" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
                         }`}
-                        onClick={isListening ? stopListening : startListeningInternal}
+                        onClick={voice.isListening ? voice.stop : voice.start}
                       >
-                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                        {voice.isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>{isListening ? "Stop listening" : "Voice input"}</TooltipContent>
+                    <TooltipContent>{voice.isListening ? "Stop listening" : "Voice input"}</TooltipContent>
                   </Tooltip>
                 )}
 

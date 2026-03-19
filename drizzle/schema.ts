@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean, bigint } from "drizzle-orm/mysql-core";
 
 // ─── ORGANIZATIONS (Multi-Tenant Organizational Units) ─────────────────────
 // DB table: organizations
@@ -99,6 +99,9 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "advisor", "manager", "admin"]).default("user").notNull(),
+  authTier: mysqlEnum("authTier", ["anonymous", "email", "full", "advisor_connected"]).default("full").notNull(),
+  affiliateOrgId: int("affiliateOrgId"),
+  anonymousConversationCount: int("anonymousConversationCount").default(0).notNull(),
   passwordHash: text("passwordHash"),
   styleProfile: text("styleProfile"),
   suitabilityCompleted: mysqlBoolean("suitabilityCompleted").default(false),
@@ -269,6 +272,7 @@ export const viewAsAuditLog = mysqlTable("view_as_audit_log", {
   id: int("id").autoincrement().primaryKey(),
   actorId: int("actorId").notNull(),
   targetUserId: int("targetUserId").notNull(),
+  organizationId: int("organizationId"),
   startTime: timestamp("startTime").notNull(),
   endTime: timestamp("endTime"),
   actions: json("actions"),
@@ -584,3 +588,121 @@ export const promptExperiments = mysqlTable("prompt_experiments", {
 });
 
 export type PromptExperiment = typeof promptExperiments.$inferSelect;
+
+
+// ─── MEETINGS (Meeting Intelligence) ───────────────────────────────────────
+// DB table: meetings
+export const meetings = mysqlTable("meetings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId"),
+  clientName: varchar("clientName", { length: 256 }),
+  clientId: int("clientId"),
+  meetingType: mysqlEnum("meetingType", [
+    "initial_consultation", "portfolio_review", "financial_plan",
+    "tax_planning", "estate_planning", "insurance_review", "general", "follow_up",
+  ]).default("general"),
+  status: mysqlEnum("status", ["scheduled", "preparing", "in_progress", "completed", "cancelled"]).default("scheduled"),
+  scheduledAt: timestamp("scheduledAt"),
+  completedAt: timestamp("completedAt"),
+  preMeetingBrief: text("preMeetingBrief"),
+  postMeetingSummary: text("postMeetingSummary"),
+  transcript: text("transcript"),
+  keyDecisions: text("keyDecisions"),
+  followUpDate: timestamp("followUpDate"),
+  followUpEmail: text("followUpEmail"),
+  complianceNotes: text("complianceNotes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Meeting = typeof meetings.$inferSelect;
+
+// DB table: meeting_action_items
+export const meetingActionItems = mysqlTable("meeting_action_items", {
+  id: int("id").autoincrement().primaryKey(),
+  meetingId: int("meetingId").notNull(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  description: text("description"),
+  assignedTo: varchar("assignedTo", { length: 256 }),
+  priority: mysqlEnum("priority", ["low", "medium", "high", "urgent"]).default("medium"),
+  status: mysqlEnum("status", ["pending", "in_progress", "completed", "cancelled"]).default("pending"),
+  dueDate: timestamp("dueDate"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MeetingActionItem = typeof meetingActionItems.$inferSelect;
+
+
+// ─── PROACTIVE INSIGHTS ──────────────────────────────────────────────────
+export const proactiveInsights = mysqlTable("proactive_insights", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  organizationId: int("organization_id"),
+  clientId: int("client_id"),
+  category: mysqlEnum("category", ["compliance", "portfolio", "tax", "engagement", "spending", "life_event"]).default("portfolio").notNull(),
+  priority: mysqlEnum("priority", ["low", "medium", "high", "critical"]).default("medium").notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description"),
+  suggestedAction: text("suggested_action"),
+  status: mysqlEnum("status", ["new", "viewed", "acted", "dismissed", "snoozed"]).default("new").notNull(),
+  snoozeUntil: timestamp("snooze_until"),
+  actedAt: timestamp("acted_at"),
+  dismissedAt: timestamp("dismissed_at"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type ProactiveInsight = typeof proactiveInsights.$inferSelect;
+
+// ─── ENGAGEMENT SCORES ───────────────────────────────────────────────────
+export const engagementScores = mysqlTable("engagement_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  clientId: int("client_id"),
+  organizationId: int("organization_id"),
+  loginFrequency: float("login_frequency").default(0),
+  meetingCadence: float("meeting_cadence").default(0),
+  responseTimeAvg: float("response_time_avg").default(0),
+  portalActivity: float("portal_activity").default(0),
+  overallScore: float("overall_score").default(0),
+  riskLevel: mysqlEnum("risk_level", ["healthy", "at_risk", "critical"]).default("healthy").notNull(),
+  periodStart: timestamp("period_start"),
+  periodEnd: timestamp("period_end"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type EngagementScore = typeof engagementScores.$inferSelect;
+
+
+// ─── COMPLIANCE REVIEWS ────────────────────────────────────────────────
+export const complianceReviews = mysqlTable("compliance_reviews", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  organizationId: varchar("organization_id", { length: 255 }),
+  reviewType: varchar("review_type", { length: 50 }).notNull().default("content_review"),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  contentHash: varchar("content_hash", { length: 64 }),
+  originalContent: text("original_content"),
+  flaggedIssues: text("flagged_issues"),
+  appliedFixes: text("applied_fixes"),
+  severity: varchar("severity", { length: 20 }).default("low"),
+  reviewerId: varchar("reviewer_id", { length: 255 }),
+  reviewedAt: bigint("reviewed_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type ComplianceReview = typeof complianceReviews.$inferSelect;
+
+// ─── COMPLIANCE FLAGS ──────────────────────────────────────────────────
+export const complianceFlags = mysqlTable("compliance_flags", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  reviewId: varchar("review_id", { length: 36 }).notNull(),
+  ruleCode: varchar("rule_code", { length: 50 }).notNull(),
+  ruleName: varchar("rule_name", { length: 255 }).notNull(),
+  description: text("description"),
+  severity: varchar("severity", { length: 20 }).notNull().default("warning"),
+  autoFixed: mysqlBoolean("auto_fixed").default(false),
+  fixApplied: text("fix_applied"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type ComplianceFlag = typeof complianceFlags.$inferSelect;

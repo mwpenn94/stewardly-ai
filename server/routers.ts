@@ -856,6 +856,11 @@ import { organizationsRouter } from "./routers/organizations";
 import { emailAuthRouter } from "./routers/emailAuth";
 import { relationshipsRouter } from "./routers/relationships";
 import { orgBrandingRouter } from "./routers/orgBranding";
+import { anonymousChatRouter } from "./routers/anonymousChat";
+import { meetingsRouter } from "./routers/meetings";
+import { insightsRouter } from "./routers/insights";
+import { complianceRouter } from "./routers/compliance";
+import { portalRouter } from "./routers/portal";
 
 export const appRouter = router({
   system: systemRouter,
@@ -885,6 +890,11 @@ export const appRouter = router({
   relationships: relationshipsRouter,
   orgBranding: orgBrandingRouter,
   aiLayers: aiLayersRouter,
+  anonymousChat: anonymousChatRouter,
+  meetings: meetingsRouter,
+  insights: insightsRouter,
+  compliance: complianceRouter,
+  portal: portalRouter,
 });
 
 export type AppRouter = typeof appRouter;
