@@ -15,6 +15,20 @@
       "when": 1773903645419,
       "tag": "0001_groovy_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1773906775350,
+      "tag": "0002_majestic_killmonger",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1773907514228,
+      "tag": "0003_unique_thaddeus_ross",
+      "breakpoints": true
     }
   ]
 }

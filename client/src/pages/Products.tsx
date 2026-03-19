@@ -51,7 +51,7 @@ export default function Products() {
           <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mx-auto mb-3">
             <Package className="w-6 h-6 text-accent" />
           </div>
-          <h1 className="text-xl font-semibold mb-1">WealthBridge Financial Products</h1>
+          <h1 className="text-xl font-semibold mb-1">Financial Products</h1>
           <p className="text-muted-foreground text-sm">Explore our comprehensive product lineup. Ask the AI for personalized recommendations.</p>
         </div>
 

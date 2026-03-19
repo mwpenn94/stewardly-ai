@@ -6,17 +6,18 @@ import {
   Sparkles, MessageSquare, Calculator, FileText, Shield,
   Brain, Globe, DollarSign, Mic, BarChart3, ArrowRight,
   Loader2, LogOut, ChevronRight, Fingerprint, Settings, Package,
+  Camera, TrendingUp,
 } from "lucide-react";
 
 const features = [
-  { icon: <MessageSquare className="w-5 h-5" />, title: "AI Chat", desc: "General & financial expertise with your personal style", href: "/chat" },
+  { icon: <MessageSquare className="w-5 h-5" />, title: "AI Chat", desc: "General & financial expertise with your personal style", href: "/" },
   { icon: <Calculator className="w-5 h-5" />, title: "Calculators", desc: "IUL, premium finance, and retirement projections", href: "/calculators" },
-  { icon: <FileText className="w-5 h-5" />, title: "Documents", desc: "Upload docs to build your AI knowledge base", href: "/documents" },
+  { icon: <FileText className="w-5 h-5" />, title: "Documents", desc: "Upload docs to train your personal AI", href: "/documents" },
   { icon: <Shield className="w-5 h-5" />, title: "Suitability", desc: "Complete your financial profile for personalized advice", href: "/suitability" },
-  { icon: <Mic className="w-5 h-5" />, title: "Voice Input", desc: "Speak naturally — your AI understands you", href: "/chat" },
-  { icon: <Package className="w-5 h-5" />, title: "Product Catalog", desc: "Browse WealthBridge financial products", href: "/products" },
-  { icon: <Fingerprint className="w-5 h-5" />, title: "Style & Memory", desc: "Clone your communication style and teach your AI", href: "/settings" },
-  { icon: <BarChart3 className="w-5 h-5" />, title: "Manager Dashboard", desc: "Review queue, audit trail, and team analytics", href: "/manager" },
+  { icon: <TrendingUp className="w-5 h-5" />, title: "Market Data", desc: "Real-time quotes and market overview", href: "/market" },
+  { icon: <Package className="w-5 h-5" />, title: "Product Catalog", desc: "Browse and compare financial products", href: "/products" },
+  { icon: <Camera className="w-5 h-5" />, title: "Avatar & Style", desc: "Personalize your AI's look and communication style", href: "/settings" },
+  { icon: <BarChart3 className="w-5 h-5" />, title: "Manager Dashboard", desc: "Review queue, audit trail, and analytics", href: "/manager" },
 ];
 
 export default function Home() {
@@ -40,12 +41,12 @@ export default function Home() {
             <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
               <Sparkles className="w-4.5 h-4.5 text-accent" />
             </div>
-            <span className="font-semibold text-sm tracking-tight">WealthBridge AI</span>
+            <span className="font-semibold text-sm tracking-tight">Personal AI</span>
           </div>
           <div className="flex items-center gap-2">
             {isAuthenticated ? (
               <>
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/chat")}>
+                <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/")}>
                   <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Chat
                 </Button>
                 <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/settings")}>
@@ -69,20 +70,20 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-accent/5 via-transparent to-transparent" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center relative">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-medium mb-6">
-            <Sparkles className="w-3 h-3" /> Digital Twin — General & Financial AI
+            <Sparkles className="w-3 h-3" /> Personal AI — General & Financial
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4 leading-tight">
             Your Personal AI That<br />
             <span className="text-accent">Thinks Like You</span>
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
-            A digital twin that clones your communication style, knows your documents,
-            and combines general intelligence with deep financial expertise from WealthBridge Financial Group.
+            An AI assistant personalized to your communication style, trained on your documents,
+            and combining general intelligence with deep financial expertise.
           </p>
 
           <div className="flex items-center justify-center gap-3 mb-12">
             {isAuthenticated ? (
-              <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={() => navigate("/chat")}>
+              <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2" onClick={() => navigate("/")}>
                 <MessageSquare className="w-4 h-4" /> Start Chatting <ArrowRight className="w-4 h-4" />
               </Button>
             ) : (
@@ -134,7 +135,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-border py-6">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between text-xs text-muted-foreground">
-          <span>WealthBridge Financial Group</span>
+          <span>Personal AI Assistant</span>
           <span>AI-powered advisory platform</span>
         </div>
       </footer>

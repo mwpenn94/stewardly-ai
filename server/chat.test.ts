@@ -4,7 +4,7 @@ import { buildSystemPrompt, FINANCIAL_DISCLAIMER, needsFinancialDisclaimer, dete
 describe("System Prompt Builder", () => {
   it("builds a general-focus prompt when focus is 'general'", () => {
     const prompt = buildSystemPrompt({ focus: "general", mode: "client" });
-    expect(prompt).toContain("digital twin");
+    expect(prompt).toContain("personal AI assistant");
     expect(prompt).toContain("polymath");
     expect(prompt).not.toContain("financial_expertise");
   });
@@ -12,7 +12,7 @@ describe("System Prompt Builder", () => {
   it("builds a financial-focus prompt when focus is 'financial'", () => {
     const prompt = buildSystemPrompt({ focus: "financial", mode: "client" });
     expect(prompt).toContain("financial_expertise");
-    expect(prompt).toContain("WealthBridge Financial Group");
+    expect(prompt).toContain("financial_expertise");
   });
 
   it("builds a combined prompt when focus is 'both'", () => {

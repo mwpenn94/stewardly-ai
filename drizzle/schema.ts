@@ -12,6 +12,7 @@ export const users = mysqlTable("users", {
   suitabilityCompleted: mysqlBoolean("suitabilityCompleted").default(false),
   suitabilityData: json("suitabilityData"),
   settings: json("settings"),
+  avatarUrl: text("avatarUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -77,7 +78,7 @@ export const documentChunks = mysqlTable("document_chunks", {
 
 export type DocumentChunk = typeof documentChunks.$inferSelect;
 
-// ─── PRODUCTS (WealthBridge + Competitors) ────────────────────────
+// ─── PRODUCTS ──────────────────────────────────────────────────────────────────
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
   company: varchar("company", { length: 128 }).notNull(),
@@ -194,3 +195,35 @@ export const suitabilityAssessments = mysqlTable("suitability_assessments", {
 });
 
 export type SuitabilityAssessment = typeof suitabilityAssessments.$inferSelect;
+
+// ─── PROMPT VARIANTS (A/B Testing) ───────────────────────────────
+export const promptVariants = mysqlTable("prompt_variants", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  promptTemplate: text("promptTemplate").notNull(),
+  category: varchar("category", { length: 64 }).default("system"),
+  isActive: mysqlBoolean("isActive").default(true),
+  weight: float("weight").default(1.0),
+  totalUses: int("totalUses").default(0),
+  avgRating: float("avgRating").default(0),
+  positiveCount: int("positiveCount").default(0),
+  negativeCount: int("negativeCount").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PromptVariant = typeof promptVariants.$inferSelect;
+
+// ─── PROMPT EXPERIMENT LOG ───────────────────────────────────────
+export const promptExperiments = mysqlTable("prompt_experiments", {
+  id: int("id").autoincrement().primaryKey(),
+  variantId: int("variantId").notNull(),
+  conversationId: int("conversationId").notNull(),
+  messageId: int("messageId"),
+  feedbackRating: mysqlEnum("feedbackRating", ["up", "down"]),
+  confidenceScore: float("confidenceScore"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PromptExperiment = typeof promptExperiments.$inferSelect;

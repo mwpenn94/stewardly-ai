@@ -67,6 +67,12 @@ export async function updateUserStyleProfile(userId: number, profile: string) {
   await db.update(users).set({ styleProfile: profile }).where(eq(users.id, userId));
 }
 
+export async function updateUserAvatar(userId: number, avatarUrl: string | null) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ avatarUrl }).where(eq(users.id, userId));
+}
+
 export async function updateSuitabilityStatus(userId: number, completed: boolean, data?: unknown) {
   const db = await getDb();
   if (!db) return;

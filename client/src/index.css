@@ -45,7 +45,7 @@
 }
 
 /*
-  WealthBridge AI — Dark navy + warm gold accent
+  Personal AI — Dark navy + warm gold accent
   Professional financial aesthetic
 */
 :root {
@@ -198,3 +198,18 @@
 .prose-chat table { @apply my-2; }
 .prose-chat blockquote { @apply my-2 border-l-2 border-accent pl-3 italic text-muted-foreground; }
 .prose-chat a { @apply text-accent underline; }
+
+/* Talking avatar animation */
+@keyframes avatar-talk {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.78 0.14 85 / 0.4); }
+  15% { transform: scale(1.04); box-shadow: 0 0 0 3px oklch(0.78 0.14 85 / 0.3); }
+  30% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.78 0.14 85 / 0); }
+  45% { transform: scale(1.06); box-shadow: 0 0 0 4px oklch(0.78 0.14 85 / 0.35); }
+  60% { transform: scale(1.02); box-shadow: 0 0 0 2px oklch(0.78 0.14 85 / 0.2); }
+  75% { transform: scale(1.05); box-shadow: 0 0 0 3px oklch(0.78 0.14 85 / 0.3); }
+}
+.avatar-talking {
+  animation: avatar-talk 1.2s ease-in-out infinite;
+  border: 2px solid oklch(0.78 0.14 85 / 0.5);
+  border-radius: 0.5rem;
+}

@@ -8,12 +8,13 @@ import { invokeLLM } from "./_core/llm";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+import { callDataApi } from "./_core/dataApi";
 import {
   createConversation, getUserConversations, getConversation, deleteConversation,
   updateConversationTitle, addMessage, getConversationMessages,
   addDocument, getUserDocuments, updateDocumentStatus, addDocumentChunks,
   searchDocumentChunks, deleteDocument, getAllProducts, getProductsByCategory,
-  addAuditEntry, getAuditTrail, addToReviewQueue, getPendingReviews,
+  addAuditEntry, getAuditTrail, addToReviewQueue, getPendingReviews, updateUserAvatar,
   updateReviewStatus, addMemory, getUserMemories, deleteMemory,
   addFeedback, getFeedbackStats, addQualityRating,
   saveSuitabilityAssessment, getUserSuitability,
@@ -387,6 +388,7 @@ const settingsRouter = router({
     settings: ctx.user.settings,
     styleProfile: ctx.user.styleProfile,
     suitabilityCompleted: ctx.user.suitabilityCompleted,
+    avatarUrl: (ctx.user as any).avatarUrl || null,
   })),
   update: protectedProcedure
     .input(z.object({ settings: z.record(z.string(), z.unknown()) }))
@@ -394,6 +396,21 @@ const settingsRouter = router({
   updateStyleProfile: protectedProcedure
     .input(z.object({ profile: z.string() }))
     .mutation(({ ctx, input }) => updateUserStyleProfile(ctx.user.id, input.profile)),
+  uploadAvatar: protectedProcedure
+    .input(z.object({ content: z.string(), mimeType: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const buffer = Buffer.from(input.content, "base64");
+      if (buffer.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Image must be under 5MB" });
+      const ext = input.mimeType.includes("png") ? "png" : input.mimeType.includes("gif") ? "gif" : "jpg";
+      const key = `avatars/${ctx.user.id}-${nanoid(8)}.${ext}`;
+      const { url } = await storagePut(key, buffer, input.mimeType);
+      await updateUserAvatar(ctx.user.id, url);
+      return { url };
+    }),
+  removeAvatar: protectedProcedure.mutation(async ({ ctx }) => {
+    await updateUserAvatar(ctx.user.id, null);
+    return { success: true };
+  }),
 });
 
 // ─── CALCULATORS ROUTER ──────────────────────────────────────────
@@ -491,6 +508,71 @@ const calculatorsRouter = router({
     }),
 });
 
+// ─── MARKET DATA ROUTER ──────────────────────────────────────────
+const marketRouter = router({
+  getQuote: protectedProcedure
+    .input(z.object({ symbol: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const data: any = await callDataApi("YahooFinance/get_stock_chart", {
+          query: { symbol: input.symbol, region: "US", interval: "1d", range: "5d", includeAdjustedClose: true },
+        });
+        const result = data?.chart?.result?.[0];
+        if (!result) return { symbol: input.symbol, price: null, change: null, changePercent: null, volume: null, marketCap: null, name: null };
+        const meta = result.meta || {};
+        return {
+          symbol: meta.symbol || input.symbol,
+          name: meta.longName || meta.shortName || input.symbol,
+          price: meta.regularMarketPrice ?? null,
+          change: meta.regularMarketPrice && meta.chartPreviousClose ? meta.regularMarketPrice - meta.chartPreviousClose : null,
+          changePercent: meta.regularMarketPrice && meta.chartPreviousClose ? ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100 : null,
+          volume: meta.regularMarketVolume ?? null,
+          marketCap: meta.marketCap ?? null,
+          dayHigh: meta.regularMarketDayHigh ?? null,
+          dayLow: meta.regularMarketDayLow ?? null,
+          fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? null,
+          fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
+        };
+      } catch (e) {
+        console.error("Market data error:", e);
+        return { symbol: input.symbol, price: null, change: null, changePercent: null, volume: null, marketCap: null, name: null };
+      }
+    }),
+  getQuotes: protectedProcedure
+    .input(z.object({ symbols: z.array(z.string()) }))
+    .query(async ({ input }) => {
+      const results = await Promise.allSettled(
+        input.symbols.map(async (symbol) => {
+          try {
+            const data: any = await callDataApi("YahooFinance/get_stock_chart", {
+              query: { symbol, region: "US", interval: "1d", range: "5d", includeAdjustedClose: true },
+            });
+            const result = data?.chart?.result?.[0];
+            const meta = result?.meta || {};
+            return {
+              symbol: meta.symbol || symbol,
+              name: meta.longName || meta.shortName || symbol,
+              price: meta.regularMarketPrice ?? null,
+              change: meta.regularMarketPrice && meta.chartPreviousClose ? meta.regularMarketPrice - meta.chartPreviousClose : null,
+              changePercent: meta.regularMarketPrice && meta.chartPreviousClose ? ((meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose) * 100 : null,
+              volume: meta.regularMarketVolume ?? null,
+              marketCap: meta.marketCap ?? null,
+            };
+          } catch { return { symbol, name: symbol, price: null, change: null, changePercent: null, volume: null, marketCap: null }; }
+        })
+      );
+      return results.map(r => r.status === "fulfilled" ? r.value : { symbol: "?", name: "?", price: null, change: null, changePercent: null, volume: null, marketCap: null });
+    }),
+  getInsights: protectedProcedure
+    .input(z.object({ symbol: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const data: any = await callDataApi("YahooFinance/get_stock_insights", { query: { symbol: input.symbol } });
+        return data?.finance?.result ?? null;
+      } catch { return null; }
+    }),
+});
+
 // ─── MAIN ROUTER ──────────────────────────────────────────────────
 export const appRouter = router({
   system: systemRouter,
@@ -513,6 +595,7 @@ export const appRouter = router({
   voice: voiceRouter,
   settings: settingsRouter,
   calculators: calculatorsRouter,
+  market: marketRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -14,8 +14,9 @@ import { useLocation } from "wouter";
 import {
   ArrowLeft, Sparkles, User, Brain, Trash2, Plus, Loader2,
   Fingerprint, BookOpen, Heart, Target, Users, Clock, DollarSign,
+  Camera, X, ImageIcon,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const MEMORY_CATEGORIES = [
   { value: "fact", label: "Fact", icon: <BookOpen className="w-3 h-3" />, desc: "Things about you" },
@@ -30,12 +31,21 @@ export default function Settings() {
   const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: !!user });
   const memoriesQuery = trpc.memories.list.useQuery(undefined, { enabled: !!user });
 
   const updateStyle = trpc.settings.updateStyleProfile.useMutation({
-    onSuccess: () => { toast.success("Style profile updated"); utils.settings.get.invalidate(); },
+    onSuccess: () => { toast.success("Communication style saved"); utils.settings.get.invalidate(); },
+    onError: (e: { message: string }) => toast.error(e.message),
+  });
+  const uploadAvatar = trpc.settings.uploadAvatar.useMutation({
+    onSuccess: (data) => { toast.success("Avatar updated"); setAvatarPreview(data.url); utils.settings.get.invalidate(); },
+    onError: (e: { message: string }) => toast.error(e.message),
+  });
+  const removeAvatar = trpc.settings.removeAvatar.useMutation({
+    onSuccess: () => { toast.success("Avatar removed"); setAvatarPreview(null); utils.settings.get.invalidate(); },
     onError: (e: { message: string }) => toast.error(e.message),
   });
   const addMemory = trpc.memories.add.useMutation({
@@ -49,12 +59,26 @@ export default function Settings() {
   const [styleProfile, setStyleProfile] = useState("");
   const [newMemory, setNewMemory] = useState("");
   const [memoryCategory, setMemoryCategory] = useState<"fact" | "preference" | "goal" | "relationship" | "financial" | "temporal">("fact");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    if (settingsQuery.data?.styleProfile) {
-      setStyleProfile(settingsQuery.data.styleProfile);
-    }
-  }, [settingsQuery.data?.styleProfile]);
+    if (settingsQuery.data?.styleProfile) setStyleProfile(settingsQuery.data.styleProfile);
+    if (settingsQuery.data?.avatarUrl) setAvatarPreview(settingsQuery.data.avatarUrl);
+  }, [settingsQuery.data?.styleProfile, settingsQuery.data?.avatarUrl]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+    if (!file.type.startsWith("image/")) { toast.error("Please upload an image file"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      uploadAvatar.mutate({ content: base64, mimeType: file.type });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-accent" /></div>;
@@ -70,38 +94,98 @@ export default function Settings() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <Sparkles className="w-4 h-4 text-accent" />
-          <span className="font-semibold text-sm">Settings & Profile</span>
+          <span className="font-semibold text-sm">Settings</span>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <Tabs defaultValue="style" className="space-y-6">
-          <TabsList className="bg-secondary">
-            <TabsTrigger value="style" className="gap-1.5 text-xs"><Fingerprint className="w-3.5 h-3.5" /> Style Clone</TabsTrigger>
+        <Tabs defaultValue="avatar" className="space-y-6">
+          <TabsList className="bg-secondary flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="avatar" className="gap-1.5 text-xs"><Camera className="w-3.5 h-3.5" /> Avatar</TabsTrigger>
+            <TabsTrigger value="style" className="gap-1.5 text-xs"><Fingerprint className="w-3.5 h-3.5" /> Personalize</TabsTrigger>
             <TabsTrigger value="memories" className="gap-1.5 text-xs"><Brain className="w-3.5 h-3.5" /> Memories</TabsTrigger>
             <TabsTrigger value="profile" className="gap-1.5 text-xs"><User className="w-3.5 h-3.5" /> Profile</TabsTrigger>
           </TabsList>
 
-          {/* Style Cloning */}
+          {/* Avatar */}
+          <TabsContent value="avatar">
+            <Card className="bg-card border-border">
+              <CardHeader>
+                <CardTitle className="text-base">AI Avatar</CardTitle>
+                <CardDescription className="text-xs">
+                  Upload an image to use as your AI's talking avatar. This can be a photo of yourself, someone else,
+                  a cartoon character, or any image you'd like. The avatar will animate during voice responses.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  {/* Avatar preview */}
+                  <div className="relative group">
+                    <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-border bg-secondary flex items-center justify-center">
+                      {avatarPreview ? (
+                        <img src={avatarPreview} alt="AI Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="text-center">
+                          <ImageIcon className="w-10 h-10 text-muted-foreground/30 mx-auto mb-1" />
+                          <p className="text-[10px] text-muted-foreground">No avatar</p>
+                        </div>
+                      )}
+                    </div>
+                    {avatarPreview && (
+                      <button
+                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeAvatar.mutate()}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 flex-1">
+                    <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                    <Button
+                      className="bg-accent text-accent-foreground hover:bg-accent/90"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={uploadAvatar.isPending}
+                    >
+                      {uploadAvatar.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Camera className="w-4 h-4 mr-2" />}
+                      {avatarPreview ? "Change Avatar" : "Upload Avatar"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Supports JPG, PNG, GIF, WebP. Max 5MB. Square images work best.
+                    </p>
+                    <div className="p-3 rounded-lg bg-accent/5 border border-accent/20">
+                      <p className="text-xs text-accent">
+                        Your avatar will appear in the chat interface and animate with a subtle talking effect
+                        when the AI speaks using voice output.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Communication Style */}
           <TabsContent value="style">
             <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle className="text-base">Communication Style Profile</CardTitle>
+                <CardTitle className="text-base">Communication Style</CardTitle>
                 <CardDescription className="text-xs">
-                  Describe how you communicate so the AI can mirror your style. Include tone, vocabulary preferences,
-                  sentence structure, formality level, and any distinctive patterns.
+                  Describe how you communicate so the AI can personalize its responses to match your style.
+                  Include tone, vocabulary preferences, sentence structure, formality level, and any distinctive patterns.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Textarea
                   value={styleProfile}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setStyleProfile(e.target.value)}
-                  placeholder="Example: I communicate in a direct, professional tone. I use bullet points frequently. I prefer concise answers but appreciate thorough explanations for complex topics. I often use analogies to explain financial concepts. I avoid jargon when speaking to clients but use technical terms with colleagues."
+                  placeholder="Example: I communicate in a direct, professional tone. I use bullet points frequently. I prefer concise answers but appreciate thorough explanations for complex topics. I often use analogies to explain financial concepts."
                   className="bg-secondary border-border min-h-[200px] text-sm"
                 />
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-muted-foreground">
-                    Tip: The more detail you provide, the better the AI will mirror your communication style.
+                    The more detail you provide, the better the AI personalizes to your style.
                   </p>
                   <Button
                     className="bg-accent text-accent-foreground hover:bg-accent/90 text-sm"
@@ -109,7 +193,7 @@ export default function Settings() {
                     disabled={updateStyle.isPending}
                   >
                     {updateStyle.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Fingerprint className="w-4 h-4 mr-1.5" />}
-                    Save Style Profile
+                    Save Style
                   </Button>
                 </div>
               </CardContent>
@@ -120,7 +204,6 @@ export default function Settings() {
                 <CardTitle className="text-base">Auto-Analyze Style</CardTitle>
                 <CardDescription className="text-xs">
                   Upload documents or past communications and the AI will analyze your writing style automatically.
-                  This works best with emails, reports, or messages you've written.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -138,7 +221,7 @@ export default function Settings() {
                 <CardTitle className="text-base">Add Memory</CardTitle>
                 <CardDescription className="text-xs">
                   Teach your AI facts about you, your preferences, goals, and relationships.
-                  These memories persist across conversations.
+                  These memories persist across conversations to personalize every interaction.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -230,13 +313,17 @@ export default function Settings() {
                     <Input value={user?.email || ""} disabled className="bg-secondary border-border h-9 text-sm" />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-lg bg-secondary/50 border border-border">
+                    <p className="text-[10px] text-muted-foreground mb-0.5">Avatar</p>
+                    <p className="text-sm font-medium">{avatarPreview ? "Set" : "Not set"}</p>
+                  </div>
                   <div className="p-3 rounded-lg bg-secondary/50 border border-border">
                     <p className="text-[10px] text-muted-foreground mb-0.5">Suitability</p>
                     <p className="text-sm font-medium">{settingsQuery.data?.suitabilityCompleted ? "Completed" : "Pending"}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-secondary/50 border border-border">
-                    <p className="text-[10px] text-muted-foreground mb-0.5">Style Profile</p>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">Style</p>
                     <p className="text-sm font-medium">{settingsQuery.data?.styleProfile ? "Active" : "Not set"}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-secondary/50 border border-border">
