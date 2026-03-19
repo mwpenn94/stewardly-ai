@@ -4,8 +4,8 @@ import { buildSystemPrompt, FINANCIAL_DISCLAIMER, needsFinancialDisclaimer, dete
 describe("System Prompt Builder", () => {
   it("builds a general-focus prompt when focus is 'general'", () => {
     const prompt = buildSystemPrompt({ focus: "general", mode: "client" });
-    expect(prompt).toContain("personal AI assistant");
-    expect(prompt).toContain("polymath");
+    expect(prompt).toContain("intelligent AI advisor");
+    expect(prompt).toContain("general_expertise");
     expect(prompt).not.toContain("financial_expertise");
   });
 

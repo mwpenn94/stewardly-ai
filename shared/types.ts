@@ -8,6 +8,9 @@ export * from "./_core/errors";
 
 // ─── APP-SPECIFIC TYPES ──────────────────────────────────────────
 
+// User roles — 4-tier access system
+export type UserRole = "user" | "advisor" | "manager" | "admin";
+
 // Advisory modes
 export type AdvisoryMode = "client" | "coach" | "manager";
 
@@ -34,4 +37,12 @@ export type SuitabilityData = {
   investmentExperience: "none" | "limited" | "moderate" | "extensive";
   financialGoals: string[];
   insuranceNeeds: string[];
+};
+
+// Role-based mode access mapping
+export const ROLE_MODE_ACCESS: Record<UserRole, AdvisoryMode[]> = {
+  user: [],  // general users see no advisory modes, just focus toggle
+  advisor: ["client", "coach"],
+  manager: ["client", "coach", "manager"],
+  admin: ["client", "coach", "manager"],
 };

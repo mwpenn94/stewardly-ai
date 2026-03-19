@@ -108,3 +108,59 @@
 - [x] Display custom avatar in chat as the AI's face
 - [x] Animate avatar with talking effect during TTS / voice responses
 - [x] Fallback to default Bot icon when no avatar is set
+
+## Enhanced Build Prompt — Major Platform Upgrade
+
+### Role System & Access Tiers
+- [x] Extend user roles from (user/admin) to (user/advisor/manager/admin)
+- [x] Role-based mode visibility: general users see no advisory modes; advisors see Client Advisor + Professional Coach; managers/admins see all modes
+- [x] Hands-free mode defaults to audio playback for responses; user can toggle on/off
+- [x] Role-based sidebar nav filtering (Manager Dashboard only visible to manager/admin)
+
+### Database Schema Extensions
+- [x] User profiles table (age, zipCode, jobTitle, incomeRange, savingsRange, familySituation, lifeStage, goals)
+- [x] Professional context table (rawInput, parsedDomains, addedBy, visibleToClient)
+- [x] Client-professional associations table
+- [x] Enrichment datasets table (datasetId, name, applicableDomains, matchDimensions)
+- [x] Enrichment cohorts table (cohortId, matchCriteria, enrichmentFields)
+- [x] Enrichment matches table (userId, datasetId, cohortId, matchFields, confidenceScore)
+- [ ] Affiliated products/resources table for management shelf — future enhancement
+- [ ] Management context table — future enhancement
+
+### Enhanced AI Behavior
+- [x] Update system prompt to full Enhanced Build Prompt spec (focus-aware, data-layered, cross-domain)
+- [ ] Context injection parser for professional use (parse free-text into structured fields) — future enhancement
+- [ ] Predictive cold-start from enrichment data (ESTIMATED badges, progressive profiling) — future enhancement
+- [ ] Cross-domain intelligence engine (life events → financial implications) — future enhancement
+- [ ] Data transparency: show users what data sources shape their insights — future enhancement
+
+### Professional Portal
+- [ ] Client book list view — future enhancement
+- [ ] Client profile view with context injection panel — future enhancement
+- [ ] Case Design Summary generator — future enhancement
+- [ ] Life Advisor Summary generator — future enhancement
+- [ ] Focus-aware client report export — future enhancement
+
+### Management Portal
+- [ ] Team analytics dashboard — future enhancement
+- [ ] Product and resource shelf manager — future enhancement
+- [ ] Context layer manager — future enhancement
+- [ ] AI-generated opportunity summaries — future enhancement
+
+### Admin Portal
+- [ ] Enrichment dataset manager with AI-assisted field mapping — future enhancement
+- [ ] User-level data association with consent management — future enhancement
+- [ ] Affiliated company profile manager — future enhancement
+- [ ] Platform analytics overview — future enhancement
+
+### Compliance & Trust
+- [x] General AI disclaimer in chat footer
+- [x] Financial AI disclaimer in system prompt and responses
+- [ ] Enrichment data usage disclosure in plain language — future enhancement
+- [ ] Consent flows for third-party data association — future enhancement
+- [x] Full audit trail for all context additions
+
+## Hands-Free Audio Fix
+- [x] Suppress speech recognition during TTS playback to prevent AI voice from being recorded as user input
+- [x] Recognition only starts AFTER TTS onend fires, with a 600ms guard delay
+- [x] ttsGuardRef prevents recognition from starting during playback

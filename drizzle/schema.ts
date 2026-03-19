@@ -7,7 +7,7 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "advisor", "manager", "admin"]).default("user").notNull(),
   styleProfile: text("styleProfile"),
   suitabilityCompleted: mysqlBoolean("suitabilityCompleted").default(false),
   suitabilityData: json("suitabilityData"),
@@ -20,6 +20,105 @@ export const users = mysqlTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+// ─── USER PROFILES (Extended personal data) ──────────────────────
+export const userProfiles = mysqlTable("user_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  age: int("age"),
+  zipCode: varchar("zipCode", { length: 10 }),
+  jobTitle: varchar("jobTitle", { length: 128 }),
+  incomeRange: varchar("incomeRange", { length: 64 }),
+  savingsRange: varchar("savingsRange", { length: 64 }),
+  familySituation: varchar("familySituation", { length: 128 }),
+  lifeStage: varchar("lifeStage", { length: 64 }),
+  goals: json("goals"),
+  sharedContext: json("sharedContext"),
+  insuranceSummary: json("insuranceSummary"),
+  investmentSummary: json("investmentSummary"),
+  estateExposure: json("estateExposure"),
+  businessOwner: mysqlBoolean("businessOwner").default(false),
+  focusPreference: mysqlEnum("focusPreference", ["general", "financial", "both"]).default("both"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserProfile = typeof userProfiles.$inferSelect;
+
+// ─── PROFESSIONAL CONTEXT ────────────────────────────────────────
+export const professionalContext = mysqlTable("professional_context", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  addedBy: int("addedBy").notNull(),
+  rawInput: text("rawInput").notNull(),
+  parsedDomains: json("parsedDomains"),
+  visibleToClient: mysqlBoolean("visibleToClient").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProfessionalContext = typeof professionalContext.$inferSelect;
+
+// ─── CLIENT ASSOCIATIONS ─────────────────────────────────────────
+export const clientAssociations = mysqlTable("client_associations", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  professionalId: int("professionalId").notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ClientAssociation = typeof clientAssociations.$inferSelect;
+
+// ─── ENRICHMENT DATASETS ─────────────────────────────────────────
+export const enrichmentDatasets = mysqlTable("enrichment_datasets", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  applicableDomains: json("applicableDomains"),
+  dataType: varchar("dataType", { length: 64 }),
+  matchDimensions: json("matchDimensions"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EnrichmentDataset = typeof enrichmentDatasets.$inferSelect;
+
+// ─── ENRICHMENT COHORTS ──────────────────────────────────────────
+export const enrichmentCohorts = mysqlTable("enrichment_cohorts", {
+  id: int("id").autoincrement().primaryKey(),
+  datasetId: int("datasetId").notNull(),
+  matchCriteria: json("matchCriteria").notNull(),
+  enrichmentFields: json("enrichmentFields").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EnrichmentCohort = typeof enrichmentCohorts.$inferSelect;
+
+// ─── ENRICHMENT MATCHES ──────────────────────────────────────────
+export const enrichmentMatches = mysqlTable("enrichment_matches", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  datasetId: int("datasetId").notNull(),
+  cohortId: int("cohortId").notNull(),
+  matchFields: json("matchFields"),
+  confidenceScore: float("confidenceScore").default(0),
+  applicableDomains: json("applicableDomains"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type EnrichmentMatch = typeof enrichmentMatches.$inferSelect;
+
+// ─── AFFILIATED RESOURCES ────────────────────────────────────────
+export const affiliatedResources = mysqlTable("affiliated_resources", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  category: mysqlEnum("category", ["carrier", "lender", "ria", "advanced_markets", "general_partner"]).notNull(),
+  description: text("description"),
+  contactInfo: json("contactInfo"),
+  isActive: mysqlBoolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AffiliatedResource = typeof affiliatedResources.$inferSelect;
 
 // ─── CONVERSATIONS ────────────────────────────────────────────────
 export const conversations = mysqlTable("conversations", {
@@ -78,7 +177,7 @@ export const documentChunks = mysqlTable("document_chunks", {
 
 export type DocumentChunk = typeof documentChunks.$inferSelect;
 
-// ─── PRODUCTS ──────────────────────────────────────────────────────────────────
+// ─── PRODUCTS ──────────────────────────────────────────────────────
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
   company: varchar("company", { length: 128 }).notNull(),
