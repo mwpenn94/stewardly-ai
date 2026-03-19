@@ -15,6 +15,7 @@ import {
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp
 } from "lucide-react";
 import { Streamdown } from "streamdown";
+import { CaptureModal } from "@/components/CaptureModal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ const FOCUS_OPTIONS: { value: FocusMode; label: string; icon: React.ReactNode; d
   { value: "both", label: "Both", icon: <Sparkles className="w-3.5 h-3.5" />, desc: "General + Financial intelligence" },
   { value: "general", label: "General", icon: <TrendingUp className="w-3.5 h-3.5" />, desc: "Open-ended advisory" },
   { value: "financial", label: "Financial", icon: <BarChart3 className="w-3.5 h-3.5" />, desc: "Financial planning focus" },
+  { value: "study", label: "Study and learn", icon: <FileText className="w-3.5 h-3.5" />, desc: "Secretary/study buddy for data review" },
 ];
 
 const MODE_OPTIONS: { value: AdvisoryMode; label: string; desc: string; minRole: UserRole }[] = [
@@ -67,6 +69,8 @@ export default function Chat() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showFocusPicker, setShowFocusPicker] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [captureModalOpen, setCaptureModalOpen] = useState(false);
+  const [captureMode, setCaptureMode] = useState<"screen" | "video">("screen");
 
   // ─── HANDS-FREE & VOICE STATE ──────────────────────────────────
   const [handsFreeActive, setHandsFreeActive] = useState(false);
@@ -326,7 +330,7 @@ export default function Chat() {
   };
 
   // ─── ROLE-BASED MODE FILTERING ────────────────────────────────
-  const userRole = (user?.role ?? "user") as UserRole;
+  const userRole = (user?.globalRole ?? "user") as UserRole;
   const availableModes = useMemo(() => {
     return MODE_OPTIONS.filter(m => hasMinRole(userRole, m.minRole));
   }, [userRole]);
@@ -765,7 +769,13 @@ export default function Chat() {
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors hidden sm:block" onClick={() => toast.info("Screen sharing coming soon")}>
+                    <button
+                      className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
+                      onClick={() => {
+                        setCaptureMode("screen");
+                        setCaptureModalOpen(true);
+                      }}
+                    >
                       <Monitor className="w-4 h-4" />
                     </button>
                   </TooltipTrigger>
@@ -774,7 +784,13 @@ export default function Chat() {
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors hidden sm:block" onClick={() => toast.info("Video sharing coming soon")}>
+                    <button
+                      className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
+                      onClick={() => {
+                        setCaptureMode("video");
+                        setCaptureModalOpen(true);
+                      }}
+                    >
                       <Video className="w-4 h-4" />
                     </button>
                   </TooltipTrigger>
@@ -827,6 +843,17 @@ export default function Chat() {
           </div>
         </div>
       </main>
+
+      {/* Capture Modal for screen/video sharing */}
+      <CaptureModal
+        open={captureModalOpen}
+        onClose={() => setCaptureModalOpen(false)}
+        onCapture={(blob) => {
+          // TODO: Handle captured blob - add to attachments or send directly
+          toast.success(`${captureMode === "screen" ? "Screen" : "Video"} captured successfully`);
+        }}
+        mode={captureMode}
+      />
     </div>
   );
 }

@@ -35,7 +35,7 @@ const chatRouter = router({
       conversationId: z.number(),
       content: z.string().min(1).max(50000),
       mode: z.enum(["client", "coach", "manager"]).default("client"),
-      focus: z.enum(["general", "financial", "both"]).default("both"),
+      focus: z.enum(["general", "financial", "both", "study"]).default("both"),
     }))
     .mutation(async ({ ctx, input }) => {
       const conversation = await getConversation(input.conversationId, ctx.user.id);
@@ -232,10 +232,10 @@ const documentsRouter = router({
   list: protectedProcedure.query(({ ctx }) => getUserDocuments(ctx.user.id)),
   listAccessible: protectedProcedure.query(async ({ ctx }) => {
     // Professionals see docs with visibility >= professional; managers >= management; admins see all
-    const role = ctx.user.role;
-    if (role === "admin") return getAccessibleDocuments(["private", "professional", "management", "admin"]);
-    if (role === "manager") return getAccessibleDocuments(["professional", "management", "admin"]);
-    if (role === "advisor") return getAccessibleDocuments(["professional", "management", "admin"]);
+    // TODO: Check org-specific roles from user_organization_roles table
+    // For now, global_admin sees all; others see only their own
+    if (ctx.user.globalRole === "global_admin") return getAccessibleDocuments(["private", "professional", "management", "admin"]);
+    // TODO: Add org role checks for manager/professional visibility
     return getUserDocuments(ctx.user.id);
   }),
   updateVisibility: protectedProcedure
@@ -444,17 +444,19 @@ The user's name is ${ctx.user.name || "there"}.`;
   getClientSuitability: protectedProcedure
     .input(z.object({ userId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const role = ctx.user.role as string;
-      if (role !== "advisor" && role !== "manager" && role !== "admin") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only professionals, managers, and admins can view client suitability" });
+      // TODO: Check org-specific roles from user_organization_roles table
+      // For now, only global_admin can view client suitability
+      if (ctx.user.globalRole !== "global_admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can view client suitability" });
       }
       return getUserSuitability(input.userId);
     }),
   // Access chain: managers/admins can list all suitability assessments
   listAll: protectedProcedure.query(async ({ ctx }) => {
-    const role = ctx.user.role as string;
-    if (role !== "manager" && role !== "admin") {
-      throw new TRPCError({ code: "FORBIDDEN", message: "Only managers and admins can list all assessments" });
+    // TODO: Check org-specific roles from user_organization_roles table
+    // For now, only global_admin can list all assessments
+    if (ctx.user.globalRole !== "global_admin") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can list all assessments" });
     }
     const db = await (await import("./db")).getDb();
     if (!db) return [];

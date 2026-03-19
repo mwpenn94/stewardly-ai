@@ -6,6 +6,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ConsentGate from "./components/ConsentGate";
 import Chat from "./pages/Chat";
+import Landing from "./pages/Landing";
+import SignIn from "./pages/SignIn";
+import FirmLanding from "./pages/FirmLanding";
 import Calculators from "./pages/Calculators";
 import Documents from "./pages/Documents";
 import Suitability from "./pages/Suitability";
@@ -18,13 +21,16 @@ import Terms from "./pages/Terms";
 function Router() {
   return (
     <Switch>
-      {/* Terms page is always accessible without consent gate */}
+      {/* Public routes - no consent gate */}
+      <Route path={"/"} component={Landing} />
+      <Route path={"/signin"} component={SignIn} />
+      <Route path={"/firm/:slug"} component={FirmLanding} />
       <Route path={"/terms"} component={Terms} />
-      {/* All other routes require ToS acceptance */}
+      
+      {/* Protected routes - require ToS acceptance */}
       <Route>
         <ConsentGate>
           <Switch>
-            <Route path={"/"} component={Chat} />
             <Route path={"/chat"} component={Chat} />
             <Route path={"/chat/:id"} component={Chat} />
             <Route path={"/calculators"} component={Calculators} />

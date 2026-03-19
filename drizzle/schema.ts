@@ -1,13 +1,53 @@
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean } from "drizzle-orm/mysql-core";
 
-// ─── USERS ────────────────────────────────────────────────────────
+// ─── FIRMS (Multi-Tenant Organizational Units) ─────────────────────
+export const firms = mysqlTable("firms", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  slug: varchar("slug", { length: 128 }).notNull().unique(),
+  description: text("description"),
+  website: varchar("website", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Firm = typeof firms.$inferSelect;
+export type InsertFirm = typeof firms.$inferInsert;
+
+// ─── FIRM LANDING PAGE CONFIG ──────────────────────────────────────
+export const firmLandingPageConfig = mysqlTable("firm_landing_page_config", {
+  id: int("id").autoincrement().primaryKey(),
+  firmId: int("firmId").notNull().unique(),
+  headline: varchar("headline", { length: 512 }).default("Your Complete Financial Picture, Understood by Us"),
+  subtitle: text("subtitle"),
+  ctaText: varchar("ctaText", { length: 128 }).default("Start Your Financial Twin →"),
+  secondaryLinkText: varchar("secondaryLinkText", { length: 128 }).default("Try it anonymously"),
+  logoUrl: text("logoUrl"),
+  primaryColor: varchar("primaryColor", { length: 7 }).default("#0F172A"),
+  accentColor: varchar("accentColor", { length: 7 }).default("#0EA5E9"),
+  backgroundOption: varchar("backgroundOption", { length: 64 }).default("gradient"),
+  trustSignal1: text("trustSignal1"),
+  trustSignal2: text("trustSignal2"),
+  trustSignal3: text("trustSignal3"),
+  disclaimerText: text("disclaimerText"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FirmLandingPageConfig = typeof firmLandingPageConfig.$inferSelect;
+
+// ─── USERS (Extended with multi-tenant hierarchy) ────────────────────
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "advisor", "manager", "admin"]).default("user").notNull(),
+  firmId: int("firmId"),
+  globalRole: mysqlEnum("globalRole", ["global_admin", "user"]).default("user").notNull(),
+  firmRole: mysqlEnum("firmRole", ["firm_admin", "manager", "professional", "user"]),
+  managerId: int("managerId"),
+  professionalId: int("professionalId"),
   styleProfile: text("styleProfile"),
   suitabilityCompleted: mysqlBoolean("suitabilityCompleted").default(false),
   suitabilityData: json("suitabilityData"),
@@ -39,12 +79,112 @@ export const userProfiles = mysqlTable("user_profiles", {
   investmentSummary: json("investmentSummary"),
   estateExposure: json("estateExposure"),
   businessOwner: mysqlBoolean("businessOwner").default(false),
-  focusPreference: mysqlEnum("focusPreference", ["general", "financial", "both"]).default("both"),
+  focusPreference: mysqlEnum("focusPreference", ["general", "financial", "both", "study"]).default("both"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type UserProfile = typeof userProfiles.$inferSelect;
+
+// ─── FIRM AI SETTINGS (Layer 2 Prompt) ────────────────────────────
+export const firmAISettings = mysqlTable("firm_ai_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  firmId: int("firmId").notNull().unique(),
+  firmName: varchar("firmName", { length: 256 }).notNull(),
+  brandVoice: text("brandVoice"),
+  approvedProductCategories: json("approvedProductCategories"),
+  prohibitedTopics: json("prohibitedTopics"),
+  complianceLanguage: text("complianceLanguage"),
+  customDisclaimers: text("customDisclaimers"),
+  promptOverlay: text("promptOverlay"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FirmAISetting = typeof firmAISettings.$inferSelect;
+
+// ─── MANAGER AI SETTINGS (Layer 3 Prompt) ────────────────────────
+export const managerAISettings = mysqlTable("manager_ai_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  managerId: int("managerId").notNull().unique(),
+  teamFocusAreas: json("teamFocusAreas"),
+  clientSegmentTargeting: text("clientSegmentTargeting"),
+  reportingRequirements: json("reportingRequirements"),
+  promptOverlay: text("promptOverlay"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ManagerAISetting = typeof managerAISettings.$inferSelect;
+
+// ─── PROFESSIONAL AI SETTINGS (Layer 4 Prompt) ────────────────────
+export const professionalAISettings = mysqlTable("professional_ai_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  professionalId: int("professionalId").notNull().unique(),
+  specialization: varchar("specialization", { length: 256 }),
+  methodology: text("methodology"),
+  communicationStyle: text("communicationStyle"),
+  perClientOverrides: json("perClientOverrides"),
+  promptOverlay: text("promptOverlay"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ProfessionalAISetting = typeof professionalAISettings.$inferSelect;
+
+// ─── USER PREFERENCES (Layer 5 Context) ──────────────────────────
+export const userPreferences = mysqlTable("user_preferences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  communicationStyle: mysqlEnum("communicationStyle", ["simple", "detailed", "expert"]).default("detailed"),
+  responseLength: mysqlEnum("responseLength", ["concise", "standard", "comprehensive"]).default("standard"),
+  ttsVoice: varchar("ttsVoice", { length: 64 }).default("en-US-JennyNeural"),
+  autoPlayVoice: mysqlBoolean("autoPlayVoice").default(false),
+  handsFreeMode: mysqlBoolean("handsFreeMode").default(false),
+  autoGenerateCharts: mysqlBoolean("autoGenerateCharts").default(true),
+  riskTolerance: mysqlEnum("riskTolerance", ["conservative", "moderate", "aggressive"]),
+  financialGoals: json("financialGoals"),
+  taxFilingStatus: varchar("taxFilingStatus", { length: 64 }),
+  stateOfResidence: varchar("stateOfResidence", { length: 64 }),
+  theme: mysqlEnum("theme", ["system", "light", "dark"]).default("dark"),
+  sidebarDefault: mysqlEnum("sidebarDefault", ["expanded", "collapsed"]).default("expanded"),
+  chatDensity: mysqlEnum("chatDensity", ["comfortable", "compact"]).default("comfortable"),
+  language: varchar("language", { length: 64 }).default("en"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserPreference = typeof userPreferences.$inferSelect;
+
+// ─── VIEW-AS AUDIT LOG ────────────────────────────────────────────
+export const viewAsAuditLog = mysqlTable("view_as_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  actorId: int("actorId").notNull(),
+  targetUserId: int("targetUserId").notNull(),
+  startTime: timestamp("startTime").notNull(),
+  endTime: timestamp("endTime"),
+  actions: json("actions"),
+  reason: text("reason"),
+  sessionDuration: int("sessionDuration"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ViewAsAuditLogEntry = typeof viewAsAuditLog.$inferSelect;
+
+// ─── WORKFLOW CHECKLIST (Onboarding Steps) ───────────────────────
+export const workflowChecklist = mysqlTable("workflow_checklist", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  workflowType: mysqlEnum("workflowType", ["professional_onboarding", "client_onboarding", "licensing", "registration"]).notNull(),
+  steps: json("steps").notNull(),
+  currentStep: int("currentStep").default(0),
+  status: mysqlEnum("status", ["not_started", "in_progress", "completed", "paused"]).default("not_started"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WorkflowChecklist = typeof workflowChecklist.$inferSelect;
 
 // ─── PROFESSIONAL CONTEXT ────────────────────────────────────────
 export const professionalContext = mysqlTable("professional_context", {
@@ -64,6 +204,8 @@ export const clientAssociations = mysqlTable("client_associations", {
   id: int("id").autoincrement().primaryKey(),
   clientId: int("clientId").notNull(),
   professionalId: int("professionalId").notNull(),
+  managerId: int("managerId"),
+  firmId: int("firmId").notNull(),
   status: mysqlEnum("status", ["active", "inactive"]).default("active"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -111,6 +253,7 @@ export type EnrichmentMatch = typeof enrichmentMatches.$inferSelect;
 // ─── AFFILIATED RESOURCES ────────────────────────────────────────
 export const affiliatedResources = mysqlTable("affiliated_resources", {
   id: int("id").autoincrement().primaryKey(),
+  firmId: int("firmId"),
   name: varchar("name", { length: 256 }).notNull(),
   category: mysqlEnum("category", ["carrier", "lender", "ria", "advanced_markets", "general_partner"]).notNull(),
   description: text("description"),
@@ -125,8 +268,10 @@ export type AffiliatedResource = typeof affiliatedResources.$inferSelect;
 export const conversations = mysqlTable("conversations", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
+  firmId: int("firmId"),
   title: varchar("title", { length: 255 }).default("New Conversation"),
   mode: mysqlEnum("mode", ["client", "coach", "manager"]).default("client").notNull(),
+  isPinned: mysqlBoolean("isPinned").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -152,6 +297,7 @@ export type Message = typeof messages.$inferSelect;
 export const documents = mysqlTable("documents", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
+  firmId: int("firmId"),
   filename: varchar("filename", { length: 512 }).notNull(),
   fileUrl: text("fileUrl").notNull(),
   fileKey: text("fileKey").notNull(),
@@ -182,6 +328,7 @@ export type DocumentChunk = typeof documentChunks.$inferSelect;
 // ─── PRODUCTS ──────────────────────────────────────────────────────
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
+  firmId: int("firmId"),
   company: varchar("company", { length: 128 }).notNull(),
   name: varchar("name", { length: 256 }).notNull(),
   category: mysqlEnum("category", ["iul", "term_life", "disability", "ltc", "premium_finance", "whole_life", "variable_life"]).notNull(),

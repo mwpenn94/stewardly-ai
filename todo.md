@@ -204,3 +204,180 @@
 
 ## UI Fixes
 - [x] Fix sidebar layout: make conversation list scrollable, keep nav options always visible and accessible
+
+## WealthBridge AI v2 — Multi-Tenant Enterprise Platform
+
+### Phase 1: Database Schema
+- [ ] Create firms table (id, name, slug, branding config)
+- [ ] Extend users table: firm_id, role (global_admin/firm_admin/manager/professional/user), manager_id, professional_id
+- [ ] Create firm_ai_settings table (Layer 2 prompts)
+- [ ] Create manager_ai_settings table (Layer 3 prompts)
+- [ ] Create professional_ai_settings table (Layer 4 prompts)
+- [ ] Create user_preferences table (Layer 5 context, TTS voice, communication style)
+- [ ] Create view_as_audit_log table (actor, target, actions, timestamps)
+- [ ] Create firm_landing_page_config table (headline, colors, logo, etc.)
+- [ ] Create workflow_checklist table (onboarding steps, platform integrations)
+
+### Phase 2: Landing Pages & Auth
+- [ ] Build global landing page (/): hero, cards, trust signals, CTA
+- [ ] Build firm landing page (/firm/[slug]): brandable, customizable
+- [ ] Implement progressive auth: anonymous → email → OAuth → advisor-linked
+- [ ] Build sign-in page with Google OAuth + email/password
+- [ ] Build firm admin branding editor (Settings → Branding)
+- [ ] Implement browse-wrap consent for anonymous users
+
+### Phase 3: Chat Interface & Voice
+- [ ] Rebuild Chat.tsx: desktop sidebar, tablet drawer, mobile bottom nav
+- [ ] Implement auto-scroll with IntersectionObserver anchor pattern
+- [ ] Add voice input (Web Speech API, 1.5s silence auto-send)
+- [ ] Add voice output: Edge TTS proxy + fallback SpeechSynthesis
+- [ ] Implement waveform/orb animation for voice mode
+- [ ] Add inline chart generation (lightweight-charts, recharts, mermaid)
+- [ ] Add ChartRenderer component to detect and render `<!-- chart: {...} -->` tags
+- [ ] Implement progressive disclosure (>300 words → summary + collapsible details)
+- [ ] Add [🎨 Generate Infographic] button for image generation
+
+### Phase 4: Settings & AI Personalization
+- [ ] Build Settings panel with 5 tabs (Profile, AI Preferences, Financial Setup, Notifications, Appearance)
+- [ ] Implement AI Preferences tab: communication style slider, response length, TTS voice, hands-free toggle
+- [ ] Implement Financial Setup tab: risk tolerance, goals, life stage, tax status
+- [ ] Build 5-layer cascading system prompt builder
+- [ ] Implement Layer 1 (Platform Base) editor for Global Admin
+- [ ] Implement Layer 2 (Firm Overlay) editor for Firm Admin
+- [ ] Implement Layer 3 (Manager Overlay) editor for Manager
+- [ ] Implement Layer 4 (Professional Overlay) editor for Professional
+- [ ] Implement Layer 5 (User Context) auto-population + editing
+- [ ] Add inheritance validation (lower layers can't contradict higher)
+- [ ] Cache all user settings for subsequent use
+
+### Phase 5: Professional Portal & View-As
+- [ ] Build /portal route (visible to Professional+ roles)
+- [ ] Build Professional view: summary cards, client book table, filters, card/table toggle
+- [ ] Build Manager view: "My Team" section, advisor cards, team summary
+- [ ] Build Firm Admin view: firm dashboard, manager list, branding editor
+- [ ] Build Global Admin view (/admin): all-firms dashboard, firm management, Layer 1 editor, feature flags
+- [ ] Implement view-as system: sessionStorage context, view-as banner, read-only mode
+- [ ] Implement view-as audit logging (actor, target, actions, timestamps)
+- [ ] Add 30-minute auto-expiry for view-as sessions
+- [ ] Build client book: name, AUM, risk profile, life stage, last contact, suitability status, next review
+
+### Phase 6: Workflow Orchestration
+- [ ] Build workflow orchestration engine (PREPARE → BRIEF → NAVIGATE → ASSIST → HANDOFF → CONFIRM → RETURN)
+- [ ] Create master onboarding checklist (database-backed, not memory-based)
+- [ ] Implement Manus Browser Operator integration scaffolding
+- [ ] Build workflow UI: step tracker, current step display, next step guidance
+- [ ] Add cross-platform handoff support (FINRA, Prometric, state DOI, E&O, broker-dealer)
+- [ ] Implement confirmation number capture and step completion tracking
+
+### Phase 7: Polish & Testing
+- [ ] Run all tests (22+ existing + new multi-tenant tests)
+- [ ] Verify multi-tenant data isolation
+- [ ] Test role-based access control across all views
+- [ ] Test view-as system and audit logging
+- [ ] Test cascading AI layer assembly
+- [ ] Test progressive auth flow
+- [ ] Test voice mode (input + output)
+- [ ] Test inline chart generation
+- [ ] Checkpoint and deliver
+
+
+## Phase 1 Completion: Multi-Tenant Schema ✓
+- [x] Created organizations table (id, name, slug, description, website, ein, industry, size)
+- [x] Created organization_landing_page_config (headline, colors, logo, branding)
+- [x] Created organization_relationships (partner, subsidiary, affiliate, referral, vendor, client)
+- [x] Created user_organization_roles (many-to-many with globalRole, organizationRole)
+- [x] Created user_relationships (manager, team_member, mentor, mentee, peer, client, advisor, colleague)
+- [x] Created organization_ai_settings (Layer 2 prompts)
+- [x] Created manager_ai_settings (Layer 3 prompts)
+- [x] Created professional_ai_settings (Layer 4 prompts)
+- [x] Created user_preferences (Layer 5 context)
+- [x] Created view_as_audit_log (role switching audit)
+- [x] Created workflow_checklist (onboarding)
+- [x] Applied all migrations via SQL
+
+## Phase 2: Landing Pages & Progressive Authentication
+
+### Global Landing Page
+- [ ] Create /landing.tsx component with hero section
+- [ ] Hero: "Your finances. Your way. Understood." headline with subtitle
+- [ ] Primary CTA: "Get Started" → sign-in
+- [ ] Secondary CTA: "Explore as a guest" → anonymous chat
+- [ ] Trust signals row: lock, shield, chart icons
+- [ ] 3 feature cards: "It learns you", "It knows finance", "It grows with you"
+- [ ] Footer with disclaimer, Privacy, Terms, About links
+- [ ] Gradient mesh background (navy/teal), fade-in animations
+
+### Firm Landing Page
+- [ ] Create /firm/[slug].tsx component
+- [ ] Query organization_landing_page_config for branding
+- [ ] Display customizable headline, subtitle, CTA, logo, colors
+- [ ] Tag anonymous/new users with firm_id from URL
+- [ ] Auto-affiliate new sign-ups to firm
+
+### Progressive Authentication
+- [ ] Tier 0 (Anonymous): Browse-wrap consent banner, localStorage conversations
+- [ ] Tier 1 (Email): Email capture modal, creates unaffiliated user
+- [ ] Tier 2 (Full account): Google OAuth + email/password
+- [ ] Tier 3 (Advisor-connected): Link to professional in firm
+- [ ] Sign-in page: centered card, logo, OAuth + email/password, "Continue as guest"
+- [ ] Post-sign-in: welcome animation → /chat
+
+### Auth Flow Updates
+- [ ] Update auth context to handle firm_id tagging
+- [ ] Update sign-up to auto-affiliate if firm_id present
+- [ ] Update sign-in to redirect to /chat
+- [ ] Add "Continue as guest" flow to localStorage
+- [ ] Implement browse-wrap consent for anonymous users
+- [ ] Fixed all 13 TypeScript errors from schema changes (user.role → user.globalRole)
+
+## Phase 2 Continued: Multi-Modal Secretary/Study Buddy
+
+### Screen Capture & Sharing
+- [ ] Implement Screen Capture API for real-time screen sharing
+- [ ] Add screen capture button to context sharing UI
+- [ ] Stream screen frames to AI for analysis
+- [ ] Support pause/resume screen capture
+- [ ] Show captured region preview before sending
+
+### Live Video Analysis
+- [ ] Implement WebRTC or getUserMedia for live video capture
+- [ ] Add video button to context sharing UI
+- [ ] Process video frames for visual understanding
+- [ ] Support pause/resume video capture
+- [ ] Show video preview before sending
+
+### Multi-Modal RAG Enhancement
+- [ ] Extend document indexing to support all formats (PDF, images, video, audio)
+- [ ] Add visual OCR for image/screenshot text extraction
+- [ ] Index video transcripts via speech-to-text
+- [ ] Create unified search across all data modalities
+- [ ] Support cross-format queries (e.g., "find this chart in my documents")
+
+### Conversational Data Review
+- [ ] Add "Study Mode" toggle in chat UI (vs. Financial/General modes)
+- [ ] Create study buddy system prompt variant
+- [ ] Support asking questions about any shared/uploaded data
+- [ ] Implement data highlighting and annotation
+- [ ] Add "Explain this" quick action for visual elements
+
+### Data Extraction & Parsing
+- [ ] Extract tables from PDFs and images
+- [ ] Parse forms and structured data
+- [ ] Support CSV/Excel import and analysis
+- [ ] Extract key information from documents
+- [ ] Create data summaries and outlines
+
+### Visual Annotation & Markup
+- [ ] Add canvas overlay for marking up images/screenshots
+- [ ] Support highlighting, circling, and pointing
+- [ ] Store annotations with context
+- [ ] Share annotated views in conversation
+
+### Study Buddy Features
+- [ ] Summarization: Create concise summaries of any document
+- [ ] Outlining: Generate outlines and key points
+- [ ] Q&A: Generate practice questions from materials
+- [ ] Comparison: Compare multiple documents/datasets
+- [ ] Timeline: Extract and visualize timelines from text
+- [ ] Glossary: Build glossaries from documents
+- [ ] Citation tracking: Track sources and references

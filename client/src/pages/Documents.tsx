@@ -51,7 +51,9 @@ export default function Documents() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
 
-  const isElevated = user?.role === "advisor" || user?.role === "manager" || user?.role === "admin";
+  // TODO: Update to check org-specific roles from user_organization_roles table
+  // For now, check if user is global_admin or has elevated org roles
+  const isElevated = user?.globalRole === "global_admin"; // Will be enhanced with org-specific roles
 
   const docs = trpc.documents.list.useQuery();
   const uploadDoc = trpc.documents.upload.useMutation({

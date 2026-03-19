@@ -15,7 +15,10 @@ export type UserRole = "user" | "advisor" | "manager" | "admin";
 export type AdvisoryMode = "client" | "coach" | "manager";
 
 // Focus modes — controls AI expertise emphasis
-export type FocusMode = "general" | "financial" | "both";
+export type FocusMode = "general" | "financial" | "both" | "study";
+
+// Study and learn mode — secretary/study buddy for data review
+// When enabled, AI focuses on understanding, explaining, and helping learn from any data format
 
 // Chat message for frontend
 export type ChatMessage = {
