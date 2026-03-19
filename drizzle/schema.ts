@@ -138,6 +138,29 @@ export const userProfiles = mysqlTable("user_profiles", {
 
 export type UserProfile = typeof userProfiles.$inferSelect;
 
+// ─── PLATFORM AI SETTINGS (Layer 1 — Global Admin Only) ─────────────────
+// DB table: platform_ai_settings
+export const platformAISettings = mysqlTable("platform_ai_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  settingKey: varchar("settingKey", { length: 64 }).notNull().unique().default("default"),
+  baseSystemPrompt: text("baseSystemPrompt"),
+  defaultTone: varchar("defaultTone", { length: 64 }).default("professional"),
+  defaultResponseFormat: varchar("defaultResponseFormat", { length: 64 }).default("mixed"),
+  defaultResponseLength: varchar("defaultResponseLength", { length: 64 }).default("standard"),
+  modelPreferences: json("modelPreferences"),
+  ensembleWeights: json("ensembleWeights"),
+  globalGuardrails: json("globalGuardrails"),
+  prohibitedTopics: json("prohibitedTopics"),
+  maxTokensDefault: int("maxTokensDefault").default(4096),
+  temperatureDefault: float("temperatureDefault").default(0.7),
+  enabledFocusModes: json("enabledFocusModes"),
+  platformDisclaimer: text("platformDisclaimer"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PlatformAISetting = typeof platformAISettings.$inferSelect;
+
 // ─── ORGANIZATION AI SETTINGS (Layer 2 Prompt) ──────────────────────────
 // DB table: organization_ai_settings
 export const organizationAISettings = mysqlTable("organization_ai_settings", {
@@ -150,6 +173,14 @@ export const organizationAISettings = mysqlTable("organization_ai_settings", {
   complianceLanguage: text("complianceLanguage"),
   customDisclaimers: text("customDisclaimers"),
   promptOverlay: text("promptOverlay"),
+  toneStyle: varchar("toneStyle", { length: 64 }).default("professional"),
+  responseFormat: varchar("responseFormat", { length: 64 }).default("mixed"),
+  responseLength: varchar("responseLength", { length: 64 }).default("standard"),
+  modelPreferences: json("modelPreferences"),
+  ensembleWeights: json("ensembleWeights"),
+  temperature: float("temperature"),
+  maxTokens: int("maxTokens"),
+  enabledFocusModes: json("enabledFocusModes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -160,10 +191,18 @@ export type OrganizationAISetting = typeof organizationAISettings.$inferSelect;
 export const managerAISettings = mysqlTable("manager_ai_settings", {
   id: int("id").autoincrement().primaryKey(),
   managerId: int("managerId").notNull().unique(),
+  organizationId: int("organizationId"),
   teamFocusAreas: json("teamFocusAreas"),
   clientSegmentTargeting: text("clientSegmentTargeting"),
   reportingRequirements: json("reportingRequirements"),
   promptOverlay: text("promptOverlay"),
+  toneStyle: varchar("toneStyle", { length: 64 }),
+  responseFormat: varchar("responseFormat", { length: 64 }),
+  responseLength: varchar("responseLength", { length: 64 }),
+  modelPreferences: json("modelPreferences"),
+  ensembleWeights: json("ensembleWeights"),
+  temperature: float("temperature"),
+  maxTokens: int("maxTokens"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -174,11 +213,20 @@ export type ManagerAISetting = typeof managerAISettings.$inferSelect;
 export const professionalAISettings = mysqlTable("professional_ai_settings", {
   id: int("id").autoincrement().primaryKey(),
   professionalId: int("professionalId").notNull().unique(),
+  organizationId: int("organizationId"),
+  managerId: int("managerId"),
   specialization: varchar("specialization", { length: 256 }),
   methodology: text("methodology"),
   communicationStyle: text("communicationStyle"),
   perClientOverrides: json("perClientOverrides"),
   promptOverlay: text("promptOverlay"),
+  toneStyle: varchar("toneStyle", { length: 64 }),
+  responseFormat: varchar("responseFormat", { length: 64 }),
+  responseLength: varchar("responseLength", { length: 64 }),
+  modelPreferences: json("modelPreferences"),
+  ensembleWeights: json("ensembleWeights"),
+  temperature: float("temperature"),
+  maxTokens: int("maxTokens"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -191,6 +239,7 @@ export const userPreferences = mysqlTable("user_preferences", {
   userId: int("userId").notNull().unique(),
   communicationStyle: mysqlEnum("communicationStyle", ["simple", "detailed", "expert"]).default("detailed"),
   responseLength: mysqlEnum("responseLength", ["concise", "standard", "comprehensive"]).default("standard"),
+  responseFormat: varchar("responseFormat", { length: 64 }).default("mixed"),
   ttsVoice: varchar("ttsVoice", { length: 64 }).default("en-US-JennyNeural"),
   autoPlayVoice: mysqlBoolean("autoPlayVoice").default(false),
   handsFreeMode: mysqlBoolean("handsFreeMode").default(false),
@@ -203,6 +252,12 @@ export const userPreferences = mysqlTable("user_preferences", {
   sidebarDefault: mysqlEnum("sidebarDefault", ["expanded", "collapsed"]).default("expanded"),
   chatDensity: mysqlEnum("chatDensity", ["comfortable", "compact"]).default("comfortable"),
   language: varchar("language", { length: 64 }).default("en"),
+  modelPreferences: json("modelPreferences"),
+  ensembleWeights: json("ensembleWeights"),
+  temperature: float("temperature"),
+  maxTokens: int("maxTokens"),
+  customPromptAdditions: text("customPromptAdditions"),
+  focusModeDefaults: varchar("focusModeDefaults", { length: 128 }).default("general,financial"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -257,8 +312,7 @@ export const clientAssociations = mysqlTable("client_associations", {
   id: int("id").autoincrement().primaryKey(),
   clientId: int("clientId").notNull(),
   professionalId: int("professionalId").notNull(),
-  managerId: int("managerId"),
-  firmId: int("firmId").notNull(),
+  organizationId: int("organizationId"),
   status: mysqlEnum("status", ["active", "inactive"]).default("active"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -306,7 +360,7 @@ export type EnrichmentMatch = typeof enrichmentMatches.$inferSelect;
 // ─── AFFILIATED RESOURCES ────────────────────────────────────────────────
 export const affiliatedResources = mysqlTable("affiliated_resources", {
   id: int("id").autoincrement().primaryKey(),
-  firmId: int("firmId"),
+  organizationId: int("organizationId"),
   name: varchar("name", { length: 256 }).notNull(),
   category: mysqlEnum("category", ["carrier", "lender", "ria", "advanced_markets", "general_partner"]).notNull(),
   description: text("description"),
@@ -350,7 +404,7 @@ export type Message = typeof messages.$inferSelect;
 export const documents = mysqlTable("documents", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  firmId: int("firmId"),
+  organizationId: int("organizationId"),
   filename: varchar("filename", { length: 512 }).notNull(),
   fileUrl: text("fileUrl").notNull(),
   fileKey: text("fileKey").notNull(),
@@ -381,7 +435,7 @@ export type DocumentChunk = typeof documentChunks.$inferSelect;
 // ─── PRODUCTS ──────────────────────────────────────────────────────────────
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
-  firmId: int("firmId"),
+  organizationId: int("organizationId"),
   company: varchar("company", { length: 128 }).notNull(),
   name: varchar("name", { length: 256 }).notNull(),
   category: mysqlEnum("category", ["iul", "term_life", "disability", "ltc", "premium_finance", "whole_life", "variable_life"]).notNull(),
@@ -392,7 +446,9 @@ export const products = mysqlTable("products", {
   maxPremium: float("maxPremium"),
   targetAudience: text("targetAudience"),
   competitorFlag: mysqlBoolean("competitorFlag").default(false),
+  isPlatform: mysqlBoolean("isPlatform").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
 });
 
 export type Product = typeof products.$inferSelect;

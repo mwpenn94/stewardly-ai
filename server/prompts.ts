@@ -8,6 +8,7 @@ export function buildSystemPrompt(opts: {
   userName?: string;
   mode: AdvisoryMode;
   focus: FocusMode;
+  focusModes?: string[];
   userRole?: string;
   styleProfile?: string | null;
   ragContext?: string;
@@ -24,6 +25,7 @@ export function buildSystemPrompt(opts: {
     userName = "the user",
     mode,
     focus,
+    focusModes: rawFocusModes,
     userRole = "user",
     styleProfile,
     ragContext,
@@ -37,6 +39,15 @@ export function buildSystemPrompt(opts: {
     affiliatedShelf,
   } = opts;
 
+  // Derive active focus modes from array or single focus
+  const focusModes = rawFocusModes && rawFocusModes.length > 0
+    ? rawFocusModes
+    : [focus];
+  const hasFinancial = focusModes.includes("financial");
+  const hasGeneral = focusModes.includes("general");
+  const hasStudy = focusModes.includes("study");
+  const isMultiFocus = focusModes.length > 1;
+
   const parts: string[] = [];
 
   // ── CORE ROLE (Focus-Aware) ──────────────────────────────────
@@ -46,11 +57,11 @@ GENERAL: A universal, open-ended advisory dimension. When this is active, engage
 
 FINANCIAL: A dedicated financial advisory dimension covering insurance planning, investing, financial planning, estate planning, and premium financing at full depth.
 
-The user's current focus mode is: ${focus}
-${focus === "both" ? '- "both": Equal weight across both dimensions. Lead with highest-impact insight regardless of domain. Proactively connect life context to financial implications and vice versa.' : ""}
-${focus === "general" ? '- "general": Lead with open, universal engagement. No topic structure imposed. Surface financial context only when the user raises something with a genuine financial dimension — briefly and naturally.' : ""}
-${focus === "financial" ? '- "financial": Lead with financial analysis at full depth. Use whatever the user shares about their life as context to personalize financial recommendations. Keep responses anchored in financial planning.' : ""}
-${focus === "study" ? '- "study": STUDY AND LEARN MODE. You are a secretary/study buddy. Your role is to: (1) Summarize and explain complex information clearly, (2) Extract key insights and patterns, (3) Answer questions about the data, (4) Generate outlines, glossaries, and study materials, (5) Compare multiple documents or datasets, (6) Help the user learn and master the material. Focus on clarity, structure, and educational value.' : ""}
+The user's active focus modes are: ${focusModes.join(", ")}
+${isMultiFocus ? `- Multiple modes active: Equal weight across all selected dimensions. Lead with highest-impact insight regardless of domain. Proactively connect insights across active modes.` : ""}
+${hasGeneral ? '- "general": Lead with open, universal engagement. No topic structure imposed. Surface financial context only when the user raises something with a genuine financial dimension — briefly and naturally.' : ""}
+${hasFinancial ? '- "financial": Lead with financial analysis at full depth. Use whatever the user shares about their life as context to personalize financial recommendations. Keep responses anchored in financial planning.' : ""}
+${hasStudy ? '- "study": GUIDED STUDY AND LEARNING MODE. You are a secretary/study buddy. Your role is to: (1) Summarize and explain complex information clearly, (2) Extract key insights and patterns, (3) Answer questions about the data, (4) Generate outlines, glossaries, and study materials, (5) Compare multiple documents or datasets, (6) Help the user learn and master the material. Focus on clarity, structure, and educational value.' : ""}
 </role>`);
 
   // ── PERSONAL STYLE ────────────────────────────────────────────
@@ -83,7 +94,7 @@ When an insight derives primarily from enrichment data rather than personal inpu
   }
 
   // ── FOCUS-SPECIFIC EXPERTISE ──────────────────────────────────
-  if (focus === "financial" || focus === "both") {
+  if (hasFinancial) {
     parts.push(`<financial_expertise>
 You have deep expertise in:
 - Life insurance products: IUL, term life, whole life, variable life, disability, LTC
@@ -96,7 +107,7 @@ ${affiliatedShelf ? `\n<affiliated_resources>${affiliatedShelf}</affiliated_reso
 </financial_expertise>`);
   }
 
-  if (focus === "general" || focus === "both") {
+  if (hasGeneral) {
     parts.push(`<general_expertise>
 You have broad expertise across:
 - Technology, software, AI/ML, data science, and engineering
@@ -110,7 +121,7 @@ You have broad expertise across:
   }
 
   // ── CROSS-DOMAIN INTELLIGENCE ─────────────────────────────────
-  if (focus === "both") {
+  if (hasGeneral && hasFinancial) {
     parts.push(`<cross_domain>Proactively identify and surface connections between what the user is experiencing generally and any financial implications, and vice versa. These connections are offered as contextual observations, not redirections. Examples:
 - New baby → life insurance gap + estate planning need + support for the life transition
 - Business launch → key-person insurance + buy-sell planning + broader life implications
@@ -130,7 +141,7 @@ You have broad expertise across:
 
   // ── COMPLIANCE ────────────────────────────────────────────────
   const disclaimers: string[] = [];
-  if (focus === "financial" || focus === "both") {
+  if (hasFinancial) {
     const suitabilityNote = suitabilityCompleted
       ? "The user has completed their suitability assessment. You may provide personalized financial guidance within compliance boundaries."
       : "IMPORTANT: The user has NOT completed a suitability assessment. For any personalized financial advice, you MUST first direct them to complete the suitability questionnaire. You may still provide general financial education and product information.";
@@ -143,7 +154,7 @@ You have broad expertise across:
 - Do NOT guarantee returns or make promises about financial outcomes`);
   }
 
-  if (focus === "general" || focus === "both") {
+  if (hasGeneral) {
     disclaimers.push(`General compliance:
 - For personal reflection and informational purposes
 - Not a substitute for professional medical, psychological, legal, or other specialized advice
@@ -234,7 +245,8 @@ export function calculateConfidence(opts: {
   if (opts.hasRAGContext) score += 0.1;
   if (opts.hasSuitability && opts.isFinancialAdvice) score += 0.1;
   if (!opts.hasSuitability && opts.isFinancialAdvice) score -= 0.2;
-  if (opts.focus === "both") score -= 0.05;
+  // Multi-focus slightly reduces confidence due to broader scope
+  // (no penalty for single focus)
   if (opts.responseLength > 2000) score += 0.05;
   return Math.max(0.1, Math.min(1.0, score));
 }

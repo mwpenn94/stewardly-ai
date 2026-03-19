@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO organizations (name, slug, description, website, industry, size) VALUES \n('WealthBridge AZ', 'wealthbridge-az', 'Arizona-based financial advisory firm specializing in personalized wealth management, retirement planning, and comprehensive financial intelligence.', 'https://wealthbridgeaz.com', 'Financial Services', 'medium'),\n('WealthBridge', 'wealthbridge', 'National financial intelligence platform providing AI-powered wealth management, advisory services, and digital financial twin technology.', 'https://wealthbridge.com', 'Financial Technology', 'large');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute INSERT INTO organizations (name, slug, description, website, industry, size) VALUES \n('WealthBridge AZ', 'wealthbridge-az', 'Arizona-based financial advisory firm specializing in personalized wealth management, retirement planning, and comprehensive financial intelligence.', 'https://wealthbridgeaz.com', 'Financial Services', 'medium'),\n('WealthBridge', 'wealthbridge', 'National financial intelligence platform providing AI-powered wealth management, advisory services, and digital financial twin technology.', 'https://wealthbridge.com', 'Financial Technology', 'large');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 88
+}

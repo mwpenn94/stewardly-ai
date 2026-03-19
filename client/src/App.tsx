@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Chat from "./pages/Chat";
@@ -11,12 +11,9 @@ import OrgLanding from "./pages/OrgLanding";
 import Welcome from "./pages/Welcome";
 import ConsentBanner from "./components/ConsentBanner";
 import Calculators from "./pages/Calculators";
-import Documents from "./pages/Documents";
-import Suitability from "./pages/Suitability";
 import ManagerDashboard from "./pages/ManagerDashboard";
-import Settings from "./pages/Settings";
 import Products from "./pages/Products";
-import MarketData from "./pages/MarketData";
+import SettingsHub from "./pages/SettingsHub";
 import Terms from "./pages/Terms";
 
 function Router() {
@@ -28,17 +25,31 @@ function Router() {
       <Route path={"/org/:slug"} component={OrgLanding} />
       <Route path={"/welcome"} component={Welcome} />
       <Route path={"/terms"} component={Terms} />
-      
-      {/* All other routes - immediate access, no gate */}
+
+      {/* Core app routes */}
       <Route path={"/chat"} component={Chat} />
       <Route path={"/chat/:id"} component={Chat} />
       <Route path={"/calculators"} component={Calculators} />
-      <Route path={"/documents"} component={Documents} />
-      <Route path={"/suitability"} component={Suitability} />
-      <Route path={"/manager"} component={ManagerDashboard} />
-      <Route path={"/settings"} component={Settings} />
       <Route path={"/products"} component={Products} />
-      <Route path={"/market"} component={MarketData} />
+      <Route path={"/manager"} component={ManagerDashboard} />
+
+      {/* Unified Settings hub */}
+      <Route path={"/settings"}>
+        <Redirect to="/settings/profile" />
+      </Route>
+      <Route path={"/settings/:tab"} component={SettingsHub} />
+
+      {/* Legacy redirects — keep old URLs working */}
+      <Route path={"/documents"}>
+        <Redirect to="/settings/knowledge" />
+      </Route>
+      <Route path={"/suitability"}>
+        <Redirect to="/settings/suitability" />
+      </Route>
+      <Route path={"/ai-settings"}>
+        <Redirect to="/settings/ai-tuning" />
+      </Route>
+
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

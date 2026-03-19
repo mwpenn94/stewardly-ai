@@ -14,11 +14,18 @@ export type UserRole = "user" | "advisor" | "manager" | "admin";
 // Advisory modes
 export type AdvisoryMode = "client" | "coach" | "manager";
 
-// Focus modes — controls AI expertise emphasis
-export type FocusMode = "general" | "financial" | "both" | "study";
+// Focus modes — controls AI expertise emphasis (multi-select: user can pick any combination)
+export type FocusMode = "general" | "financial" | "study";
 
-// Study and learn mode — secretary/study buddy for data review
-// When enabled, AI focuses on understanding, explaining, and helping learn from any data format
+// Helper to parse focus selections from comma-separated string
+export function parseFocusModes(raw: string): FocusMode[] {
+  const valid: FocusMode[] = ["general", "financial", "study"];
+  return raw.split(",").filter((m): m is FocusMode => valid.includes(m as FocusMode));
+}
+
+export function serializeFocusModes(modes: FocusMode[]): string {
+  return modes.join(",");
+}
 
 // Chat message for frontend
 export type ChatMessage = {

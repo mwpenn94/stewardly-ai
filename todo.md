@@ -427,3 +427,146 @@
 - [x] Welcome page at /welcome for marketing/sharing
 - [x] Auto-redirect to chat for default guest experience
 - [x] 39 tests passing (17 new audit + 21 chat + 1 auth)
+
+
+## Phase 3: Organizations UI, AI Personalization, Professional Portal
+
+### Seed Data & Logos
+- [ ] Upload WealthBridge AZ logo (gold/navy Arizona silhouette) to CDN
+- [ ] Upload WealthBridge logo (navy bridge icon) to CDN
+- [ ] Seed "WealthBridge AZ" organization with gold+navy color scheme
+- [ ] Seed "WealthBridge" organization with navy+white color scheme
+- [ ] Wire current user (Michael Penn) with all permission levels in both orgs
+
+### Organizations Management UI
+- [ ] Build /organizations page in sidebar nav
+- [ ] Organization list view (cards with logo, name, role)
+- [ ] Create organization form (name, slug, description, logo, colors)
+- [ ] Edit organization form (branding, colors, language customization)
+- [ ] Organization detail view with member list
+- [ ] Color scheme auto-detection from logo/materials
+- [ ] Manual color override with revert-to-default option
+- [ ] Member invitation system (email-based)
+- [ ] Role management within organization (admin, manager, professional, user)
+
+### 5-Layer AI Personalization Editor
+- [ ] Layer 1 (Platform Base) editor — global admin only
+- [ ] Layer 2 (Organization Overlay) editor — org admin
+- [ ] Layer 3 (Manager Overlay) editor — manager
+- [ ] Layer 4 (Professional Overlay) editor — professional
+- [ ] Layer 5 (User Context) editor — auto-populated + editable
+- [ ] Cascading prompt assembly function
+- [ ] Preview assembled prompt
+- [ ] Inheritance validation (lower layers can't contradict higher)
+
+### Professional Portal (/portal)
+- [ ] Portal route with role-based views
+- [ ] Professional view: client book, summary cards, filters
+- [ ] Manager view: team section, advisor cards, team summary
+- [ ] Org Admin view: org dashboard, manager list, branding editor
+- [ ] Global Admin view: all-orgs dashboard, org management, Layer 1 editor
+- [ ] View-as system: sessionStorage context, banner, read-only mode
+- [ ] View-as audit logging
+- [ ] Client book: name, AUM, risk profile, life stage, last contact
+
+### Recommendation & Invite System
+- [ ] Best-fit user-professional matching algorithm
+- [ ] Best-fit org-org matching recommendations
+- [ ] Invite system (on-platform and off-platform)
+- [ ] Professional can elect to connect with best-fit users
+- [ ] Users can elect to connect with best-fit professionals
+- [ ] Org-level recommendation generation
+
+
+### Fix Video/Screen Capture + Live Hands-Free Mode
+- [ ] Fix video capture hook — proper getUserMedia for camera
+- [ ] Fix screen capture hook — graceful fallback for iframe restrictions
+- [ ] Build LiveChat mode — continuous visual + verbal AI conversation
+- [ ] Camera feed preview in chat area during live mode
+- [ ] Periodic frame capture → send to LLM as image context
+- [ ] Continuous speech recognition → auto-send to AI
+- [ ] AI responds with voice (TTS) in hands-free mode
+- [ ] Audible cues for processing status (listening, thinking, speaking)
+- [ ] Toggle between live video/screen modes
+- [ ] Graceful error messages when permissions denied
+
+
+### Focus Mode Multi-Select
+- [ ] Replace "Both" focus mode with multi-select (user picks any combination of Financial, General, Study and learn)
+- [ ] Rename "Study and learn" description to "Guided study & learning"
+- [ ] Update Chat UI focus picker to use toggleable chips/buttons instead of radio
+- [ ] Update server-side prompt builder to handle multiple selected modes
+
+### Chat Welcome & Prompt Buttons Update
+- [ ] Fix all TS errors from multi-select focus migration in prompts.ts
+- [ ] Replace lengthy welcome text with brief animated salutation + CTA
+- [ ] Make prompt buttons dynamic based on focus modes, user context, tenant, progression
+- [ ] Remove crowding text from welcome screen
+- [ ] Add typing animation for salutation
+
+
+## 5-Layer AI Personalization System (with Ensemble & Model Weighting)
+
+### Database & Schema
+- [x] Create platform_ai_settings table (Layer 1 — global admin only)
+- [x] Add model/ensemble fields to all 5 layer tables (modelPreferences, ensembleWeights, toneStyle, responseFormat)
+- [x] Run migrations for new tables/columns
+
+### Cascading Prompt Resolution Engine
+- [x] Build resolveAIConfig() — merges all 5 layers with hierarchy rules
+- [x] Implement merge strategies: APPEND for prompts, OVERRIDE for style/weights, UNION for guardrails
+- [x] Wire resolved config into chat.send mutation (augments current buildSystemPrompt)
+- [ ] Add model ensemble weighting to LLM invocation
+
+### API Endpoints (Role-Gated)
+- [x] Layer 1 CRUD: platform settings (global_admin only)
+- [x] Layer 3 CRUD: manager AI settings (manager+ in org)
+- [x] Layer 4 CRUD: professional AI settings (professional+ in org)
+- [x] Layer 5 CRUD: user preferences (own user only)
+- [x] Preview endpoint: show assembled prompt for any user (admin/manager can preview)
+
+### AI Personalization Editor UI
+- [x] Build /ai-settings page with tabbed layer editors
+- [x] Layer 1 editor: platform base prompt, default tone, model weights, global guardrails
+- [ ] Layer 2 editor: org brand voice, approved/prohibited topics, compliance, prompt overlay
+- [x] Layer 3 editor: team focus, client segments, reporting, prompt overlay
+- [x] Layer 4 editor: specialization, methodology, communication style, per-client overrides
+- [x] Layer 5 editor: user communication style, response length/format, focus defaults, ensemble weights, custom prompt additions
+- [x] Prompt preview panel: show assembled prompt with layer indicators
+- [x] Role-gated tab visibility (each user sees only layers they can edit)
+
+### Chat Welcome & Prompt Buttons
+- [ ] Replace lengthy welcome with brief animated salutation + CTA
+- [ ] Dynamic prompt buttons based on focus modes, user context, tenant, progression
+- [ ] Typing animation for welcome message
+
+## Sidebar Reorganization & Market Data Assessment
+- [x] Assess Market Data page — removed from frontend (backend API kept for future use); Yahoo Finance API works but adds complexity without core value
+- [x] Reorganize sidebar nav items — grouped into Tools / Admin / Configure sections with headers
+- [x] Group related items — Tools (Calculators, Knowledge Base, Products, Suitability), Configure (AI Tuning, Settings), Admin (Manager Dashboard)
+
+## Settings Hub Consolidation
+- [x] Create tabbed Settings hub page with sub-tabs: Profile, Financial Profile, Knowledge Base, AI Tuning
+- [x] Move Suitability content into Settings > Financial Profile tab
+- [x] Move Knowledge Base (Documents) content into Settings > Knowledge Base tab
+- [x] Move AI Tuning content into Settings > AI Tuning tab
+- [x] Move existing Settings (avatar, style, memories) into Settings > Profile tab
+- [x] Condense sidebar to: Tools (Calculators, Products), Settings (single entry), Admin (Manager Dashboard)
+- [x] Update App.tsx routes — remove standalone /suitability, /documents, /ai-settings; keep /settings as hub
+- [x] Ensure deep-linking works (e.g., /settings/ai-tuning, /settings/knowledge)
+
+## Products Enhancement — Org-Level CRUD + Delightful UX
+- [x] Add isPlatform flag + updatedAt to products table
+- [x] Platform products (isPlatform=true) serve as defaults visible to all
+- [x] Org admins can CRUD their own products (create/update/delete endpoints)
+- [x] Enhanced product cards with risk badges, expandable details, company grouping, search + category filters
+- [x] Product detail view with expandable card (features, target audience, premium range)
+- [x] Category filtering with chip-based filter bar
+- [x] Remove number counts from product features (per knowledge)
+
+## Calculators Enhancement — Org-Level CRUD + Delightful UX
+- [x] Calculator UI enhanced with slider-based inputs, summary stat cards, mini bar charts
+- [x] Platform calculators serve as defaults (IUL, Premium Finance, Retirement)
+- [x] Enhanced calculator UI with slider controls, card-based calculator selector
+- [x] Animated results with mini bar chart visualization + summary stat cards
+- [ ] Calculator result sharing/export — future enhancement

@@ -15,8 +15,8 @@ describe("System Prompt Builder", () => {
     expect(prompt).toContain("financial_expertise");
   });
 
-  it("builds a combined prompt when focus is 'both'", () => {
-    const prompt = buildSystemPrompt({ focus: "both", mode: "client" });
+  it("builds a combined prompt when multiple focus modes are active", () => {
+    const prompt = buildSystemPrompt({ focus: "general", mode: "client", focusModes: ["general", "financial"] });
     expect(prompt).toContain("general_expertise");
     expect(prompt).toContain("financial_expertise");
   });

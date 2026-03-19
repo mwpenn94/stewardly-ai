@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, asc, inArray } from "drizzle-orm";
+import { eq, desc, and, or, sql, asc, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
@@ -220,6 +220,79 @@ export async function getProductsByCompany(company: string) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(products).where(eq(products.company, company));
+}
+
+/** Get products visible to a user: platform products + their org's products */
+export async function getVisibleProducts(organizationId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  if (organizationId) {
+    return db.select().from(products)
+      .where(or(eq(products.isPlatform, true), eq(products.organizationId, organizationId)))
+      .orderBy(products.isPlatform, products.company, products.name);
+  }
+  return db.select().from(products)
+    .where(eq(products.isPlatform, true))
+    .orderBy(products.company, products.name);
+}
+
+/** Get only org-specific products */
+export async function getOrgProducts(organizationId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(products)
+    .where(and(eq(products.organizationId, organizationId), eq(products.isPlatform, false)))
+    .orderBy(products.company, products.name);
+}
+
+/** Create a product (org-level or platform) */
+export async function createProduct(data: {
+  organizationId?: number | null;
+  company: string;
+  name: string;
+  category: "iul" | "term_life" | "disability" | "ltc" | "premium_finance" | "whole_life" | "variable_life";
+  description?: string;
+  features?: unknown;
+  riskLevel?: "low" | "moderate" | "moderate_high" | "high";
+  minPremium?: number;
+  maxPremium?: number;
+  targetAudience?: string;
+  isPlatform?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(products).values({
+    ...data,
+    isPlatform: data.isPlatform ?? false,
+  });
+  return { id: result[0].insertId };
+}
+
+/** Update a product */
+export async function updateProduct(id: number, data: Partial<{
+  company: string;
+  name: string;
+  category: "iul" | "term_life" | "disability" | "ltc" | "premium_finance" | "whole_life" | "variable_life";
+  description: string;
+  features: unknown;
+  riskLevel: "low" | "moderate" | "moderate_high" | "high";
+  minPremium: number;
+  maxPremium: number;
+  targetAudience: string;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(products).set(data).where(eq(products.id, id));
+  return { success: true };
+}
+
+/** Delete a product (only non-platform) */
+export async function deleteProduct(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Safety: only delete non-platform products
+  await db.delete(products).where(and(eq(products.id, id), eq(products.isPlatform, false)));
+  return { success: true };
 }
 
 // ─── AUDIT TRAIL HELPERS ──────────────────────────────────────────

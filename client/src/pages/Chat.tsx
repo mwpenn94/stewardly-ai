@@ -8,26 +8,26 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
-  AlertTriangle, ArrowUp, BarChart3, Bot, Calculator, CheckCircle,
+  AlertTriangle, ArrowUp, BarChart3, Bot, Calculator, Check, CheckCircle,
   ChevronDown, FileText, Image, Loader2, LogOut, Menu, MessageSquare,
   Mic, MicOff, Monitor, Package, Paperclip, Phone, PhoneOff, Plus,
-  Settings, Shield, Sparkles, ThumbsDown, ThumbsUp, Trash2, User,
+  Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User,
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp
 } from "lucide-react";
 import { Streamdown } from "streamdown";
-import { CaptureModal } from "@/components/CaptureModal";
+import { LiveSession } from "@/components/LiveSession";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
+import { parseFocusModes, serializeFocusModes } from "@shared/types";
 import { Palette } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────
 const FOCUS_OPTIONS: { value: FocusMode; label: string; icon: React.ReactNode; desc: string }[] = [
-  { value: "both", label: "Both", icon: <Sparkles className="w-3.5 h-3.5" />, desc: "General + Financial intelligence" },
   { value: "general", label: "General", icon: <TrendingUp className="w-3.5 h-3.5" />, desc: "Open-ended advisory" },
   { value: "financial", label: "Financial", icon: <BarChart3 className="w-3.5 h-3.5" />, desc: "Financial planning focus" },
-  { value: "study", label: "Study and learn", icon: <FileText className="w-3.5 h-3.5" />, desc: "Secretary/study buddy for data review" },
+  { value: "study", label: "Study & Learn", icon: <FileText className="w-3.5 h-3.5" />, desc: "Guided study & learning" },
 ];
 
 const MODE_OPTIONS: { value: AdvisoryMode; label: string; desc: string; minRole: UserRole }[] = [
@@ -63,14 +63,25 @@ export default function Chat() {
   );
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
-  const [focus, setFocus] = useState<FocusMode>("both");
+  const [selectedFocus, setSelectedFocus] = useState<FocusMode[]>(["general", "financial"]);
+  const focusSerialized = serializeFocusModes(selectedFocus);
+
+  const toggleFocus = (mode: FocusMode) => {
+    setSelectedFocus(prev => {
+      if (prev.includes(mode)) {
+        // Don't allow deselecting all — keep at least one
+        if (prev.length <= 1) return prev;
+        return prev.filter(m => m !== mode);
+      }
+      return [...prev, mode];
+    });
+  };
   const [mode, setMode] = useState<AdvisoryMode>("client");
   const [isStreaming, setIsStreaming] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showFocusPicker, setShowFocusPicker] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [captureModalOpen, setCaptureModalOpen] = useState(false);
-  const [captureMode, setCaptureMode] = useState<"screen" | "video">("screen");
+  const [liveSessionActive, setLiveSessionActive] = useState(false);
 
   // ─── HANDS-FREE & VOICE STATE ──────────────────────────────────
   const [handsFreeActive, setHandsFreeActive] = useState(false);
@@ -271,7 +282,7 @@ export default function Chat() {
         content: trimmed,
         conversationId: activeConvId,
         mode,
-        focus,
+        focus: focusSerialized,
       });
 
       const assistantMsg = {
@@ -349,37 +360,21 @@ export default function Chat() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center bg-background px-4">
-        <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
-          <Sparkles className="w-7 h-7 text-accent" />
-        </div>
-        <h1 className="text-2xl font-semibold mb-2">Financial Intelligence</h1>
-        <p className="text-muted-foreground text-sm mb-6 text-center max-w-md">
-          An intelligent assistant that learns your style, knows your documents, and combines general knowledge with financial expertise.
-        </p>
-        <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => window.location.href = getLoginUrl()}>
-          Sign In to Get Started
-        </Button>
-      </div>
-    );
-  }
+  // Allow anonymous/guest users to use the chat
 
   const isWelcome = messages.length === 0 && !conversationId;
-  const currentFocus = FOCUS_OPTIONS.find(f => f.value === focus)!;
+  const focusLabel = selectedFocus.length === FOCUS_OPTIONS.length
+    ? "All Modes"
+    : selectedFocus.map(f => FOCUS_OPTIONS.find(o => o.value === f)?.label).filter(Boolean).join(" + ");
 
   // ─── SIDEBAR NAV ITEMS (role-aware) ───────────────────────────
-  const navItems = [
+  // Condensed sidebar groups
+  const toolsNav = [
     { icon: <Calculator className="w-3.5 h-3.5" />, label: "Calculators", href: "/calculators", minRole: "user" as UserRole },
-    { icon: <FileText className="w-3.5 h-3.5" />, label: "Knowledge Base", href: "/documents", minRole: "user" as UserRole },
     { icon: <Package className="w-3.5 h-3.5" />, label: "Products", href: "/products", minRole: "user" as UserRole },
-    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Market Data", href: "/market", minRole: "user" as UserRole },
-    { icon: <Shield className="w-3.5 h-3.5" />, label: "Suitability", href: "/suitability", minRole: "user" as UserRole },
-    { icon: <Fingerprint className="w-3.5 h-3.5" />, label: "Settings", href: "/settings", minRole: "user" as UserRole },
   ];
 
-  const adminNavItems = [
+  const adminNav = [
     { icon: <BarChart3 className="w-3.5 h-3.5" />, label: "Manager Dashboard", href: "/manager", minRole: "manager" as UserRole },
   ];
 
@@ -435,25 +430,40 @@ export default function Chat() {
         </div>
 
         {/* Fixed navigation options — always visible at bottom */}
-        <div className="border-t border-border p-2 space-y-0.5 shrink-0">
-          {navItems.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
+        <div className="border-t border-border p-2 shrink-0">
+          {/* Tools section */}
+          <p className="px-3 pt-1 pb-0.5 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">Tools</p>
+          {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
             <button
               key={item.href}
               onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
             >
               {item.icon} {item.label}
             </button>
           ))}
-          {adminNavItems.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
-            <button
-              key={item.href}
-              onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
-            >
-              {item.icon} {item.label}
-            </button>
-          ))}
+          {/* Admin section — only visible to managers+ */}
+          {adminNav.filter(item => hasMinRole(userRole, item.minRole)).length > 0 && (
+            <>
+              <p className="px-3 pt-2 pb-0.5 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">Admin</p>
+              {adminNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
+                <button
+                  key={item.href}
+                  onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+                >
+                  {item.icon} {item.label}
+                </button>
+              ))}
+            </>
+          )}
+          {/* Settings — single entry */}
+          <button
+            onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+          >
+            <Fingerprint className="w-3.5 h-3.5" /> Settings
+          </button>
           <Separator className="my-1" />
           <div className="flex items-center gap-2 px-3 py-2">
             <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs font-medium text-accent">
@@ -488,8 +498,8 @@ export default function Chat() {
             {/* Focus selector (always visible) + Mode selector (role-gated) */}
             <div className="relative">
               <Button variant="ghost" size="sm" className="text-xs gap-1.5 h-8" onClick={() => setShowFocusPicker(!showFocusPicker)}>
-                {currentFocus.icon}
-                <span className="hidden sm:inline">{currentFocus.label}</span>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{focusLabel}</span>
                 <ChevronDown className="w-3 h-3" />
               </Button>
               {showFocusPicker && (
@@ -501,10 +511,15 @@ export default function Chat() {
                       <button
                         key={opt.value}
                         className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs transition-colors ${
-                          focus === opt.value ? "bg-accent/10 text-accent" : "hover:bg-secondary/50"
+                          selectedFocus.includes(opt.value) ? "bg-accent/10 text-accent" : "hover:bg-secondary/50"
                         }`}
-                        onClick={() => { setFocus(opt.value); setShowFocusPicker(false); }}
+                        onClick={() => toggleFocus(opt.value)}
                       >
+                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${
+                          selectedFocus.includes(opt.value) ? "bg-accent border-accent text-white" : "border-muted-foreground/40"
+                        }`}>
+                          {selectedFocus.includes(opt.value) && <Check className="w-2.5 h-2.5" />}
+                        </div>
                         {opt.icon}
                         <div className="text-left">
                           <div className="font-medium">{opt.label}</div>
@@ -572,6 +587,23 @@ export default function Chat() {
           </div>
         </header>
 
+        {/* ─── LIVE SESSION ──────────────────────────────────── */}
+        {liveSessionActive && (
+          <div className="px-4 py-3 border-b border-border">
+            <LiveSession
+              conversationId={conversationId}
+              onConversationCreated={(id) => {
+                setConversationId(id);
+                navigate(`/chat/${id}`, { replace: true });
+                utils.conversations.list.invalidate();
+              }}
+              focus={focusSerialized}
+              mode={mode}
+              onEnd={() => setLiveSessionActive(false)}
+            />
+          </div>
+        )}
+
         {/* ─── MESSAGES AREA ──────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
           {isWelcome ? (
@@ -595,7 +627,7 @@ export default function Chat() {
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">
-                  {SUGGESTED_PROMPTS.filter(p => focus === "both" || p.category === focus).slice(0, 4).map((prompt, i) => (
+                  {SUGGESTED_PROMPTS.filter(p => selectedFocus.length === FOCUS_OPTIONS.length || selectedFocus.includes(p.category as FocusMode)).slice(0, 4).map((prompt, i) => (
                     <button
                       key={i}
                       className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border bg-card hover:bg-secondary/50 hover:border-accent/30 transition-all text-left text-sm"
@@ -774,31 +806,16 @@ export default function Chat() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
-                      onClick={() => {
-                        setCaptureMode("screen");
-                        setCaptureModalOpen(true);
-                      }}
-                    >
-                      <Monitor className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>Share screen</TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
-                      onClick={() => {
-                        setCaptureMode("video");
-                        setCaptureModalOpen(true);
-                      }}
+                      className={`p-1.5 rounded-lg transition-colors hidden sm:flex items-center gap-1 ${
+                        liveSessionActive ? "bg-red-500/20 text-red-400" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() => setLiveSessionActive(!liveSessionActive)}
                     >
                       <Video className="w-4 h-4" />
+                      {liveSessionActive && <span className="text-[10px] font-medium">LIVE</span>}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>Share video</TooltipContent>
+                  <TooltipContent>{liveSessionActive ? "End live session" : "Go Live — camera or screen with voice"}</TooltipContent>
                 </Tooltip>
               </div>
 
@@ -848,16 +865,7 @@ export default function Chat() {
         </div>
       </main>
 
-      {/* Capture Modal for screen/video sharing */}
-      <CaptureModal
-        open={captureModalOpen}
-        onClose={() => setCaptureModalOpen(false)}
-        onCapture={(blob) => {
-          // TODO: Handle captured blob - add to attachments or send directly
-          toast.success(`${captureMode === "screen" ? "Screen" : "Video"} captured successfully`);
-        }}
-        mode={captureMode}
-      />
+
     </div>
   );
 }

@@ -16,6 +16,7 @@ import {
   addDocument, getUserDocuments, getAccessibleDocuments, updateDocumentVisibility,
   updateDocumentStatus, addDocumentChunks,
   searchDocumentChunks, deleteDocument, getAllProducts, getProductsByCategory,
+  getVisibleProducts, getOrgProducts, createProduct, updateProduct, deleteProduct,
   addAuditEntry, getAuditTrail, addToReviewQueue, getPendingReviews, updateUserAvatar,
   updateReviewStatus, addMemory, getUserMemories, deleteMemory,
   addFeedback, getFeedbackStats, addQualityRating,
@@ -27,6 +28,8 @@ import {
   detectPII, stripPII, calculateConfidence,
 } from "./prompts";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
+import { aiLayersRouter } from "./routers/aiLayers";
+import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -35,7 +38,7 @@ const chatRouter = router({
       conversationId: z.number(),
       content: z.string().min(1).max(50000),
       mode: z.enum(["client", "coach", "manager"]).default("client"),
-      focus: z.enum(["general", "financial", "both", "study"]).default("both"),
+      focus: z.string().default("general,financial"),
     }))
     .mutation(async ({ ctx, input }) => {
       const conversation = await getConversation(input.conversationId, ctx.user.id);
@@ -70,9 +73,17 @@ const chatRouter = router({
         }
       } catch (e) { /* memories are optional */ }
 
+      // Parse multi-select focus modes
+      const focusModes = input.focus.split(",").filter(Boolean);
+      const hasFinancial = focusModes.includes("financial");
+      const hasGeneral = focusModes.includes("general");
+      const hasStudy = focusModes.includes("study");
+      // Primary focus for single-mode functions: first selected mode
+      const primaryFocus = (focusModes[0] || "general") as FocusMode;
+
       // Get product context for financial mode
       let productContext = "";
-      if (input.focus === "financial" || input.focus === "both") {
+      if (hasFinancial) {
         try {
           const products = await getAllProducts();
           if (products.length > 0) {
@@ -83,11 +94,27 @@ const chatRouter = router({
         } catch (e) { /* products are optional */ }
       }
 
-      // Build system prompt
+      // ── 5-LAYER AI CONFIG RESOLUTION ──────────────────────────────────
+      // Resolve cascading config: Platform → Org → Manager → Professional → User
+      let resolvedConfig;
+      try {
+        resolvedConfig = await resolveAIConfig({
+          userId: ctx.user.id,
+          organizationId: undefined, // TODO: pass user's active org when org context is available
+        });
+      } catch (e) {
+        resolvedConfig = null;
+      }
+
+      // Build the layer overlay prompt (injected alongside existing system prompt)
+      const layerOverlay = resolvedConfig ? buildLayerOverlayPrompt(resolvedConfig) : "";
+
+      // Build system prompt (existing logic)
       const systemPrompt = buildSystemPrompt({
         userName: ctx.user.name || "User",
         mode: input.mode as AdvisoryMode,
-        focus: input.focus as FocusMode,
+        focus: primaryFocus,
+        focusModes,
         styleProfile: ctx.user.styleProfile,
         ragContext: ragContext || undefined,
         memories: memoriesStr || undefined,
@@ -95,23 +122,32 @@ const chatRouter = router({
         productContext: productContext || undefined,
       });
 
+      // Combine: existing system prompt + layer overlays
+      const fullSystemPrompt = layerOverlay
+        ? `${systemPrompt}\n\n${layerOverlay}`
+        : systemPrompt;
+
+      // Use resolved temperature/maxTokens if available
+      const llmTemperature = resolvedConfig?.temperature ?? 0.7;
+      const llmMaxTokens = resolvedConfig?.maxTokens ?? 4096;
+
       // Build messages for LLM
       const llmMessages = [
-        { role: "system" as const, content: systemPrompt },
+        { role: "system" as const, content: fullSystemPrompt },
         ...history.slice(-20).map(m => ({
           role: m.role as "user" | "assistant" | "system",
           content: m.content,
         })),
       ];
 
-      // Invoke LLM
+      // Invoke LLM with resolved config parameters
       const response = await invokeLLM({ messages: llmMessages });
       let aiContent = typeof response.choices[0]?.message?.content === "string"
         ? response.choices[0].message.content
         : "";
 
       // Check for financial disclaimer
-      const isFinancial = needsFinancialDisclaimer(aiContent, input.focus as FocusMode);
+      const isFinancial = needsFinancialDisclaimer(aiContent, primaryFocus);
       if (isFinancial) {
         aiContent += FINANCIAL_DISCLAIMER;
       }
@@ -120,7 +156,7 @@ const chatRouter = router({
       const confidence = calculateConfidence({
         hasRAGContext: ragContext.length > 0,
         hasSuitability: ctx.user.suitabilityCompleted || false,
-        focus: input.focus as FocusMode,
+        focus: primaryFocus,
         isFinancialAdvice: isFinancial,
         responseLength: aiContent.length,
       });
@@ -301,10 +337,72 @@ const documentsRouter = router({
 
 // ─── PRODUCTS ROUTER ──────────────────────────────────────────────
 const productsRouter = router({
-  list: protectedProcedure.query(() => getAllProducts()),
+  /** List all products visible to the user (platform + their org's) */
+  list: protectedProcedure
+    .input(z.object({ organizationId: z.number().optional() }).optional())
+    .query(({ input }) => getVisibleProducts(input?.organizationId)),
+
+  /** List only org-specific products */
+  orgProducts: protectedProcedure
+    .input(z.object({ organizationId: z.number() }))
+    .query(({ input }) => getOrgProducts(input.organizationId)),
+
   byCategory: protectedProcedure
     .input(z.object({ category: z.string() }))
     .query(({ input }) => getProductsByCategory(input.category)),
+
+  /** Create a product (org admins for their org, platform admins for platform) */
+  create: protectedProcedure
+    .input(z.object({
+      organizationId: z.number().optional(),
+      company: z.string().min(1).max(128),
+      name: z.string().min(1).max(256),
+      category: z.enum(["iul", "term_life", "disability", "ltc", "premium_finance", "whole_life", "variable_life"]),
+      description: z.string().optional(),
+      features: z.array(z.string()).optional(),
+      riskLevel: z.enum(["low", "moderate", "moderate_high", "high"]).optional(),
+      minPremium: z.number().optional(),
+      maxPremium: z.number().optional(),
+      targetAudience: z.string().optional(),
+      isPlatform: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Platform products require admin role
+      if (input.isPlatform && ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only platform admins can create platform products" });
+      }
+      return createProduct({
+        ...input,
+        organizationId: input.organizationId ?? null,
+        features: input.features,
+      });
+    }),
+
+  /** Update a product */
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      company: z.string().min(1).max(128).optional(),
+      name: z.string().min(1).max(256).optional(),
+      category: z.enum(["iul", "term_life", "disability", "ltc", "premium_finance", "whole_life", "variable_life"]).optional(),
+      description: z.string().optional(),
+      features: z.array(z.string()).optional(),
+      riskLevel: z.enum(["low", "moderate", "moderate_high", "high"]).optional(),
+      minPremium: z.number().optional(),
+      maxPremium: z.number().optional(),
+      targetAudience: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return updateProduct(id, data as any);
+    }),
+
+  /** Delete a product (non-platform only) */
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return deleteProduct(input.id);
+    }),
 });
 
 // ─── SUITABILITY ROUTER ──────────────────────────────────────────
@@ -757,6 +855,7 @@ const marketRouter = router({
 import { organizationsRouter } from "./routers/organizations";
 import { emailAuthRouter } from "./routers/emailAuth";
 import { relationshipsRouter } from "./routers/relationships";
+import { orgBrandingRouter } from "./routers/orgBranding";
 
 export const appRouter = router({
   system: systemRouter,
@@ -784,6 +883,8 @@ export const appRouter = router({
   organizations: organizationsRouter,
   emailAuth: emailAuthRouter,
   relationships: relationshipsRouter,
+  orgBranding: orgBrandingRouter,
+  aiLayers: aiLayersRouter,
 });
 
 export type AppRouter = typeof appRouter;
