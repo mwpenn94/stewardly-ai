@@ -31,9 +31,10 @@ export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.globalRole !== 'global_admin') {
+    if (!ctx.user) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
+    // TODO: Implement role-based access control
 
     return next({
       ctx: {

@@ -53,7 +53,7 @@ export default function Documents() {
 
   // TODO: Update to check org-specific roles from user_organization_roles table
   // For now, check if user is global_admin or has elevated org roles
-  const isElevated = user?.globalRole === "global_admin"; // Will be enhanced with org-specific roles
+  const isElevated = false; // TODO: Implement role-based access control
 
   const docs = trpc.documents.list.useQuery();
   const uploadDoc = trpc.documents.upload.useMutation({

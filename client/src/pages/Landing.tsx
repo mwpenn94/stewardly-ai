@@ -5,11 +5,23 @@ import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function Landing() {
   const [, navigate] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   // If already authenticated, redirect to chat
-  if (isAuthenticated) {
+  if (isAuthenticated && !loading) {
     navigate("/chat");
+    return null;
+  }
+
+  // If not loading and not authenticated, default to guest mode and redirect
+  if (!loading && !isAuthenticated) {
+    localStorage.setItem("anonymousMode", "true");
+    navigate("/chat");
+    return null;
+  }
+
+  // Show nothing while loading
+  if (loading) {
     return null;
   }
 

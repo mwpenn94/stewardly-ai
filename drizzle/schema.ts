@@ -43,7 +43,6 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  globalRole: mysqlEnum("globalRole", ["global_admin", "user"]).default("user").notNull(),
   styleProfile: text("styleProfile"),
   suitabilityCompleted: mysqlBoolean("suitabilityCompleted").default(false),
   suitabilityData: json("suitabilityData"),

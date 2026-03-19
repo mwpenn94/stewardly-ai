@@ -334,7 +334,7 @@ export default function Chat() {
   };
 
   // ─── ROLE-BASED MODE FILTERING ────────────────────────────────
-  const userRole = (user?.globalRole ?? "user") as UserRole;
+  const userRole = "user" as UserRole; // TODO: Implement role-based access control
   const availableModes = useMemo(() => {
     return MODE_OPTIONS.filter(m => hasMinRole(userRole, m.minRole));
   }, [userRole]);
@@ -355,7 +355,7 @@ export default function Chat() {
         <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
           <Sparkles className="w-7 h-7 text-accent" />
         </div>
-        <h1 className="text-2xl font-semibold mb-2">Your Personal AI</h1>
+        <h1 className="text-2xl font-semibold mb-2">Financial Intelligence</h1>
         <p className="text-muted-foreground text-sm mb-6 text-center max-w-md">
           An intelligent assistant that learns your style, knows your documents, and combines general knowledge with financial expertise.
         </p>
@@ -480,7 +480,7 @@ export default function Chat() {
             </Button>
             <div className="flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-accent" />
-              <span className="text-sm font-medium hidden sm:inline">Personal AI</span>
+              <span className="text-sm font-medium hidden sm:inline">Financial Intelligence</span>
             </div>
           </div>
 
