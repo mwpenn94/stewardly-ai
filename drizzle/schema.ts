@@ -16,6 +16,7 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  tosAcceptedAt: timestamp("tosAcceptedAt"),
 });
 
 export type User = typeof users.$inferSelect;
@@ -155,7 +156,8 @@ export const documents = mysqlTable("documents", {
   fileUrl: text("fileUrl").notNull(),
   fileKey: text("fileKey").notNull(),
   mimeType: varchar("mimeType", { length: 128 }),
-  category: mysqlEnum("category", ["personal_docs", "financial_products", "regulations"]).default("personal_docs").notNull(),
+  category: mysqlEnum("category", ["personal_docs", "financial_products", "regulations", "training_materials", "artifacts", "skills"]).default("personal_docs").notNull(),
+  visibility: mysqlEnum("visibility", ["private", "professional", "management", "admin"]).default("professional").notNull(),
   extractedText: text("extractedText"),
   chunkCount: int("chunkCount").default(0),
   status: mysqlEnum("status", ["uploading", "processing", "ready", "error"]).default("uploading").notNull(),
@@ -171,7 +173,7 @@ export const documentChunks = mysqlTable("document_chunks", {
   userId: int("userId").notNull(),
   content: text("content").notNull(),
   chunkIndex: int("chunkIndex").notNull(),
-  category: mysqlEnum("category", ["personal_docs", "financial_products", "regulations"]).default("personal_docs").notNull(),
+  category: mysqlEnum("category", ["personal_docs", "financial_products", "regulations", "training_materials", "artifacts", "skills"]).default("personal_docs").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

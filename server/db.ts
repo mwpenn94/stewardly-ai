@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, asc } from "drizzle-orm";
+import { eq, desc, and, sql, asc, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
@@ -139,7 +139,8 @@ export async function getConversationMessages(conversationId: number) {
 // ─── DOCUMENT HELPERS ─────────────────────────────────────────────
 export async function addDocument(data: {
   userId: number; filename: string; fileUrl: string; fileKey: string;
-  mimeType?: string; category?: "personal_docs" | "financial_products" | "regulations";
+  mimeType?: string; category?: "personal_docs" | "financial_products" | "regulations" | "training_materials" | "artifacts" | "skills";
+  visibility?: "private" | "professional" | "management" | "admin";
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -153,6 +154,18 @@ export async function getUserDocuments(userId: number) {
   return db.select().from(documents).where(eq(documents.userId, userId)).orderBy(desc(documents.createdAt));
 }
 
+export async function getAccessibleDocuments(visibilityLevels: string[]) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(documents).where(inArray(documents.visibility, visibilityLevels as any)).orderBy(desc(documents.createdAt));
+}
+
+export async function updateDocumentVisibility(id: number, userId: number, visibility: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(documents).set({ visibility: visibility as any }).where(and(eq(documents.id, id), eq(documents.userId, userId)));
+}
+
 export async function updateDocumentStatus(id: number, status: "uploading" | "processing" | "ready" | "error", extractedText?: string, chunkCount?: number) {
   const db = await getDb();
   if (!db) return;
@@ -162,7 +175,7 @@ export async function updateDocumentStatus(id: number, status: "uploading" | "pr
   await db.update(documents).set(update).where(eq(documents.id, id));
 }
 
-export async function addDocumentChunks(chunks: Array<{ documentId: number; userId: number; content: string; chunkIndex: number; category: "personal_docs" | "financial_products" | "regulations" }>) {
+export async function addDocumentChunks(chunks: Array<{ documentId: number; userId: number; content: string; chunkIndex: number; category: "personal_docs" | "financial_products" | "regulations" | "training_materials" | "artifacts" | "skills" }>) {
   const db = await getDb();
   if (!db) return;
   if (chunks.length === 0) return;

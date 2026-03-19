@@ -19,6 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
+import { Palette } from "lucide-react";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────
 const FOCUS_OPTIONS: { value: FocusMode; label: string; icon: React.ReactNode; desc: string }[] = [
@@ -96,6 +97,7 @@ export default function Chat() {
   const createConversation = trpc.conversations.create.useMutation();
   const deleteConversation = trpc.conversations.delete.useMutation();
   const feedbackMutation = trpc.feedback.submit.useMutation();
+  const visualMutation = trpc.visual.generate.useMutation();
 
   // ─── EFFECTS ──────────────────────────────────────────────────
   useEffect(() => {
@@ -618,6 +620,12 @@ export default function Chat() {
                       <div>
                         <div className="prose-chat text-sm">
                           <Streamdown>{msg.content}</Streamdown>
+                          {/* Render inline images if present in metadata */}
+                          {msg.metadata?.imageUrl && (
+                            <div className="mt-3 rounded-xl overflow-hidden border border-border max-w-md">
+                              <img src={msg.metadata.imageUrl} alt="AI generated visual" className="w-full h-auto" />
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           {msg.confidenceScore != null && (
@@ -727,6 +735,30 @@ export default function Chat() {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>Attach image</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className={`p-1.5 rounded-lg transition-colors ${visualMutation.isPending ? "bg-accent/20 text-accent" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"}`}
+                      onClick={async () => {
+                        const prompt = input.trim();
+                        if (!prompt) { toast.info("Type a description for the visual you want to generate"); return; }
+                        try {
+                          const result = await visualMutation.mutateAsync({ prompt: `Create a clear, professional visual: ${prompt}` });
+                          if (result.url) {
+                            const imgMsg = { role: "assistant" as const, content: `Here's the visual I created for: **${prompt}**`, metadata: { imageUrl: result.url }, createdAt: new Date() };
+                            setMessages(prev => [...prev, { role: "user" as const, content: `Generate visual: ${prompt}`, createdAt: new Date() }, imgMsg]);
+                            setInput("");
+                          }
+                        } catch (e: any) { toast.error(e.message || "Failed to generate visual"); }
+                      }}
+                      disabled={visualMutation.isPending}
+                    >
+                      {visualMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Generate visual / chart</TooltipContent>
                 </Tooltip>
 
                 <Tooltip>

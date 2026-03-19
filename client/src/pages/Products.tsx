@@ -93,7 +93,6 @@ export default function Products() {
 
 function ProductCard({ product, onAsk }: { product: any; onAsk: () => void }) {
   const meta = CATEGORY_META[product.category] || { icon: <Package className="w-4 h-4" />, label: product.category.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) };
-  const features = product.features ? (typeof product.features === "string" ? JSON.parse(product.features) : product.features) : {};
 
   return (
     <Card className="bg-card border-border hover:border-accent/30 transition-colors">
@@ -112,15 +111,7 @@ function ProductCard({ product, onAsk }: { product: any; onAsk: () => void }) {
         {product.description && (
           <p className="text-xs text-muted-foreground leading-relaxed">{product.description}</p>
         )}
-        {Object.keys(features).length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {Object.entries(features).slice(0, 4).map(([key, val]) => (
-              <Badge key={key} variant="outline" className="text-[10px] font-normal">
-                {key}: {String(val)}
-              </Badge>
-            ))}
-          </div>
-        )}
+
         <Button variant="ghost" size="sm" className="text-xs text-accent hover:text-accent/80 p-0 h-auto" onClick={onAsk}>
           <MessageSquare className="w-3 h-3 mr-1" /> Ask AI about this product <ChevronRight className="w-3 h-3 ml-0.5" />
         </Button>

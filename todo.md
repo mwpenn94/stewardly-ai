@@ -164,3 +164,40 @@
 - [x] Suppress speech recognition during TTS playback to prevent AI voice from being recorded as user input
 - [x] Recognition only starts AFTER TTS onend fires, with a 600ms guard delay
 - [x] ttsGuardRef prevents recognition from starting during playback
+
+## Update 4 — Document Access, Suitability, Products, AI Visuals
+- [x] Add visibility column to documents table (private/professional/management/admin) with default=professional
+- [x] Document insights/view access for financial professional, management, admin based on visibility
+- [x] User toggle to control document visibility per document
+- [x] Document management views for professionals, managers, admins
+- [x] Improve suitability to allow flexible detail (free-text + optional structured fields)
+- [x] Remove number counts from Products page
+- [x] Enable AI chart/illustration/visual generation in chat responses (image generation endpoint)
+- [x] AI can create diagrams and visualizations to explain concepts and strategies
+
+## Products Badge Cleanup
+- [x] Remove feature key-value badges from product cards for users
+
+## Conversational Suitability
+- [x] Replace form-based suitability with conversational AI flow
+- [x] AI asks questions one at a time, adapting based on answers
+- [x] Quick-reply preset buttons under each question for fast tapping
+- [x] Freeform text always available as alternative to buttons
+- [x] Progressive flow — user can stop at any point
+- [x] Results saved to suitability profile in database
+
+## Data Governance & Terms of Service
+- [x] Conversation uploads inform insights across access tiers (user → professional → management → admin)
+- [x] User controls visibility per upload (private/professional/management/admin)
+- [x] Terms of Service page modeled after Claude/OpenAI best practices
+- [x] Privacy Policy page with data usage transparency
+- [x] First-time consent flow (must accept ToS before using app)
+- [x] Consent stored in DB with timestamp
+- [x] Right to delete / data export provisions in ToS
+- [x] Data usage disclosure in plain language
+
+## Suitability Access Chain
+- [x] Suitability assessment data flows through access chain (user → professional → management → admin)
+- [x] Professionals can view their clients' suitability profiles
+- [x] Managers can view their team's clients' suitability profiles
+- [x] Admins can view all suitability profiles

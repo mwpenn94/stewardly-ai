@@ -1,97 +1,118 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { ArrowLeft, Shield, CheckCircle, Loader2, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Shield, CheckCircle, Loader2, Sparkles, Send, RotateCcw } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Streamdown } from "streamdown";
 
-const FINANCIAL_GOALS = [
-  "Retirement planning", "Wealth accumulation", "Estate planning",
-  "Education funding", "Business succession", "Tax optimization",
-  "Income protection", "Legacy planning",
-];
+type ChatMessage = { role: "user" | "assistant"; content: string; buttons?: string[] };
 
-const INSURANCE_NEEDS = [
-  "Life insurance", "Disability insurance", "Long-term care",
-  "Key person insurance", "Buy-sell funding", "Premium financing",
-  "Executive benefits", "Charitable giving",
-];
+const INITIAL_GREETING = "Hi! I'd love to learn a bit about your financial situation so I can personalize your experience. We'll keep this conversational — answer however feels natural, and you can stop anytime. Ready to get started?";
+const INITIAL_BUTTONS = ["Let's go!", "Sure, keep it quick", "I'll just type freely"];
 
 export default function Suitability() {
-  useAuth({ redirectOnUnauthenticated: true });
+  const { user } = useAuth({ redirectOnUnauthenticated: true });
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
 
   const existing = trpc.suitability.get.useQuery();
-  const submit = trpc.suitability.submit.useMutation({
+  const chatMutation = trpc.suitability.chat.useMutation();
+  const saveMutation = trpc.suitability.saveFromChat.useMutation({
     onSuccess: () => {
-      toast.success("Suitability assessment completed");
       utils.suitability.get.invalidate();
+      toast.success("Suitability profile saved!");
     },
-    onError: (e) => toast.error(e.message),
   });
 
-  const [risk, setRisk] = useState<"conservative" | "moderate" | "aggressive">("moderate");
-  const [horizon, setHorizon] = useState("10-20 years");
-  const [income, setIncome] = useState("$100,000 - $250,000");
-  const [netWorth, setNetWorth] = useState("$250,000 - $1,000,000");
-  const [experience, setExperience] = useState<"none" | "limited" | "moderate" | "extensive">("moderate");
-  const [goals, setGoals] = useState<string[]>([]);
-  const [needs, setNeeds] = useState<string[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { role: "assistant", content: INITIAL_GREETING, buttons: INITIAL_BUTTONS },
+  ]);
+  const [input, setInput] = useState("");
+  const [isComplete, setIsComplete] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const toggleGoal = (g: string) => setGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
-  const toggleNeed = (n: string) => setNeeds(prev => prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n]);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages]);
 
-  const handleSubmit = () => {
-    if (goals.length === 0) { toast.error("Please select at least one financial goal"); return; }
-    submit.mutate({ riskTolerance: risk, investmentHorizon: horizon, annualIncome: income, netWorth, investmentExperience: experience, financialGoals: goals, insuranceNeeds: needs });
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || chatMutation.isPending) return;
+
+    const userMsg: ChatMessage = { role: "user", content: text.trim() };
+    const newHistory = [...messages, userMsg];
+    setMessages(newHistory);
+    setInput("");
+
+    try {
+      const result = await chatMutation.mutateAsync({
+        history: newHistory.map(m => ({ role: m.role, content: m.content })),
+        userMessage: text.trim(),
+      });
+
+      const assistantMsg: ChatMessage = {
+        role: "assistant",
+        content: result.content,
+        buttons: result.buttons.length > 0 ? result.buttons : undefined,
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+
+      if (result.isComplete) {
+        setIsComplete(true);
+      }
+    } catch (e: any) {
+      toast.error("Something went wrong. Please try again.");
+    }
   };
 
-  if (existing.data?.completedAt) {
+  const handleSave = async () => {
+    await saveMutation.mutateAsync({
+      conversationHistory: messages.map(m => ({ role: m.role, content: m.content })),
+    });
+    setIsSaved(true);
+  };
+
+  const handleReset = () => {
+    setMessages([{ role: "assistant", content: INITIAL_GREETING, buttons: INITIAL_BUTTONS }]);
+    setIsComplete(false);
+    setIsSaved(false);
+  };
+
+  // If already completed, show summary
+  if (existing.data?.completedAt && !isSaved) {
+    const d = existing.data;
     return (
       <div className="min-h-screen bg-background">
         <div className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate("/")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <Sparkles className="w-4 h-4 text-accent" />
-            <span className="font-semibold text-sm">Suitability Assessment</span>
+            <span className="font-semibold text-sm">Suitability Profile</span>
           </div>
         </div>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 text-center">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-emerald-400" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">Assessment Complete</h2>
-          <p className="text-muted-foreground text-sm mb-2">Your suitability profile is active. The AI can now provide personalized financial guidance.</p>
-          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto text-left">
-            <div className="p-3 rounded-lg bg-card border border-border">
-              <p className="text-[10px] text-muted-foreground">Risk</p>
-              <p className="text-sm font-medium capitalize">{existing.data.riskTolerance}</p>
-            </div>
-            <div className="p-3 rounded-lg bg-card border border-border">
-              <p className="text-[10px] text-muted-foreground">Horizon</p>
-              <p className="text-sm font-medium">{existing.data.investmentHorizon}</p>
-            </div>
-            <div className="p-3 rounded-lg bg-card border border-border">
-              <p className="text-[10px] text-muted-foreground">Experience</p>
-              <p className="text-sm font-medium capitalize">{existing.data.investmentExperience}</p>
-            </div>
-            <div className="p-3 rounded-lg bg-card border border-border">
-              <p className="text-[10px] text-muted-foreground">Income</p>
-              <p className="text-sm font-medium">{existing.data.annualIncome}</p>
-            </div>
+          <h2 className="text-xl font-semibold mb-2">Profile Active</h2>
+          <p className="text-muted-foreground text-sm mb-6">Your suitability profile is active and personalizing your AI experience.</p>
+          <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto text-left mb-8">
+            {d.riskTolerance && <div className="p-3 rounded-lg bg-card border border-border"><p className="text-[10px] text-muted-foreground">Risk</p><p className="text-sm font-medium capitalize">{d.riskTolerance}</p></div>}
+            {d.investmentHorizon && <div className="p-3 rounded-lg bg-card border border-border"><p className="text-[10px] text-muted-foreground">Horizon</p><p className="text-sm font-medium">{d.investmentHorizon}</p></div>}
+            {d.investmentExperience && <div className="p-3 rounded-lg bg-card border border-border"><p className="text-[10px] text-muted-foreground">Experience</p><p className="text-sm font-medium capitalize">{d.investmentExperience}</p></div>}
+            {d.annualIncome && <div className="p-3 rounded-lg bg-card border border-border"><p className="text-[10px] text-muted-foreground">Income</p><p className="text-sm font-medium">{d.annualIncome}</p></div>}
           </div>
-          <div className="flex items-center justify-center gap-3 mt-8">
-            <Button variant="outline" onClick={() => navigate("/chat")} className="text-sm">Go to Chat</Button>
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90 text-sm" onClick={() => { /* allow retake by clearing existing */ existing.data!.completedAt = null as any; }}>Retake Assessment</Button>
+          <div className="flex items-center justify-center gap-3">
+            <Button variant="outline" onClick={() => navigate("/")} className="text-sm">Back to Chat</Button>
+            <Button className="bg-accent text-accent-foreground hover:bg-accent/90 text-sm gap-1.5" onClick={handleReset}>
+              <RotateCcw className="w-3.5 h-3.5" /> Update Profile
+            </Button>
           </div>
         </div>
       </div>
@@ -99,129 +120,146 @@ export default function Suitability() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
       <div className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <Sparkles className="w-4 h-4 text-accent" />
-          <span className="font-semibold text-sm">Suitability Assessment</span>
+          <Shield className="w-4 h-4 text-accent" />
+          <span className="font-semibold text-sm">Financial Profile</span>
+          {isComplete && !isSaved && (
+            <Button
+              size="sm"
+              className="ml-auto bg-accent text-accent-foreground hover:bg-accent/90 text-xs h-7 gap-1"
+              onClick={handleSave}
+              disabled={saveMutation.isPending}
+            >
+              {saveMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+              Save Profile
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mx-auto mb-3">
-            <Shield className="w-6 h-6 text-accent" />
+      {/* Chat messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[85%] space-y-2 ${msg.role === "user" ? "" : ""}`}>
+                {/* Message bubble */}
+                <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-accent text-accent-foreground rounded-br-md"
+                    : "bg-card border border-border rounded-bl-md"
+                }`}>
+                  {msg.role === "assistant" ? (
+                    <Streamdown>{msg.content}</Streamdown>
+                  ) : (
+                    msg.content
+                  )}
+                </div>
+
+                {/* Quick-reply buttons */}
+                {msg.role === "assistant" && msg.buttons && msg.buttons.length > 0 && i === messages.length - 1 && !isComplete && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {msg.buttons.map((btn, j) => (
+                      <Button
+                        key={j}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs h-8 rounded-full border-accent/30 hover:bg-accent/10 hover:border-accent/50 transition-all"
+                        onClick={() => sendMessage(btn)}
+                        disabled={chatMutation.isPending}
+                      >
+                        {btn}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Loading indicator */}
+          {chatMutation.isPending && (
+            <div className="flex justify-start">
+              <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-accent/60 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-1.5 h-1.5 bg-accent/60 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-1.5 h-1.5 bg-accent/60 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Completion state */}
+          {isSaved && (
+            <div className="text-center py-6">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle className="w-6 h-6 text-emerald-400" />
+              </div>
+              <p className="text-sm font-medium mb-1">Profile Saved!</p>
+              <p className="text-xs text-muted-foreground mb-4">Your AI will now use this to personalize guidance.</p>
+              <Button variant="outline" size="sm" className="text-xs" onClick={() => navigate("/")}>
+                Back to Chat
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Input area */}
+      {!isSaved && (
+        <div className="border-t border-border bg-card/30 backdrop-blur-sm p-4">
+          <div className="max-w-2xl mx-auto">
+            {isComplete ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 text-sm h-10 gap-1.5"
+                  onClick={handleSave}
+                  disabled={saveMutation.isPending}
+                >
+                  {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                  Save My Profile
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs h-10" onClick={() => { setIsComplete(false); sendMessage("I'd like to add more details."); }}>
+                  Continue
+                </Button>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type your answer or tap a button above..."
+                  className="flex-1 h-10 px-4 rounded-full bg-secondary border border-border text-sm focus:outline-none focus:ring-1 focus:ring-accent/50 placeholder:text-muted-foreground"
+                  disabled={chatMutation.isPending}
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 p-0 shrink-0"
+                  disabled={!input.trim() || chatMutation.isPending}
+                >
+                  {chatMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </Button>
+              </form>
+            )}
+            <p className="text-[10px] text-muted-foreground text-center mt-2">
+              Share as much or as little as you'd like. All information is used solely to personalize your AI experience.
+            </p>
           </div>
-          <h1 className="text-xl font-semibold mb-1">Financial Suitability Profile</h1>
-          <p className="text-muted-foreground text-sm">Complete this assessment to unlock personalized financial guidance from your AI.</p>
         </div>
-
-        {/* Risk Tolerance */}
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-3"><CardTitle className="text-sm">Risk Tolerance</CardTitle></CardHeader>
-          <CardContent>
-            <RadioGroup value={risk} onValueChange={(v) => setRisk(v as typeof risk)} className="space-y-2">
-              {[
-                { value: "conservative", label: "Conservative", desc: "Prefer stability and capital preservation" },
-                { value: "moderate", label: "Moderate", desc: "Balance between growth and stability" },
-                { value: "aggressive", label: "Aggressive", desc: "Prioritize growth, accept higher volatility" },
-              ].map(opt => (
-                <label key={opt.value} className="flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-secondary/50 cursor-pointer transition-colors">
-                  <RadioGroupItem value={opt.value} className="mt-0.5" />
-                  <div><p className="text-sm font-medium">{opt.label}</p><p className="text-xs text-muted-foreground">{opt.desc}</p></div>
-                </label>
-              ))}
-            </RadioGroup>
-          </CardContent>
-        </Card>
-
-        {/* Financial Details */}
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-3"><CardTitle className="text-sm">Financial Details</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs mb-1.5 block">Investment Horizon</Label>
-                <Select value={horizon} onValueChange={setHorizon}>
-                  <SelectTrigger className="bg-secondary border-border h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["Less than 5 years", "5-10 years", "10-20 years", "20+ years"].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs mb-1.5 block">Annual Income</Label>
-                <Select value={income} onValueChange={setIncome}>
-                  <SelectTrigger className="bg-secondary border-border h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["Under $50,000", "$50,000 - $100,000", "$100,000 - $250,000", "$250,000 - $500,000", "$500,000 - $1,000,000", "Over $1,000,000"].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs mb-1.5 block">Net Worth</Label>
-                <Select value={netWorth} onValueChange={setNetWorth}>
-                  <SelectTrigger className="bg-secondary border-border h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["Under $100,000", "$100,000 - $250,000", "$250,000 - $1,000,000", "$1,000,000 - $5,000,000", "Over $5,000,000"].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs mb-1.5 block">Investment Experience</Label>
-                <Select value={experience} onValueChange={(v) => setExperience(v as typeof experience)}>
-                  <SelectTrigger className="bg-secondary border-border h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {[{ v: "none", l: "None" }, { v: "limited", l: "Limited" }, { v: "moderate", l: "Moderate" }, { v: "extensive", l: "Extensive" }].map(o => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Financial Goals */}
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-3"><CardTitle className="text-sm">Financial Goals</CardTitle><CardDescription className="text-xs">Select all that apply</CardDescription></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {FINANCIAL_GOALS.map(g => (
-                <label key={g} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border hover:bg-secondary/50 cursor-pointer transition-colors">
-                  <Checkbox checked={goals.includes(g)} onCheckedChange={() => toggleGoal(g)} />
-                  <span className="text-sm">{g}</span>
-                </label>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Insurance Needs */}
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-3"><CardTitle className="text-sm">Insurance Needs</CardTitle><CardDescription className="text-xs">Select all that apply</CardDescription></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {INSURANCE_NEEDS.map(n => (
-                <label key={n} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border hover:bg-secondary/50 cursor-pointer transition-colors">
-                  <Checkbox checked={needs.includes(n)} onCheckedChange={() => toggleNeed(n)} />
-                  <span className="text-sm">{n}</span>
-                </label>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90 h-11 text-sm" onClick={handleSubmit} disabled={submit.isPending}>
-          {submit.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Shield className="w-4 h-4 mr-2" />}
-          Complete Assessment
-        </Button>
-
-        <p className="text-[10px] text-muted-foreground text-center">
-          This information is used solely to personalize your AI experience and is protected by our privacy policy.
-        </p>
-      </div>
+      )}
     </div>
   );
 }

@@ -7,12 +7,14 @@ import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { storagePut } from "./storage";
+import { generateImage } from "./_core/imageGeneration";
 import { nanoid } from "nanoid";
 import { callDataApi } from "./_core/dataApi";
 import {
   createConversation, getUserConversations, getConversation, deleteConversation,
   updateConversationTitle, addMessage, getConversationMessages,
-  addDocument, getUserDocuments, updateDocumentStatus, addDocumentChunks,
+  addDocument, getUserDocuments, getAccessibleDocuments, updateDocumentVisibility,
+  updateDocumentStatus, addDocumentChunks,
   searchDocumentChunks, deleteDocument, getAllProducts, getProductsByCategory,
   addAuditEntry, getAuditTrail, addToReviewQueue, getPendingReviews, updateUserAvatar,
   updateReviewStatus, addMemory, getUserMemories, deleteMemory,
@@ -228,12 +230,27 @@ const conversationsRouter = router({
 // ─── DOCUMENTS ROUTER ─────────────────────────────────────────────
 const documentsRouter = router({
   list: protectedProcedure.query(({ ctx }) => getUserDocuments(ctx.user.id)),
+  listAccessible: protectedProcedure.query(async ({ ctx }) => {
+    // Professionals see docs with visibility >= professional; managers >= management; admins see all
+    const role = ctx.user.role;
+    if (role === "admin") return getAccessibleDocuments(["private", "professional", "management", "admin"]);
+    if (role === "manager") return getAccessibleDocuments(["professional", "management", "admin"]);
+    if (role === "advisor") return getAccessibleDocuments(["professional", "management", "admin"]);
+    return getUserDocuments(ctx.user.id);
+  }),
+  updateVisibility: protectedProcedure
+    .input(z.object({ id: z.number(), visibility: z.enum(["private", "professional", "management", "admin"]) }))
+    .mutation(async ({ ctx, input }) => {
+      await updateDocumentVisibility(input.id, ctx.user.id, input.visibility);
+      return { success: true };
+    }),
   upload: protectedProcedure
     .input(z.object({
       filename: z.string(),
       content: z.string(), // base64 encoded
       mimeType: z.string().optional(),
-      category: z.enum(["personal_docs", "financial_products", "regulations"]).default("personal_docs"),
+      category: z.enum(["personal_docs", "financial_products", "regulations", "training_materials", "artifacts", "skills"]).default("personal_docs"),
+      visibility: z.enum(["private", "professional", "management", "admin"]).default("professional"),
     }))
     .mutation(async ({ ctx, input }) => {
       const buffer = Buffer.from(input.content, "base64");
@@ -247,6 +264,7 @@ const documentsRouter = router({
         fileKey,
         mimeType: input.mimeType,
         category: input.category,
+        visibility: input.visibility,
       });
 
       // Process document for RAG (extract text and chunk)
@@ -293,21 +311,168 @@ const suitabilityRouter = router({
   get: protectedProcedure.query(({ ctx }) => getUserSuitability(ctx.user.id)),
   submit: protectedProcedure
     .input(z.object({
-      riskTolerance: z.enum(["conservative", "moderate", "aggressive"]),
-      investmentHorizon: z.string(),
-      annualIncome: z.string(),
-      netWorth: z.string(),
-      investmentExperience: z.enum(["none", "limited", "moderate", "extensive"]),
-      financialGoals: z.array(z.string()),
-      insuranceNeeds: z.array(z.string()),
+      riskTolerance: z.enum(["conservative", "moderate", "aggressive"]).optional(),
+      investmentHorizon: z.string().optional(),
+      annualIncome: z.string().optional(),
+      netWorth: z.string().optional(),
+      investmentExperience: z.enum(["none", "limited", "moderate", "extensive"]).optional(),
+      financialGoals: z.array(z.string()).optional(),
+      insuranceNeeds: z.array(z.string()).optional(),
+      freeformNotes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       await saveSuitabilityAssessment({
         userId: ctx.user.id,
-        ...input,
-        responses: input,
+        riskTolerance: input.riskTolerance || "moderate",
+        investmentHorizon: input.investmentHorizon || "",
+        annualIncome: input.annualIncome || "",
+        netWorth: input.netWorth || "",
+        investmentExperience: input.investmentExperience || "none",
+        financialGoals: input.financialGoals || [],
+        insuranceNeeds: input.insuranceNeeds || [],
+        responses: { ...input },
       });
       return { success: true };
+    }),
+  // Conversational suitability — AI asks questions, user responds with buttons or freeform
+  chat: protectedProcedure
+    .input(z.object({
+      history: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string() })),
+      userMessage: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const systemPrompt = `You are a friendly financial profile assistant. Your job is to learn about the user through natural conversation.
+
+Ask ONE question at a time. After each answer, acknowledge it warmly and ask the next question.
+
+Topics to cover (in order, but adapt naturally):
+1. What are your main financial goals? (retirement, wealth building, education, estate planning, etc.)
+2. How would you describe your comfort with investment risk? (conservative, moderate, aggressive)
+3. What's your investment time horizon? (short-term, 5-10 years, 10-20 years, 20+ years)
+4. Could you share a general range for your annual income?
+5. How about your approximate net worth range?
+6. How much experience do you have with investments and financial products?
+7. Are there any specific insurance or protection needs you're thinking about?
+8. Anything else about your financial situation you'd like to share?
+
+Rules:
+- Be conversational and warm, not clinical
+- If the user gives a vague answer, that's fine — accept it and move on
+- If the user says "that's enough" or "skip" or similar, wrap up gracefully
+- After covering enough topics (at least 3), offer to wrap up
+- When wrapping up, summarize what you learned in a brief paragraph
+
+For each response, also return suggested quick-reply buttons as a JSON block at the very end of your message, on its own line, formatted exactly like:
+[BUTTONS: "Option 1", "Option 2", "Option 3"]
+
+If no buttons are appropriate, omit the BUTTONS line.
+The user's name is ${ctx.user.name || "there"}.`;
+
+      const messages = [
+        { role: "system" as const, content: systemPrompt },
+        ...input.history.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
+        { role: "user" as const, content: input.userMessage },
+      ];
+
+      const response = await invokeLLM({ messages });
+      const content = typeof response.choices[0]?.message?.content === "string"
+        ? response.choices[0].message.content : "";
+
+      // Parse buttons from response
+      const buttonMatch = content.match(/\[BUTTONS:\s*(.+?)\]/);
+      let buttons: string[] = [];
+      let cleanContent = content;
+      if (buttonMatch) {
+        cleanContent = content.replace(/\[BUTTONS:\s*.+?\]/, "").trim();
+        buttons = buttonMatch[1].split(",").map(b => b.trim().replace(/^"|"$/g, "").replace(/^'|'$/g, ""));
+      }
+
+      // Check if the AI is wrapping up (summary detected)
+      const isComplete = cleanContent.toLowerCase().includes("summary") ||
+        cleanContent.toLowerCase().includes("that covers") ||
+        cleanContent.toLowerCase().includes("profile is ready") ||
+        cleanContent.toLowerCase().includes("all set") ||
+        input.history.length >= 16; // 8 Q&A pairs max
+
+      return { content: cleanContent, buttons, isComplete };
+    }),
+  // Extract structured data from conversation and save
+  saveFromChat: protectedProcedure
+    .input(z.object({
+      conversationHistory: z.array(z.object({ role: z.string(), content: z.string() })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Use LLM to extract structured suitability data from the conversation
+      const extractPrompt = `Extract a financial suitability profile from this conversation. Return ONLY valid JSON with these fields (use null for unknown):
+{
+  "riskTolerance": "conservative" | "moderate" | "aggressive" | null,
+  "investmentHorizon": string | null,
+  "annualIncome": string | null,
+  "netWorth": string | null,
+  "investmentExperience": "none" | "limited" | "moderate" | "extensive" | null,
+  "financialGoals": string[],
+  "insuranceNeeds": string[],
+  "freeformNotes": string
+}`;
+      const resp = await invokeLLM({
+        messages: [
+          { role: "system", content: extractPrompt },
+          ...input.conversationHistory.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
+        ],
+      });
+      let extracted: any = {};
+      try {
+        const raw = typeof resp.choices[0]?.message?.content === "string" ? resp.choices[0].message.content : "{}";
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        extracted = JSON.parse(jsonMatch ? jsonMatch[0] : "{}");
+      } catch { extracted = {}; }
+
+      await saveSuitabilityAssessment({
+        userId: ctx.user.id,
+        riskTolerance: extracted.riskTolerance || "moderate",
+        investmentHorizon: extracted.investmentHorizon || "",
+        annualIncome: extracted.annualIncome || "",
+        netWorth: extracted.netWorth || "",
+        investmentExperience: extracted.investmentExperience || "none",
+        financialGoals: extracted.financialGoals || [],
+        insuranceNeeds: extracted.insuranceNeeds || [],
+        responses: { conversational: true, ...extracted },
+      });
+      return { success: true, extracted };
+    }),
+  // Access chain: professionals can view their clients' suitability
+  getClientSuitability: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const role = ctx.user.role as string;
+      if (role !== "advisor" && role !== "manager" && role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only professionals, managers, and admins can view client suitability" });
+      }
+      return getUserSuitability(input.userId);
+    }),
+  // Access chain: managers/admins can list all suitability assessments
+  listAll: protectedProcedure.query(async ({ ctx }) => {
+    const role = ctx.user.role as string;
+    if (role !== "manager" && role !== "admin") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only managers and admins can list all assessments" });
+    }
+    const db = await (await import("./db")).getDb();
+    if (!db) return [];
+    const { suitabilityAssessments: sa } = await import("../drizzle/schema");
+    const { users } = await import("../drizzle/schema");
+    const { eq } = await import("drizzle-orm");
+    const all = await db.select().from(sa).orderBy(sa.createdAt);
+    return all;
+  }),
+});
+
+// ─── VISUAL GENERATION ROUTER ────────────────────────────────────
+const visualRouter = router({
+  generate: protectedProcedure
+    .input(z.object({ prompt: z.string().min(1).max(2000) }))
+    .mutation(async ({ input }) => {
+      const result = await generateImage({ prompt: input.prompt });
+      return { url: result.url || null };
     }),
 });
 
@@ -410,6 +575,17 @@ const settingsRouter = router({
   removeAvatar: protectedProcedure.mutation(async ({ ctx }) => {
     await updateUserAvatar(ctx.user.id, null);
     return { success: true };
+  }),
+  acceptTos: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await (await import("./db")).getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+    const { users } = await import("../drizzle/schema");
+    const { eq } = await import("drizzle-orm");
+    await db.update(users).set({ tosAcceptedAt: new Date() }).where(eq(users.id, ctx.user.id));
+    return { accepted: true, acceptedAt: new Date() };
+  }),
+  getTosStatus: protectedProcedure.query(async ({ ctx }) => {
+    return { accepted: !!(ctx.user as any).tosAcceptedAt, acceptedAt: (ctx.user as any).tosAcceptedAt };
   }),
 });
 
@@ -596,6 +772,7 @@ export const appRouter = router({
   settings: settingsRouter,
   calculators: calculatorsRouter,
   market: marketRouter,
+  visual: visualRouter,
 });
 
 export type AppRouter = typeof appRouter;

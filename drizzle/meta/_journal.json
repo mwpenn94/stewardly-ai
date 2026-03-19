@@ -29,6 +29,20 @@
       "when": 1773907514228,
       "tag": "0003_unique_thaddeus_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1773910086837,
+      "tag": "0004_secret_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1773910837869,
+      "tag": "0005_cute_selene",
+      "breakpoints": true
     }
   ]
 }
