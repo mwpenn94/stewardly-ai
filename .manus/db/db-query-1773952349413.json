@@ -1,0 +1,109 @@
+{
+  "query": "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME;",
+  "rows": [
+    {
+      "TABLE_NAME": "__drizzle_migrations"
+    },
+    {
+      "TABLE_NAME": "affiliated_resources"
+    },
+    {
+      "TABLE_NAME": "audit_trail"
+    },
+    {
+      "TABLE_NAME": "client_associations"
+    },
+    {
+      "TABLE_NAME": "conversations"
+    },
+    {
+      "TABLE_NAME": "document_chunks"
+    },
+    {
+      "TABLE_NAME": "documents"
+    },
+    {
+      "TABLE_NAME": "enrichment_cohorts"
+    },
+    {
+      "TABLE_NAME": "enrichment_datasets"
+    },
+    {
+      "TABLE_NAME": "enrichment_matches"
+    },
+    {
+      "TABLE_NAME": "feedback"
+    },
+    {
+      "TABLE_NAME": "manager_ai_settings"
+    },
+    {
+      "TABLE_NAME": "memories"
+    },
+    {
+      "TABLE_NAME": "messages"
+    },
+    {
+      "TABLE_NAME": "organization_ai_settings"
+    },
+    {
+      "TABLE_NAME": "organization_landing_page_config"
+    },
+    {
+      "TABLE_NAME": "organization_relationships"
+    },
+    {
+      "TABLE_NAME": "organizations"
+    },
+    {
+      "TABLE_NAME": "products"
+    },
+    {
+      "TABLE_NAME": "professional_ai_settings"
+    },
+    {
+      "TABLE_NAME": "professional_context"
+    },
+    {
+      "TABLE_NAME": "prompt_experiments"
+    },
+    {
+      "TABLE_NAME": "prompt_variants"
+    },
+    {
+      "TABLE_NAME": "quality_ratings"
+    },
+    {
+      "TABLE_NAME": "review_queue"
+    },
+    {
+      "TABLE_NAME": "suitability_assessments"
+    },
+    {
+      "TABLE_NAME": "user_organization_roles"
+    },
+    {
+      "TABLE_NAME": "user_preferences"
+    },
+    {
+      "TABLE_NAME": "user_profiles"
+    },
+    {
+      "TABLE_NAME": "user_relationships"
+    },
+    {
+      "TABLE_NAME": "users"
+    },
+    {
+      "TABLE_NAME": "view_as_audit_log"
+    },
+    {
+      "TABLE_NAME": "workflow_checklist"
+    }
+  ],
+  "messages": [],
+  "stdout": "TABLE_NAME\n__drizzle_migrations\naffiliated_resources\naudit_trail\nclient_associations\nconversations\ndocument_chunks\ndocuments\nenrichment_cohorts\nenrichment_datasets\nenrichment_matches\nfeedback\nmanager_ai_settings\nmemories\nmessages\norganization_ai_settings\norganization_landing_page_config\norganization_relationships\norganizations\nproducts\nprofessional_ai_settings\nprofessional_context\nprompt_experiments\nprompt_variants\nquality_ratings\nreview_queue\nsuitability_assessments\nuser_organization_roles\nuser_preferences\nuser_profiles\nuser_relationships\nusers\nview_as_audit_log\nworkflow_checklist\n",
+  "stderr": "",
+  "execution_time_ms": 66
+}

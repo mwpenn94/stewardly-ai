@@ -1,4 +1,4 @@
-# Personal AI — Project TODO
+# WealthBridge AI — Project TODO
 
 ## Turn 1 — Foundation
 - [x] Database schema (all tables: conversations, messages, documents, products, compliance, reviews, memories, feedback)
@@ -208,23 +208,23 @@
 ## WealthBridge AI v2 — Multi-Tenant Enterprise Platform
 
 ### Phase 1: Database Schema
-- [ ] Create firms table (id, name, slug, branding config)
-- [ ] Extend users table: firm_id, role (global_admin/firm_admin/manager/professional/user), manager_id, professional_id
-- [ ] Create firm_ai_settings table (Layer 2 prompts)
-- [ ] Create manager_ai_settings table (Layer 3 prompts)
-- [ ] Create professional_ai_settings table (Layer 4 prompts)
-- [ ] Create user_preferences table (Layer 5 context, TTS voice, communication style)
-- [ ] Create view_as_audit_log table (actor, target, actions, timestamps)
-- [ ] Create firm_landing_page_config table (headline, colors, logo, etc.)
-- [ ] Create workflow_checklist table (onboarding steps, platform integrations)
+- [x] Create organizations table (id, name, slug, branding config)
+- [x] Extend users table: role (user/advisor/manager/admin), passwordHash
+- [x] Create organization_ai_settings table (Layer 2 prompts)
+- [x] Create manager_ai_settings table (Layer 3 prompts)
+- [x] Create professional_ai_settings table (Layer 4 prompts)
+- [x] Create user_preferences table (Layer 5 context, TTS voice, communication style)
+- [x] Create view_as_audit_log table (actor, target, actions, timestamps)
+- [x] Create organization_landing_page_config table (headline, colors, logo, etc.)
+- [x] Create workflow_checklist table (onboarding steps, platform integrations)
 
 ### Phase 2: Landing Pages & Auth
-- [ ] Build global landing page (/): hero, cards, trust signals, CTA
-- [ ] Build firm landing page (/firm/[slug]): brandable, customizable
-- [ ] Implement progressive auth: anonymous → email → OAuth → advisor-linked
-- [ ] Build sign-in page with Google OAuth + email/password
-- [ ] Build firm admin branding editor (Settings → Branding)
-- [ ] Implement browse-wrap consent for anonymous users
+- [x] Build global landing page (/welcome): hero, cards, trust signals, CTA
+- [x] Build org landing page (/org/[slug]): brandable, customizable
+- [x] Implement progressive auth: anonymous → email → OAuth → advisor-linked
+- [x] Build sign-in page with Google OAuth + email/password
+- [ ] Build org admin branding editor (Settings → Branding)
+- [x] Implement browse-wrap consent banner for anonymous users
 
 ### Phase 3: Chat Interface & Voice
 - [ ] Rebuild Chat.tsx: desktop sidebar, tablet drawer, mobile bottom nav
@@ -298,21 +298,21 @@
 ## Phase 2: Landing Pages & Progressive Authentication
 
 ### Global Landing Page
-- [ ] Create /landing.tsx component with hero section
-- [ ] Hero: "Your finances. Your way. Understood." headline with subtitle
-- [ ] Primary CTA: "Get Started" → sign-in
-- [ ] Secondary CTA: "Explore as a guest" → anonymous chat
-- [ ] Trust signals row: lock, shield, chart icons
-- [ ] 3 feature cards: "It learns you", "It knows finance", "It grows with you"
-- [ ] Footer with disclaimer, Privacy, Terms, About links
-- [ ] Gradient mesh background (navy/teal), fade-in animations
+- [x] Create /welcome route with hero section
+- [x] Hero: "Your finances. Your way. Understood." headline with subtitle
+- [x] Primary CTA: "Get Started" → sign-in
+- [x] Secondary CTA: "Explore as a guest" → anonymous chat
+- [x] Trust signals row: lock, shield, chart icons
+- [x] 3 feature cards: "It learns you", "It knows finance", "It grows with you"
+- [x] Footer with disclaimer, Privacy, Terms, About links
+- [x] Gradient mesh background (navy/teal), fade-in animations
 
 ### Firm Landing Page
-- [ ] Create /firm/[slug].tsx component
-- [ ] Query organization_landing_page_config for branding
-- [ ] Display customizable headline, subtitle, CTA, logo, colors
-- [ ] Tag anonymous/new users with firm_id from URL
-- [ ] Auto-affiliate new sign-ups to firm
+- [x] Create /org/[slug] route (OrgLanding.tsx)
+- [x] Query organization_landing_page_config for branding
+- [x] Display customizable headline, subtitle, CTA, logo, colors
+- [ ] Tag anonymous/new users with org_id from URL
+- [ ] Auto-affiliate new sign-ups to org
 
 ### Progressive Authentication
 - [ ] Tier 0 (Anonymous): Browse-wrap consent banner, localStorage conversations
@@ -381,3 +381,49 @@
 - [ ] Timeline: Extract and visualize timelines from text
 - [ ] Glossary: Build glossaries from documents
 - [ ] Citation tracking: Track sources and references
+
+
+### Phase 2B: Email/Password Authentication
+- [x] Add password field to users table schema
+- [x] Create password hashing utility (bcrypt)
+- [x] Implement emailAuth.signUp tRPC procedure (email/password)
+- [x] Implement emailAuth.signIn tRPC procedure (email/password)
+- [x] Implement emailAuth.updatePassword tRPC procedure
+- [x] Update SignIn page with email/password form (sign-up/sign-in toggle)
+- [x] Add password validation (8+ chars, uppercase, lowercase, number)
+- [x] Add email validation and uniqueness check
+- [x] Test email/password sign-up flow (vitest)
+- [x] Test email/password sign-in flow (vitest)
+
+
+### Phase 2C: Organization CRUD
+- [x] Organizations table exists in DB with all fields
+- [x] Implement organizations.create tRPC procedure
+- [x] Implement organizations.list tRPC procedure (user's orgs)
+- [x] Implement organizations.get tRPC procedure
+- [x] Implement organizations.update tRPC procedure
+- [x] Implement organizations.delete tRPC procedure
+- [x] Implement organizations.getBySlug (public, for landing pages)
+- [x] Implement organizations.listMembers / inviteMember / removeMember
+- [ ] Create organizations management UI page
+- [ ] Add organization creation form
+- [ ] Add organization edit form
+- [ ] Add organization deletion confirmation
+- [x] Test organization CRUD flow (vitest — 5 tests)
+
+
+## Audit Completion — Quality Review
+- [x] Drizzle schema fully aligned with actual database tables (organizations, not firms)
+- [x] All stale firmId/firms/globalRole references removed from codebase
+- [x] FirmLanding renamed to OrgLanding, route updated to /org/:slug
+- [x] All "Personal AI" branding removed — replaced with WealthBridge AI / Financial Intelligence
+- [x] Title updated: "Personal AI Assistant" → "WealthBridge AI"
+- [x] Fonts updated: Inter → Satoshi (headings) + DM Sans (body)
+- [x] Color palette updated: warm gold → sky blue (#0EA5E9) with deep navy base
+- [x] Email/password auth router (signUp, signIn, updatePassword, updateProfile, deleteAccount)
+- [x] Organizations CRUD router (create, list, get, getBySlug, update, delete, members)
+- [x] Relationships router (user-to-user, org-to-org, accept/reject/remove)
+- [x] Browse-wrap consent banner (non-blocking, dismissible)
+- [x] Welcome page at /welcome for marketing/sharing
+- [x] Auto-redirect to chat for default guest experience
+- [x] 39 tests passing (17 new audit + 21 chat + 1 auth)

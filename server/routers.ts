@@ -235,7 +235,7 @@ const documentsRouter = router({
     // TODO: Check org-specific roles from user_organization_roles table
     // For now, global_admin sees all; others see only their own
     // TODO: Implement role-based access control
-    // if (ctx.user.globalRole === "global_admin") return getAccessibleDocuments(["private", "professional", "management", "admin"]);
+    // TODO: Check user_organization_roles for role-based document access
     // TODO: Add org role checks for manager/professional visibility
     return getUserDocuments(ctx.user.id);
   }),
@@ -754,6 +754,10 @@ const marketRouter = router({
 });
 
 // ─── MAIN ROUTER ──────────────────────────────────────────────────
+import { organizationsRouter } from "./routers/organizations";
+import { emailAuthRouter } from "./routers/emailAuth";
+import { relationshipsRouter } from "./routers/relationships";
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -777,6 +781,9 @@ export const appRouter = router({
   calculators: calculatorsRouter,
   market: marketRouter,
   visual: visualRouter,
+  organizations: organizationsRouter,
+  emailAuth: emailAuthRouter,
+  relationships: relationshipsRouter,
 });
 
 export type AppRouter = typeof appRouter;

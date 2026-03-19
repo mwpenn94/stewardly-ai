@@ -1,43 +1,70 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { Mail, Chrome } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { Chrome, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export default function SignIn() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
+  const signInMutation = trpc.emailAuth.signIn.useMutation({
+    onSuccess: () => {
+      // Reload to pick up the new session cookie
+      window.location.href = "/chat";
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  const signUpMutation = trpc.emailAuth.signUp.useMutation({
+    onSuccess: () => {
+      // Reload to pick up the new session cookie
+      window.location.href = "/chat";
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+  });
+
+  const isLoading = signInMutation.isPending || signUpMutation.isPending;
+
   // If already authenticated, redirect to chat
-  if (isAuthenticated) {
-    navigate("/chat");
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/chat");
+    }
+  }, [isAuthenticated, navigate]);
+
+  if (isAuthenticated) return null;
 
   const handleGoogleSignIn = () => {
     const loginUrl = getLoginUrl();
     window.location.href = loginUrl;
   };
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
 
-    try {
-      // TODO: Implement email/password sign-in via tRPC
-      // For now, show a placeholder
-      setError("Email sign-in coming soon. Please use Google OAuth.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed");
-    } finally {
-      setIsLoading(false);
+    if (mode === "signup") {
+      if (!name.trim()) {
+        setError("Name is required");
+        return;
+      }
+      signUpMutation.mutate({ email, password, name: name.trim() });
+    } else {
+      signInMutation.mutate({ email, password });
     }
   };
 
@@ -46,30 +73,30 @@ export default function SignIn() {
     navigate("/chat");
   };
 
-  const handleBackToLanding = () => {
-    navigate("/");
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       {/* Background gradient */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl opacity-30 animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl opacity-30 animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl opacity-30 animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
       <div className="w-full max-w-md space-y-8">
         {/* Logo and title */}
         <div className="text-center space-y-3">
           <div className="flex justify-center">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-sky-400 to-teal-400 flex items-center justify-center">
-              <span className="text-lg font-bold text-slate-900">AI</span>
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center">
+              <span className="text-lg font-bold text-slate-900">W</span>
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            {mode === "signin" ? "Welcome back" : "Create your account"}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Sign in to your account
+            {mode === "signin"
+              ? "Sign in to your WealthBridge AI account"
+              : "Get started with personalized financial intelligence"}
           </p>
         </div>
 
@@ -96,7 +123,25 @@ export default function SignIn() {
           </div>
 
           {/* Email/password form */}
-          <form onSubmit={handleEmailSignIn} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signup" && (
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium text-foreground">
+                  Full name
+                </label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={isLoading}
+                  className="bg-background/50 border-border/50 h-10"
+                  autoComplete="name"
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-foreground">
                 Email address
@@ -106,9 +151,10 @@ export default function SignIn() {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setError(""); }}
                 disabled={isLoading}
                 className="bg-background/50 border-border/50 h-10"
+                autoComplete="email"
               />
             </div>
 
@@ -116,15 +162,31 @@ export default function SignIn() {
               <label htmlFor="password" className="text-sm font-medium text-foreground">
                 Password
               </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isLoading}
-                className="bg-background/50 border-border/50 h-10"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                  disabled={isLoading}
+                  className="bg-background/50 border-border/50 h-10 pr-10"
+                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {mode === "signup" && (
+                <p className="text-xs text-muted-foreground">
+                  At least 8 characters with uppercase, lowercase, and a number
+                </p>
+              )}
             </div>
 
             {error && (
@@ -135,10 +197,12 @@ export default function SignIn() {
 
             <Button
               type="submit"
-              disabled={isLoading || !email || !password}
-              className="w-full bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white border-0 h-10"
+              disabled={isLoading || !email || !password || (mode === "signup" && !name)}
+              className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white border-0 h-10"
             >
-              {isLoading ? "Signing in..." : "Sign in with email"}
+              {isLoading
+                ? mode === "signin" ? "Signing in..." : "Creating account..."
+                : mode === "signin" ? "Sign in" : "Create account"}
             </Button>
           </form>
 
@@ -155,19 +219,34 @@ export default function SignIn() {
         {/* Footer links */}
         <div className="text-center space-y-3">
           <p className="text-xs text-muted-foreground">
-            New to Personal AI?{" "}
-            <button
-              onClick={handleGoogleSignIn}
-              className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
-            >
-              Sign up with Google
-            </button>
+            {mode === "signin" ? (
+              <>
+                New here?{" "}
+                <button
+                  onClick={() => { setMode("signup"); setError(""); }}
+                  className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
+                >
+                  Create an account
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button
+                  onClick={() => { setMode("signin"); setError(""); }}
+                  className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
+                >
+                  Sign in
+                </button>
+              </>
+            )}
           </p>
           <button
-            onClick={handleBackToLanding}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => navigate("/")}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
           >
-            ← Back to home
+            <ArrowLeft className="w-3 h-3" />
+            Back to home
           </button>
         </div>
       </div>

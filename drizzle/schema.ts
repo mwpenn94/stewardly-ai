@@ -1,23 +1,77 @@
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean } from "drizzle-orm/mysql-core";
 
-// ─── FIRMS (Multi-Tenant Organizational Units) ─────────────────────
-export const firms = mysqlTable("firms", {
+// ─── ORGANIZATIONS (Multi-Tenant Organizational Units) ─────────────────────
+// DB table: organizations
+export const organizations = mysqlTable("organizations", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 256 }).notNull(),
   slug: varchar("slug", { length: 128 }).notNull().unique(),
   description: text("description"),
   website: varchar("website", { length: 512 }),
+  ein: varchar("ein", { length: 20 }),
+  industry: varchar("industry", { length: 128 }),
+  size: mysqlEnum("size", ["solo", "small", "medium", "large", "enterprise"]).default("small"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type Firm = typeof firms.$inferSelect;
-export type InsertFirm = typeof firms.$inferInsert;
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = typeof organizations.$inferInsert;
 
-// ─── FIRM LANDING PAGE CONFIG ──────────────────────────────────────
-export const firmLandingPageConfig = mysqlTable("firm_landing_page_config", {
+// ─── USER-ORGANIZATION ROLES (Many-to-many with role context) ────────────
+// DB table: user_organization_roles
+export const userOrganizationRoles = mysqlTable("user_organization_roles", {
   id: int("id").autoincrement().primaryKey(),
-  firmId: int("firmId").notNull().unique(),
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId").notNull(),
+  globalRole: mysqlEnum("globalRole", ["global_admin", "user"]).default("user"),
+  organizationRole: mysqlEnum("organizationRole", ["org_admin", "manager", "professional", "user"]).default("user"),
+  managerId: int("managerId"),
+  professionalId: int("professionalId"),
+  status: mysqlEnum("status", ["active", "inactive", "invited", "pending_approval"]).default("active"),
+  invitedAt: timestamp("invitedAt"),
+  approvedAt: timestamp("approvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserOrganizationRole = typeof userOrganizationRoles.$inferSelect;
+export type InsertUserOrganizationRole = typeof userOrganizationRoles.$inferInsert;
+
+// ─── ORGANIZATION RELATIONSHIPS (Org-to-org connections) ─────────────────
+// DB table: organization_relationships
+export const organizationRelationships = mysqlTable("organization_relationships", {
+  id: int("id").autoincrement().primaryKey(),
+  parentOrgId: int("parentOrgId").notNull(),
+  childOrgId: int("childOrgId").notNull(),
+  relationshipType: mysqlEnum("relationshipType", ["partner", "subsidiary", "affiliate", "referral", "vendor", "client"]).notNull(),
+  status: mysqlEnum("status", ["active", "inactive", "pending"]).default("active"),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type OrganizationRelationship = typeof organizationRelationships.$inferSelect;
+
+// ─── USER RELATIONSHIPS (User-to-user connections) ───────────────────────
+// DB table: user_relationships
+export const userRelationships = mysqlTable("user_relationships", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  relatedUserId: int("relatedUserId").notNull(),
+  relationshipType: mysqlEnum("relationshipType", ["manager", "team_member", "mentor", "mentee", "peer", "client", "advisor", "colleague"]).notNull(),
+  organizationId: int("organizationId"),
+  status: mysqlEnum("status", ["active", "inactive", "pending"]).default("active"),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type UserRelationship = typeof userRelationships.$inferSelect;
+
+// ─── ORGANIZATION LANDING PAGE CONFIG ──────────────────────────────────────
+// DB table: organization_landing_page_config
+export const organizationLandingPageConfig = mysqlTable("organization_landing_page_config", {
+  id: int("id").autoincrement().primaryKey(),
+  organizationId: int("organizationId").notNull().unique(),
   headline: varchar("headline", { length: 512 }).default("Your Complete Financial Picture, Understood by Us"),
   subtitle: text("subtitle"),
   ctaText: varchar("ctaText", { length: 128 }).default("Start Your Financial Twin →"),
@@ -34,15 +88,18 @@ export const firmLandingPageConfig = mysqlTable("firm_landing_page_config", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type FirmLandingPageConfig = typeof firmLandingPageConfig.$inferSelect;
+export type OrganizationLandingPageConfig = typeof organizationLandingPageConfig.$inferSelect;
 
-// ─── USERS (Extended with multi-tenant hierarchy) ────────────────────
+// ─── USERS ────────────────────────────────────────────────────────────────
+// DB table: users
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
+  role: mysqlEnum("role", ["user", "advisor", "manager", "admin"]).default("user").notNull(),
+  passwordHash: text("passwordHash"),
   styleProfile: text("styleProfile"),
   suitabilityCompleted: mysqlBoolean("suitabilityCompleted").default(false),
   suitabilityData: json("suitabilityData"),
@@ -57,7 +114,7 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// ─── USER PROFILES (Extended personal data) ──────────────────────
+// ─── USER PROFILES (Extended personal data) ──────────────────────────────
 export const userProfiles = mysqlTable("user_profiles", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -81,11 +138,12 @@ export const userProfiles = mysqlTable("user_profiles", {
 
 export type UserProfile = typeof userProfiles.$inferSelect;
 
-// ─── FIRM AI SETTINGS (Layer 2 Prompt) ────────────────────────────
-export const firmAISettings = mysqlTable("firm_ai_settings", {
+// ─── ORGANIZATION AI SETTINGS (Layer 2 Prompt) ──────────────────────────
+// DB table: organization_ai_settings
+export const organizationAISettings = mysqlTable("organization_ai_settings", {
   id: int("id").autoincrement().primaryKey(),
-  firmId: int("firmId").notNull().unique(),
-  firmName: varchar("firmName", { length: 256 }).notNull(),
+  organizationId: int("organizationId").notNull().unique(),
+  organizationName: varchar("organizationName", { length: 256 }).notNull(),
   brandVoice: text("brandVoice"),
   approvedProductCategories: json("approvedProductCategories"),
   prohibitedTopics: json("prohibitedTopics"),
@@ -96,9 +154,9 @@ export const firmAISettings = mysqlTable("firm_ai_settings", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type FirmAISetting = typeof firmAISettings.$inferSelect;
+export type OrganizationAISetting = typeof organizationAISettings.$inferSelect;
 
-// ─── MANAGER AI SETTINGS (Layer 3 Prompt) ────────────────────────
+// ─── MANAGER AI SETTINGS (Layer 3 Prompt) ────────────────────────────────
 export const managerAISettings = mysqlTable("manager_ai_settings", {
   id: int("id").autoincrement().primaryKey(),
   managerId: int("managerId").notNull().unique(),
@@ -112,7 +170,7 @@ export const managerAISettings = mysqlTable("manager_ai_settings", {
 
 export type ManagerAISetting = typeof managerAISettings.$inferSelect;
 
-// ─── PROFESSIONAL AI SETTINGS (Layer 4 Prompt) ────────────────────
+// ─── PROFESSIONAL AI SETTINGS (Layer 4 Prompt) ──────────────────────────
 export const professionalAISettings = mysqlTable("professional_ai_settings", {
   id: int("id").autoincrement().primaryKey(),
   professionalId: int("professionalId").notNull().unique(),
@@ -127,7 +185,7 @@ export const professionalAISettings = mysqlTable("professional_ai_settings", {
 
 export type ProfessionalAISetting = typeof professionalAISettings.$inferSelect;
 
-// ─── USER PREFERENCES (Layer 5 Context) ──────────────────────────
+// ─── USER PREFERENCES (Layer 5 Context) ──────────────────────────────────
 export const userPreferences = mysqlTable("user_preferences", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().unique(),
@@ -151,7 +209,7 @@ export const userPreferences = mysqlTable("user_preferences", {
 
 export type UserPreference = typeof userPreferences.$inferSelect;
 
-// ─── VIEW-AS AUDIT LOG ────────────────────────────────────────────
+// ─── VIEW-AS AUDIT LOG ────────────────────────────────────────────────────
 export const viewAsAuditLog = mysqlTable("view_as_audit_log", {
   id: int("id").autoincrement().primaryKey(),
   actorId: int("actorId").notNull(),
@@ -166,7 +224,7 @@ export const viewAsAuditLog = mysqlTable("view_as_audit_log", {
 
 export type ViewAsAuditLogEntry = typeof viewAsAuditLog.$inferSelect;
 
-// ─── WORKFLOW CHECKLIST (Onboarding Steps) ───────────────────────
+// ─── WORKFLOW CHECKLIST (Onboarding Steps) ───────────────────────────────
 export const workflowChecklist = mysqlTable("workflow_checklist", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -181,7 +239,7 @@ export const workflowChecklist = mysqlTable("workflow_checklist", {
 
 export type WorkflowChecklist = typeof workflowChecklist.$inferSelect;
 
-// ─── PROFESSIONAL CONTEXT ────────────────────────────────────────
+// ─── PROFESSIONAL CONTEXT ────────────────────────────────────────────────
 export const professionalContext = mysqlTable("professional_context", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -194,7 +252,7 @@ export const professionalContext = mysqlTable("professional_context", {
 
 export type ProfessionalContext = typeof professionalContext.$inferSelect;
 
-// ─── CLIENT ASSOCIATIONS ─────────────────────────────────────────
+// ─── CLIENT ASSOCIATIONS ─────────────────────────────────────────────────
 export const clientAssociations = mysqlTable("client_associations", {
   id: int("id").autoincrement().primaryKey(),
   clientId: int("clientId").notNull(),
@@ -207,7 +265,7 @@ export const clientAssociations = mysqlTable("client_associations", {
 
 export type ClientAssociation = typeof clientAssociations.$inferSelect;
 
-// ─── ENRICHMENT DATASETS ─────────────────────────────────────────
+// ─── ENRICHMENT DATASETS ─────────────────────────────────────────────────
 export const enrichmentDatasets = mysqlTable("enrichment_datasets", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 256 }).notNull(),
@@ -220,7 +278,7 @@ export const enrichmentDatasets = mysqlTable("enrichment_datasets", {
 
 export type EnrichmentDataset = typeof enrichmentDatasets.$inferSelect;
 
-// ─── ENRICHMENT COHORTS ──────────────────────────────────────────
+// ─── ENRICHMENT COHORTS ──────────────────────────────────────────────────
 export const enrichmentCohorts = mysqlTable("enrichment_cohorts", {
   id: int("id").autoincrement().primaryKey(),
   datasetId: int("datasetId").notNull(),
@@ -231,7 +289,7 @@ export const enrichmentCohorts = mysqlTable("enrichment_cohorts", {
 
 export type EnrichmentCohort = typeof enrichmentCohorts.$inferSelect;
 
-// ─── ENRICHMENT MATCHES ──────────────────────────────────────────
+// ─── ENRICHMENT MATCHES ──────────────────────────────────────────────────
 export const enrichmentMatches = mysqlTable("enrichment_matches", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -245,7 +303,7 @@ export const enrichmentMatches = mysqlTable("enrichment_matches", {
 
 export type EnrichmentMatch = typeof enrichmentMatches.$inferSelect;
 
-// ─── AFFILIATED RESOURCES ────────────────────────────────────────
+// ─── AFFILIATED RESOURCES ────────────────────────────────────────────────
 export const affiliatedResources = mysqlTable("affiliated_resources", {
   id: int("id").autoincrement().primaryKey(),
   firmId: int("firmId"),
@@ -259,21 +317,21 @@ export const affiliatedResources = mysqlTable("affiliated_resources", {
 
 export type AffiliatedResource = typeof affiliatedResources.$inferSelect;
 
-// ─── CONVERSATIONS ────────────────────────────────────────────────
+// ─── CONVERSATIONS ────────────────────────────────────────────────────────
+// DB table: conversations (has organizationId, NOT firmId or isPinned)
 export const conversations = mysqlTable("conversations", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  firmId: int("firmId"),
   title: varchar("title", { length: 255 }).default("New Conversation"),
   mode: mysqlEnum("mode", ["client", "coach", "manager"]).default("client").notNull(),
-  isPinned: mysqlBoolean("isPinned").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  organizationId: int("organizationId"),
 });
 
 export type Conversation = typeof conversations.$inferSelect;
 
-// ─── MESSAGES ─────────────────────────────────────────────────────
+// ─── MESSAGES ─────────────────────────────────────────────────────────────
 export const messages = mysqlTable("messages", {
   id: int("id").autoincrement().primaryKey(),
   conversationId: int("conversationId").notNull(),
@@ -288,7 +346,7 @@ export const messages = mysqlTable("messages", {
 
 export type Message = typeof messages.$inferSelect;
 
-// ─── DOCUMENTS (RAG) ──────────────────────────────────────────────
+// ─── DOCUMENTS (RAG) ──────────────────────────────────────────────────────
 export const documents = mysqlTable("documents", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -307,7 +365,7 @@ export const documents = mysqlTable("documents", {
 
 export type Document = typeof documents.$inferSelect;
 
-// ─── DOCUMENT CHUNKS (RAG embeddings) ─────────────────────────────
+// ─── DOCUMENT CHUNKS (RAG embeddings) ─────────────────────────────────────
 export const documentChunks = mysqlTable("document_chunks", {
   id: int("id").autoincrement().primaryKey(),
   documentId: int("documentId").notNull(),
@@ -320,7 +378,7 @@ export const documentChunks = mysqlTable("document_chunks", {
 
 export type DocumentChunk = typeof documentChunks.$inferSelect;
 
-// ─── PRODUCTS ──────────────────────────────────────────────────────
+// ─── PRODUCTS ──────────────────────────────────────────────────────────────
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
   firmId: int("firmId"),
@@ -339,7 +397,7 @@ export const products = mysqlTable("products", {
 
 export type Product = typeof products.$inferSelect;
 
-// ─── COMPLIANCE AUDIT TRAIL ───────────────────────────────────────
+// ─── COMPLIANCE AUDIT TRAIL ───────────────────────────────────────────────
 export const auditTrail = mysqlTable("audit_trail", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -358,7 +416,7 @@ export const auditTrail = mysqlTable("audit_trail", {
 
 export type AuditTrailEntry = typeof auditTrail.$inferSelect;
 
-// ─── REVIEW QUEUE (Layer 4 Human-in-the-Loop) ─────────────────────
+// ─── REVIEW QUEUE (Layer 4 Human-in-the-Loop) ─────────────────────────────
 export const reviewQueue = mysqlTable("review_queue", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -378,7 +436,7 @@ export const reviewQueue = mysqlTable("review_queue", {
 
 export type ReviewQueueItem = typeof reviewQueue.$inferSelect;
 
-// ─── MEMORIES (Mem0-style) ────────────────────────────────────────
+// ─── MEMORIES (Mem0-style) ────────────────────────────────────────────────
 export const memories = mysqlTable("memories", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -394,7 +452,7 @@ export const memories = mysqlTable("memories", {
 
 export type Memory = typeof memories.$inferSelect;
 
-// ─── FEEDBACK ─────────────────────────────────────────────────────
+// ─── FEEDBACK ─────────────────────────────────────────────────────────────
 export const feedback = mysqlTable("feedback", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -407,7 +465,7 @@ export const feedback = mysqlTable("feedback", {
 
 export type Feedback = typeof feedback.$inferSelect;
 
-// ─── QUALITY RATINGS ──────────────────────────────────────────────
+// ─── QUALITY RATINGS ──────────────────────────────────────────────────────
 export const qualityRatings = mysqlTable("quality_ratings", {
   id: int("id").autoincrement().primaryKey(),
   messageId: int("messageId").notNull(),
@@ -420,7 +478,7 @@ export const qualityRatings = mysqlTable("quality_ratings", {
 
 export type QualityRating = typeof qualityRatings.$inferSelect;
 
-// ─── SUITABILITY ASSESSMENTS ──────────────────────────────────────
+// ─── SUITABILITY ASSESSMENTS ──────────────────────────────────────────────
 export const suitabilityAssessments = mysqlTable("suitability_assessments", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
@@ -439,7 +497,7 @@ export const suitabilityAssessments = mysqlTable("suitability_assessments", {
 
 export type SuitabilityAssessment = typeof suitabilityAssessments.$inferSelect;
 
-// ─── PROMPT VARIANTS (A/B Testing) ───────────────────────────────
+// ─── PROMPT VARIANTS (A/B Testing) ───────────────────────────────────────
 export const promptVariants = mysqlTable("prompt_variants", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 256 }).notNull(),
@@ -458,7 +516,7 @@ export const promptVariants = mysqlTable("prompt_variants", {
 
 export type PromptVariant = typeof promptVariants.$inferSelect;
 
-// ─── PROMPT EXPERIMENT LOG ───────────────────────────────────────
+// ─── PROMPT EXPERIMENT LOG ───────────────────────────────────────────────
 export const promptExperiments = mysqlTable("prompt_experiments", {
   id: int("id").autoincrement().primaryKey(),
   variantId: int("variantId").notNull(),

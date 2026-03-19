@@ -47,7 +47,7 @@ export default function ConsentGate({ children }: ConsentGateProps) {
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto">
             <Shield className="w-6 h-6 text-primary" />
           </div>
-          <h1 className="text-xl font-semibold">Welcome to Personal AI</h1>
+          <h1 className="text-xl font-semibold">Welcome to WealthBridge AI</h1>
           <p className="text-sm text-muted-foreground">
             Before you get started, please review and accept our terms.
           </p>

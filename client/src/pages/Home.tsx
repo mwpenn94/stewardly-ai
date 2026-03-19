@@ -12,7 +12,7 @@ import {
 const features = [
   { icon: <MessageSquare className="w-5 h-5" />, title: "AI Chat", desc: "General & financial expertise with your personal style", href: "/" },
   { icon: <Calculator className="w-5 h-5" />, title: "Calculators", desc: "IUL, premium finance, and retirement projections", href: "/calculators" },
-  { icon: <FileText className="w-5 h-5" />, title: "Documents", desc: "Upload docs to train your personal AI", href: "/documents" },
+  { icon: <FileText className="w-5 h-5" />, title: "Documents", desc: "Upload docs to enhance your AI experience", href: "/documents" },
   { icon: <Shield className="w-5 h-5" />, title: "Suitability", desc: "Complete your financial profile for personalized advice", href: "/suitability" },
   { icon: <TrendingUp className="w-5 h-5" />, title: "Market Data", desc: "Real-time quotes and market overview", href: "/market" },
   { icon: <Package className="w-5 h-5" />, title: "Product Catalog", desc: "Browse and compare financial products", href: "/products" },
@@ -41,7 +41,7 @@ export default function Home() {
             <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
               <Sparkles className="w-4.5 h-4.5 text-accent" />
             </div>
-            <span className="font-semibold text-sm tracking-tight">Personal AI</span>
+            <span className="font-semibold text-sm tracking-tight">WealthBridge AI</span>
           </div>
           <div className="flex items-center gap-2">
             {isAuthenticated ? (
@@ -70,10 +70,10 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-accent/5 via-transparent to-transparent" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center relative">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-medium mb-6">
-            <Sparkles className="w-3 h-3" /> Personal AI — General & Financial
+            <Sparkles className="w-3 h-3" /> WealthBridge AI — General & Financial
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4 leading-tight">
-            Your Personal AI That<br />
+            Your AI Assistant That<br />
             <span className="text-accent">Thinks Like You</span>
           </h1>
           <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
@@ -135,7 +135,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-border py-6">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Personal AI Assistant</span>
+          <span>WealthBridge AI</span>
           <span>AI-powered advisory platform</span>
         </div>
       </footer>

@@ -590,8 +590,8 @@ export default function Chat() {
                   Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
                 </h1>
                 <p className="text-muted-foreground text-sm sm:text-base mb-8 max-w-lg mx-auto">
-                  I'm your personal AI assistant. Ask me anything — from general questions to financial planning.
-                  I learn from your documents and adapt to your preferences.
+                  I'm your AI assistant. Ask me anything — from general questions to financial planning, or switch to Study and learn mode to review documents and data.
+                  I adapt to your preferences over time.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">

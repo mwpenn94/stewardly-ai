@@ -42,48 +42,74 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-heading: "Satoshi", "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 /*
-  Personal AI — Dark navy + warm gold accent
-  Professional financial aesthetic
+  WealthBridge AI — Deep navy + sky blue accent
+  Professional financial intelligence aesthetic
+  Fonts: Satoshi (headings), DM Sans (body)
+  Palette: #0F172A navy, #0EA5E9 sky blue, #10B981 emerald, #F43F5E rose
 */
 :root {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Satoshi", "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --radius: 0.625rem;
-  --background: oklch(0.12 0.02 260);
-  --foreground: oklch(0.93 0.008 260);
-  --card: oklch(0.16 0.022 260);
-  --card-foreground: oklch(0.93 0.008 260);
-  --popover: oklch(0.16 0.022 260);
-  --popover-foreground: oklch(0.93 0.008 260);
-  --primary: oklch(0.78 0.14 85);
-  --primary-foreground: oklch(0.12 0.02 260);
-  --secondary: oklch(0.2 0.025 260);
-  --secondary-foreground: oklch(0.88 0.008 260);
-  --muted: oklch(0.2 0.02 260);
-  --muted-foreground: oklch(0.6 0.015 260);
-  --accent: oklch(0.78 0.14 85);
-  --accent-foreground: oklch(0.12 0.02 260);
-  --destructive: oklch(0.6 0.2 25);
-  --destructive-foreground: oklch(0.95 0.005 260);
-  --border: oklch(0.25 0.025 260);
-  --input: oklch(0.22 0.025 260);
-  --ring: oklch(0.78 0.14 85);
-  --chart-1: oklch(0.78 0.14 85);
-  --chart-2: oklch(0.55 0.12 160);
-  --chart-3: oklch(0.65 0.15 45);
-  --chart-4: oklch(0.6 0.1 300);
-  --chart-5: oklch(0.5 0.08 200);
-  --sidebar: oklch(0.1 0.018 260);
-  --sidebar-foreground: oklch(0.88 0.008 260);
-  --sidebar-primary: oklch(0.78 0.14 85);
-  --sidebar-primary-foreground: oklch(0.1 0.018 260);
-  --sidebar-accent: oklch(0.18 0.025 260);
-  --sidebar-accent-foreground: oklch(0.88 0.008 260);
-  --sidebar-border: oklch(0.22 0.025 260);
-  --sidebar-ring: oklch(0.78 0.14 85);
+
+  /* Deep navy base */
+  --background: oklch(0.13 0.025 255);
+  --foreground: oklch(0.93 0.008 255);
+
+  /* Card: slightly lighter navy */
+  --card: oklch(0.17 0.028 255);
+  --card-foreground: oklch(0.93 0.008 255);
+
+  /* Popover */
+  --popover: oklch(0.17 0.028 255);
+  --popover-foreground: oklch(0.93 0.008 255);
+
+  /* Primary: sky blue (#0EA5E9) */
+  --primary: oklch(0.68 0.16 230);
+  --primary-foreground: oklch(0.13 0.025 255);
+
+  /* Secondary: muted navy */
+  --secondary: oklch(0.21 0.028 255);
+  --secondary-foreground: oklch(0.88 0.008 255);
+
+  /* Muted */
+  --muted: oklch(0.21 0.022 255);
+  --muted-foreground: oklch(0.6 0.015 255);
+
+  /* Accent: sky blue (same as primary for consistency) */
+  --accent: oklch(0.68 0.16 230);
+  --accent-foreground: oklch(0.13 0.025 255);
+
+  /* Destructive: rose (#F43F5E) */
+  --destructive: oklch(0.62 0.22 15);
+  --destructive-foreground: oklch(0.95 0.005 255);
+
+  /* Borders & inputs */
+  --border: oklch(0.26 0.028 255);
+  --input: oklch(0.23 0.028 255);
+  --ring: oklch(0.68 0.16 230);
+
+  /* Charts: sky blue, emerald, amber, rose, purple */
+  --chart-1: oklch(0.68 0.16 230);
+  --chart-2: oklch(0.65 0.17 160);
+  --chart-3: oklch(0.72 0.15 85);
+  --chart-4: oklch(0.62 0.22 15);
+  --chart-5: oklch(0.6 0.15 300);
+
+  /* Sidebar: deepest navy */
+  --sidebar: oklch(0.11 0.022 255);
+  --sidebar-foreground: oklch(0.88 0.008 255);
+  --sidebar-primary: oklch(0.68 0.16 230);
+  --sidebar-primary-foreground: oklch(0.11 0.022 255);
+  --sidebar-accent: oklch(0.19 0.028 255);
+  --sidebar-accent-foreground: oklch(0.88 0.008 255);
+  --sidebar-border: oklch(0.23 0.028 255);
+  --sidebar-ring: oklch(0.68 0.16 230);
 }
 
 .dark {
@@ -97,6 +123,9 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -150,11 +179,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.4 0.02 260 / 0.4);
+  background: oklch(0.4 0.02 255 / 0.4);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0.02 260 / 0.6);
+  background: oklch(0.5 0.02 255 / 0.6);
 }
 
 /* Chat message animations */
@@ -166,10 +195,10 @@
   animation: message-in 0.3s ease-out;
 }
 
-/* Pulse glow for gold accent */
+/* Pulse glow for sky blue accent */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.78 0.14 85 / 0.4); }
-  50% { box-shadow: 0 0 0 6px oklch(0.78 0.14 85 / 0); }
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.68 0.16 230 / 0.4); }
+  50% { box-shadow: 0 0 0 6px oklch(0.68 0.16 230 / 0); }
 }
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
@@ -191,7 +220,7 @@
   @apply prose prose-sm prose-invert max-w-none;
 }
 .prose-chat p { @apply my-1.5; }
-.prose-chat h1, .prose-chat h2, .prose-chat h3 { @apply mt-3 mb-1.5 text-foreground; }
+.prose-chat h1, .prose-chat h2, .prose-chat h3 { @apply mt-3 mb-1.5 text-foreground; font-family: var(--font-heading); }
 .prose-chat ul, .prose-chat ol { @apply my-1.5 pl-5; }
 .prose-chat pre { @apply my-2 rounded-lg bg-secondary; }
 .prose-chat code { @apply text-accent; }
@@ -201,15 +230,19 @@
 
 /* Talking avatar animation */
 @keyframes avatar-talk {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.78 0.14 85 / 0.4); }
-  15% { transform: scale(1.04); box-shadow: 0 0 0 3px oklch(0.78 0.14 85 / 0.3); }
-  30% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.78 0.14 85 / 0); }
-  45% { transform: scale(1.06); box-shadow: 0 0 0 4px oklch(0.78 0.14 85 / 0.35); }
-  60% { transform: scale(1.02); box-shadow: 0 0 0 2px oklch(0.78 0.14 85 / 0.2); }
-  75% { transform: scale(1.05); box-shadow: 0 0 0 3px oklch(0.78 0.14 85 / 0.3); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.68 0.16 230 / 0.4); }
+  15% { transform: scale(1.04); box-shadow: 0 0 0 3px oklch(0.68 0.16 230 / 0.3); }
+  30% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.68 0.16 230 / 0); }
+  45% { transform: scale(1.06); box-shadow: 0 0 0 4px oklch(0.68 0.16 230 / 0.35); }
+  60% { transform: scale(1.02); box-shadow: 0 0 0 2px oklch(0.68 0.16 230 / 0.2); }
+  75% { transform: scale(1.05); box-shadow: 0 0 0 3px oklch(0.68 0.16 230 / 0.3); }
 }
 .avatar-talking {
   animation: avatar-talk 1.2s ease-in-out infinite;
-  border: 2px solid oklch(0.78 0.14 85 / 0.5);
+  border: 2px solid oklch(0.68 0.16 230 / 0.5);
   border-radius: 0.5rem;
 }
+
+/* Emerald success indicators */
+.text-emerald { color: oklch(0.65 0.17 160); }
+.bg-emerald { background-color: oklch(0.65 0.17 160); }

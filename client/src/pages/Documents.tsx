@@ -285,7 +285,7 @@ export default function Documents() {
           <div className="text-center py-16 text-muted-foreground">
             <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No files uploaded yet</p>
-            <p className="text-xs mt-1">Upload documents, artifacts, and skills to train your personal AI</p>
+            <p className="text-xs mt-1">Upload documents, artifacts, and skills to enhance your AI experience</p>
           </div>
         )}
       </div>

@@ -7,7 +7,9 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Chat from "./pages/Chat";
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
-import FirmLanding from "./pages/FirmLanding";
+import OrgLanding from "./pages/OrgLanding";
+import Welcome from "./pages/Welcome";
+import ConsentBanner from "./components/ConsentBanner";
 import Calculators from "./pages/Calculators";
 import Documents from "./pages/Documents";
 import Suitability from "./pages/Suitability";
@@ -23,7 +25,8 @@ function Router() {
       {/* Public routes */}
       <Route path={"/"} component={Landing} />
       <Route path={"/signin"} component={SignIn} />
-      <Route path={"/firm/:slug"} component={FirmLanding} />
+      <Route path={"/org/:slug"} component={OrgLanding} />
+      <Route path={"/welcome"} component={Welcome} />
       <Route path={"/terms"} component={Terms} />
       
       {/* All other routes - immediate access, no gate */}
@@ -49,6 +52,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <ConsentBanner />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

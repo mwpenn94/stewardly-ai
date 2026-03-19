@@ -1,27 +1,25 @@
 import { Button } from "@/components/ui/button";
-import { Lock, Shield, TrendingUp } from "lucide-react";
+import { Lock, Shield, TrendingUp, Brain, BarChart3, Rocket } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useEffect } from "react";
 
-export default function Landing() {
+/**
+ * Welcome page — the full marketing landing page.
+ * Accessible at /welcome for sharing/marketing.
+ * Shows hero, feature cards, trust signals, and footer.
+ */
+export default function Welcome() {
   const [, navigate] = useLocation();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    if (loading) return;
-    
+  // If already authenticated, offer to go to chat
+  const handleGetStarted = () => {
     if (isAuthenticated) {
       navigate("/chat");
     } else {
-      // Default to guest mode
-      localStorage.setItem("anonymousMode", "true");
-      navigate("/chat");
+      navigate("/signin");
     }
-  }, [isAuthenticated, loading, navigate]);
-
-  const handleGetStarted = () => {
-    navigate("/signin");
   };
 
   const handleGuestAccess = () => {
@@ -29,37 +27,41 @@ export default function Landing() {
     navigate("/chat");
   };
 
-  // Show nothing while loading or redirecting
-  if (loading) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Animated gradient mesh background */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl opacity-30 animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl opacity-30 animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl opacity-30 animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl opacity-20 animate-pulse" style={{ animationDelay: "2s" }} />
       </div>
 
       {/* Header */}
       <header className="relative z-10 border-b border-border/50 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-teal-400 flex items-center justify-center">
-              <span className="text-sm font-bold text-slate-900">AI</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center">
+              <span className="text-sm font-bold text-slate-900">W</span>
             </div>
-            <span className="font-semibold text-foreground">Financial Intelligence</span>
+            <span className="font-semibold text-foreground">WealthBridge AI</span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGetStarted}
-            className="border-border/50 hover:border-border"
-          >
-            Sign In
-          </Button>
+          <div className="flex items-center gap-3">
+            {isAuthenticated ? (
+              <Button size="sm" onClick={() => navigate("/chat")} className="bg-gradient-to-r from-sky-500 to-emerald-500 text-white border-0">
+                Go to Chat
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={handleGuestAccess}>
+                  Try Free
+                </Button>
+                <Button size="sm" onClick={() => navigate("/signin")} className="bg-gradient-to-r from-sky-500 to-emerald-500 text-white border-0">
+                  Sign In
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -68,17 +70,17 @@ export default function Landing() {
         {/* Hero section */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
           <div className="text-center space-y-8 animate-in fade-in duration-700">
-            {/* Headline */}
             <div className="space-y-4">
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground">
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-tight">
                 Your finances.{" "}
-                <span className="bg-gradient-to-r from-sky-400 to-teal-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-sky-400 to-emerald-400 bg-clip-text text-transparent">
                   Your way.
                 </span>{" "}
                 Understood.
               </h1>
               <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                An AI that learns how you think about money — and helps you think better. General guidance, financial insight, and personal support that adapts to you.
+                An AI that learns how you think about money — and helps you think better. 
+                General guidance, financial insight, and personal support that adapts to you.
               </p>
             </div>
 
@@ -87,18 +89,20 @@ export default function Landing() {
               <Button
                 size="lg"
                 onClick={handleGetStarted}
-                className="bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white border-0 px-8"
+                className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white border-0 px-8 text-base"
               >
-                Get Started
+                {isAuthenticated ? "Open Chat" : "Get Started"}
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={handleGuestAccess}
-                className="border-border/50 hover:border-border px-8"
-              >
-                Explore as a guest
-              </Button>
+              {!isAuthenticated && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={handleGuestAccess}
+                  className="border-border/50 hover:border-border px-8 text-base"
+                >
+                  Explore as a guest
+                </Button>
+              )}
             </div>
 
             {/* Trust signals */}
@@ -124,10 +128,10 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-8">
             {/* Card 1: It learns you */}
             <div className="group relative p-8 rounded-2xl border border-border/50 bg-card/50 backdrop-blur hover:border-border/80 transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/10">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-sky-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-sky-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative space-y-4">
                 <div className="w-12 h-12 rounded-lg bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
-                  <span className="text-2xl">🧠</span>
+                  <Brain className="w-6 h-6 text-sky-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground">It learns you</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -138,10 +142,10 @@ export default function Landing() {
 
             {/* Card 2: It knows finance */}
             <div className="group relative p-8 rounded-2xl border border-border/50 bg-card/50 backdrop-blur hover:border-border/80 transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/10">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-sky-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-sky-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative space-y-4">
-                <div className="w-12 h-12 rounded-lg bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
-                  <span className="text-2xl">📊</span>
+                <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
+                  <BarChart3 className="w-6 h-6 text-emerald-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground">It knows finance</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -152,10 +156,10 @@ export default function Landing() {
 
             {/* Card 3: It grows with you */}
             <div className="group relative p-8 rounded-2xl border border-border/50 bg-card/50 backdrop-blur hover:border-border/80 transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/10">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-sky-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-sky-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative space-y-4">
-                <div className="w-12 h-12 rounded-lg bg-sky-500/10 flex items-center justify-center group-hover:bg-sky-500/20 transition-colors">
-                  <span className="text-2xl">🚀</span>
+                <div className="w-12 h-12 rounded-lg bg-rose-500/10 flex items-center justify-center group-hover:bg-rose-500/20 transition-colors">
+                  <Rocket className="w-6 h-6 text-rose-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground">It grows with you</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -163,6 +167,32 @@ export default function Landing() {
                 </p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Multi-modal capabilities section */}
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-border/30">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
+              Your AI secretary that understands <span className="text-sky-400">everything</span>
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Share documents, screen, video, or just talk. It reviews, explains, and helps you learn from any data you have access to.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: "📄", title: "Documents", desc: "Upload PDFs, images, spreadsheets — get instant analysis and summaries" },
+              { icon: "🖥️", title: "Screen Share", desc: "Share your screen for real-time visual context and guidance" },
+              { icon: "🎥", title: "Live Video", desc: "Point your camera at documents, whiteboards, or anything for instant understanding" },
+              { icon: "🎙️", title: "Voice", desc: "Talk naturally — ask questions, get answers, have a real conversation" },
+            ].map((item) => (
+              <div key={item.title} className="p-6 rounded-xl border border-border/30 bg-card/30 backdrop-blur text-center space-y-3">
+                <span className="text-3xl">{item.icon}</span>
+                <h3 className="font-semibold text-foreground">{item.title}</h3>
+                <p className="text-xs text-muted-foreground">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </section>
       </main>
@@ -175,10 +205,10 @@ export default function Landing() {
               AI-powered. Not a substitute for professional financial advice.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center text-sm">
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => navigate("/terms")} className="text-muted-foreground hover:text-foreground transition-colors">
                 Privacy
               </button>
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={() => navigate("/terms")} className="text-muted-foreground hover:text-foreground transition-colors">
                 Terms
               </button>
               <button className="text-muted-foreground hover:text-foreground transition-colors">
