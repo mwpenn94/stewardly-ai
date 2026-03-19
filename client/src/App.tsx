@@ -4,7 +4,6 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import ConsentGate from "./components/ConsentGate";
 import Chat from "./pages/Chat";
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
@@ -21,30 +20,24 @@ import Terms from "./pages/Terms";
 function Router() {
   return (
     <Switch>
-      {/* Public routes - no consent gate */}
+      {/* Public routes */}
       <Route path={"/"} component={Landing} />
       <Route path={"/signin"} component={SignIn} />
       <Route path={"/firm/:slug"} component={FirmLanding} />
       <Route path={"/terms"} component={Terms} />
       
-      {/* Protected routes - require ToS acceptance */}
-      <Route>
-        <ConsentGate>
-          <Switch>
-            <Route path={"/chat"} component={Chat} />
-            <Route path={"/chat/:id"} component={Chat} />
-            <Route path={"/calculators"} component={Calculators} />
-            <Route path={"/documents"} component={Documents} />
-            <Route path={"/suitability"} component={Suitability} />
-            <Route path={"/manager"} component={ManagerDashboard} />
-            <Route path={"/settings"} component={Settings} />
-            <Route path={"/products"} component={Products} />
-            <Route path={"/market"} component={MarketData} />
-            <Route path={"/404"} component={NotFound} />
-            <Route component={NotFound} />
-          </Switch>
-        </ConsentGate>
-      </Route>
+      {/* All other routes - immediate access, no gate */}
+      <Route path={"/chat"} component={Chat} />
+      <Route path={"/chat/:id"} component={Chat} />
+      <Route path={"/calculators"} component={Calculators} />
+      <Route path={"/documents"} component={Documents} />
+      <Route path={"/suitability"} component={Suitability} />
+      <Route path={"/manager"} component={ManagerDashboard} />
+      <Route path={"/settings"} component={Settings} />
+      <Route path={"/products"} component={Products} />
+      <Route path={"/market"} component={MarketData} />
+      <Route path={"/404"} component={NotFound} />
+      <Route component={NotFound} />
     </Switch>
   );
 }

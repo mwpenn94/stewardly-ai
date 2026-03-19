@@ -37,9 +37,9 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-teal-400 flex items-center justify-center">
-              <span className="text-sm font-bold text-slate-900">PA</span>
+              <span className="text-sm font-bold text-slate-900">AI</span>
             </div>
-            <span className="font-semibold text-foreground">Personal AI</span>
+            <span className="font-semibold text-foreground">Financial Intelligence</span>
           </div>
           <Button
             variant="outline"

@@ -87,13 +87,17 @@ export default function Chat() {
   const recognitionRef = useRef<any>(null);
   const ttsGuardRef = useRef(false); // Prevents recognition during TTS
 
+  // ─── ANONYMOUS MODE ──────────────────────────────────────────
+  const isAnonymous = typeof window !== 'undefined' && localStorage.getItem('anonymousMode') === 'true';
+  const allowQueries = isAuthenticated || isAnonymous;
+
   // ─── QUERIES ──────────────────────────────────────────────────
-  const conversationsQuery = trpc.conversations.list.useQuery(undefined, { enabled: isAuthenticated });
+  const conversationsQuery = trpc.conversations.list.useQuery(undefined, { enabled: allowQueries });
   const messagesQuery = trpc.conversations.messages.useQuery(
     { conversationId: conversationId! },
-    { enabled: !!conversationId && isAuthenticated }
+    { enabled: !!conversationId && allowQueries }
   );
-  const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: isAuthenticated });
+  const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: allowQueries });
   const avatarUrl = settingsQuery.data?.avatarUrl;
 
   // ─── MUTATIONS ────────────────────────────────────────────────

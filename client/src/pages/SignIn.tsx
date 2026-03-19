@@ -64,12 +64,12 @@ export default function SignIn() {
         <div className="text-center space-y-3">
           <div className="flex justify-center">
             <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-sky-400 to-teal-400 flex items-center justify-center">
-              <span className="text-lg font-bold text-slate-900">PA</span>
+              <span className="text-lg font-bold text-slate-900">AI</span>
             </div>
           </div>
           <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
           <p className="text-sm text-muted-foreground">
-            Sign in to your Personal AI account
+            Sign in to your account
           </p>
         </div>
 
