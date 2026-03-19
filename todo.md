@@ -201,3 +201,6 @@
 - [x] Professionals can view their clients' suitability profiles
 - [x] Managers can view their team's clients' suitability profiles
 - [x] Admins can view all suitability profiles
+
+## UI Fixes
+- [x] Fix sidebar layout: make conversation list scrollable, keep nav options always visible and accessible

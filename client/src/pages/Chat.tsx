@@ -388,7 +388,7 @@ export default function Chat() {
         transition-transform duration-200
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}>
-        <div className="p-3 flex items-center justify-between border-b border-border">
+        <div className="p-3 flex items-center justify-between border-b border-border shrink-0">
           <Button variant="ghost" size="sm" className="gap-2 text-xs flex-1 justify-start" onClick={handleNewConversation}>
             <Plus className="w-3.5 h-3.5" /> New Conversation
           </Button>
@@ -397,7 +397,8 @@ export default function Chat() {
           </Button>
         </div>
 
-        <ScrollArea className="flex-1">
+        {/* Scrollable conversation list — grows to fill available space */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="p-2 space-y-0.5">
             {conversationsQuery.data?.map((conv: any) => (
               <div
@@ -423,9 +424,10 @@ export default function Chat() {
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
-        <div className="border-t border-border p-2 space-y-0.5">
+        {/* Fixed navigation options — always visible at bottom */}
+        <div className="border-t border-border p-2 space-y-0.5 shrink-0">
           {navItems.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
             <button
               key={item.href}
