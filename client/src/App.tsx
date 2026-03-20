@@ -45,6 +45,8 @@ import Privacy from "./pages/Privacy";
 import GlobalFooter from "./components/GlobalFooter";
 import ProfessionalDirectory from "./pages/ProfessionalDirectory";
 import ImprovementEngine from "./pages/ImprovementEngine";
+import Integrations from "./pages/Integrations";
+import { GuidedTour } from "./components/GuidedTour";
 
 function Router() {
   return (
@@ -93,6 +95,7 @@ function Router() {
       <Route path={"/email-campaigns"} component={EmailCampaigns} />
       <Route path={"/professionals"} component={ProfessionalDirectory} />
       <Route path={"/improvement"} component={ImprovementEngine} />
+      <Route path={"/integrations"} component={Integrations} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>
@@ -128,6 +131,7 @@ function AppContent() {
       <ConsentBanner />
       <GlobalFooter />
       <ContextualHelp />
+      <GuidedTour />
     </>
   );
 }

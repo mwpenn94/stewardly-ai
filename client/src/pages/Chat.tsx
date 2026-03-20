@@ -23,7 +23,7 @@ import {
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
   Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
-  LogIn, UserPlus, Lightbulb, Wrench, Activity
+  LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { LiveSession } from "@/components/LiveSession";
@@ -264,7 +264,7 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
           What can I help you with?
         </p>
 
-        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto transition-all duration-700 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+        <div data-tour="suggested-prompts" className={`grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto transition-all duration-700 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
           {prompts.map((prompt, i) => (
             <button
               key={i}
@@ -881,6 +881,7 @@ export default function Chat() {
     { icon: <DollarSign className="w-3.5 h-3.5" />, label: "Premium Finance", href: "/premium-finance", minRole: "advisor" as UserRole },
     { icon: <Mail className="w-3.5 h-3.5" />, label: "Email Campaigns", href: "/email-campaigns", minRole: "advisor" as UserRole },
     { icon: <UserPlus className="w-3.5 h-3.5" />, label: "Find a Pro", href: "/professionals", minRole: "user" as UserRole },
+    { icon: <Link2 className="w-3.5 h-3.5" />, label: "Integrations", href: "/integrations", minRole: "user" as UserRole },
   ];
 
   const adminNav = [
@@ -1163,7 +1164,7 @@ export default function Chat() {
                 <ChevronDown className={`w-3 h-3 transition-transform ${toolsExpanded ? "rotate-180" : ""}`} />
               </button>
               {toolsExpanded && (
-                <div className="px-1 pb-1 grid grid-cols-2 gap-0.5">
+                <div data-tour="sidebar-nav" className="px-1 pb-1 grid grid-cols-2 gap-0.5">
                   {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
                     <button
                       key={item.href}
@@ -1536,7 +1537,7 @@ export default function Chat() {
             <input ref={imageInputRef} type="file" className="hidden" multiple accept="image/*" onChange={handleFileSelect} />
 
             {/* Textarea — full width, rounded pill */}
-            <div className="relative bg-secondary/30 rounded-2xl border border-border focus-within:border-accent/40 focus-within:shadow-[0_0_0_1px_oklch(0.68_0.16_230_/_0.15)] transition-all px-3 py-1.5">
+            <div data-tour="chat-input" className="relative bg-secondary/30 rounded-2xl border border-border focus-within:border-accent/40 focus-within:shadow-[0_0_0_1px_oklch(0.68_0.16_230_/_0.15)] transition-all px-3 py-1.5">
               <Textarea
                 ref={textareaRef}
                 value={input}
@@ -1630,7 +1631,7 @@ export default function Chat() {
               </div>
 
               {/* Mode dropdown — Copilot "Smart v" style */}
-              <div className="relative">
+              <div className="relative" data-tour="focus-mode">
                   <button
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium bg-secondary/40 text-foreground hover:bg-secondary/60 border border-border transition-all"
                     onClick={() => setShowModeMenu(!showModeMenu)}
@@ -1688,6 +1689,7 @@ export default function Chat() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    data-tour="voice-toggle"
                     className={`p-2.5 rounded-full transition-all ${
                       ttsEnabled
                         ? "bg-accent/15 text-accent"

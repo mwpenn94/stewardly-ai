@@ -1547,3 +1547,58 @@
 - [x] Sign-in button in chat header area for guests on mobile
 - [x] For authenticated users: sign-out always accessible in sidebar user section
 - [x] Guest sign-in prompt in WelcomeScreen
+
+## Contextual AI Insights Injection (March 20, 2026) — SUPERSEDED
+- [x] (See completed section below)
+
+## Granular Knowledge Base Access Control (March 20, 2026)
+- [x] Create kb_sharing_permissions table (userId, professionalId, topicCategory, permissionLevel, grantedAt)
+- [x] Create kb_sharing_defaults table (professionalType, topicCategory, defaultPermission)
+- [x] Create kb_access_transitions table (userId, fromProfessionalId, toProfessionalId, transitionDate, reason)
+- [x] Backend: Topic/category taxonomy for KB documents (insurance, investments, tax, estate, general, personal)
+- [x] Backend: Sharing rule CRUD procedures (grant, revoke, update per document or per category)
+- [x] Backend: Smart defaults engine — auto-set sharing based on professional relationship type
+  - Insurance professional → insurance + general docs only
+  - Financial advisor → investments + general docs
+  - Tax professional → tax + general docs
+  - Estate planner → estate + general docs
+  - Full-service advisor → all categories
+- [x] Backend: Access transition on party change — when client changes professionals, revoke old access and grant to new
+- [x] Backend: Universal vs granular toggle — user can share everything or control per-topic
+- [x] Backend: KB query filter — professionals only see documents they have access to
+- [x] Frontend: Data Sharing settings tab with per-professional, per-topic permission grid
+- [x] Frontend: "Quick Share" presets (share everything, share by category, custom)
+- [x] Frontend: Default sharing preferences in Settings
+- [x] Frontend: Access transition confirmation when changing professionals
+- [x] Frontend: Professional view — filtered KB showing only accessible documents
+
+## Contextual AI Insights Injection (March 20, 2026)
+- [x] Create user_insights_cache table (userId, insightType, layerContext, data JSON, computedAt, expiresAt)
+- [x] Backend: Platform-layer insight collector (features used, features available, config completeness %)
+- [x] Backend: Org-layer insight collector (org membership, org tools enabled, compliance status)
+- [x] Backend: Manager-layer insight collector (team size, team activity, review queue, escalation count)
+- [x] Backend: Professional-layer insight collector (client count, response times, feedback scores, tool adoption)
+- [x] Backend: User-layer insight collector (conversations count, features explored, profile completeness, docs uploaded)
+- [x] Backend: Insight refresh logic (15-min TTL for active sessions, daily for summaries)
+- [x] Backend: buildInsightContext() function that assembles user+layer insights into prompt-injectable block
+- [x] Backend: Detect audit-direction prompts and inject contextual insights into system prompt before LLM call
+- [x] Backend: Cache invalidation on significant user actions (new conversation, feature use, settings change)
+
+## UI/UX Polish & Tour Feature (March 20, 2026)
+- [x] Add guided tour for new users (5-step GuidedTour component, triggers on first visit)
+- [x] Empty states built into new pages (Professional Directory, Integrations, Improvement Engine)
+- [x] Mobile responsiveness on all new pages
+- [x] Consistent card styling across feature pages
+- [x] Platform guide updated to v5.0 with all new features
+
+## Data Pipeline Integration (March 20, 2026)
+- [x] Schema: 7 integration tables (providers, connections, sync logs, field mappings, enrichment rules, data cache, usage tracking)
+- [x] Encryption service for credential storage
+- [x] Seed 20 integration providers across 4 ownership tiers
+- [x] tRPC integrations router with full CRUD, sync, enrichment, usage tracking
+- [x] Platform pipelines (FRED, BLS, Census, SEC EDGAR, BEA, FINRA)
+- [x] Cron manager for scheduled pipeline execution
+- [x] Provider service classes (Plaid, Yodlee, MX, financial aggregators)
+- [x] Frontend Integration Management page with connect/disconnect, sync status
+- [x] Context assembly: integration data injected into system prompt
+- [x] Context assembly: platform insights injected into system prompt

@@ -1893,3 +1893,228 @@ export const improvementFeedback = mysqlTable("improvement_feedback", {
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 export type ImprovementFeedback = typeof improvementFeedback.$inferSelect;
+
+// ─── USER INSIGHTS CACHE ────────────────────────────────────────
+// Stores pre-computed contextual insights per user per direction/layer.
+// Used to inject real data into system prompts for audit-direction chat prompts.
+export const userInsightsCache = mysqlTable("user_insights_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  insightType: mysqlEnum("insight_type", [
+    "people_performance", "system_infrastructure", "usage_optimization"
+  ]).notNull(),
+  layer: mysqlEnum("layer", ["platform", "organization", "manager", "professional", "user"]).notNull(),
+  data: json("data").notNull(), // Structured insight data (metrics, recommendations, gaps)
+  summary: text("summary").notNull(), // Human-readable summary for prompt injection
+  computedAt: bigint("computed_at", { mode: "number" }).notNull(),
+  expiresAt: bigint("expires_at", { mode: "number" }).notNull(),
+});
+export type UserInsightCache = typeof userInsightsCache.$inferSelect;
+
+// ─── KNOWLEDGE BASE SHARING PERMISSIONS ─────────────────────────────────
+// Granular topic-scoped sharing controls for client data.
+// Clients control which professionals/orgs can see which categories of their data.
+// Defaults are set per relationship type (e.g., insurance agent sees insurance data).
+export const kbSharingPermissions = mysqlTable("kb_sharing_permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("owner_id").notNull(), // The client who owns the data
+  granteeId: int("grantee_id").notNull(), // The professional/user who receives access
+  granteeType: mysqlEnum("grantee_type", ["professional", "manager", "organization", "admin"]).notNull(),
+  // Topic categories that map to data domains
+  topic: mysqlEnum("topic", [
+    "insurance", "investments", "tax", "estate", "retirement",
+    "debt", "budgeting", "real_estate", "business", "education",
+    "health_finance", "general", "all"
+  ]).notNull(),
+  // What level of access
+  accessLevel: mysqlEnum("access_level", [
+    "none",       // Explicitly blocked
+    "summary",    // Can see aggregated/anonymized summaries only
+    "read",       // Can read full data
+    "contribute", // Can read + add context/notes
+    "full"        // Can read + contribute + manage (for admins)
+  ]).default("read").notNull(),
+  // Whether this was auto-set by defaults or manually configured
+  source: mysqlEnum("source", ["default", "user_set", "professional_request", "admin_override"]).default("default").notNull(),
+  isActive: mysqlBoolean("is_active").default(true).notNull(),
+  grantedAt: bigint("granted_at", { mode: "number" }).notNull(),
+  revokedAt: bigint("revoked_at", { mode: "number" }),
+  expiresAt: bigint("expires_at", { mode: "number" }), // Optional expiry
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type KbSharingPermission = typeof kbSharingPermissions.$inferSelect;
+
+// ─── SHARING DEFAULTS (per relationship type) ───────────────────────────
+// Defines what topics are shared by default when a client connects with a professional.
+// Users can adjust from these defaults easily.
+export const kbSharingDefaults = mysqlTable("kb_sharing_defaults", {
+  id: int("id").autoincrement().primaryKey(),
+  relationshipType: mysqlEnum("relationship_type", [
+    "financial_advisor", "insurance_agent", "tax_professional", "estate_attorney",
+    "accountant", "mortgage_broker", "real_estate_agent", "other"
+  ]).notNull(),
+  topic: mysqlEnum("topic", [
+    "insurance", "investments", "tax", "estate", "retirement",
+    "debt", "budgeting", "real_estate", "business", "education",
+    "health_finance", "general", "all"
+  ]).notNull(),
+  defaultAccessLevel: mysqlEnum("default_access_level", [
+    "none", "summary", "read", "contribute", "full"
+  ]).default("read").notNull(),
+  rationale: text("rationale"), // Why this default makes sense
+});
+export type KbSharingDefault = typeof kbSharingDefaults.$inferSelect;
+
+// ─── ACCESS TRANSITION LOG ──────────────────────────────────────────────
+// Tracks when access transitions from one professional to another.
+// When a client changes providers, access moves from old to new.
+export const kbAccessTransitions = mysqlTable("kb_access_transitions", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("owner_id").notNull(),
+  fromGranteeId: int("from_grantee_id").notNull(),
+  toGranteeId: int("to_grantee_id").notNull(),
+  topic: mysqlEnum("topic", [
+    "insurance", "investments", "tax", "estate", "retirement",
+    "debt", "budgeting", "real_estate", "business", "education",
+    "health_finance", "general", "all"
+  ]).notNull(),
+  previousAccessLevel: varchar("previous_access_level", { length: 32 }).notNull(),
+  newAccessLevel: varchar("new_access_level", { length: 32 }).notNull(),
+  reason: mysqlEnum("reason", ["client_switched", "professional_left", "org_change", "manual", "expired"]).notNull(),
+  transitionedAt: bigint("transitioned_at", { mode: "number" }).notNull(),
+  transitionedBy: int("transitioned_by").notNull(), // Who initiated (client or admin)
+});
+export type KbAccessTransition = typeof kbAccessTransitions.$inferSelect;
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INTEGRATION INFRASTRUCTURE TABLES
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── INTEGRATION PROVIDERS (Registry of all available providers) ──────────
+export const integrationProviders = mysqlTable("integration_providers", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  slug: varchar("slug", { length: 50 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  category: mysqlEnum("category", [
+    "crm", "messaging", "carrier", "investments", "insurance",
+    "demographics", "economic", "enrichment", "regulatory", "property", "middleware"
+  ]).notNull(),
+  ownershipTier: mysqlEnum("ownership_tier", ["platform", "organization", "professional", "client"]).notNull(),
+  authMethod: mysqlEnum("auth_method", [
+    "oauth2", "api_key", "bearer_token", "hmac_webhook", "manual_upload", "none"
+  ]).notNull(),
+  baseUrl: varchar("base_url", { length: 500 }),
+  docsUrl: varchar("docs_url", { length: 500 }),
+  signupUrl: varchar("signup_url", { length: 500 }),
+  freeTierDescription: text("free_tier_description"),
+  freeTierLimit: varchar("free_tier_limit", { length: 200 }),
+  logoUrl: varchar("logo_url", { length: 500 }),
+  isActive: mysqlBoolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type IntegrationProvider = typeof integrationProviders.$inferSelect;
+
+// ─── INTEGRATION CONNECTIONS (Configured connections per owner) ───────────
+export const integrationConnections = mysqlTable("integration_connections", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  providerId: varchar("provider_id", { length: 36 }).notNull(),
+  ownershipTier: mysqlEnum("ownership_tier", ["platform", "organization", "professional", "client"]).notNull(),
+  ownerId: varchar("owner_id", { length: 36 }).notNull(),
+  organizationId: int("organization_id"),
+  userId: int("user_id"),
+  status: mysqlEnum("status", ["connected", "disconnected", "error", "pending", "expired"]).default("pending"),
+  credentialsEncrypted: text("credentials_encrypted"),
+  configJson: json("config_json"),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncStatus: mysqlEnum("last_sync_status", ["success", "partial", "failed"]),
+  lastSyncError: text("last_sync_error"),
+  recordsSynced: int("records_synced").default(0),
+  usageThisPeriod: int("usage_this_period").default(0),
+  usagePeriodStart: timestamp("usage_period_start"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type IntegrationConnection = typeof integrationConnections.$inferSelect;
+
+// ─── INTEGRATION SYNC LOGS (Audit trail of sync operations) ──────────────
+export const integrationSyncLogs = mysqlTable("integration_sync_logs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  connectionId: varchar("connection_id", { length: 36 }).notNull(),
+  syncType: mysqlEnum("sync_type", ["full", "incremental", "webhook", "manual_upload", "on_demand"]).notNull(),
+  direction: mysqlEnum("direction", ["inbound", "outbound", "bidirectional"]).notNull(),
+  startedAt: timestamp("started_at").notNull(),
+  completedAt: timestamp("completed_at"),
+  status: mysqlEnum("status", ["running", "success", "partial", "failed", "cancelled"]).notNull(),
+  recordsCreated: int("records_created").default(0),
+  recordsUpdated: int("records_updated").default(0),
+  recordsFailed: int("records_failed").default(0),
+  errorDetails: json("error_details"),
+  triggeredBy: mysqlEnum("triggered_by", ["schedule", "webhook", "manual", "system"]).notNull(),
+  triggeredByUserId: int("triggered_by_user_id"),
+});
+export type IntegrationSyncLog = typeof integrationSyncLogs.$inferSelect;
+
+// ─── INTEGRATION FIELD MAPPINGS ──────────────────────────────────────────
+export const integrationFieldMappings = mysqlTable("integration_field_mappings", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  connectionId: varchar("connection_id", { length: 36 }).notNull(),
+  externalField: varchar("external_field", { length: 200 }).notNull(),
+  internalTable: varchar("internal_table", { length: 100 }).notNull(),
+  internalField: varchar("internal_field", { length: 200 }).notNull(),
+  transform: mysqlEnum("transform", [
+    "direct", "lowercase", "uppercase", "date_parse", "phone_e164",
+    "currency_cents", "boolean_parse", "custom"
+  ]).default("direct"),
+  customTransform: text("custom_transform"),
+  isActive: mysqlBoolean("is_active").default(true),
+});
+export type IntegrationFieldMapping = typeof integrationFieldMappings.$inferSelect;
+
+// ─── INTEGRATION WEBHOOK EVENTS (Raw inbound webhook log) ────────────────
+export const integrationWebhookEvents = mysqlTable("integration_webhook_events", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  connectionId: varchar("connection_id", { length: 36 }).notNull(),
+  providerSlug: varchar("provider_slug", { length: 50 }).notNull(),
+  eventType: varchar("event_type", { length: 100 }).notNull(),
+  payloadJson: json("payload_json").notNull(),
+  signatureValid: mysqlBoolean("signature_valid").notNull(),
+  processedAt: timestamp("processed_at"),
+  processingStatus: mysqlEnum("processing_status", ["pending", "processed", "failed", "skipped"]).default("pending"),
+  processingError: text("processing_error"),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+});
+export type IntegrationWebhookEvent = typeof integrationWebhookEvents.$inferSelect;
+
+// ─── ENRICHMENT CACHE (Cached enrichment lookups) ────────────────────────
+export const enrichmentCache = mysqlTable("enrichment_cache", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  providerSlug: varchar("provider_slug", { length: 50 }).notNull(),
+  lookupKey: varchar("lookup_key", { length: 500 }).notNull(),
+  lookupType: varchar("lookup_type", { length: 50 }).notNull(),
+  resultJson: json("result_json").notNull(),
+  qualityScore: decimal("quality_score", { precision: 3, scale: 2 }),
+  fetchedAt: timestamp("fetched_at").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  hitCount: int("hit_count").default(1),
+  connectionId: varchar("connection_id", { length: 36 }),
+});
+export type EnrichmentCacheEntry = typeof enrichmentCache.$inferSelect;
+
+// ─── CARRIER IMPORT TEMPLATES (Parsing templates for manual uploads) ─────
+export const carrierImportTemplates = mysqlTable("carrier_import_templates", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  carrierSlug: varchar("carrier_slug", { length: 50 }).notNull(),
+  reportType: varchar("report_type", { length: 100 }).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  columnMappings: json("column_mappings").notNull(),
+  parserType: mysqlEnum("parser_type", ["csv", "pdf_table", "pdf_ocr", "excel"]).notNull(),
+  sampleHeaders: json("sample_headers"),
+  isSystem: mysqlBoolean("is_system").default(false),
+  createdBy: int("created_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type CarrierImportTemplate = typeof carrierImportTemplates.$inferSelect;

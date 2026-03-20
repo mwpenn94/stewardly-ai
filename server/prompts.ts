@@ -20,6 +20,8 @@ export function buildSystemPrompt(opts: {
   managementContext?: string;
   enrichmentData?: string;
   affiliatedShelf?: string;
+  integrationContext?: string;
+  insightContext?: string;
 }): string {
   const {
     userName = "the user",
@@ -37,6 +39,8 @@ export function buildSystemPrompt(opts: {
     managementContext,
     enrichmentData,
     affiliatedShelf,
+    integrationContext,
+    insightContext,
   } = opts;
 
   // Derive active focus modes from array or single focus
@@ -130,6 +134,16 @@ You have broad expertise across:
 - Business launch → key-person insurance + buy-sell planning + broader life implications
 - Career change → income gap analysis + emergency fund review + decision exploration
 - Health diagnosis → insurance review + financial contingency + practical guidance</cross_domain>`);
+  }
+
+  // ── INTEGRATION DATA CONTEXT ──────────────────────────────────
+  if (integrationContext) {
+    parts.push(`<integration_data>Real-time data from ${userName}'s connected financial accounts and integrations:\n${integrationContext}\n\nUse this data to provide specific, personalized insights. Reference actual numbers and account details when relevant. If data seems stale (>24h old), note that and suggest the user refresh their connections.</integration_data>`);
+  }
+
+  // ── PLATFORM INSIGHT CONTEXT ──────────────────────────────────
+  if (insightContext) {
+    parts.push(`<platform_insights>Real-time insights about ${userName}'s platform usage, configuration, and performance metrics:\n${insightContext}\n\nUse these insights to provide specific, actionable recommendations. Reference actual metrics and gaps when answering audit-direction questions. Be concrete about what features are underutilized and what improvements would have the most impact.</platform_insights>`);
   }
 
   // ── RAG CONTEXT ───────────────────────────────────────────────

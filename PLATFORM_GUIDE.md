@@ -1,6 +1,6 @@
 # Stewardry — Comprehensive Platform Guide
 
-**Version:** 4.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
+**Version:** 5.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
 
 ---
 
@@ -12,25 +12,31 @@
 4. [Authentication and Access Model](#authentication-and-access-model)
 5. [Core AI Engine](#core-ai-engine)
 6. [Chat Interface and Interaction Modes](#chat-interface-and-interaction-modes)
-7. [Data Intelligence Hub](#data-intelligence-hub)
-8. [Financial Tools and Calculators](#financial-tools-and-calculators)
-9. [Product Marketplace](#product-marketplace)
-10. [Compliance and Regulatory Framework](#compliance-and-regulatory-framework)
-11. [Communication and Campaigns](#communication-and-campaigns)
-12. [Part G — Licensed Operations](#part-g--licensed-operations)
-13. [Multi-Modal Capabilities](#multi-modal-capabilities)
-14. [Search and Recommendations](#search-and-recommendations)
-15. [Organization and Team Management](#organization-and-team-management)
-16. [Workflow and Task Engine](#workflow-and-task-engine)
-17. [Analytics and Reporting](#analytics-and-reporting)
-18. [User Experience and Help System](#user-experience-and-help-system)
-19. [Accessibility and Mobile Responsiveness](#accessibility-and-mobile-responsiveness)
-20. [Navigation and Page Map](#navigation-and-page-map)
-21. [API Reference](#api-reference)
-22. [Database Schema](#database-schema)
-23. [Test Coverage](#test-coverage)
-24. [Feature Matrix](#feature-matrix)
-25. [Deployment and Infrastructure](#deployment-and-infrastructure)
+7. [Professional Directory and Referrals](#professional-directory-and-referrals)
+8. [Data Sharing and Access Control](#data-sharing-and-access-control)
+9. [Integration Pipeline](#integration-pipeline)
+10. [AI Improvement Engine](#ai-improvement-engine)
+11. [Contextual AI Insights](#contextual-ai-insights)
+12. [Data Intelligence Hub](#data-intelligence-hub)
+13. [Financial Tools and Calculators](#financial-tools-and-calculators)
+14. [Product Marketplace](#product-marketplace)
+15. [Compliance and Regulatory Framework](#compliance-and-regulatory-framework)
+16. [Privacy and Data Governance](#privacy-and-data-governance)
+17. [Communication and Campaigns](#communication-and-campaigns)
+18. [Part G — Licensed Operations](#part-g--licensed-operations)
+19. [Multi-Modal Capabilities](#multi-modal-capabilities)
+20. [Search and Recommendations](#search-and-recommendations)
+21. [Organization and Team Management](#organization-and-team-management)
+22. [Workflow and Task Engine](#workflow-and-task-engine)
+23. [Analytics and Reporting](#analytics-and-reporting)
+24. [User Experience and Help System](#user-experience-and-help-system)
+25. [Accessibility and Mobile Responsiveness](#accessibility-and-mobile-responsiveness)
+26. [Navigation and Page Map](#navigation-and-page-map)
+27. [API Reference](#api-reference)
+28. [Database Schema](#database-schema)
+29. [Test Coverage](#test-coverage)
+30. [Feature Matrix](#feature-matrix)
+31. [Deployment and Infrastructure](#deployment-and-infrastructure)
 
 ---
 
@@ -38,7 +44,7 @@
 
 Stewardry is an AI-powered digital financial twin platform designed for financial advisors, insurance professionals, and wealth management firms. The platform combines conversational AI with real-time market data, comprehensive financial calculators, compliance automation, data intelligence pipelines, email campaign management, and multi-modal interaction into a unified experience. It is built to function as an always-available co-pilot for financial professionals — handling everything from client suitability assessments to estate document drafting, from premium finance modeling to autonomous agent orchestration.
 
-The platform comprises **90 database tables** defined in the Drizzle ORM schema (with 40 currently migrated to production), **72 tRPC routers** exposing **368 procedures**, **45 page-level components**, **74 reusable UI components** (including 50+ shadcn/ui primitives), and **249 source files** totaling approximately **60,865 lines of TypeScript/TSX**. The automated test suite contains **410 tests** across **16 test files**, all passing.
+The platform comprises **113 database tables** defined in the Drizzle ORM schema, **34 sub-routers** plus the main router exposing **400+ procedures**, **44 page-level components**, **24 reusable components** (plus 50+ shadcn/ui primitives), and **277 source files** totaling approximately **71,624 lines of TypeScript/TSX**. The automated test suite contains **449 tests** across **18 test files**, all passing. New in v5.0: Professional Referral Directory with 5-tier matching, granular Knowledge Base access control with topic-scoped sharing, a 20+ provider Integration Pipeline, a 3-direction AI Improvement Engine, and contextual AI insights that inject real-time usage data into audit-direction prompts.
 
 Stewardry operates on a tiered access model where anonymous guests receive full feature access with session-scoped data persistence, authenticated users get permanent data storage and cross-device sync, and administrators gain access to organization management and compliance oversight tools. The conversational AI interface serves as the primary entry point, following a design philosophy inspired by Claude, Copilot, and ChatGPT — prioritizing simplicity, intuitiveness, and streamlined interaction.
 
@@ -68,20 +74,20 @@ Stewardry operates on a tiered access model where anonymous guests receive full 
 
 | Metric | Value |
 |--------|-------|
-| Total source files | 249 |
-| Total lines of code | 60,865 |
-| Page components | 45 |
-| Reusable components | 74 |
-| tRPC routers | 72 |
-| tRPC procedures | 368 |
-| Database tables (schema) | 90 |
-| Database tables (migrated) | 40 |
-| Router files (server/routers/) | 27 |
-| Main router file (server/routers.ts) | 1,099 lines |
-| Database helpers (server/db.ts) | 413 lines |
+| Total source files | 277 |
+| Total lines of code | 71,624 |
+| Page components | 44 |
+| Reusable components | 24 (+ 50+ shadcn/ui) |
+| tRPC sub-routers | 34 |
+| tRPC procedures | 400+ |
+| Database tables (schema) | 113 |
+| Router files (server/routers/) | 33 |
+| Main router file (server/routers.ts) | 1,231 lines |
+| Database helpers (server/db.ts) | 538 lines |
+| Schema file (drizzle/schema.ts) | 2,120 lines |
 | CSS theme file (index.css) | 248 lines |
-| Test files | 16 |
-| Automated tests | 410 |
+| Test files | 18 |
+| Automated tests | 449 |
 
 ### Data Flow
 
@@ -232,6 +238,228 @@ LiveChat Mode combines continuous visual and verbal AI interaction with simultan
 
 ---
 
+## Professional Directory and Referrals
+
+The Professional Directory (`/professionals`) enables users to find, connect with, and manage relationships with financial professionals across a **5-tier matching algorithm** that prioritizes the most relevant professionals for each user's needs.
+
+### 5-Tier Matching Algorithm
+
+| Tier | Priority | Description |
+|------|----------|-------------|
+| **Tier 1** | Highest | Existing relationships — professionals the user already works with |
+| **Tier 2** | High | Organization-affiliated — professionals within the user's org |
+| **Tier 3** | Medium | Specialty match — professionals whose specializations match the user's needs |
+| **Tier 4** | Lower | Location match — professionals in the user's geographic area |
+| **Tier 5** | General | Directory — all verified professionals in the system |
+
+### Features
+
+**Find a Professional.** Search by specialty, location, or name with tier-based results. The matching algorithm considers the user's financial profile, existing relationships, and organizational affiliations to rank results.
+
+**My Professionals.** View and manage existing relationships with advisors, accountants, attorneys, insurance agents, tax preparers, estate planners, and mortgage brokers. Each relationship card shows the professional's credentials, specializations, and contact information.
+
+**Reconnection.** If a user has previously worked with a professional, they can reconnect with one click. The system tracks historical relationships and surfaces them in Tier 1 results.
+
+**Professional CRUD.** Online professionals can create and manage their profiles, including credentials, specializations, firm affiliation, location, bio, and contact information. Profiles can be marked as verified.
+
+**Reviews.** Users can leave ratings and reviews for professionals they have worked with.
+
+**Access Transitions.** When a user changes professionals (e.g., switches financial advisors), data access automatically transitions from the previous to the new professional, with full audit logging.
+
+### Relationship Types
+
+`advisor`, `accountant`, `attorney`, `insurance_agent`, `tax_preparer`, `estate_planner`, `mortgage_broker`, `other`
+
+### Database Tables
+
+`professionals`, `professionalRelationships`, `professionalReviews`, `professionalContext`, `professionalAISettings`
+
+---
+
+## Data Sharing and Access Control
+
+The Data Sharing system (`Settings → Data Sharing`) provides fine-grained control over who can see what data. This ensures that a client's insurance professional cannot see what the client shared with their tax advisor, and vice versa.
+
+### Topic Categories
+
+`general`, `investments`, `insurance`, `tax`, `estate`, `retirement`, `banking`, `credit`, `real_estate`, `business`, `education`, `healthcare`
+
+### Permission Levels
+
+| Level | Description |
+|-------|-------------|
+| `none` | No access to data in this topic |
+| `summary` | Can see aggregated summaries only |
+| `read` | Can read full data |
+| `full` | Can read and contribute data |
+
+### Smart Defaults
+
+When a user connects with a professional, the system automatically sets appropriate sharing defaults based on the professional's specialty:
+
+| Professional Type | Full Access | Read Access | No Access |
+|-------------------|-------------|-------------|-----------|
+| **Financial Advisor** | investments, retirement, banking | tax, estate | insurance, healthcare |
+| **Tax Preparer** | tax | investments, banking, business | insurance, estate |
+| **Insurance Agent** | insurance | healthcare | investments, tax |
+| **Estate Planner** | estate | investments, insurance | tax, banking |
+| **Accountant** | tax, banking | investments, business | insurance, estate |
+
+### Access Transitions
+
+When a user changes professionals (e.g., switches financial advisors):
+
+1. All permissions from the previous professional are revoked.
+2. Smart defaults are applied for the new professional.
+3. The transition is logged in `kb_access_transitions` for audit.
+4. The user is notified of the change.
+
+### Universal vs. Granular Sharing
+
+Users can choose between **universal sharing** (one permission level for all topics with a professional) or **granular sharing** (per-topic permission levels for fine-tuned control). The default is granular with smart defaults applied.
+
+### Database Tables
+
+`kbSharingPermissions`, `kbSharingDefaults`, `kbAccessTransitions`
+
+---
+
+## Integration Pipeline
+
+The Integration Pipeline (`/integrations`) connects Stewardry to **20+ external data sources** across 4 ownership tiers, with encrypted credential storage, field mapping, sync scheduling, and webhook event processing.
+
+### Integration Providers
+
+| Category | Providers | Default Tier |
+|----------|-----------|-------------|
+| **Account Aggregation** | Plaid, Yodlee, MX, Finicity | Client, Professional |
+| **Government Data** | FRED, BLS, Census, SEC EDGAR, BEA | Platform |
+| **Market Data** | Alpha Vantage, IEX Cloud, Polygon.io | Platform, Organization |
+| **Insurance** | ACORD, Carrier APIs, Vertafore, Applied Epic | Professional, Organization |
+| **CRM** | Salesforce, Wealthbox, Redtail, Orion | Professional, Organization |
+| **Compliance** | FINRA BrokerCheck, SEC IAPD | Platform |
+| **Tax** | Intuit ProConnect, Drake | Professional |
+
+### Ownership Tiers
+
+| Tier | Who Manages | Scope | Example |
+|------|-------------|-------|---------|
+| **Platform** | System admins | Global data available to all users | FRED interest rates, SEC filings |
+| **Organization** | Org admins | Org-wide data | CRM, market data subscriptions |
+| **Professional** | Individual professionals | Practice-level data | Client accounts, insurance carriers |
+| **Client** | End users | Personal data | Bank accounts via Plaid, tax documents |
+
+### Platform Pipelines
+
+Automated data collection from government/public APIs runs on configurable schedules:
+
+| Pipeline | Source | Data | Default Cadence |
+|----------|--------|------|-----------------|
+| **FRED** | Federal Reserve | Interest rates, inflation, GDP, unemployment | Daily |
+| **BLS** | Bureau of Labor Statistics | Employment, CPI, wages, productivity | Daily |
+| **Census** | US Census Bureau | Demographics, income, housing | Weekly |
+| **SEC EDGAR** | Securities and Exchange Commission | Company filings, insider trading, financial statements | Daily |
+| **BEA** | Bureau of Economic Analysis | GDP, personal income, trade balance | Daily |
+| **FINRA** | Financial Industry Regulatory Authority | Broker/dealer compliance data | Weekly |
+
+### Features
+
+**Connection Management.** Connect, disconnect, and configure integrations per tier. Each connection stores encrypted credentials (AES-256-GCM), sync status, and error history.
+
+**Sync Scheduling.** Automatic data sync with configurable cadence (hourly, daily, weekly). The cron manager tracks sync health and retries failed syncs.
+
+**Field Mapping.** Map external data fields to internal schema with transforms (date parsing, currency conversion, phone E.164, percentage normalization, boolean coercion).
+
+**Webhook Events.** Receive and process real-time webhook events from providers with HMAC-SHA256 signature verification.
+
+**Data Enrichment.** Cross-reference and enrich data across multiple sources.
+
+**Context Assembly.** Connected integration data is automatically assembled into the AI system prompt as an `<integration_data>` block, providing the AI with real-time financial context.
+
+### Database Tables
+
+`integrationProviders`, `integrationConnections`, `integrationSyncLogs`, `integrationFieldMappings`, `integrationWebhookEvents`, `enrichmentCache`, `enrichmentDatasets`
+
+---
+
+## AI Improvement Engine
+
+The AI Improvement Engine (`/improvement`) continuously audits, recommends, and implements improvements across all 5 layers of the hierarchy in **3 audit directions**.
+
+### 3 Audit Directions
+
+| Direction | What It Measures | Example Finding |
+|-----------|-----------------|----------------|
+| **People Performance** | How well people at this layer serve users below | "Professional avg response time is 48hrs — recommend reducing to 24hrs" |
+| **System/Infrastructure** | How well the system config supports users | "Organization has not configured compliance language — recommend setup" |
+| **Usage Optimization** | How users can better leverage their tools | "You have not used the Financial Planning tool yet — it matches your retirement goal" |
+
+### Per-Layer Audit Focus
+
+| Layer | People Performance | System/Infrastructure | Usage Optimization |
+|-------|-------------------|----------------------|-------------------|
+| **Platform** | Cross-org service quality | Feature flags, global settings, uptime | Admin tool adoption |
+| **Organization** | Team service metrics | Branding, compliance config, AI settings | Org tool utilization |
+| **Manager** | Coaching effectiveness, review speed | Team config, escalation rules | Management dashboard usage |
+| **Professional** | Client satisfaction, response times | Practice setup, carrier connections | Advisory tool adoption |
+| **User** | N/A (bottom of hierarchy) | Profile completeness, preferences | Feature discovery, engagement |
+
+### Action Types
+
+| Type | Description | Auto-Implementable? |
+|------|-------------|-------------------|
+| `auto_config` | Configuration changes | Yes |
+| `notification` | Alert/reminder to relevant party | Yes |
+| `recommendation` | Suggested improvement | No — requires human review |
+| `escalation` | Escalate to higher layer | No — requires human action |
+| `training` | Training/education recommendation | No — requires human action |
+
+### Improvement Workflow
+
+1. **Audit.** The engine collects metrics and runs AI analysis per layer/direction.
+2. **Recommend.** AI generates prioritized improvement actions with estimated impact scores.
+3. **Implement or Direct.** Safe changes (config updates, notifications) are auto-implemented. Risky changes are surfaced for human review with clear instructions.
+4. **Track.** All actions are logged with before/after metrics for impact measurement.
+5. **Feedback.** Users can rate improvement actions (helpful/not helpful) to refine future recommendations.
+
+### Database Tables
+
+`layerAudits`, `layerMetrics`, `improvementActions`, `improvementFeedback`
+
+---
+
+## Contextual AI Insights
+
+The Contextual AI Insights system ensures that audit-direction prompts in chat deliver **personalized, data-backed responses** rather than generic advice. When a user asks "What admin tools am I underutilizing?" the AI receives real-time data about that specific user's platform usage.
+
+### How It Works
+
+1. **Insight Collectors.** Per-layer collector functions in `server/insightCollectors.ts` gather real-time data:
+   - **Platform layer:** Features available vs. used, config completeness percentage, active integrations count
+   - **Organization layer:** Org membership, org tools enabled, compliance status, team size
+   - **Manager layer:** Team activity, review queue depth, escalation count, coaching sessions
+   - **Professional layer:** Client count, response times, feedback scores, tool adoption rate
+   - **User layer:** Conversations count, features explored, profile completeness, documents uploaded, settings configured
+
+2. **Caching.** Insights are cached in the `user_insights_cache` table with a **15-minute TTL** for active sessions. Cache is invalidated on significant user actions (new conversation, feature use, settings change).
+
+3. **Injection.** The `buildInsightContext()` function assembles insights into a structured `<platform_insights>` block that is injected into the system prompt before the LLM call.
+
+4. **Role-Aware Prompts.** The 4 suggested prompts on the chat WelcomeScreen are personalized by role:
+
+| Role | Prompt 1 | Prompt 2 | Prompt 3 | Prompt 4 |
+|------|----------|----------|----------|----------|
+| **Admin** | People Performance audit | System/Infrastructure audit | Usage Optimization | General financial |
+| **Manager** | Team performance review | Team config optimization | Management tool adoption | General financial |
+| **Professional** | Client service quality | Practice setup optimization | Advisory tool adoption | General financial |
+| **User/Client** | Usage optimization | General financial | General financial | General financial |
+
+### Database Tables
+
+`userInsightsCache`
+
+---
+
 ## Data Intelligence Hub
 
 The Data Intelligence Hub is the platform's central data ingestion and analysis engine, accessible at `/data-intelligence`. It provides **14 tabs** for managing data sources, processing pipelines, and AI-generated insights.
@@ -337,6 +565,49 @@ A conversational AI-driven suitability questionnaire (`/suitability`) adapts que
 ### Audit System
 
 Every significant action is logged to the audit trail including user actions (queries, document uploads, calculations), AI responses with compliance flags, administrative actions (role changes, policy updates), and data access events for privacy compliance. Audit logs are append-only and stored in the `audit_trail` and `privacy_audit` tables.
+
+---
+
+## Privacy and Data Governance
+
+Stewardry implements comprehensive privacy and data governance controls aligned with financial industry regulations.
+
+### Privacy Page
+
+A dedicated `/privacy` page documents all data collection practices, processing purposes, retention policies, and user rights. Sections cover: data collection (what is collected and why), data processing (how data is used), data retention (how long data is kept), user rights (access, correction, deletion, portability), and contact information.
+
+### PII Masking Pipeline
+
+Before any user message reaches the LLM, the `maskPIIForLLM()` function in `server/prompts.ts` strips personally identifiable information:
+
+| PII Type | Pattern | Replacement |
+|----------|---------|-------------|
+| Social Security Numbers | `XXX-XX-XXXX` | `[SSN REDACTED]` |
+| Credit Card Numbers | `XXXX-XXXX-XXXX-XXXX` (with spaces/dashes) | `[CARD REDACTED]` |
+| Account Numbers | 8-17 digit sequences | `[ACCOUNT REDACTED]` |
+| Phone Numbers | Various US formats | `[PHONE REDACTED]` |
+| Email Addresses | Standard email format | `[EMAIL REDACTED]` |
+| Street Addresses | Number + street name patterns | `[ADDRESS REDACTED]` |
+
+### Consent Tracking
+
+Per-source consent is tracked in the `user_consents` table. Consent types include: `ai_chat`, `voice_recording`, `document_upload`, `data_sharing`, `marketing_email`, and `analytics`. Each consent record stores the version, grant timestamp, and optional revocation timestamp. The Settings > Privacy & Data tab allows users to view and revoke consents.
+
+### Financial Disclaimer
+
+A persistent financial disclaimer appears in the GlobalFooter on every page: "AI-generated content is for informational purposes only and does not constitute financial, legal, or tax advice. Consult a qualified professional before making financial decisions."
+
+### Topic-Specific Disclaimers
+
+The `getTopicDisclaimer()` function in `server/prompts.ts` detects investment, insurance, and tax topics in user messages and appends appropriate regulatory disclaimers to AI responses.
+
+### AI Identity Disclosure
+
+The system prompt includes an `<identity>` block that instructs the AI to always identify itself as an AI assistant, never claim to be human, and include appropriate disclaimers when discussing regulated financial topics.
+
+### Database Tables
+
+`userConsents`, `privacyAudit`, `auditTrail`
 
 ---
 
@@ -562,6 +833,8 @@ The chat sidebar organizes navigation into three sections based on user role:
 | Estate Planning | `/estate-planning` | Estate document drafting |
 | Premium Finance | `/premium-finance` | Premium finance cases |
 | Email Campaigns | `/email-campaigns` | Email campaign management |
+| Integrations | `/integrations` | Integration pipeline management |
+| Professionals | `/professionals` | Professional directory and referrals |
 
 **Admin Section** (role-gated):
 
@@ -571,6 +844,7 @@ The chat sidebar organizes navigation into three sections based on user role:
 | Organizations | `/organizations` | Advisor |
 | Manager Dashboard | `/manager` | Manager |
 | Global Admin | `/admin` | Admin |
+| AI Improvement | `/improvement` | Admin |
 
 ### Additional Routes
 
@@ -581,8 +855,9 @@ The chat sidebar organizes navigation into three sections based on user role:
 | `/welcome` | Welcome | Post-auth welcome with feature highlights |
 | `/terms` | Terms | Terms of service |
 | `/org/:slug` | OrgLanding | Organization-specific landing page |
-| `/settings` | SettingsHub | User settings (6 tabs) |
-| `/settings/:tab` | SettingsHub | Direct tab access |
+| `/privacy` | Privacy | Privacy policy and data practices |
+| `/settings` | SettingsHub | User settings (8 tabs) |
+| `/settings/:tab` | SettingsHub | Direct tab access (incl. privacy-data, data-sharing) |
 | `/documents` | Documents | Document management |
 | `/suitability` | Suitability | Suitability assessment |
 | `/ai-settings` | AISettings | AI model configuration |
@@ -595,17 +870,17 @@ The chat sidebar organizes navigation into three sections based on user role:
 
 ## API Reference
 
-### tRPC Routers (72 total)
+### tRPC Routers (34 sub-routers + main)
 
-The platform exposes 72 tRPC routers organized by domain:
+The platform exposes 34 sub-routers plus the main router, organized by domain:
 
 | Category | Routers |
 |----------|---------|
 | **Core** | auth, system, settings, conversations, chat, memories, memoryEpisodes |
-| **AI** | aiLayers, ambient, constitutionalAI, multiModel, complianceCopilot, visual |
+| **AI** | aiLayers, ambient, constitutionalAI, multiModel, complianceCopilot, visual, improvementEngine |
 | **Financial** | calculators, taxProjector, equityComp, digitalAssets, divorceAnalysis, charitableGiving, businessExit, feeBilling, financialHealth, ssOptimizer, hsaOptimizer, ltcPlanner, medicareNav, educationPlanner, annualReview, planAdherence |
 | **Products** | products, matching, recommendation, suitability |
-| **Data** | dataIngestion, dataIngestionEnhanced, scheduledIngestion, webhookIngestion, analytics, searchEnhanced |
+| **Data** | dataIngestion, dataIngestionEnhanced, scheduledIngestion, webhookIngestion, analytics, searchEnhanced, integrations |
 | **Compliance** | compliance, review, knowledgeGraph |
 | **Communication** | comms, emailCampaign, voice, meetings, feedback |
 | **Organization** | organizations, orgBranding, portal, portalOptimizer, practiceIntelligence, clientSegmentation, relationships, coi |
@@ -613,6 +888,7 @@ The platform exposes 72 tRPC routers organized by domain:
 | **Part G** | agentic (sub-routers: gate, agent, quote, application, advisory, estate, premiumFinance, carrier) |
 | **Education** | education, studentLoans, studyBuddy, medicare |
 | **Market** | market |
+| **Privacy & Access** | consent, kbAccess, professionals, fairness |
 
 ### Express Endpoints
 
@@ -628,11 +904,11 @@ The platform exposes 72 tRPC routers organized by domain:
 
 ## Database Schema
 
-The platform defines **90 MySQL/TiDB tables** in the Drizzle ORM schema, with **40 currently migrated** to production. Tables are organized by domain:
+The platform defines **113 MySQL/TiDB tables** in the Drizzle ORM schema. Tables are organized by domain:
 
 | Domain | Count | Key Tables |
 |--------|-------|------------|
-| **Users and Auth** | 8 | users, user_profiles, user_preferences, user_relationships, professional_context, view_as_audit_log, privacy_audit |
+| **Users and Auth** | 10 | users, user_profiles, user_preferences, user_relationships, professional_context, view_as_audit_log, privacy_audit, user_consents, user_insights_cache |
 | **Organizations** | 5 | organizations, user_organization_roles, organization_relationships, organization_ai_settings, organization_landing_page_config |
 | **Conversations and AI** | 12 | conversations, messages, memories, memory_episodes, feedback, review_queue, platform_ai_settings, professional_ai_settings, manager_ai_settings, constitutional_violations, prompt_variants, prompt_experiments |
 | **Documents and Knowledge** | 6 | documents, document_chunks, document_extractions, kg_nodes, kg_edges, search_cache |
@@ -643,12 +919,17 @@ The platform defines **90 MySQL/TiDB tables** in the Drizzle ORM schema, with **
 | **Platform Operations** | 14 | feature_flags, workflow_checklist, workflow_event_chains, workflow_execution_log, tasks, meetings, meeting_action_items, client_segments, practice_metrics, engagement_scores, portal_engagement, market_data_cache, web_scrape_results, referrals |
 | **Compliance** | 3 | audit_trail, compliance_audit, compliance_flags |
 | **Multi-Model** | 2 | proactive_insights, affiliated_resources |
+| **Professionals and Referrals** | 3 | professionals, professional_relationships, professional_reviews |
+| **KB Access Control** | 3 | kb_sharing_permissions, kb_sharing_defaults, kb_access_transitions |
+| **Integration Pipeline** | 7 | integration_providers, integration_connections, integration_sync_logs, integration_field_mappings, integration_webhook_events, enrichment_cache, carrier_import_templates |
+| **AI Improvement Engine** | 4 | layer_audits, layer_metrics, improvement_actions, improvement_feedback |
+| **Fairness Testing** | 2 | fairness_test_runs, fairness_test_prompts |
 
 ---
 
 ## Test Coverage
 
-The platform maintains **410 automated tests** across **16 test suites**, all passing:
+The platform maintains **449 automated tests** across **18 test suites**, all passing:
 
 | Test File | Tests | Coverage Area |
 |-----------|-------|---------------|
@@ -668,32 +949,39 @@ The platform maintains **410 automated tests** across **16 test suites**, all pa
 | roleHierarchy.test.ts | 9 | Role-based access control |
 | products-ai.test.ts | 8 | AI product analysis |
 | auth.logout.test.ts | 1 | Authentication logout |
+| auditRemediation.test.ts | 22 | PII masking, topic disclaimers, AI identity |
+| auditV2Features.test.ts | 17 | Consent tracking, professionals, improvement engine |
 
 ---
 
 ## Feature Matrix
 
-| Feature | Guest | User | Manager | Admin |
-|---------|-------|------|---------|-------|
-| AI Chat (all modes) | Yes | Yes | Yes | Yes |
-| Voice Mode | Yes | Yes | Yes | Yes |
-| Financial Calculators | Yes | Yes | Yes | Yes |
-| Product Marketplace | Yes | Yes | Yes | Yes |
-| Document Upload/Analysis | Yes | Yes | Yes | Yes |
-| Market Data | Yes | Yes | Yes | Yes |
-| Education Hub | Yes | Yes | Yes | Yes |
-| Data Intelligence Hub | No | Yes | Yes | Yes |
-| Email Campaigns | No | Yes | Yes | Yes |
-| Insights Dashboard | No | Yes | Yes | Yes |
-| Workflow Management | No | Yes | Yes | Yes |
-| Settings (Appearance) | Yes | Yes | Yes | Yes |
-| Settings (Full) | No | Yes | Yes | Yes |
-| Client Portal | No | No | Yes | Yes |
-| Practice Intelligence | No | No | Yes | Yes |
-| Team Management | No | No | Yes | Yes |
-| Organization Admin | No | No | No | Yes |
-| Global Admin | No | No | No | Yes |
-| Compliance Review | No | No | No | Yes |
+| Feature | Guest | User | Professional | Manager | Admin |
+|---------|-------|------|-------------|---------|-------|
+| AI Chat (all modes) | Yes | Yes | Yes | Yes | Yes |
+| Voice Mode | Yes | Yes | Yes | Yes | Yes |
+| Financial Calculators | Yes | Yes | Yes | Yes | Yes |
+| Product Marketplace | Yes | Yes | Yes | Yes | Yes |
+| Document Upload/Analysis | Yes | Yes | Yes | Yes | Yes |
+| Market Data | Yes | Yes | Yes | Yes | Yes |
+| Education Hub | Yes | Yes | Yes | Yes | Yes |
+| Professional Directory | Yes | Yes | Yes | Yes | Yes |
+| Integration Pipeline | No | Yes | Yes | Yes | Yes |
+| Data Intelligence Hub | No | Yes | Yes | Yes | Yes |
+| Email Campaigns | No | Yes | Yes | Yes | Yes |
+| Insights Dashboard | No | Yes | Yes | Yes | Yes |
+| Workflow Management | No | Yes | Yes | Yes | Yes |
+| Data Sharing Controls | No | Yes | Yes | Yes | Yes |
+| Consent Management | No | Yes | Yes | Yes | Yes |
+| Settings (Full) | No | Yes | Yes | Yes | Yes |
+| Client Portal | No | No | Yes | Yes | Yes |
+| Practice Intelligence | No | No | Yes | Yes | Yes |
+| Team Management | No | No | No | Yes | Yes |
+| AI Improvement Engine | No | No | No | No | Yes |
+| Organization Admin | No | No | No | No | Yes |
+| Global Admin | No | No | No | No | Yes |
+| Compliance Review | No | No | No | No | Yes |
+| Fairness Testing | No | No | No | No | Yes |
 
 ---
 
@@ -723,4 +1011,4 @@ To publish updates, create a checkpoint via the development workflow and click t
 
 ---
 
-*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 4.0.*
+*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 5.0.*

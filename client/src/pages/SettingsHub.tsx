@@ -19,9 +19,10 @@ import NotificationsTab from "./settings/NotificationsTab";
 import AppearanceTab from "./settings/AppearanceTab";
 import GuestPreferencesTab from "./settings/GuestPreferencesTab";
 import PrivacyDataTab from "./settings/PrivacyDataTab";
+import DataSharingTab from "./settings/DataSharingTab";
 
 // ─── TAB DEFINITIONS ─────────────────────────────────────────────
-type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "notifications" | "appearance" | "guest-prefs" | "privacy";
+type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: string; slug: string }[] = [
   { id: "profile", label: "Profile & Style", icon: <User className="w-4 h-4" />, desc: "Avatar, memories, communication style", slug: "profile" },
@@ -32,6 +33,7 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: strin
   { id: "appearance", label: "Appearance", icon: <Palette className="w-4 h-4" />, desc: "Theme, colors, font size, density", slug: "appearance" },
   { id: "guest-prefs", label: "Guest Preferences", icon: <Sparkles className="w-4 h-4" />, desc: "Customize AI responses without an account", slug: "guest-prefs" },
   { id: "privacy", label: "Privacy & Data", icon: <Shield className="w-4 h-4" />, desc: "Data rights, consent, export, and deletion", slug: "privacy" },
+  { id: "data-sharing", label: "Data Sharing", icon: <Shield className="w-4 h-4" />, desc: "Control who sees what financial data", slug: "data-sharing" },
 ];
 
 // Tabs accessible without authentication
@@ -186,6 +188,7 @@ export default function SettingsHub() {
               {activeTab === "appearance" && <AppearanceTab />}
               {activeTab === "guest-prefs" && <GuestPreferencesTab />}
               {activeTab === "privacy" && <PrivacyDataTab />}
+              {activeTab === "data-sharing" && <DataSharingTab />}
             </>
           )}
         </main>

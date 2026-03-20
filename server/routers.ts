@@ -29,6 +29,7 @@ import {
   getUserFolders, createFolder, updateFolder, deleteFolder,
   reorderConversations, exportConversation,
 } from "./db";
+import { buildInsightContext, invalidateInsightCache } from "./insightCollectors";
 import {
   buildSystemPrompt, FINANCIAL_DISCLAIMER, needsFinancialDisclaimer,
   detectPII, stripPII, calculateConfidence, getTopicDisclaimer, maskPIIForLLM,
@@ -37,6 +38,9 @@ import { extractMemoriesFromMessage, saveExtractedMemories, generateEpisodeSumma
 import { assembleGraphContext } from "./knowledgeGraph";
 import { classifyContent, applyModifications, logComplianceAudit, logPrivacyAudit } from "./complianceCopilot";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
+import { eq, and } from "drizzle-orm";
+import { integrationConnections, integrationProviders } from "../drizzle/schema";
+import { getDb } from "./db";
 import { aiLayersRouter } from "./routers/aiLayers";
 import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
 
@@ -83,6 +87,15 @@ const chatRouter = router({
         memoriesStr = [memCtx, graphCtx].filter(Boolean).join("\n\n");
       } catch (e) { /* memories are optional */ }
 
+      // ── CONTEXTUAL INSIGHTS (audit-direction prompts) ──────────────
+      // Always collect insights so the AI has real data about the user's
+      // platform usage, configuration, and performance.
+      let insightContext = "";
+      try {
+        const userRole = ctx.user.role || "user";
+        insightContext = await buildInsightContext(ctx.user.id, userRole);
+      } catch (e) { /* insights are optional, degrade gracefully */ }
+
       // Parse multi-select focus modes
       const focusModes = input.focus.split(",").filter(Boolean);
       const hasFinancial = focusModes.includes("financial");
@@ -119,7 +132,32 @@ const chatRouter = router({
       // Build the layer overlay prompt (injected alongside existing system prompt)
       const layerOverlay = resolvedConfig ? buildLayerOverlayPrompt(resolvedConfig) : "";
 
-      // Build system prompt (existing logic)
+      // ── INTEGRATION DATA CONTEXT ──────────────────────────────────
+      // Assemble data from user's connected integrations (Plaid, etc.)
+      let integrationContext = "";
+      try {
+        const db = (await getDb())!;
+        const connections = await db.select()
+          .from(integrationConnections)
+          .where(and(
+            eq(integrationConnections.ownerId, String(ctx.user.id)),
+            eq(integrationConnections.status, "connected")
+          ));
+        if (connections.length > 0) {
+          const summaries: string[] = [];
+          for (const conn of connections) {
+            const provider = await db.select()
+              .from(integrationProviders)
+              .where(eq(integrationProviders.id, conn.providerId))
+              .limit(1);
+            const providerName = provider[0]?.name || "Unknown";
+            summaries.push(`- ${providerName}: ${conn.recordsSynced || 0} records synced, last sync ${conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleDateString() : "never"}, status: ${conn.lastSyncStatus || "unknown"}`);
+          }
+          integrationContext = `Connected integrations (${connections.length}):\n${summaries.join("\n")}`;
+        }
+      } catch (e) { /* integration context is optional */ }
+
+      // Build system prompt (existing logic + new context params)
       const systemPrompt = buildSystemPrompt({
         userName: ctx.user.name || "User",
         mode: input.mode as AdvisoryMode,
@@ -130,10 +168,12 @@ const chatRouter = router({
         memories: memoriesStr || undefined,
         suitabilityCompleted: ctx.user.suitabilityCompleted || false,
         productContext: productContext || undefined,
+        integrationContext: integrationContext || undefined,
+        insightContext: insightContext || undefined,
       });
 
       // Combine: existing system prompt + layer overlays
-      const fullSystemPrompt = layerOverlay
+      let fullSystemPrompt = layerOverlay
         ? `${systemPrompt}\n\n${layerOverlay}`
         : systemPrompt;
 
@@ -1101,6 +1141,8 @@ import { consentRouter } from "./routers/consent";
 import { professionalsRouter } from "./routers/professionals";
 import { fairnessRouter } from "./routers/fairness";
 import { improvementEngineRouter } from "./routers/improvementEngine";
+import { kbAccessRouter } from "./routers/kbAccess";
+import { integrationsRouter } from "./routers/integrations";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1182,6 +1224,8 @@ export const appRouter = router({
   professionals: professionalsRouter,
   fairness: fairnessRouter,
   improvementEngine: improvementEngineRouter,
+  kbAccess: kbAccessRouter,
+  integrations: integrationsRouter,
 });
 
 export type AppRouter = typeof appRouter;
