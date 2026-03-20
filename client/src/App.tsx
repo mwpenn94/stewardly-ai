@@ -43,6 +43,8 @@ import EmailCampaigns from "./pages/EmailCampaigns";
 import Help from "./pages/Help";
 import Privacy from "./pages/Privacy";
 import GlobalFooter from "./components/GlobalFooter";
+import ProfessionalDirectory from "./pages/ProfessionalDirectory";
+import ImprovementEngine from "./pages/ImprovementEngine";
 
 function Router() {
   return (
@@ -89,6 +91,8 @@ function Router() {
       <Route path={"/premium-finance"} component={PremiumFinance} />
       <Route path={"/carrier-connector"} component={CarrierConnector} />
       <Route path={"/email-campaigns"} component={EmailCampaigns} />
+      <Route path={"/professionals"} component={ProfessionalDirectory} />
+      <Route path={"/improvement"} component={ImprovementEngine} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>

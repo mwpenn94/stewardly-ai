@@ -1468,3 +1468,82 @@
 - [x] 5A: Fix "Loading checklist..." stuck state (error handling + retry:1 + staleTime)
 - [x] 5B: Replace generic suggested prompts with financial-focused ones (expanded PROMPT_BANK)
 - [x] 5D: Add conversational tone rules to system prompt (TONE RULES + RESPONSE LENGTH blocks)
+
+## Per-Source Consent Tracking (1F) — March 20, 2026
+- [x] Create user_consents table (userId, consentType, grantedAt, revokedAt, version)
+- [x] Backend: consent check/grant/revoke procedures
+- [x] Frontend: consent gate before first AI chat, first voice, first doc upload
+- [x] Settings > Privacy & Data: view/revoke consents
+
+## Fairness Testing Harness (2D) — March 20, 2026
+- [x] Create fairness_test_runs table (runId, timestamp, results, summary)
+- [x] Create fairness_test_prompts table (promptId, demographic, category, text)
+- [x] Backend: fairness test runner procedure (sends 20+ demographic-varied prompts, scores responses)
+- [x] Backend: fairness report generator (bias detection, tone analysis, recommendation quality)
+- [ ] Admin UI: fairness test dashboard with run history and results — backend ready, frontend deferred
+
+## Professional Referral Directory — March 20, 2026
+- [x] Create professionals table (id, name, title, firm, credentials, specializations, tier, location, contact, bio, verified, source)
+- [x] Create professional_relationships table (userId, professionalId, relationship type, status, notes)
+- [x] Create professional_reviews table (professionalId, userId, rating, review, date)
+- [x] Backend: professional CRUD procedures (create, read, update, delete)
+- [x] Backend: 5-tier matching algorithm (Tier 1: existing relationships, Tier 2: org-affiliated, Tier 3: specialty match, Tier 4: location match, Tier 5: general directory)
+- [x] Backend: reconnection flow for existing professional relationships
+- [x] Backend: online professional directory search/import
+- [x] Frontend: "Talk to a Pro" → full referral page with tier-based results
+- [x] Frontend: professional profile cards with credentials, reviews, contact
+- [x] Frontend: "My Professionals" management page (add, edit, remove relationships)
+- [x] Frontend: professional CRUD forms for online professionals
+- [x] Frontend: reconnection UI for previously associated professionals
+
+## 5-Layer AI Improvement Engine — March 20, 2026
+- [x] Create layer_audits table (id, layer, auditType, timestamp, findings, recommendations, status)
+- [x] Create improvement_actions table (id, auditId, layer, actionType, description, status, implementedAt, result)
+- [x] Create layer_metrics table (id, layer, metricName, value, timestamp, context)
+- [x] Create improvement_feedback table (id, actionId, userId, rating, notes, timestamp)
+- [x] Backend: Layer 1 (Platform) auditor — system health, performance, error rates, uptime
+- [x] Backend: Layer 2 (Organization) auditor — org config compliance, usage patterns, policy adherence
+- [x] Backend: Layer 3 (Manager) auditor — team performance, review queue efficiency, escalation patterns
+- [x] Backend: Layer 4 (Professional) auditor — response quality, client satisfaction, knowledge gaps
+- [x] Backend: Layer 5 (User) auditor — engagement, satisfaction, feature adoption, personalization effectiveness
+- [x] Backend: AI recommendation engine (analyzes audit findings, generates prioritized improvements)
+- [x] Backend: auto-implementation engine (applies safe improvements automatically, flags risky ones for review)
+- [x] Backend: continuous improvement scheduler (periodic audits, trend analysis, regression detection)
+- [x] Frontend: AI Improvement Engine dashboard (layer overview, audit history, action queue)
+- [x] Frontend: per-layer drill-down with metrics, findings, and recommended actions
+- [x] Frontend: action approval/rejection workflow for non-auto improvements
+- [x] Frontend: improvement impact tracker (before/after metrics)
+
+## Dual-Direction AI Improvement Engine Update — March 20, 2026
+- [x] Backend: Add "service_quality" audit direction (how well layer serves users below)
+- [x] Backend: Add "usage_optimization" audit direction (how user can better use their layer)
+- [x] Backend: Per-layer usage optimization collectors (feature adoption, config completeness, best practice gaps)
+- [x] Backend: AI recommendation engine generates both directions of improvements
+- [x] Frontend: Dual-tab view in improvement dashboard (Service Quality vs Usage Optimization)
+- [x] Frontend: Personal improvement suggestions panel ("You could benefit from...")
+
+## 3-Direction Audit Engine Update — March 20, 2026
+- [x] Backend: Split service_quality into "people_performance" and "system_infrastructure" directions
+- [x] Backend: "usage_optimization" direction (how user can better use their layer)
+- [x] Backend: Per-layer people performance collectors (responsiveness, coaching, review quality)
+- [x] Backend: Per-layer system/infrastructure collectors (config completeness, compliance setup, AI settings)
+- [x] Backend: Per-layer usage optimization collectors (feature adoption, personalization, best practice gaps)
+- [x] Frontend: 3-tab view in improvement dashboard (People | System | Usage)
+
+## Role-Aware Audit Prompts in Chat (March 20, 2026)
+- [x] Map 3 of 4 suggested prompts to audit directions based on user role
+- [x] Admins: People Performance + System/Infrastructure + Usage Optimization prompts
+- [x] Managers: People Performance + System/Infrastructure + Usage Optimization prompts (team-scoped)
+- [x] Professionals: People Performance + System/Infrastructure + Usage Optimization prompts (practice-scoped)
+- [x] Users/Clients: Usage Optimization prompt only (other 3 are standard financial prompts)
+- [x] 4th prompt always a general financial question for all roles
+- [x] Add sidebar nav items for Professional Directory and Improvement Engine
+
+## Persistent Guest Auth Controls (March 20, 2026)
+- [x] Add persistent sign-in button for guest users in sidebar (always visible, emerald CTA)
+- [x] Add sign-out / clear session button for guest users in sidebar
+- [x] Auth controls visible on all pages for guests (sidebar bottom section)
+- [x] Clear visual hierarchy — not dismissable, always accessible
+- [x] Sign-in button in chat header area for guests on mobile
+- [x] For authenticated users: sign-out always accessible in sidebar user section
+- [x] Guest sign-in prompt in WelcomeScreen

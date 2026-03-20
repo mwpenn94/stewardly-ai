@@ -1097,6 +1097,10 @@ import { recommendationRouter } from "./routers/recommendation";
 import { webhookIngestionRouter } from "./routers/webhookIngestion";
 import { analyticsRouter } from "./routers/analytics";
 import { emailCampaignRouter } from "./routers/emailCampaign";
+import { consentRouter } from "./routers/consent";
+import { professionalsRouter } from "./routers/professionals";
+import { fairnessRouter } from "./routers/fairness";
+import { improvementEngineRouter } from "./routers/improvementEngine";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1174,6 +1178,10 @@ export const appRouter = router({
   recommendation: recommendationRouter,
   analytics: analyticsRouter,
   emailCampaign: emailCampaignRouter,
+  consent: consentRouter,
+  professionals: professionalsRouter,
+  fairness: fairnessRouter,
+  improvementEngine: improvementEngineRouter,
 });
 
 export type AppRouter = typeof appRouter;

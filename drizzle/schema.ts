@@ -1656,3 +1656,240 @@ export const emailSends = mysqlTable("email_sends", {
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 export type EmailSend = typeof emailSends.$inferSelect;
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PER-SOURCE CONSENT TRACKING (1F)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const userConsents = mysqlTable("user_consents", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  consentType: mysqlEnum("consent_type", ["ai_chat", "voice_input", "document_upload", "data_sharing", "marketing", "analytics"]).notNull(),
+  granted: mysqlBoolean("granted").default(false).notNull(),
+  grantedAt: bigint("granted_at", { mode: "number" }),
+  revokedAt: bigint("revoked_at", { mode: "number" }),
+  version: varchar("version", { length: 20 }).default("1.0").notNull(),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type UserConsent = typeof userConsents.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FAIRNESS TESTING HARNESS (2D)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const fairnessTestPrompts = mysqlTable("fairness_test_prompts", {
+  id: int("id").autoincrement().primaryKey(),
+  demographic: varchar("demographic", { length: 128 }).notNull(),
+  category: varchar("category", { length: 64 }).notNull(),
+  promptText: text("prompt_text").notNull(),
+  expectedBehavior: text("expected_behavior"),
+  isActive: mysqlBoolean("is_active").default(true).notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type FairnessTestPrompt = typeof fairnessTestPrompts.$inferSelect;
+
+export const fairnessTestRuns = mysqlTable("fairness_test_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  runBy: int("run_by").notNull(),
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).default("pending").notNull(),
+  totalPrompts: int("total_prompts").default(0),
+  completedPrompts: int("completed_prompts").default(0),
+  overallScore: float("overall_score"),
+  biasDetected: mysqlBoolean("bias_detected").default(false),
+  summary: json("summary"),
+  findings: json("findings"),
+  recommendations: json("recommendations"),
+  startedAt: bigint("started_at", { mode: "number" }),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type FairnessTestRun = typeof fairnessTestRuns.$inferSelect;
+
+export const fairnessTestResults = mysqlTable("fairness_test_results", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: int("run_id").notNull(),
+  promptId: int("prompt_id").notNull(),
+  response: text("response"),
+  toneScore: float("tone_score"),
+  qualityScore: float("quality_score"),
+  biasIndicators: json("bias_indicators"),
+  disclaimerPresent: mysqlBoolean("disclaimer_present").default(false),
+  responseTimeMs: int("response_time_ms"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type FairnessTestResult = typeof fairnessTestResults.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PROFESSIONAL REFERRAL DIRECTORY
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const professionals = mysqlTable("professionals", {
+  id: int("id").autoincrement().primaryKey(),
+  // If this professional is also a platform user, link them
+  linkedUserId: int("linked_user_id"),
+  name: varchar("name", { length: 256 }).notNull(),
+  title: varchar("title", { length: 256 }),
+  firm: varchar("firm", { length: 256 }),
+  email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 32 }),
+  website: varchar("website", { length: 512 }),
+  location: varchar("location", { length: 256 }),
+  state: varchar("state", { length: 64 }),
+  bio: text("bio"),
+  avatarUrl: text("avatar_url"),
+  // Credentials & qualifications
+  credentials: json("credentials"), // ["CFP", "CFA", "ChFC", "CLU", "RICP"]
+  licenses: json("licenses"), // ["Series 7", "Series 66", "Life & Health"]
+  specializations: json("specializations"), // ["retirement", "estate", "insurance", "tax", "investment"]
+  // Tier classification
+  tier: mysqlEnum("tier", ["tier1_existing", "tier2_org_affiliated", "tier3_specialty", "tier4_location", "tier5_general"]).default("tier5_general").notNull(),
+  // Verification & trust
+  verified: mysqlBoolean("verified").default(false).notNull(),
+  verifiedAt: bigint("verified_at", { mode: "number" }),
+  source: mysqlEnum("source", ["manual", "directory_import", "org_roster", "self_registered", "referral"]).default("manual").notNull(),
+  // Ratings
+  avgRating: float("avg_rating").default(0),
+  reviewCount: int("review_count").default(0),
+  // Metadata
+  yearsExperience: int("years_experience"),
+  aumRange: varchar("aum_range", { length: 64 }),
+  feeStructure: varchar("fee_structure", { length: 128 }),
+  minimumInvestment: varchar("minimum_investment", { length: 64 }),
+  servicesOffered: json("services_offered"),
+  languagesSpoken: json("languages_spoken"),
+  // Status
+  status: mysqlEnum("status", ["active", "inactive", "pending_verification", "suspended"]).default("active").notNull(),
+  createdBy: int("created_by"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type Professional = typeof professionals.$inferSelect;
+export type InsertProfessional = typeof professionals.$inferInsert;
+
+export const professionalRelationships = mysqlTable("professional_relationships", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  professionalId: int("professional_id").notNull(),
+  relationshipType: mysqlEnum("relationship_type", [
+    "financial_advisor", "insurance_agent", "tax_professional", "estate_attorney",
+    "accountant", "mortgage_broker", "real_estate_agent", "other"
+  ]).notNull(),
+  status: mysqlEnum("status", ["active", "inactive", "pending", "ended"]).default("active").notNull(),
+  startedAt: bigint("started_at", { mode: "number" }),
+  endedAt: bigint("ended_at", { mode: "number" }),
+  notes: text("notes"),
+  lastContactAt: bigint("last_contact_at", { mode: "number" }),
+  referralSource: varchar("referral_source", { length: 128 }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type ProfessionalRelationship = typeof professionalRelationships.$inferSelect;
+
+export const professionalReviews = mysqlTable("professional_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  professionalId: int("professional_id").notNull(),
+  userId: int("user_id").notNull(),
+  rating: int("rating").notNull(), // 1-5
+  title: varchar("title", { length: 256 }),
+  review: text("review"),
+  isAnonymous: mysqlBoolean("is_anonymous").default(false),
+  status: mysqlEnum("status", ["published", "pending", "flagged", "removed"]).default("pending").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type ProfessionalReview = typeof professionalReviews.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5-LAYER AI IMPROVEMENT ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const layerAudits = mysqlTable("layer_audits", {
+  id: int("id").autoincrement().primaryKey(),
+  layer: mysqlEnum("layer", ["platform", "organization", "manager", "professional", "user"]).notNull(),
+  auditType: mysqlEnum("audit_type", [
+    "scheduled", "manual", "triggered", "continuous"
+  ]).default("scheduled").notNull(),
+  auditDirection: varchar("audit_direction", { length: 30 }).default("system_infrastructure").notNull(),
+  targetId: int("target_id"), // org/manager/professional/user ID depending on layer
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).default("pending").notNull(),
+  // Findings
+  findings: json("findings"), // Array of { category, severity, description, evidence, metric }
+  overallHealthScore: float("overall_health_score"), // 0-100
+  metricsSnapshot: json("metrics_snapshot"), // Key metrics at time of audit
+  // AI Analysis
+  aiAnalysis: text("ai_analysis"), // LLM-generated analysis
+  recommendations: json("recommendations"), // Array of { priority, description, layer, autoImplementable, estimatedImpact }
+  // Timing
+  runBy: int("run_by"),
+  startedAt: bigint("started_at", { mode: "number" }),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type LayerAudit = typeof layerAudits.$inferSelect;
+
+export const improvementActions = mysqlTable("improvement_actions", {
+  id: int("id").autoincrement().primaryKey(),
+  auditId: int("audit_id").notNull(),
+  layer: mysqlEnum("layer", ["platform", "organization", "manager", "professional", "user"]).notNull(),
+  direction: varchar("direction", { length: 30 }).default("system_infrastructure").notNull(),
+  actionType: mysqlEnum("action_type", [
+    "auto_implement", "recommend", "escalate", "monitor"
+  ]).notNull(),
+  category: varchar("category", { length: 128 }).notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description").notNull(),
+  // Implementation details
+  implementationPlan: text("implementation_plan"),
+  configChanges: json("config_changes"), // What settings/config to change
+  beforeState: json("before_state"),
+  afterState: json("after_state"),
+  // Status tracking
+  status: mysqlEnum("status", [
+    "proposed", "approved", "implementing", "implemented", "rejected", "failed", "rolled_back"
+  ]).default("proposed").notNull(),
+  priority: mysqlEnum("priority", ["low", "medium", "high", "critical"]).default("medium").notNull(),
+  estimatedImpact: varchar("estimated_impact", { length: 256 }),
+  actualImpact: text("actual_impact"),
+  // Approval
+  approvedBy: int("approved_by"),
+  approvedAt: bigint("approved_at", { mode: "number" }),
+  rejectedBy: int("rejected_by"),
+  rejectedAt: bigint("rejected_at", { mode: "number" }),
+  rejectionReason: text("rejection_reason"),
+  // Implementation
+  implementedAt: bigint("implemented_at", { mode: "number" }),
+  implementedBy: varchar("implemented_by", { length: 64 }), // "ai_engine" or user ID
+  rolledBackAt: bigint("rolled_back_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type ImprovementAction = typeof improvementActions.$inferSelect;
+
+export const layerMetrics = mysqlTable("layer_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  layer: mysqlEnum("layer", ["platform", "organization", "manager", "professional", "user"]).notNull(),
+  targetId: int("target_id"), // specific entity ID within the layer
+  metricName: varchar("metric_name", { length: 128 }).notNull(),
+  metricValue: float("metric_value").notNull(),
+  metricUnit: varchar("metric_unit", { length: 32 }),
+  context: json("context"), // Additional context for the metric
+  period: varchar("period", { length: 32 }), // "hourly", "daily", "weekly", "monthly"
+  recordedAt: bigint("recorded_at", { mode: "number" }).notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type LayerMetric = typeof layerMetrics.$inferSelect;
+
+export const improvementFeedback = mysqlTable("improvement_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  actionId: int("action_id").notNull(),
+  userId: int("user_id").notNull(),
+  rating: int("rating").notNull(), // 1-5
+  helpful: mysqlBoolean("helpful").default(true),
+  notes: text("notes"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type ImprovementFeedback = typeof improvementFeedback.$inferSelect;

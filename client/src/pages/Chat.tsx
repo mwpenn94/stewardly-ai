@@ -22,7 +22,8 @@ import {
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
   Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
-  Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone
+  Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
+  LogIn, UserPlus, Lightbulb, Wrench, Activity
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { LiveSession } from "@/components/LiveSession";
@@ -60,7 +61,68 @@ const MODE_OPTIONS: { value: AdvisoryMode; label: string; desc: string; minRole:
 ];
 
 // Dynamic prompt suggestions based on focus modes, user context, and progression
-const PROMPT_BANK: { text: string; icon: string; category: FocusMode; tier: "new" | "returning" | "any" }[] = [
+// ─── ROLE-AWARE PROMPT SYSTEM ─────────────────────────────────
+// 3 of 4 prompts map to audit directions based on user role.
+// The 4th prompt is always a general financial question.
+type PromptEntry = { text: string; icon: string; category: FocusMode; tier: "new" | "returning" | "any" };
+
+// Audit-direction prompts per role tier
+const AUDIT_PROMPTS: Record<string, { people: PromptEntry[]; system: PromptEntry[]; usage: PromptEntry[] }> = {
+  admin: {
+    people: [
+      { text: "How well are our advisors serving their clients this month?", icon: "👥", category: "financial", tier: "any" },
+      { text: "Which professionals need coaching based on client feedback?", icon: "📋", category: "financial", tier: "returning" },
+      { text: "Show me team performance across all tiers", icon: "📊", category: "financial", tier: "any" },
+    ],
+    system: [
+      { text: "Audit our platform configuration — what needs attention?", icon: "🔧", category: "financial", tier: "any" },
+      { text: "Are our compliance rules and AI settings optimized?", icon: "🛡️", category: "financial", tier: "returning" },
+      { text: "What infrastructure improvements would most impact user experience?", icon: "⚙️", category: "financial", tier: "any" },
+    ],
+    usage: [
+      { text: "What admin tools am I underutilizing?", icon: "💡", category: "general", tier: "any" },
+      { text: "Help me set up better monitoring and alerts", icon: "📈", category: "general", tier: "returning" },
+      { text: "What best practices should I adopt as a platform admin?", icon: "🎯", category: "general", tier: "any" },
+    ],
+  },
+  manager: {
+    people: [
+      { text: "How is my team performing with their client book?", icon: "👥", category: "financial", tier: "any" },
+      { text: "Which team members need support based on recent activity?", icon: "📋", category: "financial", tier: "returning" },
+      { text: "Show me coaching opportunities across my team", icon: "📊", category: "financial", tier: "any" },
+    ],
+    system: [
+      { text: "Is my team's configuration helping or hindering them?", icon: "🔧", category: "financial", tier: "any" },
+      { text: "What compliance or workflow settings should I adjust?", icon: "🛡️", category: "financial", tier: "returning" },
+      { text: "Audit my team's tool setup — what's missing?", icon: "⚙️", category: "financial", tier: "any" },
+    ],
+    usage: [
+      { text: "What management features am I not using effectively?", icon: "💡", category: "general", tier: "any" },
+      { text: "Help me build better team reports and dashboards", icon: "📈", category: "general", tier: "returning" },
+      { text: "What best practices should I adopt as a team manager?", icon: "🎯", category: "general", tier: "any" },
+    ],
+  },
+  advisor: {
+    people: [
+      { text: "How well am I serving my clients? Show me feedback trends", icon: "👥", category: "financial", tier: "any" },
+      { text: "Which clients need attention based on recent interactions?", icon: "📋", category: "financial", tier: "returning" },
+      { text: "Help me improve my client communication approach", icon: "📊", category: "financial", tier: "any" },
+    ],
+    system: [
+      { text: "Is my practice setup optimized? Audit my configuration", icon: "🔧", category: "financial", tier: "any" },
+      { text: "What tools and integrations should I enable?", icon: "🛡️", category: "financial", tier: "returning" },
+      { text: "Review my AI settings — am I getting the best results?", icon: "⚙️", category: "financial", tier: "any" },
+    ],
+    usage: [
+      { text: "What advisory features am I underutilizing?", icon: "💡", category: "general", tier: "any" },
+      { text: "Help me build a more efficient client workflow", icon: "📈", category: "general", tier: "returning" },
+      { text: "What best practices should I adopt as a financial professional?", icon: "🎯", category: "general", tier: "any" },
+    ],
+  },
+};
+
+// Standard prompts for all users (the 4th slot + user/client prompts)
+const STANDARD_PROMPTS: PromptEntry[] = [
   // General prompts — practical life decisions
   { text: "Walk me through a major life decision I'm facing", icon: "💡", category: "general", tier: "any" },
   { text: "Help me evaluate the financial impact of a career change", icon: "🎯", category: "general", tier: "any" },
@@ -84,29 +146,66 @@ const PROMPT_BANK: { text: string; icon: string; category: FocusMode; tier: "new
   { text: "Compare these two documents side by side", icon: "🔍", category: "study", tier: "any" },
 ];
 
-function getDynamicPrompts(focus: FocusMode[], hasConversations: boolean): typeof PROMPT_BANK {
+// Usage optimization prompts for regular users/clients
+const USER_USAGE_PROMPTS: PromptEntry[] = [
+  { text: "What features should I explore to get more from this platform?", icon: "💡", category: "general", tier: "any" },
+  { text: "Help me set up my financial profile for better recommendations", icon: "🎯", category: "financial", tier: "new" },
+  { text: "What tools am I not using that could help my financial planning?", icon: "🔍", category: "financial", tier: "returning" },
+  { text: "How can I get more personalized advice from the AI?", icon: "⚙️", category: "general", tier: "any" },
+];
+
+function getDynamicPrompts(focus: FocusMode[], hasConversations: boolean, role: string): PromptEntry[] {
   const tier = hasConversations ? "returning" : "new";
-  const filtered = PROMPT_BANK.filter(p => {
-    const focusMatch = focus.includes(p.category);
-    const tierMatch = p.tier === "any" || p.tier === tier;
-    return focusMatch && tierMatch;
-  });
-  // Shuffle and pick 4, ensuring variety across categories
-  const shuffled = [...filtered].sort(() => Math.random() - 0.5);
-  const result: typeof PROMPT_BANK = [];
-  const usedCategories = new Set<string>();
-  // First pass: one from each active category
-  for (const p of shuffled) {
-    if (result.length >= 4) break;
-    if (!usedCategories.has(p.category)) {
-      result.push(p);
-      usedCategories.add(p.category);
+  const result: PromptEntry[] = [];
+
+  // For admin/manager/advisor: 3 audit-direction prompts + 1 standard
+  const auditRole = AUDIT_PROMPTS[role];
+  if (auditRole) {
+    // Pick one from each audit direction
+    const pickOne = (pool: PromptEntry[]) => {
+      const eligible = pool.filter(p => p.tier === "any" || p.tier === tier);
+      return eligible[Math.floor(Math.random() * eligible.length)];
+    };
+    const peoplePick = pickOne(auditRole.people);
+    const systemPick = pickOne(auditRole.system);
+    const usagePick = pickOne(auditRole.usage);
+    if (peoplePick) result.push(peoplePick);
+    if (systemPick) result.push(systemPick);
+    if (usagePick) result.push(usagePick);
+    // 4th slot: a standard financial/general prompt
+    const standardFiltered = STANDARD_PROMPTS.filter(p => {
+      const focusMatch = focus.includes(p.category);
+      const tierMatch = p.tier === "any" || p.tier === tier;
+      return focusMatch && tierMatch;
+    });
+    const shuffledStandard = [...standardFiltered].sort(() => Math.random() - 0.5);
+    if (shuffledStandard.length > 0) result.push(shuffledStandard[0]);
+  } else {
+    // Regular user/client: 1 usage optimization prompt + 3 standard
+    const usageFiltered = USER_USAGE_PROMPTS.filter(p => p.tier === "any" || p.tier === tier);
+    if (usageFiltered.length > 0) {
+      result.push(usageFiltered[Math.floor(Math.random() * usageFiltered.length)]);
     }
-  }
-  // Fill remaining slots
-  for (const p of shuffled) {
-    if (result.length >= 4) break;
-    if (!result.includes(p)) result.push(p);
+    // Fill remaining 3 from standard prompts
+    const standardFiltered = STANDARD_PROMPTS.filter(p => {
+      const focusMatch = focus.includes(p.category);
+      const tierMatch = p.tier === "any" || p.tier === tier;
+      return focusMatch && tierMatch;
+    });
+    const shuffled = [...standardFiltered].sort(() => Math.random() - 0.5);
+    const usedCategories = new Set<string>();
+    // Ensure category variety
+    for (const p of shuffled) {
+      if (result.length >= 4) break;
+      if (!usedCategories.has(p.category)) {
+        result.push(p);
+        usedCategories.add(p.category);
+      }
+    }
+    for (const p of shuffled) {
+      if (result.length >= 4) break;
+      if (!result.includes(p)) result.push(p);
+    }
   }
   return result;
 }
@@ -139,7 +238,7 @@ function useTypingAnimation(text: string, speed = 40) {
 }
 
 // ─── WELCOME SCREEN COMPONENT ─────────────────────────────────
-function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, ttsEnabled, onPromptClick, isAuthenticated }: {
+function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, ttsEnabled, onPromptClick, isAuthenticated, userRole, isGuest }: {
   avatarUrl?: string | null;
   userName?: string | null;
   selectedFocus: FocusMode[];
@@ -147,10 +246,12 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
   ttsEnabled: boolean;
   onPromptClick: (text: string) => void;
   isAuthenticated: boolean;
+  userRole: string;
+  isGuest: boolean;
 }) {
   const greeting = `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${userName ? `, ${userName.split(" ")[0]}` : ""}`;
   const { displayed: typedGreeting, done: greetingDone } = useTypingAnimation(greeting, 35);
-  const [prompts] = useState(() => getDynamicPrompts(selectedFocus, hasConversations));
+  const [prompts] = useState(() => getDynamicPrompts(selectedFocus, hasConversations, userRole));
 
   return (
     <div className="h-full flex flex-col items-center justify-center px-4 pb-32">
@@ -177,6 +278,26 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
           ))}
         </div>
 
+        {/* Guest sign-in prompt */}
+        {isGuest && greetingDone && (
+          <div className="mt-6 max-w-lg mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+                <LogIn className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-xs text-emerald-300 font-medium">You're exploring as a guest</p>
+                <p className="text-[10px] text-muted-foreground">Sign in to save conversations, unlock all features, and personalize your experience.</p>
+              </div>
+              <button
+                onClick={() => window.location.href = getLoginUrl()}
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors text-xs font-medium"
+              >
+                Sign In
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Onboarding Checklist */}
         {!hasConversations && (
@@ -759,6 +880,7 @@ export default function Chat() {
     { icon: <Scale className="w-3.5 h-3.5" />, label: "Estate Planning", href: "/estate-planning", minRole: "advisor" as UserRole },
     { icon: <DollarSign className="w-3.5 h-3.5" />, label: "Premium Finance", href: "/premium-finance", minRole: "advisor" as UserRole },
     { icon: <Mail className="w-3.5 h-3.5" />, label: "Email Campaigns", href: "/email-campaigns", minRole: "advisor" as UserRole },
+    { icon: <UserPlus className="w-3.5 h-3.5" />, label: "Find a Pro", href: "/professionals", minRole: "user" as UserRole },
   ];
 
   const adminNav = [
@@ -766,6 +888,7 @@ export default function Chat() {
     { icon: <Building2 className="w-3.5 h-3.5" />, label: "Organizations", href: "/organizations", minRole: "advisor" as UserRole },
     { icon: <BarChart3 className="w-3.5 h-3.5" />, label: "Manager Dashboard", href: "/manager", minRole: "manager" as UserRole },
     { icon: <Globe className="w-3.5 h-3.5" />, label: "Global Admin", href: "/admin", minRole: "admin" as UserRole },
+    { icon: <Activity className="w-3.5 h-3.5" />, label: "Improvement Engine", href: "/improvement", minRole: "advisor" as UserRole },
   ];
 
   return (
@@ -1093,52 +1216,129 @@ export default function Chat() {
             </>
           )}
           <Separator className="mx-2" />
-          <div className={`flex items-center ${sidebarCollapsed ? "justify-center p-2" : "gap-2 px-3 py-2"}`}>
-            {sidebarCollapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)}>
+          {/* ─── PERSISTENT AUTH CONTROLS ─── */}
+          {user?.authTier === "anonymous" ? (
+            /* Guest user: always show sign-in CTA */
+            sidebarCollapsed ? (
+              <div className="p-2 space-y-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
+                        window.location.href = getLoginUrl();
+                      }}
+                      className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/30 transition-colors mx-auto"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Sign in to save your progress</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { logout(); }}
+                      className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors mx-auto"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Clear guest session</TooltipContent>
+                </Tooltip>
+              </div>
+            ) : (
+              <div className="px-3 py-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                    <User className="w-3 h-3 text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs text-amber-300 font-medium block">Guest</span>
+                    <span className="text-[10px] text-muted-foreground">Session is temporary</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
+                    window.location.href = getLoginUrl();
+                  }}
+                  className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors text-xs font-medium"
+                >
+                  <LogIn className="w-3.5 h-3.5" /> Sign In to Save Progress
+                </button>
+                <button
+                  onClick={() => { logout(); }}
+                  className="flex items-center justify-center gap-1.5 w-full px-3 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors text-[11px]"
+                >
+                  <LogOut className="w-3 h-3" /> Clear Session
+                </button>
+              </div>
+            )
+          ) : (
+            /* Authenticated user: show user info + sign-out */
+            <div className={`flex items-center ${sidebarCollapsed ? "justify-center p-2" : "gap-2 px-3 py-2"}`}>
+              {sidebarCollapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)}>
+                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{user?.name || "User"} — Click to expand</TooltipContent>
+                </Tooltip>
+              ) : (
+                <>
+                  <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent">
                     {user?.name?.charAt(0)?.toUpperCase() || "U"}
                   </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">{user?.name || "User"} — Click to expand</TooltipContent>
-              </Tooltip>
-            ) : (
-              <>
-                <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent">
-                  {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs truncate block">{user?.name || "User"}</span>
-                  <span className="text-[10px] text-muted-foreground capitalize">{userRole}</span>
-                </div>
-                <button onClick={() => setSidebarCollapsed(true)} className="text-muted-foreground hover:text-foreground" title="Collapse sidebar">
-                  <PanelLeftClose className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => logout()} className="text-muted-foreground hover:text-foreground">
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              </>
-            )}
-          </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs truncate block">{user?.name || "User"}</span>
+                    <span className="text-[10px] text-muted-foreground capitalize">{userRole}</span>
+                  </div>
+                  <button onClick={() => setSidebarCollapsed(true)} className="text-muted-foreground hover:text-foreground" title="Collapse sidebar">
+                    <PanelLeftClose className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => logout()} className="text-muted-foreground hover:text-foreground" title="Sign out">
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </aside>
 
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Mobile-only sidebar toggle + escalation */}
+        {/* Mobile-only sidebar toggle + escalation + guest sign-in */}
         <div className="lg:hidden flex items-center h-12 px-3 shrink-0 justify-between">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-5 h-5" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-[10px] h-7 gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-            onClick={() => toast.info("Professional referral network coming soon. For urgent financial matters, please consult a licensed advisor.")}
-          >
-            <Phone className="w-3 h-3" /> Talk to a Pro
-          </Button>
+          <div className="flex items-center gap-1.5">
+            {user?.authTier === "anonymous" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-[10px] h-7 gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                onClick={() => {
+                  if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
+                  window.location.href = getLoginUrl();
+                }}
+              >
+                <LogIn className="w-3 h-3" /> Sign In
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-[10px] h-7 gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+              onClick={() => navigate("/professionals")}
+            >
+              <Phone className="w-3 h-3" /> Talk to a Pro
+            </Button>
+          </div>
         </div>
 
         {/* ─── LIVE SESSION ──────────────────────────────────── */}
@@ -1170,6 +1370,8 @@ export default function Chat() {
               ttsEnabled={ttsEnabled}
               onPromptClick={(text) => { setInput(text); textareaRef.current?.focus(); }}
               isAuthenticated={isAuthenticated}
+              userRole={userRole}
+              isGuest={user?.authTier === "anonymous"}
             />
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">

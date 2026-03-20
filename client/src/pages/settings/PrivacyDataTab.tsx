@@ -6,54 +6,65 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Shield, Download, Trash2, Eye, Database, Mic, FileText,
-  MessageSquare, AlertTriangle, CheckCircle, Loader2,
+  MessageSquare, AlertTriangle, CheckCircle, Loader2, Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 
-/**
- * Privacy & Data tab in Settings — data rights, consent management, data export/deletion.
- */
+const CONSENT_MAP = [
+  { key: "ai_chat" as const, label: "AI Chat Processing", desc: "Allow AI to process your messages and generate responses", icon: MessageSquare },
+  { key: "voice_input" as const, label: "Voice Processing", desc: "Allow speech-to-text transcription of voice input", icon: Mic },
+  { key: "document_upload" as const, label: "Document Upload & Analysis", desc: "Allow AI to analyze uploaded documents for your Knowledge Base", icon: FileText },
+  { key: "analytics" as const, label: "Usage Analytics", desc: "Allow anonymized usage data collection to improve the platform", icon: Database },
+  { key: "data_sharing" as const, label: "Data Sharing", desc: "Allow sharing anonymized data with your organization's professionals", icon: Eye },
+];
+
 export default function PrivacyDataTab() {
   const { user } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  // Consent states from localStorage (per-source tracking - 1F)
-  const [consents, setConsents] = useState(() => ({
-    aiChat: localStorage.getItem("consent_ai_chat") === "true",
-    voice: localStorage.getItem("consent_voice") === "true",
-    docUpload: localStorage.getItem("consent_doc_upload") === "true",
-    analytics: localStorage.getItem("consent_analytics") !== "false", // default true
-  }));
+  // Server-backed consent tracking
+  const consentsQuery = trpc.consent.list.useQuery(undefined, { retry: 1, staleTime: 30000 });
+  const grantMut = trpc.consent.grant.useMutation({
+    onSuccess: () => consentsQuery.refetch(),
+  });
+  const revokeMut = trpc.consent.revoke.useMutation({
+    onSuccess: () => consentsQuery.refetch(),
+  });
+  const revokeAllMut = trpc.consent.revokeAll.useMutation({
+    onSuccess: () => { consentsQuery.refetch(); toast.success("All consents revoked"); },
+  });
 
-  const updateConsent = (key: keyof typeof consents, value: boolean) => {
-    setConsents(prev => ({ ...prev, [key]: value }));
-    localStorage.setItem(`consent_${key === "aiChat" ? "ai_chat" : key === "docUpload" ? "doc_upload" : key}`, String(value));
-    toast.success(`${value ? "Enabled" : "Disabled"} ${key === "aiChat" ? "AI chat" : key === "voice" ? "voice" : key === "docUpload" ? "document upload" : "analytics"} consent`);
+  const consents = consentsQuery.data || [];
+  const isConsentGranted = (type: string) => {
+    const c = consents.find((c: any) => c.consentType === type);
+    return c?.granted ?? false;
+  };
+  const consentTimestamp = (type: string) => {
+    const c = consents.find((c: any) => c.consentType === type);
+    return c?.grantedAt ? new Date(Number(c.grantedAt)).toLocaleDateString() : null;
+  };
+
+  const handleToggleConsent = (type: string, value: boolean) => {
+    if (value) {
+      grantMut.mutate({ consentType: type as any });
+      toast.success(`Enabled ${type.replace(/_/g, " ")} consent`);
+    } else {
+      revokeMut.mutate({ consentType: type as any });
+      toast.info(`Disabled ${type.replace(/_/g, " ")} consent`);
+    }
   };
 
   const utils = trpc.useUtils();
 
-  // Export all user data
   const handleExportData = async () => {
     setExporting(true);
     try {
-      // Fetch conversations list
       const conversations = await utils.conversations.list.fetch();
       const exportData = {
         exportedAt: new Date().toISOString(),
-        user: {
-          name: user?.name,
-          email: user?.email,
-          role: user?.role,
-          createdAt: user?.createdAt,
-        },
-        conversations: conversations?.map((c: any) => ({
-          id: c.id,
-          title: c.title,
-          createdAt: c.createdAt,
-          pinned: c.pinned,
-        })) || [],
+        user: { name: user?.name, email: user?.email, role: user?.role, createdAt: user?.createdAt },
+        conversations: conversations?.map((c: any) => ({ id: c.id, title: c.title, createdAt: c.createdAt, pinned: c.pinned })) || [],
         consentSettings: consents,
         note: "For full conversation exports, use the Export option in each conversation's context menu.",
       };
@@ -82,48 +93,46 @@ export default function PrivacyDataTab() {
           Privacy & Data
         </h2>
         <p className="text-sm text-muted-foreground">
-          Manage your data, consent preferences, and privacy settings.
+          Manage your data, consent preferences, and privacy settings. Consent changes are tracked and auditable.
         </p>
       </div>
 
       {/* ─── CONSENT MANAGEMENT (1F) ─── */}
       <section>
-        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Eye className="w-4 h-4" />
-          Consent Management
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Eye className="w-4 h-4" />
+            Consent Management
+          </h3>
+          <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => revokeAllMut.mutate()}>
+            Revoke All
+          </Button>
+        </div>
         <p className="text-xs text-muted-foreground mb-4">
-          Control which features can process your data. Disabling a consent will prevent that feature from working.
+          Control which features can process your data. Changes are logged with timestamps for compliance.
         </p>
         <div className="space-y-3">
-          <ConsentRow
-            icon={<MessageSquare className="w-4 h-4" />}
-            label="AI Chat Processing"
-            description="Allow AI to process your messages and generate responses"
-            checked={consents.aiChat}
-            onChange={(v) => updateConsent("aiChat", v)}
-          />
-          <ConsentRow
-            icon={<Mic className="w-4 h-4" />}
-            label="Voice Processing"
-            description="Allow speech-to-text transcription of voice input"
-            checked={consents.voice}
-            onChange={(v) => updateConsent("voice", v)}
-          />
-          <ConsentRow
-            icon={<FileText className="w-4 h-4" />}
-            label="Document Upload & Analysis"
-            description="Allow AI to analyze uploaded documents for your Knowledge Base"
-            checked={consents.docUpload}
-            onChange={(v) => updateConsent("docUpload", v)}
-          />
-          <ConsentRow
-            icon={<Database className="w-4 h-4" />}
-            label="Usage Analytics"
-            description="Allow anonymized usage data collection to improve the platform"
-            checked={consents.analytics}
-            onChange={(v) => updateConsent("analytics", v)}
-          />
+          {CONSENT_MAP.map(({ key, label, desc, icon: Icon }) => (
+            <div key={key} className="flex items-center justify-between gap-4 p-3 rounded-lg bg-card border border-border/50">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="text-muted-foreground shrink-0"><Icon className="w-4 h-4" /></div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{label}</p>
+                  <p className="text-[10px] text-muted-foreground">{desc}</p>
+                  {consentTimestamp(key) && (
+                    <p className="text-[9px] text-muted-foreground/60 flex items-center gap-1 mt-0.5">
+                      <Clock className="w-2.5 h-2.5" /> Granted {consentTimestamp(key)}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Switch
+                checked={isConsentGranted(key)}
+                onCheckedChange={(v) => handleToggleConsent(key, v)}
+                disabled={grantMut.isPending || revokeMut.isPending}
+              />
+            </div>
+          ))}
         </div>
       </section>
 
@@ -134,8 +143,7 @@ export default function PrivacyDataTab() {
           Export Your Data
         </h3>
         <p className="text-xs text-muted-foreground mb-3">
-          Download a copy of your account data, including profile information and conversation metadata.
-          Individual conversations can be exported from their context menu in the chat sidebar.
+          Download a copy of your account data, including profile information, consent history, and conversation metadata.
         </p>
         <Button size="sm" variant="outline" onClick={handleExportData} disabled={exporting}>
           {exporting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Download className="w-4 h-4 mr-1.5" />}
@@ -179,7 +187,6 @@ export default function PrivacyDataTab() {
                 <p className="text-sm font-medium text-destructive">Are you sure?</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   This will permanently delete all your conversations, documents, memories, and profile data.
-                  Please export your data first if you want to keep a copy.
                 </p>
               </div>
             </div>
@@ -197,24 +204,6 @@ export default function PrivacyDataTab() {
           </div>
         )}
       </section>
-    </div>
-  );
-}
-
-function ConsentRow({ icon, label, description, checked, onChange }: {
-  icon: React.ReactNode; label: string; description: string;
-  checked: boolean; onChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-card border border-border/50">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="text-muted-foreground shrink-0">{icon}</div>
-        <div className="min-w-0">
-          <p className="text-sm font-medium">{label}</p>
-          <p className="text-[10px] text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   );
 }
