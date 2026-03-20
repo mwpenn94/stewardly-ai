@@ -1,0 +1,130 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "affiliated_resources"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "audit_trail"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "client_associations"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "compliance_reviews"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "conversations"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "document_chunks"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "documents"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "engagement_scores"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "enrichment_cohorts"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "enrichment_datasets"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "enrichment_matches"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "feature_flags"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "feedback"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "manager_ai_settings"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "meeting_action_items"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "meetings"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "memories"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "messages"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "organization_ai_settings"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "organization_landing_page_config"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "organization_relationships"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "organizations"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "platform_ai_settings"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "proactive_insights"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "products"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "professional_ai_settings"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "professional_context"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "prompt_experiments"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "prompt_variants"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "quality_ratings"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "review_queue"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "suitability_assessments"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "user_organization_roles"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "user_preferences"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "user_profiles"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "user_relationships"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "users"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "view_as_audit_log"
+    },
+    {
+      "Tables_in_GaKEFERPH576tbv5NzvkMD": "workflow_checklist"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_GaKEFERPH576tbv5NzvkMD\n__drizzle_migrations\naffiliated_resources\naudit_trail\nclient_associations\ncompliance_reviews\nconversations\ndocument_chunks\ndocuments\nengagement_scores\nenrichment_cohorts\nenrichment_datasets\nenrichment_matches\nfeature_flags\nfeedback\nmanager_ai_settings\nmeeting_action_items\nmeetings\nmemories\nmessages\norganization_ai_settings\norganization_landing_page_config\norganization_relationships\norganizations\nplatform_ai_settings\nproactive_insights\nproducts\nprofessional_ai_settings\nprofessional_context\nprompt_experiments\nprompt_variants\nquality_ratings\nreview_queue\nsuitability_assessments\nuser_organization_roles\nuser_preferences\nuser_profiles\nuser_relationships\nusers\nview_as_audit_log\nworkflow_checklist\n",
+  "stderr": "",
+  "execution_time_ms": 130
+}

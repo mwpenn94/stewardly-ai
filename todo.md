@@ -812,3 +812,100 @@
 - [x] Fix Chat.tsx React hooks order error ("Rendered more hooks than during the previous render")
 - [x] Fix comprehensive.test.ts — 17 test failures (import path ./promptBuilder → ./prompts, procedure name mismatches, PII test assertions)
 - [x] All 128 tests passing across 6 test files
+
+## Master Continuation Prompt — v4-v7 Features (No API Keys Required)
+
+### A1. Memory Engine — 3-Tier Persistent Memory
+- [x] Create memory_facts, memory_preferences, memory_episodes tables
+- [x] Build memory extraction from conversations (auto-extract facts after each message)
+- [x] Tier 1: Structured facts (key-value with timestamps, source, change history)
+- [x] Tier 2: Behavioral preferences (response length, chart vs text, topic interests)
+- [x] Tier 3: Episodic summaries (2-3 sentence conversation summaries)
+- [x] Runtime injection: assemble memory context before every AI response
+- [x] Settings > "What Steward Knows" UI (via existing memories in Settings)
+- [x] Memory privacy: firm-scoped, user can delete individual facts or clear all
+
+### A2. Knowledge Graph — Financial Relationship Graph
+- [x] Create kg_nodes and kg_edges tables
+- [x] Node types: Person, Account, Goal, Insurance, Property, Liability, Income, Tax, Estate, Product, Regulation
+- [x] Edge types: OWNS, BENEFITS_FROM, FUNDS, PAYS, GOVERNS, DEPENDS_ON, CONFLICTS_WITH, BENEFICIARY_OF
+- [x] Gap detection: scan for missing edges (no beneficiary, no insurance, unfunded goals)
+- [ ] Reasoning chains: "How I got here" collapsible section on AI responses — future enhancement
+- [ ] Graph visualization (D3.js force-directed layout) on "My Financial Picture" page — future enhancement
+
+### A4. Compliance Copilot Upgrade — LLM-as-Judge
+- [x] Content classification (general_education / product_discussion / personalized_recommendation / investment_advice)
+- [x] Risk-tiered routing (auto-approve / auto-modify / queue for review / block)
+- [x] Reasoning chain capture on every response
+- [x] Enhanced compliance_audit table with immutable append-only logging
+
+### C2. Privacy Shield — PII Masking
+- [x] PII masking pipeline before LLM calls (SSN, account numbers, names, addresses)
+- [x] Data minimization per agent scope
+- [x] Settings > "Privacy & Data" > "What data was sent to AI" transparency view (privacy_audit table + router)
+
+### B9. Adaptive Education — Personalized Financial Education
+- [x] Knowledge gap detection from conversation patterns (via recommendation engine)
+- [x] Micro-lesson generation (2-5 min, 8 seed modules across categories)
+- [x] Education progress tracking table
+- [x] "Learn" section in sidebar with active modules and progress (Education Center page)
+
+### D10. Plan Adherence Engine
+- [ ] Plan adherence monitoring (savings, spending, investment, debt)
+- [ ] Intervention tiers (gentle nudge → contextualized insight → advisor alert → plan revision)
+- [ ] Adherence score (0-100) on dashboard
+- [ ] Positive reinforcement for strong adherence
+
+### D4. Client Segmentation & Service Tier
+- [ ] Scoring model (Value, Growth, Engagement, Relationship — 0-25 each)
+- [ ] Auto-tier assignment (Platinum/Gold/Silver/Bronze)
+- [ ] Service creep detection alerts
+- [ ] client_segments table with scoring and tier history
+
+### D3. Practice Intelligence
+- [ ] Growth, profitability, engagement, operational metrics
+- [ ] Attrition prediction scoring
+- [ ] Practice Intelligence tab on professional dashboard
+- [ ] practice_metrics table
+
+### D6. Student Loan Optimizer
+- [x] Loan inventory (manual entry)
+- [x] Repayment plan comparison (Standard, SAVE, PAYE, IBR, ICR, PSLF, refinancing)
+- [x] Integrated financial impact modeling
+- [x] student_loans table
+
+### D7. LTC Planner
+- [ ] Care cost projector (probability, duration, cost by geography)
+- [ ] Funding strategy comparison (traditional LTC, hybrid, self-fund, Medicaid)
+- [ ] Retirement integration via simulation
+- [ ] ltc_analyses table
+
+### D8. Equity Compensation Planner
+- [x] Grant inventory (ISO/NSO/RSU/ESPP tracking)
+- [x] Tax scenario modeling (AMT analysis, exercise strategy)
+- [ ] Concentration risk monitoring — future enhancement
+- [x] equity_grants table
+
+### B8. COI Network — Center of Influence
+- [x] COI contact management (CPA, attorney, agent, broker)
+- [x] Referral tracking (sent/received, reciprocity)
+- [ ] COI matching when needs identified outside advisor scope — future enhancement
+- [x] coi_contacts and referrals tables
+
+### D13. Digital Asset Estate Planning
+- [x] Digital asset inventory (crypto, financial accounts, social media, loyalty programs)
+- [x] Access planning guidance (seed phrase backup, hardware wallet docs)
+- [ ] Legal framework checklist (state digital asset laws) — future enhancement
+- [x] digital_asset_inventory table
+
+### C4. Ambient Finance — Smart Notifications
+- [ ] Channel selection (in-app, email digest, push)
+- [ ] Intelligent suppression (batch similar, quiet hours, defer during travel)
+- [ ] Morning briefing generation
+- [ ] notification_log table
+
+### D14. Client Portal Optimizer — Plan-First Experience
+- [ ] Plan-first home screen (goals progress → action items → health score → portfolio)
+- [ ] Engagement tracking (login frequency, time spent, features used)
+- [ ] Personalized portal based on preferences
+- [ ] portal_engagement table

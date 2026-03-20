@@ -721,3 +721,279 @@ export const featureFlags = mysqlTable("feature_flags", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type FeatureFlag = typeof featureFlags.$inferSelect;
+
+
+// ═══════════════════════════════════════════════════════════════════
+// v4+ TABLES — Memory Engine, Knowledge Graph, Compliance Copilot,
+//              Privacy Shield, Education, Plan Adherence, Segmentation
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── MEMORY EPISODES (Conversation Summaries — Tier 3) ──────────
+export const memoryEpisodes = mysqlTable("memory_episodes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  conversationId: int("conversationId").notNull(),
+  summary: text("summary").notNull(),
+  keyTopics: json("keyTopics"), // string[]
+  emotionalTone: varchar("emotionalTone", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MemoryEpisode = typeof memoryEpisodes.$inferSelect;
+
+// ─── KNOWLEDGE GRAPH NODES ──────────────────────────────────────
+export const kgNodes = mysqlTable("kg_nodes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  nodeType: mysqlEnum("nodeType", [
+    "person", "account", "goal", "insurance", "property",
+    "liability", "income", "tax", "estate", "product",
+    "regulation", "document", "advisor", "beneficiary",
+  ]).notNull(),
+  label: varchar("label", { length: 256 }).notNull(),
+  dataJson: json("dataJson"),
+  status: mysqlEnum("status", ["active", "inactive", "pending"]).default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type KgNode = typeof kgNodes.$inferSelect;
+
+// ─── KNOWLEDGE GRAPH EDGES ──────────────────────────────────────
+export const kgEdges = mysqlTable("kg_edges", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  sourceNodeId: int("sourceNodeId").notNull(),
+  targetNodeId: int("targetNodeId").notNull(),
+  edgeType: mysqlEnum("edgeType", [
+    "owns", "benefits_from", "funds", "pays", "governs",
+    "depends_on", "conflicts_with", "beneficiary_of",
+    "manages", "insures", "employs", "related_to",
+  ]).notNull(),
+  weight: float("weight").default(1.0),
+  metadataJson: json("metadataJson"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type KgEdge = typeof kgEdges.$inferSelect;
+
+// ─── COMPLIANCE AUDIT (Enhanced — Immutable Append-Only) ────────
+export const complianceAudit = mysqlTable("compliance_audit", {
+  id: int("id").autoincrement().primaryKey(),
+  messageId: int("messageId").notNull(),
+  userId: int("userId").notNull(),
+  conversationId: int("conversationId"),
+  classification: mysqlEnum("classification", [
+    "general_education", "product_discussion",
+    "personalized_recommendation", "investment_advice",
+  ]).notNull(),
+  confidenceScore: float("confidenceScore").notNull(),
+  flagsJson: json("flagsJson"),
+  reasoningChainJson: json("reasoningChainJson"),
+  modificationsJson: json("modificationsJson"),
+  reviewTier: mysqlEnum("reviewTier", ["auto_approved", "auto_modified", "human_review", "blocked"]).notNull(),
+  reviewerId: int("reviewerId"),
+  modelVersion: varchar("modelVersion", { length: 64 }),
+  promptHash: varchar("promptHash", { length: 64 }),
+  deliveryStatus: mysqlEnum("deliveryStatus", ["delivered", "held", "blocked", "modified"]).default("delivered"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ComplianceAuditEntry = typeof complianceAudit.$inferSelect;
+
+// ─── PRIVACY AUDIT LOG ──────────────────────────────────────────
+export const privacyAudit = mysqlTable("privacy_audit", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  apiCallPurpose: varchar("apiCallPurpose", { length: 128 }).notNull(),
+  dataCategories: json("dataCategories"), // string[]
+  piiMasked: mysqlBoolean("piiMasked").default(false),
+  modelUsed: varchar("modelUsed", { length: 64 }),
+  tokensSent: int("tokensSent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PrivacyAuditEntry = typeof privacyAudit.$inferSelect;
+
+// ─── EDUCATION MODULES ──────────────────────────────────────────
+export const educationModules = mysqlTable("education_modules", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description"),
+  category: mysqlEnum("category", [
+    "budgeting", "investing", "insurance", "tax", "estate",
+    "retirement", "debt", "credit", "real_estate", "general",
+  ]).notNull(),
+  difficulty: mysqlEnum("difficulty", ["beginner", "intermediate", "advanced"]).default("beginner"),
+  estimatedMinutes: int("estimatedMinutes").default(5),
+  content: text("content"), // markdown
+  isActive: mysqlBoolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type EducationModule = typeof educationModules.$inferSelect;
+
+// ─── EDUCATION PROGRESS ─────────────────────────────────────────
+export const educationProgress = mysqlTable("education_progress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  moduleId: int("moduleId").notNull(),
+  assignedBy: varchar("assignedBy", { length: 64 }).default("system"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  score: float("score"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type EducationProgressEntry = typeof educationProgress.$inferSelect;
+
+// ─── PLAN ADHERENCE ─────────────────────────────────────────────
+export const planAdherence = mysqlTable("plan_adherence", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  category: mysqlEnum("category", ["savings", "spending", "investment", "debt", "insurance", "estate"]).notNull(),
+  targetValue: float("targetValue"),
+  actualValue: float("actualValue"),
+  adherenceScore: float("adherenceScore"), // 0-100
+  trend: mysqlEnum("trend", ["improving", "stable", "declining"]).default("stable"),
+  lastNudgeTier: mysqlEnum("lastNudgeTier", ["none", "gentle", "contextual", "advisor_alert", "plan_revision"]).default("none"),
+  periodStart: timestamp("periodStart"),
+  periodEnd: timestamp("periodEnd"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PlanAdherenceEntry = typeof planAdherence.$inferSelect;
+
+// ─── CLIENT SEGMENTS ────────────────────────────────────────────
+export const clientSegments = mysqlTable("client_segments", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  professionalId: int("professionalId").notNull(),
+  valueScore: float("valueScore").default(0),
+  growthScore: float("growthScore").default(0),
+  engagementScore: float("engagementScore").default(0),
+  relationshipScore: float("relationshipScore").default(0),
+  totalScore: float("totalScore").default(0),
+  tier: mysqlEnum("tier", ["platinum", "gold", "silver", "bronze"]).default("silver"),
+  serviceModelJson: json("serviceModelJson"),
+  previousTier: mysqlEnum("previousTier", ["platinum", "gold", "silver", "bronze"]),
+  lastClassified: timestamp("lastClassified"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ClientSegment = typeof clientSegments.$inferSelect;
+
+// ─── PRACTICE METRICS ───────────────────────────────────────────
+export const practiceMetrics = mysqlTable("practice_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  professionalId: int("professionalId").notNull(),
+  firmId: int("firmId"),
+  periodEndDate: timestamp("periodEndDate").notNull(),
+  organicGrowthRate: float("organicGrowthRate"),
+  netNewClients: int("netNewClients"),
+  revenuePerClient: float("revenuePerClient"),
+  costToServeJson: json("costToServeJson"),
+  attritionRiskClientsJson: json("attritionRiskClientsJson"),
+  engagementScoresJson: json("engagementScoresJson"),
+  benchmarkPercentilesJson: json("benchmarkPercentilesJson"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PracticeMetric = typeof practiceMetrics.$inferSelect;
+
+// ─── STUDENT LOANS ──────────────────────────────────────────────
+export const studentLoans = mysqlTable("student_loans", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  servicer: varchar("servicer", { length: 256 }),
+  balance: float("balance").notNull(),
+  rate: float("rate").notNull(),
+  loanType: mysqlEnum("loanType", ["subsidized", "unsubsidized", "plus", "grad_plus", "private", "consolidation"]).notNull(),
+  repaymentPlan: varchar("repaymentPlan", { length: 64 }),
+  paymentsMade: int("paymentsMade").default(0),
+  remainingTerm: int("remainingTerm"), // months
+  pslfQualifyingPayments: int("pslfQualifyingPayments").default(0),
+  pslfEligible: mysqlBoolean("pslfEligible").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StudentLoan = typeof studentLoans.$inferSelect;
+
+// ─── EQUITY GRANTS ──────────────────────────────────────────────
+export const equityGrants = mysqlTable("equity_grants", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  grantType: mysqlEnum("grantType", ["iso", "nso", "rsu", "espp"]).notNull(),
+  company: varchar("company", { length: 256 }).notNull(),
+  grantDate: timestamp("grantDate"),
+  vestingSchedule: json("vestingSchedule"),
+  exercisePrice: float("exercisePrice"),
+  currentFMV: float("currentFMV"),
+  sharesGranted: int("sharesGranted"),
+  sharesVested: int("sharesVested").default(0),
+  sharesExercised: int("sharesExercised").default(0),
+  expirationDate: timestamp("expirationDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type EquityGrant = typeof equityGrants.$inferSelect;
+
+// ─── COI CONTACTS ───────────────────────────────────────────────
+export const coiContacts = mysqlTable("coi_contacts", {
+  id: int("id").autoincrement().primaryKey(),
+  professionalId: int("professionalId").notNull(),
+  firmId: int("firmId"),
+  name: varchar("name", { length: 256 }).notNull(),
+  coiFirm: varchar("coiFirm", { length: 256 }),
+  specialty: mysqlEnum("specialty", ["cpa", "attorney", "insurance_agent", "mortgage_broker", "real_estate", "other"]).notNull(),
+  contactJson: json("contactJson"),
+  relationshipStrength: mysqlEnum("relationshipStrength", ["strong", "moderate", "new"]).default("new"),
+  referralsSent: int("referralsSent").default(0),
+  referralsReceived: int("referralsReceived").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CoiContact = typeof coiContacts.$inferSelect;
+
+// ─── REFERRALS ──────────────────────────────────────────────────
+export const referrals = mysqlTable("referrals", {
+  id: int("id").autoincrement().primaryKey(),
+  fromProfessionalId: int("fromProfessionalId").notNull(),
+  toCoiId: int("toCoiId").notNull(),
+  clientId: int("clientId"),
+  reason: text("reason"),
+  outcome: mysqlEnum("outcome", ["pending", "accepted", "completed", "declined"]).default("pending"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Referral = typeof referrals.$inferSelect;
+
+// ─── DIGITAL ASSET INVENTORY ────────────────────────────────────
+export const digitalAssetInventory = mysqlTable("digital_asset_inventory", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  assetType: mysqlEnum("assetType", [
+    "crypto_wallet", "exchange_account", "brokerage", "bank",
+    "social_media", "email", "cloud_storage", "loyalty_program",
+    "domain", "digital_content", "other",
+  ]).notNull(),
+  platform: varchar("platform", { length: 256 }).notNull(),
+  approximateValue: float("approximateValue"),
+  accessMethod: text("accessMethod"), // encrypted description
+  hasAccessPlan: mysqlBoolean("hasAccessPlan").default(false),
+  legacyContactSet: mysqlBoolean("legacyContactSet").default(false),
+  lastVerified: timestamp("lastVerified"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DigitalAssetInventoryItem = typeof digitalAssetInventory.$inferSelect;
+
+// ─── NOTIFICATION LOG ───────────────────────────────────────────
+export const notificationLog = mysqlTable("notification_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  type: varchar("type", { length: 64 }).notNull(),
+  channel: mysqlEnum("channel", ["in_app", "email", "push", "sms"]).default("in_app"),
+  urgency: mysqlEnum("urgency", ["low", "medium", "high", "critical"]).default("medium"),
+  title: varchar("title", { length: 256 }),
+  content: text("content"),
+  deliveredAt: timestamp("deliveredAt"),
+  readAt: timestamp("readAt"),
+  suppressed: mysqlBoolean("suppressed").default(false),
+  suppressionReason: varchar("suppressionReason", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type NotificationLogEntry = typeof notificationLog.$inferSelect;

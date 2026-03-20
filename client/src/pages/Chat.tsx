@@ -9,7 +9,7 @@ import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
   AlertTriangle, ArrowUp, BarChart3, BookOpen, Bot, Briefcase, Building2, Calculator, Check, CheckCircle, ClipboardList,
-  ChevronDown, FileText, Image, Loader2, LogOut, Menu, MessageSquare,
+  ChevronDown, FileText, GraduationCap, Image, Key, Loader2, LogOut, Menu, MessageSquare,
   Mic, MicOff, Monitor, Package, Paperclip, Phone, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield
@@ -516,6 +516,11 @@ export default function Chat() {
     { icon: <Users className="w-3.5 h-3.5" />, label: "Marketplace", href: "/marketplace", minRole: "user" as UserRole },
     { icon: <ClipboardList className="w-3.5 h-3.5" />, label: "Workflows", href: "/workflows", minRole: "user" as UserRole },
     { icon: <BookOpen className="w-3.5 h-3.5" />, label: "Study Buddy", href: "/study", minRole: "user" as UserRole },
+    { icon: <GraduationCap className="w-3.5 h-3.5" />, label: "Education", href: "/education", minRole: "user" as UserRole },
+    { icon: <GraduationCap className="w-3.5 h-3.5" />, label: "Student Loans", href: "/student-loans", minRole: "user" as UserRole },
+    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Equity Comp", href: "/equity-comp", minRole: "user" as UserRole },
+    { icon: <Key className="w-3.5 h-3.5" />, label: "Digital Assets", href: "/digital-assets", minRole: "user" as UserRole },
+    { icon: <Users className="w-3.5 h-3.5" />, label: "COI Network", href: "/coi-network", minRole: "advisor" as UserRole },
   ];
 
   const adminNav = [

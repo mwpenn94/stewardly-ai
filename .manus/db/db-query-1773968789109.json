@@ -1,0 +1,58 @@
+{
+  "query": "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('memory_episodes','kg_nodes','kg_edges','compliance_audit','privacy_audit','education_modules','education_progress','plan_adherence','client_segments','practice_metrics','student_loans','equity_grants','coi_contacts','referrals','digital_asset_inventory','notification_log') ORDER BY TABLE_NAME;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('memory_episodes','kg_nodes','kg_edges','compliance_audit','privacy_audit','education_modules','education_progress','plan_adherence','client_segments','practice_metrics','student_loans','equity_grants','coi_contacts','referrals','digital_asset_inventory','notification_log') ORDER BY TABLE_NAME;",
+  "rows": [
+    {
+      "TABLE_NAME": "client_segments"
+    },
+    {
+      "TABLE_NAME": "coi_contacts"
+    },
+    {
+      "TABLE_NAME": "compliance_audit"
+    },
+    {
+      "TABLE_NAME": "digital_asset_inventory"
+    },
+    {
+      "TABLE_NAME": "education_modules"
+    },
+    {
+      "TABLE_NAME": "education_progress"
+    },
+    {
+      "TABLE_NAME": "equity_grants"
+    },
+    {
+      "TABLE_NAME": "kg_edges"
+    },
+    {
+      "TABLE_NAME": "kg_nodes"
+    },
+    {
+      "TABLE_NAME": "memory_episodes"
+    },
+    {
+      "TABLE_NAME": "notification_log"
+    },
+    {
+      "TABLE_NAME": "plan_adherence"
+    },
+    {
+      "TABLE_NAME": "practice_metrics"
+    },
+    {
+      "TABLE_NAME": "privacy_audit"
+    },
+    {
+      "TABLE_NAME": "referrals"
+    },
+    {
+      "TABLE_NAME": "student_loans"
+    }
+  ],
+  "messages": [],
+  "stdout": "TABLE_NAME\nclient_segments\ncoi_contacts\ncompliance_audit\ndigital_asset_inventory\neducation_modules\neducation_progress\nequity_grants\nkg_edges\nkg_nodes\nmemory_episodes\nnotification_log\nplan_adherence\npractice_metrics\nprivacy_audit\nreferrals\nstudent_loans\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

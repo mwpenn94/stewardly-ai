@@ -27,6 +27,11 @@ import Portal from "./pages/Portal";
 import Organizations from "./pages/Organizations";
 import Workflows from "./pages/Workflows";
 import StudyBuddy from "./pages/StudyBuddy";
+import EducationCenter from "./pages/EducationCenter";
+import StudentLoans from "./pages/StudentLoans";
+import EquityComp from "./pages/EquityComp";
+import DigitalAssets from "./pages/DigitalAssets";
+import CoiNetwork from "./pages/CoiNetwork";
 
 function Router() {
   return (
@@ -56,6 +61,11 @@ function Router() {
       <Route path={"/organizations"} component={Organizations} />
       <Route path={"/workflows"} component={Workflows} />
       <Route path={"/study"} component={StudyBuddy} />
+      <Route path={"/education"} component={EducationCenter} />
+      <Route path={"/student-loans"} component={StudentLoans} />
+      <Route path={"/equity-comp"} component={EquityComp} />
+      <Route path={"/digital-assets"} component={DigitalAssets} />
+      <Route path={"/coi-network"} component={CoiNetwork} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>

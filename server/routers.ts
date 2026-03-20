@@ -28,6 +28,9 @@ import {
   buildSystemPrompt, FINANCIAL_DISCLAIMER, needsFinancialDisclaimer,
   detectPII, stripPII, calculateConfidence,
 } from "./prompts";
+import { extractMemoriesFromMessage, saveExtractedMemories, generateEpisodeSummary, saveEpisodeSummary, assembleMemoryContext } from "./memoryEngine";
+import { assembleGraphContext } from "./knowledgeGraph";
+import { classifyContent, applyModifications, logComplianceAudit, logPrivacyAudit } from "./complianceCopilot";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
 import { aiLayersRouter } from "./routers/aiLayers";
 import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
@@ -65,13 +68,14 @@ const chatRouter = router({
         }
       } catch (e) { /* RAG is optional */ }
 
-      // Get user memories
+      // Get user memories (3-tier Memory Engine + Knowledge Graph)
       let memoriesStr = "";
       try {
-        const mems = await getUserMemories(ctx.user.id);
-        if (mems.length > 0) {
-          memoriesStr = mems.slice(0, 10).map(m => `- [${m.category}] ${m.content}`).join("\n");
-        }
+        const [memCtx, graphCtx] = await Promise.all([
+          assembleMemoryContext(ctx.user.id),
+          assembleGraphContext(ctx.user.id),
+        ]);
+        memoriesStr = [memCtx, graphCtx].filter(Boolean).join("\n\n");
       } catch (e) { /* memories are optional */ }
 
       // Parse multi-select focus modes
@@ -270,6 +274,45 @@ const chatRouter = router({
           await updateConversationTitle(input.conversationId, ctx.user.id, title);
         } catch (e) { /* title generation is optional */ }
       }
+
+      // ── MEMORY AUTO-EXTRACTION (async, non-blocking) ──────────
+      (async () => {
+        try {
+          const extracted = await extractMemoriesFromMessage(ctx.user.id, input.content, aiContent);
+          if (extracted.length > 0) await saveExtractedMemories(ctx.user.id, extracted);
+        } catch { /* memory extraction is optional */ }
+        // Episode summary every 10 messages
+        if (history.length > 0 && history.length % 10 === 0) {
+          try {
+            const episode = await generateEpisodeSummary(history);
+            if (episode) await saveEpisodeSummary(ctx.user.id, input.conversationId, episode);
+          } catch { /* episode summary is optional */ }
+        }
+      })();
+
+      // ── COMPLIANCE COPILOT (async, non-blocking) ───────────────
+      (async () => {
+        try {
+          const classification = await classifyContent(aiContent, {
+            hasSuitability: ctx.user.suitabilityCompleted || false,
+            focus: input.focus,
+          });
+          await logComplianceAudit({
+            messageId: assistantMsg.id,
+            userId: ctx.user.id,
+            conversationId: input.conversationId,
+            result: classification,
+            modelVersion: response.model,
+          });
+          await logPrivacyAudit({
+            userId: ctx.user.id,
+            apiCallPurpose: "chat_response",
+            dataCategories: [input.focus],
+            piiMasked: piiCheck.hasPII,
+            modelUsed: response.model,
+          });
+        } catch { /* compliance logging is optional */ }
+      })();
 
       return {
         id: assistantMsg.id,
@@ -909,6 +952,11 @@ import { portalRouter } from "./routers/portal";
 import { featureFlagsRouter } from "./routers/featureFlags";
 import { workflowRouter } from "./routers/workflow";
 import { matchingRouter } from "./routers/matching";
+import {
+  knowledgeGraphRouter, educationRouter, studentLoansRouter,
+  equityCompRouter, digitalAssetsRouter, coiRouter,
+  complianceCopilotRouter, memoryEpisodesRouter,
+} from "./routers/v4Features";
 
 export const appRouter = router({
   system: systemRouter,
@@ -946,6 +994,14 @@ export const appRouter = router({
   featureFlags: featureFlagsRouter,
   workflow: workflowRouter,
   matching: matchingRouter,
+  knowledgeGraph: knowledgeGraphRouter,
+  education: educationRouter,
+  studentLoans: studentLoansRouter,
+  equityComp: equityCompRouter,
+  digitalAssets: digitalAssetsRouter,
+  coi: coiRouter,
+  complianceCopilot: complianceCopilotRouter,
+  memoryEpisodes: memoryEpisodesRouter,
 });
 
 export type AppRouter = typeof appRouter;
