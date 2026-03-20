@@ -288,7 +288,7 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
               </div>
               <div className="flex-1 text-left">
                 <p className="text-xs text-emerald-300 font-medium">You're exploring as a guest</p>
-                <p className="text-[10px] text-muted-foreground">Sign in to save conversations, unlock all features, and personalize your experience.</p>
+                <p className="text-[10px] text-muted-foreground">Sign in to save conversations, unlock all features, and enrich your profile with LinkedIn, Google, or email.</p>
               </div>
               <button
                 onClick={() => window.location.href = getLoginUrl()}

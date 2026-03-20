@@ -1,6 +1,6 @@
 # Stewardry — Comprehensive Platform Guide
 
-**Version:** 6.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
+**Version:** 7.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
 
 ---
 
@@ -44,6 +44,9 @@
 36. [Voice Settings Hierarchy](#voice-settings-hierarchy)
 37. [Scheduled Tasks and Cron Jobs](#scheduled-tasks-and-cron-jobs)
 38. [Known Limitations and Roadmap](#known-limitations-and-roadmap)
+39. [Auth Enrichment and Multi-Provider Sign-In](#auth-enrichment-and-multi-provider-sign-in)
+40. [Apollo.io Integration](#apolloio-integration)
+41. [Post-Signup Enrichment Pipeline](#post-signup-enrichment-pipeline)
 
 ---
 
@@ -51,7 +54,7 @@
 
 Stewardry is an AI-powered digital financial twin platform designed for financial advisors, insurance professionals, and wealth management firms. The platform combines conversational AI with real-time market data, comprehensive financial calculators, compliance automation, data intelligence pipelines, email campaign management, and multi-modal interaction into a unified experience. It is built to function as an always-available co-pilot for financial professionals — handling everything from client suitability assessments to estate document drafting, from premium finance modeling to autonomous agent orchestration.
 
-The platform comprises **132 database tables** defined in the Drizzle ORM schema, **37 sub-routers** plus the main router exposing **400+ procedures**, **46 page-level components**, **24 reusable components** (plus 50+ shadcn/ui primitives), and **290+ source files** totaling approximately **80,000+ lines of TypeScript/TSX**. The automated test suite contains **565 tests** across **19 test files**, all passing. New in v6.0: 12-dimension Suitability Intelligence Engine with progressive profiling and confidence decay, 8 built-in Analytical Models with dependency resolution and scheduling, cross-layer Propagation Engine with coaching message generation, 6-stage File Processing Pipeline, Voice Settings Hierarchy with per-layer TTS defaults, Intelligence Feed and Analytics Hub pages, comprehensive user-type testing across all 5 roles, and adminProcedure enforcement.
+The platform comprises **134 database tables** defined in the Drizzle ORM schema, **38 sub-routers** plus the main router exposing **420+ procedures**, **46 page-level components**, **24 reusable components** (plus 50+ shadcn/ui primitives), and **302 source files** totaling approximately **78,000+ lines of TypeScript/TSX**. The automated test suite contains **614 tests** across **20 test files**, all passing. New in v7.0: Multi-provider authentication enrichment (LinkedIn OAuth, Google OAuth, Email magic links), Apollo.io integration for professional data enrichment, profile merger with confidence hierarchy, post-signup enrichment pipeline (Census, BLS, FRED, Apollo, FINRA), Connected Accounts settings tab with completeness meter, token refresh cron job, and comprehensive auth enrichment test suite.
 
 Stewardry operates on a tiered access model where anonymous guests receive full feature access with session-scoped data persistence, authenticated users get permanent data storage and cross-device sync, and administrators gain access to organization management and compliance oversight tools. The conversational AI interface serves as the primary entry point, following a design philosophy inspired by Claude, Copilot, and ChatGPT — prioritizing simplicity, intuitiveness, and streamlined interaction.
 
@@ -69,7 +72,7 @@ Stewardry operates on a tiered access model where anonymous guests receive full 
 | **Database** | MySQL/TiDB via Drizzle ORM | Relational storage with typed schema and migration management |
 | **AI Engine** | LLM via Forge API | Multi-model AI with constitutional guardrails and structured output |
 | **File Storage** | S3 (via `storagePut`/`storageGet`) | Document, image, and media storage with CDN delivery |
-| **Authentication** | Manus OAuth + Guest Sessions | Dual-mode auth with automatic session migration |
+| **Authentication** | Manus OAuth + LinkedIn + Google + Email Magic Links + Guest Sessions | Multi-provider auth with profile enrichment and automatic session migration |
 | **Voice** | Deepgram STT + Edge TTS (25+ voices) | Speech-to-text transcription and natural text-to-speech |
 | **Maps** | Google Maps Proxy | Geocoding, directions, places, and visualization |
 | **Charts** | Chart.js + react-chartjs-2 | Analytics and financial data visualizations |
@@ -81,20 +84,20 @@ Stewardry operates on a tiered access model where anonymous guests receive full 
 
 | Metric | Value |
 |--------|-------|
-| Total source files | 277 |
-| Total lines of code | 71,624 |
-| Page components | 44 |
+| Total source files | 302 |
+| Total lines of code | 78,149 |
+| Page components | 46 |
 | Reusable components | 24 (+ 50+ shadcn/ui) |
-| tRPC sub-routers | 34 |
-| tRPC procedures | 400+ |
-| Database tables (schema) | 113 |
-| Router files (server/routers/) | 33 |
-| Main router file (server/routers.ts) | 1,231 lines |
+| tRPC sub-routers | 38 |
+| tRPC procedures | 420+ |
+| Database tables (schema) | 134 |
+| Router files (server/routers/) | 38 |
+| Main router file (server/routers.ts) | 1,241 lines |
 | Database helpers (server/db.ts) | 538 lines |
-| Schema file (drizzle/schema.ts) | 2,120 lines |
+| Schema file (drizzle/schema.ts) | 2,497 lines |
 | CSS theme file (index.css) | 248 lines |
-| Test files | 18 |
-| Automated tests | 449 |
+| Test files | 20 |
+| Automated tests | 614 |
 
 ### Data Flow
 
@@ -166,7 +169,22 @@ The platform uses a base radius of `0.625rem` (10px) with computed variants: `--
 
 Anonymous visitors automatically receive a guest session when they first interact with the platform. The `/api/auth/guest-session` endpoint creates a temporary user record with `authTier: "anonymous"` and signs a 24-hour session JWT. This allows guests to use all features — chat, calculators, document uploads, market data — with data persisted in the database for the duration of their session.
 
-A persistent **GuestBanner** appears at the top of the interface, encouraging sign-in to save data permanently. When a guest signs in via Manus OAuth, the `/api/auth/migrate-guest` endpoint transfers all guest data (conversations, documents, calculations) to the authenticated account.
+A persistent **GuestBanner** appears at the top of the interface, encouraging sign-in to save data permanently. The banner highlights LinkedIn sign-in for professional profile enrichment. When a guest signs in via Manus OAuth, the `/api/auth/migrate-guest` endpoint transfers all guest data (conversations, documents, calculations) to the authenticated account.
+
+### Multi-Provider Authentication (v7.0)
+
+The platform supports four authentication providers, each contributing different profile data:
+
+| Provider | Fields Provided | Confidence Level |
+|----------|----------------|------------------|
+| **LinkedIn** | Name, email, photo, employer, job title, industry, headline | Highest (95-100) |
+| **Google** | Name, email, photo, phone, birthday, gender, address, organizations | High (85-95) |
+| **Email (Magic Link)** | Email, employer inferred from domain | Medium (70-80) |
+| **Manus OAuth** | Name, email, avatar | Base (60-70) |
+
+The **Profile Merger** service resolves conflicts using a confidence hierarchy: LinkedIn data takes precedence over Google, which takes precedence over Email, which takes precedence over Manus OAuth. Each field is tracked with its source and confidence score, ensuring the most reliable data is always displayed.
+
+The **Connected Accounts** settings tab displays all linked providers with a profile completeness meter, allowing users to connect additional providers to improve their profile quality.
 
 ### Access Tiers
 
@@ -1304,3 +1322,121 @@ Each task runs in isolation — a failure in one task does not affect others. Al
 ---
 
 *This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 6.0.*
+
+---
+
+## Auth Enrichment and Multi-Provider Sign-In
+
+### Overview
+
+Version 7.0 introduces a comprehensive authentication enrichment system that allows users to connect multiple identity providers (LinkedIn, Google, Email) in addition to the base Manus OAuth. Each provider contributes different profile fields with varying confidence levels, and the **Profile Merger** service automatically resolves conflicts using a deterministic confidence hierarchy.
+
+### Architecture
+
+The auth enrichment system consists of five services:
+
+| Service | Location | Responsibility |
+|---------|----------|---------------|
+| **LinkedInAuthService** | `server/services/auth/linkedinAuth.ts` | OAuth 2.0 flow, profile fetch, token storage |
+| **GoogleAuthService** | `server/services/auth/googleAuth.ts` | OAuth 2.0 flow, People API fetch, token storage |
+| **EmailAuthService** | `server/services/auth/emailAuth.ts` | Magic link generation, verification, domain-based employer inference |
+| **ProfileMerger** | `server/services/auth/profileMerger.ts` | Confidence-based field merging across providers |
+| **PostSignupEnrichment** | `server/services/auth/postSignupEnrichment.ts` | Automated enrichment pipeline triggered after sign-up |
+
+### Confidence Hierarchy
+
+The profile merger uses a numeric confidence system where higher values take precedence:
+
+| Source | Name | Email | Phone | Employer | Job Title | Industry | Birthday |
+|--------|------|-------|-------|----------|-----------|----------|----------|
+| **LinkedIn** | 95 | 95 | — | 100 | 100 | 95 | — |
+| **Google** | 90 | 90 | 90 | 80 | 80 | — | 90 |
+| **Email** | — | 85 | — | 70 | — | — | — |
+| **Manus** | 60 | 60 | — | — | — | — | — |
+
+When merging, the system compares confidence scores for each field. If the new data has a higher confidence than the existing value, it replaces it. All changes are logged in the `auth_enrichment_log` table with before/after values for audit purposes.
+
+### Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `auth_provider_tokens` | Stores OAuth tokens per user per provider (encrypted), with expiry tracking |
+| `auth_enrichment_log` | Audit trail of all profile enrichment events with source, fields captured, and confidence |
+
+### tRPC Router: `authEnrichment`
+
+| Procedure | Type | Access | Description |
+|-----------|------|--------|-------------|
+| `getSignInMethods` | Query | Public | Lists all available sign-in methods with configuration status |
+| `initiateLinkedIn` | Mutation | Public | Generates LinkedIn OAuth URL with state parameter |
+| `initiateGoogle` | Mutation | Public | Generates Google OAuth URL with state parameter |
+| `requestMagicLink` | Mutation | Public | Sends magic link email for passwordless sign-in |
+| `linkProvider` | Mutation | Protected | Links a new provider to an existing account |
+| `unlinkProvider` | Mutation | Protected | Disconnects a provider from the account |
+| `getConnectedProviders` | Query | Protected | Lists all connected providers with token status |
+| `getEnrichmentHistory` | Query | Protected | Returns the full enrichment audit log |
+| `getProfileCompleteness` | Query | Protected | Calculates profile completeness percentage |
+| `forceProfileRefresh` | Mutation | Protected | Triggers re-enrichment from all connected providers |
+
+### Frontend: Connected Accounts Tab
+
+The **Connected Accounts** tab in Settings (`/settings/connected-accounts`) provides:
+
+1. A **profile completeness meter** showing the percentage of fields populated across all providers
+2. **Provider cards** for LinkedIn, Google, and Email with connect/disconnect actions
+3. **Enrichment history** showing all profile updates with timestamps and sources
+4. A **force refresh** button to re-pull data from all connected providers
+
+---
+
+## Apollo.io Integration
+
+### Overview
+
+Apollo.io is integrated as a data enrichment provider for professional profile data. When configured with an API key, it provides company information, job titles, social profiles, and contact details for users based on their email address or employer domain.
+
+### Service: `ApolloService`
+
+Located at `server/services/auth/apolloService.ts`, the service provides three methods:
+
+| Method | Input | Output |
+|--------|-------|--------|
+| `enrichPerson` | API key, email, first/last name | Full professional profile (title, company, phone, LinkedIn URL, industry, seniority) |
+| `enrichCompany` | API key, domain | Company profile (name, industry, size, revenue, founded year, technologies) |
+| `findEmail` | API key, first name, last name, domain | Professional email address |
+
+The service includes automatic error handling, rate limiting awareness, and graceful degradation when the API is unavailable. Apollo is seeded as an integration provider in the `integration_providers` table with category `data_enrichment`.
+
+---
+
+## Post-Signup Enrichment Pipeline
+
+### Overview
+
+The post-signup enrichment pipeline (`PostSignupEnrichment` service) runs automatically after a user completes sign-up. It sequentially queries multiple data sources to build a comprehensive user profile.
+
+### Pipeline Stages
+
+| Stage | Source | Data Enriched | Requires API Key |
+|-------|--------|--------------|-----------------|
+| 1 | **Census Bureau** | Demographic context from ZIP code (median income, education, population) | Yes |
+| 2 | **BLS (Bureau of Labor Statistics)** | Employment and wage data for user's occupation/industry | Yes |
+| 3 | **FRED (Federal Reserve)** | Current economic indicators (interest rates, inflation, unemployment) | Yes |
+| 4 | **Apollo.io** | Professional profile, company data, social profiles | Yes |
+| 5 | **FINRA BrokerCheck** | Broker registration status, CRD number, firm history | No (public API) |
+
+Each stage runs independently — if one fails (missing API key, network error), the pipeline continues to the next stage. Results are logged to the `auth_enrichment_log` table with the source, fields captured, and confidence scores.
+
+### Token Refresh Cron
+
+A daily cron job (`token-refresh`) runs at 2:00 AM to:
+
+1. Check all `auth_provider_tokens` for tokens expiring within 7 days
+2. Attempt to refresh tokens using stored refresh tokens
+3. Re-fetch profile data from providers with refreshed tokens
+4. Detect and log any profile changes (job change, company change, etc.)
+5. Trigger suitability re-synthesis if significant changes are detected
+
+---
+
+*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 7.0.*

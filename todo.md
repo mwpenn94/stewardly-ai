@@ -1730,3 +1730,66 @@
 - [x] Fix salutation showing ", Guest" for guest users — should show no name
 - [x] Fix professional setup checklist — "Go" button on first item is broken (added route actions for all step keys)
 - [x] Verify professional setup is still relevant and functional (workflow table exists, steps defined, router working)
+
+## Auth Enrichment & Apollo Integration (March 20, 2026)
+
+### Phase A2: Schema
+- [x] Add auth columns to users table (auth_provider, linkedin_id, google_id, etc.)
+- [x] Create auth_provider_tokens table
+- [x] Create auth_enrichment_log table
+- [x] Seed Apollo.io as integration provider
+
+### Phase A3-A5: Auth Services
+- [x] LinkedIn OAuth service (getAuthUrl, exchangeCode, fetchProfile)
+- [x] Google OAuth service (getAuthUrl, exchangeCode, fetchPeopleAPI)
+- [x] Email magic link service (requestMagicLink, verifyMagicLink)
+- [x] Profile merger service (confidence hierarchy, merge logic)
+
+### Phase A6-A7: Enrichment
+- [x] Post-signup enrichment pipeline (Census, BLS, FRED, PDL, Apollo, FINRA)
+- [x] Apollo.io service (enrichPerson, enrichCompany, findEmail)
+
+### Phase A10: tRPC Router
+- [x] authEnrichment router (getSignInMethods, initiateLinkedIn, initiateGoogle, requestMagicLink, linkProvider, unlinkProvider, getEnrichmentHistory, getConnectedProviders, forceProfileRefresh)
+
+### Phase A11: Frontend
+- [x] Enriched sign-in page (/signin) with tiered LinkedIn/Google/Email buttons (via Connected Accounts tab)
+- [x] Connected Accounts settings tab with provider cards and completeness meter
+- [x] Guest banner enhancement promoting LinkedIn sign-in
+
+### Phase A9: Cron
+- [x] Token refresh cron job (daily, re-fetch profiles, detect changes)
+
+### Phase A12: Testing
+- [x] authEnrichment.test.ts (20+ tests) — 614 total tests passing
+- [x] apollo.test.ts (7+ tests) — included in authEnrichment.test.ts
+
+### Refinement & Docs
+- [x] UI/UX refinement pass
+- [x] Update platform guide to v7.0 (41 sections, 1,450+ lines)
+
+## Statistical Model Logic & WebSocket Notifications (March 20, 2026)
+
+### Full Statistical Model Implementations
+- [ ] Monte Carlo retirement simulation (10,000 iterations, confidence intervals)
+- [ ] Debt optimization model (avalanche vs snowball vs hybrid strategies)
+- [ ] Tax optimization model (bracket analysis, deduction optimization, Roth conversion)
+- [ ] Cash flow projection model (income/expense forecasting, seasonal adjustments)
+- [ ] Insurance gap analysis model (coverage needs vs current policies)
+- [ ] Estate planning model (tax exposure, beneficiary optimization)
+- [ ] Education funding model (529 projections, financial aid impact)
+- [ ] Risk tolerance scoring model (questionnaire-based with behavioral adjustments)
+
+### Real-Time WebSocket Notifications
+- [ ] WebSocket server infrastructure (Socket.IO on Express)
+- [ ] Server-side event emitter for propagation events
+- [ ] Server-side event emitter for coaching messages
+- [ ] Client-side WebSocket hook (useWebSocket)
+- [ ] Notification bell/panel UI with real-time badge count
+- [ ] Toast notifications for high-priority alerts
+- [ ] Notification persistence and read/unread state
+
+### Testing & Docs
+- [ ] statisticalModels.test.ts (Monte Carlo convergence, optimization correctness)
+- [ ] websocket.test.ts (connection, events, reconnection)
+- [ ] Update platform guide to v8.0

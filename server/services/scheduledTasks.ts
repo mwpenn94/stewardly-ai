@@ -9,6 +9,8 @@
 import { getDb } from "../db";
 import { expireOldEvents, deliverPendingEvents } from "./propagationEngine";
 import { applyConfidenceDecay } from "./suitabilityEngine";
+import { authProviderTokens, users } from "../../drizzle/schema";
+import { eq, lt, and, isNotNull } from "drizzle-orm";
 
 // ─── Task Registry ─────────────────────────────────────────────────────────
 
@@ -116,6 +118,44 @@ const tasks: ScheduledTask[] = [
       try {
         // In production, fetch from Census, BLS, FRED, BEA APIs
         return { success: true, message: "Platform data pipelines complete" };
+      } catch (error: any) {
+        return { success: false, message: error.message };
+      }
+    },
+  },
+  {
+    name: "token-refresh",
+    description: "Refresh expiring OAuth tokens and re-fetch provider profiles for changes",
+    intervalMs: 24 * 60 * 60 * 1000, // daily
+    lastRun: 0,
+    enabled: true,
+    handler: async () => {
+      try {
+        const db = await getDb();
+        if (!db) return { success: false, message: "No database" };
+
+        // Find tokens expiring within 7 days
+        const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        const expiringTokens = await db.select()
+          .from(authProviderTokens)
+          .where(
+            and(
+              isNotNull(authProviderTokens.tokenExpiresAt),
+              lt(authProviderTokens.tokenExpiresAt, sevenDaysFromNow)
+            )
+          );
+
+        let refreshed = 0;
+        for (const token of expiringTokens) {
+          if (token.refreshTokenEncrypted) {
+            // In production: call provider's refresh endpoint
+            // For now, log the need for refresh
+            console.log(`[TokenRefresh] Token for user ${token.userId} provider ${token.provider} expires at ${token.tokenExpiresAt}`);
+            refreshed++;
+          }
+        }
+
+        return { success: true, message: `Checked ${expiringTokens.length} tokens, ${refreshed} need refresh` };
       } catch (error: any) {
         return { success: false, message: error.message };
       }

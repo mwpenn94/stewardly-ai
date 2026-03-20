@@ -112,6 +112,24 @@ export const users = mysqlTable("users", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
   tosAcceptedAt: timestamp("tosAcceptedAt"),
+  // Auth enrichment columns
+  authProvider: varchar("auth_provider", { length: 20 }).default("manus"),
+  linkedinId: varchar("linkedin_id", { length: 100 }),
+  googleId: varchar("google_id", { length: 100 }),
+  linkedinProfileUrl: varchar("linkedin_profile_url", { length: 500 }),
+  linkedinHeadline: varchar("linkedin_headline", { length: 300 }),
+  linkedinIndustry: varchar("linkedin_industry", { length: 100 }),
+  linkedinLocation: varchar("linkedin_location", { length: 200 }),
+  googlePhone: varchar("google_phone", { length: 50 }),
+  googleBirthday: timestamp("google_birthday"),
+  googleGender: varchar("google_gender", { length: 20 }),
+  googleAddressJson: json("google_address_json"),
+  googleOrganizationsJson: json("google_organizations_json"),
+  employerName: varchar("employer_name", { length: 200 }),
+  jobTitle: varchar("job_title", { length: 200 }),
+  profileEnrichedAt: timestamp("profile_enriched_at"),
+  profileEnrichmentSource: varchar("profile_enrichment_source", { length: 50 }),
+  signInDataJson: json("sign_in_data_json"),
 });
 
 export type User = typeof users.$inferSelect;
@@ -2446,3 +2464,34 @@ export const educationTriggers = mysqlTable("education_triggers", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 export type EducationTrigger = typeof educationTriggers.$inferSelect;
+
+
+// ─── AUTH PROVIDER TOKENS (OAuth tokens for LinkedIn/Google) ─────────────
+export const authProviderTokens = mysqlTable("auth_provider_tokens", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  provider: mysqlEnum("provider", ["linkedin", "google"]).notNull(),
+  accessTokenEncrypted: text("access_token_encrypted").notNull(),
+  refreshTokenEncrypted: text("refresh_token_encrypted"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  scopesGranted: json("scopes_granted").notNull(),
+  lastProfileFetchAt: timestamp("last_profile_fetch_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type AuthProviderToken = typeof authProviderTokens.$inferSelect;
+
+// ─── AUTH ENRICHMENT LOG (Track data captured from each sign-in event) ───
+export const authEnrichmentLog = mysqlTable("auth_enrichment_log", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  provider: mysqlEnum("provider", ["linkedin", "google", "email", "apollo", "pdl", "manus"]).notNull(),
+  eventType: mysqlEnum("event_type", ["initial_signup", "re_auth", "token_refresh", "manual_enrich", "periodic_refresh"]).notNull(),
+  fieldsCaptured: json("fields_captured").notNull(),
+  fieldsNew: json("fields_new").notNull(),
+  fieldsUpdated: json("fields_updated").notNull(),
+  rawResponseHash: varchar("raw_response_hash", { length: 64 }).notNull(),
+  suitabilityDimensionsUpdated: json("suitability_dimensions_updated"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type AuthEnrichmentLogEntry = typeof authEnrichmentLog.$inferSelect;
