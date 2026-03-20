@@ -13,7 +13,8 @@ import { useLocation } from "wouter";
 import {
   ArrowLeft, Calculator, TrendingUp, Building2, PiggyBank, Loader2,
   Sparkles, DollarSign, BarChart3, ArrowUpRight, ArrowDownRight,
-  ChevronRight, Info,
+  ChevronRight, Info, Heart, Scale, GraduationCap, Stethoscope,
+  HandCoins, Briefcase, ListChecks,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 
@@ -95,6 +96,13 @@ const CALCULATORS = [
   { id: "iul", label: "IUL Projection", icon: <TrendingUp className="w-4 h-4" />, desc: "Indexed Universal Life illustration", color: "text-emerald-400" },
   { id: "pf", label: "Premium Finance", icon: <Building2 className="w-4 h-4" />, desc: "Leverage analysis for HNW clients", color: "text-blue-400" },
   { id: "ret", label: "Retirement", icon: <PiggyBank className="w-4 h-4" />, desc: "Wealth accumulation projection", color: "text-amber-400" },
+  { id: "tax", label: "Tax Projector", icon: <DollarSign className="w-4 h-4" />, desc: "Multi-year tax projection & Roth analysis", color: "text-violet-400" },
+  { id: "ss", label: "Social Security", icon: <Calculator className="w-4 h-4" />, desc: "Optimize claiming strategy", color: "text-cyan-400" },
+  { id: "medicare", label: "Medicare", icon: <Stethoscope className="w-4 h-4" />, desc: "Navigate Medicare enrollment & costs", color: "text-rose-400" },
+  { id: "hsa", label: "HSA Optimizer", icon: <Heart className="w-4 h-4" />, desc: "Health Savings Account strategy", color: "text-pink-400" },
+  { id: "charitable", label: "Charitable", icon: <HandCoins className="w-4 h-4" />, desc: "Giving strategy optimization", color: "text-orange-400" },
+  { id: "divorce", label: "Divorce Analysis", icon: <Scale className="w-4 h-4" />, desc: "Asset division & alimony modeling", color: "text-red-400" },
+  { id: "education", label: "Education", icon: <GraduationCap className="w-4 h-4" />, desc: "529 & education funding planner", color: "text-indigo-400" },
 ] as const;
 
 export default function Calculators() {
@@ -349,6 +357,34 @@ export default function Calculators() {
         )}
 
         {/* ─── RETIREMENT CALCULATOR ──────────────────────────── */}
+        {/* ─── TAX PROJECTOR ──────────────────────────────── */}
+        {activeCalc === "tax" && (
+          <TaxProjectorPanel />
+        )}
+        {/* ─── SOCIAL SECURITY ─────────────────────────────── */}
+        {activeCalc === "ss" && (
+          <SSOptimizerPanel />
+        )}
+        {/* ─── MEDICARE ───────────────────────────────────── */}
+        {activeCalc === "medicare" && (
+          <MedicarePanel />
+        )}
+        {/* ─── HSA OPTIMIZER ──────────────────────────────── */}
+        {activeCalc === "hsa" && (
+          <HSAOptimizerPanel />
+        )}
+        {/* ─── CHARITABLE GIVING ──────────────────────────── */}
+        {activeCalc === "charitable" && (
+          <CharitablePanel />
+        )}
+        {/* ─── DIVORCE ANALYSIS ───────────────────────────── */}
+        {activeCalc === "divorce" && (
+          <DivorcePanel />
+        )}
+        {/* ─── EDUCATION PLANNER ──────────────────────────── */}
+        {activeCalc === "education" && (
+          <EducationPanel />
+        )}
         {activeCalc === "ret" && (
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <Card className="lg:col-span-2 bg-card/60 border-border/50">
@@ -442,5 +478,396 @@ export default function Calculators() {
         </p>
       </div>
     </div>
+  );
+}
+
+// ─── Part F Calculator Panels ──────────────────────────────────────────
+
+function CalcPanel({ title, icon, color, children, onCalculate, isLoading, result }: {
+  title: string; icon: React.ReactNode; color: string; children: React.ReactNode;
+  onCalculate: () => void; isLoading: boolean; result: React.ReactNode;
+}) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <Card className="lg:col-span-2 bg-card/60 border-border/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <span className={color}>{icon}</span> {title}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {children}
+          <Button size="sm" className="w-full" onClick={onCalculate} disabled={isLoading}>
+            {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
+            Calculate
+          </Button>
+        </CardContent>
+      </Card>
+      <div className="lg:col-span-3">
+        {result}
+      </div>
+    </div>
+  );
+}
+
+function TaxProjectorPanel() {
+  const [wages, setWages] = useState(150000);
+  const [deductions, setDeductions] = useState(0);
+  const [stateCode, setStateCode] = useState("TX");
+  const taxCalc = trpc.taxProjector.project.useMutation({ onError: (e: any) => toast.error(e.message) });
+  return (
+    <CalcPanel title="Tax Projector" icon={<DollarSign className="w-4 h-4" />} color="text-violet-400"
+      onCalculate={() => taxCalc.mutate({ filingStatus: "mfj", wages, itemizedDeductions: deductions, stateCode })}
+      isLoading={taxCalc.isPending}
+      result={taxCalc.data ? (
+        <Card className="bg-card/60 border-border/50 h-full">
+          <CardContent className="pt-6 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                <p className="text-[10px] text-muted-foreground">Federal Tax</p>
+                <p className="text-lg font-semibold text-violet-400">{fmt(taxCalc.data.federalTax)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                <p className="text-[10px] text-muted-foreground">Effective Rate</p>
+                <p className="text-lg font-semibold text-violet-400">{(taxCalc.data.effectiveRate * 100).toFixed(1)}%</p>
+              </div>
+              <div className="p-3 rounded-lg bg-secondary/50">
+                <p className="text-[10px] text-muted-foreground">State Tax</p>
+                <p className="text-lg font-semibold">{fmt(taxCalc.data.stateTax)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-secondary/50">
+                <p className="text-[10px] text-muted-foreground">Total Tax</p>
+                <p className="text-lg font-semibold">{fmt(taxCalc.data.totalTax)}</p>
+              </div>
+            </div>
+            {taxCalc.data.bracketBreakdown?.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium">Bracket Breakdown</p>
+                {taxCalc.data.bracketBreakdown.map((b: any, i: number) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{b.bracket}</span>
+                    <span className="font-mono">{fmt(b.taxOnBracket)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
+          <DollarSign className="w-6 h-6 text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Configure tax parameters</p>
+        </div>
+      )}
+    >
+      <SliderInput label="W-2 Wages" value={wages} onChange={setWages} min={25000} max={2000000} step={5000} format={fmt} />
+      <SliderInput label="Itemized Deductions" value={deductions} onChange={setDeductions} min={0} max={500000} step={1000} format={fmt} />
+    </CalcPanel>
+  );
+}
+
+function SSOptimizerPanel() {
+  const [birthYear, setBirthYear] = useState(1963);
+  const [pia, setPia] = useState(2500);
+  const [lifeExpectancy, setLifeExpectancy] = useState(85);
+  const ssCalc = trpc.ssOptimizer.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
+  return (
+    <CalcPanel title="Social Security Optimizer" icon={<Calculator className="w-4 h-4" />} color="text-cyan-400"
+      onCalculate={() => ssCalc.mutate({ birthYear, birthMonth: 6, earningsHistory: [], estimatedPIA: pia, filingStatus: "single", lifeExpectancy, discountRate: 0.03 })}
+      isLoading={ssCalc.isPending}
+      result={ssCalc.data ? (
+        <Card className="bg-card/60 border-border/50 h-full">
+          <CardContent className="pt-6 space-y-3">
+            <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+              <p className="text-[10px] text-muted-foreground">Optimal Claiming Age</p>
+              <p className="text-2xl font-bold text-cyan-400">{ssCalc.data.optimalAge}</p>
+              <p className="text-xs text-muted-foreground mt-1">{ssCalc.data.optimalReason}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-secondary/50">
+                <p className="text-[10px] text-muted-foreground">PIA (Full Retirement)</p>
+                <p className="text-sm font-semibold">{fmt(ssCalc.data.pia)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-secondary/50">
+                <p className="text-[10px] text-muted-foreground">Full Retirement Age</p>
+                <p className="text-sm font-semibold">{ssCalc.data.fra.toFixed(1)} yrs</p>
+              </div>
+            </div>
+            {ssCalc.data.scenarios?.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium">Claiming Scenarios</p>
+                {ssCalc.data.scenarios.slice(0, 5).map((s: any, i: number) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Age {s.claimingAge} ({s.reductionOrIncrease})</span>
+                    <span className="font-mono">{fmt(s.monthlyBenefit)}/mo</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
+          <Calculator className="w-6 h-6 text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Enter your Social Security details</p>
+        </div>
+      )}
+    >
+      <SliderInput label="Birth Year" value={birthYear} onChange={setBirthYear} min={1940} max={1990} />
+      <SliderInput label="Estimated PIA (Monthly)" value={pia} onChange={setPia} min={500} max={5000} step={50} format={fmt} />
+      <SliderInput label="Life Expectancy" value={lifeExpectancy} onChange={setLifeExpectancy} min={70} max={100} suffix=" yrs" />
+    </CalcPanel>
+  );
+}
+
+function MedicarePanel() {
+  const [age, setAge] = useState(64);
+  const [magi, setMagi] = useState(100000);
+  const medCalc = trpc.medicareNav.navigate.useMutation({ onError: (e: any) => toast.error(e.message) });
+  return (
+    <CalcPanel title="Medicare Navigator" icon={<Stethoscope className="w-4 h-4" />} color="text-rose-400"
+      onCalculate={() => medCalc.mutate({ age, retirementAge: 65, magi, filingStatus: "mfj" })}
+      isLoading={medCalc.isPending}
+      result={medCalc.data ? (
+        <Card className="bg-card/60 border-border/50 h-full">
+          <CardContent className="pt-6 space-y-3">
+            <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+              <p className="text-[10px] text-muted-foreground">Best Pathway</p>
+              <p className="text-lg font-bold text-rose-400">{medCalc.data.bestPathway}</p>
+            </div>
+            {medCalc.data.pathways?.slice(0, 3).map((p: any, i: number) => (
+              <div key={i} className="p-3 rounded-lg bg-secondary/50">
+                <div className="flex justify-between">
+                  <span className="text-xs font-medium">{p.label}</span>
+                  <Badge variant="outline" className="text-[10px]">{p.score}/100</Badge>
+                </div>
+                <p className="text-sm font-semibold mt-1">{fmt(p.totalAnnualCost)}/yr</p>
+              </div>
+            ))}
+            {medCalc.data.enrollmentTimeline?.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium">Enrollment Timeline</p>
+                {medCalc.data.enrollmentTimeline.map((t: any, i: number) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{t.event}</span>
+                    <span>{t.deadline}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
+          <Stethoscope className="w-6 h-6 text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Enter Medicare details</p>
+        </div>
+      )}
+    >
+      <SliderInput label="Age" value={age} onChange={setAge} min={60} max={75} suffix=" yrs" />
+      <SliderInput label="MAGI" value={magi} onChange={setMagi} min={0} max={500000} step={5000} format={fmt} />
+    </CalcPanel>
+  );
+}
+
+function HSAOptimizerPanel() {
+  const [age, setAge] = useState(40);
+  const [contribution, setContribution] = useState(3850);
+  const [medExpenses, setMedExpenses] = useState(3000);
+  const hsaCalc = trpc.hsaOptimizer.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
+  return (
+    <CalcPanel title="HSA Optimizer" icon={<Heart className="w-4 h-4" />} color="text-pink-400"
+      onCalculate={() => hsaCalc.mutate({ age, coverageType: "self", annualContribution: contribution, annualMedicalExpenses: medExpenses, marginalTaxRate: 0.24, stateTaxRate: 0.05, yearsToRetirement: 65 - age })}
+      isLoading={hsaCalc.isPending}
+      result={hsaCalc.data ? (
+        <Card className="bg-card/60 border-border/50 h-full">
+          <CardContent className="pt-6 space-y-3">
+            <div className="p-3 rounded-lg bg-pink-500/10 border border-pink-500/20">
+              <p className="text-[10px] text-muted-foreground">Best Strategy</p>
+              <p className="text-lg font-bold text-pink-400">{hsaCalc.data.bestStrategy}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-secondary/50">
+                <p className="text-[10px] text-muted-foreground">Max Contribution</p>
+                <p className="text-sm font-semibold">{fmt(hsaCalc.data.maxContribution)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-secondary/50">
+                <p className="text-[10px] text-muted-foreground">Triple Tax Savings</p>
+                <p className="text-sm font-semibold text-pink-400">{fmt(hsaCalc.data.tripleAdvantage.totalLifetimeSavings)}</p>
+              </div>
+            </div>
+            {hsaCalc.data.catchUpEligible && (
+              <p className="text-xs text-pink-400">Catch-up eligible: +{fmt(hsaCalc.data.catchUpAmount)}/yr</p>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
+          <Heart className="w-6 h-6 text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Configure HSA parameters</p>
+        </div>
+      )}
+    >
+      <SliderInput label="Age" value={age} onChange={setAge} min={18} max={64} suffix=" yrs" />
+      <SliderInput label="Annual Contribution" value={contribution} onChange={setContribution} min={0} max={8550} step={50} format={fmt} />
+      <SliderInput label="Annual Medical Expenses" value={medExpenses} onChange={setMedExpenses} min={0} max={50000} step={500} format={fmt} />
+    </CalcPanel>
+  );
+}
+
+function CharitablePanel() {
+  const [donationGoal, setDonationGoal] = useState(25000);
+  const [agi, setAgi] = useState(250000);
+  const charCalc = trpc.charitableGiving.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
+  return (
+    <CalcPanel title="Charitable Giving" icon={<HandCoins className="w-4 h-4" />} color="text-orange-400"
+      onCalculate={() => charCalc.mutate({ annualDonationGoal: donationGoal, marginalTaxRate: 0.32, stateTaxRate: 0.05, age: 55, filingStatus: "mfj", agi, itemizesDeductions: true })}
+      isLoading={charCalc.isPending}
+      result={charCalc.data ? (
+        <Card className="bg-card/60 border-border/50 h-full">
+          <CardContent className="pt-6 space-y-3">
+            <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+              <p className="text-[10px] text-muted-foreground">Best Vehicle</p>
+              <p className="text-lg font-bold text-orange-400">{charCalc.data.bestVehicle}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-secondary/50">
+                <p className="text-[10px] text-muted-foreground">Total Tax Savings</p>
+                <p className="text-sm font-semibold text-orange-400">{fmt(charCalc.data.totalTaxSavings)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-secondary/50">
+                <p className="text-[10px] text-muted-foreground">Effective Cost of Giving</p>
+                <p className="text-sm font-semibold">{fmt(charCalc.data.effectiveCostOfGiving)}</p>
+              </div>
+            </div>
+            {charCalc.data.strategies?.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium">Strategies</p>
+                {charCalc.data.strategies.slice(0, 3).map((s: string, i: number) => (
+                  <p key={i} className="text-xs text-muted-foreground">• {s}</p>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
+          <HandCoins className="w-6 h-6 text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Plan your charitable giving</p>
+        </div>
+      )}
+    >
+      <SliderInput label="AGI" value={agi} onChange={setAgi} min={50000} max={2000000} step={5000} format={fmt} />
+      <SliderInput label="Donation Goal" value={donationGoal} onChange={setDonationGoal} min={1000} max={500000} step={1000} format={fmt} />
+    </CalcPanel>
+  );
+}
+
+function DivorcePanel() {
+  const [totalAssets, setTotalAssets] = useState(2000000);
+  const [income1, setIncome1] = useState(150000);
+  const [income2, setIncome2] = useState(80000);
+  const [yearsMarried, setYearsMarried] = useState(15);
+  const divCalc = trpc.divorce.analyze.useMutation({ onError: (e: any) => toast.error(e.message) });
+  return (
+    <CalcPanel title="Divorce Analysis" icon={<Scale className="w-4 h-4" />} color="text-red-400"
+      onCalculate={() => divCalc.mutate({
+        assets: [{ name: "Primary Home", type: "real_estate", fairMarketValue: totalAssets * 0.4, classification: "marital", owner: "joint" },
+                 { name: "Retirement", type: "retirement_pretax", fairMarketValue: totalAssets * 0.3, classification: "marital", owner: "joint" },
+                 { name: "Brokerage", type: "brokerage", fairMarketValue: totalAssets * 0.2, classification: "marital", owner: "joint" },
+                 { name: "Cash", type: "cash", fairMarketValue: totalAssets * 0.1, classification: "marital", owner: "joint" }],
+        spouse1Income: income1, spouse2Income: income2, spouse1Age: 50, spouse2Age: 48,
+        yearsMarried, state: "CA", marginalRate: 0.32
+      })}
+      isLoading={divCalc.isPending}
+      result={divCalc.data ? (
+        <Card className="bg-card/60 border-border/50 h-full">
+          <CardContent className="pt-6 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                <p className="text-[10px] text-muted-foreground">Total Marital Estate</p>
+                <p className="text-lg font-semibold text-red-400">{fmt(divCalc.data.totalMaritalEstate)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                <p className="text-[10px] text-muted-foreground">Support Cost</p>
+                <p className="text-lg font-semibold text-red-400">{fmt(divCalc.data.supportAnalysis.totalSupportCost)}</p>
+              </div>
+            </div>
+            {divCalc.data.scenarios?.slice(0, 2).map((s: any, i: number) => (
+              <div key={i} className="p-3 rounded-lg bg-secondary/50">
+                <p className="text-xs font-medium">{s.name}</p>
+                <div className="flex justify-between text-xs mt-1">
+                  <span>Spouse 1: {fmt(s.spouse1Total)}</span>
+                  <span>Spouse 2: {fmt(s.spouse2Total)}</span>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
+          <Scale className="w-6 h-6 text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Model asset division scenarios</p>
+        </div>
+      )}
+    >
+      <SliderInput label="Total Marital Assets" value={totalAssets} onChange={setTotalAssets} min={100000} max={20000000} step={50000} format={fmt} />
+      <SliderInput label="Spouse 1 Income" value={income1} onChange={setIncome1} min={0} max={1000000} step={5000} format={fmt} />
+      <SliderInput label="Spouse 2 Income" value={income2} onChange={setIncome2} min={0} max={1000000} step={5000} format={fmt} />
+      <SliderInput label="Years Married" value={yearsMarried} onChange={setYearsMarried} min={1} max={50} suffix=" yrs" />
+    </CalcPanel>
+  );
+}
+
+function EducationPanel() {
+  const [childAge, setChildAge] = useState(5);
+  const [annualCost, setAnnualCost] = useState(40000);
+  const [monthlyContribution, setMonthlyContribution] = useState(500);
+  const eduCalc = trpc.educationPlanner.plan.useMutation({ onError: (e: any) => toast.error(e.message) });
+  return (
+    <CalcPanel title="Education Planner" icon={<GraduationCap className="w-4 h-4" />} color="text-indigo-400"
+      onCalculate={() => eduCalc.mutate({ childAge, annualCostToday: annualCost, monthlyContribution, marginalTaxRate: 0.24, stateTaxRate: 0.05 })}
+      isLoading={eduCalc.isPending}
+      result={eduCalc.data ? (
+        <Card className="bg-card/60 border-border/50 h-full">
+          <CardContent className="pt-6 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                <p className="text-[10px] text-muted-foreground">Total Projected Cost</p>
+                <p className="text-lg font-semibold text-indigo-400">{fmt(eduCalc.data.totalProjectedCost)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                <p className="text-[10px] text-muted-foreground">Funding Gap</p>
+                <p className={`text-lg font-semibold ${eduCalc.data.fundingGap > 0 ? "text-red-400" : "text-emerald-400"}`}>
+                  {eduCalc.data.fundingGap > 0 ? `-${fmt(eduCalc.data.fundingGap)}` : "Fully Funded"}
+                </p>
+              </div>
+            </div>
+            <div className="p-3 rounded-lg bg-secondary/50">
+              <p className="text-[10px] text-muted-foreground">Best Vehicle</p>
+              <p className="text-sm font-semibold">{eduCalc.data.bestVehicle}</p>
+              <p className="text-xs text-muted-foreground mt-1">Monthly needed: {fmt(eduCalc.data.monthlyNeeded)}</p>
+            </div>
+            {eduCalc.data.strategies?.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium">Strategies</p>
+                {eduCalc.data.strategies.slice(0, 3).map((s: string, i: number) => (
+                  <p key={i} className="text-xs text-muted-foreground">• {s}</p>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
+          <GraduationCap className="w-6 h-6 text-muted-foreground/30 mb-3" />
+          <p className="text-sm text-muted-foreground">Plan education funding</p>
+        </div>
+      )}
+    >
+      <SliderInput label="Child's Age" value={childAge} onChange={setChildAge} min={0} max={17} suffix=" yrs" />
+      <SliderInput label="Annual Cost Today" value={annualCost} onChange={setAnnualCost} min={10000} max={100000} step={1000} format={fmt} />
+      <SliderInput label="Monthly Contribution" value={monthlyContribution} onChange={setMonthlyContribution} min={100} max={5000} step={50} format={fmt} />
+    </CalcPanel>
   );
 }

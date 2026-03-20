@@ -1194,3 +1194,384 @@ export const savedAnalyses = mysqlTable("saved_analyses", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
 });
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PART G: AGENTIC EXECUTION TABLES
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── G8: Licensed Review Gate (immutable compliance gate log) ──────────────
+export const gateReviews = mysqlTable("gate_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  actionId: varchar("action_id", { length: 255 }).notNull(),
+  actionType: varchar("action_type", { length: 100 }).notNull(),
+  complianceTier: int("compliance_tier").notNull().default(1),
+  classificationRationale: text("classification_rationale"),
+  reviewerId: int("reviewer_id"),
+  reviewerLicenseNumber: varchar("reviewer_license_number", { length: 100 }),
+  reviewerLicenseState: varchar("reviewer_license_state", { length: 10 }),
+  reviewerLicenseExpiry: bigint("reviewer_license_expiry", { mode: "number" }),
+  decision: mysqlEnum("decision", ["pending", "approved", "modified", "rejected", "escalated"]).default("pending"),
+  modificationDetails: text("modification_details"),
+  complianceNotes: text("compliance_notes"),
+  decisionTimestamp: bigint("decision_timestamp", { mode: "number" }),
+  archiveRef: varchar("archive_ref", { length: 255 }),
+  workflowType: varchar("workflow_type", { length: 100 }),
+  clientId: int("client_id"),
+  professionalId: int("professional_id"),
+  firmId: int("firm_id"),
+  slaDeadline: bigint("sla_deadline", { mode: "number" }),
+  escalatedTo: int("escalated_to"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type GateReview = typeof gateReviews.$inferSelect;
+
+// ─── G1: Agent Instances ───────────────────────────────────────────────────
+export const agentInstances = mysqlTable("agent_instances", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  firmId: int("firm_id"),
+  workflowType: varchar("workflow_type", { length: 100 }).notNull(),
+  deploymentMode: mysqlEnum("deployment_mode", ["local", "cloud", "hybrid"]).default("local"),
+  instanceStatus: mysqlEnum("instance_status", ["spawning", "active", "paused", "terminated", "error"]).default("spawning"),
+  configJson: json("config_json"),
+  budgetLimitUsd: decimal("budget_limit_usd", { precision: 10, scale: 2 }),
+  runtimeLimitMinutes: int("runtime_limit_minutes").default(60),
+  totalActions: int("total_actions").default(0),
+  totalCostUsd: decimal("total_cost_usd", { precision: 10, scale: 2 }).default("0"),
+  spawnedAt: bigint("spawned_at", { mode: "number" }).notNull(),
+  terminatedAt: bigint("terminated_at", { mode: "number" }),
+});
+export type AgentInstance = typeof agentInstances.$inferSelect;
+
+// ─── G1: Agent Actions (immutable log) ─────────────────────────────────────
+export const agentActions = mysqlTable("agent_actions", {
+  id: int("id").autoincrement().primaryKey(),
+  agentInstanceId: int("agent_instance_id").notNull(),
+  actionType: varchar("action_type", { length: 100 }).notNull(),
+  targetSystem: varchar("target_system", { length: 255 }),
+  targetUrl: text("target_url"),
+  dataAccessedSummary: text("data_accessed_summary"),
+  dataModifiedSummary: text("data_modified_summary"),
+  screenshotHash: varchar("screenshot_hash", { length: 255 }),
+  complianceTier: int("compliance_tier").default(1),
+  gateTriggered: mysqlBoolean("gate_triggered").default(false),
+  gateResult: varchar("gate_result", { length: 50 }),
+  durationMs: int("duration_ms"),
+  errorMessage: text("error_message"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type AgentAction = typeof agentActions.$inferSelect;
+
+// ─── G2: Insurance Quotes ──────────────────────────────────────────────────
+export const insuranceQuotes = mysqlTable("insurance_quotes", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  professionalId: int("professional_id"),
+  quoteRunId: varchar("quote_run_id", { length: 255 }).notNull(),
+  carrierName: varchar("carrier_name", { length: 255 }).notNull(),
+  productType: varchar("product_type", { length: 100 }).notNull(),
+  productName: varchar("product_name", { length: 255 }),
+  premiumMonthly: decimal("premium_monthly", { precision: 12, scale: 2 }),
+  premiumAnnual: decimal("premium_annual", { precision: 12, scale: 2 }),
+  deathBenefit: decimal("death_benefit", { precision: 15, scale: 2 }),
+  cashValueYr10: decimal("cash_value_yr10", { precision: 15, scale: 2 }),
+  cashValueYr20: decimal("cash_value_yr20", { precision: 15, scale: 2 }),
+  ridersJson: json("riders_json"),
+  uwClassEstimated: varchar("uw_class_estimated", { length: 100 }),
+  amBestRating: varchar("am_best_rating", { length: 10 }),
+  quoteDate: bigint("quote_date", { mode: "number" }).notNull(),
+  source: mysqlEnum("source", ["api", "browser", "manual"]).default("manual"),
+  status: mysqlEnum("status", ["illustrative", "reviewed", "selected", "expired"]).default("illustrative"),
+  comparisonNotes: text("comparison_notes"),
+});
+export type InsuranceQuote = typeof insuranceQuotes.$inferSelect;
+
+// ─── G3: Insurance Applications ────────────────────────────────────────────
+export const insuranceApplications = mysqlTable("insurance_applications", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  professionalId: int("professional_id"),
+  carrierName: varchar("carrier_name", { length: 255 }).notNull(),
+  productName: varchar("product_name", { length: 255 }),
+  applicationDataJson: json("application_data_json"),
+  preliminaryUwAssessment: text("preliminary_uw_assessment"),
+  compliancePreflightJson: json("compliance_preflight_json"),
+  gateStatus: mysqlEnum("gate_status", ["draft", "pending_review", "approved", "submitted", "issued", "declined", "counter_offer"]).default("draft"),
+  gateReviewId: int("gate_review_id"),
+  reviewerId: int("reviewer_id"),
+  reviewerLicense: varchar("reviewer_license", { length: 100 }),
+  reviewedAt: bigint("reviewed_at", { mode: "number" }),
+  submittedAt: bigint("submitted_at", { mode: "number" }),
+  carrierStatus: varchar("carrier_status", { length: 100 }),
+  carrierRefNumber: varchar("carrier_ref_number", { length: 255 }),
+  pendingRequirementsJson: json("pending_requirements_json"),
+  policyNumber: varchar("policy_number", { length: 255 }),
+  issuedAt: bigint("issued_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type InsuranceApplication = typeof insuranceApplications.$inferSelect;
+
+// ─── G4: Advisory Executions ───────────────────────────────────────────────
+export const advisoryExecutions = mysqlTable("advisory_executions", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  professionalId: int("professional_id").notNull(),
+  executionType: mysqlEnum("execution_type", ["account_open", "rebalance", "harvest", "transfer", "trade", "rollover"]).notNull(),
+  executionDataJson: json("execution_data_json"),
+  taxImpactEstimate: decimal("tax_impact_estimate", { precision: 12, scale: 2 }),
+  gateStatus: mysqlEnum("gate_status", ["draft", "pending_review", "approved", "executing", "completed", "failed"]).default("draft"),
+  gateReviewId: int("gate_review_id"),
+  reviewerId: int("reviewer_id"),
+  approvedAt: bigint("approved_at", { mode: "number" }),
+  executedAt: bigint("executed_at", { mode: "number" }),
+  custodianConfirmation: varchar("custodian_confirmation", { length: 255 }),
+  postExecutionAuditJson: json("post_execution_audit_json"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type AdvisoryExecution = typeof advisoryExecutions.$inferSelect;
+
+// ─── G5: Estate Documents ──────────────────────────────────────────────────
+export const estateDocuments = mysqlTable("estate_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  documentType: mysqlEnum("document_type", ["trust", "will", "poa_financial", "poa_healthcare", "directive", "beneficiary_audit"]).notNull(),
+  draftVersion: int("draft_version").default(1),
+  draftContentUrl: text("draft_content_url"),
+  draftContentHash: varchar("draft_content_hash", { length: 255 }),
+  complexityLevel: mysqlEnum("complexity_level", ["simple", "standard", "complex"]).default("standard"),
+  reviewPath: mysqlEnum("review_path", ["self_help", "attorney_review"]).default("attorney_review"),
+  attorneyId: int("attorney_id"),
+  attorneyStatus: mysqlEnum("attorney_status", ["pending", "reviewing", "approved", "revision_requested"]).default("pending"),
+  stateJurisdiction: varchar("state_jurisdiction", { length: 10 }),
+  finalized: mysqlBoolean("finalized").default(false),
+  executedDate: bigint("executed_date", { mode: "number" }),
+  archiveRef: varchar("archive_ref", { length: 255 }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type EstateDocument = typeof estateDocuments.$inferSelect;
+
+// ─── G6: Premium Finance Cases ─────────────────────────────────────────────
+export const premiumFinanceCases = mysqlTable("premium_finance_cases", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  professionalId: int("professional_id").notNull(),
+  insurancePolicyRef: varchar("insurance_policy_ref", { length: 255 }),
+  financedPremiumAnnual: decimal("financed_premium_annual", { precision: 15, scale: 2 }),
+  loanAmount: decimal("loan_amount", { precision: 15, scale: 2 }),
+  lenderName: varchar("lender_name", { length: 255 }),
+  interestRate: decimal("interest_rate", { precision: 5, scale: 3 }),
+  termYears: int("term_years"),
+  collateralType: varchar("collateral_type", { length: 100 }),
+  collateralValue: decimal("collateral_value", { precision: 15, scale: 2 }),
+  structureJson: json("structure_json"),
+  stressTestJson: json("stress_test_json"),
+  gateStatus: mysqlEnum("gate_status", ["modeling", "pending_review", "approved", "applied", "funded", "monitoring", "closed"]).default("modeling"),
+  gateReviewId: int("gate_review_id"),
+  status: mysqlEnum("status", ["modeling", "applied", "funded", "monitoring", "closed"]).default("modeling"),
+  monitoringAlertsJson: json("monitoring_alerts_json"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type PremiumFinanceCase = typeof premiumFinanceCases.$inferSelect;
+
+// ─── G7: Carrier Connections ───────────────────────────────────────────────
+export const carrierConnections = mysqlTable("carrier_connections", {
+  id: int("id").autoincrement().primaryKey(),
+  firmId: int("firm_id").notNull(),
+  carrierName: varchar("carrier_name", { length: 255 }).notNull(),
+  connectionType: mysqlEnum("connection_type", ["api", "browser"]).default("browser"),
+  apiEndpoint: varchar("api_endpoint", { length: 500 }),
+  credentialsVaultRef: varchar("credentials_vault_ref", { length: 255 }),
+  supportedOperationsJson: json("supported_operations_json"),
+  stateAppointmentsJson: json("state_appointments_json"),
+  lastVerified: bigint("last_verified", { mode: "number" }),
+  active: mysqlBoolean("active").default(true),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type CarrierConnection = typeof carrierConnections.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DATA INGESTION & INTELLIGENCE PIPELINE TABLES
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Data Sources Registry ─────────────────────────────────────────────────
+export const dataSources = mysqlTable("data_sources", {
+  id: int("id").autoincrement().primaryKey(),
+  firmId: int("firm_id"),
+  name: varchar("name", { length: 255 }).notNull(),
+  sourceType: mysqlEnum("source_type", ["document_upload", "web_scrape", "api_feed", "market_data", "regulatory", "product_catalog", "news_feed", "competitor", "custom"]).notNull(),
+  url: varchar("url", { length: 1000 }),
+  authType: mysqlEnum("auth_type", ["none", "api_key", "oauth", "basic", "bearer"]).default("none"),
+  credentialsVaultRef: varchar("credentials_vault_ref", { length: 255 }),
+  scheduleCron: varchar("schedule_cron", { length: 100 }),
+  priority: int("priority").default(5),
+  isActive: mysqlBoolean("is_active").default(true),
+  lastRunAt: bigint("last_run_at", { mode: "number" }),
+  lastSuccessAt: bigint("last_success_at", { mode: "number" }),
+  totalRecordsIngested: int("total_records_ingested").default(0),
+  configJson: json("config_json"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type DataSource = typeof dataSources.$inferSelect;
+
+// ─── Ingestion Jobs ────────────────────────────────────────────────────────
+export const ingestionJobs = mysqlTable("ingestion_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  dataSourceId: int("data_source_id").notNull(),
+  triggeredBy: int("triggered_by"),
+  status: mysqlEnum("status", ["queued", "running", "completed", "failed", "cancelled"]).default("queued"),
+  progressPct: int("progress_pct").default(0),
+  recordsProcessed: int("records_processed").default(0),
+  recordsCreated: int("records_created").default(0),
+  recordsUpdated: int("records_updated").default(0),
+  recordsSkipped: int("records_skipped").default(0),
+  recordsErrored: int("records_errored").default(0),
+  errorLog: text("error_log"),
+  startedAt: bigint("started_at", { mode: "number" }),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  durationMs: int("duration_ms"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type IngestionJob = typeof ingestionJobs.$inferSelect;
+
+// ─── Ingested Records (normalized) ─────────────────────────────────────────
+export const ingestedRecords = mysqlTable("ingested_records", {
+  id: int("id").autoincrement().primaryKey(),
+  dataSourceId: int("data_source_id").notNull(),
+  ingestionJobId: int("ingestion_job_id"),
+  recordType: mysqlEnum("record_type", ["customer_profile", "organization", "product", "market_price", "regulatory_update", "news_article", "competitor_intel", "document_extract", "entity", "metric"]).notNull(),
+  entityId: varchar("entity_id", { length: 255 }),
+  title: varchar("title", { length: 500 }),
+  contentSummary: text("content_summary"),
+  structuredData: json("structured_data"),
+  rawDataUrl: text("raw_data_url"),
+  confidenceScore: decimal("confidence_score", { precision: 3, scale: 2 }).default("0.80"),
+  freshnessAt: bigint("freshness_at", { mode: "number" }),
+  tags: json("tags"),
+  isVerified: mysqlBoolean("is_verified").default(false),
+  verifiedBy: int("verified_by"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type IngestedRecord = typeof ingestedRecords.$inferSelect;
+
+// ─── Market Data Cache (time-series) ───────────────────────────────────────
+export const marketDataCache = mysqlTable("market_data_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  symbol: varchar("symbol", { length: 50 }).notNull(),
+  dataType: mysqlEnum("data_type", ["price", "fx_rate", "interest_rate", "index", "economic_indicator", "commodity"]).notNull(),
+  value: decimal("value", { precision: 18, scale: 6 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("USD"),
+  source: varchar("source", { length: 100 }),
+  observedAt: bigint("observed_at", { mode: "number" }).notNull(),
+  metadataJson: json("metadata_json"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type MarketDataCacheRow = typeof marketDataCache.$inferSelect;
+
+// ─── Web Scrape Results ────────────────────────────────────────────────────
+export const webScrapeResults = mysqlTable("web_scrape_results", {
+  id: int("id").autoincrement().primaryKey(),
+  dataSourceId: int("data_source_id"),
+  ingestionJobId: int("ingestion_job_id"),
+  url: varchar("url", { length: 2000 }).notNull(),
+  pageTitle: varchar("page_title", { length: 500 }),
+  contentText: text("content_text"),
+  extractedEntities: json("extracted_entities"),
+  extractedMetrics: json("extracted_metrics"),
+  scrapeStatus: mysqlEnum("scrape_status", ["success", "partial", "failed"]).default("success"),
+  httpStatus: int("http_status"),
+  contentHash: varchar("content_hash", { length: 64 }),
+  scrapedAt: bigint("scraped_at", { mode: "number" }).notNull(),
+});
+export type WebScrapeResult = typeof webScrapeResults.$inferSelect;
+
+// ─── Document Extractions ──────────────────────────────────────────────────
+export const documentExtractions = mysqlTable("document_extractions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  documentId: int("document_id"),
+  ingestionJobId: int("ingestion_job_id"),
+  extractionType: mysqlEnum("extraction_type", ["financial_statement", "tax_return", "insurance_policy", "investment_statement", "bank_statement", "pay_stub", "estate_document", "medical_record", "custom"]).notNull(),
+  extractedData: json("extracted_data").notNull(),
+  extractedEntities: json("extracted_entities"),
+  extractedAmounts: json("extracted_amounts"),
+  extractionConfidence: decimal("extraction_confidence", { precision: 3, scale: 2 }).default("0.80"),
+  pageCount: int("page_count"),
+  processingTimeMs: int("processing_time_ms"),
+  llmModelUsed: varchar("llm_model_used", { length: 100 }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type DocumentExtraction = typeof documentExtractions.$inferSelect;
+
+
+// ─── Scrape Schedules ─────────────────────────────────────────────────────
+export const scrapeSchedules = mysqlTable("scrape_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  dataSourceId: int("data_source_id").notNull(),
+  cronExpression: varchar("cron_expression", { length: 100 }).notNull(),
+  nextRunAt: bigint("next_run_at", { mode: "number" }),
+  lastRunAt: bigint("last_run_at", { mode: "number" }),
+  enabled: mysqlBoolean("enabled").default(true),
+  retryOnFailure: mysqlBoolean("retry_on_failure").default(true),
+  maxRetries: int("max_retries").default(3),
+  notifyOnFailure: mysqlBoolean("notify_on_failure").default(true),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type ScrapeSchedule = typeof scrapeSchedules.$inferSelect;
+
+// ─── Data Quality Scores ──────────────────────────────────────────────────
+export const dataQualityScores = mysqlTable("data_quality_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  dataSourceId: int("data_source_id").notNull(),
+  ingestionJobId: int("ingestion_job_id"),
+  completeness: decimal("completeness", { precision: 5, scale: 2 }).default("0.00"),
+  accuracy: decimal("accuracy", { precision: 5, scale: 2 }).default("0.00"),
+  freshness: decimal("freshness", { precision: 5, scale: 2 }).default("0.00"),
+  consistency: decimal("consistency", { precision: 5, scale: 2 }).default("0.00"),
+  overallScore: decimal("overall_score", { precision: 5, scale: 2 }).default("0.00"),
+  issuesFound: json("issues_found"),
+  recommendations: json("recommendations"),
+  scoredAt: bigint("scored_at", { mode: "number" }).notNull(),
+});
+export type DataQualityScore = typeof dataQualityScores.$inferSelect;
+
+// ─── Ingestion Insights (AI-generated) ────────────────────────────────────
+export const ingestionInsights = mysqlTable("ingestion_insights", {
+  id: int("id").autoincrement().primaryKey(),
+  insightType: mysqlEnum("insight_type", ["trend", "anomaly", "opportunity", "risk", "recommendation", "competitive_intel", "market_shift", "regulatory_change"]).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description").notNull(),
+  severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).default("medium"),
+  dataSourceIds: json("data_source_ids"),
+  relatedEntityIds: json("related_entity_ids"),
+  actionable: mysqlBoolean("actionable").default(true),
+  acknowledged: mysqlBoolean("acknowledged").default(false),
+  acknowledgedBy: int("acknowledged_by"),
+  expiresAt: bigint("expires_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type IngestionInsight = typeof ingestionInsights.$inferSelect;
+
+// ─── Bulk Import Batches ──────────────────────────────────────────────────
+export const bulkImportBatches = mysqlTable("bulk_import_batches", {
+  id: int("id").autoincrement().primaryKey(),
+  batchName: varchar("batch_name", { length: 255 }).notNull(),
+  importType: mysqlEnum("import_type", ["csv_upload", "api_bulk", "multi_url_scrape", "rss_feed", "sitemap_crawl"]).notNull(),
+  totalItems: int("total_items").default(0),
+  processedItems: int("processed_items").default(0),
+  successItems: int("success_items").default(0),
+  failedItems: int("failed_items").default(0),
+  status: mysqlEnum("status", ["pending", "processing", "completed", "failed", "cancelled"]).default("pending"),
+  inputData: json("input_data"),
+  resultsJson: json("results_json"),
+  triggeredBy: int("triggered_by"),
+  startedAt: bigint("started_at", { mode: "number" }),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type BulkImportBatch = typeof bulkImportBatches.$inferSelect;

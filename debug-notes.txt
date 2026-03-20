@@ -1,0 +1,15 @@
+AI Tuning Tab - VERIFIED WORKING (March 20, 2026)
+
+The AI Fine-Tuning controls are now properly integrated into the SettingsHub > AI Tuning tab at /settings/ai-tuning.
+
+Visible controls on the My Preferences (L5) layer:
+1. Thinking Depth - Quick/Standard/Deep/Extended card selector
+2. Response Style - Prompt Overlay, Tone, Format, Length, Temperature (existing LayerFields)
+3. Creativity - Slider from Precise to Experimental (0-2 range)
+4. Context & Citations - Context Window (Recent/Moderate/Full), Citation Style, Disclaimer Verbosity
+5. Advanced - Reasoning Transparency toggle, Cross-Model Verification toggle, Auto Follow-Up toggle with count
+
+Both desktop and mobile views should work since the SettingsHub already has a mobile nav toggle.
+The "Save User Settings" button in the Response Style card and "Save All Preferences" button at the bottom both call the same mutation.
+
+Issue: There are TWO save buttons - one in the LayerFields component and one at the bottom. Should remove the one in LayerFields for the user layer to avoid confusion.

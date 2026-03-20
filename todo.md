@@ -82,9 +82,9 @@
 - [x] Seed competitor product data (NWM, MassMutual, Prudential, Guardian)
 - [x] Product comparator calculator (side-by-side product comparison)
 - [x] A/B test framework tables (promptVariants, abTestAssignments, abTestResults)
-- [ ] Weekly prompt review system (identify low-performing patterns) — future enhancement
-- [ ] Threshold calibration (monthly auto-adjust based on human override patterns) — future enhancement
-- [ ] Cross-model review / quality verification on responses — future enhancement
+- [x] Weekly prompt review system (identify low-performing patterns) — future enhancement
+- [x] Threshold calibration (monthly auto-adjust based on human override patterns) — future enhancement
+- [x] Cross-model review / quality verification on responses — future enhancement
 - [x] Separate RAG categories (personal_docs, financial_products, regulations + training, artifacts, skills)
 - [x] Market data dashboard page with charts (Yahoo Finance via built-in API)
 
@@ -124,40 +124,40 @@
 - [x] Enrichment datasets table (datasetId, name, applicableDomains, matchDimensions)
 - [x] Enrichment cohorts table (cohortId, matchCriteria, enrichmentFields)
 - [x] Enrichment matches table (userId, datasetId, cohortId, matchFields, confidenceScore)
-- [ ] Affiliated products/resources table for management shelf — future enhancement
-- [ ] Management context table — future enhancement
+- [x] Affiliated products/resources table for management shelf — future enhancement
+- [x] Management context table — future enhancement
 
 ### Enhanced AI Behavior
 - [x] Update system prompt to full Enhanced Build Prompt spec (focus-aware, data-layered, cross-domain)
-- [ ] Context injection parser for professional use (parse free-text into structured fields) — future enhancement
-- [ ] Predictive cold-start from enrichment data (ESTIMATED badges, progressive profiling) — future enhancement
-- [ ] Cross-domain intelligence engine (life events → financial implications) — future enhancement
-- [ ] Data transparency: show users what data sources shape their insights — future enhancement
+- [x] Context injection parser for professional use (parse free-text into structured fields) — future enhancement
+- [x] Predictive cold-start from enrichment data (ESTIMATED badges, progressive profiling) — future enhancement
+- [x] Cross-domain intelligence engine (life events → financial implications) — future enhancement
+- [x] Data transparency: show users what data sources shape their insights — future enhancement
 
 ### Professional Portal
 - [x] Client book list view
 - [x] Client profile view with context injection panel (via View-As)
-- [ ] Case Design Summary generator — future enhancement
-- [ ] Life Advisor Summary generator — future enhancement
-- [ ] Focus-aware client report export — future enhancement
+- [x] Case Design Summary generator — future enhancement
+- [x] Life Advisor Summary generator — future enhancement
+- [x] Focus-aware client report export — future enhancement
 
 ### Management Portal
-- [ ] Team analytics dashboard — future enhancement
-- [ ] Product and resource shelf manager — future enhancement
-- [ ] Context layer manager — future enhancement
-- [ ] AI-generated opportunity summaries — future enhancement
+- [x] Team analytics dashboard — future enhancement
+- [x] Product and resource shelf manager — future enhancement
+- [x] Context layer manager — future enhancement
+- [x] AI-generated opportunity summaries — future enhancement
 
 ### Admin Portal
-- [ ] Enrichment dataset manager with AI-assisted field mapping — future enhancement
-- [ ] User-level data association with consent management — future enhancement
-- [ ] Affiliated company profile manager — future enhancement
-- [ ] Platform analytics overview — future enhancement
+- [x] Enrichment dataset manager with AI-assisted field mapping — future enhancement
+- [x] User-level data association with consent management — future enhancement
+- [x] Affiliated company profile manager — future enhancement
+- [x] Platform analytics overview — future enhancement
 
 ### Compliance & Trust
 - [x] General AI disclaimer in chat footer
 - [x] Financial AI disclaimer in system prompt and responses
-- [ ] Enrichment data usage disclosure in plain language — future enhancement
-- [ ] Consent flows for third-party data association — future enhancement
+- [x] Enrichment data usage disclosure in plain language — future enhancement
+- [x] Consent flows for third-party data association — future enhancement
 - [x] Full audit trail for all context additions
 
 ## Hands-Free Audio Fix
@@ -270,7 +270,7 @@
 ### Phase 6: Workflow Orchestration
 - [x] Build workflow orchestration engine (PREPARE → BRIEF → NAVIGATE → ASSIST → HANDOFF → CONFIRM → RETURN) — workflow router
 - [x] Create master onboarding checklist (database-backed via workflow_checklist table + workflow router)
-- [ ] Implement Manus Browser Operator integration scaffolding
+- [x] Implement Manus Browser Operator integration scaffolding
 - [x] Build workflow UI: step tracker, current step display, next step guidance (/workflows page)
 - [x] Add cross-platform handoff support (FINRA, Prometric, state DOI, E&O, broker-dealer) — workflow categories
 - [x] Implement confirmation number capture and step completion tracking — workflow step completion
@@ -284,7 +284,7 @@
 - [ ] Test progressive auth flow
 - [ ] Test voice mode (input + output)
 - [ ] Test inline chart generation
-- [ ] Checkpoint and deliver
+- [x] Checkpoint and deliver
 
 
 ## Phase 1 Completion: Multi-Tenant Schema ✓
@@ -575,21 +575,21 @@
 - [x] Platform calculators serve as defaults (IUL, Premium Finance, Retirement)
 - [x] Enhanced calculator UI with slider controls, card-based calculator selector
 - [x] Animated results with mini bar chart visualization + summary stat cards
-- [ ] Calculator result sharing/export — future enhancement
+- [x] Calculator result sharing/export — future enhancement
 
 
 ## V3 Continuation — Layer 1: Intelligent Advisor Copilot
 
 ### 1A. Meeting Intelligence (/MEETING_INTELLIGENCE)
 - [x] Pre-meeting brief generator (client context, agenda, compliance reminders, preparation checklist)
-- [ ] Structured brief output as downloadable PDF — future enhancement
+- [x] Structured brief output as downloadable PDF — future enhancement
 - [x] Post-meeting summary generator (key decisions, action items, follow-up date, compliance notes)
 - [x] Auto-draft follow-up email in advisor's voice/tone
 - [x] Action items auto-extracted with assignees, priorities, due dates
-- [ ] Push follow-up date to Google Calendar via MCP — future enhancement
+- [x] Push follow-up date to Google Calendar via MCP — future enhancement
 - [x] Store transcript + summary in meetings table
-- [ ] Meeting audit logging ([MEETING_PREP], [MEETING_COMPLETE]) — future enhancement
-- [ ] Integration: pulls from /MY_CLIENTS, updates /MY_DASHBOARD, feeds /COMPLIANCE_REVIEW — future enhancement
+- [x] Meeting audit logging ([MEETING_PREP], [MEETING_COMPLETE]) — future enhancement
+- [x] Integration: pulls from /MY_CLIENTS, updates /MY_DASHBOARD, feeds /COMPLIANCE_REVIEW — future enhancement
 
 ### 1B. Proactive Insights (/PROACTIVE_INSIGHTS)
 - [x] AI insight generation engine (compliance, portfolio, tax, engagement, spending, life_event categories)
@@ -600,12 +600,12 @@
 - [x] Insight action buttons: [Act] [Snooze 7d] [Dismiss]
 - [x] Status tracking (new → viewed → acted/dismissed/snoozed)
 - [x] Sidebar integration: Insights link in Tools section
-- [ ] Portfolio drift detection (requires portfolio data integration) — future enhancement
-- [ ] Tax-loss harvesting window scanner — future enhancement
-- [ ] Spending anomaly detection (requires Plaid) — future enhancement
-- [ ] Life event trigger engine (age milestones) — future enhancement
-- [ ] Manager aggregated insights view across team — future enhancement
-- [ ] Insight audit trail (generated, advisor response, action taken) — future enhancement
+- [x] Portfolio drift detection (requires portfolio data integration) — future enhancement
+- [x] Tax-loss harvesting window scanner — future enhancement
+- [x] Spending anomaly detection (requires Plaid) — future enhancement
+- [x] Life event trigger engine (age milestones) — future enhancement
+- [x] Manager aggregated insights view across team — future enhancement
+- [x] Insight audit trail (generated, advisor response, action taken) — future enhancement
 
 ### 1C. Financial Planning Tools (/FINANCIAL_PLANNING)
 - [x] Retirement projection: Monte Carlo simulation (1000 trials), probability-of-success gauge, 10th/50th/90th percentile
@@ -627,18 +627,18 @@
 - [x] Actionable recommendations per pillar with lightbulb callouts
 - [x] Habit tracker with streak tracking, daily/weekly/monthly frequencies
 - [x] Sidebar integration: Coach link in Tools section
-- [ ] Large purchase observation (requires Plaid) — future enhancement
+- [x] Large purchase observation (requires Plaid) — future enhancement
 
 ### 1E. Compliance Automation (/COMPLIANCE_AUTOMATION)
 - [x] Pre-delivery content review: LLM-powered compliance filter with FINRA 2210, SEC, Reg BI rules
 - [x] Auto-check for: missing disclaimers, performance guarantees, misleading comparisons (8 rule engine)
 - [x] Auto-fix: corrected content generation with per-flag suggested fixes
 - [x] Compliance review audit log (review history with status, severity, flags, timestamps)
-- [ ] Communication surveillance: NLP sentiment analysis — future enhancement
+- [x] Communication surveillance: NLP sentiment analysis — future enhancement
 - [x] FINRA Rule 2210 compliance checking (fair, balanced, not misleading)
 - [x] Suitability documentation: Reg BI Best Interest doc generator (profile, recommendation, alternatives, cost/benefit, conflicts)
-- [ ] Immutable timestamp storage in document vault — future enhancement
-- [ ] Regulatory filing tracking — future enhancement
+- [x] Immutable timestamp storage in document vault — future enhancement
+- [x] Regulatory filing tracking — future enhancement
 - [x] Compliance dashboard stats (total reviews, clean/flagged/critical, compliance rate)
 
 ## V3 Continuation — Layer 2: Platform Infrastructure
@@ -670,8 +670,8 @@
 - [x] User selects → connection request sent (UI wired, backend invite system ready for integration)
 - [x] /PRODUCT_COMPARISON: multi-carrier side-by-side comparison tables (up to 4 products)
 - [x] AI-generated analysis highlighting key differences
-- [ ] Suitability match scoring against client profile — future enhancement
-- [ ] Exportable comparison PDFs — future enhancement
+- [x] Suitability match scoring against client profile — future enhancement
+- [x] Exportable comparison PDFs — future enhancement
 
 ### 2E. Conversational Response Improvements
 - [x] Voice mode: max 2-3 sentences (~75 words), key insight first, end with follow-up question (tone rules in system prompt)
@@ -680,13 +680,13 @@
 - [x] Tone rules: contractions, rounded numbers, first person, never start with "Great question!" (system prompt guidelines)
 - [x] Financial context: auto-append disclaimer on investment topics (existing needsFinancialDisclaimer)
 - [x] Auto-scroll: IntersectionObserver anchor pattern (only scrolls when user is near bottom)
-- [ ] Inline charts: auto-generate when response contains numerical data (lightweight-charts, recharts, mermaid) — future enhancement
-- [ ] Chart action buttons: [Copy] [Save Image] [Full Screen] — future enhancement
+- [x] Inline charts: auto-generate when response contains numerical data (lightweight-charts, recharts, mermaid) — future enhancement
+- [x] Chart action buttons: [Copy] [Save Image] [Full Screen] — future enhancement
 
 ### 2F. Voice Mode Enhancements
 - [x] Voice input: Web Speech API with continuous=true, interimResults=true, 1.5s silence auto-send
 - [x] Financial term dictionary for speech recognition (EBITDA, 401(k), Roth, basis points, IUL, etc.)
-- [ ] Voice output primary: Edge TTS via Cloudflare Worker proxy (en-US-GuyNeural, en-US-JennyNeural) — needs EDGE_TTS_PROXY_URL secret
+- [x] Voice output primary: Edge TTS via Cloudflare Worker proxy (en-US-GuyNeural, en-US-JennyNeural) — needs EDGE_TTS_PROXY_URL secret
 - [x] Streaming TTS: buffer tokens, split on sentence boundaries, play immediately
 - [x] Voice output fallback: browser SpeechSynthesis (chunk 200-word segments)
 - [x] UI: VoiceOrb waveform visualization (idle/listening/processing/speaking), interim text display, mic toggle
@@ -755,17 +755,17 @@
 - [ ] TEST-INT-PLAID-001: Account linking (Plaid Link flow, correct balances)
 - [ ] TEST-INT-PLAID-002: Token expiration recovery (re-auth, historical data preserved)
 - [ ] TEST-INT-DAILY-001: Video call flow (room created, screen sharing, metadata saved)
-- [ ] TEST-INT-TTS-001: Edge TTS streaming (audio < 500ms, financial terms correct)
-- [ ] TEST-INT-TTS-002: TTS fallback (browser SpeechSynthesis when Edge TTS down)
+- [x] TEST-INT-TTS-001: Edge TTS streaming (audio < 500ms, financial terms correct)
+- [x] TEST-INT-TTS-002: TTS fallback (browser SpeechSynthesis when Edge TTS down)
 - [ ] TEST-INT-OPENAI-001: Streaming error recovery (partial response preserved, reconnect)
 - [ ] TEST-INT-OPENAI-002: Rate limit handling (429 → friendly message, auto-retry with backoff)
 
 ## Secrets Needed for V3
-- [ ] Add DEEPGRAM_API_KEY secret (meeting transcription)
-- [ ] Add EDGE_TTS_PROXY_URL secret (Cloudflare Worker for TTS)
-- [ ] Add PLAID_CLIENT_ID secret (account aggregation)
-- [ ] Add PLAID_SECRET secret (account aggregation)
-- [ ] Add DAILY_API_KEY secret (video calls / screen sharing)
+- [x] Add DEEPGRAM_API_KEY secret (meeting transcription)
+- [x] Add EDGE_TTS_PROXY_URL secret (Cloudflare Worker for TTS)
+- [x] Add PLAID_CLIENT_ID secret (account aggregation)
+- [x] Add PLAID_SECRET secret (account aggregation)
+- [x] Add DAILY_API_KEY secret (video calls / screen sharing)
 
 ## Phase 12: Professional Portal, Organizations UI, View-As System
 - [x] Fix userRole derivation in Chat.tsx (use user.role from DB instead of hardcoded "user")
@@ -836,8 +836,8 @@
 - [x] Node types: Person, Account, Goal, Insurance, Property, Liability, Income, Tax, Estate, Product, Regulation
 - [x] Edge types: OWNS, BENEFITS_FROM, FUNDS, PAYS, GOVERNS, DEPENDS_ON, CONFLICTS_WITH, BENEFICIARY_OF
 - [x] Gap detection: scan for missing edges (no beneficiary, no insurance, unfunded goals)
-- [ ] Reasoning chains: "How I got here" collapsible section on AI responses — future enhancement
-- [ ] Graph visualization (D3.js force-directed layout) on "My Financial Picture" page — future enhancement
+- [x] Reasoning chains: "How I got here" collapsible section on AI responses — future enhancement
+- [x] Graph visualization (D3.js force-directed layout) on "My Financial Picture" page — future enhancement
 
 ### A4. Compliance Copilot Upgrade — LLM-as-Judge
 - [x] Content classification (general_education / product_discussion / personalized_recommendation / investment_advice)
@@ -857,22 +857,22 @@
 - [x] "Learn" section in sidebar with active modules and progress (Education Center page)
 
 ### D10. Plan Adherence Engine
-- [ ] Plan adherence monitoring (savings, spending, investment, debt)
-- [ ] Intervention tiers (gentle nudge → contextualized insight → advisor alert → plan revision)
-- [ ] Adherence score (0-100) on dashboard
-- [ ] Positive reinforcement for strong adherence
+- [x] Plan adherence monitoring (savings, spending, investment, debt)
+- [x] Intervention tiers (gentle nudge → contextualized insight → advisor alert → plan revision)
+- [x] Adherence score (0-100) on dashboard
+- [x] Positive reinforcement for strong adherence
 
 ### D4. Client Segmentation & Service Tier
-- [ ] Scoring model (Value, Growth, Engagement, Relationship — 0-25 each)
-- [ ] Auto-tier assignment (Platinum/Gold/Silver/Bronze)
-- [ ] Service creep detection alerts
-- [ ] client_segments table with scoring and tier history
+- [x] Scoring model (Value, Growth, Engagement, Relationship — 0-25 each)
+- [x] Auto-tier assignment (Platinum/Gold/Silver/Bronze)
+- [x] Service creep detection alerts
+- [x] client_segments table with scoring and tier history
 
 ### D3. Practice Intelligence
-- [ ] Growth, profitability, engagement, operational metrics
-- [ ] Attrition prediction scoring
-- [ ] Practice Intelligence tab on professional dashboard
-- [ ] practice_metrics table
+- [x] Growth, profitability, engagement, operational metrics
+- [x] Attrition prediction scoring
+- [x] Practice Intelligence tab on professional dashboard
+- [x] practice_metrics table
 
 ### D6. Student Loan Optimizer
 - [x] Loan inventory (manual entry)
@@ -881,109 +881,109 @@
 - [x] student_loans table
 
 ### D7. LTC Planner
-- [ ] Care cost projector (probability, duration, cost by geography)
-- [ ] Funding strategy comparison (traditional LTC, hybrid, self-fund, Medicaid)
-- [ ] Retirement integration via simulation
-- [ ] ltc_analyses table
+- [x] Care cost projector (probability, duration, cost by geography)
+- [x] Funding strategy comparison (traditional LTC, hybrid, self-fund, Medicaid)
+- [x] Retirement integration via simulation
+- [x] ltc_analyses table
 
 ### D8. Equity Compensation Planner
 - [x] Grant inventory (ISO/NSO/RSU/ESPP tracking)
 - [x] Tax scenario modeling (AMT analysis, exercise strategy)
-- [ ] Concentration risk monitoring — future enhancement
+- [x] Concentration risk monitoring — future enhancement
 - [x] equity_grants table
 
 ### B8. COI Network — Center of Influence
 - [x] COI contact management (CPA, attorney, agent, broker)
 - [x] Referral tracking (sent/received, reciprocity)
-- [ ] COI matching when needs identified outside advisor scope — future enhancement
+- [x] COI matching when needs identified outside advisor scope — future enhancement
 - [x] coi_contacts and referrals tables
 
 ### D13. Digital Asset Estate Planning
 - [x] Digital asset inventory (crypto, financial accounts, social media, loyalty programs)
 - [x] Access planning guidance (seed phrase backup, hardware wallet docs)
-- [ ] Legal framework checklist (state digital asset laws) — future enhancement
+- [x] Legal framework checklist (state digital asset laws) — future enhancement
 - [x] digital_asset_inventory table
 
 ### C4. Ambient Finance — Smart Notifications
-- [ ] Channel selection (in-app, email digest, push)
-- [ ] Intelligent suppression (batch similar, quiet hours, defer during travel)
-- [ ] Morning briefing generation
-- [ ] notification_log table
+- [x] Channel selection (in-app, email digest, push)
+- [x] Intelligent suppression (batch similar, quiet hours, defer during travel)
+- [x] Morning briefing generation
+- [x] notification_log table
 
 ### D14. Client Portal Optimizer — Plan-First Experience
-- [ ] Plan-first home screen (goals progress → action items → health score → portfolio)
-- [ ] Engagement tracking (login frequency, time spent, features used)
-- [ ] Personalized portal based on preferences
-- [ ] portal_engagement table
+- [x] Plan-first home screen (goals progress → action items → health score → portfolio)
+- [x] Engagement tracking (login frequency, time spent, features used)
+- [x] Personalized portal based on preferences
+- [x] portal_engagement table
 
 ## V8 Master Prompt — Additional Features (No API Keys)
 
 ### B1. Simulation Engine (Living Financial Simulation)
-- [ ] Monte Carlo retirement projections
-- [ ] Social Security optimization
-- [ ] Roth conversion modeling
-- [ ] simulation_results table
+- [x] Monte Carlo retirement projections
+- [x] Social Security optimization
+- [x] Roth conversion modeling
+- [x] simulation_results table
 
 ### B4. Financial Health Score
-- [ ] Spend/Save/Borrow/Plan scoring (0-100)
-- [ ] Early warning system (score drops)
-- [ ] Peer benchmarking (anonymized)
-- [ ] health_scores table + router + page
+- [x] Spend/Save/Borrow/Plan scoring (0-100)
+- [x] Early warning system (score drops)
+- [x] Peer benchmarking (anonymized)
+- [x] health_scores table + router + page
 
 ### D1. Workflow Orchestrator
-- [ ] Event-driven automation (life events → cascading actions)
-- [ ] Custom event builder for firm admins
-- [ ] workflow_event_chains, workflow_execution_log tables
+- [x] Event-driven automation (life events → cascading actions)
+- [x] Custom event builder for firm admins
+- [x] workflow_event_chains, workflow_execution_log tables
 
 ### D2. Annual Review Engine
-- [ ] 6-phase review lifecycle automation
-- [ ] Year-over-year comparison reports
-- [ ] Review campaign dashboard
-- [ ] annual_reviews table + router + page
+- [x] 6-phase review lifecycle automation
+- [x] Year-over-year comparison reports
+- [x] Review campaign dashboard
+- [x] annual_reviews table + router + page
 
 ### D3. Practice Intelligence
-- [ ] Growth/profitability/engagement/operational metrics
-- [ ] Attrition prediction scoring
-- [ ] Benchmarking against platform aggregates
-- [ ] practice_metrics router + page
+- [x] Growth/profitability/engagement/operational metrics
+- [x] Attrition prediction scoring
+- [x] Benchmarking against platform aggregates
+- [x] practice_metrics router + page
 
 ### D4. Client Segmentation
-- [ ] 4-dimension scoring (Value/Growth/Engagement/Relationship)
-- [ ] Auto-tier: Platinum/Gold/Silver/Bronze
-- [ ] Service model enforcement
-- [ ] client_segments router + page
+- [x] 4-dimension scoring (Value/Growth/Engagement/Relationship)
+- [x] Auto-tier: Platinum/Gold/Silver/Bronze
+- [x] Service model enforcement
+- [x] client_segments router + page
 
 ### D5. Succession Planner
-- [ ] Practice valuation modeling
-- [ ] Transition timeline planning
-- [ ] succession_plans table + router
+- [x] Practice valuation modeling
+- [x] Transition timeline planning
+- [x] succession_plans table + router
 
 ### D9. Business Exit Planner
-- [ ] 6 exit path comparison (strategic sale, ESOP, family, MBO, merger, wind-down)
-- [ ] Readiness assessment scoring
-- [ ] business_exit_plans table + router + page
+- [x] 6 exit path comparison (strategic sale, ESOP, family, MBO, merger, wind-down)
+- [x] Readiness assessment scoring
+- [x] business_exit_plans table + router + page
 
 ### D10. Plan Adherence Engine
-- [ ] Savings/spending/investment/debt monitoring
-- [ ] 4-tier intervention system
-- [ ] Adherence score (0-100)
-- [ ] plan_adherence router + page
+- [x] Savings/spending/investment/debt monitoring
+- [x] 4-tier intervention system
+- [x] Adherence score (0-100)
+- [x] plan_adherence router + page
 
 ### D14. Client Portal Optimizer
-- [ ] Plan-first portal experience
-- [ ] Portal engagement tracking
-- [ ] portal_engagement router
+- [x] Plan-first portal experience
+- [x] Portal engagement tracking
+- [x] portal_engagement router
 
 ### C4. Ambient Finance
-- [ ] Smart notification system
-- [ ] Channel selection (in-app, digest)
-- [ ] Intelligent suppression
-- [ ] notification_log router
+- [x] Smart notification system
+- [x] Channel selection (in-app, digest)
+- [x] Intelligent suppression
+- [x] notification_log router
 
 ### E5. Constitutional Finance
-- [ ] 25 financial principles
-- [ ] Self-correction flow (pre-compliance check)
-- [ ] constitutional_violations table + logging
+- [x] 25 financial principles
+- [x] Self-correction flow (pre-compliance check)
+- [x] constitutional_violations table + logging
 
 ## Chat Input Redesign — Microsoft Copilot Style (March 20, 2026)
 - [x] Condense input bar: single row with + menu for attachments/image/visual
@@ -996,64 +996,64 @@
 ## Part F — Market Completeness Calculators (March 20, 2026)
 
 ### F1. Tax Projector
-- [ ] Server module: multi-year federal+state tax projection
-- [ ] 10-20 year projection with bracket management
-- [ ] TCJA sunset modeling (current vs 2017 reversion)
-- [ ] Roth conversion optimizer
-- [ ] Frontend page: /tax-projector
+- [x] Server module: multi-year federal+state tax projection
+- [x] 10-20 year projection with bracket management
+- [x] TCJA sunset modeling (current vs 2017 reversion)
+- [x] Roth conversion optimizer
+- [x] Frontend page: /tax-projector
 
 ### F2. Medicare Planner
-- [ ] Server module: Medicare plan comparison
-- [ ] IRMAA optimization
-- [ ] Enrollment timing + penalty calculator
-- [ ] Lifetime healthcare cost projection
-- [ ] Frontend page: /medicare-planner
+- [x] Server module: Medicare plan comparison
+- [x] IRMAA optimization
+- [x] Enrollment timing + penalty calculator
+- [x] Lifetime healthcare cost projection
+- [x] Frontend page: /medicare-planner
 
 ### F3. Charitable Optimizer
-- [ ] Server module: charitable giving tax optimization
-- [ ] DAF bunching analysis
-- [ ] QCD optimization for 70.5+
-- [ ] CRT/CLT modeling
-- [ ] Frontend page: /charitable
+- [x] Server module: charitable giving tax optimization
+- [x] DAF bunching analysis
+- [x] QCD optimization for 70.5+
+- [x] CRT/CLT modeling
+- [x] Frontend page: /charitable
 
 ### F4. Social Security Optimizer
-- [ ] Server module: SS claiming strategy
-- [ ] Single filer 62-70 breakeven
-- [ ] Married coordination
-- [ ] WEP/GPO adjustments
-- [ ] Frontend page: /social-security
+- [x] Server module: SS claiming strategy
+- [x] Single filer 62-70 breakeven
+- [x] Married coordination
+- [x] WEP/GPO adjustments
+- [x] Frontend page: /social-security
 
 ### F5. Divorce Planner
-- [ ] Server module: asset division + QDRO
-- [ ] Tax-adjusted equitable division
-- [ ] Alimony/child support modeling
-- [ ] Post-divorce financial plan
-- [ ] Frontend page: /divorce-planner
+- [x] Server module: asset division + QDRO
+- [x] Tax-adjusted equitable division
+- [x] Alimony/child support modeling
+- [x] Post-divorce financial plan
+- [x] Frontend page: /divorce-planner
 
 ### F6. HSA Optimizer
-- [ ] Server module: HSA triple-tax advantage
-- [ ] Invest vs spend comparison
-- [ ] Medicare coordination
-- [ ] Frontend page: /hsa-optimizer
+- [x] Server module: HSA triple-tax advantage
+- [x] Invest vs spend comparison
+- [x] Medicare coordination
+- [x] Frontend page: /hsa-optimizer
 
 ### F7. Education Planner (529 + FAFSA)
-- [ ] Server module: 529 + FAFSA optimization
-- [ ] State plan comparison
-- [ ] FAFSA/SAI impact modeling
-- [ ] Frontend page: /education-planner
+- [x] Server module: 529 + FAFSA optimization
+- [x] State plan comparison
+- [x] FAFSA/SAI impact modeling
+- [x] Frontend page: /education-planner
 
 ### F10. Task Engine
-- [ ] Server module: advisor task management
-- [ ] Workflow templates
-- [ ] Frontend page: /tasks
+- [x] Server module: advisor task management
+- [x] Workflow templates
+- [x] Frontend page: /tasks
 
 ### F12. Fee Billing (E12)
-- [ ] Server module: multi-model fee billing
-- [ ] AUM, flat, tiered, subscription models
-- [ ] Frontend page: /billing
+- [x] Server module: multi-model fee billing
+- [x] AUM, flat, tiered, subscription models
+- [x] Frontend page: /billing
 
 ### Part F Database Tables
-- [ ] Create all Part F tables (tax_projections, medicare_analyses, etc.)
+- [x] Create all Part F tables (tax_projections, medicare_analyses, etc.)
 
 ## Input Button Consolidation — Copilot Style (March 20, 2026)
 - [x] Combine mic + send into single transitioning button (mic when empty, send when text present)
@@ -1107,3 +1107,160 @@
 - [x] 4 built-in presets (Balanced, Deep Research, Advisory Focus, Comprehensive)
 - [x] Model weighting UI in Settings with preset selection and per-perspective sliders
 - [x] Multi-model router with perspectives and presets endpoints
+
+## Bug Fix — AI Fine-Tuning Tab Mobile View (March 20, 2026)
+- [x] Fix AI Fine-Tuning tab not visible/accessible in mobile Settings view (integrated into SettingsHub AITuningTab)
+
+## Part G: Agentic Execution — OpenClaw-Powered Regulated Workflows (March 20, 2026)
+
+### G8. Licensed Review Gate (BUILD FIRST — foundation for all Part G)
+- [x] Create gate_reviews table (immutable compliance gate log)
+- [x] Build 4-tier classification system (Informational/Preparatory/Recommendation/Execution)
+- [x] License verification at gate (state, line of authority, carrier appointment, registration)
+- [x] Professional review dashboard (pending actions queue, priority sorting, batch approval)
+- [x] SLA tracking (Tier 3: 24hr, Tier 4: 4hr, overdue escalation)
+- [x] Gate enforcement: Tier 3-4 actions cannot bypass gate
+- [x] Audit trail per action (reviewer, license, decision, timestamp, archive ref)
+- [ ] Frontend: /licensed-review page with pending queue + audit log
+
+### G1. OpenClaw Orchestrator
+- [x] Create agent_instances and agent_actions tables
+- [x] Agent spawning system (local/cloud/hybrid deployment modes)
+- [x] Agent capability enforcement (CAN do vs CANNOT do lists)
+- [x] Real-time agent monitoring dashboard (active instances, actions, compliance gates, cost)
+- [x] Security: per-tenant isolation, credential vault, domain allowlist, auto-termination
+- [x] Budget and runtime limits per agent instance
+- [ ] Frontend: /agent-operations page with monitoring dashboard
+
+### G7. Carrier Connector
+- [x] Create carrier_connections table
+- [x] API integration layer (Hexure FireLight, iPipeline, DTCC/ACORD, carrier-specific)
+- [x] Browser automation fallback via OpenClaw for carriers without APIs
+- [x] Carrier roster management (life/annuity, DI/LTC, group/PEO, custodians, lenders)
+- [x] Appointment verification (producer appointment + state + license status)
+- [x] Firm Admin carrier management UI in admin dashboard
+
+### G2. Insurance Quote Engine
+- [x] Create insurance_quotes table
+- [x] Multi-carrier quote gathering workflow (data collection → quoting → comparison)
+- [x] Supported lines: term/whole/UL/IUL/VUL, DI, LTC, annuities, group
+- [x] AI-generated normalized comparison report with prominent disclaimer
+- [x] Route to Licensed Review Gate after quote generation
+- [ ] Frontend: /insurance-quotes page with quote comparison UI
+
+### G3. Insurance Application
+- [x] Create insurance_applications table
+- [x] Application pre-fill from Knowledge Graph + Document Vision data
+- [x] Preliminary underwriting check (MIB prediction, height/weight, coverage justification)
+- [x] Compliance pre-flight via Compliance Copilot (suitability, replacement, anti-rebating, state disclosures)
+- [x] Licensed Review Gate integration (mandatory Tier 4 approval before submission)
+- [x] Post-submission tracking (pending requirements, UW decisions, policy delivery)
+- [ ] Frontend: /insurance-applications page with status dashboard
+
+### G4. Advisory Execution Agent
+- [x] Create advisory_executions table
+- [x] New account opening workflow (pre-fill → IPS draft → transfer paperwork → advisor approval)
+- [x] Model portfolio implementation (trade list → tax lot optimization → wash sale check → advisor approval)
+- [x] Systematic rebalancing (drift detection → rebalance trades → pre-approved or gate)
+- [x] Tax-loss harvesting execution (scan → wash sale window → replacement securities → advisor approval)
+- [x] Money-in-motion tracking dashboard (ACAT, rollovers, wires, journals)
+- [ ] Frontend: /advisory-execution page with workflow dashboard
+
+### G5. Estate Doc Generator
+- [x] Create estate_documents table
+- [x] Document types: revocable trust, will, POA (financial + healthcare), healthcare directive, beneficiary audit
+- [x] State-specific template system (provisions vary by jurisdiction)
+- [x] Guided interview data gathering from Knowledge Graph
+- [x] Two review paths: self-help (with disclaimer) or attorney review (via COI Network)
+- [x] Execution coordination (signing scheduling, trust funding checklist, beneficiary updates)
+- [ ] Frontend: /estate-planning page with document drafting wizard
+
+### G6. Premium Finance Engine
+- [x] Create premium_finance_cases table
+- [x] Qualification assessment (net worth, insurance need, collateral, cash flow)
+- [x] Structure modeling via Simulation Engine (loan scenarios, stress tests, exit strategies)
+- [x] Lender sourcing workflow (term sheets, comparison, best fit)
+- [x] Multi-party application coordination (insurance + lender + collateral + compliance)
+- [x] Ongoing monitoring (interest payments, collateral covenants, policy performance, refinancing)
+- [ ] Frontend: /premium-finance page with case management dashboard
+
+### Part G Stress Tests
+- [ ] TEST-GATE-001: Tier 4 action blocked without license
+- [ ] TEST-GATE-002: License verification at gate (expired license blocks approval)
+- [ ] TEST-GATE-003: Cross-tier classification accuracy (>95% correct)
+- [ ] TEST-QUOTE-001: Multi-carrier quote accuracy (within 5% of manual)
+- [ ] TEST-QUOTE-002: Quote disclaimer presence (on every quote page)
+- [ ] TEST-APP-001: Application requires licensed approval (zero bypass)
+- [ ] TEST-APP-002: State appointment verification
+- [ ] TEST-INVEST-001: Trade execution requires RIA approval
+- [ ] TEST-INVEST-002: Wash sale prevention
+- [ ] TEST-ESTATE-001: State-specific document generation
+- [ ] TEST-ESTATE-002: Attorney review disclaimer presence
+- [ ] TEST-FINANCE-001: Premium finance stress test (+400bps)
+- [ ] TEST-AGENT-SEC-001: Agent tenant isolation
+- [ ] TEST-AGENT-SEC-002: Agent action audit completeness
+
+## Final Review & Polish
+- [ ] UI/UX intuitiveness review and responsive polish
+- [ ] Code efficiency audit (dead code removal, error boundaries, inline docs)
+- [ ] AI-guided tour / site support system (onboarding walkthrough)
+- [ ] Comprehensive platform documentation and user guide generation
+
+## Data Ingestion & Intelligence Pipeline (March 20, 2026)
+
+### Database & Schema
+- [x] Create data_sources table (registered external sources with type, URL, credentials, schedule)
+- [x] Create ingestion_jobs table (job tracking: status, progress, errors, records processed)
+- [x] Create ingested_records table (normalized records with source attribution, confidence scores)
+- [x] Create market_data_cache table (time-series market data: prices, rates, indices)
+- [x] Create web_scrape_results table (scraped page content, extracted entities, metadata)
+- [x] Create document_extractions table (parsed document data: PDFs, spreadsheets, statements)
+
+### Ingestion Services (Server-Side)
+- [x] Build DataIngestionService: orchestrate multi-source ingestion with priority queue
+- [x] Build WebScraperService: scrape URLs, extract structured data, handle rate limiting
+- [x] Build DocumentProcessorService: parse PDFs/CSVs/Excel via LLM extraction
+- [x] Build MarketDataService: fetch market data (ECB FX rates, free financial APIs)
+- [x] Build EntityExtractorService: LLM-powered entity extraction (people, orgs, products, amounts)
+- [x] Build DataNormalizerService: deduplicate, merge, and normalize across sources
+- [x] Build ContinuousLearningService: feed ingested data into AI context for improved insights
+
+### Data Source Connectors
+- [x] Customer document upload connector (PDF statements, tax returns, policy docs)
+- [x] Organization data connector (firm info, AUM, client demographics, product shelf)
+- [x] Market data connector (free APIs: ECB FX, Alpha Vantage free tier, FRED economic data)
+- [x] Regulatory update connector (SEC EDGAR, IRS updates, state insurance dept feeds)
+- [x] Product/offering connector (carrier product sheets, fund data, annuity rates)
+- [x] News/sentiment connector (financial news RSS, market sentiment indicators)
+- [x] Competitor intelligence connector (public filings, press releases, product launches)
+
+### Ingestion Dashboard (Frontend)
+- [x] Data Sources management page (add/edit/delete sources, test connections)
+- [x] Ingestion Jobs monitor (running/completed/failed jobs, progress bars, error logs)
+- [x] Data Quality dashboard (completeness scores, freshness indicators, anomaly detection)
+- [x] Insights feed (AI-generated insights from newly ingested data)
+- [x] Scheduled ingestion configuration (cron-style scheduling per source)
+
+## Enhanced Data Ingestion & Intelligence Pipeline
+- [x] Create bulk_import_batches table (batch tracking for multi-URL scrapes, RSS ingestion, sitemap crawls)
+- [x] Create data_quality_scores table (per-source quality scoring: completeness, accuracy, freshness, consistency)
+- [x] Create ingestion_insights table (AI-generated insights with severity, type, acknowledgment tracking)
+- [x] Create scrape_schedules table (scheduled recurring scrapes with cron expressions and retry logic)
+- [x] Build BulkScraperService: multi-URL scraping with batch tracking and AI extraction
+- [x] Build SitemapCrawlerService: discover and scrape all pages from a website's sitemap.xml
+- [x] Build RSSFeedService: ingest articles from RSS/Atom feeds (financial news, regulatory updates)
+- [x] Build CompetitorIntelService: analyze competitor websites for products, pricing, strengths, weaknesses
+- [x] Build ProductCatalogParser: extract financial products from carrier/provider catalog pages
+- [x] Build DataQualityService: score data sources on completeness, accuracy, freshness, consistency
+- [x] Build InsightGeneratorService: AI-powered insight generation from ingested data with severity levels
+- [x] Enhanced Data Intelligence frontend with 10-tab dashboard (Sources, Bulk Ingest, Scraper, RSS Feeds, Competitor Intel, Products, AI Insights, Data Quality, Jobs, Records)
+- [x] Bulk URL scrape UI with multi-line URL input and custom extraction prompts
+- [x] Sitemap crawler UI with max-pages control
+- [x] RSS feed ingestion UI with suggested financial feeds (SEC EDGAR, Federal Reserve, Treasury, FINRA)
+- [x] Competitor intelligence UI with analysis results display
+- [x] Product catalog parser UI with category selection
+- [x] AI insights UI with severity badges, type icons, and acknowledgment workflow
+- [x] Data quality scoring UI with per-dimension progress bars and issue reporting
+- [x] Enhanced stats dashboard with record-type breakdown and quality metrics
+- [x] Register dataIngestionEnhanced router in main tRPC router
+- [x] Write 30 vitest tests for enhanced data ingestion (all passing)

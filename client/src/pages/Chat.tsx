@@ -13,7 +13,7 @@ import {
   Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
-  Copy, RefreshCw
+  Copy, RefreshCw, Database, Zap, FileCheck, Scale
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { LiveSession } from "@/components/LiveSession";
@@ -550,6 +550,13 @@ export default function Chat() {
     { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Equity Comp", href: "/equity-comp", minRole: "user" as UserRole },
     { icon: <Key className="w-3.5 h-3.5" />, label: "Digital Assets", href: "/digital-assets", minRole: "user" as UserRole },
     { icon: <Users className="w-3.5 h-3.5" />, label: "COI Network", href: "/coi-network", minRole: "advisor" as UserRole },
+    { icon: <Database className="w-3.5 h-3.5" />, label: "Data Intelligence", href: "/data-intelligence", minRole: "advisor" as UserRole },
+    { icon: <Zap className="w-3.5 h-3.5" />, label: "Agentic Hub", href: "/agentic", minRole: "advisor" as UserRole },
+    { icon: <Shield className="w-3.5 h-3.5" />, label: "Licensed Review", href: "/licensed-review", minRole: "advisor" as UserRole },
+    { icon: <Bot className="w-3.5 h-3.5" />, label: "Agent Ops", href: "/agent-operations", minRole: "advisor" as UserRole },
+    { icon: <FileCheck className="w-3.5 h-3.5" />, label: "Insurance", href: "/insurance-quotes", minRole: "advisor" as UserRole },
+    { icon: <Scale className="w-3.5 h-3.5" />, label: "Estate Planning", href: "/estate-planning", minRole: "advisor" as UserRole },
+    { icon: <DollarSign className="w-3.5 h-3.5" />, label: "Premium Finance", href: "/premium-finance", minRole: "advisor" as UserRole },
   ];
 
   const adminNav = [

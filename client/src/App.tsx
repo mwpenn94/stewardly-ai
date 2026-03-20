@@ -32,6 +32,9 @@ import StudentLoans from "./pages/StudentLoans";
 import EquityComp from "./pages/EquityComp";
 import DigitalAssets from "./pages/DigitalAssets";
 import CoiNetwork from "./pages/CoiNetwork";
+import DataIntelligence from "./pages/DataIntelligence";
+import AgenticHub from "./pages/AgenticHub";
+import { LicensedReview, AgentOperations, InsuranceQuotes, InsuranceApplications, AdvisoryExecution, EstatePlanning, PremiumFinance, CarrierConnector } from "./pages/PartGPages";
 
 function Router() {
   return (
@@ -66,6 +69,16 @@ function Router() {
       <Route path={"/equity-comp"} component={EquityComp} />
       <Route path={"/digital-assets"} component={DigitalAssets} />
       <Route path={"/coi-network"} component={CoiNetwork} />
+      <Route path={"/data-intelligence"} component={DataIntelligence} />
+      <Route path={"/agentic"} component={AgenticHub} />
+      <Route path={"/licensed-review"} component={LicensedReview} />
+      <Route path={"/agent-operations"} component={AgentOperations} />
+      <Route path={"/insurance-quotes"} component={InsuranceQuotes} />
+      <Route path={"/insurance-applications"} component={InsuranceApplications} />
+      <Route path={"/advisory-execution"} component={AdvisoryExecution} />
+      <Route path={"/estate-planning"} component={EstatePlanning} />
+      <Route path={"/premium-finance"} component={PremiumFinance} />
+      <Route path={"/carrier-connector"} component={CarrierConnector} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>

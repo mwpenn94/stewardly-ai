@@ -10,9 +10,12 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trpc } from "@/lib/trpc";
 import {
-  Eye, Layers, Loader2, Save, Settings2, Shield, Users, User, Building2, Plus, X, AlertCircle
+  Eye, Layers, Loader2, Save, Settings2, Shield, Users, User, Building2, Plus, X, AlertCircle,
+  Brain, Zap, BookOpen, MessageSquare, HelpCircle, RefreshCw, Sparkles as SparklesIcon, Info
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useEffect, useMemo, useState } from "react";
@@ -60,14 +63,14 @@ function LayerFields({
   responseFormat, setResponseFormat,
   responseLength, setResponseLength,
   temperature, setTemperature,
-  onSave, saving, layerLabel,
+  onSave, saving, layerLabel, hideSaveButton,
 }: {
   promptOverlay: string; setPromptOverlay: (v: string) => void;
   toneStyle: string; setToneStyle: (v: string) => void;
   responseFormat: string; setResponseFormat: (v: string) => void;
   responseLength: string; setResponseLength: (v: string) => void;
   temperature: number; setTemperature: (v: number) => void;
-  onSave: () => void; saving: boolean; layerLabel: string;
+  onSave: () => void; saving: boolean; layerLabel: string; hideSaveButton?: boolean;
 }) {
   return (
     <div className="space-y-5">
@@ -123,16 +126,56 @@ function LayerFields({
         </div>
       </div>
 
-      <Button
-        size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs gap-1.5"
-        onClick={onSave} disabled={saving}
-      >
-        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-        Save {layerLabel} Settings
-      </Button>
+      {!hideSaveButton && (
+        <Button
+          size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs gap-1.5"
+          onClick={onSave} disabled={saving}
+        >
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+          Save {layerLabel} Settings
+        </Button>
+      )}
     </div>
   );
 }
+
+// ─── TOOLTIP HELPER ─────────────────────────────────────────────────
+function TuningTooltip({ children, tip }: { children: React.ReactNode; tip: string }) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[220px] text-xs">{tip}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+// ─── THINKING DEPTH OPTIONS ─────────────────────────────────────────
+const THINKING_DEPTH_OPTIONS = [
+  { value: "quick", label: "Quick", icon: <Zap className="w-3.5 h-3.5" />, desc: "Fast responses, minimal reasoning" },
+  { value: "standard", label: "Standard", icon: <Brain className="w-3.5 h-3.5" />, desc: "Balanced depth and speed" },
+  { value: "deep", label: "Deep", icon: <BookOpen className="w-3.5 h-3.5" />, desc: "Thorough analysis, longer responses" },
+  { value: "extended", label: "Extended", icon: <SparklesIcon className="w-3.5 h-3.5" />, desc: "Maximum reasoning, multi-step chains" },
+];
+
+const CONTEXT_DEPTH_OPTIONS = [
+  { value: "recent", label: "Recent", desc: "Last 5 messages" },
+  { value: "moderate", label: "Moderate", desc: "Last 15 messages" },
+  { value: "full", label: "Full History", desc: "All available context" },
+];
+
+const DISCLAIMER_OPTIONS = [
+  { value: "minimal", label: "Minimal" },
+  { value: "standard", label: "Standard" },
+  { value: "comprehensive", label: "Comprehensive" },
+];
+
+const CITATION_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "inline", label: "Inline" },
+  { value: "footnotes", label: "Footnotes" },
+];
 
 // ─── USER PREFERENCES EDITOR (Layer 5) ──────────────────────────────
 function UserPreferencesEditor() {
@@ -142,11 +185,23 @@ function UserPreferencesEditor() {
     onError: (e) => toast.error(e.message),
   });
 
+  // Existing fields
   const [promptOverlay, setPromptOverlay] = useState("");
   const [toneStyle, setToneStyle] = useState("professional");
   const [responseFormat, setResponseFormat] = useState("mixed");
   const [responseLength, setResponseLength] = useState("standard");
   const [temperature, setTemperature] = useState(0.7);
+
+  // AI Fine-Tuning fields
+  const [thinkingDepth, setThinkingDepth] = useState("standard");
+  const [creativity, setCreativity] = useState(0.7);
+  const [contextDepth, setContextDepth] = useState("moderate");
+  const [disclaimerVerbosity, setDisclaimerVerbosity] = useState("standard");
+  const [autoFollowUp, setAutoFollowUp] = useState(false);
+  const [autoFollowUpCount, setAutoFollowUpCount] = useState(1);
+  const [crossModelVerify, setCrossModelVerify] = useState(false);
+  const [citationStyle, setCitationStyle] = useState("none");
+  const [reasoningTransparency, setReasoningTransparency] = useState(false);
 
   useEffect(() => {
     if (query.data) {
@@ -155,28 +210,227 @@ function UserPreferencesEditor() {
       setResponseFormat(query.data.responseFormat || "mixed");
       setResponseLength(query.data.responseLength || "standard");
       setTemperature(query.data.temperature ?? 0.7);
+      // AI Fine-Tuning
+      setThinkingDepth(query.data.thinkingDepth || "standard");
+      setCreativity(query.data.creativity ?? 0.7);
+      setContextDepth(query.data.contextDepth || "moderate");
+      setDisclaimerVerbosity(query.data.disclaimerVerbosity || "standard");
+      setAutoFollowUp(query.data.autoFollowUp ?? false);
+      setAutoFollowUpCount(query.data.autoFollowUpCount ?? 1);
+      setCrossModelVerify(query.data.crossModelVerify ?? false);
+      setCitationStyle(query.data.citationStyle || "none");
+      setReasoningTransparency(query.data.reasoningTransparency ?? false);
     }
   }, [query.data]);
 
   if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
 
+  const handleSave = () => mutation.mutate({
+    customPromptAdditions: promptOverlay,
+    communicationStyle: toneStyle as any,
+    responseFormat,
+    responseLength: responseLength as any,
+    temperature,
+    thinkingDepth: thinkingDepth as any,
+    creativity,
+    contextDepth: contextDepth as any,
+    disclaimerVerbosity: disclaimerVerbosity as any,
+    autoFollowUp,
+    autoFollowUpCount,
+    crossModelVerify,
+    citationStyle: citationStyle as any,
+    reasoningTransparency,
+  });
+
   return (
-    <LayerFields
-      promptOverlay={promptOverlay} setPromptOverlay={setPromptOverlay}
-      toneStyle={toneStyle} setToneStyle={setToneStyle}
-      responseFormat={responseFormat} setResponseFormat={setResponseFormat}
-      responseLength={responseLength} setResponseLength={setResponseLength}
-      temperature={temperature} setTemperature={setTemperature}
-      onSave={() => mutation.mutate({
-        customPromptAdditions: promptOverlay,
-        communicationStyle: toneStyle as any,
-        responseFormat,
-        responseLength: responseLength as any,
-        temperature,
-      })}
-      saving={mutation.isPending}
-      layerLabel="User"
-    />
+    <div className="space-y-6">
+      {/* ── Thinking Depth ── */}
+      <Card className="bg-card/40 border-border/40">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Brain className="w-4 h-4 text-accent" />
+            <Label className="text-sm font-semibold">Thinking Depth</Label>
+            <TuningTooltip tip="Controls how deeply the AI reasons before responding. Extended thinking produces more thorough analysis but takes longer.">
+              <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+            </TuningTooltip>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {THINKING_DEPTH_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setThinkingDepth(opt.value)}
+                className={`p-2.5 rounded-lg border text-left transition-all ${
+                  thinkingDepth === opt.value
+                    ? "bg-accent/15 border-accent/40 text-accent"
+                    : "bg-secondary/30 border-border/30 text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  {opt.icon}
+                  <span className="text-xs font-medium">{opt.label}</span>
+                </div>
+                <p className="text-[9px] leading-tight opacity-70">{opt.desc}</p>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Style & Tone (existing LayerFields) ── */}
+      <Card className="bg-card/40 border-border/40">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageSquare className="w-4 h-4 text-accent" />
+            <Label className="text-sm font-semibold">Response Style</Label>
+          </div>
+          <LayerFields
+            promptOverlay={promptOverlay} setPromptOverlay={setPromptOverlay}
+            toneStyle={toneStyle} setToneStyle={setToneStyle}
+            responseFormat={responseFormat} setResponseFormat={setResponseFormat}
+            responseLength={responseLength} setResponseLength={setResponseLength}
+            temperature={temperature} setTemperature={setTemperature}
+            onSave={handleSave}
+            saving={mutation.isPending}
+            layerLabel="User"
+            hideSaveButton
+          />
+        </CardContent>
+      </Card>
+
+      {/* ── Creativity Slider ── */}
+      <Card className="bg-card/40 border-border/40">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <SparklesIcon className="w-4 h-4 text-accent" />
+            <Label className="text-sm font-semibold">Creativity</Label>
+            <TuningTooltip tip="Higher creativity produces more novel and varied responses. Lower values keep responses more predictable and factual.">
+              <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+            </TuningTooltip>
+            <span className="ml-auto text-[10px] text-muted-foreground font-mono">{creativity.toFixed(2)}</span>
+          </div>
+          <Slider value={[creativity]} onValueChange={([v]) => setCreativity(v)} min={0} max={2} step={0.05} className="w-full" />
+          <div className="flex justify-between text-[9px] text-muted-foreground">
+            <span>Precise</span><span>Balanced</span><span>Creative</span><span>Experimental</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Context & Citations ── */}
+      <Card className="bg-card/40 border-border/40">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <BookOpen className="w-4 h-4 text-accent" />
+            <Label className="text-sm font-semibold">Context & Citations</Label>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Context Window</Label>
+              <div className="flex gap-1.5">
+                {CONTEXT_DEPTH_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setContextDepth(opt.value)}
+                    className={`flex-1 px-2 py-1.5 rounded-md text-center transition-all ${
+                      contextDepth === opt.value
+                        ? "bg-accent/15 border border-accent/40 text-accent"
+                        : "bg-secondary/30 border border-border/30 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span className="text-[10px] font-medium block">{opt.label}</span>
+                    <span className="text-[8px] opacity-60">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Citation Style</Label>
+              <Select value={citationStyle} onValueChange={setCitationStyle}>
+                <SelectTrigger className="bg-secondary border-border h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CITATION_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs font-medium mb-1.5 block">Financial Disclaimer Verbosity</Label>
+            <Select value={disclaimerVerbosity} onValueChange={setDisclaimerVerbosity}>
+              <SelectTrigger className="bg-secondary border-border h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {DISCLAIMER_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Advanced Toggles ── */}
+      <Card className="bg-card/40 border-border/40">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Settings2 className="w-4 h-4 text-accent" />
+            <Label className="text-sm font-semibold">Advanced</Label>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs">Reasoning Transparency</Label>
+                <TuningTooltip tip="Show 'How I got here' reasoning chains in AI responses so you can see the logic behind each answer.">
+                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                </TuningTooltip>
+              </div>
+              <Switch checked={reasoningTransparency} onCheckedChange={setReasoningTransparency} />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs">Cross-Model Verification</Label>
+                <TuningTooltip tip="Run a second AI perspective to verify critical financial advice. Adds a brief delay but increases accuracy.">
+                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                </TuningTooltip>
+              </div>
+              <Switch checked={crossModelVerify} onCheckedChange={setCrossModelVerify} />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs">Auto Follow-Up</Label>
+                <TuningTooltip tip="AI will proactively suggest follow-up questions and deeper explorations after each response.">
+                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                </TuningTooltip>
+              </div>
+              <div className="flex items-center gap-2">
+                {autoFollowUp && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] text-muted-foreground">Max:</span>
+                    <Select value={String(autoFollowUpCount)} onValueChange={(v) => setAutoFollowUpCount(Number(v))}>
+                      <SelectTrigger className="bg-secondary border-border h-6 w-14 text-[10px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[1,2,3,4,5].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <Switch checked={autoFollowUp} onCheckedChange={setAutoFollowUp} />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Save Button ── */}
+      <Button
+        size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs gap-1.5"
+        onClick={handleSave} disabled={mutation.isPending}
+      >
+        {mutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+        Save All Preferences
+      </Button>
+    </div>
   );
 }
 

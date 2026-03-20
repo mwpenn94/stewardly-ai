@@ -1,0 +1,42 @@
+PART G: AGENTIC EXECUTION — 8 New Skills
+
+G1. /OPENCLAW_ORCHESTRATOR — Agent lifecycle management (spawn, configure, monitor, terminate)
+  - Tables: agent_instances, agent_actions
+  - Dashboard: active agents, actions, compliance gates, cost tracking
+  - Security: per-tenant isolation, credential vault, domain allowlist
+
+G2. /INSURANCE_QUOTE_ENGINE — Multi-carrier automated quoting
+  - Table: insurance_quotes
+  - Lines: term/whole/UL/IUL/VUL, DI, LTC, annuities, group
+  - Workflow: data collection → quote gathering → comparison report → licensed review
+
+G3. /INSURANCE_APPLICATION — Application prep + regulated submission
+  - Table: insurance_applications
+  - Workflow: pre-fill → preliminary UW → compliance pre-flight → licensed review → submission → tracking
+
+G4. /ADVISORY_EXECUTION_AGENT — Investment execution with RIA gates
+  - Table: advisory_executions
+  - Workflows: account opening, model implementation, rebalancing, tax-loss harvesting, money-in-motion
+
+G5. /ESTATE_DOC_GENERATOR — Estate document drafting + attorney coordination
+  - Table: estate_documents
+  - Types: trust, will, POA, healthcare directive, beneficiary audit
+  - Paths: self-help (with disclaimer) or attorney review
+
+G6. /PREMIUM_FINANCE_ENGINE — Premium financing workflow automation
+  - Table: premium_finance_cases
+  - Workflow: qualification → structure modeling → lender sourcing → application coordination → monitoring
+
+G7. /CARRIER_CONNECTOR — Multi-carrier API + browser integration layer
+  - Table: carrier_connections
+  - Methods: API (Hexure, iPipeline, DTCC) + browser automation fallback
+  - Roster: life/annuity, DI/LTC, group/PEO, custodians, lenders
+
+G8. /LICENSED_REVIEW_GATE — Universal compliance gate (BUILD FIRST)
+  - Table: gate_reviews
+  - 4 tiers: Informational → Preparatory → Recommendation → Execution
+  - Mandatory for all regulated actions
+
+BUILD ORDER: G8 → G1 → G7 → G2 → G3 → G4 → G5 → G6
+
+STRESS TESTS (14 new): TEST-GATE-001 through TEST-AGENT-SEC-002

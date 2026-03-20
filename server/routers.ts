@@ -1007,6 +1007,9 @@ import {
   commsRouter, feeBillingRouter,
 } from "./routers/v6Features";
 import { multiModelRouter } from "./routers/multiModel";
+import { dataIngestionRouter } from "./routers/dataIngestion";
+import { dataIngestionEnhancedRouter } from "./routers/dataIngestionEnhanced";
+import { agenticRouter } from "./routers/agenticExecution";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1074,6 +1077,9 @@ export const appRouter = router({
   comms: commsRouter,
   feeBilling: feeBillingRouter,
   multiModel: multiModelRouter,
+  dataIngestion: dataIngestionRouter,
+  dataIngestionEnhanced: dataIngestionEnhancedRouter,
+  agentic: agenticRouter,
 });
 
 export type AppRouter = typeof appRouter;
