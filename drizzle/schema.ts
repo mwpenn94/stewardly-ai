@@ -261,6 +261,16 @@ export const userPreferences = mysqlTable("user_preferences", {
   maxTokens: int("maxTokens"),
   customPromptAdditions: text("customPromptAdditions"),
   focusModeDefaults: varchar("focusModeDefaults", { length: 128 }).default("general,financial"),
+  // AI Fine-Tuning fields
+  thinkingDepth: mysqlEnum("thinkingDepth", ["quick", "standard", "deep", "extended"]).default("standard"),
+  creativity: float("creativity").default(0.7),
+  contextDepth: mysqlEnum("contextDepth", ["recent", "moderate", "full"]).default("moderate"),
+  disclaimerVerbosity: mysqlEnum("disclaimerVerbosity", ["minimal", "standard", "comprehensive"]).default("standard"),
+  autoFollowUp: mysqlBoolean("autoFollowUp").default(false),
+  autoFollowUpCount: int("autoFollowUpCount").default(1),
+  crossModelVerify: mysqlBoolean("crossModelVerify").default(false),
+  citationStyle: mysqlEnum("citationStyle", ["none", "inline", "footnotes"]).default("none"),
+  reasoningTransparency: mysqlBoolean("reasoningTransparency").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

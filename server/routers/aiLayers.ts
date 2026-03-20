@@ -379,6 +379,16 @@ export const aiLayersRouter = router({
       maxTokens: z.number().min(256).max(32768).optional(),
       customPromptAdditions: z.string().optional(),
       focusModeDefaults: z.string().max(128).optional(),
+      // AI Fine-Tuning fields
+      thinkingDepth: z.enum(["quick", "standard", "deep", "extended"]).optional(),
+      creativity: z.number().min(0).max(2).optional(),
+      contextDepth: z.enum(["recent", "moderate", "full"]).optional(),
+      disclaimerVerbosity: z.enum(["minimal", "standard", "comprehensive"]).optional(),
+      autoFollowUp: z.boolean().optional(),
+      autoFollowUpCount: z.number().min(1).max(5).optional(),
+      crossModelVerify: z.boolean().optional(),
+      citationStyle: z.enum(["none", "inline", "footnotes"]).optional(),
+      reasoningTransparency: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });

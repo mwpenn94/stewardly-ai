@@ -134,13 +134,18 @@ const chatRouter = router({
         : systemPrompt;
 
       // Use resolved temperature/maxTokens if available
-      const llmTemperature = resolvedConfig?.temperature ?? 0.7;
+      // Creativity slider overrides temperature when set
+      const llmTemperature = resolvedConfig?.creativity ?? resolvedConfig?.temperature ?? 0.7;
       const llmMaxTokens = resolvedConfig?.maxTokens ?? 4096;
+
+      // Context depth controls how much history to include
+      const contextDepth = resolvedConfig?.contextDepth ?? "moderate";
+      const historySliceSize = contextDepth === "recent" ? 8 : contextDepth === "full" ? 50 : 20;
 
       // Build messages for LLM
       const llmMessages = [
         { role: "system" as const, content: fullSystemPrompt },
-        ...history.slice(-20).map(m => ({
+        ...history.slice(-historySliceSize).map(m => ({
           role: m.role as "user" | "assistant" | "system",
           content: m.content,
         })),
@@ -1001,6 +1006,7 @@ import {
   divorceRouter, educationPlannerRouter, taskEngineRouter,
   commsRouter, feeBillingRouter,
 } from "./routers/v6Features";
+import { multiModelRouter } from "./routers/multiModel";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1067,6 +1073,7 @@ export const appRouter = router({
   taskEngine: taskEngineRouter,
   comms: commsRouter,
   feeBilling: feeBillingRouter,
+  multiModel: multiModelRouter,
 });
 
 export type AppRouter = typeof appRouter;

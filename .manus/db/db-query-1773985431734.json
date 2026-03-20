@@ -1,0 +1,282 @@
+{
+  "query": "SHOW COLUMNS FROM user_preferences",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SHOW COLUMNS FROM user_preferences",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "userId",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "communicationStyle",
+      "Type": "enum('simple','detailed','expert')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "detailed",
+      "Extra": ""
+    },
+    {
+      "Field": "responseLength",
+      "Type": "enum('concise','standard','comprehensive')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "standard",
+      "Extra": ""
+    },
+    {
+      "Field": "ttsVoice",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "en-US-JennyNeural",
+      "Extra": ""
+    },
+    {
+      "Field": "autoPlayVoice",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "handsFreeMode",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "autoGenerateCharts",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "riskTolerance",
+      "Type": "enum('conservative','moderate','aggressive')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "financialGoals",
+      "Type": "json",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "taxFilingStatus",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "stateOfResidence",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "theme",
+      "Type": "enum('system','light','dark')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "dark",
+      "Extra": ""
+    },
+    {
+      "Field": "sidebarDefault",
+      "Type": "enum('expanded','collapsed')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "expanded",
+      "Extra": ""
+    },
+    {
+      "Field": "chatDensity",
+      "Type": "enum('comfortable','compact')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "comfortable",
+      "Extra": ""
+    },
+    {
+      "Field": "language",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "en",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "updatedAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    },
+    {
+      "Field": "modelPreferences",
+      "Type": "json",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "ensembleWeights",
+      "Type": "json",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "temperature",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "maxTokens",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "customPromptAdditions",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "responseFormat",
+      "Type": "varchar(64)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "mixed",
+      "Extra": ""
+    },
+    {
+      "Field": "focusModeDefaults",
+      "Type": "varchar(128)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "general,financial",
+      "Extra": ""
+    },
+    {
+      "Field": "thinkingDepth",
+      "Type": "enum('quick','standard','deep','extended')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "standard",
+      "Extra": ""
+    },
+    {
+      "Field": "creativity",
+      "Type": "float",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0.7",
+      "Extra": ""
+    },
+    {
+      "Field": "contextDepth",
+      "Type": "enum('recent','moderate','full')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "moderate",
+      "Extra": ""
+    },
+    {
+      "Field": "disclaimerVerbosity",
+      "Type": "enum('minimal','standard','comprehensive')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "standard",
+      "Extra": ""
+    },
+    {
+      "Field": "autoFollowUp",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "autoFollowUpCount",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "crossModelVerify",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "citationStyle",
+      "Type": "enum('none','inline','footnotes')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "none",
+      "Extra": ""
+    },
+    {
+      "Field": "reasoningTransparency",
+      "Type": "tinyint(1)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\nuserId\tint\tNO\tUNI\tNULL\t\ncommunicationStyle\tenum('simple','detailed','expert')\tYES\t\tdetailed\t\nresponseLength\tenum('concise','standard','comprehensive')\tYES\t\tstandard\t\nttsVoice\tvarchar(64)\tYES\t\ten-US-JennyNeural\t\nautoPlayVoice\ttinyint(1)\tYES\t\t0\t\nhandsFreeMode\ttinyint(1)\tYES\t\t0\t\nautoGenerateCharts\ttinyint(1)\tYES\t\t1\t\nriskTolerance\tenum('conservative','moderate','aggressive')\tYES\t\tNULL\t\nfinancialGoals\tjson\tYES\t\tNULL\t\ntaxFilingStatus\tvarchar(64)\tYES\t\tNULL\t\nstateOfResidence\tvarchar(64)\tYES\t\tNULL\t\ntheme\tenum('system','light','dark')\tYES\t\tdark\t\nsidebarDefault\tenum('expanded','collapsed')\tYES\t\texpanded\t\nchatDensity\tenum('comfortable','compact')\tYES\t\tcomfortable\t\nlanguage\tvarchar(64)\tYES\t\ten\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nupdatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\nmodelPreferences\tjson\tYES\t\tNULL\t\nensembleWeights\tjson\tYES\t\tNULL\t\ntemperature\tfloat\tYES\t\tNULL\t\nmaxTokens\tint\tYES\t\tNULL\t\ncustomPromptAdditions\ttext\tYES\t\tNULL\t\nresponseFormat\tvarchar(64)\tYES\t\tmixed\t\nfocusModeDefaults\tvarchar(128)\tYES\t\tgeneral,financial\t\nthinkingDepth\tenum('quick','standard','deep','extended')\tYES\t\tstandard\t\ncreativity\tfloat\tYES\t\t0.7\t\ncontextDepth\tenum('recent','moderate','full')\tYES\t\tmoderate\t\ndisclaimerVerbosity\tenum('minimal','standard','comprehensive')\tYES\t\tstandard\t\nautoFollowUp\ttinyint(1)\tYES\t\t0\t\nautoFollowUpCount\tint\tYES\t\t1\t\ncrossModelVerify\ttinyint(1)\tYES\t\t0\t\ncitationStyle\tenum('none','inline','footnotes')\tYES\t\tnone\t\nreasoningTransparency\ttinyint(1)\tYES\t\t0\t\n",
+  "stderr": "",
+  "execution_time_ms": 217
+}

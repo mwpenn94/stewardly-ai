@@ -12,7 +12,8 @@ import {
   ChevronDown, ChevronUp, FileText, GraduationCap, Image, Key, Loader2, LogOut, Menu, MessageSquare,
   Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
-  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield
+  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
+  Copy, RefreshCw
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { LiveSession } from "@/components/LiveSession";
@@ -797,7 +798,7 @@ export default function Chat() {
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
               {messages.map((msg: any, i: number) => (
-                <div key={msg.id || i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
+                <div key={msg.id || i} className={`group/msg flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
                   {msg.role === "assistant" && (
                     <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 mt-0.5 ${tts.isSpeaking && i === messages.length - 1 ? "avatar-talking" : ""} ${avatarUrl ? "" : "bg-accent/10"}`}>
                       {avatarUrl ? <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
@@ -836,19 +837,32 @@ export default function Chat() {
                             </span>
                           )}
                           {msg.id && (
-                            <div className="flex items-center gap-0.5">
-                              <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => handleFeedback(msg.id, "up")}>
-                                <ThumbsUp className="w-3 h-3" />
-                              </button>
-                              <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => handleFeedback(msg.id, "down")}>
-                                <ThumbsDown className="w-3 h-3" />
-                              </button>
-                              <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.speak(msg.content)}>
-                                <Volume2 className="w-3 h-3" />
-                              </button>
-                              <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied to clipboard"); }}>
-                                <FileText className="w-3 h-3" />
-                              </button>
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                              <Tooltip><TooltipTrigger asChild>
+                                <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => handleFeedback(msg.id, "up")}>
+                                  <ThumbsUp className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-[10px]">Good response</TooltipContent></Tooltip>
+                              <Tooltip><TooltipTrigger asChild>
+                                <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => handleFeedback(msg.id, "down")}>
+                                  <ThumbsDown className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-[10px]">Bad response</TooltipContent></Tooltip>
+                              <Tooltip><TooltipTrigger asChild>
+                                <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-[10px]">Copy</TooltipContent></Tooltip>
+                              <Tooltip><TooltipTrigger asChild>
+                                <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.speak(msg.content)}>
+                                  <Volume2 className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-[10px]">Read aloud</TooltipContent></Tooltip>
+                              <Tooltip><TooltipTrigger asChild>
+                                <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => { if (messages.length >= 2) { const lastUserMsg = [...messages].reverse().find(m => m.role === "user"); if (lastUserMsg) handleSendWithText(lastUserMsg.content); } }}>
+                                  <RefreshCw className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-[10px]">Regenerate</TooltipContent></Tooltip>
                               <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-purple-400 transition-colors" onClick={async () => { toast.info("Generating infographic..."); try { const result = await visualMutation.mutateAsync({ prompt: `Create a professional infographic summarizing: ${msg.content.slice(0, 500)}` }); if (result.url) { setMessages(prev => [...prev, { role: "assistant" as const, content: `Here's the infographic:`, metadata: { imageUrl: result.url }, createdAt: new Date() }]); } } catch (e: any) { toast.error(e.message || "Failed to generate infographic"); } }} title="Generate Infographic">
                                 <Palette className="w-3 h-3" />
                               </button>

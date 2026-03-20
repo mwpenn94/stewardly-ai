@@ -1077,3 +1077,33 @@
 - [x] Sidebar: contracted state with small icons only, expands to current full layout
 - [x] Remove "Press phone for hands-free voice" hint text from main conversation screen
 - [x] Remove icon above "Good evening" greeting on main conversation screen
+
+## AI Fine-Tuning Controls (March 20, 2026)
+- [x] Add AI Fine-Tuning tab to Settings page
+- [x] Thinking depth slider (Quick → Standard → Deep → Extended)
+- [x] Response creativity/temperature slider (Precise → Balanced → Creative → Experimental)
+- [x] Context window depth selector (Recent → Moderate → Full History)
+- [x] Financial disclaimer verbosity (Minimal → Standard → Comprehensive)
+- [x] Auto-follow-up toggle with count slider
+- [x] Cross-model verification toggle
+- [x] Source citation preference (None → Inline → Footnotes)
+- [x] Reasoning transparency toggle (show reasoning chains)
+- [x] Custom instructions textarea
+- [x] Persist AI tuning settings per user (DB columns + resolver wiring)
+- [x] Wire all tuning parameters into server-side LLM calls (temperature, context depth, prompt directives)
+- [x] Write tests for AI fine-tuning feature (19 tests, all passing)
+
+## Per-Message Action Buttons (March 20, 2026)
+- [x] Add thumbs up/down feedback buttons per AI message (with tooltips)
+- [x] Add copy-to-clipboard button per AI message
+- [x] Add read aloud button per AI message (TTS)
+- [x] Add regenerate response button per AI message
+- [x] Show action bar on hover/focus, ChatGPT-style (group-hover with opacity transition)
+
+## Multi-Model Integration (March 20, 2026)
+- [x] Multi-perspective querying engine (analyst, advisor, critic, educator viewpoints)
+- [x] Synthesis engine (merge perspectives into cohesive response)
+- [x] Cross-model verification with structured JSON validation
+- [x] 4 built-in presets (Balanced, Deep Research, Advisory Focus, Comprehensive)
+- [x] Model weighting UI in Settings with preset selection and per-perspective sliders
+- [x] Multi-model router with perspectives and presets endpoints

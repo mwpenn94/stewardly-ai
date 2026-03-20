@@ -14,8 +14,10 @@ import { useLocation } from "wouter";
 import {
   ArrowLeft, Sparkles, User, Brain, Trash2, Plus, Loader2,
   Fingerprint, BookOpen, Heart, Target, Users, Clock, DollarSign,
-  Camera, X, ImageIcon, Volume2, Play, Square, Mic,
+  Camera, X, ImageIcon, Volume2, Play, Square, Mic, Sliders,
 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { useState, useEffect, useRef } from "react";
 
 const MEMORY_CATEGORIES = [
@@ -106,6 +108,7 @@ export default function Settings() {
             <TabsTrigger value="style" className="gap-1.5 text-xs"><Fingerprint className="w-3.5 h-3.5" /> Personalize</TabsTrigger>
             <TabsTrigger value="memories" className="gap-1.5 text-xs"><Brain className="w-3.5 h-3.5" /> Memories</TabsTrigger>
             <TabsTrigger value="profile" className="gap-1.5 text-xs"><User className="w-3.5 h-3.5" /> Profile</TabsTrigger>
+            <TabsTrigger value="ai-tuning" className="gap-1.5 text-xs"><Sliders className="w-3.5 h-3.5" /> AI Tuning</TabsTrigger>
           </TabsList>
 
           {/* Avatar */}
@@ -339,6 +342,10 @@ export default function Settings() {
           <TabsContent value="voice">
             <VoiceSettings />
           </TabsContent>
+          {/* AI Tuning */}
+          <TabsContent value="ai-tuning">
+            <AITuningSettings />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
@@ -495,5 +502,358 @@ function VoiceSettings() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+
+// ─── AI TUNING SETTINGS COMPONENT ─────────────────────────────────
+const THINKING_DEPTH_OPTIONS = [
+  { value: "quick", label: "Quick", desc: "Fast responses, minimal deliberation" },
+  { value: "standard", label: "Standard", desc: "Balanced speed and thoroughness" },
+  { value: "deep", label: "Deep", desc: "Thorough multi-step analysis" },
+  { value: "extended", label: "Extended", desc: "Maximum reasoning depth with full chains" },
+];
+
+const CONTEXT_DEPTH_OPTIONS = [
+  { value: "recent", label: "Recent (8 msgs)", desc: "Fast, focused on latest context" },
+  { value: "moderate", label: "Moderate (20 msgs)", desc: "Balanced conversation memory" },
+  { value: "full", label: "Full History (50 msgs)", desc: "Maximum conversation context" },
+];
+
+const DISCLAIMER_OPTIONS = [
+  { value: "minimal", label: "Minimal", desc: "Brief inline disclaimers only" },
+  { value: "standard", label: "Standard", desc: "Standard compliance disclaimers" },
+  { value: "comprehensive", label: "Comprehensive", desc: "Detailed regulatory disclosures" },
+];
+
+const CITATION_OPTIONS = [
+  { value: "none", label: "None", desc: "No citations" },
+  { value: "inline", label: "Inline", desc: "Sources cited within text" },
+  { value: "footnotes", label: "Footnotes", desc: "Numbered references at end" },
+];
+
+function TuningTooltip({ text }: { text: string }) {
+  return (
+    <span className="ml-1 text-[10px] text-muted-foreground/60 cursor-help" title={text}>
+      ⓘ
+    </span>
+  );
+}
+
+function AITuningSettings() {
+  const prefsQuery = trpc.aiLayers.getUserPreferences.useQuery();
+  const updatePrefs = trpc.aiLayers.updateUserPreferences.useMutation({
+    onSuccess: () => toast.success("AI tuning saved"),
+    onError: (e) => toast.error(e.message),
+  });
+
+  const [thinkingDepth, setThinkingDepth] = useState("standard");
+  const [creativity, setCreativity] = useState(0.7);
+  const [contextDepth, setContextDepth] = useState("moderate");
+  const [disclaimerVerbosity, setDisclaimerVerbosity] = useState("standard");
+  const [autoFollowUp, setAutoFollowUp] = useState(false);
+  const [autoFollowUpCount, setAutoFollowUpCount] = useState(1);
+  const [crossModelVerify, setCrossModelVerify] = useState(false);
+  const [citationStyle, setCitationStyle] = useState("none");
+  const [reasoningTransparency, setReasoningTransparency] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState("");
+
+  // Model weighting state
+  const perspectivesQuery = trpc.multiModel.perspectives.useQuery();
+  const presetsQuery = trpc.multiModel.presets.useQuery();
+  const [activePreset, setActivePreset] = useState("balanced");
+  const [weights, setWeights] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (prefsQuery.data) {
+      const p = prefsQuery.data;
+      if (p.thinkingDepth) setThinkingDepth(p.thinkingDepth);
+      if (p.creativity != null) setCreativity(p.creativity);
+      if (p.contextDepth) setContextDepth(p.contextDepth);
+      if (p.disclaimerVerbosity) setDisclaimerVerbosity(p.disclaimerVerbosity);
+      setAutoFollowUp(!!p.autoFollowUp);
+      if (p.autoFollowUpCount != null) setAutoFollowUpCount(p.autoFollowUpCount);
+      setCrossModelVerify(!!p.crossModelVerify);
+      if (p.citationStyle) setCitationStyle(p.citationStyle);
+      setReasoningTransparency(!!p.reasoningTransparency);
+      if (p.customPromptAdditions) setCustomInstructions(p.customPromptAdditions);
+      if (p.ensembleWeights) {
+        try {
+          const w = typeof p.ensembleWeights === "string" ? JSON.parse(p.ensembleWeights) : p.ensembleWeights;
+          if (typeof w === "object" && w) setWeights(w as Record<string, number>);
+        } catch {}
+      }
+    }
+  }, [prefsQuery.data]);
+
+  useEffect(() => {
+    if (presetsQuery.data && activePreset) {
+      const preset = presetsQuery.data.find(p => p.id === activePreset);
+      if (preset && Object.keys(weights).length === 0) {
+        setWeights(preset.weights);
+      }
+    }
+  }, [presetsQuery.data, activePreset]);
+
+  const handleSave = () => {
+    updatePrefs.mutate({
+      thinkingDepth: thinkingDepth as any,
+      creativity,
+      contextDepth: contextDepth as any,
+      disclaimerVerbosity: disclaimerVerbosity as any,
+      autoFollowUp,
+      autoFollowUpCount,
+      crossModelVerify,
+      citationStyle: citationStyle as any,
+      reasoningTransparency,
+      customPromptAdditions: customInstructions || undefined,
+      ensembleWeights: Object.keys(weights).length > 0 ? weights : undefined,
+    });
+  };
+
+  const creativityLabel = creativity <= 0.3 ? "Precise" : creativity <= 0.7 ? "Balanced" : creativity <= 1.2 ? "Creative" : "Experimental";
+
+  return (
+    <div className="space-y-4">
+      {/* Thinking & Response */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Brain className="w-4 h-4 text-accent" /> Thinking & Response
+          </CardTitle>
+          <CardDescription className="text-xs">Control how deeply and creatively the AI reasons</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Thinking Depth */}
+          <div>
+            <Label className="text-xs font-medium">
+              Thinking Depth
+              <TuningTooltip text="Controls how much reasoning the AI does before responding" />
+            </Label>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {THINKING_DEPTH_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setThinkingDepth(opt.value)}
+                  className={`p-2.5 rounded-lg border text-left transition-all ${
+                    thinkingDepth === opt.value
+                      ? "border-accent bg-accent/10 ring-1 ring-accent/30"
+                      : "border-border hover:border-accent/40"
+                  }`}
+                >
+                  <div className="text-xs font-medium">{opt.label}</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Creativity Slider */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-xs font-medium">
+                Creativity
+                <TuningTooltip text="Higher values produce more creative but less predictable responses" />
+              </Label>
+              <Badge variant="outline" className="text-[10px]">{creativityLabel} ({creativity.toFixed(1)})</Badge>
+            </div>
+            <Slider
+              value={[creativity]}
+              onValueChange={([v]) => setCreativity(v)}
+              min={0}
+              max={2}
+              step={0.1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-[9px] text-muted-foreground mt-1">
+              <span>Precise</span><span>Balanced</span><span>Creative</span><span>Experimental</span>
+            </div>
+          </div>
+
+          {/* Context Depth */}
+          <div>
+            <Label className="text-xs font-medium">
+              Context Window
+              <TuningTooltip text="How much conversation history to include in each request" />
+            </Label>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {CONTEXT_DEPTH_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setContextDepth(opt.value)}
+                  className={`p-2 rounded-lg border text-center transition-all ${
+                    contextDepth === opt.value
+                      ? "border-accent bg-accent/10 ring-1 ring-accent/30"
+                      : "border-border hover:border-accent/40"
+                  }`}
+                >
+                  <div className="text-xs font-medium">{opt.label}</div>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Output Formatting */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-accent" /> Output Formatting
+          </CardTitle>
+          <CardDescription className="text-xs">Control disclaimers, citations, and reasoning visibility</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Disclaimer Verbosity */}
+          <div>
+            <Label className="text-xs font-medium">Financial Disclaimers</Label>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {DISCLAIMER_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setDisclaimerVerbosity(opt.value)}
+                  className={`p-2 rounded-lg border text-center transition-all ${
+                    disclaimerVerbosity === opt.value
+                      ? "border-accent bg-accent/10 ring-1 ring-accent/30"
+                      : "border-border hover:border-accent/40"
+                  }`}
+                >
+                  <div className="text-xs font-medium">{opt.label}</div>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Citation Style */}
+          <div>
+            <Label className="text-xs font-medium">Source Citations</Label>
+            <div className="grid grid-cols-3 gap-2 mt-2">
+              {CITATION_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setCitationStyle(opt.value)}
+                  className={`p-2 rounded-lg border text-center transition-all ${
+                    citationStyle === opt.value
+                      ? "border-accent bg-accent/10 ring-1 ring-accent/30"
+                      : "border-border hover:border-accent/40"
+                  }`}
+                >
+                  <div className="text-xs font-medium">{opt.label}</div>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Reasoning Transparency */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+            <div>
+              <div className="text-xs font-medium">Show Reasoning Chains</div>
+              <div className="text-[10px] text-muted-foreground">Include "How I got here" reasoning before conclusions</div>
+            </div>
+            <Switch checked={reasoningTransparency} onCheckedChange={setReasoningTransparency} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Advanced */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-accent" /> Advanced
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Auto Follow-Up */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+            <div>
+              <div className="text-xs font-medium">Auto Follow-Up Questions</div>
+              <div className="text-[10px] text-muted-foreground">AI proactively asks follow-up questions</div>
+            </div>
+            <div className="flex items-center gap-3">
+              {autoFollowUp && (
+                <Select value={String(autoFollowUpCount)} onValueChange={v => setAutoFollowUpCount(Number(v))}>
+                  <SelectTrigger className="w-16 h-7 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[1,2,3,4,5].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+              <Switch checked={autoFollowUp} onCheckedChange={setAutoFollowUp} />
+            </div>
+          </div>
+
+          {/* Cross-Model Verification */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+            <div>
+              <div className="text-xs font-medium">Cross-Model Verification</div>
+              <div className="text-[10px] text-muted-foreground">Verify responses with a second analysis pass</div>
+            </div>
+            <Switch checked={crossModelVerify} onCheckedChange={setCrossModelVerify} />
+          </div>
+
+          {/* Model Weighting */}
+          <div>
+            <Label className="text-xs font-medium mb-2 block">
+              Model Perspective Weighting
+              <TuningTooltip text="Adjust how much each perspective influences multi-model responses" />
+            </Label>
+            {presetsQuery.data && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {presetsQuery.data.map(preset => (
+                  <button
+                    key={preset.id}
+                    onClick={() => { setActivePreset(preset.id); setWeights(preset.weights); }}
+                    className={`px-2.5 py-1 rounded-md text-[10px] border transition-all ${
+                      activePreset === preset.id
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-border text-muted-foreground hover:border-accent/40"
+                    }`}
+                  >
+                    {preset.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {perspectivesQuery.data && (
+              <div className="space-y-2">
+                {perspectivesQuery.data.map(p => (
+                  <div key={p.id} className="flex items-center gap-3">
+                    <span className="text-[10px] w-24 text-muted-foreground">{p.name}</span>
+                    <Slider
+                      value={[weights[p.id] ?? p.weight]}
+                      onValueChange={([v]) => setWeights(prev => ({ ...prev, [p.id]: v }))}
+                      min={0}
+                      max={2}
+                      step={0.1}
+                      className="flex-1"
+                    />
+                    <span className="text-[10px] w-8 text-right">{(weights[p.id] ?? p.weight).toFixed(1)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Custom Instructions */}
+          <div>
+            <Label className="text-xs font-medium">Custom Instructions</Label>
+            <Textarea
+              value={customInstructions}
+              onChange={e => setCustomInstructions(e.target.value)}
+              placeholder="Add custom instructions that will be included in every AI response..."
+              className="mt-1.5 text-xs min-h-[80px]"
+            />
+          </div>
+
+          <Button onClick={handleSave} disabled={updatePrefs.isPending} className="w-full">
+            {updatePrefs.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            Save AI Tuning
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

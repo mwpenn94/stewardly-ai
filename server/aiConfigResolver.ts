@@ -63,6 +63,16 @@ export interface ResolvedAIConfig {
   enabledFocusModes: string[];
   /** Layer sources for transparency */
   layerSources: { layer: number; name: string; hasConfig: boolean }[];
+  // AI Fine-Tuning fields
+  thinkingDepth: string;
+  creativity: number;
+  contextDepth: string;
+  disclaimerVerbosity: string;
+  autoFollowUp: boolean;
+  autoFollowUpCount: number;
+  crossModelVerify: boolean;
+  citationStyle: string;
+  reasoningTransparency: boolean;
 }
 
 // Default config when no layers are configured
@@ -86,6 +96,16 @@ const DEFAULT_CONFIG: ResolvedAIConfig = {
   customPromptAdditions: null,
   enabledFocusModes: ["general", "financial", "study"],
   layerSources: [],
+  // AI Fine-Tuning defaults
+  thinkingDepth: "standard",
+  creativity: 0.7,
+  contextDepth: "moderate",
+  disclaimerVerbosity: "standard",
+  autoFollowUp: false,
+  autoFollowUpCount: 1,
+  crossModelVerify: false,
+  citationStyle: "none",
+  reasoningTransparency: false,
 };
 
 // ─── SAFE JSON PARSE ─────────────────────────────────────────────────────────
@@ -338,6 +358,17 @@ export async function resolveAIConfig(opts: {
       if (Object.keys(userModelPrefs).length > 0) config.modelPreferences = userModelPrefs as Record<string, string>;
       const userWeights = safeJsonObject(userPrefs.ensembleWeights);
       if (Object.keys(userWeights).length > 0) config.ensembleWeights = userWeights as Record<string, number>;
+
+      // AI Fine-Tuning fields
+      if (userPrefs.thinkingDepth) config.thinkingDepth = userPrefs.thinkingDepth;
+      if (userPrefs.creativity != null) config.creativity = userPrefs.creativity;
+      if (userPrefs.contextDepth) config.contextDepth = userPrefs.contextDepth;
+      if (userPrefs.disclaimerVerbosity) config.disclaimerVerbosity = userPrefs.disclaimerVerbosity;
+      config.autoFollowUp = !!userPrefs.autoFollowUp;
+      if (userPrefs.autoFollowUpCount != null) config.autoFollowUpCount = userPrefs.autoFollowUpCount;
+      config.crossModelVerify = !!userPrefs.crossModelVerify;
+      if (userPrefs.citationStyle) config.citationStyle = userPrefs.citationStyle;
+      config.reasoningTransparency = !!userPrefs.reasoningTransparency;
     } else {
       config.layerSources.push({ layer: 5, name: "User", hasConfig: false });
     }
@@ -390,6 +421,43 @@ Communication level: ${config.communicationStyle}
   // Compliance
   if (config.complianceLanguage) {
     parts.push(`<compliance>${config.complianceLanguage}</compliance>`);
+  }
+
+  // AI Fine-Tuning directives
+  const tuningParts: string[] = [];
+  const depthMap: Record<string, string> = {
+    quick: "Respond quickly with minimal deliberation. Keep analysis brief.",
+    standard: "Use standard reasoning depth. Balance thoroughness with speed.",
+    deep: "Think deeply before responding. Provide thorough multi-step analysis.",
+    extended: "Use maximum reasoning depth. Consider multiple angles, edge cases, and provide comprehensive multi-step analysis with full reasoning chains.",
+  };
+  if (config.thinkingDepth && depthMap[config.thinkingDepth]) {
+    tuningParts.push(`Thinking depth: ${depthMap[config.thinkingDepth]}`);
+  }
+  const disclaimerMap: Record<string, string> = {
+    minimal: "Use brief inline disclaimers only when legally necessary.",
+    standard: "Include standard compliance disclaimers on financial topics.",
+    comprehensive: "Include detailed regulatory disclosures and disclaimers on all financial content.",
+  };
+  if (config.disclaimerVerbosity && disclaimerMap[config.disclaimerVerbosity]) {
+    tuningParts.push(`Disclaimers: ${disclaimerMap[config.disclaimerVerbosity]}`);
+  }
+  const citationMap: Record<string, string> = {
+    none: "",
+    inline: "Cite sources inline within the text when referencing data or claims.",
+    footnotes: "Add numbered footnote references for all data and claims, with a references section at the end.",
+  };
+  if (config.citationStyle && citationMap[config.citationStyle]) {
+    tuningParts.push(`Citations: ${citationMap[config.citationStyle]}`);
+  }
+  if (config.reasoningTransparency) {
+    tuningParts.push("Show your reasoning: Include a brief 'How I got here' section explaining your reasoning chain before conclusions.");
+  }
+  if (config.autoFollowUp) {
+    tuningParts.push(`After responding, proactively ask up to ${config.autoFollowUpCount} follow-up question(s) to deepen the conversation.`);
+  }
+  if (tuningParts.length > 0) {
+    parts.push(`<ai_tuning>\n${tuningParts.join("\n")}\n</ai_tuning>`);
   }
 
   return parts.join("\n\n");
