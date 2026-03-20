@@ -387,17 +387,30 @@ export type AffiliatedResource = typeof affiliatedResources.$inferSelect;
 
 // ─── CONVERSATIONS ────────────────────────────────────────────────────────
 // DB table: conversations (has organizationId, NOT firmId or isPinned)
+// ─── CONVERSATION FOLDERS ──────────────────────────────────────────────────
+export const conversationFolders = mysqlTable("conversation_folders", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  color: varchar("color", { length: 32 }).default("#6366f1"),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ConversationFolder = typeof conversationFolders.$inferSelect;
+
 export const conversations = mysqlTable("conversations", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   title: varchar("title", { length: 255 }).default("New Conversation"),
   mode: mysqlEnum("mode", ["client", "coach", "manager"]).default("client").notNull(),
+  pinned: mysqlBoolean("pinned").default(false).notNull(),
+  folderId: int("folderId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   organizationId: int("organizationId"),
 });
-
-export type Conversation = typeof conversations.$inferSelect;
+export type Conversation = typeof conversations.$inferSelect;;
 
 // ─── MESSAGES ─────────────────────────────────────────────────────────────
 export const messages = mysqlTable("messages", {

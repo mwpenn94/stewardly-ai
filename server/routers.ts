@@ -25,6 +25,8 @@ import {
   addFeedback, getFeedbackStats, addQualityRating,
   saveSuitabilityAssessment, getUserSuitability,
   updateUserStyleProfile, updateUserSettings,
+  toggleConversationPin, moveConversationToFolder,
+  getUserFolders, createFolder, updateFolder, deleteFolder,
 } from "./db";
 import {
   buildSystemPrompt, FINANCIAL_DISCLAIMER, needsFinancialDisclaimer,
@@ -382,6 +384,25 @@ const conversationsRouter = router({
       await updateConversationTitle(input.id, ctx.user.id, title);
       return { title };
     }),
+  // Pin / Unpin
+  togglePin: protectedProcedure
+    .input(z.object({ id: z.number(), pinned: z.boolean() }))
+    .mutation(({ ctx, input }) => toggleConversationPin(input.id, ctx.user.id, input.pinned)),
+  // Move to folder
+  moveToFolder: protectedProcedure
+    .input(z.object({ id: z.number(), folderId: z.number().nullable() }))
+    .mutation(({ ctx, input }) => moveConversationToFolder(input.id, ctx.user.id, input.folderId)),
+  // Folder CRUD
+  folders: protectedProcedure.query(({ ctx }) => getUserFolders(ctx.user.id)),
+  createFolder: protectedProcedure
+    .input(z.object({ name: z.string().min(1).max(128), color: z.string().max(32).optional() }))
+    .mutation(({ ctx, input }) => createFolder(ctx.user.id, input.name, input.color)),
+  updateFolder: protectedProcedure
+    .input(z.object({ id: z.number(), name: z.string().min(1).max(128).optional(), color: z.string().max(32).optional(), sortOrder: z.number().optional() }))
+    .mutation(({ ctx, input }) => updateFolder(input.id, ctx.user.id, { name: input.name, color: input.color, sortOrder: input.sortOrder })),
+  deleteFolder: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(({ ctx, input }) => deleteFolder(input.id, ctx.user.id)),
 });
 
 // ─── DOCUMENTS ROUTER ─────────────────────────────────────────────

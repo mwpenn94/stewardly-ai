@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
   products, auditTrail, reviewQueue, memories, feedback, qualityRatings,
-  suitabilityAssessments
+  suitabilityAssessments, conversationFolders
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -180,6 +180,46 @@ export async function getConversationContext(userId: number, conversationIds: nu
     });
   }
   return results;
+}
+
+// ─── CONVERSATION PIN / FOLDER HELPERS ────────────────────────────
+export async function toggleConversationPin(id: number, userId: number, pinned: boolean) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(conversations).set({ pinned }).where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
+}
+
+export async function moveConversationToFolder(id: number, userId: number, folderId: number | null) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(conversations).set({ folderId }).where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
+}
+
+export async function getUserFolders(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(conversationFolders).where(eq(conversationFolders.userId, userId)).orderBy(conversationFolders.sortOrder);
+}
+
+export async function createFolder(userId: number, name: string, color?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result = await db.insert(conversationFolders).values({ userId, name, color: color || "#6366f1" });
+  return { id: result[0].insertId };
+}
+
+export async function updateFolder(id: number, userId: number, data: { name?: string; color?: string; sortOrder?: number }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(conversationFolders).set(data).where(and(eq(conversationFolders.id, id), eq(conversationFolders.userId, userId)));
+}
+
+export async function deleteFolder(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Unassign conversations from this folder first
+  await db.update(conversations).set({ folderId: null }).where(and(eq(conversations.userId, userId), eq(conversations.folderId, id)));
+  await db.delete(conversationFolders).where(and(eq(conversationFolders.id, id), eq(conversationFolders.userId, userId)));
 }
 
 // ─── MESSAGE HELPERS ──────────────────────────────────────────────

@@ -6,6 +6,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+  DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
@@ -14,7 +21,8 @@ import {
   Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
-  Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle
+  Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
+  Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { LiveSession } from "@/components/LiveSession";
@@ -220,6 +228,11 @@ export default function Chat() {
   const [showModeMenu, setShowModeMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<{ id: number; name: string; color: string } | null>(null);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderColor, setNewFolderColor] = useState("#6366f1");
+  const [expandedFolders, setExpandedFolders] = useState<Set<number>>(new Set());
 
   // ─── HANDS-FREE & VOICE STATE ──────────────────────────────────
   const [handsFreeActive, setHandsFreeActive] = useState(false);
@@ -329,6 +342,45 @@ export default function Chat() {
   const deleteConversation = trpc.conversations.delete.useMutation();
   const feedbackMutation = trpc.feedback.submit.useMutation();
   const visualMutation = trpc.visual.generate.useMutation();
+
+  // ─── FOLDER & PIN QUERIES/MUTATIONS ────────────────────────
+  const foldersQuery = trpc.conversations.folders.useQuery(undefined, { enabled: isAuthenticated });
+  const togglePinMutation = trpc.conversations.togglePin.useMutation({
+    onSuccess: () => utils.conversations.list.invalidate(),
+  });
+  const moveToFolderMutation = trpc.conversations.moveToFolder.useMutation({
+    onSuccess: () => utils.conversations.list.invalidate(),
+  });
+  const createFolderMutation = trpc.conversations.createFolder.useMutation({
+    onSuccess: () => { utils.conversations.folders.invalidate(); setFolderDialogOpen(false); setNewFolderName(""); },
+  });
+  const updateFolderMutation = trpc.conversations.updateFolder.useMutation({
+    onSuccess: () => { utils.conversations.folders.invalidate(); setEditingFolder(null); },
+  });
+  const deleteFolderMutation = trpc.conversations.deleteFolder.useMutation({
+    onSuccess: () => { utils.conversations.folders.invalidate(); utils.conversations.list.invalidate(); },
+  });
+
+  // Group conversations by pinned, folder, and unfiled
+  const groupedConversations = useMemo(() => {
+    const convs = conversationsQuery.data || [];
+    const pinned = convs.filter((c: any) => c.pinned);
+    const folders = foldersQuery.data || [];
+    const folderGroups = folders.map((f: any) => ({
+      ...f,
+      conversations: convs.filter((c: any) => !c.pinned && c.folderId === f.id),
+    }));
+    const unfiled = convs.filter((c: any) => !c.pinned && !c.folderId);
+    return { pinned, folderGroups, unfiled };
+  }, [conversationsQuery.data, foldersQuery.data]);
+
+  const toggleFolderExpand = (folderId: number) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folderId)) next.delete(folderId); else next.add(folderId);
+      return next;
+    });
+  };
 
   // ─── EFFECTS ──────────────────────────────────────────────────
   useEffect(() => {
@@ -518,6 +570,92 @@ export default function Chat() {
     utils.conversations.list.invalidate();
   };
 
+  // ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────
+  const gPressedRef = useRef(false);
+  const gTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+      const isMod = e.metaKey || e.ctrlKey;
+
+      // G-then-X navigation (only when not in input)
+      if (!isInput && !isMod && !e.shiftKey) {
+        if (e.key.toLowerCase() === "g") {
+          gPressedRef.current = true;
+          if (gTimerRef.current) clearTimeout(gTimerRef.current);
+          gTimerRef.current = setTimeout(() => { gPressedRef.current = false; }, 800);
+          return;
+        }
+        if (gPressedRef.current) {
+          gPressedRef.current = false;
+          if (gTimerRef.current) clearTimeout(gTimerRef.current);
+          const k = e.key.toLowerCase();
+          if (k === "c") { e.preventDefault(); navigate("/"); return; }
+          if (k === "s") { e.preventDefault(); navigate("/settings/profile"); return; }
+          if (k === "h") { e.preventDefault(); navigate("/help"); return; }
+        }
+      }
+
+      // Ctrl/Cmd + Shift + N  → New conversation
+      if (isMod && e.shiftKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        handleNewConversation();
+        return;
+      }
+
+      // Ctrl/Cmd + K  → Search conversations
+      if (isMod && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSidebarOpen(true);
+        setSidebarCollapsed(false);
+        setSearchOpen(true);
+        // Focus search input after render
+        setTimeout(() => {
+          const searchInput = document.querySelector('[data-search-input]') as HTMLInputElement;
+          searchInput?.focus();
+        }, 100);
+        return;
+      }
+
+      // Ctrl/Cmd + Shift + S  → Toggle sidebar
+      if (isMod && e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        setSidebarCollapsed(prev => !prev);
+        return;
+      }
+
+      // / → Focus chat input (only when not in input)
+      if (e.key === "/" && !isInput) {
+        e.preventDefault();
+        textareaRef.current?.focus();
+        return;
+      }
+
+      // Esc → Close menus
+      if (e.key === "Escape") {
+        if (showAddMenu) { setShowAddMenu(false); return; }
+        if (showModeMenu) { setShowModeMenu(false); return; }
+        if (showFocusPicker) { setShowFocusPicker(false); return; }
+        if (searchOpen) { setSearchOpen(false); setSearchQuery(""); return; }
+      }
+
+      // Ctrl/Cmd + Enter → Send message (when in textarea)
+      if (isMod && e.key === "Enter" && isInput) {
+        e.preventDefault();
+        handleSend();
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      if (gTimerRef.current) clearTimeout(gTimerRef.current);
+    };
+  }, [showAddMenu, showModeMenu, showFocusPicker, searchOpen]);
+
   const handleFeedback = async (messageId: number, rating: "up" | "down") => {
     if (!conversationId) return;
     await feedbackMutation.mutateAsync({ messageId, conversationId, rating });
@@ -643,6 +781,7 @@ export default function Chat() {
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
+                data-search-input
                 placeholder="Search conversations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -705,8 +844,9 @@ export default function Chat() {
             </div>
           ) : (
           <div className={sidebarCollapsed ? "p-1 space-y-1" : "p-2 space-y-0.5"}>
-            {conversationsQuery.data?.map((conv: any) => (
-              sidebarCollapsed ? (
+            {sidebarCollapsed ? (
+              /* Collapsed: simple icon list */
+              conversationsQuery.data?.map((conv: any) => (
                 <Tooltip key={conv.id}>
                   <TooltipTrigger asChild>
                     <div
@@ -715,30 +855,80 @@ export default function Chat() {
                       }`}
                       onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
                     >
-                      <MessageSquare className="w-4 h-4" />
+                      {conv.pinned ? <Pin className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{conv.title || "New Conversation"}</TooltipContent>
+                  <TooltipContent side="right">{conv.pinned ? "📌 " : ""}{conv.title || "New Conversation"}</TooltipContent>
                 </Tooltip>
-              ) : (
-                <div
-                  key={conv.id}
-                  className={`group flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${
-                    conv.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-foreground"
-                  }`}
-                  onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
-                >
-                  <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />
-                  <span className="truncate flex-1">{conv.title || "New Conversation"}</span>
+              ))
+            ) : (
+              /* Expanded: grouped by pinned → folders → unfiled */
+              <>
+                {/* Pinned section */}
+                {groupedConversations.pinned.length > 0 && (
+                  <div className="mb-2">
+                    <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <Pin className="w-3 h-3" /> Pinned
+                    </div>
+                    {groupedConversations.pinned.map((conv: any) => (
+                      <ConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
+                        setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
+                        handleDeleteConversation={handleDeleteConversation}
+                        togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
+                        folders={foldersQuery.data || []} />
+                    ))}
+                  </div>
+                )}
+
+                {/* Folder sections */}
+                {groupedConversations.folderGroups.map((folder: any) => (
+                  folder.conversations.length > 0 && (
+                    <div key={folder.id} className="mb-1">
+                      <button
+                        className="flex items-center gap-1.5 px-2 py-1 w-full text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors group"
+                        onClick={() => toggleFolderExpand(folder.id)}
+                      >
+                        <ChevronRight className={`w-3 h-3 transition-transform ${expandedFolders.has(folder.id) ? "rotate-90" : ""}`} />
+                        <FolderOpen className="w-3 h-3" style={{ color: folder.color }} />
+                        <span className="flex-1 text-left truncate">{folder.name}</span>
+                        <span className="text-[9px] opacity-60">{folder.conversations.length}</span>
+                      </button>
+                      {expandedFolders.has(folder.id) && folder.conversations.map((conv: any) => (
+                        <ConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
+                          setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
+                          handleDeleteConversation={handleDeleteConversation}
+                          togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
+                          folders={foldersQuery.data || []} indent />
+                      ))}
+                    </div>
+                  )
+                ))}
+
+                {/* Folder management button */}
+                {isAuthenticated && (
                   <button
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-destructive"
-                    onClick={(e) => { e.stopPropagation(); handleDeleteConversation(conv.id); }}
+                    className="flex items-center gap-1.5 px-2 py-1 w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => { setEditingFolder(null); setNewFolderName(""); setNewFolderColor("#6366f1"); setFolderDialogOpen(true); }}
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <FolderPlus className="w-3 h-3" /> New Folder
                   </button>
-                </div>
-              )
-            ))}
+                )}
+
+                {/* Unfiled conversations */}
+                {groupedConversations.unfiled.length > 0 && (groupedConversations.pinned.length > 0 || groupedConversations.folderGroups.some((f: any) => f.conversations.length > 0)) && (
+                  <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-1">
+                    <MessageSquare className="w-3 h-3" /> Conversations
+                  </div>
+                )}
+                {groupedConversations.unfiled.map((conv: any) => (
+                  <ConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
+                    setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
+                    handleDeleteConversation={handleDeleteConversation}
+                    togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
+                    folders={foldersQuery.data || []} />
+                ))}
+              </>
+            )}
             {conversationsQuery.isLoading && (
               <div className="space-y-2 p-2">
                 {[1,2,3].map(i => <Skeleton key={i} className="h-8 w-full" />)}
@@ -1289,6 +1479,113 @@ export default function Chat() {
       </main>
 
 
+      {/* Folder Create/Edit Dialog */}
+      <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
+        <DialogContent className="sm:max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle>{editingFolder ? "Edit Folder" : "Create Folder"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <Input
+              placeholder="Folder name"
+              value={editingFolder ? editingFolder.name : newFolderName}
+              onChange={(e) => editingFolder ? setEditingFolder({ ...editingFolder, name: e.target.value }) : setNewFolderName(e.target.value)}
+              autoFocus
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Color:</span>
+              <div className="flex gap-1.5">
+                {["#6366f1", "#f43f5e", "#10b981", "#f59e0b", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"].map(c => (
+                  <button
+                    key={c}
+                    className={`w-6 h-6 rounded-full border-2 transition-all ${
+                      (editingFolder ? editingFolder.color : newFolderColor) === c ? "border-foreground scale-110" : "border-transparent"
+                    }`}
+                    style={{ backgroundColor: c }}
+                    onClick={() => editingFolder ? setEditingFolder({ ...editingFolder, color: c }) : setNewFolderColor(c)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            {editingFolder && (
+              <Button variant="destructive" size="sm" onClick={() => {
+                deleteFolderMutation.mutate({ id: editingFolder.id });
+                setFolderDialogOpen(false);
+              }}>Delete</Button>
+            )}
+            <Button size="sm" onClick={() => {
+              if (editingFolder) {
+                updateFolderMutation.mutate({ id: editingFolder.id, name: editingFolder.name, color: editingFolder.color });
+              } else if (newFolderName.trim()) {
+                createFolderMutation.mutate({ name: newFolderName.trim(), color: newFolderColor });
+              }
+            }}>
+              {editingFolder ? "Save" : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+/* ─── ConvItem: Single conversation row with context menu ─── */
+function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setConversationId,
+  handleDeleteConversation, togglePinMutation, moveToFolderMutation, folders, indent }: {
+  conv: any; conversationId: number | null; navigate: (path: string) => void;
+  setSidebarOpen: (v: boolean) => void; setConversationId: (v: number | null) => void;
+  handleDeleteConversation: (id: number) => void;
+  togglePinMutation: any; moveToFolderMutation: any; folders: any[]; indent?: boolean;
+}) {
+  return (
+    <DropdownMenu>
+      <div
+        className={`group flex items-center gap-2 ${indent ? "pl-6 pr-3" : "px-3"} py-2 rounded-lg text-sm cursor-pointer transition-colors ${
+          conv.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-foreground"
+        }`}
+        onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
+      >
+        {conv.pinned ? <Pin className="w-3.5 h-3.5 shrink-0 text-accent" /> : <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />}
+        <span className="truncate flex-1">{conv.title || "New Conversation"}</span>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-foreground"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="w-3.5 h-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+      </div>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem onClick={() => togglePinMutation.mutate({ id: conv.id, pinned: !conv.pinned })}>
+          <Pin className="w-3.5 h-3.5 mr-2" /> {conv.pinned ? "Unpin" : "Pin to top"}
+        </DropdownMenuItem>
+        {folders.length > 0 && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <FolderOpen className="w-3.5 h-3.5 mr-2" /> Move to folder
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              {conv.folderId && (
+                <DropdownMenuItem onClick={() => moveToFolderMutation.mutate({ id: conv.id, folderId: null })}>
+                  Remove from folder
+                </DropdownMenuItem>
+              )}
+              {folders.map((f: any) => (
+                <DropdownMenuItem key={f.id} onClick={() => moveToFolderMutation.mutate({ id: conv.id, folderId: f.id })}>
+                  <FolderOpen className="w-3 h-3 mr-2" style={{ color: f.color }} /> {f.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteConversation(conv.id)}>
+          <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -1400,3 +1400,22 @@
 - [x] Expand ANONYMOUS_TABS to include a "Guest Preferences" tab in SettingsHub
 - [x] Wire guest preferences into anonymous chat endpoint via request payload
 - [x] Show "Sign in to unlock full personalization" prompt in guest preferences UI
+
+## Wire Keyboard Shortcuts to Actions (March 20, 2026)
+- [x] Wire Ctrl+Shift+N to create new conversation
+- [x] Wire Ctrl+K to open/focus conversation search
+- [x] Wire / to focus chat input
+- [x] Wire Ctrl+Shift+S to toggle sidebar
+- [x] Wire G-then-C, G-then-S, G-then-H for navigation
+- [x] Wire Esc to close menus/cancel
+- [x] Wire Ctrl+Enter to send message
+
+## Conversation Pinning & Folders (March 20, 2026)
+- [x] Add pinned and folder_id columns to conversations table
+- [x] Create conversation_folders table for user-defined folders
+- [x] Add DB helpers for pin/unpin, folder CRUD, move conversation to folder
+- [x] Add tRPC endpoints for pin, unpin, folder CRUD, move to folder
+- [x] Build pin/unpin UI in sidebar conversation context menu (three-dot dropdown)
+- [x] Build folder management UI (create, rename, delete folders with color picker)
+- [x] Group conversations by folder in sidebar with collapsible sections
+- [x] Show pinned conversations at top of sidebar
