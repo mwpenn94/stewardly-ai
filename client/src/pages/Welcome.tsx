@@ -44,7 +44,7 @@ export default function Welcome() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center">
               <span className="text-sm font-bold text-slate-900">W</span>
             </div>
-            <span className="font-semibold text-foreground">WealthBridge AI</span>
+            <span className="font-semibold text-foreground">Stewardry</span>
           </div>
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
@@ -216,7 +216,7 @@ export default function Welcome() {
               </button>
             </div>
             <p className="text-xs text-muted-foreground/50 text-center">
-              © 2026 WealthBridge AI. All rights reserved.
+              © 2026 Stewardry. All rights reserved.
             </p>
           </div>
         </div>

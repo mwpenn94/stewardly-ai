@@ -116,7 +116,7 @@ export class ScheduleRunnerService {
       } else if (source.sourceType === "news_feed" && source.url) {
         // RSS feed re-ingestion
         const response = await fetch(source.url, {
-          headers: { "User-Agent": "WealthBridge-AI/1.0 ScheduledFeedReader" },
+          headers: { "User-Agent": "Stewardry/1.0 ScheduledFeedReader" },
           signal: AbortSignal.timeout(15000),
         });
         const xml = await response.text();

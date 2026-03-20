@@ -46,7 +46,7 @@
 }
 
 /*
-  WealthBridge AI — Deep navy + sky blue accent
+  Stewardry — Deep navy + sky blue accent
   Professional financial intelligence aesthetic
   Fonts: Satoshi (headings), DM Sans (body)
   Palette: #0F172A navy, #0EA5E9 sky blue, #10B981 emerald, #F43F5E rose
@@ -246,3 +246,24 @@
 /* Emerald success indicators */
 .text-emerald { color: oklch(0.65 0.17 160); }
 .bg-emerald { background-color: oklch(0.65 0.17 160); }
+
+/* Touch-action utility for eliminating 300ms tap delay on mobile */
+.touch-action-manipulation { touch-action: manipulation; }
+
+/* Responsive chat input bar for narrow viewports (<360px) */
+@media (max-width: 359px) {
+  .chat-input-bar {
+    gap: 0.25rem !important;
+    padding: 0.375rem !important;
+  }
+  .chat-input-bar textarea {
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+    min-height: 36px !important;
+  }
+  .chat-input-bar .mode-selector {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.7rem;
+  }
+}

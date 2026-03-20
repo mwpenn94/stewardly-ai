@@ -4,11 +4,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Link } from "wouter";
 import {
   Shield, Clock, CheckCircle, XCircle, AlertTriangle, FileText,
   Bot, Play, Pause, DollarSign, Users, Building2, Briefcase,
   Scale, Heart, Home, FileCheck, TrendingUp, Search,
-  RefreshCw, ChevronRight, Eye, Download, Send, Plus
+  RefreshCw, ChevronRight, Eye, Download, Send, Plus, ArrowLeft
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -44,6 +45,7 @@ export function LicensedReview() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
@@ -146,6 +148,7 @@ export function AgentOperations() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
@@ -216,6 +219,7 @@ export function InsuranceQuotes() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
@@ -273,6 +277,7 @@ export function InsuranceApplications() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <FileCheck className="h-7 w-7 text-emerald-400" /> Insurance Applications
@@ -335,6 +340,7 @@ export function AdvisoryExecution() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Briefcase className="h-7 w-7 text-blue-400" /> Advisory Execution Dashboard
@@ -416,6 +422,7 @@ export function EstatePlanning() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
@@ -496,6 +503,7 @@ export function PremiumFinance() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Building2 className="h-7 w-7 text-green-400" /> Premium Finance Engine
@@ -562,6 +570,7 @@ export function CarrierConnector() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

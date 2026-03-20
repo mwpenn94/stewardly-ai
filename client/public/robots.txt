@@ -1,0 +1,41 @@
+# Stewardry — robots.txt
+# Allow AI auditing bots and search engine crawlers
+
+# Allow all standard search engines
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Allow AI auditing and research bots
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+# Default: allow all other bots
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://stewardry.manus.space/sitemap.xml

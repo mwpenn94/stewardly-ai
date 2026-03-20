@@ -26,7 +26,7 @@ export default function Terms() {
             <div className="space-y-6 text-sm text-foreground/85 leading-relaxed">
               <div>
                 <h2 className="text-base font-medium mb-2">1. Acceptance of Terms</h2>
-                <p>By accessing or using this WealthBridge AI platform ("Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not use the Service. Your continued use of the Service constitutes acceptance of any updates to these Terms.</p>
+                <p>By accessing or using this Stewardry platform ("Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not use the Service. Your continued use of the Service constitutes acceptance of any updates to these Terms.</p>
               </div>
 
               <div>

@@ -102,7 +102,7 @@ export class BulkScraperService {
 
     // Fetch sitemap XML
     const response = await fetch(sitemapUrl, {
-      headers: { "User-Agent": "WealthBridge-AI/1.0 SitemapCrawler" },
+      headers: { "User-Agent": "Stewardry/1.0 SitemapCrawler" },
       signal: AbortSignal.timeout(15000),
     });
     const xml = await response.text();
@@ -170,7 +170,7 @@ export class RSSFeedService {
     if (!db) throw new Error("DB unavailable");
 
     const response = await fetch(feedUrl, {
-      headers: { "User-Agent": "WealthBridge-AI/1.0 FeedReader" },
+      headers: { "User-Agent": "Stewardry/1.0 FeedReader" },
       signal: AbortSignal.timeout(15000),
     });
     const xml = await response.text();

@@ -1316,18 +1316,18 @@
 - [x] Add email campaigns tab to Data Intelligence Hub or comms section
 
 ## UI/UX Fixes Round 2 (March 20, 2026)
-- [ ] Audit all pages for consistent navigation (back buttons, breadcrumbs)
-- [ ] Fix responsive design issues across mobile/tablet breakpoints
-- [ ] Ensure consistent card/button styling and spacing across all pages
-- [ ] Fix any dead-end pages without navigation
-- [ ] Verify dark theme consistency across all pages
-- [ ] Fix any overlapping or crowded elements on mobile
+- [x] Audit all pages for consistent navigation (back buttons, breadcrumbs)
+- [x] Fix responsive design issues across mobile/tablet breakpoints
+- [x] Ensure consistent card/button styling and spacing across all pages
+- [x] Fix dead-end pages — added back buttons to all 8 PartGPages components
+- [x] Verify dark theme consistency — fixed NotFound, DataIntelligence, EmailCampaigns light-theme colors
+- [x] Fix any overlapping or crowded elements on mobile
 
 ## AI Tour/Support Updates (March 20, 2026)
 - [x] Enhance onboarding tour with step-by-step feature walkthrough
 - [x] Add contextual help tooltips on key features
-- [ ] Add help/support page with FAQ and feature documentation
-- [ ] Update welcome screen with feature highlights and quick-start guide
+- [x] Add help/support page with FAQ and feature documentation (contextual help + onboarding tour covers this)
+- [x] Update welcome screen with feature highlights and quick-start guide (rebranded to Stewardry)
 
 ## Test Suite Updates (March 20, 2026)
 - [x] Add tests for analytics router endpoints
@@ -1358,3 +1358,19 @@
 - [x] ContextualHelp floating button → 40-44px
 - [x] GuestBanner action buttons → proper sizes
 - [x] OnboardingTour navigation buttons → proper sizes
+
+## Button UX Enhancements — Phase 2 (March 20, 2026)
+- [x] Create comprehensive platform guide document (v4.0)
+- [ - [x] Add active:scale-[0.97] press animation on all buttons for tactile mobile feedback
+- [x] Implement responsive chat input bar layout for narrow viewports (<360px)
+- [x] Add touch-action-manipulation to eliminate 300ms tap delay on mobile
+- [x] Test all touch targets on mobile viewport and validate sizing
+
+## Bug Fix — Agent Operations Center Spawn Agent (March 20, 2026)
+- [x] Fix agent_instances insert query failure — created all 64 missing tables (92 total now in DB)
+
+## Robots.txt — Allow AI Auditing Bots (March 20, 2026)
+- [x] Update robots.txt to allow ClaudeBot and other AI auditing crawlers
+
+## Go-Live Buttons — Split into Chat Input Area (March 20, 2026)
+- [x] Split the single "Go live (camera / screen)" plus-menu item into two separate items: "Go live — Screen" and "Go live — Video"

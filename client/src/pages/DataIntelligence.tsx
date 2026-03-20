@@ -973,7 +973,7 @@ export default function DataIntelligence() {
               {(schedules.data || []).map((s: any) => (
                 <Card key={s.id}>
                   <CardContent className="py-3 flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${s.enabled ? "bg-emerald-500" : "bg-gray-400"}`} />
+                    <div className={`w-2 h-2 rounded-full ${s.enabled ? "bg-emerald-500" : "bg-zinc-500"}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{s.dataSourceName || `Source #${s.dataSourceId}`}</p>
                       <p className="text-xs text-muted-foreground">
@@ -1112,7 +1112,7 @@ export default function DataIntelligence() {
               <p className="text-xs text-muted-foreground">Completed</p>
             </CardContent></Card>
             <Card><CardContent className="py-3 text-center">
-              <p className="text-2xl font-bold text-gray-400">{actionStats.data?.dismissed || 0}</p>
+              <p className="text-2xl font-bold text-zinc-400">{actionStats.data?.dismissed || 0}</p>
               <p className="text-xs text-muted-foreground">Dismissed</p>
             </CardContent></Card>
           </div>
@@ -1137,7 +1137,7 @@ export default function DataIntelligence() {
                   {(pendingActions.data || []).map((a: any) => (
                     <div key={a.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
                       <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-                        a.priority === "urgent" ? "bg-red-500" : a.priority === "high" ? "bg-amber-500" : a.priority === "medium" ? "bg-blue-500" : "bg-gray-400"
+                        a.priority === "urgent" ? "bg-red-500" : a.priority === "high" ? "bg-amber-500" : a.priority === "medium" ? "bg-blue-500" : "bg-zinc-500"
                       }`} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{a.insight?.title || `Action #${a.id}`}</p>

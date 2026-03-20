@@ -85,13 +85,13 @@ export default function EmailCampaigns() {
   };
 
   const statusColors: Record<string, string> = {
-    draft: "bg-gray-500/10 text-gray-500",
+    draft: "bg-zinc-500/10 text-zinc-400",
     scheduled: "bg-blue-500/10 text-blue-500",
     sending: "bg-yellow-500/10 text-yellow-500",
     sent: "bg-green-500/10 text-green-500",
     paused: "bg-orange-500/10 text-orange-500",
     cancelled: "bg-red-500/10 text-red-500",
-    pending: "bg-gray-500/10 text-gray-500",
+    pending: "bg-zinc-500/10 text-zinc-400",
     delivered: "bg-green-500/10 text-green-500",
     opened: "bg-blue-500/10 text-blue-500",
     clicked: "bg-purple-500/10 text-purple-500",
@@ -374,7 +374,7 @@ export default function EmailCampaigns() {
                   <CardTitle className="text-sm">Email Preview</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="border rounded-lg p-4 bg-white text-black">
+                  <div className="border rounded-lg p-4 bg-card text-card-foreground">
                     <div className="border-b pb-2 mb-3">
                       <p className="text-sm font-medium">Subject: {selectedDetail.data.subject}</p>
                     </div>

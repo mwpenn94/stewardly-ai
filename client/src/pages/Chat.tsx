@@ -212,7 +212,7 @@ export default function Chat() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showFocusPicker, setShowFocusPicker] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [liveSessionActive, setLiveSessionActive] = useState(false);
+  const [liveSessionMode, setLiveSessionMode] = useState<"camera" | "screen" | null>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showModeMenu, setShowModeMenu] = useState(false);
@@ -778,7 +778,7 @@ export default function Chat() {
         </div>
 
         {/* ─── LIVE SESSION ──────────────────────────────────── */}
-        {liveSessionActive && (
+        {liveSessionMode && (
           <div className="px-4 py-3 border-b border-border">
             <LiveSession
               conversationId={conversationId}
@@ -789,7 +789,8 @@ export default function Chat() {
               }}
               focus={focusSerialized}
               mode={mode}
-              onEnd={() => setLiveSessionActive(false)}
+              onEnd={() => setLiveSessionMode(null)}
+              initialMode={liveSessionMode}
             />
           </div>
         )}
@@ -976,7 +977,7 @@ export default function Chat() {
             </div>
 
             {/* Action bar below textarea — Copilot style: [+] [Mode v] ... [Audio] [hands-free/send] */}
-            <div className="flex items-center gap-1 mt-1.5">
+            <div className="chat-input-bar flex items-center gap-1 mt-1.5">
               {/* + Add context button */}
               <div className="relative">
                 <Tooltip>
@@ -1034,12 +1035,21 @@ export default function Chat() {
                       <div className="h-px bg-border my-0.5" />
                       <button
                         className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-colors ${
-                          liveSessionActive ? "bg-red-500/10 text-red-400" : "hover:bg-secondary/60"
+                          liveSessionMode === "screen" ? "bg-red-500/10 text-red-400" : "hover:bg-secondary/60"
                         }`}
-                        onClick={() => { setLiveSessionActive(!liveSessionActive); setShowAddMenu(false); }}
+                        onClick={() => { setLiveSessionMode(liveSessionMode === "screen" ? null : "screen"); setShowAddMenu(false); }}
+                      >
+                        <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>{liveSessionMode === "screen" ? "End screen share" : "Go live — Screen"}</span>
+                      </button>
+                      <button
+                        className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-colors ${
+                          liveSessionMode === "camera" ? "bg-red-500/10 text-red-400" : "hover:bg-secondary/60"
+                        }`}
+                        onClick={() => { setLiveSessionMode(liveSessionMode === "camera" ? null : "camera"); setShowAddMenu(false); }}
                       >
                         <Video className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>{liveSessionActive ? "End live session" : "Go live (camera / screen)"}</span>
+                        <span>{liveSessionMode === "camera" ? "End video session" : "Go live — Video"}</span>
                       </button>
                     </div>
                   </>

@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as total_tables FROM information_schema.tables WHERE table_schema = DATABASE()",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT COUNT(*) as total_tables FROM information_schema.tables WHERE table_schema = DATABASE()",
+  "rows": [
+    {
+      "total_tables": "92"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_tables\n92\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

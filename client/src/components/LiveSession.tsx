@@ -17,6 +17,7 @@ interface LiveSessionProps {
   focus: string;
   mode: string;
   onEnd: () => void;
+  initialMode?: "camera" | "screen";
 }
 
 // Audible cue helper
@@ -38,9 +39,10 @@ function playAudioCue(type: "start" | "listening" | "thinking" | "speaking" | "e
   return u;
 }
 
-export function LiveSession({ conversationId, onConversationCreated, focus, mode, onEnd }: LiveSessionProps) {
+export function LiveSession({ conversationId, onConversationCreated, focus, mode, onEnd, initialMode }: LiveSessionProps) {
   // ─── State ────────────────────────────────────────────────────
   const [liveMode, setLiveMode] = useState<LiveMode>(null);
+  const autoStarted = useRef(false);
   const [isActive, setIsActive] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(true);
@@ -141,6 +143,14 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
       setStatusText("Failed to start");
     }
   }, []);
+
+  // Auto-start with initialMode if provided
+  useEffect(() => {
+    if (initialMode && !autoStarted.current) {
+      autoStarted.current = true;
+      startStream(initialMode);
+    }
+  }, [initialMode, startStream]);
 
   // ─── Stop stream ──────────────────────────────────────────────
   const stopStream = useCallback(() => {
