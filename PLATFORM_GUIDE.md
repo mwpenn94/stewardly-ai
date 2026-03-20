@@ -1,6 +1,6 @@
 # Stewardry — Comprehensive Platform Guide
 
-**Version:** 7.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
+**Version:** 8.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
 
 ---
 
@@ -47,6 +47,7 @@
 39. [Auth Enrichment and Multi-Provider Sign-In](#auth-enrichment-and-multi-provider-sign-in)
 40. [Apollo.io Integration](#apolloio-integration)
 41. [Post-Signup Enrichment Pipeline](#post-signup-enrichment-pipeline)
+42. [Real-Time WebSocket Notifications](#real-time-websocket-notifications)
 
 ---
 
@@ -54,7 +55,7 @@
 
 Stewardry is an AI-powered digital financial twin platform designed for financial advisors, insurance professionals, and wealth management firms. The platform combines conversational AI with real-time market data, comprehensive financial calculators, compliance automation, data intelligence pipelines, email campaign management, and multi-modal interaction into a unified experience. It is built to function as an always-available co-pilot for financial professionals — handling everything from client suitability assessments to estate document drafting, from premium finance modeling to autonomous agent orchestration.
 
-The platform comprises **134 database tables** defined in the Drizzle ORM schema, **38 sub-routers** plus the main router exposing **420+ procedures**, **46 page-level components**, **24 reusable components** (plus 50+ shadcn/ui primitives), and **302 source files** totaling approximately **78,000+ lines of TypeScript/TSX**. The automated test suite contains **614 tests** across **20 test files**, all passing. New in v7.0: Multi-provider authentication enrichment (LinkedIn OAuth, Google OAuth, Email magic links), Apollo.io integration for professional data enrichment, profile merger with confidence hierarchy, post-signup enrichment pipeline (Census, BLS, FRED, Apollo, FINRA), Connected Accounts settings tab with completeness meter, token refresh cron job, and comprehensive auth enrichment test suite.
+The platform comprises **134 database tables** defined in the Drizzle ORM schema, **39 sub-routers** plus the main router exposing **430+ procedures**, **46 page-level components**, **25 reusable components** (plus 50+ shadcn/ui primitives), and **310+ source files** totaling approximately **82,000+ lines of TypeScript/TSX**. The automated test suite contains **671 tests** across **21 test files**, all passing. New in v8.0: Full statistical model implementations for all 8 analytical models (Monte Carlo retirement simulation, debt optimization with avalanche/snowball/hybrid strategies, tax optimization with bracket analysis, cash flow projection, insurance gap analysis, estate planning with trust strategies, education funding projection, and risk tolerance assessment), real-time WebSocket notifications via Socket.IO (notification bell with dropdown panel, toast alerts for high-priority events, per-user notification persistence, connection status indicators), server-side event emitters wired into the Propagation Engine and Model Engine for automatic notification delivery, and a comprehensive test suite covering all statistical models and notification infrastructure.
 
 Stewardry operates on a tiered access model where anonymous guests receive full feature access with session-scoped data persistence, authenticated users get permanent data storage and cross-device sync, and administrators gain access to organization management and compliance oversight tools. The conversational AI interface serves as the primary entry point, following a design philosophy inspired by Claude, Copilot, and ChatGPT — prioritizing simplicity, intuitiveness, and streamlined interaction.
 
@@ -73,6 +74,7 @@ Stewardry operates on a tiered access model where anonymous guests receive full 
 | **AI Engine** | LLM via Forge API | Multi-model AI with constitutional guardrails and structured output |
 | **File Storage** | S3 (via `storagePut`/`storageGet`) | Document, image, and media storage with CDN delivery |
 | **Authentication** | Manus OAuth + LinkedIn + Google + Email Magic Links + Guest Sessions | Multi-provider auth with profile enrichment and automatic session migration |
+| **Real-time** | Socket.IO (WebSocket) | Bidirectional real-time notifications with automatic reconnection |
 | **Voice** | Deepgram STT + Edge TTS (25+ voices) | Speech-to-text transcription and natural text-to-speech |
 | **Maps** | Google Maps Proxy | Geocoding, directions, places, and visualization |
 | **Charts** | Chart.js + react-chartjs-2 | Analytics and financial data visualizations |
@@ -1107,28 +1109,39 @@ The `suitability_household_links` table enables linking multiple user profiles i
 
 ## Analytical Model Engine
 
-The Model Engine provides 8 built-in analytical models that can be executed on-demand or on a recurring schedule, with automatic dependency resolution.
+The Model Engine provides 8 built-in analytical models with full statistical implementations that can be executed on-demand or on a recurring schedule, with automatic dependency resolution. Each model now contains production-grade mathematical logic rather than execution stubs.
 
 ### Built-in Models
 
-| Model ID | Type | Description | Dependencies |
-|----------|------|-------------|-------------|
-| portfolio_risk | risk | Portfolio risk assessment using variance-covariance | None |
-| retirement_readiness | projection | Monte Carlo retirement simulation | portfolio_risk |
-| tax_optimization | optimization | Tax-loss harvesting and Roth conversion analysis | None |
-| insurance_gap | gap_analysis | Insurance coverage gap identification | None |
-| estate_planning | planning | Estate tax and succession planning | None |
-| debt_optimization | optimization | Debt payoff strategy optimization | None |
-| education_funding | projection | 529 and education savings projections | None |
-| cash_flow | analysis | Income/expense pattern analysis | None |
+| Model ID | Type | Description | Implementation | Dependencies |
+|----------|------|-------------|---------------|-------------|
+| portfolio_risk | risk | Portfolio risk assessment using variance-covariance | Variance-covariance matrix, Sharpe ratio, max drawdown | None |
+| retirement_readiness | projection | Monte Carlo retirement simulation | 10,000-iteration Monte Carlo with percentile breakdowns, Social Security integration, contribution growth, recommended additional savings | portfolio_risk |
+| tax_optimization | optimization | Tax-loss harvesting and Roth conversion analysis | Full 2025/2026 bracket analysis, standard vs. itemized comparison, Roth conversion break-even, charitable bundling strategy | None |
+| insurance_gap | gap_analysis | Insurance coverage gap identification | Life (10-12x income), disability (65% replacement), home, auto, umbrella, LTC analysis with priority scoring | None |
+| estate_planning | planning | Estate tax and succession planning | Federal exemption ($13.61M), marital deduction, ILIT/GRAT/QPRT/CRT/FLP trust strategies, annual gifting analysis | None |
+| debt_optimization | optimization | Debt payoff strategy optimization | Avalanche (highest rate first), snowball (lowest balance first), hybrid strategies with month-by-month schedules | None |
+| education_funding | projection | 529 and education savings projections | Inflation-adjusted cost projection, 529 growth modeling, funding gap calculation, tax benefit analysis | None |
+| cash_flow | analysis | Income/expense pattern analysis | Seasonal adjustment, one-time events, emergency fund ratio tracking, cumulative balance projection | None |
+
+### Statistical Model Details
+
+The **Monte Carlo Retirement Simulation** runs configurable iterations (default 10,000) using normally-distributed annual returns with the specified mean and standard deviation. Each simulation tracks portfolio balance through accumulation and decumulation phases, incorporating Social Security benefits at the specified start age. The output includes success rate (percentage of simulations where funds lasted through life expectancy), percentile breakdowns (10th, 25th, 50th, 75th, 90th), year-by-year median projections, and a recommended additional savings amount calculated via binary search to achieve a 90% success rate.
+
+The **Debt Optimization** engine simulates three strategies in parallel: avalanche (highest interest rate first), snowball (lowest balance first), and hybrid (small debts under $1,000 first, then avalanche). Each strategy produces a complete month-by-month payment schedule showing per-debt payments, remaining balances, and interest paid. The recommendation engine considers the interest differential between strategies and the number of quick-win small debts to suggest the optimal approach.
+
+The **Tax Optimization** model implements the full 2025/2026 federal tax bracket system for all four filing statuses, compares standard versus itemized deductions (with SALT cap at $10,000), calculates Roth conversion break-even years, evaluates charitable bundling with donor-advised fund strategies, and provides retirement contribution optimization analysis.
 
 ### Execution Pipeline
 
 ```
 Model Selection → Dependency Resolution → Input Validation
-    → Execution → Output Storage (model_output_records)
-    → Suitability Update → Propagation Event → Coaching Message
+    → Statistical Execution → Output Storage (model_output_records)
+    → Suitability Update → Propagation Event → WebSocket Notification
+    → Coaching Message Generation
 ```
+
+When a model completes execution, the engine automatically sends a real-time WebSocket notification to the requesting user with the model name, execution time, and a summary of results. If the model produces actionable insights (e.g., a retirement funding gap), the Propagation Engine generates coaching messages that are also delivered via WebSocket.
 
 When a model with dependencies is executed, the engine automatically runs prerequisite models first. For example, running `retirement_readiness` will first execute `portfolio_risk` if it hasn't been run recently.
 
@@ -1304,24 +1317,21 @@ Each task runs in isolation — a failure in one task does not affect others. Al
 
 1. **Integration API Keys**: Most integration providers are configured but require API key registration. Currently only Plaid has active credentials.
 2. **Platform Pipeline Data**: Census, BLS, FRED, and BEA data pipelines are stubbed and need API key registration at each agency.
-3. **Model Engine**: The 8 analytical models have execution stubs. Full statistical implementations (Monte Carlo simulation, optimization algorithms) require additional development.
-4. **Document Generation**: The `generated_documents` table exists but the PDF rendering pipeline is not yet implemented.
-5. **Chat.tsx Size**: At 1,923 lines, the main chat component would benefit from decomposition into smaller sub-components.
+3. **Document Generation**: The `generated_documents` table exists but the PDF rendering pipeline is not yet implemented.
+4. **Chat.tsx Size**: At 1,950+ lines, the main chat component would benefit from decomposition into smaller sub-components.
 
 ### Roadmap (Priority Order)
 
 1. **Integration Activation**: Register API keys for GoHighLevel, BridgeFT, and Schwab to enable live data sync
-2. **Model Implementation**: Implement full statistical models with Monte Carlo, optimization, and projection engines
-3. **Document Generation**: Build PDF rendering pipeline for financial plans, reports, and compliance documents
-4. **Real-time Notifications**: WebSocket-based push notifications for propagation events and coaching messages
-5. **Mobile App**: React Native wrapper for native mobile experience
-6. **Multi-language Support**: Internationalization for non-English markets
-7. **Advanced Analytics Dashboards**: Charts, trends, and predictive analytics in the Analytics Hub
-8. **Marketplace**: Third-party plugin and integration marketplace
+2. **Document Generation**: Build PDF rendering pipeline for financial plans, reports, and compliance documents
+3. **Mobile App**: React Native wrapper for native mobile experience
+4. **Multi-language Support**: Internationalization for non-English markets
+5. **Advanced Analytics Dashboards**: Charts, trends, and predictive analytics in the Analytics Hub
+6. **Marketplace**: Third-party plugin and integration marketplace
 
 ---
 
-*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 6.0.*
+*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 8.0.*
 
 ---
 
@@ -1439,4 +1449,80 @@ A daily cron job (`token-refresh`) runs at 2:00 AM to:
 
 ---
 
-*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 7.0.*
+*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 8.0.*
+
+---
+
+## Real-Time WebSocket Notifications
+
+### Overview
+
+Version 8.0 introduces a full real-time notification system built on Socket.IO, enabling instant delivery of propagation events, coaching messages, model completion alerts, and system notifications without polling. The system supports per-user notification persistence, read/unread state management, and automatic reconnection with exponential backoff.
+
+### Architecture
+
+| Component | Location | Responsibility |
+|-----------|----------|---------------|
+| **WebSocket Server** | `server/services/websocketNotifications.ts` | Socket.IO server attached to Express, user authentication via JWT, room management by userId and role |
+| **useWebSocket Hook** | `client/src/hooks/useWebSocket.ts` | Client-side Socket.IO connection with reconnection, notification state management, toast integration |
+| **NotificationBell** | `client/src/components/NotificationBell.tsx` | Dropdown panel with type filters, read/unread state, priority badges, time-ago formatting |
+| **NotificationProvider** | `client/src/contexts/NotificationContext.tsx` | React context providing notification state to all components |
+| **Notifications Router** | `server/routers/notifications.ts` | tRPC procedures for REST-based notification access and admin broadcast |
+
+### Notification Types
+
+| Type | Icon | Color | Trigger |
+|------|------|-------|---------|
+| `coaching` | Brain | Violet | Behavioral coaching messages from the AI engine |
+| `propagation` | Radio | Blue | Cross-layer intelligence cascade events |
+| `alert` | Shield | Red | Compliance alerts, risk threshold breaches |
+| `model_complete` | TrendingUp | Emerald | Analytical model execution completed |
+| `enrichment` | Zap | Amber | Profile enrichment from external providers |
+| `system` | Settings | Gray | Platform maintenance, admin broadcasts |
+
+### Priority Levels
+
+| Priority | Visual Treatment | Toast Behavior |
+|----------|-----------------|----------------|
+| `critical` | Red background, red border | Auto-displayed with `error` style, 8-second duration |
+| `high` | Amber background, amber border | Auto-displayed with `warning` style, 6-second duration |
+| `medium` | Blue background, blue border | Auto-displayed with `info` style, 4-second duration |
+| `low` | Gray background, gray border | No toast, badge count only |
+
+### Server-Side Integration
+
+The WebSocket notification system is wired into two core engines:
+
+The **Model Engine** (`server/services/modelEngine.ts`) sends a `model_complete` notification to the requesting user when any analytical model finishes execution. The notification includes the model name, execution time, and a summary of results.
+
+The **Propagation Engine** (`server/services/propagationEngine.ts`) sends `propagation` notifications when cross-layer intelligence cascades are generated. Coaching messages are delivered as `coaching` type notifications with the message content and target role.
+
+### Client-Side Features
+
+The notification bell appears in two locations: the desktop sidebar (below Help and Settings) and the mobile header bar. It displays a real-time unread count badge with a green connection indicator dot. Clicking the bell opens a dropdown panel with:
+
+1. **Type filter tabs** showing counts per notification type (All, Coaching, Intelligence, Alert, Model, etc.)
+2. **Notification cards** with type icon, title, body (2-line clamp), priority badge, and time-ago timestamp
+3. **Read/unread state** with blue dot indicator and click-to-mark-as-read
+4. **Mark all as read** and **Clear all** actions in the header and footer
+5. **Empty state** with connection status message
+
+High-priority notifications (critical and high) automatically trigger toast notifications via Sonner, providing immediate visibility even when the notification panel is closed.
+
+### Connection Management
+
+The client-side hook implements automatic reconnection with exponential backoff (1s, 2s, 4s, 8s, max 30s) and a maximum of 10 reconnection attempts. The connection status is visible via the green/gray dot on the bell icon. When the connection is lost, the system falls back to the tRPC `notifications.list` endpoint for REST-based polling.
+
+### tRPC Router: `notifications`
+
+| Procedure | Type | Auth | Description |
+|-----------|------|------|-------------|
+| `list` | Query | Protected | Get all notifications for the current user with total and unread counts |
+| `unreadCount` | Query | Protected | Get the unread notification count |
+| `sendTest` | Mutation | Protected | Send a test notification (development/debugging) |
+| `broadcast` | Mutation | Admin | Broadcast a notification to all connected users |
+| `connectionStats` | Query | Admin | Get WebSocket connection statistics (total connections, users by role) |
+
+### Per-User Storage
+
+Notifications are stored in-memory on the server with a maximum of 100 notifications per user (oldest are evicted when the limit is reached). Each notification includes an `id`, `type`, `priority`, `title`, `body`, `createdAt` timestamp, `readAt` timestamp (null if unread), and optional `metadata` object for type-specific data.

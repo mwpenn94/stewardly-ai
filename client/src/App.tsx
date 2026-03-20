@@ -49,6 +49,7 @@ import Integrations from "./pages/Integrations";
 import { GuidedTour } from "./components/GuidedTour";
 import IntelligenceFeed from "./pages/IntelligenceFeed";
 import AnalyticsHub from "./pages/AnalyticsHub";
+import { NotificationProvider } from "./contexts/NotificationContext";
 
 function Router() {
   return (
@@ -145,9 +146,11 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <Toaster />
-          <KeyboardShortcuts />
-          <AppContent />
+          <NotificationProvider>
+            <Toaster />
+            <KeyboardShortcuts />
+            <AppContent />
+          </NotificationProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

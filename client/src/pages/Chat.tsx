@@ -35,6 +35,8 @@ import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
+import { NotificationBell } from "@/components/NotificationBell";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -336,6 +338,7 @@ export default function Chat() {
   const [, navigate] = useLocation();
   const [matchChat, paramsChat] = useRoute("/chat/:id");
   const utils = trpc.useUtils();
+  const { notifications, unreadCount, connected: wsConnected, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
 
   // ─── STATE ──────────────────────────────────────────────────────
   const [conversationId, setConversationId] = useState<number | null>(
@@ -1233,6 +1236,20 @@ export default function Chat() {
                   <Fingerprint className="w-3.5 h-3.5" /> Settings
                 </button>
               </div>
+              {/* Desktop notification bell */}
+              <div className="hidden lg:flex items-center justify-center px-2 pb-1">
+                <NotificationBell
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  connected={wsConnected}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                  onClear={clearNotifications}
+                />
+                {!sidebarCollapsed && unreadCount > 0 && (
+                  <span className="text-[10px] text-muted-foreground ml-1">{unreadCount} unread</span>
+                )}
+              </div>
             </>
           )}
           <Separator className="mx-2" />
@@ -1337,6 +1354,14 @@ export default function Chat() {
             <Menu className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-1.5">
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadCount}
+              connected={wsConnected}
+              onMarkAsRead={markAsRead}
+              onMarkAllAsRead={markAllAsRead}
+              onClear={clearNotifications}
+            />
             {user?.authTier === "anonymous" && (
               <Button
                 variant="outline"

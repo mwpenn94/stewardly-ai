@@ -1771,25 +1771,25 @@
 ## Statistical Model Logic & WebSocket Notifications (March 20, 2026)
 
 ### Full Statistical Model Implementations
-- [ ] Monte Carlo retirement simulation (10,000 iterations, confidence intervals)
-- [ ] Debt optimization model (avalanche vs snowball vs hybrid strategies)
-- [ ] Tax optimization model (bracket analysis, deduction optimization, Roth conversion)
-- [ ] Cash flow projection model (income/expense forecasting, seasonal adjustments)
-- [ ] Insurance gap analysis model (coverage needs vs current policies)
-- [ ] Estate planning model (tax exposure, beneficiary optimization)
-- [ ] Education funding model (529 projections, financial aid impact)
-- [ ] Risk tolerance scoring model (questionnaire-based with behavioral adjustments)
+- [x] Monte Carlo retirement simulation (10,000 iterations, confidence intervals)
+- [x] Debt optimization model (avalanche vs snowball vs hybrid strategies)
+- [x] Tax optimization model (bracket analysis, deduction optimization, Roth conversion)
+- [x] Cash flow projection model (income/expense forecasting, seasonal adjustments)
+- [x] Insurance gap analysis model (coverage needs vs current policies)
+- [x] Estate planning model (tax exposure, beneficiary optimization)
+- [x] Education funding model (529 projections, financial aid impact)
+- [x] Risk tolerance scoring model (questionnaire-based with behavioral adjustments)
 
 ### Real-Time WebSocket Notifications
-- [ ] WebSocket server infrastructure (Socket.IO on Express)
-- [ ] Server-side event emitter for propagation events
-- [ ] Server-side event emitter for coaching messages
-- [ ] Client-side WebSocket hook (useWebSocket)
-- [ ] Notification bell/panel UI with real-time badge count
-- [ ] Toast notifications for high-priority alerts
-- [ ] Notification persistence and read/unread state
+- [x] WebSocket server infrastructure (Socket.IO on Express)
+- [x] Server-side event emitter for propagation events
+- [x] Server-side event emitter for coaching messages
+- [x] Client-side WebSocket hook (useWebSocket)
+- [x] Notification bell/panel UI with real-time badge count
+- [x] Toast notifications for high-priority alerts
+- [x] Notification persistence and read/unread state
 
 ### Testing & Docs
-- [ ] statisticalModels.test.ts (Monte Carlo convergence, optimization correctness)
-- [ ] websocket.test.ts (connection, events, reconnection)
-- [ ] Update platform guide to v8.0
+- [x] statisticalModels.test.ts (Monte Carlo convergence, optimization correctness)
+- [x] websocket.test.ts (connection, events, reconnection)
+- [x] Update platform guide to v8.0

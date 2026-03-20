@@ -1148,6 +1148,7 @@ import { modelEngineRouter } from "./routers/modelEngine";
 import { propagationRouter } from "./routers/propagation";
 import { fileProcessingRouter } from "./routers/fileProcessing";
 import { authEnrichmentRouter } from "./routers/authEnrichment";
+import { notificationsRouter } from "./routers/notifications";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1236,6 +1237,7 @@ export const appRouter = router({
   propagation: propagationRouter,
   fileProcessing: fileProcessingRouter,
   authEnrichment: authEnrichmentRouter,
+  notifications: notificationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

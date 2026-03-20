@@ -2,6 +2,7 @@ import { getDb } from "../db";
 import { propagationEvents, propagationActions, coachingMessages } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import crypto from "crypto";
+import { sendNotification, broadcastToRole } from "./websocketNotifications";
 
 // ─── Layer Hierarchy ────────────────────────────────────────────────────────
 
@@ -40,6 +41,26 @@ export async function createPropagationEvent(params: {
     status: "pending",
     expiresAt,
   });
+
+  // Emit real-time notification for the propagation event
+  if (params.targetEntityId) {
+    sendNotification(params.targetEntityId, {
+      type: "propagation",
+      priority: params.priority ?? "medium",
+      title: `${params.eventType.charAt(0).toUpperCase() + params.eventType.slice(1)} from ${params.sourceLayer}`,
+      body: typeof params.payload.insight === "string" ? params.payload.insight : `New ${params.eventType} event requires your attention`,
+      metadata: { eventId: id, sourceLayer: params.sourceLayer, targetLayer: params.targetLayer, eventType: params.eventType },
+    });
+  } else {
+    // Broadcast to the target layer role
+    broadcastToRole(params.targetLayer, {
+      type: "propagation",
+      priority: params.priority ?? "medium",
+      title: `${params.eventType.charAt(0).toUpperCase() + params.eventType.slice(1)} from ${params.sourceLayer}`,
+      body: typeof params.payload.insight === "string" ? params.payload.insight : `New ${params.eventType} event for ${params.targetLayer} layer`,
+      metadata: { eventId: id, sourceLayer: params.sourceLayer, targetLayer: params.targetLayer, eventType: params.eventType },
+    });
+  }
 
   return id;
 }
@@ -212,6 +233,15 @@ export async function createCoachingMessage(params: {
     triggerEvent: params.triggerEvent ?? null,
     status: "pending",
     expiresAt,
+  });
+
+  // Emit real-time notification for the coaching message
+  sendNotification(params.userId, {
+    type: "coaching",
+    priority: params.priority ?? "medium",
+    title: params.title,
+    body: params.content,
+    metadata: { messageId: id, messageType: params.messageType, category: params.category },
   });
 
   return id;

@@ -2,6 +2,17 @@ import { getDb } from "../db";
 import { analyticalModels, modelRuns, modelOutputRecords, modelSchedules } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 import crypto from "crypto";
+import { broadcastToRole } from "./websocketNotifications";
+import {
+  monteCarloRetirement, type RetirementInput,
+  optimizeDebt, type DebtOptimizationInput,
+  optimizeTax, type TaxOptimizationInput,
+  projectCashFlow, type CashFlowInput,
+  analyzeInsuranceGaps, type InsuranceGapInput,
+  analyzeEstatePlan, type EstatePlanningInput,
+  projectEducationFunding, type EducationFundingInput,
+  scoreRiskTolerance, type RiskToleranceInput,
+} from "./statisticalModels";
 
 // ─── Model Registry ─────────────────────────────────────────────────────────
 
@@ -86,6 +97,87 @@ export const BUILT_IN_MODELS = [
     inputSchema: { goals: "array", currentState: "object" },
     outputSchema: { progress: "array", onTrack: "boolean", adjustments: "array" },
   },
+  // ─── Full Statistical Models ─────────────────────────────────────────────
+  {
+    name: "Monte Carlo Retirement Simulation",
+    slug: "monte-carlo-retirement",
+    description: "10,000-iteration Monte Carlo simulation for retirement planning with inflation, Social Security, and contribution growth",
+    layer: "user" as const,
+    category: "financial" as const,
+    executionType: "statistical" as const,
+    inputSchema: { currentAge: "number", retirementAge: "number", currentSavings: "number", annualContribution: "number", expectedReturn: "number" },
+    outputSchema: { successRate: "number", medianEndingBalance: "number", yearByYearMedian: "array", recommendedAdditionalSavings: "number" },
+  },
+  {
+    name: "Debt Optimization",
+    slug: "debt-optimization",
+    description: "Compares Avalanche, Snowball, and Hybrid debt payoff strategies with month-by-month schedules",
+    layer: "user" as const,
+    category: "financial" as const,
+    executionType: "statistical" as const,
+    inputSchema: { debts: "array", monthlyBudget: "number", extraPayment: "number" },
+    outputSchema: { avalanche: "object", snowball: "object", hybrid: "object", recommendation: "string" },
+  },
+  {
+    name: "Tax Optimization",
+    slug: "tax-optimization",
+    description: "Bracket analysis, Roth conversion, charitable strategy, and retirement contribution optimization",
+    layer: "user" as const,
+    category: "financial" as const,
+    executionType: "statistical" as const,
+    inputSchema: { filingStatus: "string", grossIncome: "number", deductions: "object" },
+    outputSchema: { currentTaxLiability: "number", rothConversion: "object", totalOptimizedSavings: "number" },
+  },
+  {
+    name: "Cash Flow Projection",
+    slug: "cash-flow-projection",
+    description: "Multi-month income/expense forecasting with seasonal adjustments and emergency fund tracking",
+    layer: "user" as const,
+    category: "financial" as const,
+    executionType: "statistical" as const,
+    inputSchema: { monthlyIncome: "array", monthlyExpenses: "array", projectionMonths: "number" },
+    outputSchema: { monthlyProjections: "array", summary: "object", alerts: "array" },
+  },
+  {
+    name: "Insurance Gap Analysis",
+    slug: "insurance-gap-analysis",
+    description: "Identifies coverage gaps across life, disability, home, umbrella, and long-term care insurance",
+    layer: "user" as const,
+    category: "risk" as const,
+    executionType: "statistical" as const,
+    inputSchema: { annualIncome: "number", currentPolicies: "array", netWorth: "number" },
+    outputSchema: { gaps: "array", overallScore: "number", recommendations: "array" },
+  },
+  {
+    name: "Estate Planning Analysis",
+    slug: "estate-planning",
+    description: "Estate tax exposure, trust strategies (ILIT, CRT, GRAT, Dynasty), and beneficiary optimization",
+    layer: "user" as const,
+    category: "financial" as const,
+    executionType: "statistical" as const,
+    inputSchema: { totalEstateValue: "number", filingStatus: "string", assets: "array" },
+    outputSchema: { federalEstateTax: "number", strategies: "array", totalPotentialSavings: "number" },
+  },
+  {
+    name: "Education Funding Projection",
+    slug: "education-funding",
+    description: "529 plan projections with education inflation, financial aid, and alternative strategy analysis",
+    layer: "user" as const,
+    category: "financial" as const,
+    executionType: "statistical" as const,
+    inputSchema: { childAge: "number", annualCostToday: "number", current529Balance: "number" },
+    outputSchema: { totalProjectedCost: "number", fundingGap: "number", monthlyNeeded: "number" },
+  },
+  {
+    name: "Risk Tolerance Assessment",
+    slug: "risk-tolerance-assessment",
+    description: "5-dimension risk scoring (capacity, willingness, need, knowledge, behavioral) with allocation recommendation",
+    layer: "user" as const,
+    category: "risk" as const,
+    executionType: "statistical" as const,
+    inputSchema: { questionnaireAnswers: "array", behavioralSignals: "object", financialContext: "object" },
+    outputSchema: { compositeScore: "number", category: "string", recommendedAllocation: "object" },
+  },
 ] as const;
 
 // ─── Seed Models ────────────────────────────────────────────────────────────
@@ -162,6 +254,15 @@ export async function executeModel(
       })
       .where(eq(modelRuns.id, runId));
 
+    // Emit real-time notification for model completion
+    broadcastToRole(model.layer, {
+      type: "model_complete",
+      priority: "medium",
+      title: `Model Completed: ${model.name}`,
+      body: `${model.name} finished in ${durationMs}ms`,
+      metadata: { runId, modelSlug: model.slug, modelName: model.name, durationMs },
+    });
+
     return { runId, output, durationMs };
   } catch (error: any) {
     const durationMs = Date.now() - startTime;
@@ -199,6 +300,23 @@ async function runModelLogic(
       return detectBehavioralPatterns(input);
     case "goal-progress-tracker":
       return trackGoalProgress(input);
+    // ─── Full Statistical Models ─────────────────────────────────────────
+    case "monte-carlo-retirement":
+      return monteCarloRetirement(input as unknown as RetirementInput) as unknown as Record<string, unknown>;
+    case "debt-optimization":
+      return optimizeDebt(input as unknown as DebtOptimizationInput) as unknown as Record<string, unknown>;
+    case "tax-optimization":
+      return optimizeTax(input as unknown as TaxOptimizationInput) as unknown as Record<string, unknown>;
+    case "cash-flow-projection":
+      return projectCashFlow(input as unknown as CashFlowInput) as unknown as Record<string, unknown>;
+    case "insurance-gap-analysis":
+      return analyzeInsuranceGaps(input as unknown as InsuranceGapInput) as unknown as Record<string, unknown>;
+    case "estate-planning":
+      return analyzeEstatePlan(input as unknown as EstatePlanningInput) as unknown as Record<string, unknown>;
+    case "education-funding":
+      return projectEducationFunding(input as unknown as EducationFundingInput) as unknown as Record<string, unknown>;
+    case "risk-tolerance-assessment":
+      return scoreRiskTolerance(input as unknown as RiskToleranceInput) as unknown as Record<string, unknown>;
     default:
       return { status: "not_implemented", message: `Model ${slug} execution not yet implemented` };
   }
