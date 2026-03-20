@@ -1143,6 +1143,10 @@ import { fairnessRouter } from "./routers/fairness";
 import { improvementEngineRouter } from "./routers/improvementEngine";
 import { kbAccessRouter } from "./routers/kbAccess";
 import { integrationsRouter } from "./routers/integrations";
+import { suitabilityEngineRouter } from "./routers/suitabilityEngine";
+import { modelEngineRouter } from "./routers/modelEngine";
+import { propagationRouter } from "./routers/propagation";
+import { fileProcessingRouter } from "./routers/fileProcessing";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1226,6 +1230,10 @@ export const appRouter = router({
   improvementEngine: improvementEngineRouter,
   kbAccess: kbAccessRouter,
   integrations: integrationsRouter,
+  suitabilityEngine: suitabilityEngineRouter,
+  modelEngine: modelEngineRouter,
+  propagation: propagationRouter,
+  fileProcessing: fileProcessingRouter,
 });
 
 export type AppRouter = typeof appRouter;

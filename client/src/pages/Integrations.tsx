@@ -372,7 +372,10 @@ export default function Integrations() {
     tierFilter === "all" ? {} : { ownershipTier: tierFilter }
   );
   const providers = providersData?.providers;
-  const { data: connections, isLoading: loadingConnections, refetch: refetchConnections } = trpc.integrations.listConnections.useQuery();
+  const { data: connections, isLoading: loadingConnections, refetch: refetchConnections } = trpc.integrations.listConnections.useQuery(
+    undefined,
+    { enabled: !!user }
+  );
 
   // Mutations
   const createConnection = trpc.integrations.createConnection.useMutation({

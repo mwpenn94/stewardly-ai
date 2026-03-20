@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, Camera, Brain, Shield, FileText, Sparkles, User,
-  Loader2, Settings2, ChevronRight, Bell, Palette,
+  Loader2, Settings2, ChevronRight, Bell, Palette, Mic,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { getLoginUrl } from "@/const";
@@ -20,15 +20,17 @@ import AppearanceTab from "./settings/AppearanceTab";
 import GuestPreferencesTab from "./settings/GuestPreferencesTab";
 import PrivacyDataTab from "./settings/PrivacyDataTab";
 import DataSharingTab from "./settings/DataSharingTab";
+import VoiceTab from "./settings/VoiceTab";
 
 // ─── TAB DEFINITIONS ─────────────────────────────────────────────
-type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing";
+type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "voice" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: string; slug: string }[] = [
   { id: "profile", label: "Profile & Style", icon: <User className="w-4 h-4" />, desc: "Avatar, memories, communication style", slug: "profile" },
   { id: "suitability", label: "Financial Profile", icon: <Shield className="w-4 h-4" />, desc: "Suitability assessment for personalized advice", slug: "suitability" },
   { id: "knowledge", label: "Knowledge Base", icon: <FileText className="w-4 h-4" />, desc: "Documents and files that train your AI", slug: "knowledge" },
   { id: "ai-tuning", label: "AI Tuning", icon: <Sparkles className="w-4 h-4" />, desc: "5-layer AI personalization cascade", slug: "ai-tuning" },
+  { id: "voice", label: "Voice & Speech", icon: <Mic className="w-4 h-4" />, desc: "Edge TTS voice selection and speech settings", slug: "voice" },
   { id: "notifications", label: "Notifications", icon: <Bell className="w-4 h-4" />, desc: "Manage alerts and email digests", slug: "notifications" },
   { id: "appearance", label: "Appearance", icon: <Palette className="w-4 h-4" />, desc: "Theme, colors, font size, density", slug: "appearance" },
   { id: "guest-prefs", label: "Guest Preferences", icon: <Sparkles className="w-4 h-4" />, desc: "Customize AI responses without an account", slug: "guest-prefs" },
@@ -37,7 +39,7 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: strin
 ];
 
 // Tabs accessible without authentication
-const ANONYMOUS_TABS: SettingsTab[] = ["appearance", "guest-prefs"];
+const ANONYMOUS_TABS: SettingsTab[] = ["appearance", "guest-prefs", "voice"];
 
 export default function SettingsHub() {
   const { user, loading } = useAuth();
@@ -184,6 +186,7 @@ export default function SettingsHub() {
               {activeTab === "suitability" && <SuitabilityTab />}
               {activeTab === "knowledge" && <KnowledgeBaseTab />}
               {activeTab === "ai-tuning" && <AITuningTab />}
+              {activeTab === "voice" && <VoiceTab />}
               {activeTab === "notifications" && <NotificationsTab />}
               {activeTab === "appearance" && <AppearanceTab />}
               {activeTab === "guest-prefs" && <GuestPreferencesTab />}

@@ -1,6 +1,6 @@
 # Stewardry — Comprehensive Platform Guide
 
-**Version:** 5.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
+**Version:** 6.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
 
 ---
 
@@ -37,6 +37,13 @@
 29. [Test Coverage](#test-coverage)
 30. [Feature Matrix](#feature-matrix)
 31. [Deployment and Infrastructure](#deployment-and-infrastructure)
+32. [Suitability Intelligence Engine](#suitability-intelligence-engine)
+33. [Analytical Model Engine](#analytical-model-engine)
+34. [Propagation and Coaching Engine](#propagation-and-coaching-engine)
+35. [File Processing Pipeline](#file-processing-pipeline)
+36. [Voice Settings Hierarchy](#voice-settings-hierarchy)
+37. [Scheduled Tasks and Cron Jobs](#scheduled-tasks-and-cron-jobs)
+38. [Known Limitations and Roadmap](#known-limitations-and-roadmap)
 
 ---
 
@@ -44,7 +51,7 @@
 
 Stewardry is an AI-powered digital financial twin platform designed for financial advisors, insurance professionals, and wealth management firms. The platform combines conversational AI with real-time market data, comprehensive financial calculators, compliance automation, data intelligence pipelines, email campaign management, and multi-modal interaction into a unified experience. It is built to function as an always-available co-pilot for financial professionals — handling everything from client suitability assessments to estate document drafting, from premium finance modeling to autonomous agent orchestration.
 
-The platform comprises **113 database tables** defined in the Drizzle ORM schema, **34 sub-routers** plus the main router exposing **400+ procedures**, **44 page-level components**, **24 reusable components** (plus 50+ shadcn/ui primitives), and **277 source files** totaling approximately **71,624 lines of TypeScript/TSX**. The automated test suite contains **449 tests** across **18 test files**, all passing. New in v5.0: Professional Referral Directory with 5-tier matching, granular Knowledge Base access control with topic-scoped sharing, a 20+ provider Integration Pipeline, a 3-direction AI Improvement Engine, and contextual AI insights that inject real-time usage data into audit-direction prompts.
+The platform comprises **132 database tables** defined in the Drizzle ORM schema, **37 sub-routers** plus the main router exposing **400+ procedures**, **46 page-level components**, **24 reusable components** (plus 50+ shadcn/ui primitives), and **290+ source files** totaling approximately **80,000+ lines of TypeScript/TSX**. The automated test suite contains **565 tests** across **19 test files**, all passing. New in v6.0: 12-dimension Suitability Intelligence Engine with progressive profiling and confidence decay, 8 built-in Analytical Models with dependency resolution and scheduling, cross-layer Propagation Engine with coaching message generation, 6-stage File Processing Pipeline, Voice Settings Hierarchy with per-layer TTS defaults, Intelligence Feed and Analytics Hub pages, comprehensive user-type testing across all 5 roles, and adminProcedure enforcement.
 
 Stewardry operates on a tiered access model where anonymous guests receive full feature access with session-scoped data persistence, authenticated users get permanent data storage and cross-device sync, and administrators gain access to organization management and compliance oversight tools. The conversational AI interface serves as the primary entry point, following a design philosophy inspired by Claude, Copilot, and ChatGPT — prioritizing simplicity, intuitiveness, and streamlined interaction.
 
@@ -904,7 +911,7 @@ The platform exposes 34 sub-routers plus the main router, organized by domain:
 
 ## Database Schema
 
-The platform defines **113 MySQL/TiDB tables** in the Drizzle ORM schema. Tables are organized by domain:
+The platform defines **132 MySQL/TiDB tables** in the Drizzle ORM schema. Tables are organized by domain:
 
 | Domain | Count | Key Tables |
 |--------|-------|------------|
@@ -921,15 +928,19 @@ The platform defines **113 MySQL/TiDB tables** in the Drizzle ORM schema. Tables
 | **Multi-Model** | 2 | proactive_insights, affiliated_resources |
 | **Professionals and Referrals** | 3 | professionals, professional_relationships, professional_reviews |
 | **KB Access Control** | 3 | kb_sharing_permissions, kb_sharing_defaults, kb_access_transitions |
-| **Integration Pipeline** | 7 | integration_providers, integration_connections, integration_sync_logs, integration_field_mappings, integration_webhook_events, enrichment_cache, carrier_import_templates |
+| **Integration Pipeline** | 8 | integration_providers, integration_connections, integration_sync_config, integration_sync_logs, integration_field_mappings, integration_webhook_events, enrichment_cache, carrier_import_templates |
 | **AI Improvement Engine** | 4 | layer_audits, layer_metrics, improvement_actions, improvement_feedback |
 | **Fairness Testing** | 2 | fairness_test_runs, fairness_test_prompts |
+| **Suitability Intelligence** | 5 | suitability_profiles, suitability_dimensions, suitability_change_events, suitability_questions_queue, suitability_household_links |
+| **Analytical Models** | 4 | analytical_models, model_runs, model_output_records, model_schedules |
+| **Propagation & Coaching** | 5 | propagation_events, propagation_actions, coaching_messages, platform_learnings, education_triggers |
+| **File Processing** | 4 | file_uploads, file_chunks, file_derived_enrichments, generated_documents |
 
 ---
 
 ## Test Coverage
 
-The platform maintains **449 automated tests** across **18 test suites**, all passing:
+The platform maintains **565 automated tests** across **19 test suites**, all passing:
 
 | Test File | Tests | Coverage Area |
 |-----------|-------|---------------|
@@ -951,6 +962,7 @@ The platform maintains **449 automated tests** across **18 test suites**, all pa
 | auth.logout.test.ts | 1 | Authentication logout |
 | auditRemediation.test.ts | 22 | PII masking, topic disclaimers, AI identity |
 | auditV2Features.test.ts | 17 | Consent tracking, professionals, improvement engine |
+| userTypes.test.ts | 39 | All 5 roles (guest, user, advisor, manager, admin) across all major features |
 
 ---
 
@@ -981,9 +993,13 @@ The platform maintains **449 automated tests** across **18 test suites**, all pa
 | Organization Admin | No | No | No | No | Yes |
 | Global Admin | No | No | No | No | Yes |
 | Compliance Review | No | No | No | No | Yes |
-| Fairness Testing | No | No | No | No | Yes |
-
----
+| **Fairness Testing** | No | No | No | No | Yes |
+| **Suitability Engine** | No | Yes | Yes | Yes | Yes |
+| **Analytical Models** | No | Yes | Yes | Yes | Yes |
+| **Intelligence Feed** | No | Yes | Yes | Yes | Yes |
+| **Analytics Hub** | No | Yes | Yes | Yes | Yes |
+| **Model Seeding** | No | No | No | No | Yes |
+| **Voice Settings** | Yes | Yes | Yes | Yes | Yes |-
 
 ## Deployment and Infrastructure
 
@@ -1012,3 +1028,279 @@ To publish updates, create a checkpoint via the development workflow and click t
 ---
 
 *This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 5.0.*
+
+
+---
+
+## Suitability Intelligence Engine
+
+The Suitability Intelligence Engine provides a 12-dimension financial profiling system that builds a comprehensive picture of each user's financial situation through progressive profiling rather than lengthy questionnaires.
+
+### 12-Dimension Model
+
+| Dimension | Description | Score Range | Decay Rate |
+|-----------|-------------|-------------|------------|
+| risk_tolerance | Willingness to accept investment risk | 0-100 | 0.95/month |
+| investment_horizon | Time horizon for investments | 0-100 | 0.98/month |
+| income_stability | Stability and predictability of income | 0-100 | 0.96/month |
+| liquidity_needs | Short-term cash requirements | 0-100 | 0.94/month |
+| tax_sensitivity | Impact of tax considerations | 0-100 | 0.97/month |
+| estate_complexity | Complexity of estate planning needs | 0-100 | 0.99/month |
+| insurance_adequacy | Current insurance coverage assessment | 0-100 | 0.95/month |
+| debt_management | Debt-to-income and management quality | 0-100 | 0.96/month |
+| retirement_readiness | Preparedness for retirement | 0-100 | 0.97/month |
+| education_funding | Education savings and planning | 0-100 | 0.98/month |
+| charitable_intent | Philanthropic goals and planning | 0-100 | 0.99/month |
+| special_needs | Special circumstances (disability, dependents) | 0-100 | 0.99/month |
+
+### Progressive Profiling Flow
+
+The system avoids upfront questionnaires by extracting suitability signals from natural conversation:
+
+1. **Signal Extraction**: AI analyzes chat messages for financial indicators
+2. **Dimension Update**: Relevant dimension scores are updated with confidence levels
+3. **Confidence Decay**: Scores decay over time based on per-dimension decay rates
+4. **Question Generation**: Low-confidence dimensions trigger contextual follow-up questions queued in `suitability_questions_queue`
+5. **Synthesis**: The `synthesize()` function combines all dimensions into a composite suitability profile
+
+### Household Linking
+
+The `suitability_household_links` table enables linking multiple user profiles into a household unit. This supports combined financial planning where spousal income, shared debts, and joint goals are factored into suitability assessments.
+
+### Key Tables
+
+- `suitabilityProfiles`: Per-user composite suitability profile with overall score and confidence
+- `suitabilityDimensions`: Individual dimension scores with confidence, source, and timestamps
+- `suitabilityChangeEvents`: Audit trail of all dimension changes with before/after values
+- `suitabilityQuestionsQueue`: AI-generated follow-up questions for low-confidence dimensions
+- `suitabilityHouseholdLinks`: Household relationship links between user profiles
+
+### tRPC Router: `suitabilityEngine`
+
+| Procedure | Auth | Description |
+|-----------|------|-------------|
+| getDimensions | Public | List all 12 dimension definitions |
+| getProfile | Protected | Get user's full suitability profile with all dimensions |
+| updateDimension | Protected | Update a specific dimension score with source and confidence |
+| synthesize | Protected | Run full synthesis across all dimensions to compute composite score |
+| getQuestions | Protected | Get pending questions for low-confidence dimensions |
+
+---
+
+## Analytical Model Engine
+
+The Model Engine provides 8 built-in analytical models that can be executed on-demand or on a recurring schedule, with automatic dependency resolution.
+
+### Built-in Models
+
+| Model ID | Type | Description | Dependencies |
+|----------|------|-------------|-------------|
+| portfolio_risk | risk | Portfolio risk assessment using variance-covariance | None |
+| retirement_readiness | projection | Monte Carlo retirement simulation | portfolio_risk |
+| tax_optimization | optimization | Tax-loss harvesting and Roth conversion analysis | None |
+| insurance_gap | gap_analysis | Insurance coverage gap identification | None |
+| estate_planning | planning | Estate tax and succession planning | None |
+| debt_optimization | optimization | Debt payoff strategy optimization | None |
+| education_funding | projection | 529 and education savings projections | None |
+| cash_flow | analysis | Income/expense pattern analysis | None |
+
+### Execution Pipeline
+
+```
+Model Selection → Dependency Resolution → Input Validation
+    → Execution → Output Storage (model_output_records)
+    → Suitability Update → Propagation Event → Coaching Message
+```
+
+When a model with dependencies is executed, the engine automatically runs prerequisite models first. For example, running `retirement_readiness` will first execute `portfolio_risk` if it hasn't been run recently.
+
+### Model Scheduling
+
+Models can be scheduled for recurring execution via `model_schedules`:
+- **Frequencies**: daily, weekly, monthly, quarterly
+- **Automatic execution**: The cron system checks for due schedules and executes them
+- **Result history**: All runs stored in `model_runs` with full input/output records in `model_output_records`
+
+### tRPC Router: `modelEngine`
+
+| Procedure | Auth | Description |
+|-----------|------|-------------|
+| list | Protected | List all available analytical models |
+| execute | Protected | Execute a model with optional parameters |
+| history | Protected | Get execution history for a model |
+| seed | Admin | Seed the 8 built-in model definitions |
+
+---
+
+## Propagation and Coaching Engine
+
+The Propagation Engine implements cross-layer intelligence cascading. When significant events occur (suitability changes, model results, integration syncs), the engine generates role-appropriate actions and coaching messages that flow through the 5-layer hierarchy.
+
+### Event Types
+
+| Event Type | Trigger | Example |
+|------------|---------|---------|
+| suitability_change | Dimension score changes significantly | Risk tolerance dropped 20 points after market event |
+| model_result | Analytical model produces actionable output | Retirement gap of $250K detected |
+| integration_sync | New data arrives from integration | New brokerage account linked via Plaid |
+| compliance_alert | Compliance rule triggered | Portfolio concentration exceeds 25% threshold |
+| market_event | Market condition change detected | Fed rate decision impacts client portfolios |
+| coaching_insight | AI identifies coaching opportunity | Client hasn't reviewed insurance in 18 months |
+
+### Cascading Flow
+
+```
+Source Event → propagation_events table
+    → Layer-appropriate action generation → propagation_actions table
+    → Coaching message creation → coaching_messages table
+    → Platform learning extraction → platform_learnings table
+    → Education trigger evaluation → education_triggers table
+```
+
+### Coaching Messages
+
+The system generates role-specific coaching messages:
+
+| Target Role | Message Style | Example |
+|-------------|--------------|---------|
+| User | Actionable personal tip | "Your emergency fund covers only 2 months. Consider building to 6 months." |
+| Advisor | Client engagement alert | "Client John's risk tolerance dropped significantly. Schedule a review." |
+| Manager | Team performance insight | "3 advisors haven't run suitability reviews this quarter." |
+| Admin | Platform optimization | "Insurance gap model has 40% lower engagement than retirement model." |
+
+### tRPC Router: `propagation`
+
+| Procedure | Auth | Description |
+|-----------|------|-------------|
+| getMyEvents | Protected | Get propagation events relevant to the current user |
+| getCoachingMessages | Protected | Get coaching messages for the current user |
+| cascadeEvent | Protected | Manually trigger a propagation cascade |
+| dismissAction | Protected | Dismiss a propagation action |
+
+---
+
+## File Processing Pipeline
+
+The File Processing service implements a 6-stage document ingestion pipeline that validates, parses, classifies, extracts, and enriches uploaded documents.
+
+### Pipeline Stages
+
+| Stage | Status | Description | Output |
+|-------|--------|-------------|--------|
+| 1 | uploaded | File received and stored in S3 | File metadata, S3 URL |
+| 2 | validated | Format, size, and security checks | Validation result (pass/fail) |
+| 3 | parsed | Content extraction (text, tables, images) | Raw content, page count |
+| 4 | classified | Document type classification via AI | Category label + confidence |
+| 5 | extracted | Structured data extraction | Key-value pairs, entities |
+| 6 | enriched | Cross-reference with existing data | Enrichment records, links |
+
+### Document Categories
+
+- `statement`: Account statements, brokerage reports, bank statements
+- `tax_document`: W-2, 1099, K-1, tax returns, estimated payments
+- `insurance_policy`: Policy declarations, coverage summaries, riders
+- `estate_document`: Wills, trusts, power of attorney, beneficiary designations
+- `financial_plan`: Financial plans, projections, recommendations
+- `other`: General documents, correspondence, notes
+
+### Key Tables
+
+- `fileUploads`: Upload metadata with pipeline status tracking
+- `fileChunks`: Parsed content chunks for large documents
+- `fileDerivedEnrichments`: Enrichment results linking documents to existing data
+
+### tRPC Router: `fileProcessing`
+
+| Procedure | Auth | Description |
+|-----------|------|-------------|
+| list | Protected | List uploaded files with pipeline status |
+| create | Protected | Create a new file upload record |
+| process | Protected | Advance a file through the next pipeline stage |
+
+---
+
+## Voice Settings Hierarchy
+
+Voice settings cascade through the 5-layer hierarchy, with each layer able to set defaults that lower layers inherit unless overridden.
+
+### Cascade Order
+
+```
+Layer 1: Platform defaults (defaultTtsVoice, defaultSpeechRate)
+  └── Layer 2: Organization override (if set)
+        └── Layer 3: Manager override (if set)
+              └── Layer 4: Professional override (if set)
+                    └── Layer 5: User preference (always wins if set)
+```
+
+### Per-Layer Fields
+
+Each layer table (`platformAISettings`, `organizationAISettings`, `managerAISettings`, `professionalAISettings`) now includes:
+- `defaultTtsVoice`: Edge TTS voice ID (e.g., "en-US-JennyNeural")
+- `defaultSpeechRate`: Playback speed multiplier (0.5 to 2.0)
+
+### Guest Voice Persistence
+
+Guest users store voice settings in `localStorage`:
+- `tts-voice`: Selected Edge TTS voice ID
+- `tts-speech-rate`: Playback speed (0.5-2.0)
+- `tts-auto-play`: Auto-play AI responses (boolean)
+- `tts-hands-free`: Default hands-free mode (boolean)
+
+### Voice Tab in Settings
+
+The new Voice tab in SettingsHub (`/settings/voice`) is accessible to all users including guests. It provides:
+- Voice selection with preview playback
+- Speech rate adjustment with slider
+- Auto-play toggle
+- Hands-free mode default toggle
+- For authenticated users: server-side persistence via `userPreferences` table
+
+---
+
+## Scheduled Tasks and Cron Jobs
+
+The platform runs periodic background tasks via `node-cron` in `server/services/scheduledTasks.ts`.
+
+### Task Schedule
+
+| Task | Schedule | Description |
+|------|----------|-------------|
+| Suitability Decay | Daily at 2:00 AM | Apply confidence decay to stale dimension scores |
+| Propagation Delivery | Every 5 minutes | Deliver pending propagation actions to target users |
+| Propagation Expiry | Daily at 3:00 AM | Expire undelivered actions older than 30 days |
+| Model Execution | Every 15 minutes | Check for and execute due model schedules |
+| Coaching Digest | Daily at 7:00 AM | Generate daily coaching message summaries |
+| Integration Health | Hourly | Check webhook health, token expiry, and cache freshness |
+| Platform Pipelines | Varies | Census (monthly), BLS (weekly), FRED (daily), BEA (quarterly) |
+
+### Error Handling
+
+Each task runs in isolation — a failure in one task does not affect others. All executions are logged, and persistent failures trigger admin notifications via the `notifyOwner` helper.
+
+---
+
+## Known Limitations and Roadmap
+
+### Current Limitations
+
+1. **Integration API Keys**: Most integration providers are configured but require API key registration. Currently only Plaid has active credentials.
+2. **Platform Pipeline Data**: Census, BLS, FRED, and BEA data pipelines are stubbed and need API key registration at each agency.
+3. **Model Engine**: The 8 analytical models have execution stubs. Full statistical implementations (Monte Carlo simulation, optimization algorithms) require additional development.
+4. **Document Generation**: The `generated_documents` table exists but the PDF rendering pipeline is not yet implemented.
+5. **Chat.tsx Size**: At 1,923 lines, the main chat component would benefit from decomposition into smaller sub-components.
+
+### Roadmap (Priority Order)
+
+1. **Integration Activation**: Register API keys for GoHighLevel, BridgeFT, and Schwab to enable live data sync
+2. **Model Implementation**: Implement full statistical models with Monte Carlo, optimization, and projection engines
+3. **Document Generation**: Build PDF rendering pipeline for financial plans, reports, and compliance documents
+4. **Real-time Notifications**: WebSocket-based push notifications for propagation events and coaching messages
+5. **Mobile App**: React Native wrapper for native mobile experience
+6. **Multi-language Support**: Internationalization for non-English markets
+7. **Advanced Analytics Dashboards**: Charts, trends, and predictive analytics in the Analytics Hub
+8. **Marketplace**: Third-party plugin and integration marketplace
+
+---
+
+*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 6.0.*

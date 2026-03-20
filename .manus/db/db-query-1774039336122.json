@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE platform_ai_settings \n  ADD COLUMN defaultTtsVoice VARCHAR(64) DEFAULT NULL,\n  ADD COLUMN defaultSpeechRate FLOAT DEFAULT NULL,\n  ADD COLUMN defaultAutoPlayVoice TINYINT(1) DEFAULT NULL;\n\nALTER TABLE organization_ai_settings \n  ADD COLUMN defaultTtsVoice VARCHAR(64) DEFAULT NULL,\n  ADD COLUMN defaultSpeechRate FLOAT DEFAULT NULL;\n\nALTER TABLE manager_ai_settings \n  ADD COLUMN defaultTtsVoice VARCHAR(64) DEFAULT NULL,\n  ADD COLUMN defaultSpeechRate FLOAT DEFAULT NULL;\n\nALTER TABLE professional_ai_settings \n  ADD COLUMN defaultTtsVoice VARCHAR(64) DEFAULT NULL,\n  ADD COLUMN defaultSpeechRate FLOAT DEFAULT NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute \nALTER TABLE platform_ai_settings \n  ADD COLUMN defaultTtsVoice VARCHAR(64) DEFAULT NULL,\n  ADD COLUMN defaultSpeechRate FLOAT DEFAULT NULL,\n  ADD COLUMN defaultAutoPlayVoice TINYINT(1) DEFAULT NULL;\n\nALTER TABLE organization_ai_settings \n  ADD COLUMN defaultTtsVoice VARCHAR(64) DEFAULT NULL,\n  ADD COLUMN defaultSpeechRate FLOAT DEFAULT NULL;\n\nALTER TABLE manager_ai_settings \n  ADD COLUMN defaultTtsVoice VARCHAR(64) DEFAULT NULL,\n  ADD COLUMN defaultSpeechRate FLOAT DEFAULT NULL;\n\nALTER TABLE professional_ai_settings \n  ADD COLUMN defaultTtsVoice VARCHAR(64) DEFAULT NULL,\n  ADD COLUMN defaultSpeechRate FLOAT DEFAULT NULL;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 5874
+}

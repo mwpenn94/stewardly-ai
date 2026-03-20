@@ -34,7 +34,9 @@ export const adminProcedure = t.procedure.use(
     if (!ctx.user) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
-    // TODO: Implement role-based access control
+    if (ctx.user.role !== 'admin') {
+      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+    }
 
     return next({
       ctx: {

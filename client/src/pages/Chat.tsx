@@ -249,7 +249,8 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
   userRole: string;
   isGuest: boolean;
 }) {
-  const greeting = `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${userName ? `, ${userName.split(" ")[0]}` : ""}`;
+  const displayName = userName && !isGuest && userName !== "Guest User" && userName !== "Guest" ? userName.split(" ")[0] : null;
+  const greeting = `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${displayName ? `, ${displayName}` : ""}`;
   const { displayed: typedGreeting, done: greetingDone } = useTypingAnimation(greeting, 35);
   const [prompts] = useState(() => getDynamicPrompts(selectedFocus, hasConversations, userRole));
 
@@ -307,11 +308,20 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
               compact
               enabled={isAuthenticated}
               onStepAction={(key) => {
-                if (key === "suitability") onPromptClick("Help me complete my suitability assessment");
-                else if (key === "first_chat") onPromptClick("Tell me about your financial planning capabilities");
-                else if (key === "ai_settings") onPromptClick("How do I configure my AI preferences?");
-                else if (key === "knowledge_base") onPromptClick("How do I upload documents to my knowledge base?");
-                else if (key === "explore_tools") onPromptClick("Show me the financial tools available");
+                const stepActions: Record<string, () => void> = {
+                  profile: () => window.location.assign("/settings/profile"),
+                  suitability: () => window.location.assign("/settings/suitability"),
+                  org_join: () => window.location.assign("/organizations"),
+                  ai_settings: () => window.location.assign("/settings/ai-tuning"),
+                  first_chat: () => onPromptClick("Tell me about your financial planning capabilities"),
+                  knowledge_base: () => window.location.assign("/settings/knowledge"),
+                  explore_tools: () => onPromptClick("Show me the financial tools available"),
+                  connect_advisor: () => window.location.assign("/matching"),
+                  explore_planning: () => onPromptClick("Help me create a financial plan"),
+                };
+                const action = stepActions[key];
+                if (action) action();
+                else onPromptClick(`Help me with: ${key.replace(/_/g, " ")}`);
               }}
             />
           </div>
@@ -365,7 +375,10 @@ export default function Chat() {
 
   // ─── HANDS-FREE & VOICE STATE ──────────────────────────────────
   const [handsFreeActive, setHandsFreeActive] = useState(false);
-  const [ttsEnabled, setTtsEnabled] = useState(true); // Default ON per spec
+  const [ttsEnabled, setTtsEnabled] = useState(() => {
+    const stored = localStorage.getItem("tts-enabled");
+    return stored !== "false"; // Default ON
+  });
 
   // ─── REFS ──────────────────────────────────────────────────────
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -387,10 +400,14 @@ export default function Chat() {
   // ─── ENHANCED TTS ─────────────────────────────────────────────
   // Read voice preference from localStorage (set in Settings > Voice tab)
   const [ttsVoice] = useState(() => localStorage.getItem("tts-voice") || "aria");
+  const [ttsRate] = useState(() => {
+    const stored = localStorage.getItem("tts-speech-rate");
+    return stored ? parseFloat(stored) : 1.0;
+  });
   const tts = useTTS({
     enabled: ttsEnabled,
     voice: ttsVoice,
-    rate: 1.0,
+    rate: ttsRate,
     onStart: () => {
       guardRef.current = true;
     },
@@ -882,6 +899,8 @@ export default function Chat() {
     { icon: <Mail className="w-3.5 h-3.5" />, label: "Email Campaigns", href: "/email-campaigns", minRole: "advisor" as UserRole },
     { icon: <UserPlus className="w-3.5 h-3.5" />, label: "Find a Pro", href: "/professionals", minRole: "user" as UserRole },
     { icon: <Link2 className="w-3.5 h-3.5" />, label: "Integrations", href: "/integrations", minRole: "user" as UserRole },
+    { icon: <Lightbulb className="w-3.5 h-3.5" />, label: "Intelligence", href: "/intelligence", minRole: "user" as UserRole },
+    { icon: <Activity className="w-3.5 h-3.5" />, label: "Analytics Hub", href: "/analytics-hub", minRole: "advisor" as UserRole },
   ];
 
   const adminNav = [

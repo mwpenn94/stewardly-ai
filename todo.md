@@ -1602,3 +1602,131 @@
 - [x] Frontend Integration Management page with connect/disconnect, sync status
 - [x] Context assembly: integration data injected into system prompt
 - [x] Context assembly: platform insights injected into system prompt
+
+## Bug Fixes (March 20, 2026)
+- [x] Fix auth loop error on Integrations page
+- [x] Fix help/tips button overlapping hands-free voice/send button
+- [x] Fix help popup menu cut off at bottom of page
+- [x] Fix Edge TTS voice options missing from settings
+- [x] Layer-based voice/settings defaults and overrides (each layer can set default TTS voice, etc.)
+- [x] Restore guest access to settings with session-persistent data
+
+## Master Prompt Implementation (March 20, 2026)
+
+### Phase 1: New Schema Tables (27 tables from master prompt)
+- [x] integration_sync_config table
+- [x] suitability_profiles table (12-dimension model)
+- [x] suitability_dimensions table
+- [x] suitability_change_events table
+- [x] suitability_questions_queue table
+- [x] suitability_household_links table
+- [x] file_uploads table (6-stage pipeline)
+- [x] file_chunks table
+- [x] file_derived_enrichments table
+- [x] analytical_models table
+- [x] model_runs table
+- [x] model_output_records table
+- [x] model_schedules table
+- [x] generated_documents table
+- [x] propagation_events table
+- [x] propagation_actions table
+- [x] coaching_messages table
+- [x] platform_learnings table
+- [x] education_triggers table
+
+### Phase 2: Encryption Service Enhancement
+- [x] Enhance encryption service with AES-256-GCM (IV + auth tag) — already implemented
+
+### Phase 3: Seed Data
+- [ ] Seed 20 integration providers with full metadata
+- [ ] Seed carrier_import_templates (7 templates)
+- [ ] Seed analytical_models (16 models across 5 layers)
+- [ ] Seed model_schedules (default schedules)
+
+### Phase 4: Core Services
+- [ ] Platform pipelines service (Census, BLS, FRED, BEA, EDGAR, BrokerCheck)
+- [x] Suitability engine (12-dimension profiles, synthesis, decay, questions)
+- [x] Model engine (run models with dependency resolution)
+- [x] Propagation engine (cross-layer intelligence cascading)
+- [x] File processor service (6-stage pipeline)
+- [ ] Export service (CSV, Excel, PDF, DOCX, JSON)
+- [ ] Document templates service (9 templates)
+
+### Phase 5-6: Webhook Endpoint & New Routers
+- [ ] Webhook receiver endpoint (POST /api/webhooks/provider/:connectionId)
+- [x] File ingestion router
+- [x] Models router
+- [ ] Exports router
+- [ ] Document generation router
+- [x] Suitability intelligence router
+- [x] Intelligence router (propagation, coaching, education)
+
+### Phase 7-8: Integration Hooks & AI Context Assembly
+- [x] Wire integration sync → suitability synthesis → propagation
+- [x] Wire file upload → enrichment → propagation
+- [x] Wire model run → suitability → propagation
+- [x] Full 5-layer AI context assembly with cross-layer intelligence
+
+### Phase 9: Frontend Enhancements
+- [ ] Platform admin integrations dashboard
+- [ ] Organization admin integrations management
+- [ ] Advisor integrations settings
+- [ ] Client profile suitability intelligence panel
+- [x] Analytics hub with models, dashboards, records, exports
+- [x] Intelligence feed (coaching, alerts, education)
+- [ ] Chat enhancement: file layer-routing, document generation
+
+### Phase 10: Cron Jobs
+- [x] Platform pipeline schedules (Census monthly, BLS weekly, FRED daily, etc.) — stub, needs API keys
+- [x] Suitability cron (confidence decay, milestones, synthesis)
+- [x] Intelligence cron (pattern detection, coaching digest, org brief)
+- [x] Integration health cron (webhook health, token expiry, cache expiry)
+
+### Phase 11: Testing
+- [ ] integrations.test.ts (30+ tests)
+- [ ] suitabilityEngine.test.ts (25+ tests)
+- [ ] propagationEngine.test.ts (20+ tests)
+- [ ] fileIngestion.test.ts (20+ tests)
+- [ ] models.test.ts (20+ tests)
+
+## UI/UX Refinement Pass (March 20, 2026)
+- [x] Tour/help feature review and polish
+- [x] Responsive design audit
+- [x] Micro-interaction improvements
+- [x] Code efficiency review — 0 TS errors, Chat.tsx 1923 lines (largest), no critical issues
+
+## Documentation
+- [x] Comprehensive platform guide document (updated to v6.0 with 38 sections)
+
+## Complete User-Type Testing Suite (March 20, 2026)
+
+### Per-Role Feature Access Tests (Desktop + Mobile viewports)
+- [x] Guest user: chat access, settings (appearance, voice, guest-prefs), no protected routes, session persistence
+- [x] Guest user mobile: sidebar collapse, touch targets, voice controls, bottom nav
+- [x] Authenticated user (role=user): chat, settings (all tabs), suitability, knowledge base, products, calculators
+- [x] Authenticated user mobile: responsive layout, swipe gestures, mobile-optimized forms
+- [x] Professional/Advisor (role=advisor): portal, client book, view-as, meeting intelligence, insights, compliance
+- [x] Professional mobile: portal cards, client list, view-as on small screens
+- [x] Manager (role=manager): team dashboard, team analytics, org-level settings, manager AI layer
+- [x] Manager mobile: team cards, dashboard metrics, responsive tables
+- [x] Admin (role=admin): all features, platform settings, org management, Layer 1 editor, improvement engine
+- [x] Admin mobile: admin panels, data tables, full CRUD on mobile
+
+### Cross-Role Navigation & Access Control Tests
+- [x] Role-based sidebar nav visibility (correct items per role)
+- [x] Protected route redirects for unauthorized roles
+- [x] View-as system works across roles with audit logging
+- [x] Mode visibility (Client Advisor, Professional Coach, Manager Dashboard) per role
+
+### Responsive Viewport Tests
+- [x] Desktop (1280px+): full sidebar, multi-column layouts, hover states
+- [x] Tablet (768-1279px): collapsible sidebar, adapted grids
+- [x] Mobile (320-767px): bottom nav, stacked layouts, touch-friendly controls, no overlapping elements
+
+## Bug Fix (March 20, 2026 - Salutation)
+- [x] Fix salutation showing ", Guest" for guest users — should show no name
+
+## Bug Fix (March 20, 2026 - Salutation & Professional Setup)
+- [x] Fix salutation showing ", Guest" for guest users — should show no name
+- [x] Fix professional setup checklist — "Go" button on first item is broken (added route actions for all step keys)
+- [x] Verify professional setup is still relevant and functional (workflow table exists, steps defined, router working)

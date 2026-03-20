@@ -28,7 +28,7 @@ function canManageTier(userRole: string, tier: string): boolean {
 
 export const integrationsRouter = router({
   // ─── Provider Registry (public read) ────────────────────────────────
-  listProviders: protectedProcedure
+  listProviders: publicProcedure
     .input(z.object({
       category: z.string().optional(),
       ownershipTier: z.string().optional(),
@@ -53,7 +53,7 @@ export const integrationsRouter = router({
       return { providers: filtered, grouped };
     }),
 
-  getProvider: protectedProcedure
+  getProvider: publicProcedure
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       const db = (await getDb())!;

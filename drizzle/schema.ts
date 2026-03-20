@@ -158,6 +158,9 @@ export const platformAISettings = mysqlTable("platform_ai_settings", {
   temperatureDefault: float("temperatureDefault").default(0.7),
   enabledFocusModes: json("enabledFocusModes"),
   platformDisclaimer: text("platformDisclaimer"),
+  defaultTtsVoice: varchar("defaultTtsVoice", { length: 64 }),
+  defaultSpeechRate: float("defaultSpeechRate"),
+  defaultAutoPlayVoice: mysqlBoolean("defaultAutoPlayVoice"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -184,6 +187,8 @@ export const organizationAISettings = mysqlTable("organization_ai_settings", {
   temperature: float("temperature"),
   maxTokens: int("maxTokens"),
   enabledFocusModes: json("enabledFocusModes"),
+  defaultTtsVoice: varchar("defaultTtsVoice", { length: 64 }),
+  defaultSpeechRate: float("defaultSpeechRate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -206,6 +211,8 @@ export const managerAISettings = mysqlTable("manager_ai_settings", {
   ensembleWeights: json("ensembleWeights"),
   temperature: float("temperature"),
   maxTokens: int("maxTokens"),
+  defaultTtsVoice: varchar("defaultTtsVoice", { length: 64 }),
+  defaultSpeechRate: float("defaultSpeechRate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -230,6 +237,8 @@ export const professionalAISettings = mysqlTable("professional_ai_settings", {
   ensembleWeights: json("ensembleWeights"),
   temperature: float("temperature"),
   maxTokens: int("maxTokens"),
+  defaultTtsVoice: varchar("defaultTtsVoice", { length: 64 }),
+  defaultSpeechRate: float("defaultSpeechRate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -2118,3 +2127,322 @@ export const carrierImportTemplates = mysqlTable("carrier_import_templates", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type CarrierImportTemplate = typeof carrierImportTemplates.$inferSelect;
+
+// ─── INTEGRATION SYNC CONFIG (Per-connection sync scheduling) ──────────────
+export const integrationSyncConfig = mysqlTable("integration_sync_config", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  connectionId: varchar("connection_id", { length: 36 }).notNull(),
+  syncType: mysqlEnum("sync_type", ["full", "incremental", "webhook"]).default("incremental").notNull(),
+  schedule: varchar("schedule", { length: 64 }),
+  lastSyncAt: timestamp("last_sync_at"),
+  nextSyncAt: timestamp("next_sync_at"),
+  retryCount: int("retry_count").default(0),
+  maxRetries: int("max_retries").default(3),
+  backoffMinutes: int("backoff_minutes").default(5),
+  fieldMappingOverrides: json("field_mapping_overrides"),
+  filterCriteria: json("filter_criteria"),
+  isActive: mysqlBoolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type IntegrationSyncConfig = typeof integrationSyncConfig.$inferSelect;
+
+// ─── SUITABILITY PROFILES (12-dimension model) ────────────────────────────
+export const suitabilityProfiles = mysqlTable("suitability_profiles", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  organizationId: int("organization_id"),
+  overallScore: float("overall_score"),
+  confidenceLevel: float("confidence_level").default(0),
+  dataCompleteness: float("data_completeness").default(0),
+  lastSynthesizedAt: timestamp("last_synthesized_at"),
+  synthesisVersion: int("synthesis_version").default(1),
+  dimensionScores: json("dimension_scores"),
+  sourceBreakdown: json("source_breakdown"),
+  changeVelocity: float("change_velocity"),
+  status: mysqlEnum("status", ["draft", "active", "needs_review", "archived"]).default("draft"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type SuitabilityProfile = typeof suitabilityProfiles.$inferSelect;
+
+// ─── SUITABILITY DIMENSIONS (Individual dimension tracking) ────────────────
+export const suitabilityDimensions = mysqlTable("suitability_dimensions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  profileId: varchar("profile_id", { length: 36 }).notNull(),
+  dimensionKey: varchar("dimension_key", { length: 64 }).notNull(),
+  dimensionLabel: varchar("dimension_label", { length: 128 }).notNull(),
+  value: json("value"),
+  score: float("score"),
+  confidence: float("confidence").default(0),
+  sources: json("sources"),
+  lastUpdatedAt: timestamp("last_updated_at").defaultNow().notNull(),
+  decayRate: float("decay_rate").default(0.01),
+  nextReviewAt: timestamp("next_review_at"),
+});
+export type SuitabilityDimension = typeof suitabilityDimensions.$inferSelect;
+
+// ─── SUITABILITY CHANGE EVENTS (Track changes over time) ──────────────────
+export const suitabilityChangeEvents = mysqlTable("suitability_change_events", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  profileId: varchar("profile_id", { length: 36 }).notNull(),
+  dimensionKey: varchar("dimension_key", { length: 64 }),
+  changeType: mysqlEnum("change_type", ["user_input", "advisor_update", "system_inference", "integration_sync", "decay", "milestone"]).notNull(),
+  previousValue: json("previous_value"),
+  newValue: json("new_value"),
+  source: varchar("source", { length: 128 }),
+  confidence: float("confidence"),
+  triggeredBy: int("triggered_by"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type SuitabilityChangeEvent = typeof suitabilityChangeEvents.$inferSelect;
+
+// ─── SUITABILITY QUESTIONS QUEUE (Progressive profiling) ──────────────────
+export const suitabilityQuestionsQueue = mysqlTable("suitability_questions_queue", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  dimensionKey: varchar("dimension_key", { length: 64 }).notNull(),
+  question: text("question").notNull(),
+  questionType: mysqlEnum("question_type", ["multiple_choice", "scale", "free_text", "yes_no", "numeric"]).default("multiple_choice"),
+  options: json("options"),
+  priority: int("priority").default(50),
+  status: mysqlEnum("status", ["pending", "asked", "answered", "skipped", "expired"]).default("pending"),
+  askedAt: timestamp("asked_at"),
+  answeredAt: timestamp("answered_at"),
+  answer: json("answer"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type SuitabilityQuestion = typeof suitabilityQuestionsQueue.$inferSelect;
+
+// ─── SUITABILITY HOUSEHOLD LINKS (Family/household grouping) ──────────────
+export const suitabilityHouseholdLinks = mysqlTable("suitability_household_links", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  primaryUserId: int("primary_user_id").notNull(),
+  linkedUserId: int("linked_user_id").notNull(),
+  relationship: mysqlEnum("relationship", ["spouse", "partner", "dependent", "parent", "sibling", "other"]).notNull(),
+  sharedDimensions: json("shared_dimensions"),
+  isActive: mysqlBoolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type SuitabilityHouseholdLink = typeof suitabilityHouseholdLinks.$inferSelect;
+
+// ─── FILE UPLOADS (6-stage pipeline) ──────────────────────────────────────
+export const fileUploads = mysqlTable("file_uploads", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  organizationId: int("organization_id"),
+  connectionId: varchar("connection_id", { length: 36 }),
+  filename: varchar("filename", { length: 512 }).notNull(),
+  mimeType: varchar("mime_type", { length: 128 }),
+  sizeBytes: bigint("size_bytes", { mode: "number" }),
+  storageUrl: text("storage_url"),
+  storageKey: varchar("storage_key", { length: 512 }),
+  stage: mysqlEnum("stage", ["uploaded", "validated", "parsed", "enriched", "indexed", "complete", "failed"]).default("uploaded"),
+  stageError: text("stage_error"),
+  category: mysqlEnum("category", ["personal_docs", "financial_products", "regulations", "training", "artifacts", "skills", "carrier_report", "client_data", "compliance"]).default("personal_docs"),
+  visibility: mysqlEnum("visibility", ["private", "professional", "management", "admin"]).default("private"),
+  metadata: json("metadata"),
+  parsedContent: json("parsed_content"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type FileUpload = typeof fileUploads.$inferSelect;
+
+// ─── FILE CHUNKS (Parsed segments for RAG) ────────────────────────────────
+export const fileChunks = mysqlTable("file_chunks", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  fileId: varchar("file_id", { length: 36 }).notNull(),
+  chunkIndex: int("chunk_index").notNull(),
+  content: text("content").notNull(),
+  contentType: mysqlEnum("content_type", ["text", "table", "image_description", "header", "metadata"]).default("text"),
+  tokenCount: int("token_count"),
+  embedding: json("embedding"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type FileChunk = typeof fileChunks.$inferSelect;
+
+// ─── FILE DERIVED ENRICHMENTS (Extracted insights from files) ─────────────
+export const fileDerivedEnrichments = mysqlTable("file_derived_enrichments", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  fileId: varchar("file_id", { length: 36 }).notNull(),
+  userId: int("user_id").notNull(),
+  enrichmentType: mysqlEnum("enrichment_type", ["suitability_signal", "risk_indicator", "product_match", "compliance_flag", "financial_metric", "life_event"]).notNull(),
+  dimensionKey: varchar("dimension_key", { length: 64 }),
+  extractedValue: json("extracted_value"),
+  confidence: float("confidence"),
+  appliedToProfile: mysqlBoolean("applied_to_profile").default(false),
+  appliedAt: timestamp("applied_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type FileDerivedEnrichment = typeof fileDerivedEnrichments.$inferSelect;
+
+// ─── ANALYTICAL MODELS (Model registry) ───────────────────────────────────
+export const analyticalModels = mysqlTable("analytical_models", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  layer: mysqlEnum("layer", ["platform", "organization", "manager", "professional", "user"]).notNull(),
+  category: mysqlEnum("category", ["risk", "suitability", "compliance", "engagement", "financial", "behavioral", "market", "operational"]).notNull(),
+  inputSchema: json("input_schema"),
+  outputSchema: json("output_schema"),
+  dependencies: json("dependencies"),
+  version: varchar("version", { length: 20 }).default("1.0.0"),
+  isActive: mysqlBoolean("is_active").default(true),
+  executionType: mysqlEnum("execution_type", ["llm", "statistical", "rule_based", "hybrid"]).default("hybrid"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type AnalyticalModel = typeof analyticalModels.$inferSelect;
+
+// ─── MODEL RUNS (Execution history) ──────────────────────────────────────
+export const modelRuns = mysqlTable("model_runs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  modelId: varchar("model_id", { length: 36 }).notNull(),
+  triggeredBy: mysqlEnum("triggered_by", ["schedule", "event", "manual", "dependency"]).notNull(),
+  triggerSource: varchar("trigger_source", { length: 128 }),
+  inputData: json("input_data"),
+  outputData: json("output_data"),
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed", "cancelled"]).default("pending"),
+  errorMessage: text("error_message"),
+  durationMs: int("duration_ms"),
+  affectedUserIds: json("affected_user_ids"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+export type ModelRun = typeof modelRuns.$inferSelect;
+
+// ─── MODEL OUTPUT RECORDS (Individual results per user/entity) ────────────
+export const modelOutputRecords = mysqlTable("model_output_records", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  runId: varchar("run_id", { length: 36 }).notNull(),
+  modelId: varchar("model_id", { length: 36 }).notNull(),
+  entityType: mysqlEnum("entity_type", ["user", "organization", "team", "platform"]).default("user"),
+  entityId: int("entity_id"),
+  outputType: varchar("output_type", { length: 64 }).notNull(),
+  outputValue: json("output_value"),
+  confidence: float("confidence"),
+  previousValue: json("previous_value"),
+  delta: json("delta"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ModelOutputRecord = typeof modelOutputRecords.$inferSelect;
+
+// ─── MODEL SCHEDULES (Cron-based execution) ──────────────────────────────
+export const modelSchedules = mysqlTable("model_schedules", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  modelId: varchar("model_id", { length: 36 }).notNull(),
+  cronExpression: varchar("cron_expression", { length: 64 }).notNull(),
+  timezone: varchar("timezone", { length: 64 }).default("UTC"),
+  isActive: mysqlBoolean("is_active").default(true),
+  lastRunAt: timestamp("last_run_at"),
+  nextRunAt: timestamp("next_run_at"),
+  filterCriteria: json("filter_criteria"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ModelSchedule = typeof modelSchedules.$inferSelect;
+
+// ─── GENERATED DOCUMENTS (Export/report generation) ──────────────────────
+export const generatedDocuments = mysqlTable("generated_documents", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  organizationId: int("organization_id"),
+  templateSlug: varchar("template_slug", { length: 100 }).notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  format: mysqlEnum("format", ["pdf", "docx", "xlsx", "csv", "json", "html"]).notNull(),
+  storageUrl: text("storage_url"),
+  storageKey: varchar("storage_key", { length: 512 }),
+  inputData: json("input_data"),
+  status: mysqlEnum("status", ["generating", "complete", "failed"]).default("generating"),
+  errorMessage: text("error_message"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type GeneratedDocument = typeof generatedDocuments.$inferSelect;
+
+// ─── PROPAGATION EVENTS (Cross-layer intelligence cascading) ─────────────
+export const propagationEvents = mysqlTable("propagation_events", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  sourceLayer: mysqlEnum("source_layer", ["platform", "organization", "manager", "professional", "user"]).notNull(),
+  targetLayer: mysqlEnum("target_layer", ["platform", "organization", "manager", "professional", "user"]).notNull(),
+  eventType: mysqlEnum("event_type", ["insight", "alert", "recommendation", "compliance", "milestone", "risk_change", "opportunity"]).notNull(),
+  sourceEntityId: int("source_entity_id"),
+  targetEntityId: int("target_entity_id"),
+  payload: json("payload"),
+  priority: mysqlEnum("priority", ["critical", "high", "medium", "low"]).default("medium"),
+  status: mysqlEnum("status", ["pending", "delivered", "acknowledged", "acted", "dismissed", "expired"]).default("pending"),
+  deliveredAt: timestamp("delivered_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PropagationEvent = typeof propagationEvents.$inferSelect;
+
+// ─── PROPAGATION ACTIONS (Actions taken on propagated events) ────────────
+export const propagationActions = mysqlTable("propagation_actions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  eventId: varchar("event_id", { length: 36 }).notNull(),
+  actorId: int("actor_id").notNull(),
+  actionType: mysqlEnum("action_type", ["acknowledge", "act", "dismiss", "escalate", "snooze", "delegate"]).notNull(),
+  notes: text("notes"),
+  resultData: json("result_data"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PropagationAction = typeof propagationActions.$inferSelect;
+
+// ─── COACHING MESSAGES (AI-generated coaching/nudges) ────────────────────
+export const coachingMessages = mysqlTable("coaching_messages", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  organizationId: int("organization_id"),
+  messageType: mysqlEnum("message_type", ["nudge", "celebration", "reminder", "education", "insight", "alert"]).notNull(),
+  category: varchar("category", { length: 64 }),
+  title: varchar("title", { length: 256 }).notNull(),
+  content: text("content").notNull(),
+  priority: mysqlEnum("priority", ["critical", "high", "medium", "low"]).default("medium"),
+  triggerEvent: varchar("trigger_event", { length: 128 }),
+  status: mysqlEnum("status", ["pending", "delivered", "read", "acted", "dismissed"]).default("pending"),
+  deliveredAt: timestamp("delivered_at"),
+  readAt: timestamp("read_at"),
+  expiresAt: timestamp("expires_at"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type CoachingMessage = typeof coachingMessages.$inferSelect;
+
+// ─── PLATFORM LEARNINGS (System-wide pattern detection) ──────────────────
+export const platformLearnings = mysqlTable("platform_learnings", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  learningType: mysqlEnum("learning_type", ["pattern", "anomaly", "trend", "correlation", "best_practice", "risk_factor"]).notNull(),
+  category: varchar("category", { length: 64 }),
+  description: text("description").notNull(),
+  evidence: json("evidence"),
+  confidence: float("confidence"),
+  impactScore: float("impact_score"),
+  applicableLayer: mysqlEnum("applicable_layer", ["platform", "organization", "manager", "professional", "user"]),
+  actionRecommendation: text("action_recommendation"),
+  status: mysqlEnum("status", ["detected", "validated", "applied", "rejected", "expired"]).default("detected"),
+  appliedAt: timestamp("applied_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PlatformLearning = typeof platformLearnings.$inferSelect;
+
+// ─── EDUCATION TRIGGERS (Contextual education delivery) ──────────────────
+export const educationTriggers = mysqlTable("education_triggers", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  triggerCondition: json("trigger_condition").notNull(),
+  educationModuleId: int("education_module_id"),
+  targetAudience: mysqlEnum("target_audience", ["all", "new_users", "professionals", "managers", "admins"]).default("all"),
+  title: varchar("title", { length: 256 }).notNull(),
+  content: text("content"),
+  contentUrl: text("content_url"),
+  deliveryMethod: mysqlEnum("delivery_method", ["in_app", "chat_injection", "notification", "email"]).default("in_app"),
+  priority: int("priority").default(50),
+  isActive: mysqlBoolean("is_active").default(true),
+  timesTriggered: int("times_triggered").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type EducationTrigger = typeof educationTriggers.$inferSelect;

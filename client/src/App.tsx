@@ -47,6 +47,8 @@ import ProfessionalDirectory from "./pages/ProfessionalDirectory";
 import ImprovementEngine from "./pages/ImprovementEngine";
 import Integrations from "./pages/Integrations";
 import { GuidedTour } from "./components/GuidedTour";
+import IntelligenceFeed from "./pages/IntelligenceFeed";
+import AnalyticsHub from "./pages/AnalyticsHub";
 
 function Router() {
   return (
@@ -96,6 +98,8 @@ function Router() {
       <Route path={"/professionals"} component={ProfessionalDirectory} />
       <Route path={"/improvement"} component={ImprovementEngine} />
       <Route path={"/integrations"} component={Integrations} />
+      <Route path={"/intelligence"} component={IntelligenceFeed} />
+      <Route path={"/analytics-hub"} component={AnalyticsHub} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>

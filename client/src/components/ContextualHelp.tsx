@@ -119,6 +119,10 @@ export function ContextualHelp() {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
 
+  // Hide on chat pages — the chat page has its own help in the sidebar
+  const hiddenPaths = ["/chat"];
+  const isHidden = hiddenPaths.some(p => location.startsWith(p));
+
   // Determine current page context
   const currentPage = useMemo(() => {
     const basePath = "/" + (location.split("/")[1] || "chat");
@@ -146,22 +150,24 @@ export function ContextualHelp() {
 
   return (
     <>
-      {/* Floating help button */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="fixed bottom-6 right-6 z-50 h-10 w-10 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 border-0"
-        onClick={() => setIsOpen(true)}
-        title="Help & Tips (Ctrl+/)"
-      >
-        <HelpCircle className="w-5 h-5" />
-      </Button>
+      {/* Floating help button — hidden on chat pages to avoid overlapping input bar */}
+      {!isHidden && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="fixed bottom-6 right-6 z-50 h-10 w-10 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 border-0"
+          onClick={() => setIsOpen(true)}
+          title="Help & Tips (Ctrl+/)"
+        >
+          <HelpCircle className="w-5 h-5" />
+        </Button>
+      )}
 
       {/* Help panel */}
       {isOpen && (
         <>
           <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setIsOpen(false)} />
-          <Card className="fixed bottom-20 right-6 z-50 w-96 max-h-[70vh] shadow-2xl border-primary/20">
+          <Card className="fixed bottom-20 right-6 z-50 w-96 max-h-[60vh] shadow-2xl border-primary/20 overflow-hidden flex flex-col">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -179,7 +185,7 @@ export function ContextualHelp() {
                 </div>
               )}
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 flex-1 overflow-hidden">
               <Tabs defaultValue="tips">
                 <TabsList className="w-full rounded-none border-b bg-transparent h-8">
                   <TabsTrigger value="tips" className="text-xs h-7 gap-1">
