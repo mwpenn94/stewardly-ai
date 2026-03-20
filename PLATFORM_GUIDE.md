@@ -1,418 +1,455 @@
-# Stewardry — Comprehensive Platform Documentation
+# Stewardry — Comprehensive Platform Guide
 
-**Version:** 2.0 | **Last Updated:** March 20, 2026 | **Author:** Manus AI
-
----
-
-## 1. Executive Summary
-
-Stewardry is an AI-powered digital financial twin platform that combines conversational AI, multi-modal data processing, financial planning tools, and regulatory compliance into a unified advisory ecosystem. The platform serves individual users, financial professionals, managers, and administrators through a role-based architecture with 89 database tables, 67 tRPC routers, 236 source files totaling 57,000+ lines of code, and 370 automated tests across 15 test suites.
-
-The platform is built on a React 19 + Tailwind CSS 4 + Express 4 + tRPC 11 stack with Manus OAuth, TiDB (MySQL-compatible) database, S3 file storage, and integrated LLM services. It supports real-time chat streaming, voice interaction, screen/video capture, document processing, market data feeds, and a comprehensive data ingestion pipeline.
+**Version:** 3.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
 
 ---
 
-## 2. Architecture Overview
+## Table of Contents
 
-### 2.1 Technology Stack
+1. [Executive Summary](#executive-summary)
+2. [Architecture Overview](#architecture-overview)
+3. [Authentication and Access Model](#authentication-and-access-model)
+4. [Core AI Engine](#core-ai-engine)
+5. [Data Intelligence Hub](#data-intelligence-hub)
+6. [Financial Tools and Calculators](#financial-tools-and-calculators)
+7. [Product Marketplace](#product-marketplace)
+8. [Compliance and Regulatory Framework](#compliance-and-regulatory-framework)
+9. [Communication and Campaigns](#communication-and-campaigns)
+10. [Part G — Licensed Operations](#part-g--licensed-operations)
+11. [Multi-Modal Capabilities](#multi-modal-capabilities)
+12. [Search and Recommendations](#search-and-recommendations)
+13. [Organization and Team Management](#organization-and-team-management)
+14. [Workflow and Task Engine](#workflow-and-task-engine)
+15. [Analytics and Reporting](#analytics-and-reporting)
+16. [User Experience and Help System](#user-experience-and-help-system)
+17. [API Reference](#api-reference)
+18. [Database Schema](#database-schema)
+19. [Test Coverage](#test-coverage)
+20. [Feature Matrix](#feature-matrix)
+
+---
+
+## Executive Summary
+
+Stewardry is an AI-powered digital financial twin platform designed for financial advisors, insurance professionals, and wealth management firms. The platform combines conversational AI, real-time market data, comprehensive financial calculators, compliance automation, and data intelligence into a unified experience. It supports 91 database tables, 71 tRPC routers, 251 source files, and 410 automated tests across 16 test suites.
+
+The platform operates on a tiered access model: anonymous guests receive full feature access with session-scoped data persistence, authenticated users get permanent data storage and cross-device sync, and administrators gain access to organization management and compliance oversight tools.
+
+---
+
+## Architecture Overview
+
+Stewardry is built on a modern full-stack architecture optimized for real-time AI interactions and financial data processing.
+
+### Technology Stack
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| Frontend | React 19, Tailwind CSS 4, shadcn/ui | Responsive UI with dark luxury theme |
-| State Management | tRPC React Query hooks | Type-safe server state |
-| Backend | Express 4, tRPC 11 | API layer with end-to-end type safety |
-| Database | TiDB (MySQL-compatible) via Drizzle ORM | 89 tables with full relational model |
-| Authentication | Manus OAuth + Email Auth + Anonymous | Progressive auth tiers |
-| File Storage | S3 via storagePut/storageGet helpers | Document and media storage |
-| AI Services | Built-in LLM (invokeLLM), Edge TTS, Whisper | Chat, voice, transcription |
-| Image Generation | Built-in generateImage service | Visual content creation |
-| Real-time | tRPC streaming subscriptions | Chat streaming, live updates |
+| Frontend | React 19 + Tailwind 4 | UI framework with utility-first styling |
+| State Management | tRPC 11 + React Query | End-to-end type-safe API calls with caching |
+| Backend | Express 4 + tRPC | HTTP server with RPC-style procedures |
+| Database | MySQL/TiDB via Drizzle ORM | Relational storage with 91 tables |
+| AI Engine | LLM via Forge API | Multi-model AI with constitutional guardrails |
+| File Storage | S3 | Document, image, and media storage |
+| Authentication | Manus OAuth + Guest Sessions | Dual-mode auth with session migration |
+| Voice | Deepgram + Edge TTS | Speech-to-text and text-to-speech |
+| Maps | Google Maps Proxy | Geocoding, directions, and places |
+| Charts | Chart.js + react-chartjs-2 | Analytics visualizations |
 
-### 2.2 Database Schema
+### Data Flow
 
-The platform uses 89 MySQL tables organized into the following domains:
+The platform follows a request-response pattern through tRPC procedures. Frontend components call typed hooks (`trpc.*.useQuery` / `trpc.*.useMutation`), which route through the Express server to tRPC context. Protected procedures validate the session JWT, inject `ctx.user`, and execute business logic against the database and external services. AI-powered features route through the Forge API with constitutional compliance checks applied at the procedure level.
 
-**Core User & Auth (8 tables):** users, sessions, email_verifications, user_profiles, user_settings, tos_consents, style_profiles, professional_contexts
+For data ingestion, the flow is: External Source -> Webhook/Scraper/RSS/API -> Data Ingestion Service -> Quality Scoring -> Ingested Records -> AI Insight Generation -> Insight-to-Action Workflow -> Advisor Notifications.
 
-**Organizations & Roles (5 tables):** organizations, user_organization_roles, organization_relationships, org_branding, org_products
-
-**Conversations & AI (12 tables):** conversations, messages, memories, feedback, review_queue, ai_layers, constitutional_rules, prompt_variants, ab_test_assignments, ab_test_results, memory_episodes, ambient_contexts
-
-**Documents & Knowledge (6 tables):** documents, document_chunks, knowledge_graph_nodes, knowledge_graph_edges, search_cache, annotations
-
-**Financial Planning (14 tables):** suitability_assessments, products, product_features, financial_health_scores, plan_adherence_records, tax_projections, ss_optimization_plans, hsa_plans, medicare_plans, charitable_giving_plans, education_plans, student_loan_strategies, equity_comp_plans, digital_asset_portfolios
-
-**Insurance & Advisory (10 tables):** licensed_reviews, agent_operations, carrier_connections, insurance_quotes, insurance_applications, advisory_actions, estate_documents, premium_finance_cases, coi_records, fee_billing_records
-
-**Data Ingestion (10 tables):** data_sources, ingested_records, ingestion_jobs, data_quality_scores, scrape_schedules, ingestion_insights, bulk_import_batches, insight_actions, enrichment_datasets, enrichment_cohorts
-
-**Platform Operations (14 tables):** feature_flags, workflow_checklists, task_engine_tasks, comms_messages, meetings, client_segmentation_profiles, practice_intelligence_reports, annual_review_sessions, portal_optimizer_configs, business_exit_plans, divorce_financial_analyses, ltc_plans, multi_model_configs, workflow_orchestrator_flows
+For email campaigns, the flow is: Campaign Creation -> AI Content Generation -> Recipient Management -> Template Personalization -> Batch Sending -> Status Tracking -> Analytics.
 
 ---
 
-## 3. Feature Catalog
+## Authentication and Access Model
 
-### 3.1 AI Chat Engine
+### Guest Session System
 
-The core of the platform is a conversational AI engine that serves as a digital financial twin. It supports:
+Anonymous visitors automatically receive a guest session when they first interact with the platform. The `/api/auth/guest-session` endpoint creates a temporary user record with `authTier: "anonymous"` and signs a 24-hour session JWT. This allows guests to use all features — chat, calculators, document uploads, market data — with data persisted in the database for the duration of their session.
 
-**Multi-Mode Operation:** Users can switch between General, Financial, or Both focus modes. The system prompt dynamically adjusts based on the selected focus, incorporating relevant context layers, compliance guardrails, and domain-specific knowledge.
+A persistent GuestBanner appears at the top of the interface, encouraging sign-in to save data permanently. When a guest signs in via Manus OAuth, the `/api/auth/migrate-guest` endpoint transfers all guest data (conversations, documents, calculations) to the authenticated account.
 
-**Streaming Responses:** Chat uses tRPC streaming to deliver tokens in real-time with auto-scroll and typing indicators. Responses include inline disclaimers for financial topics and support markdown rendering via the Streamdown component.
+### Access Tiers
 
-**Context Layers:** The AI assembles a 5-layer prompt from platform defaults, organization rules, professional context, client data, and enrichment datasets. Each layer is auditable and respects role-based visibility.
+| Tier | Capabilities | Data Retention |
+|------|-------------|----------------|
+| Guest (Anonymous) | All features, session-scoped data | 24 hours |
+| Authenticated User | All features, permanent data, cross-device sync | Permanent |
+| Manager | Team oversight, client portal, practice intelligence | Permanent |
+| Administrator | Organization management, compliance review, global admin | Permanent |
 
-**Memory System:** The AI extracts and stores memories from conversations, categorized by type (preference, fact, goal, concern). Memories are injected into future conversations for personalization.
+### Page Access Rules
 
-**Constitutional AI:** A guardrail system ensures responses comply with regulatory requirements, ethical standards, and organizational policies. Rules are configurable per organization.
+User-facing pages (Chat, Calculators, Products, Education, Insights, Meetings, Workflows, Documents, Settings/Appearance) are accessible to all users including guests. Admin-only pages (Global Admin, Manager Dashboard, Portal, Organizations) display an AuthGate component with a sign-in button and navigation links rather than performing a hard redirect.
 
-### 3.2 Voice & Multi-Modal Interaction
+---
 
-**Hands-Free Voice Mode:** Continuous speech recognition via Web Speech API with automatic silence detection. The AI responds with natural speech via Edge TTS (25+ voices, 6 locales). A state machine manages the listen → process → speak → listen cycle with audible cues.
+## Core AI Engine
 
-**Screen Capture:** Real-time screen sharing via the Screen Capture API. Supports pause/resume, frame capture for AI analysis, and region preview before sending.
+### Conversational AI
 
-**Video Capture:** Live camera feed via getUserMedia. Periodic frame capture sends visual context to the LLM for analysis. Supports hands-free visual + verbal conversation.
+The Chat interface is the primary entry point. It supports three focus modes: **General** (broad topics), **Financial** (advisory-specific), and **Both** (hybrid). The AI processes text, voice, images, documents, and screen captures as input context.
 
-**LiveChat Mode:** A combined mode that streams camera/screen video while maintaining continuous speech recognition. The AI sees what you see and hears what you say, responding with voice in real-time.
+Key capabilities include multi-turn conversations with full history retention, constitutional compliance checking on every response, automatic disclaimer insertion for financial advice, focus mode switching mid-conversation, voice mode with Deepgram STT and Edge TTS, document and image analysis via multi-modal processing, and real-time market data integration into responses.
 
-**Document Processing:** Upload PDFs, images, and documents for OCR text extraction, table parsing, form recognition, and content summarization. Processed content is indexed for RAG retrieval.
+### AI Tuning
 
-### 3.3 Financial Planning Tools
+Users can personalize their AI experience through Settings, including communication style adjustment (formality, detail level, tone), knowledge base uploads to train the AI on specific topics, memory episodes where the AI remembers key facts across conversations, and style personalization where the AI adapts to preferred communication patterns.
+
+### Constitutional AI Framework
+
+Every AI response passes through a constitutional compliance layer that flags potential financial advice for review, inserts appropriate disclaimers, maintains audit trails for regulatory compliance, enforces organization-level compliance policies, and supports custom compliance rules per organization.
+
+### Context Layers
+
+The AI assembles a 5-layer prompt from platform defaults, organization rules, professional context, client data, and enrichment datasets. Each layer is auditable and respects role-based visibility.
+
+### Memory System
+
+The AI extracts and stores memories from conversations, categorized by type (preference, fact, goal, concern). Memories are injected into future conversations for personalization and continuity.
+
+---
+
+## Data Intelligence Hub
+
+The Data Intelligence Hub is the platform's central data ingestion and analysis engine, accessible at `/data-intelligence`. It provides 14 tabs for managing data sources, processing pipelines, and AI-generated insights.
+
+### Data Sources and Ingestion
+
+| Method | Description | Use Case |
+|--------|-------------|----------|
+| Web Scraping | Bulk URL scraping with up to 100 URLs per batch | Competitor websites, market reports |
+| Sitemap Crawling | Automatic discovery and crawling of site pages | Full-site content ingestion |
+| RSS/Atom Feeds | Subscribe to feeds with configurable polling | News, blog posts, regulatory updates |
+| CSV/Excel Upload | Paste or upload tabular data with column mapping | Customer lists, product catalogs |
+| API Feeds | Connect to external APIs for structured data | CRM data, custodian feeds |
+| Webhook Ingestion | Receive real-time pushes from external systems | Event-driven data updates |
+| Document Upload | PDF, image, and document processing with OCR | Contracts, statements, forms |
+
+### Webhook Ingestion Endpoint
+
+External systems can push data to Stewardry via authenticated webhook endpoints. The endpoint is `POST /api/webhooks/ingest/:sourceId` with HMAC-SHA256 signature validation in the `X-Webhook-Signature` header. Rate limiting is enforced at 100 requests per minute per source. The service accepts JSON and form-encoded payloads, including nested structures, and routes records into the ingestion pipeline for quality scoring and insight generation.
+
+### Scheduled Ingestion Automation
+
+Data sources can be configured with automatic refresh schedules across 7 frequency presets: every 15 minutes (real-time market data), hourly (news feeds), every 6 hours (competitor monitoring), daily (regulatory updates), weekly (market reports), monthly (industry benchmarks), and custom user-defined schedules. Each schedule supports enable/pause/run-now controls.
+
+### Data Quality Scoring
+
+Every ingested record receives a quality score (0.0-1.0) based on completeness (percentage of expected fields populated), freshness (time since last update), accuracy (cross-validation against known data), and consistency (alignment with existing records).
+
+### AI Insight Generation
+
+The AI continuously analyzes ingested data to generate actionable insights categorized by severity (Critical, High, Medium, Low, Info), type (market trends, competitor moves, regulatory changes, client opportunities), and confidence score.
+
+### Insight-to-Action Workflow
+
+Critical and high-severity insights automatically generate action items. The AI generates an insight from ingested data, the system creates an action item with a recommended response, critical/high insights trigger owner notifications, advisors review and complete or dismiss actions, and action completion feeds back into the AI for continuous improvement.
+
+---
+
+## Financial Tools and Calculators
+
+The platform provides 20+ financial calculators accessible at `/calculators`:
 
 | Calculator | Description |
 |-----------|-------------|
-| IUL Projection | Indexed Universal Life insurance projections with illustrated rates |
-| Premium Finance ROI | Loan-based premium financing with stress testing (+400bps) |
-| Retirement Aggregator | Multi-source retirement planning with inflation adjustment |
-| Product Comparator | Side-by-side comparison of insurance and investment products |
-| Tax Projector | Federal and state tax estimation with optimization strategies |
-| Social Security Optimizer | Claiming strategy analysis for maximum lifetime benefits |
+| IUL Projections | Indexed Universal Life policy modeling with illustrated rates |
+| Premium Finance ROI | Premium financing return analysis with stress testing |
+| Retirement Planning | Monte Carlo retirement projections with inflation adjustment |
+| Tax Projections | Multi-year tax liability forecasting with optimization strategies |
+| Estate Planning | Estate tax and transfer analysis |
+| Social Security Optimizer | Benefit claiming strategy optimization for maximum lifetime benefits |
 | HSA Optimizer | Health Savings Account contribution and investment planning |
 | Medicare Navigator | Medicare plan comparison and enrollment guidance |
-| Charitable Giving | Tax-efficient charitable giving strategies |
-| Education Planner | 529 and education funding projections |
-| Student Loan Analyzer | Repayment strategy comparison and forgiveness analysis |
-| Equity Comp Planner | Stock option and RSU vesting/exercise optimization |
-| Digital Asset Manager | Cryptocurrency and digital asset portfolio tracking |
 | LTC Planner | Long-term care insurance needs analysis |
-| Business Exit Planner | Business valuation and succession planning |
-| Divorce Financial Analyst | Asset division and financial impact modeling |
+| Student Loan Optimizer | Repayment strategy comparison and forgiveness analysis |
+| Charitable Giving | Donor-advised fund and CRT modeling |
+| Business Exit Planning | Business valuation and succession planning |
+| Equity Compensation | Stock option and RSU vesting/exercise optimization |
+| Digital Assets | Cryptocurrency and digital asset portfolio tracking |
+| Divorce Planning | Asset division and financial impact modeling |
+| Fee Billing | Advisory fee structure comparison |
+| Financial Health Score | Comprehensive financial wellness assessment |
+| Client Segmentation | Client base analysis and targeting |
+| Annual Review | Year-over-year financial review |
+| Plan Adherence | Financial plan tracking and compliance |
+| Product Comparator | Side-by-side comparison of insurance and investment products |
+| Education Planner | 529 and education funding projections |
 
-### 3.4 Data Intelligence Hub
-
-The Data Intelligence Hub provides comprehensive data ingestion, processing, and insight generation:
-
-**Data Sources:** Register and manage data sources with configurable scrape schedules (hourly to monthly). Supports web URLs, RSS/Atom feeds, sitemaps, API endpoints, and manual uploads.
-
-**Bulk Ingestion:** Scrape up to 100 URLs simultaneously with concurrent processing. Sitemap crawling automatically discovers and ingests all pages from a domain.
-
-**RSS Feed Monitoring:** Subscribe to RSS/Atom feeds for continuous content ingestion. Auto-detects feed format and extracts structured content.
-
-**Competitor Intelligence:** AI-powered analysis of competitor websites, extracting product offerings, pricing signals, market positioning, and strategic insights.
-
-**Product Catalog Parsing:** Automated extraction of product details, features, and pricing from web pages and documents.
-
-**CSV/Excel Upload:** Paste or upload tabular data with automatic column mapping, header detection, and batch tracking.
-
-**Data Quality Scoring:** Automated quality assessment of ingested data across completeness, accuracy, freshness, and consistency dimensions.
-
-**AI Insight Generation:** LLM-powered analysis of ingested data to surface trends, anomalies, opportunities, and risks with severity-based prioritization.
-
-**Insight-to-Action Workflow:** Critical and high-severity insights automatically generate action items, trigger advisor notifications, and integrate with the task engine.
-
-**Scheduled Automation:** Cron-based scheduling with 7 frequency presets. Enable/pause/run-now controls for each schedule.
-
-### 3.5 Insurance & Advisory Operations (Part G)
-
-**Licensed Review Queue:** Tier-4 actions (insurance applications, trade execution) require licensed professional approval. Pending items are queued with full context, and approvals are audited.
-
-**Agent Operations Dashboard:** Monitor agent activity, carrier connections, state appointments, and compliance metrics. Register and manage carrier integrations.
-
-**Insurance Quotes:** Multi-carrier quote generation with side-by-side comparison. Quotes include mandatory disclaimers and are linked to client suitability profiles.
-
-**Insurance Applications:** End-to-end application workflow from quote selection through submission, underwriting, and policy issuance. Every step requires licensed approval.
-
-**Advisory Execution:** Investment and advisory action execution with RIA approval gates. Tracks pending, approved, and executed actions with full audit trail.
-
-**Estate Planning:** State-specific document generation for wills, trusts, powers of attorney, and healthcare directives. All documents include attorney review disclaimers.
-
-**Premium Finance:** Case management for premium-financed life insurance with stress testing, collateral tracking, and ROI analysis.
-
-### 3.6 Organization & Role Management
-
-**Multi-Tenant Architecture:** Organizations have independent branding, product shelves, compliance rules, and AI layer configurations. Users can belong to multiple organizations with different roles.
-
-**Role Hierarchy:** Four-tier role system (user → advisor → manager → admin) with granular permissions. Global admins see all organizations; firm admins see only their firm; managers see their team; professionals see their clients.
-
-**Organization Branding:** Custom color schemes, logos, and descriptions per organization. AI-powered color scheme detection from uploaded logos.
-
-**Matching & Recommendations:** Best-fit algorithms match users with professionals and organizations based on expertise, location, specialization, and client needs.
-
-**Invitation System:** Email-based invitations for on-platform and off-platform users. Invitations track status (pending, accepted, declined, expired).
-
-### 3.7 Compliance & Governance
-
-**Suitability Assessment:** Conversational AI-driven suitability questionnaire that adapts questions based on previous answers. Results are stored and accessible across the advisory chain.
-
-**Audit Trail:** Every action — chat messages, document uploads, review decisions, settings changes — is logged with timestamps, user IDs, and context. Audit logs are append-only.
-
-**Terms of Service:** First-time consent flow with versioned ToS and Privacy Policy. Consent is stored with timestamps and is required before platform access.
-
-**Data Governance:** Tiered visibility (private → professional → management → admin) for documents and data. Users control visibility per upload.
-
-**Compliance Copilot:** AI-assisted compliance monitoring that detects regulated conversations, flags potential issues, and suggests corrective actions.
+All calculators work for guest users with session-scoped data. Results can be discussed with the AI for deeper analysis.
 
 ---
 
-## 4. API Reference
+## Product Marketplace
 
-### 4.1 Router Catalog
-
-The platform exposes 67 tRPC routers organized into functional domains:
-
-**Core:** auth, chat, conversations, documents, settings, voice, feedback, memories, visual
-
-**Financial:** calculators, market, products, suitability, financialHealth, taxProjector, ssOptimizer, hsaOptimizer, medicareNav, charitableGiving, educationPlanner, studentLoans, equityComp, digitalAssets, ltcPlanner, businessExit, divorce
-
-**Insurance (Agentic):** agentic.licensedReview, agentic.agentOperations, agentic.insuranceQuotes, agentic.insuranceApplications, agentic.advisoryExecution, agentic.estatePlanning, agentic.premiumFinance
-
-**Organizations:** organizations, orgBranding, relationships, matching, recommendation, portal, portalOptimizer
-
-**AI & Intelligence:** aiLayers, constitutional, complianceCopilot, multiModel, ambient, knowledgeGraph, memoryEpisodes, searchEnhanced, multiModalProcessing
-
-**Data:** dataIngestion, dataIngestionEnhanced, scheduledIngestion
-
-**Operations:** workflow, workflowOrchestrator, taskEngine, comms, feeBilling, featureFlags, annualReview, clientSegmentation, practiceIntelligence, planAdherence
-
-**Auth:** emailAuth, anonymousChat
-
-### 4.2 Authentication
-
-All procedures use one of three access levels:
-
-| Level | Description | Use Case |
-|-------|-------------|----------|
-| `publicProcedure` | No auth required | auth.me, anonymousChat |
-| `protectedProcedure` | Requires valid session | Most features |
-| `adminProcedure` | Requires admin role | Organization management, feature flags |
+The Products section (`/products`) provides a searchable catalog of financial products with AI-powered suitability scoring. Features include product search and filtering by category, carrier, and features; AI suitability scoring based on client profiles; side-by-side product comparison; carrier connection management; and product research mode via enhanced search.
 
 ---
 
-## 5. Frontend Architecture
+## Compliance and Regulatory Framework
 
-### 5.1 Page Structure
+### Compliance Copilot
 
-| Route | Component | Description |
-|-------|-----------|-------------|
-| `/` | Chat.tsx | Main conversational interface (landing page) |
-| `/about` | About.tsx | Platform information and features |
-| `/market` | MarketData.tsx | Real-time market data dashboard |
-| `/tools` | FinancialTools.tsx | Financial calculators suite |
-| `/documents` | Documents.tsx | Document management and upload |
-| `/products` | Products.tsx | Product catalog and comparison |
-| `/settings` | Settings.tsx | User preferences and profile |
-| `/data-intelligence` | DataIntelligence.tsx | Data ingestion hub (13 tabs) |
-| `/licensed-review` | PartGPages.tsx | Licensed review queue |
-| `/agent-operations` | PartGPages.tsx | Agent operations dashboard |
-| `/insurance-quotes` | PartGPages.tsx | Insurance quote management |
-| `/insurance-applications` | PartGPages.tsx | Application workflow |
-| `/advisory-execution` | PartGPages.tsx | Advisory action execution |
-| `/estate-planning` | PartGPages.tsx | Estate document management |
-| `/premium-finance` | PartGPages.tsx | Premium finance cases |
-| `/terms` | Terms.tsx | Terms of Service |
-| `/privacy` | Privacy.tsx | Privacy Policy |
+The Compliance Copilot monitors all AI interactions for regulatory compliance with real-time flagging of potential compliance issues, automatic disclaimer insertion, audit trail generation for every conversation, organization-level compliance policy enforcement, and a licensed review queue for flagged interactions.
 
-### 5.2 Key Components
+### Suitability Assessment
 
-**DashboardLayout:** Sidebar navigation with collapsible sections, user profile, and role-based menu filtering. Used for all authenticated pages.
+A conversational AI-driven suitability questionnaire adapts questions based on previous answers. Results are stored and accessible across the advisory chain, supporting input at varying levels of detail from abstract to highly specific.
 
-**AIChatBox:** Full-featured chat interface with message history, streaming support, markdown rendering, and context sharing buttons.
+### Audit System
 
-**OnboardingTour:** AI-guided walkthrough with spotlight highlighting and contextual tooltips. Auto-starts for first-time users.
-
-**LiveChatMode:** Combined video/screen capture with continuous speech recognition for hands-free visual + verbal AI conversation.
-
-**CaptureModal:** Screen and video capture interface with preview, pause/resume, and frame extraction.
-
-### 5.3 Design System
-
-The platform uses a dark luxury financial theme with the following design tokens:
-
-- **Primary:** Navy (#1B2A4A) with gold accents (#D4A843)
-- **Typography:** Inter for body text, system fonts for UI elements
-- **Shadows:** Soft elevation system with 3 levels
-- **Radius:** Consistent 8px border radius
-- **Spacing:** 4px grid system
+Every significant action is logged to the audit trail including user actions (queries, document uploads, calculations), AI responses with compliance flags, administrative actions (role changes, policy updates), and data access events for privacy compliance. Audit logs are append-only.
 
 ---
 
-## 6. Testing & Quality
+## Communication and Campaigns
 
-### 6.1 Test Coverage
+### Email Campaign Manager
 
-| Suite | Tests | Coverage Area |
-|-------|-------|--------------|
-| functional.test.ts | 36 | Chat, CRUD, auth, documents, market, calculators, suitability, memory, settings |
-| security.test.ts | 19 | JWT, XSS, SQL injection, CSRF, file upload, session, audit, access control |
-| roleHierarchy.test.ts | 9 | Admin, firm admin, manager, professional, unaffiliated, transitions, audit, layers |
-| platform.test.ts | 47 | Performance, responsive, accessibility, compliance, integration, Part G (14 sub-suites) |
-| comprehensive.test.ts | 61 | End-to-end feature verification |
-| portal.test.ts | 20 | Portal and organization features |
-| chat.test.ts | 21 | Chat streaming and message handling |
-| dataIngestion.test.ts | 42 | Data source management and ingestion |
-| dataIngestionEnhanced.test.ts | 30 | Bulk scraping, RSS, competitor intel |
-| v4features.test.ts | 24 | V4 feature set verification |
-| aiTuning.test.ts | 19 | AI layer and tuning configuration |
-| edgeTTS.test.ts | 16 | Voice synthesis and TTS |
-| products-ai.test.ts | 8 | Product AI recommendations |
-| routers.audit.test.ts | 17 | Router audit trail completeness |
-| auth.logout.test.ts | 1 | Session cleanup verification |
-| **Total** | **370** | **Full platform coverage** |
+The Email Campaign Manager (`/email-campaigns`) provides full campaign lifecycle management:
 
-### 6.2 Test Categories
+**Campaign Creation** allows setting name, subject, and body with a rich text editor. **AI Content Generation** generates professional email content from prompts with tone selection across professional, friendly, urgent, and educational styles. **Recipient Management** supports bulk adding recipients and filtering by type (all clients, prospects, partners, custom list). **Template Personalization** uses `{{recipientName}}` and `{{recipientEmail}}` tokens that are auto-replaced per recipient. **Batch Sending** delivers to all recipients with per-recipient status tracking. **Campaign Analytics** tracks sent, delivered, opened, and failed counts.
 
-**Functional (TEST-FUNC):** Verifies core user workflows — chat streaming, conversation CRUD, hand-off flow, progressive auth, document management, market data, calculators, suitability, memory, and settings.
+### Notification System
 
-**Security (TEST-SEC):** Validates JWT authentication, XSS prevention, SQL injection protection, CSRF defense, file upload validation, session management, prompt isolation, and data access control.
-
-**Role Hierarchy (TEST-ROLE):** Confirms role-based access at all levels — global admin, firm admin, manager, professional, unaffiliated user — plus affiliation transitions and 5-layer prompt inheritance.
-
-**Performance (TEST-PERF):** Measures router initialization speed, auth check latency, batch access patterns, memory efficiency, and concurrent operation handling.
-
-**Compliance (TEST-COMP):** Verifies AI disclaimer presence, regulated conversation detection, retention lock enforcement, GDPR data export, human escalation paths, and audit trail completeness.
-
-**Integration (TEST-INT):** Tests Plaid account linking, Daily.co video calls, and LLM streaming error recovery with rate limit handling.
-
-**Part G (TEST-GATE/QUOTE/APP/INVEST/ESTATE/FINANCE/AGENT-SEC):** Validates license gates, multi-carrier quotes, application approval flows, trade execution controls, state-specific documents, premium finance stress tests, and agent tenant isolation.
+The platform includes a built-in notification system for insight-triggered advisor alerts, campaign completion notifications, compliance review notifications, and task assignment notifications.
 
 ---
 
-## 7. Data Ingestion Pipeline
+## Part G — Licensed Operations
 
-### 7.1 Pipeline Architecture
+Part G provides specialized tools for licensed insurance and advisory operations, accessible through 7 dedicated pages:
 
-The data ingestion pipeline follows a 5-stage process:
+| Page | Route | Purpose |
+|------|-------|---------|
+| Licensed Review | `/licensed-review` | Pending compliance review queue with audit log |
+| Agent Operations | `/agent-operations` | Agent monitoring dashboard with performance metrics |
+| Insurance Quotes | `/insurance-quotes` | Multi-carrier quote generation and comparison |
+| Insurance Applications | `/insurance-applications` | Application status tracking and management |
+| Advisory Execution | `/advisory-execution` | Advisory workflow execution dashboard |
+| Estate Planning | `/estate-planning` | Estate document drafting wizard with state-specific templates |
+| Premium Finance | `/premium-finance` | Premium finance case management with stress testing |
 
-1. **Source Registration:** Define data sources with type (web, RSS, API, file), URL, and scrape configuration.
-2. **Ingestion:** Execute scraping, parsing, or API calls to extract raw content. Supports concurrent batch processing.
-3. **Processing:** Clean, normalize, and structure extracted data. Apply OCR for images, transcription for audio/video.
-4. **Quality Scoring:** Assess data quality across 4 dimensions (completeness, accuracy, freshness, consistency) with weighted scoring.
-5. **Insight Generation:** AI analyzes processed data to surface actionable insights with severity-based prioritization.
-
-### 7.2 Supported Ingestion Methods
-
-| Method | Capacity | Description |
-|--------|----------|-------------|
-| Single URL Scrape | 1 URL | Extract content from a single web page |
-| Bulk URL Scrape | Up to 100 URLs | Concurrent scraping with progress tracking |
-| Sitemap Crawl | Unlimited | Discover and ingest all pages from a sitemap |
-| RSS/Atom Feed | Continuous | Subscribe to feeds for ongoing content ingestion |
-| API Feed | Configurable | Pull data from REST APIs with custom headers |
-| CSV/TSV Upload | Unlimited rows | Paste or upload tabular data with column mapping |
-| Document Upload | Per file | Process PDFs, images, and documents for content extraction |
-
-### 7.3 Scheduled Automation
-
-Schedules support 7 frequency presets: every 15 minutes, hourly, every 6 hours, daily, weekly, biweekly, and monthly. Each schedule can be enabled, paused, or triggered manually. The cron runner processes due schedules and creates ingestion jobs automatically.
+Each page integrates with the corresponding backend router for real-time data and AI-assisted operations. All Part G actions require licensed professional approval and generate complete audit trails.
 
 ---
 
-## 8. Deployment & Operations
+## Multi-Modal Capabilities
 
-### 8.1 Environment Variables
+### Document Processing
 
-The platform uses the following environment variables (automatically injected by the Manus platform):
+The platform supports OCR text extraction from images and scanned documents via LLM vision, PDF table and form parsing, AI-generated document summaries and key information extraction, and automatic document chunking for knowledge base indexing.
 
-| Variable | Purpose |
+### Visual Analysis
+
+Screen Capture shares screen content with AI for real-time analysis with pause/resume support. Video Capture uses the camera feed with periodic frame capture for visual context. Image Analysis accepts uploaded images for AI interpretation. The Annotation System supports highlighting, circling, and annotating visual content with persistent context storage.
+
+### Voice and Audio
+
+Speech-to-Text uses Deepgram-powered real-time transcription. Text-to-Speech uses Edge TTS with 25+ natural voices across 6 locales. Voice Mode provides hands-free conversational interaction with continuous listening and audible processing cues. Audio Transcription transcribes uploaded audio and video files.
+
+### LiveChat Mode
+
+LiveChat Mode combines continuous visual and verbal AI interaction with simultaneous screen sharing and voice conversation, real-time frame analysis with spoken responses, and pause/resume controls for both video and audio streams.
+
+---
+
+## Search and Recommendations
+
+### Enhanced Search
+
+The Enhanced Search system provides cached search with results stored in the `search_cache` table to avoid redundant lookups, cited sources with URLs for every search result, product research mode where AI proactively researches and compares financial products, and unified multi-modal search across documents, transcripts, images, and ingested data.
+
+### Recommendation Engine
+
+The Recommendation system provides client-product matching with AI-powered best-fit scoring, organization recommendations based on user needs, email invitations to recommended contacts, and continuous learning from user feedback and outcomes.
+
+---
+
+## Organization and Team Management
+
+### Organization Structure
+
+Organizations support hierarchical team management with organization creation including branding (logo, colors, domain), role-based access (Owner, Admin, Manager, Member), team member invitation and management, and organization-level settings and compliance policies.
+
+### Org Branding Editor
+
+The Org Branding Editor (`/org-branding`) allows organizations to customize their logo and color scheme, custom domain configuration, brand voice for AI communications, and organization-specific compliance disclaimers. AI-powered color scheme detection automatically extracts colors from uploaded logos.
+
+### Practice Intelligence
+
+The Practice Intelligence dashboard provides team performance metrics, client engagement analytics, revenue and AUM tracking, and compliance score monitoring.
+
+---
+
+## Workflow and Task Engine
+
+### Workflow Orchestrator
+
+The Workflow Orchestrator manages multi-step business processes with configurable workflow templates, automatic task assignment based on roles, progress tracking with status updates, and integration with the AI for automated decision points.
+
+### Task Engine
+
+The Task Engine handles individual task management with task creation from insights, workflows, or manual entry; priority levels and due date tracking; assignment to team members; and status tracking (pending, in-progress, completed, dismissed).
+
+---
+
+## Analytics and Reporting
+
+### Dashboard Analytics
+
+The Analytics Dashboard (Data Intelligence Hub, Analytics tab) provides 7 Chart.js visualizations:
+
+| Chart | Type | Data |
+|-------|------|------|
+| Ingestion Volume | Line | Records ingested over time (7d/30d/90d) |
+| Data Quality Trends | Line | Average quality scores over time |
+| Insight Severity | Doughnut | Distribution by critical/high/medium/low/info |
+| Insight Types | Bar | Count by insight category |
+| Job Status | Doughnut | Completed/running/failed/pending jobs |
+| Action Status | Bar | Pending/completed/dismissed actions |
+| Source Breakdown | Pie | Records by data source type |
+
+The dashboard also includes 6 summary stat cards: Total Records, Active Sources, Average Quality, Total Insights, Pending Actions, and Active Jobs.
+
+### Insights Dashboard
+
+The Insights page (`/insights`) provides AI-generated financial insights based on user data, market trend analysis, portfolio performance summaries, and actionable recommendations.
+
+---
+
+## User Experience and Help System
+
+### Onboarding Tour
+
+New users are greeted with a 15-step guided tour covering: welcome and platform overview, AI Chat and focus modes, voice mode, context sharing (documents, screen, camera), sidebar navigation, market data, financial planning tools, compliance features, Data Intelligence Hub, settings and personalization, email campaigns, product marketplace, guest access explanation, help system introduction, and completion with next steps.
+
+### Contextual Help
+
+A floating help button (bottom-right, or `Ctrl+/`) provides page-specific assistance across three categories: Tips (contextual guidance for the current page), Shortcuts (keyboard shortcuts relevant to the current context), and FAQ (frequently asked questions about the current feature). Help content adapts automatically based on the current route.
+
+### GuestBanner
+
+Guest users see a persistent banner encouraging sign-in, with a clear explanation that their session data will be preserved upon authentication.
+
+### AuthGate
+
+Admin-only pages display a friendly AuthGate component with a clear explanation of why sign-in is required, a sign-in button linking to Manus OAuth, and navigation links back to Chat and Home.
+
+---
+
+## API Reference
+
+### tRPC Routers (71 total)
+
+The platform exposes 71 tRPC routers organized by domain:
+
+| Category | Routers |
 |----------|---------|
-| DATABASE_URL | TiDB/MySQL connection string |
-| JWT_SECRET | Session cookie signing |
-| VITE_APP_ID | Manus OAuth application ID |
-| OAUTH_SERVER_URL | OAuth backend URL |
-| BUILT_IN_FORGE_API_URL | LLM and service API endpoint |
-| BUILT_IN_FORGE_API_KEY | Server-side API authentication |
-| VITE_FRONTEND_FORGE_API_KEY | Client-side API authentication |
-| PLAID_CLIENT_ID | Plaid financial data integration |
-| PLAID_SECRET | Plaid API secret |
-| DAILY_API_KEY | Daily.co video conferencing |
-| DEEPGRAM_API_KEY | Speech transcription |
+| Core | auth, system, settings, conversations, chat, memories, memoryEpisodes |
+| AI | aiLayers, ambient, constitutionalAI, multiModel, complianceCopilot, visual |
+| Financial | calculators, taxProjector, equityComp, digitalAssets, divorceAnalysis, charitableGiving, businessExit, feeBilling, financialHealth, ssOptimizer, hsaOptimizer, ltcPlanner, medicareNav, educationPlanner, annualReview, planAdherence |
+| Products | products, matching, recommendation, suitability |
+| Data | dataIngestion, dataIngestionEnhanced, scheduledIngestion, webhookIngestion, analytics, searchEnhanced |
+| Compliance | compliance, review, knowledgeGraph |
+| Communication | comms, emailCampaign, voice, meetings, feedback |
+| Organization | organizations, orgBranding, portal, portalOptimizer, practiceIntelligence, clientSegmentation, relationships, coi |
+| Operations | workflowOrchestrator, workflow, taskEngine, featureFlags, anonymousChat, multiModalProcessing |
+| Part G | agentic (sub-routers for licensed review, agent ops, quotes, applications, advisory, estate, premium finance) |
+| Education | education, studentLoans, studyBuddy, medicare |
+| Market | market |
 
-### 8.2 Custom Domains
+### Express Endpoints
 
-The platform is accessible at:
-- **wealthai-gakeferp.manus.space**
-- **stewardry.manus.space**
-
-Custom domains can be configured through the Manus Management UI under Settings → Domains.
-
----
-
-## 9. Security Model
-
-### 9.1 Authentication Flow
-
-The platform implements progressive authentication with 4 tiers:
-
-1. **Anonymous:** Basic chat access via anonymousChat router. No data persistence.
-2. **Email Verified:** Email-based authentication for basic features. Limited data storage.
-3. **Full OAuth:** Manus OAuth with session cookies. Full platform access based on role.
-4. **Advisor-Connected:** Full access plus professional advisory features and compliance tracking.
-
-### 9.2 Data Protection
-
-All data is protected through multiple layers:
-
-- **Transport:** HTTPS with TLS 1.3
-- **Authentication:** JWT-based session cookies with httpOnly, Secure, and SameSite attributes
-- **Authorization:** Role-based access control with per-procedure enforcement
-- **Data Isolation:** All queries filter by userId to prevent cross-user data access
-- **Audit Logging:** Append-only audit trail for all state-changing operations
-- **PII Protection:** Automated PII detection and masking in chat responses
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/webhooks/ingest/:sourceId` | HMAC-SHA256 | Receive external data pushes |
+| POST | `/api/auth/guest-session` | None | Create anonymous guest session |
+| POST | `/api/auth/migrate-guest` | Session JWT | Migrate guest data to authenticated account |
+| GET | `/api/oauth/callback` | OAuth flow | Manus OAuth callback handler |
+| POST | `/api/trpc/*` | Session JWT | All tRPC procedure calls |
 
 ---
 
-## 10. Appendix
+## Database Schema
 
-### 10.1 File Structure Summary
+The platform uses 91 MySQL/TiDB tables organized by domain:
 
-```
-wealthbridge-ai/
-├── client/                    # Frontend (React 19 + Tailwind 4)
-│   ├── src/
-│   │   ├── pages/             # 15+ page components
-│   │   ├── components/        # 20+ reusable components
-│   │   ├── hooks/             # Custom hooks (capture, auth, tour)
-│   │   ├── contexts/          # React contexts
-│   │   └── lib/               # tRPC client, utilities
-│   └── index.html
-├── server/                    # Backend (Express + tRPC)
-│   ├── routers/               # 30+ feature routers
-│   ├── services/              # Business logic services
-│   ├── _core/                 # Framework plumbing
-│   ├── *.test.ts              # 15 test files (370 tests)
-│   ├── db.ts                  # Database helpers
-│   ├── routers.ts             # Router registration (67 routers)
-│   └── storage.ts             # S3 helpers
-├── drizzle/                   # Database schema (89 tables)
-│   └── schema.ts
-├── shared/                    # Shared types and constants
-├── todo.md                    # Feature tracking (1200+ items)
-└── PLATFORM_GUIDE.md          # This document
-```
+| Domain | Count | Key Tables |
+|--------|-------|------------|
+| Users and Auth | 8 | users, sessions, email_verifications, user_profiles, user_settings, tos_consents, style_profiles, professional_contexts |
+| Organizations | 5 | organizations, user_organization_roles, organization_relationships, org_branding, org_products |
+| Conversations and AI | 12 | conversations, messages, memories, feedback, review_queue, ai_layers, constitutional_rules, prompt_variants, ab_test_assignments, ab_test_results, memory_episodes, ambient_contexts |
+| Documents and Knowledge | 6 | documents, document_chunks, knowledge_graph_nodes, knowledge_graph_edges, search_cache, annotations |
+| Financial Planning | 14 | suitability_assessments, products, product_features, financial_health_scores, plan_adherence_records, tax_projections, ss_optimization_plans, hsa_plans, medicare_plans, charitable_giving_plans, education_plans, student_loan_strategies, equity_comp_plans, digital_asset_portfolios |
+| Insurance and Advisory | 10 | licensed_reviews, agent_operations, carrier_connections, insurance_quotes, insurance_applications, advisory_actions, estate_documents, premium_finance_cases, coi_records, fee_billing_records |
+| Data Ingestion | 10 | data_sources, ingested_records, ingestion_jobs, data_quality_scores, scrape_schedules, ingestion_insights, bulk_import_batches, insight_actions, enrichment_datasets, enrichment_cohorts |
+| Communication | 3 | email_campaigns, email_sends, comms_messages |
+| Platform Operations | 14 | feature_flags, workflow_checklists, task_engine_tasks, meetings, client_segmentation_profiles, practice_intelligence_reports, annual_review_sessions, portal_optimizer_configs, business_exit_plans, divorce_financial_analyses, ltc_plans, multi_model_configs, workflow_orchestrator_flows |
 
-### 10.2 Key Metrics
+---
 
-| Metric | Value |
-|--------|-------|
-| Source Files | 236 |
-| Lines of Code | 57,454 |
-| Database Tables | 89 |
-| tRPC Routers | 67 |
-| Test Files | 15 |
-| Test Cases | 370 |
-| Todo Items Completed | 1,200+ |
-| Frontend Pages | 15+ |
-| Reusable Components | 20+ |
-| Financial Calculators | 16 |
-| Data Ingestion Methods | 7 |
+## Test Coverage
+
+The platform maintains 410 automated tests across 16 test suites:
+
+| Test File | Tests | Coverage Area |
+|-----------|-------|---------------|
+| comprehensive.test.ts | 61 | Cross-cutting platform features |
+| dataIngestion.test.ts | 90 | Data ingestion pipeline |
+| dataIngestionEnhanced.test.ts | 83 | Enhanced scraping, RSS, quality scoring |
+| newFeatures.test.ts | 40 | Analytics, webhooks, email campaigns, guest sessions |
+| platform.test.ts | 47 | Performance, accessibility, compliance |
+| functional.test.ts | 36 | Core functional scenarios |
+| chat.test.ts | 21 | Chat and conversation features |
+| portal.test.ts | 20 | Client portal operations |
+| aiTuning.test.ts | 19 | AI personalization |
+| security.test.ts | 19 | Security and input validation |
+| routers.audit.test.ts | 17 | Audit trail system |
+| edgeTTS.test.ts | 16 | Text-to-speech |
+| v4features.test.ts | 30 | V4 feature set |
+| roleHierarchy.test.ts | 9 | Role-based access control |
+| products-ai.test.ts | 8 | AI product analysis |
+| auth.logout.test.ts | 1 | Authentication logout |
+
+---
+
+## Feature Matrix
+
+| Feature | Guest | User | Manager | Admin |
+|---------|-------|------|---------|-------|
+| AI Chat (all modes) | Yes | Yes | Yes | Yes |
+| Voice Mode | Yes | Yes | Yes | Yes |
+| Financial Calculators | Yes | Yes | Yes | Yes |
+| Product Marketplace | Yes | Yes | Yes | Yes |
+| Document Upload/Analysis | Yes | Yes | Yes | Yes |
+| Market Data | Yes | Yes | Yes | Yes |
+| Education Hub | Yes | Yes | Yes | Yes |
+| Data Intelligence Hub | No | Yes | Yes | Yes |
+| Email Campaigns | No | Yes | Yes | Yes |
+| Insights Dashboard | No | Yes | Yes | Yes |
+| Workflow Management | No | Yes | Yes | Yes |
+| Settings (Appearance) | Yes | Yes | Yes | Yes |
+| Settings (Full) | No | Yes | Yes | Yes |
+| Client Portal | No | No | Yes | Yes |
+| Practice Intelligence | No | No | Yes | Yes |
+| Team Management | No | No | Yes | Yes |
+| Organization Admin | No | No | No | Yes |
+| Global Admin | No | No | No | Yes |
+| Compliance Review | No | No | No | Yes |
+
+---
+
+## Deployment
+
+The platform is hosted on Manus infrastructure with built-in custom domain support (stewardry.manus.space), SSL/TLS encryption, database backups, S3 file storage, and CDN for static assets. To publish updates, create a checkpoint via the development workflow and click the Publish button in the Management UI.
+
+---
+
+*This guide is auto-generated and reflects the current state of the Stewardry platform as of March 20, 2026.*

@@ -106,7 +106,7 @@ const CALCULATORS = [
 ] as const;
 
 export default function Calculators() {
-  useAuth({ redirectOnUnauthenticated: true });
+  useAuth();
   const [, navigate] = useLocation();
   const [activeCalc, setActiveCalc] = useState<string>("iul");
 
@@ -141,7 +141,7 @@ export default function Calculators() {
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => navigate("/chat")}>
+          <Button variant="ghost" size="icon-sm" className="shrink-0" onClick={() => navigate("/chat")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex items-center gap-2">

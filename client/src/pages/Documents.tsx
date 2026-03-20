@@ -42,7 +42,7 @@ const CATEGORIES = [
 type CategoryValue = typeof CATEGORIES[number]["value"];
 
 export default function Documents() {
-  const { user } = useAuth({ redirectOnUnauthenticated: true });
+  const { user } = useAuth();
   const [, navigate] = useLocation();
   const [uploading, setUploading] = useState(false);
   const [category, setCategory] = useState<CategoryValue>("personal_docs");
@@ -111,7 +111,7 @@ export default function Documents() {
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <Sparkles className="w-4 h-4 text-accent" />
@@ -243,7 +243,7 @@ export default function Documents() {
                               value={doc.visibility || "professional"}
                               onValueChange={(v) => updateVis.mutate({ id: doc.id, visibility: v as any })}
                             >
-                              <SelectTrigger className="h-7 w-7 p-0 border-0 bg-transparent [&>svg]:hidden">
+                              <SelectTrigger className="h-9 w-9 p-0 border-0 bg-transparent [&>svg]:hidden">
                                 {doc.visibility === "private" ? <EyeOff className="w-3.5 h-3.5 text-muted-foreground" /> : <Eye className="w-3.5 h-3.5 text-muted-foreground" />}
                               </SelectTrigger>
                               <SelectContent>
@@ -259,7 +259,7 @@ export default function Documents() {
                             {/* Insights */}
                             <Button
                               variant="ghost" size="sm"
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
                               onClick={() => setSelectedDoc(doc)}
                             >
                               <FileText className="w-3.5 h-3.5" />
@@ -267,7 +267,7 @@ export default function Documents() {
                             {/* Delete */}
                             <Button
                               variant="ghost" size="sm"
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                              className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive"
                               onClick={() => deleteDoc.mutate({ id: doc.id })}
                             >
                               <Trash2 className="w-3.5 h-3.5" />

@@ -3,7 +3,7 @@
  * Comprehensive dashboard for multi-source data ingestion, bulk scraping,
  * RSS feeds, competitor intelligence, data quality, and AI-generated insights.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { Link } from "wouter";
 import {
-  Database, Globe, FileText, TrendingUp, Brain,
+  ArrowLeft, Database, Globe, FileText, TrendingUp, Brain,
   Play, Plus, RefreshCw, Search, Zap, BarChart3,
   Clock, CheckCircle2, AlertCircle, Loader2, Trash2,
   Rss, Layers, Shield, Target, Eye, Sparkles,
@@ -243,6 +244,9 @@ export default function DataIntelligence() {
 
   return (
     <div className="space-y-6">
+      <Link href="/chat" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" /> Back to Chat
+      </Link>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -364,6 +368,7 @@ export default function DataIntelligence() {
           <TabsTrigger value="schedules" className="text-xs">Schedules</TabsTrigger>
           <TabsTrigger value="csv-upload" className="text-xs">CSV Upload</TabsTrigger>
           <TabsTrigger value="actions" className="text-xs">Actions</TabsTrigger>
+          <TabsTrigger value="analytics" className="text-xs">Analytics</TabsTrigger>
         </TabsList>
 
         {/* ─── Sources Tab ─────────────────────────────────────────── */}
@@ -1180,7 +1185,16 @@ export default function DataIntelligence() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ── Analytics Tab ─────────────────────────────────────── */}
+        <TabsContent value="analytics" className="space-y-4">
+          <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}>
+            <AnalyticsDashboardLazy />
+          </Suspense>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
+const AnalyticsDashboardLazy = lazy(() => import("@/components/AnalyticsDashboard"));

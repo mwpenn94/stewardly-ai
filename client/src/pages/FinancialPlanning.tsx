@@ -103,7 +103,7 @@ export default function FinancialPlanning() {
       {/* Header */}
       <div className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/chat")} className="h-8 w-8">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/chat")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
@@ -640,7 +640,7 @@ function GoalTracker() {
                       value={goal.current}
                       onChange={e => updateGoalCurrent(goal.id, +e.target.value)}
                     />
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeGoal(goal.id)}>
+                    <Button variant="ghost" size="icon-sm" onClick={() => removeGoal(goal.id)}>
                       <Trash2 className="w-3 h-3 text-muted-foreground" />
                     </Button>
                   </div>

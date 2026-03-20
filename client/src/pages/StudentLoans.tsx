@@ -12,7 +12,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 
 export default function StudentLoans() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [addOpen, setAddOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);

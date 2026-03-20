@@ -1604,3 +1604,41 @@ export const searchCache = mysqlTable("search_cache", {
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 export type SearchCache = typeof searchCache.$inferSelect;
+
+
+// ─── Email Campaigns ──────────────────────────────────────────────────────
+export const emailCampaigns = mysqlTable("email_campaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  bodyHtml: text("body_html").notNull(),
+  bodyText: text("body_text"),
+  templateId: varchar("template_id", { length: 100 }),
+  status: mysqlEnum("status", ["draft", "scheduled", "sending", "sent", "paused", "cancelled"]).default("draft"),
+  recipientFilter: json("recipient_filter"),
+  totalRecipients: int("total_recipients").default(0),
+  sentCount: int("sent_count").default(0),
+  openCount: int("open_count").default(0),
+  clickCount: int("click_count").default(0),
+  bounceCount: int("bounce_count").default(0),
+  scheduledAt: bigint("scheduled_at", { mode: "number" }),
+  sentAt: bigint("sent_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type EmailCampaign = typeof emailCampaigns.$inferSelect;
+
+export const emailSends = mysqlTable("email_sends", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaign_id").notNull(),
+  recipientEmail: varchar("recipient_email", { length: 320 }).notNull(),
+  recipientName: varchar("recipient_name", { length: 255 }),
+  status: mysqlEnum("status", ["pending", "sent", "delivered", "opened", "clicked", "bounced", "failed"]).default("pending"),
+  sentAt: bigint("sent_at", { mode: "number" }),
+  openedAt: bigint("opened_at", { mode: "number" }),
+  clickedAt: bigint("clicked_at", { mode: "number" }),
+  errorMessage: text("error_message"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type EmailSend = typeof emailSends.$inferSelect;

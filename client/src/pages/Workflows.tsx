@@ -101,7 +101,7 @@ type WorkflowInstance = {
 };
 
 export default function Workflows() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [activeWorkflow, setActiveWorkflow] = useState<WorkflowInstance | null>(null);
   const [expandedStep, setExpandedStep] = useState<number | null>(null);

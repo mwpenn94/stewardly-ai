@@ -275,13 +275,13 @@ export function LiveChatMode({
           </div>
           <div className="flex items-center gap-1">
             <Button
-              variant="ghost" size="icon" className="h-7 w-7"
+              variant="ghost" size="icon-sm"
               onClick={() => setIsExpanded(!isExpanded)}
             >
               {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </Button>
             {onClose && (
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { stopLiveMode(); onClose(); }}>
+              <Button variant="ghost" size="icon-sm" onClick={() => { stopLiveMode(); onClose(); }}>
                 <Square className="w-4 h-4" />
               </Button>
             )}

@@ -63,12 +63,19 @@ export default function Insights() {
     return insightsList.data.filter((i: any) => i.category === activeCategory);
   }, [insightsList.data, activeCategory]);
 
+  // Guest session auto-provisions a user, so this is a fallback for edge cases
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">Please sign in to access Proactive Insights.</p>
+        <Card className="max-w-md w-full border-border/50">
+          <CardContent className="p-8 text-center space-y-4">
+            <Sparkles className="w-10 h-10 mx-auto text-muted-foreground" />
+            <p className="text-muted-foreground">Loading Proactive Insights...</p>
+            <div className="flex gap-2 justify-center">
+              <Button variant="outline" size="sm" onClick={() => navigate("/chat")}>
+                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />Back to Chat
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -81,7 +88,7 @@ export default function Insights() {
       <div className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/chat")} className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/chat")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>

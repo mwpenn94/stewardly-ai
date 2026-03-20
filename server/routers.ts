@@ -1014,6 +1014,9 @@ import { agenticRouter } from "./routers/agenticExecution";
 import { searchEnhancedRouter } from "./routers/searchEnhanced";
 import { multiModalProcessingRouter } from "./routers/multiModalProcessing";
 import { recommendationRouter } from "./routers/recommendation";
+import { webhookIngestionRouter } from "./routers/webhookIngestion";
+import { analyticsRouter } from "./routers/analytics";
+import { emailCampaignRouter } from "./routers/emailCampaign";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1086,8 +1089,11 @@ export const appRouter = router({
   scheduledIngestion: scheduledIngestionRouter,
   agentic: agenticRouter,
   searchEnhanced: searchEnhancedRouter,
+  webhooks: webhookIngestionRouter,
   multiModalProcessing: multiModalProcessingRouter,
   recommendation: recommendationRouter,
+  analytics: analyticsRouter,
+  emailCampaign: emailCampaignRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1272,3 +1272,89 @@
 ## Bug Fix — Chat Page Errors + Auth Prompt (March 20, 2026)
 - [x] Fix 3 errors occurring on chat page load
 - [x] Fix user being prompted to authenticate despite anonymous user capability
+
+## Next Steps — Round 2 (March 20, 2026)
+- [x] Webhook ingestion endpoint — public webhook URL for external systems (CRMs, custodians, market data) to push data into the pipeline
+- [x] Dashboard analytics widgets — Chart.js visualizations for ingestion volume, data quality trends, insight severity distribution
+- [x] Bulk email campaign integration — connect comms router to email service for insight-triggered personalized outreach
+
+## Bug Fix — Anonymous Settings Access (March 20, 2026)
+- [x] Fix anonymous user being forced to login when accessing settings
+
+## Bug Fix — Anonymous Access Across All Pages (March 20, 2026)
+- [x] Fix Calculators page forcing login for anonymous users
+- [x] Fix Documents page forcing login for anonymous users
+- [x] Fix EducationCenter page forcing login for anonymous users
+- [x] Fix Products page forcing login for anonymous users
+- [x] Fix Suitability page forcing login for anonymous users
+- [x] Fix StudentLoans page forcing login for anonymous users
+- [x] Fix StudyBuddy page forcing login for anonymous users
+- [x] Fix Workflows page forcing login for anonymous users
+- [x] Keep redirect for admin-only pages (GlobalAdmin, ManagerDashboard, Portal, Organizations)
+
+## Bug Fix — Sign-in + Navigation for Anonymous Users (March 20, 2026)
+- [x] Create shared AuthGate component with sign-in button + back navigation for anonymous users
+- [x] Fix all pages: replace redirectOnUnauthenticated with AuthGate showing sign-in + nav options
+- [x] Ensure every page has navigation back to chat/home for anonymous users
+
+## Anonymous Session System (March 20, 2026)
+- [x] Create anonymous session backend: auto-provision temp guest user with session token
+- [x] Create useAnonymousSession hook: manages temp session, provides guest user context
+- [x] Create AuthGate component: sign-in button + back navigation + "session data" banner
+- [x] Fix ALL pages: remove redirectOnUnauthenticated, use anonymous session for data features
+- [x] Add "Save your data — Sign in" banner for anonymous users with session data
+- [x] Ensure anonymous users always have navigation (back to chat/home) on every page
+
+## Dashboard Analytics Widgets (March 20, 2026)
+- [x] Create analytics router with time-series and aggregate data endpoints
+- [x] Build Chart.js dashboard tab in Data Intelligence Hub with ingestion volume, quality trends, severity distribution, source breakdown charts
+- [x] Add platform stats summary cards (total sources, records, insights, avg quality)
+
+## Bulk Email Campaign Integration (March 20, 2026)
+- [x] Create email campaign service with template rendering and batch sending
+- [x] Create email campaign router with campaign CRUD, recipient management, and send endpoints
+- [x] Add email campaigns tab to Data Intelligence Hub or comms section
+
+## UI/UX Fixes Round 2 (March 20, 2026)
+- [ ] Audit all pages for consistent navigation (back buttons, breadcrumbs)
+- [ ] Fix responsive design issues across mobile/tablet breakpoints
+- [ ] Ensure consistent card/button styling and spacing across all pages
+- [ ] Fix any dead-end pages without navigation
+- [ ] Verify dark theme consistency across all pages
+- [ ] Fix any overlapping or crowded elements on mobile
+
+## AI Tour/Support Updates (March 20, 2026)
+- [x] Enhance onboarding tour with step-by-step feature walkthrough
+- [x] Add contextual help tooltips on key features
+- [ ] Add help/support page with FAQ and feature documentation
+- [ ] Update welcome screen with feature highlights and quick-start guide
+
+## Test Suite Updates (March 20, 2026)
+- [x] Add tests for analytics router endpoints
+- [x] Add tests for webhook ingestion service
+- [x] Add tests for email campaign service
+- [x] Add tests for guest session system
+- [x] Add tests for anonymous access on all pages
+- [x] Run full test suite and fix any failures
+- [x] Verify all 370+ tests still pass with new additions
+
+## Comprehensive Guide Updates (March 20, 2026)
+- [x] Update PLATFORM_GUIDE.md with all new features (webhooks, analytics, email, guest sessions)
+- [x] Add architecture diagrams and data flow descriptions
+- [x] Document all API endpoints including webhook URLs
+- [x] Update feature matrix and capability summary
+
+## Comprehensive Button Size Audit — Mobile Touch Targets (March 20, 2026)
+- [x] Chat input bar: plus button, audio toggle, send/hands-free button → 40-44px touch targets
+- [x] Chat input bar: mode selector pill → taller for mobile tap
+- [x] Chat sidebar: new conversation, collapse, conversation items → 40-44px touch targets
+- [x] Chat message actions: copy, thumbs up/down, read aloud, regenerate → 40-44px touch targets
+- [x] Chat header: hamburger menu button → 40-44px
+- [x] All page header/nav buttons across all pages → 40-44px minimum
+- [x] Settings page buttons and toggles → proper touch sizes
+- [x] Portal/admin page action buttons → proper touch sizes
+- [x] Data Intelligence Hub tab buttons and action buttons → proper sizes
+- [x] All dialog/modal close buttons → 40-44px
+- [x] ContextualHelp floating button → 40-44px
+- [x] GuestBanner action buttons → proper sizes
+- [x] OnboardingTour navigation buttons → proper sizes

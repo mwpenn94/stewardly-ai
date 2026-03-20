@@ -41,7 +41,7 @@ type ViewAsSession = {
 // ─── MAIN COMPONENT ────────────────────────────────────────────────
 
 export default function Portal() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewAsSession, setViewAsSession] = useState<ViewAsSession>(null);

@@ -6,7 +6,8 @@ import {
   ArrowLeft, Camera, Brain, Shield, FileText, Sparkles, User,
   Loader2, Settings2, ChevronRight, Bell, Palette,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { getLoginUrl } from "@/const";
 import { useLocation, useRoute } from "wouter";
 
 // Lazy-loaded tab content (each is a self-contained component)
@@ -29,8 +30,11 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: strin
   { id: "appearance", label: "Appearance", icon: <Palette className="w-4 h-4" />, desc: "Theme, colors, font size, density", slug: "appearance" },
 ];
 
+// Tabs accessible without authentication
+const ANONYMOUS_TABS: SettingsTab[] = ["appearance"];
+
 export default function SettingsHub() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
 
   // Deep-link support: /settings/:tab
@@ -55,6 +59,15 @@ export default function SettingsHub() {
     }
   }, [matchTab, paramsTab?.tab]);
 
+  const isAuthenticated = !!user;
+
+  // For anonymous users, default to appearance tab if they land on an auth-required tab
+  useEffect(() => {
+    if (!loading && !isAuthenticated && !ANONYMOUS_TABS.includes(activeTab)) {
+      setActiveTab("appearance");
+    }
+  }, [loading, isAuthenticated]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -64,6 +77,7 @@ export default function SettingsHub() {
   }
 
   const currentTab = TABS.find(t => t.id === activeTab)!;
+  const needsAuth = !isAuthenticated && !ANONYMOUS_TABS.includes(activeTab);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -99,23 +113,31 @@ export default function SettingsHub() {
           fixed md:relative inset-0 top-14 z-20 md:z-0
         `}>
           <div className="p-3 space-y-1">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setMobileNavOpen(false); }}
-                className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
-                  activeTab === tab.id
-                    ? "bg-accent/10 text-accent border border-accent/20"
-                    : "text-muted-foreground hover:text-foreground hover:bg-card/50"
-                }`}
-              >
-                <span className={`mt-0.5 shrink-0 ${activeTab === tab.id ? "text-accent" : ""}`}>{tab.icon}</span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{tab.label}</p>
-                  <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5">{tab.desc}</p>
-                </div>
-              </button>
-            ))}
+            {TABS.map((tab) => {
+              const tabRequiresAuth = !isAuthenticated && !ANONYMOUS_TABS.includes(tab.id);
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); setMobileNavOpen(false); }}
+                  className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                    activeTab === tab.id
+                      ? "bg-accent/10 text-accent border border-accent/20"
+                      : tabRequiresAuth
+                        ? "text-muted-foreground/40 hover:text-muted-foreground/60 hover:bg-card/30"
+                        : "text-muted-foreground hover:text-foreground hover:bg-card/50"
+                  }`}
+                >
+                  <span className={`mt-0.5 shrink-0 ${activeTab === tab.id ? "text-accent" : ""}`}>{tab.icon}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate flex items-center gap-1.5">
+                      {tab.label}
+                      {tabRequiresAuth && <span className="text-[9px] bg-muted/50 text-muted-foreground px-1.5 py-0.5 rounded">Sign in</span>}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5">{tab.desc}</p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </aside>
 
@@ -126,12 +148,40 @@ export default function SettingsHub() {
 
         {/* ─── MAIN CONTENT ─── */}
         <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8">
-          {activeTab === "profile" && <ProfileTab />}
-          {activeTab === "suitability" && <SuitabilityTab />}
-          {activeTab === "knowledge" && <KnowledgeBaseTab />}
-          {activeTab === "ai-tuning" && <AITuningTab />}
-          {activeTab === "notifications" && <NotificationsTab />}
-          {activeTab === "appearance" && <AppearanceTab />}
+          {needsAuth ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-4">
+                <User className="w-8 h-8 text-accent" />
+              </div>
+              <h2 className="text-lg font-semibold mb-2">Sign in to access {currentTab.label}</h2>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+                This setting requires an account. Sign in to personalize your experience, or explore the Appearance tab as a guest.
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => { window.location.href = getLoginUrl(); }}
+                  className="gap-2"
+                >
+                  <User className="w-4 h-4" /> Sign In
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveTab("appearance")}
+                >
+                  <Palette className="w-4 h-4 mr-1.5" /> Appearance
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {activeTab === "profile" && <ProfileTab />}
+              {activeTab === "suitability" && <SuitabilityTab />}
+              {activeTab === "knowledge" && <KnowledgeBaseTab />}
+              {activeTab === "ai-tuning" && <AITuningTab />}
+              {activeTab === "notifications" && <NotificationsTab />}
+              {activeTab === "appearance" && <AppearanceTab />}
+            </>
+          )}
         </main>
       </div>
     </div>

@@ -213,7 +213,7 @@ export default function CoiNetwork() {
                           <SelectItem value="new">New</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button variant="ghost" size="sm" className="text-destructive h-7 w-7 p-0" onClick={() => deleteMutation.mutate({ id: contact.id })}>
+                      <Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => deleteMutation.mutate({ id: contact.id })}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>

@@ -157,10 +157,10 @@ export default function InlineChart({ data, className = "" }: InlineChartProps) 
           <span>{data.title || "Chart"}</span>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={handleDownload} title="Download PNG">
+          <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={handleDownload} title="Download PNG">
             <Download className="w-3 h-3" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setExpanded(!expanded)} title={expanded ? "Collapse" : "Expand"}>
+          <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={() => setExpanded(!expanded)} title={expanded ? "Collapse" : "Expand"}>
             {expanded ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
           </Button>
         </div>

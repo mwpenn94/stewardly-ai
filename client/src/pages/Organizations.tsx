@@ -27,7 +27,7 @@ import {
 import { useState } from "react";
 
 export default function Organizations() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
 

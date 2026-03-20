@@ -10,7 +10,7 @@ import { useLocation } from "wouter";
 import { Streamdown } from "streamdown";
 
 export default function EducationCenter() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>();

@@ -30,7 +30,7 @@ const MEMORY_CATEGORIES = [
 ];
 
 export default function Settings() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -92,7 +92,7 @@ export default function Settings() {
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <Sparkles className="w-4 h-4 text-accent" />
@@ -279,7 +279,7 @@ export default function Settings() {
                             </Badge>
                             <p className="text-sm flex-1">{mem.content}</p>
                             <Button
-                              variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                              variant="ghost" size="sm" className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive shrink-0"
                               onClick={() => deleteMemory.mutate({ id: mem.id })}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -477,7 +477,7 @@ function VoiceSettings() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 shrink-0"
+                    className="h-9 w-9 p-0 shrink-0"
                     onClick={(e) => { e.stopPropagation(); handlePreview(v.id, v.label); }}
                     disabled={speakMutation.isPending && previewPlaying !== v.id}
                   >

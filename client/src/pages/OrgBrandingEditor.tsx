@@ -89,7 +89,19 @@ export default function OrgBrandingEditor() {
     });
   };
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Palette className="w-10 h-10 mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground">Loading Organization Branding...</p>
+          <Button variant="outline" size="sm" onClick={() => navigate("/chat")}>
+            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />Back to Chat
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

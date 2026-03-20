@@ -89,7 +89,7 @@ function EnsembleWeightEditor({
             className="flex-1"
           />
           <span className="text-xs text-muted-foreground w-10 text-right">{(weight * 100).toFixed(0)}%</span>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => removeModel(model)}>
+          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive" onClick={() => removeModel(model)}>
             &times;
           </Button>
         </div>
@@ -913,8 +913,17 @@ export default function AISettings() {
   }
 
   if (!user) {
-    window.location.href = "/signin";
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Settings2 className="w-10 h-10 mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground">Loading AI Settings...</p>
+          <Button variant="outline" size="sm" onClick={() => navigate("/chat")}>
+            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />Back to Chat
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

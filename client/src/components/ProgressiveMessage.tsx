@@ -88,7 +88,7 @@ export function ProgressiveMessage({
       {/* Copy button — visible on hover */}
       <button
         onClick={handleCopy}
-        className="absolute top-0 right-0 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground"
+        className="absolute top-0 right-0 p-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground"
         title="Copy response"
       >
         {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}

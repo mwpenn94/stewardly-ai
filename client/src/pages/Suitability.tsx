@@ -14,7 +14,7 @@ const INITIAL_GREETING = "Hi! I'd love to learn a bit about your financial situa
 const INITIAL_BUTTONS = ["Let's go!", "Sure, keep it quick", "I'll just type freely"];
 
 export default function Suitability() {
-  const { user } = useAuth({ redirectOnUnauthenticated: true });
+  const { user } = useAuth();
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
 
@@ -89,7 +89,7 @@ export default function Suitability() {
       <div className="min-h-screen bg-background">
         <div className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate("/")}>
+            <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <Sparkles className="w-4 h-4 text-accent" />
@@ -124,7 +124,7 @@ export default function Suitability() {
       {/* Header */}
       <div className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <Shield className="w-4 h-4 text-accent" />

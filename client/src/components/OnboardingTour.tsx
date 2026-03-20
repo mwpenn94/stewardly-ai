@@ -114,6 +114,40 @@ const TOUR_STEPS: TourStep[] = [
     category: "getting-started",
   },
   {
+    id: "email-campaigns",
+    title: "Email Campaigns",
+    description: "Create and send personalized email campaigns to clients. Use AI to generate professional content, manage recipients, and track campaign performance.",
+    target: "[data-tour='email-campaigns']",
+    placement: "right",
+    icon: <Globe className="w-5 h-5" />,
+    category: "advanced",
+  },
+  {
+    id: "products-marketplace",
+    title: "Product Marketplace",
+    description: "Browse financial products with AI-powered suitability scoring. Compare products side-by-side and get personalized recommendations based on your client profiles.",
+    target: "[data-tour='products']",
+    placement: "right",
+    icon: <Users className="w-5 h-5" />,
+    category: "features",
+  },
+  {
+    id: "guest-access",
+    title: "Guest Access",
+    description: "You can explore all features without signing in. Your data is saved for the session. Sign in anytime to save permanently and access across devices.",
+    placement: "center",
+    icon: <Users className="w-5 h-5" />,
+    category: "getting-started",
+  },
+  {
+    id: "help-system",
+    title: "Help is Always Available",
+    description: "Click the help button (bottom-right) or press Ctrl+/ for page-specific tips, keyboard shortcuts, and FAQ. The help adapts to whichever page you're on.",
+    placement: "center",
+    icon: <HelpCircle className="w-5 h-5" />,
+    category: "getting-started",
+  },
+  {
     id: "complete",
     title: "You're All Set!",
     description: "You're ready to explore. Start a conversation, upload a document, or check the market data. Your AI assistant is here to help with anything — financial or otherwise.",
@@ -256,8 +290,8 @@ export function OnboardingTour({ onComplete, isOpen }: OnboardingTourProps) {
                   </Badge>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleSkip}>
-                <X className="w-3 h-3" />
+              <Button variant="ghost" size="icon-sm" className="shrink-0" onClick={handleSkip}>
+                <X className="w-4 h-4" />
               </Button>
             </div>
 
@@ -281,13 +315,13 @@ export function OnboardingTour({ onComplete, isOpen }: OnboardingTourProps) {
               </span>
               <div className="flex gap-1.5">
                 {currentStep > 0 && (
-                  <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handlePrev}>
-                    <ChevronLeft className="w-3 h-3 mr-0.5" /> Back
+                  <Button variant="outline" size="sm" className="text-xs" onClick={handlePrev}>
+                    <ChevronLeft className="w-3.5 h-3.5 mr-0.5" /> Back
                   </Button>
                 )}
-                <Button size="sm" className="h-7 text-xs" onClick={handleNext}>
+                <Button size="sm" className="text-xs" onClick={handleNext}>
                   {currentStep === TOUR_STEPS.length - 1 ? "Get Started" : "Next"}
-                  {currentStep < TOUR_STEPS.length - 1 && <ChevronRight className="w-3 h-3 ml-0.5" />}
+                  {currentStep < TOUR_STEPS.length - 1 && <ChevronRight className="w-3.5 h-3.5 ml-0.5" />}
                 </Button>
               </div>
             </div>
@@ -306,11 +340,11 @@ export function HelpButton({ onClick }: { onClick: () => void }) {
     <Button
       variant="outline"
       size="icon"
-      className="h-8 w-8 rounded-full"
+      className="rounded-full"
       onClick={onClick}
       title="Start guided tour"
     >
-      <HelpCircle className="w-4 h-4" />
+      <HelpCircle className="w-5 h-5" />
     </Button>
   );
 }

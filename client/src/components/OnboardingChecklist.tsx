@@ -97,7 +97,7 @@ export default function OnboardingChecklist({
         </div>
         <div className="flex items-center gap-1">
           {onDismiss && (
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); onDismiss(); }}>
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={(e) => { e.stopPropagation(); onDismiss(); }}>
               <X className="w-3 h-3" />
             </Button>
           )}

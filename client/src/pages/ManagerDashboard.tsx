@@ -15,7 +15,7 @@ import {
 import { useState } from "react";
 
 export default function ManagerDashboard() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [reviewNote, setReviewNote] = useState("");
   const [selectedItem, setSelectedItem] = useState<number | null>(null);
@@ -48,7 +48,7 @@ export default function ManagerDashboard() {
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <Sparkles className="w-4 h-4 text-accent" />

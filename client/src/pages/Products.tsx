@@ -38,7 +38,7 @@ const RISK_COLORS: Record<string, string> = {
 const CATEGORIES = ["iul", "term_life", "whole_life", "variable_life", "disability", "ltc", "premium_finance"] as const;
 
 export default function Products() {
-  const { user } = useAuth({ redirectOnUnauthenticated: true });
+  const { user } = useAuth();
   const [, navigate] = useLocation();
   const products = trpc.products.list.useQuery();
   const utils = trpc.useUtils();
@@ -101,7 +101,7 @@ export default function Products() {
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => navigate("/chat")}>
+          <Button variant="ghost" size="icon-sm" className="shrink-0" onClick={() => navigate("/chat")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex items-center gap-2">

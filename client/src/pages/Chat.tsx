@@ -13,7 +13,7 @@ import {
   Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
-  Copy, RefreshCw, Database, Zap, FileCheck, Scale
+  Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { LiveSession } from "@/components/LiveSession";
@@ -559,6 +559,7 @@ export default function Chat() {
     { icon: <FileCheck className="w-3.5 h-3.5" />, label: "Insurance", href: "/insurance-quotes", minRole: "advisor" as UserRole },
     { icon: <Scale className="w-3.5 h-3.5" />, label: "Estate Planning", href: "/estate-planning", minRole: "advisor" as UserRole },
     { icon: <DollarSign className="w-3.5 h-3.5" />, label: "Premium Finance", href: "/premium-finance", minRole: "advisor" as UserRole },
+    { icon: <Mail className="w-3.5 h-3.5" />, label: "Email Campaigns", href: "/email-campaigns", minRole: "advisor" as UserRole },
   ];
 
   const adminNav = [
@@ -586,7 +587,7 @@ export default function Chat() {
           {sidebarCollapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewConversation}>
+                <Button variant="ghost" size="icon" onClick={handleNewConversation}>
                   <Plus className="w-4 h-4" />
                 </Button>
               </TooltipTrigger>
@@ -597,7 +598,7 @@ export default function Chat() {
               <Button variant="ghost" size="sm" className="gap-2 text-xs flex-1 justify-start" onClick={handleNewConversation}>
                 <Plus className="w-3.5 h-3.5" /> New Conversation
               </Button>
-              <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(false)}>
+              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
                 <X className="w-4 h-4" />
               </Button>
             </>
@@ -770,9 +771,9 @@ export default function Chat() {
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile-only sidebar toggle */}
-        <div className="lg:hidden flex items-center h-10 px-3 shrink-0">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSidebarOpen(true)}>
-            <Menu className="w-4 h-4" />
+        <div className="lg:hidden flex items-center h-12 px-3 shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
+            <Menu className="w-5 h-5" />
           </Button>
         </div>
 
@@ -849,33 +850,35 @@ export default function Chat() {
                           {msg.id && (
                             <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => handleFeedback(msg.id, "up")}>
-                                  <ThumbsUp className="w-3 h-3" />
+                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => handleFeedback(msg.id, "up")}>
+                                  <ThumbsUp className="w-4 h-4" />
                                 </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-[10px]">Good response</TooltipContent></Tooltip>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Good response</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => handleFeedback(msg.id, "down")}>
-                                  <ThumbsDown className="w-3 h-3" />
+                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => handleFeedback(msg.id, "down")}>
+                                  <ThumbsDown className="w-4 h-4" />
                                 </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-[10px]">Bad response</TooltipContent></Tooltip>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Bad response</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
-                                  <Copy className="w-3 h-3" />
+                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
+                                  <Copy className="w-4 h-4" />
                                 </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-[10px]">Copy</TooltipContent></Tooltip>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Copy</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.speak(msg.content)}>
-                                  <Volume2 className="w-3 h-3" />
+                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.speak(msg.content)}>
+                                  <Volume2 className="w-4 h-4" />
                                 </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-[10px]">Read aloud</TooltipContent></Tooltip>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Read aloud</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => { if (messages.length >= 2) { const lastUserMsg = [...messages].reverse().find(m => m.role === "user"); if (lastUserMsg) handleSendWithText(lastUserMsg.content); } }}>
-                                  <RefreshCw className="w-3 h-3" />
+                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => { if (messages.length >= 2) { const lastUserMsg = [...messages].reverse().find(m => m.role === "user"); if (lastUserMsg) handleSendWithText(lastUserMsg.content); } }}>
+                                  <RefreshCw className="w-4 h-4" />
                                 </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-[10px]">Regenerate</TooltipContent></Tooltip>
-                              <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-purple-400 transition-colors" onClick={async () => { toast.info("Generating infographic..."); try { const result = await visualMutation.mutateAsync({ prompt: `Create a professional infographic summarizing: ${msg.content.slice(0, 500)}` }); if (result.url) { setMessages(prev => [...prev, { role: "assistant" as const, content: `Here's the infographic:`, metadata: { imageUrl: result.url }, createdAt: new Date() }]); } } catch (e: any) { toast.error(e.message || "Failed to generate infographic"); } }} title="Generate Infographic">
-                                <Palette className="w-3 h-3" />
-                              </button>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Regenerate</TooltipContent></Tooltip>
+                              <Tooltip><TooltipTrigger asChild>
+                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-purple-400 transition-colors" onClick={async () => { toast.info("Generating infographic..."); try { const result = await visualMutation.mutateAsync({ prompt: `Create a professional infographic summarizing: ${msg.content.slice(0, 500)}` }); if (result.url) { setMessages(prev => [...prev, { role: "assistant" as const, content: `Here's the infographic:`, metadata: { imageUrl: result.url }, createdAt: new Date() }]); } } catch (e: any) { toast.error(e.message || "Failed to generate infographic"); } }} title="Generate Infographic">
+                                  <Palette className="w-4 h-4" />
+                                </button>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate Infographic</TooltipContent></Tooltip>
                             </div>
                           )}
                         </div>
@@ -932,7 +935,7 @@ export default function Chat() {
                 </span>
               )}
             </div>
-            <Button variant="ghost" size="sm" className="text-xs h-6 shrink-0" onClick={toggleHandsFree}>End</Button>
+            <Button variant="ghost" size="sm" className="text-xs shrink-0" onClick={toggleHandsFree}>End</Button>
           </div>
         )}
 
@@ -973,18 +976,18 @@ export default function Chat() {
             </div>
 
             {/* Action bar below textarea — Copilot style: [+] [Mode v] ... [Audio] [hands-free/send] */}
-            <div className="flex items-center gap-1.5 mt-1.5">
+            <div className="flex items-center gap-1 mt-1.5">
               {/* + Add context button */}
               <div className="relative">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      className={`p-1.5 rounded-full transition-all ${
+                      className={`p-2.5 rounded-full transition-all ${
                         showAddMenu ? "bg-accent/20 text-accent rotate-45" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
                       }`}
                       onClick={() => setShowAddMenu(!showAddMenu)}
                     >
-                      <Plus className="w-4 h-4 transition-transform" />
+                      <Plus className="w-5 h-5 transition-transform" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>Add context</TooltipContent>
@@ -1045,10 +1048,10 @@ export default function Chat() {
 
               {/* Mode dropdown — Copilot "Smart v" style */}
               <div className="relative">
-                <button
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-secondary/40 text-foreground hover:bg-secondary/60 border border-border transition-all"
-                  onClick={() => setShowModeMenu(!showModeMenu)}
-                >
+                  <button
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium bg-secondary/40 text-foreground hover:bg-secondary/60 border border-border transition-all"
+                    onClick={() => setShowModeMenu(!showModeMenu)}
+                  >
                   {FOCUS_OPTIONS.find(o => selectedFocus.includes(o.value))?.icon || <Sparkles className="w-3 h-3" />}
                   {FOCUS_OPTIONS.find(o => selectedFocus.includes(o.value))?.label || "General"}
                   <ChevronDown className={`w-3 h-3 transition-transform ${showModeMenu ? "rotate-180" : ""}`} />
@@ -1102,14 +1105,14 @@ export default function Chat() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    className={`p-1.5 rounded-full transition-all ${
+                    className={`p-2.5 rounded-full transition-all ${
                       ttsEnabled
                         ? "bg-accent/15 text-accent"
                         : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
                     }`}
                     onClick={() => { setTtsEnabled(!ttsEnabled); tts.cancel(); }}
                   >
-                    {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                    {ttsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>{ttsEnabled ? "Mute audio" : "Enable audio"}</TooltipContent>
@@ -1119,26 +1122,26 @@ export default function Chat() {
               {isStreaming ? (
                 <Button
                   size="icon"
-                  className="h-8 w-8 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
+                  className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
                   disabled
                 >
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                 </Button>
               ) : (input.trim() || attachments.length > 0) ? (
                 <Button
                   size="icon"
-                  className="h-8 w-8 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
+                  className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
                   onClick={handleSend}
                 >
-                  <ArrowUp className="w-4 h-4" />
+                  <ArrowUp className="w-5 h-5" />
                 </Button>
               ) : handsFreeActive ? (
                 <Button
                   size="icon"
-                  className="h-8 w-8 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse transition-all"
+                  className="h-10 w-10 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse transition-all"
                   onClick={toggleHandsFree}
                 >
-                  <PhoneOff className="w-4 h-4" />
+                  <PhoneOff className="w-5 h-5" />
                 </Button>
               ) : (
                 <Tooltip>
@@ -1146,10 +1149,10 @@ export default function Chat() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all"
+                      className="h-10 w-10 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all"
                       onClick={toggleHandsFree}
                     >
-                      <AudioLines className="w-4 h-4" />
+                      <AudioLines className="w-5 h-5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Start hands-free voice</TooltipContent>

@@ -229,7 +229,7 @@ export default function KnowledgeBaseTab() {
                             value={doc.visibility || "professional"}
                             onValueChange={(v) => updateVis.mutate({ id: doc.id, visibility: v as any })}
                           >
-                            <SelectTrigger className="h-6 w-6 p-0 border-0 bg-transparent [&>svg]:hidden">
+                            <SelectTrigger className="h-9 w-9 p-0 border-0 bg-transparent [&>svg]:hidden">
                               {doc.visibility === "private" ? <EyeOff className="w-3 h-3 text-muted-foreground" /> : <Eye className="w-3 h-3 text-muted-foreground" />}
                             </SelectTrigger>
                             <SelectContent>
@@ -242,14 +242,14 @@ export default function KnowledgeBaseTab() {
                           </Select>
                           <Button
                             variant="ghost" size="sm"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                            className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
                             onClick={() => setSelectedDoc(doc)}
                           >
                             <FileText className="w-3 h-3" />
                           </Button>
                           <Button
                             variant="ghost" size="sm"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive"
                             onClick={() => deleteDoc.mutate({ id: doc.id })}
                           >
                             <Trash2 className="w-3 h-3" />

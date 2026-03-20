@@ -430,13 +430,13 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
           <div className="absolute top-3 right-3 flex gap-1.5">
             <button
               onClick={() => setExpanded(!expanded)}
-              className="p-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white transition-colors"
+              className="p-2.5 rounded-lg bg-black/50 hover:bg-black/70 text-white transition-colors"
             >
               {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
             <button
               onClick={() => setShowPreview(false)}
-              className="p-1.5 rounded-lg bg-black/50 hover:bg-black/70 text-white transition-colors"
+              className="p-2.5 rounded-lg bg-black/50 hover:bg-black/70 text-white transition-colors"
             >
               <EyeOff className="w-4 h-4" />
             </button>
@@ -476,7 +476,6 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
             onClick={toggleMute}
             title={isMuted ? "Unmute" : "Mute"}
           >
@@ -486,7 +485,6 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
             onClick={() => setTtsEnabled(!ttsEnabled)}
             title={ttsEnabled ? "Mute AI voice" : "Enable AI voice"}
           >
@@ -496,7 +494,6 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
             onClick={() => {
               if (liveMode === "camera") {
                 stopStream();

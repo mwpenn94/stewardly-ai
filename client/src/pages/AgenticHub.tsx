@@ -15,8 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { Link } from "wouter";
 import {
-  Shield, Bot, FileText, Calculator, Scale, Building2,
+  ArrowLeft, Shield, Bot, FileText, Calculator, Scale, Building2,
   DollarSign, Link2, Play, Plus, CheckCircle2, XCircle,
   Clock, AlertTriangle, Loader2, Eye, ArrowRight,
 } from "lucide-react";
@@ -79,6 +80,9 @@ export default function AgenticHub() {
   return (
     <div className="space-y-6">
       <div>
+        <Link href="/chat" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2">
+          <ArrowLeft className="h-4 w-4" /> Back to Chat
+        </Link>
         <h1 className="text-2xl font-bold tracking-tight">Agentic Execution Hub</h1>
         <p className="text-muted-foreground">Compliance-gated autonomous execution for insurance, advisory, and estate planning</p>
       </div>

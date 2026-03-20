@@ -10,6 +10,9 @@ import SignIn from "./pages/SignIn";
 import OrgLanding from "./pages/OrgLanding";
 import Welcome from "./pages/Welcome";
 import ConsentBanner from "./components/ConsentBanner";
+import { GuestBanner } from "./components/GuestBanner";
+import { ContextualHelp } from "./components/ContextualHelp";
+import { useGuestSession } from "./hooks/useGuestSession";
 import Calculators from "./pages/Calculators";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import Products from "./pages/Products";
@@ -35,6 +38,7 @@ import CoiNetwork from "./pages/CoiNetwork";
 import DataIntelligence from "./pages/DataIntelligence";
 import AgenticHub from "./pages/AgenticHub";
 import { LicensedReview, AgentOperations, InsuranceQuotes, InsuranceApplications, AdvisoryExecution, EstatePlanning, PremiumFinance, CarrierConnector } from "./pages/PartGPages";
+import EmailCampaigns from "./pages/EmailCampaigns";
 
 function Router() {
   return (
@@ -79,6 +83,7 @@ function Router() {
       <Route path={"/estate-planning"} component={EstatePlanning} />
       <Route path={"/premium-finance"} component={PremiumFinance} />
       <Route path={"/carrier-connector"} component={CarrierConnector} />
+      <Route path={"/email-campaigns"} component={EmailCampaigns} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>
@@ -103,14 +108,26 @@ function Router() {
   );
 }
 
+function AppContent() {
+  // Auto-provision guest session for anonymous visitors
+  useGuestSession();
+  return (
+    <>
+      <GuestBanner />
+      <Router />
+      <ConsentBanner />
+      <ContextualHelp />
+    </>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
-          <Router />
-          <ConsentBanner />
+          <AppContent />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

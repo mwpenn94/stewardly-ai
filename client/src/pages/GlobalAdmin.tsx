@@ -21,7 +21,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function GlobalAdmin() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const utils = trpc.useUtils();
@@ -111,7 +111,7 @@ export default function GlobalAdmin() {
       {/* Header */}
       <header className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate("/chat")}>
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/chat")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <Globe className="w-4 h-4 text-accent" />
@@ -352,7 +352,7 @@ export default function GlobalAdmin() {
                             checked={flag.enabled}
                             onCheckedChange={(checked) => toggleFlag.mutate({ id: flag.id, enabled: checked })}
                           />
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive"
                             onClick={() => { if (confirm(`Delete flag "${flag.label}"?`)) deleteFlag.mutate({ id: flag.id }); }}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>

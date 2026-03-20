@@ -24,7 +24,7 @@ type StudyResult = {
 };
 
 export default function StudyBuddy() {
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("tools");
   const [documentText, setDocumentText] = useState("");
