@@ -1075,3 +1075,4 @@
 - [x] Textarea becomes full-width (buttons below, not beside)
 - [x] Remove header entirely (mobile-only hamburger remains)
 - [x] Sidebar: contracted state with small icons only, expands to current full layout
+- [x] Remove "Press phone for hands-free voice" hint text from main conversation screen

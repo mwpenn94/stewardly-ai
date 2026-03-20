@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc";
 import {
   AlertTriangle, ArrowUp, AudioLines, BarChart3, BookOpen, Bot, Briefcase, Building2, Calculator, Check, CheckCircle, ClipboardList,
   ChevronDown, ChevronUp, FileText, GraduationCap, Image, Key, Loader2, LogOut, Menu, MessageSquare,
-  Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, Phone, PhoneOff, Plus,
+  Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield
 } from "lucide-react";
@@ -166,9 +166,6 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
           ))}
         </div>
 
-        <p className={`text-[11px] text-muted-foreground mt-6 transition-opacity duration-700 delay-300 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
-          Press <Phone className="w-3 h-3 inline" /> for hands-free voice &middot; <Volume2 className="w-3 h-3 inline" /> audio is {ttsEnabled ? "on" : "off"}
-        </p>
 
         {/* Onboarding Checklist */}
         {!hasConversations && (
