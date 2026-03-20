@@ -14,7 +14,7 @@ import { useLocation } from "wouter";
 import {
   ArrowLeft, Sparkles, User, Brain, Trash2, Plus, Loader2,
   Fingerprint, BookOpen, Heart, Target, Users, Clock, DollarSign,
-  Camera, X, ImageIcon,
+  Camera, X, ImageIcon, Volume2, Play, Square, Mic,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -102,6 +102,7 @@ export default function Settings() {
         <Tabs defaultValue="avatar" className="space-y-6">
           <TabsList className="bg-secondary flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="avatar" className="gap-1.5 text-xs"><Camera className="w-3.5 h-3.5" /> Avatar</TabsTrigger>
+            <TabsTrigger value="voice" className="gap-1.5 text-xs"><Volume2 className="w-3.5 h-3.5" /> Voice</TabsTrigger>
             <TabsTrigger value="style" className="gap-1.5 text-xs"><Fingerprint className="w-3.5 h-3.5" /> Personalize</TabsTrigger>
             <TabsTrigger value="memories" className="gap-1.5 text-xs"><Brain className="w-3.5 h-3.5" /> Memories</TabsTrigger>
             <TabsTrigger value="profile" className="gap-1.5 text-xs"><User className="w-3.5 h-3.5" /> Profile</TabsTrigger>
@@ -334,8 +335,165 @@ export default function Settings() {
               </CardContent>
             </Card>
           </TabsContent>
+          {/* Voice */}
+          <TabsContent value="voice">
+            <VoiceSettings />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
+  );
+}
+
+// ─── VOICE SETTINGS COMPONENT ─────────────────────────────────────
+function VoiceSettings() {
+  const voicesQuery = trpc.voice.voices.useQuery();
+  const speakMutation = trpc.voice.speak.useMutation();
+  const [selectedVoice, setSelectedVoice] = useState<string>(() => {
+    return localStorage.getItem("tts-voice") || "aria";
+  });
+  const [previewPlaying, setPreviewPlaying] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [localeFilter, setLocaleFilter] = useState<string>("all");
+
+  const voices = voicesQuery.data || [];
+  const locales = Array.from(new Set(voices.map(v => v.locale))).sort();
+  const localeLabels: Record<string, string> = {
+    "en-US": "American", "en-GB": "British", "en-AU": "Australian",
+    "en-IE": "Irish", "en-IN": "Indian", "en-CA": "Canadian",
+  };
+
+  const filteredVoices = localeFilter === "all" ? voices : voices.filter(v => v.locale === localeFilter);
+
+  const handlePreview = (voiceId: string, label: string) => {
+    // Stop any current preview
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
+    if (previewPlaying === voiceId) {
+      setPreviewPlaying(null);
+      return;
+    }
+    setPreviewPlaying(voiceId);
+    speakMutation.mutate(
+      { text: `Hi, I'm ${label}. I'll be your financial advisor's voice assistant. How can I help you today?`, voice: voiceId },
+      {
+        onSuccess: (data) => {
+          if (!data.audio) { setPreviewPlaying(null); return; }
+          const binaryStr = atob(data.audio);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+          const blob = new Blob([bytes], { type: "audio/webm" });
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          audio.onended = () => { URL.revokeObjectURL(url); setPreviewPlaying(null); audioRef.current = null; };
+          audio.onerror = () => { URL.revokeObjectURL(url); setPreviewPlaying(null); audioRef.current = null; };
+          audio.play().catch(() => { setPreviewPlaying(null); });
+        },
+        onError: () => { setPreviewPlaying(null); toast.error("Preview failed"); },
+      }
+    );
+  };
+
+  const handleSelect = (voiceId: string) => {
+    setSelectedVoice(voiceId);
+    localStorage.setItem("tts-voice", voiceId);
+    toast.success("Voice preference saved");
+  };
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2"><Mic className="w-4 h-4 text-accent" /> Voice Assistant</CardTitle>
+        <CardDescription className="text-xs">
+          Choose the voice for your AI assistant. Click the play button to preview, then select your preferred voice.
+          Your choice is saved locally and used for all hands-free and audio responses.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Locale filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge
+            variant={localeFilter === "all" ? "default" : "outline"}
+            className="cursor-pointer text-xs"
+            onClick={() => setLocaleFilter("all")}
+          >
+            All
+          </Badge>
+          {locales.map(loc => (
+            <Badge
+              key={loc}
+              variant={localeFilter === loc ? "default" : "outline"}
+              className="cursor-pointer text-xs"
+              onClick={() => setLocaleFilter(loc)}
+            >
+              {localeLabels[loc] || loc}
+            </Badge>
+          ))}
+        </div>
+
+        {/* Voice grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {filteredVoices.map(v => {
+            const isSelected = selectedVoice === v.id;
+            const isPreviewing = previewPlaying === v.id;
+            return (
+              <div
+                key={v.id}
+                className={`relative p-3 rounded-lg border transition-all cursor-pointer ${
+                  isSelected
+                    ? "border-accent bg-accent/10 ring-1 ring-accent/30"
+                    : "border-border bg-secondary/30 hover:border-accent/40 hover:bg-secondary/60"
+                }`}
+                onClick={() => handleSelect(v.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                      v.gender === "female" ? "bg-pink-500/20 text-pink-400" : "bg-blue-500/20 text-blue-400"
+                    }`}>
+                      {v.label[0]}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {v.label}
+                        {isSelected && <span className="ml-1.5 text-accent text-[10px]">\u2713 Active</span>}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {v.description} \u00b7 {localeLabels[v.locale] || v.locale}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 shrink-0"
+                    onClick={(e) => { e.stopPropagation(); handlePreview(v.id, v.label); }}
+                    disabled={speakMutation.isPending && previewPlaying !== v.id}
+                  >
+                    {isPreviewing ? (
+                      <Square className="w-3.5 h-3.5 text-accent" />
+                    ) : speakMutation.isPending && previewPlaying === v.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Play className="w-3.5 h-3.5" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {voicesQuery.isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -165,6 +165,10 @@
 - [x] Recognition only starts AFTER TTS onend fires, with a 600ms guard delay
 - [x] ttsGuardRef prevents recognition from starting during playback
 - [x] Fix hands-free mode UI freaking out after user finishes speaking
+- [x] Fix hands-free voice: recognition restarts instead of processing transcript after silence detection (state machine rewrite)
+- [x] Expand Edge TTS voice catalog with all available voices (25+ voices, 6 locales)
+- [x] Add voice selector UI in Settings with preview playback
+- [x] Persist voice preference in user settings (localStorage)
 - [x] Upgrade TTS from browser SpeechSynthesis to Edge TTS via server proxy
 
 ## Update 4 — Document Access, Suitability, Products, AI Visuals

@@ -16,9 +16,8 @@ vi.mock("msedge-tts", () => {
     toStream(text: string, options?: any) {
       const readable = new Readable({
         read() {
-          // Emit fake audio data
           this.push(Buffer.from("fake-audio-data"));
-          this.push(null); // end stream
+          this.push(null);
         },
       });
       return { audioStream: readable };
@@ -33,46 +32,73 @@ vi.mock("msedge-tts", () => {
   };
 });
 
-import { generateSpeech, getAvailableVoices, VOICES } from "./edgeTTS";
+import { generateSpeech, getVoiceCatalog, VOICE_CATALOG } from "./edgeTTS";
 
 describe("Edge TTS Service", () => {
-  describe("getAvailableVoices", () => {
-    it("returns a list of voice objects", () => {
-      const voices = getAvailableVoices();
-      expect(voices).toBeInstanceOf(Array);
-      expect(voices.length).toBeGreaterThan(0);
+  describe("VOICE_CATALOG", () => {
+    it("has at least 20 voices", () => {
+      expect(VOICE_CATALOG.length).toBeGreaterThanOrEqual(20);
     });
 
     it("each voice has required fields", () => {
-      const voices = getAvailableVoices();
-      for (const v of voices) {
+      for (const v of VOICE_CATALOG) {
         expect(v).toHaveProperty("id");
-        expect(v).toHaveProperty("name");
+        expect(v).toHaveProperty("shortName");
+        expect(v).toHaveProperty("label");
         expect(v).toHaveProperty("gender");
         expect(v).toHaveProperty("locale");
+        expect(v).toHaveProperty("description");
         expect(["male", "female"]).toContain(v.gender);
+        expect(v.shortName).toMatch(/Neural$/);
         expect(v.locale).toMatch(/^en-/);
       }
     });
 
     it("includes aria as a voice", () => {
-      const voices = getAvailableVoices();
-      const aria = voices.find((v) => v.id === "aria");
+      const aria = VOICE_CATALOG.find((v) => v.id === "aria");
       expect(aria).toBeDefined();
-      expect(aria!.name).toBe("en-US-AriaNeural");
+      expect(aria!.shortName).toBe("en-US-AriaNeural");
       expect(aria!.gender).toBe("female");
+    });
+
+    it("has voices from multiple locales", () => {
+      const locales = new Set(VOICE_CATALOG.map(v => v.locale));
+      expect(locales.size).toBeGreaterThanOrEqual(4); // US, GB, AU, IE, IN, CA
+    });
+
+    it("has both male and female voices", () => {
+      const genders = new Set(VOICE_CATALOG.map(v => v.gender));
+      expect(genders.has("male")).toBe(true);
+      expect(genders.has("female")).toBe(true);
+    });
+
+    it("has unique IDs", () => {
+      const ids = VOICE_CATALOG.map(v => v.id);
+      const uniqueIds = new Set(ids);
+      expect(uniqueIds.size).toBe(ids.length);
     });
   });
 
-  describe("VOICES constant", () => {
-    it("has at least 5 voices", () => {
-      expect(Object.keys(VOICES).length).toBeGreaterThanOrEqual(5);
+  describe("getVoiceCatalog", () => {
+    it("returns voice objects without shortName (for frontend)", () => {
+      const catalog = getVoiceCatalog();
+      expect(catalog.length).toBe(VOICE_CATALOG.length);
+      for (const v of catalog) {
+        expect(v).toHaveProperty("id");
+        expect(v).toHaveProperty("label");
+        expect(v).toHaveProperty("gender");
+        expect(v).toHaveProperty("locale");
+        expect(v).toHaveProperty("description");
+        // shortName is internal — not exposed to frontend
+        expect(v).not.toHaveProperty("shortName");
+      }
     });
 
-    it("all voice names end with Neural", () => {
-      for (const name of Object.values(VOICES)) {
-        expect(name).toMatch(/Neural$/);
-      }
+    it("maps IDs correctly from VOICE_CATALOG", () => {
+      const catalog = getVoiceCatalog();
+      const catalogIds = catalog.map(v => v.id);
+      const sourceIds = VOICE_CATALOG.map(v => v.id);
+      expect(catalogIds).toEqual(sourceIds);
     });
   });
 
@@ -88,12 +114,16 @@ describe("Edge TTS Service", () => {
       expect(buffer).toBeInstanceOf(Buffer);
     });
 
+    it("accepts voices from different locales", async () => {
+      const buffer = await generateSpeech("Test", "sonia");
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+
     it("throws on empty text after cleaning", async () => {
       await expect(generateSpeech("")).rejects.toThrow();
     });
 
     it("cleans markdown from text", async () => {
-      // Should not throw — markdown gets cleaned to plain text
       const buffer = await generateSpeech("**Bold** and `code` and [link](http://example.com)");
       expect(buffer).toBeInstanceOf(Buffer);
     });
@@ -105,8 +135,12 @@ describe("Edge TTS Service", () => {
     });
 
     it("defaults to aria voice when invalid voice given", async () => {
-      // @ts-ignore - testing invalid input
       const buffer = await generateSpeech("Test", "nonexistent");
+      expect(buffer).toBeInstanceOf(Buffer);
+    });
+
+    it("accepts rate and pitch parameters", async () => {
+      const buffer = await generateSpeech("Test", "aria", "+10%", "+5Hz");
       expect(buffer).toBeInstanceOf(Buffer);
     });
   });

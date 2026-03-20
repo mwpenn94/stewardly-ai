@@ -239,19 +239,28 @@ export default function Chat() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const handleSendRef = useRef<(text: string) => void>(() => {});
 
-  // ─── COMBINED GUARD REF ────────────────────────────────────────
-  // Blocks voice recognition during BOTH TTS playback AND AI streaming/processing
-  const combinedGuardRef = useRef(false);
+  // ─── GUARD REF ─────────────────────────────────────────────────
+  // Blocks voice recognition during TTS playback AND AI processing.
+  // The voice hook checks this before starting/restarting.
+  const guardRef = useRef(false);
+  // Track hands-free processing state for UI (not a React state to avoid re-render loops)
+  const processingRef = useRef(false);
+  const [, forceUpdate] = useState(0);
 
   // ─── ENHANCED TTS ─────────────────────────────────────────────
+  // Read voice preference from localStorage (set in Settings > Voice tab)
+  const [ttsVoice] = useState(() => localStorage.getItem("tts-voice") || "aria");
   const tts = useTTS({
     enabled: ttsEnabled,
+    voice: ttsVoice,
     rate: 1.0,
     onStart: () => {
-      combinedGuardRef.current = true;
+      guardRef.current = true;
     },
     onEnd: () => {
-      combinedGuardRef.current = false;
+      guardRef.current = false;
+      processingRef.current = false;
+      forceUpdate(n => n + 1);
       // In hands-free mode, restart listening after TTS completes
       if (handsFreeActive) {
         setTimeout(() => voice.start(), 600);
@@ -259,34 +268,38 @@ export default function Chat() {
     },
   });
 
-  // ─── ENHANCED VOICE RECOGNITION ───────────────────────────────
+  // ─── VOICE RECOGNITION (STATE MACHINE) ────────────────────────
+  // The voice hook uses a state machine internally:
+  //   IDLE → LISTENING → SENT → (wait for start()) → LISTENING
+  // After sending a transcript, it moves to SENT and NEVER auto-restarts.
+  // Only an explicit start() call (from tts.onEnd or the finally block) restarts it.
   const voice = useVoiceRecognition({
     enabled: handsFreeActive,
-    silenceTimeout: 1500,
+    silenceTimeout: 1800,
     lang: "en-US",
     onTranscript: (text) => {
-      // Set guard immediately so recognition doesn't restart during processing
-      combinedGuardRef.current = true;
-      // Clear the input field immediately to prevent flicker
+      // Recognition already stopped itself (moved to SENT state).
+      // Set guard so it can't restart, then send the message.
+      guardRef.current = true;
+      processingRef.current = true;
       setInput("");
-      // Auto-send in hands-free mode
+      forceUpdate(n => n + 1);
       handleSendRef.current(text);
     },
     onInterim: (text) => {
-      // Only update input if hands-free is active and we're not processing
-      if (handsFreeActive && !isStreaming && !tts.isSpeaking) {
+      if (handsFreeActive && !processingRef.current && !tts.isSpeaking) {
         setInput(text);
       }
     },
-    guardRef: combinedGuardRef,
+    guardRef,
   });
 
-  // Derive voice state for UI — stable transitions to prevent flicker
-  const voiceState: "idle" | "listening" | "processing" | "speaking" = 
-    tts.isSpeaking ? "speaking" : 
-    isStreaming ? "processing" :
-    voice.isListening ? "listening" : 
-    (handsFreeActive && combinedGuardRef.current) ? "processing" : "idle";
+  // Derive voice state for UI
+  const voiceState: "idle" | "listening" | "processing" | "speaking" =
+    tts.isSpeaking ? "speaking" :
+    (isStreaming || processingRef.current) ? "processing" :
+    voice.isListening ? "listening" :
+    "idle";
 
   // ─── ANONYMOUS MODE ──────────────────────────────────────────
   const isAnonymous = !isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('anonymousMode') === 'true';
@@ -450,13 +463,14 @@ export default function Chat() {
       setIsStreaming(false);
       setAttachments([]);
       // If hands-free is active and TTS is NOT about to speak (no ttsEnabled or error path),
-      // release the guard so recognition can restart.
-      // If TTS IS speaking, the guard will be released by tts.onEnd.
+      // release the guard and restart listening.
+      // If TTS IS enabled, the guard stays on until tts.onEnd releases it and restarts listening.
       if (handsFreeActive && !ttsEnabled) {
-        combinedGuardRef.current = false;
+        guardRef.current = false;
+        processingRef.current = false;
+        forceUpdate(n => n + 1);
         setTimeout(() => voice.start(), 600);
       }
-      // If ttsEnabled, the guard stays on until TTS finishes (tts.onEnd releases it)
     }
   };
 

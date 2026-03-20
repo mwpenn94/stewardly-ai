@@ -9,7 +9,7 @@ import { transcribeAudio } from "./_core/voiceTranscription";
 import { storagePut } from "./storage";
 import { generateImage } from "./_core/imageGeneration";
 import { nanoid } from "nanoid";
-import { generateSpeech, getAvailableVoices, type VoiceId } from "./edgeTTS";
+import { generateSpeech, getVoiceCatalog } from "./edgeTTS";
 import { callDataApi } from "./_core/dataApi";
 import { SEARCH_TOOLS, executeSearchTool } from "./webSearch";
 import {
@@ -740,7 +740,7 @@ const voiceRouter = router({
   speak: publicProcedure
     .input(z.object({
       text: z.string().min(1).max(5000),
-      voice: z.enum(["aria", "jenny", "sara", "emma", "guy", "davis", "jason", "tony", "sonia", "ryan"]).default("aria"),
+      voice: z.string().default("aria"),
       rate: z.string().default("+0%"),
       pitch: z.string().default("+0Hz"),
     }))
@@ -748,11 +748,10 @@ const voiceRouter = router({
       try {
         const audioBuffer = await generateSpeech(
           input.text,
-          input.voice as VoiceId,
+          input.voice,
           input.rate,
           input.pitch
         );
-        // Return base64-encoded audio for the frontend to play
         return {
           audio: audioBuffer.toString("base64"),
           mimeType: "audio/webm",
@@ -766,8 +765,8 @@ const voiceRouter = router({
         });
       }
     }),
-  /** List available Edge TTS voices */
-  voices: publicProcedure.query(() => getAvailableVoices()),
+  /** List available Edge TTS voices with metadata */
+  voices: publicProcedure.query(() => getVoiceCatalog()),
 });
 
 // ─── SETTINGS ROUTER ──────────────────────────────────────────────
