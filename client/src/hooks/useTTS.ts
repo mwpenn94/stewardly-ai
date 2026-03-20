@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { trpc } from "@/lib/trpc";
 
 export interface TTSOptions {
   /** Whether TTS is enabled */
   enabled: boolean;
-  /** Voice preference (for browser SpeechSynthesis fallback) */
+  /** Edge TTS voice preset. Default "aria" */
   voice?: string;
-  /** Rate (0.5 - 2.0). Default 1.0 */
+  /** Rate (for browser fallback, 0.5 - 2.0). Default 1.0 */
   rate?: number;
   /** Called when TTS starts playing */
   onStart?: () => void;
@@ -24,27 +25,25 @@ export interface TTSReturn {
 }
 
 /**
- * Clean markdown/formatting from text for natural speech.
+ * Clean markdown/formatting from text for natural speech (browser fallback only).
  */
 function cleanForSpeech(text: string): string {
   return text
-    .replace(/```[\s\S]*?```/g, " code block omitted ") // code blocks
-    .replace(/`[^`]+`/g, (m) => m.replace(/`/g, ""))     // inline code
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")              // markdown links
-    .replace(/[#*_~\[\]()>|]/g, "")                       // markdown chars
-    .replace(/---[\s\S]*$/m, "")                           // horizontal rules and below
-    .replace(/\n{2,}/g, ". ")                              // double newlines → pause
-    .replace(/\n/g, " ")                                   // single newlines → space
-    .replace(/\s{2,}/g, " ")                               // collapse whitespace
+    .replace(/```[\s\S]*?```/g, " code block omitted ")
+    .replace(/`[^`]+`/g, (m) => m.replace(/`/g, ""))
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[#*_~\[\]()>|]/g, "")
+    .replace(/---[\s\S]*$/m, "")
+    .replace(/\n{2,}/g, ". ")
+    .replace(/\n/g, " ")
+    .replace(/\s{2,}/g, " ")
     .trim();
 }
 
 /**
- * Split text into sentence-sized chunks for natural speech cadence.
- * Targets ~200 words per chunk max for browser SpeechSynthesis reliability.
+ * Split text into sentence-sized chunks for browser SpeechSynthesis reliability.
  */
 function chunkText(text: string, maxWords = 200): string[] {
-  // First split on sentence boundaries
   const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [text];
   const chunks: string[] = [];
   let current = "";
@@ -70,7 +69,7 @@ function chunkText(text: string, maxWords = 200): string[] {
 
 export function useTTS({
   enabled,
-  voice,
+  voice = "aria",
   rate = 1.0,
   onStart,
   onEnd,
@@ -80,11 +79,15 @@ export function useTTS({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const onStartRef = useRef(onStart);
   const onEndRef = useRef(onEnd);
+  const cancelledRef = useRef(false);
 
   useEffect(() => { onStartRef.current = onStart; }, [onStart]);
   useEffect(() => { onEndRef.current = onEnd; }, [onEnd]);
 
+  const speakMutation = trpc.voice.speak.useMutation();
+
   const cancel = useCallback(() => {
+    cancelledRef.current = true;
     // Cancel browser synthesis
     window.speechSynthesis?.cancel();
     // Cancel audio element
@@ -98,36 +101,85 @@ export function useTTS({
   }, []);
 
   /**
-   * Browser SpeechSynthesis fallback — works everywhere, no API key needed.
+   * Play audio from base64-encoded webm data via Edge TTS.
+   */
+  const playEdgeAudio = useCallback(
+    (base64Audio: string) => {
+      if (cancelledRef.current) return;
+
+      // Decode base64 to blob
+      const binaryStr = atob(base64Audio);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: "audio/webm" });
+      const url = URL.createObjectURL(blob);
+
+      const audio = new Audio(url);
+      audioRef.current = audio;
+
+      audio.onplay = () => {
+        if (cancelledRef.current) {
+          audio.pause();
+          return;
+        }
+      };
+
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+        guardRef.current = false;
+        setIsSpeaking(false);
+        onEndRef.current?.();
+      };
+
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+        guardRef.current = false;
+        setIsSpeaking(false);
+        onEndRef.current?.();
+      };
+
+      audio.play().catch(() => {
+        // Autoplay blocked — clean up
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+        guardRef.current = false;
+        setIsSpeaking(false);
+        onEndRef.current?.();
+      });
+    },
+    []
+  );
+
+  /**
+   * Browser SpeechSynthesis fallback — works everywhere, no API needed.
    */
   const speakWithBrowser = useCallback(
     (text: string) => {
-      if (!window.speechSynthesis) return;
+      if (!window.speechSynthesis) {
+        guardRef.current = false;
+        setIsSpeaking(false);
+        onEndRef.current?.();
+        return;
+      }
       window.speechSynthesis.cancel();
 
       const cleaned = cleanForSpeech(text);
-      if (!cleaned) return;
-
-      guardRef.current = true;
-      setIsSpeaking(true);
-      onStartRef.current?.();
+      if (!cleaned) {
+        guardRef.current = false;
+        setIsSpeaking(false);
+        onEndRef.current?.();
+        return;
+      }
 
       const chunks = chunkText(cleaned);
       chunks.forEach((chunk, i) => {
         const utterance = new SpeechSynthesisUtterance(chunk);
         utterance.rate = rate;
         utterance.pitch = 1.0;
-
-        // Try to find a good voice
-        if (voice) {
-          const voices = window.speechSynthesis.getVoices();
-          const match = voices.find(
-            (v) =>
-              v.name.toLowerCase().includes(voice.toLowerCase()) ||
-              v.voiceURI.toLowerCase().includes(voice.toLowerCase())
-          );
-          if (match) utterance.voice = match;
-        }
 
         if (i === chunks.length - 1) {
           utterance.onend = () => {
@@ -139,20 +191,45 @@ export function useTTS({
         window.speechSynthesis.speak(utterance);
       });
     },
-    [rate, voice]
+    [rate]
   );
 
   /**
-   * Main speak function — uses browser SpeechSynthesis.
-   * Edge TTS integration would go here if EDGE_TTS_PROXY_URL is configured.
+   * Main speak function — tries Edge TTS server first, falls back to browser.
    */
   const speak = useCallback(
     (text: string) => {
       if (!enabled) return;
       cancel();
-      speakWithBrowser(text);
+      cancelledRef.current = false;
+
+      guardRef.current = true;
+      setIsSpeaking(true);
+      onStartRef.current?.();
+
+      // Try Edge TTS via server
+      speakMutation.mutate(
+        { text, voice: voice as any },
+        {
+          onSuccess: (data) => {
+            if (cancelledRef.current) return;
+            if (data.audio) {
+              playEdgeAudio(data.audio);
+            } else {
+              // No audio returned — fall back to browser
+              speakWithBrowser(text);
+            }
+          },
+          onError: () => {
+            if (cancelledRef.current) return;
+            // Edge TTS failed — fall back to browser SpeechSynthesis
+            console.info("[TTS] Edge TTS unavailable, using browser fallback");
+            speakWithBrowser(text);
+          },
+        }
+      );
     },
-    [enabled, cancel, speakWithBrowser]
+    [enabled, cancel, voice, speakMutation, playEdgeAudio, speakWithBrowser]
   );
 
   // Cancel on unmount

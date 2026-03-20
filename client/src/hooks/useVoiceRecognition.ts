@@ -96,7 +96,7 @@ export interface VoiceRecognitionOptions {
   onTranscript: (text: string) => void;
   /** Called when interim (partial) transcript updates */
   onInterim?: (text: string) => void;
-  /** Guard ref — if true, recognition should not start (e.g., TTS playing) */
+  /** Guard ref — if true, recognition should not start (e.g., TTS playing or AI processing) */
   guardRef?: React.MutableRefObject<boolean>;
 }
 
@@ -124,6 +124,10 @@ export function useVoiceRecognition({
   const enabledRef = useRef(enabled);
   const onTranscriptRef = useRef(onTranscript);
   const onInterimRef = useRef(onInterim);
+  // Track whether we just sent a transcript — prevents immediate restart flicker
+  const justSentRef = useRef(false);
+  // Track whether recognition is being intentionally stopped (vs browser ending it)
+  const intentionalStopRef = useRef(false);
 
   // Keep refs in sync
   useEffect(() => { enabledRef.current = enabled; }, [enabled]);
@@ -137,24 +141,9 @@ export function useVoiceRecognition({
     }
   }, []);
 
-  const startSilenceTimer = useCallback(() => {
-    clearSilenceTimer();
-    silenceTimerRef.current = setTimeout(() => {
-      // Silence detected — finalize and send
-      const transcript = finalTranscriptRef.current.trim();
-      if (transcript) {
-        const corrected = correctFinancialTerms(transcript);
-        onTranscriptRef.current(corrected);
-        finalTranscriptRef.current = "";
-        setInterimText("");
-      }
-      // Stop and restart recognition for next utterance
-      recognitionRef.current?.stop();
-    }, silenceTimeout);
-  }, [silenceTimeout, clearSilenceTimer]);
-
   const stop = useCallback(() => {
     clearSilenceTimer();
+    intentionalStopRef.current = true;
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch {}
       recognitionRef.current = null;
@@ -165,10 +154,16 @@ export function useVoiceRecognition({
   }, [clearSilenceTimer]);
 
   const start = useCallback(() => {
-    // Don't start if guarded (TTS playing) or already listening
+    // Don't start if guarded (TTS playing or AI processing)
     if (guardRef?.current) return;
+    // Don't start if not enabled
+    if (!enabledRef.current) return;
+
+    // Clean up any existing recognition instance
     if (recognitionRef.current) {
+      intentionalStopRef.current = true;
       try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
     }
 
     const SR =
@@ -183,6 +178,8 @@ export function useVoiceRecognition({
     recognition.maxAlternatives = 1;
 
     finalTranscriptRef.current = "";
+    justSentRef.current = false;
+    intentionalStopRef.current = false;
 
     recognition.onresult = (event: any) => {
       let interim = "";
@@ -206,30 +203,70 @@ export function useVoiceRecognition({
       onInterimRef.current?.(display);
 
       // Reset silence timer on any speech activity
-      startSilenceTimer();
+      clearSilenceTimer();
+      silenceTimerRef.current = setTimeout(() => {
+        // Silence detected — finalize and send
+        const transcript = finalTranscriptRef.current.trim();
+        if (transcript) {
+          const corrected = correctFinancialTerms(transcript);
+          justSentRef.current = true;
+          // Clear interim display BEFORE sending to prevent flicker
+          setInterimText("");
+          finalTranscriptRef.current = "";
+          onTranscriptRef.current(corrected);
+        }
+        // Stop recognition — it will NOT auto-restart because justSentRef is true.
+        // The parent component (Chat.tsx) is responsible for calling start() again
+        // after the AI response completes and TTS finishes.
+        intentionalStopRef.current = true;
+        try { recognitionRef.current?.stop(); } catch {}
+      }, silenceTimeout);
     };
 
     recognition.onerror = (event: any) => {
       if (event.error === "no-speech" || event.error === "aborted") {
-        // Benign — restart if still enabled
+        // Benign — only restart if we didn't just send something
       } else {
         console.warn("[VoiceRecognition] Error:", event.error);
       }
       setIsListening(false);
-      // Auto-restart if enabled and not guarded
-      if (enabledRef.current && !guardRef?.current) {
+
+      // Only auto-restart for benign errors when we haven't just sent a transcript
+      // and we're not guarded (TTS/processing)
+      if (
+        enabledRef.current &&
+        !guardRef?.current &&
+        !justSentRef.current &&
+        !intentionalStopRef.current &&
+        (event.error === "no-speech" || event.error === "aborted")
+      ) {
         setTimeout(() => {
-          if (enabledRef.current && !guardRef?.current) start();
+          if (enabledRef.current && !guardRef?.current && !justSentRef.current) {
+            start();
+          }
         }, 800);
       }
     };
 
     recognition.onend = () => {
       setIsListening(false);
-      // Auto-restart for continuous listening if enabled
-      if (enabledRef.current && !guardRef?.current) {
+      recognitionRef.current = null;
+
+      // Only auto-restart if:
+      // 1. Still enabled (hands-free active)
+      // 2. Not guarded (TTS not playing, AI not processing)
+      // 3. We didn't just send a transcript (prevents restart-during-response loop)
+      // 4. Not an intentional stop
+      if (
+        enabledRef.current &&
+        !guardRef?.current &&
+        !justSentRef.current &&
+        !intentionalStopRef.current
+      ) {
         setTimeout(() => {
-          if (enabledRef.current && !guardRef?.current) start();
+          if (enabledRef.current && !guardRef?.current && !justSentRef.current) {
+            start();
+          }
         }, 300);
       }
     };
@@ -241,7 +278,7 @@ export function useVoiceRecognition({
     } catch (err) {
       console.warn("[VoiceRecognition] Start failed:", err);
     }
-  }, [lang, guardRef, startSilenceTimer]);
+  }, [lang, guardRef, clearSilenceTimer, silenceTimeout]);
 
   // Cleanup on unmount
   useEffect(() => {

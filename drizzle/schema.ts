@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean, bigint } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean, bigint, decimal, date } from "drizzle-orm/mysql-core";
 
 // ─── ORGANIZATIONS (Multi-Tenant Organizational Units) ─────────────────────
 // DB table: organizations
@@ -997,3 +997,190 @@ export const notificationLog = mysqlTable("notification_log", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type NotificationLogEntry = typeof notificationLog.$inferSelect;
+
+// ─── LTC Analyses ──────────────────────────────────────────────
+export const ltcAnalyses = mysqlTable("ltc_analyses", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
+  currentAge: int("current_age"),
+  retirementAge: int("retirement_age").default(65),
+  state: varchar("state", { length: 2 }),
+  zipCode: varchar("zip_code", { length: 10 }),
+  healthStatus: mysqlEnum("health_status", ["excellent", "good", "fair", "poor"]).default("good"),
+  gender: mysqlEnum("gender", ["male", "female", "other"]),
+  maritalStatus: mysqlEnum("marital_status", ["single", "married", "divorced", "widowed"]),
+  annualIncome: decimal("annual_income", { precision: 15, scale: 2 }),
+  totalAssets: decimal("total_assets", { precision: 15, scale: 2 }),
+  ltcInsuranceHas: mysqlBoolean("ltc_insurance_has").default(false),
+  ltcInsuranceDailyBenefit: decimal("ltc_insurance_daily_benefit", { precision: 10, scale: 2 }),
+  ltcInsuranceBenefitPeriod: int("ltc_insurance_benefit_period"),
+  projectedAnnualCost: decimal("projected_annual_cost", { precision: 15, scale: 2 }),
+  projectedDurationYears: decimal("projected_duration_years", { precision: 5, scale: 2 }),
+  probabilityOfNeed: decimal("probability_of_need", { precision: 5, scale: 2 }),
+  fundingGap: decimal("funding_gap", { precision: 15, scale: 2 }),
+  recommendedStrategy: varchar("recommended_strategy", { length: 50 }),
+  analysisJson: text("analysis_json"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+// ─── Portal Engagement ─────────────────────────────────────────
+export const portalEngagement = mysqlTable("portal_engagement", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
+  sessionDate: date("session_date").notNull(),
+  loginCount: int("login_count").default(0),
+  timeSpentSeconds: int("time_spent_seconds").default(0),
+  pagesVisited: int("pages_visited").default(0),
+  featuresUsed: text("features_used"),
+  goalsChecked: int("goals_checked").default(0),
+  actionsCompleted: int("actions_completed").default(0),
+  engagementScore: int("engagement_score").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── Health Scores ─────────────────────────────────────────────
+export const healthScores = mysqlTable("health_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  totalScore: int("total_score").notNull().default(0),
+  spendScore: int("spend_score").notNull().default(0),
+  saveScore: int("save_score").notNull().default(0),
+  borrowScore: int("borrow_score").notNull().default(0),
+  planScore: int("plan_score").notNull().default(0),
+  status: mysqlEnum("status", ["healthy", "coping", "vulnerable"]).notNull().default("coping"),
+  insightsJson: text("insights_json"),
+  recommendationsJson: text("recommendations_json"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+// ─── Business Exit Plans ───────────────────────────────────────
+export const businessExitPlans = mysqlTable("business_exit_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  businessName: varchar("business_name", { length: 256 }).notNull(),
+  businessType: varchar("business_type", { length: 128 }),
+  annualRevenue: float("annual_revenue"),
+  annualProfit: float("annual_profit"),
+  employeeCount: int("employee_count"),
+  ownerDependenceScore: int("owner_dependence_score"), // 0-100
+  readinessScore: int("readiness_score"), // 0-100
+  preferredExitPath: varchar("preferred_exit_path", { length: 64 }),
+  analysisJson: text("analysis_json"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+// ─── Constitutional Violations ─────────────────────────────────
+export const constitutionalViolations = mysqlTable("constitutional_violations", {
+  id: int("id").autoincrement().primaryKey(),
+  messageId: int("message_id"),
+  principleNumber: int("principle_number").notNull(),
+  principleText: text("principle_text"),
+  violationDescription: text("violation_description"),
+  severity: mysqlEnum("severity", ["low", "medium", "high"]).default("low"),
+  originalResponseHash: varchar("original_response_hash", { length: 64 }),
+  correctedResponseHash: varchar("corrected_response_hash", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── Workflow Event Chains ─────────────────────────────────────
+export const workflowEventChains = mysqlTable("workflow_event_chains", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  eventType: varchar("event_type", { length: 128 }).notNull(),
+  actionsJson: text("actions_json").notNull(),
+  isActive: mysqlBoolean("is_active").default(true),
+  createdBy: int("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+export const workflowExecutionLog = mysqlTable("workflow_execution_log", {
+  id: int("id").autoincrement().primaryKey(),
+  chainId: int("chain_id").notNull(),
+  eventSource: varchar("event_source", { length: 256 }),
+  triggeredAt: timestamp("triggered_at").defaultNow(),
+  actionsExecuted: int("actions_executed").default(0),
+  actionsFailed: int("actions_failed").default(0),
+  resultJson: text("result_json"),
+  status: mysqlEnum("status", ["running", "completed", "failed", "partial"]).default("running"),
+});
+
+// ─── Annual Reviews ────────────────────────────────────────────
+export const annualReviews = mysqlTable("annual_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  professionalId: int("professional_id").notNull(),
+  phase: mysqlEnum("phase", ["identify", "prepare", "schedule", "conduct", "document", "followup"]).default("identify"),
+  dueDate: timestamp("due_date"),
+  scheduledDate: timestamp("scheduled_date"),
+  completedDate: timestamp("completed_date"),
+  prepReportJson: text("prep_report_json"),
+  agendaJson: text("agenda_json"),
+  meetingSummary: text("meeting_summary"),
+  actionItemsJson: text("action_items_json"),
+  complianceChecklist: text("compliance_checklist"),
+  status: mysqlEnum("status", ["pending", "scheduled", "in_progress", "completed", "overdue"]).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+
+// ─── Tasks (Practice Management) ──────────────────────────────
+export const tasks = mysqlTable("tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  assignedTo: int("assigned_to"),
+  clientId: int("client_id"),
+  title: varchar("title", { length: 512 }).notNull(),
+  description: text("description"),
+  priority: mysqlEnum("priority", ["urgent", "high", "medium", "low"]).default("medium"),
+  status: mysqlEnum("status", ["pending", "in_progress", "completed", "cancelled", "overdue"]).default("pending"),
+  category: mysqlEnum("category", ["client_review", "compliance", "onboarding", "follow_up", "planning", "admin", "meeting_prep", "document", "other"]).default("other"),
+  dueDate: timestamp("due_date"),
+  completedAt: timestamp("completed_at"),
+  recurring: mysqlBoolean("recurring").default(false),
+  recurringInterval: mysqlEnum("recurring_interval", ["daily", "weekly", "monthly", "quarterly", "annually"]),
+  relatedEntityType: varchar("related_entity_type", { length: 64 }),
+  relatedEntityId: int("related_entity_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});
+
+// ─── Communications Log ───────────────────────────────────────
+export const commsLog = mysqlTable("comms_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  clientId: int("client_id"),
+  templateId: varchar("template_id", { length: 128 }),
+  channel: mysqlEnum("channel", ["email", "sms", "letter", "portal_message"]).default("email"),
+  category: varchar("category", { length: 64 }),
+  subject: varchar("subject", { length: 512 }),
+  body: text("body"),
+  status: mysqlEnum("status", ["draft", "sent", "scheduled", "failed"]).default("draft"),
+  scheduledAt: timestamp("scheduled_at"),
+  sentAt: timestamp("sent_at"),
+  complianceFlags: json("compliance_flags"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── Saved Financial Analyses ─────────────────────────────────
+export const savedAnalyses = mysqlTable("saved_analyses", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  clientId: int("client_id"),
+  analysisType: mysqlEnum("analysis_type", [
+    "tax_projection", "ss_optimization", "hsa_optimization",
+    "medicare_navigation", "charitable_giving", "divorce_financial",
+    "education_plan", "fee_comparison",
+  ]).notNull(),
+  title: varchar("title", { length: 256 }),
+  inputJson: text("input_json"),
+  resultJson: text("result_json"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+});

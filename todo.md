@@ -164,6 +164,8 @@
 - [x] Suppress speech recognition during TTS playback to prevent AI voice from being recorded as user input
 - [x] Recognition only starts AFTER TTS onend fires, with a 600ms guard delay
 - [x] ttsGuardRef prevents recognition from starting during playback
+- [x] Fix hands-free mode UI freaking out after user finishes speaking
+- [x] Upgrade TTS from browser SpeechSynthesis to Edge TTS via server proxy
 
 ## Update 4 — Document Access, Suitability, Products, AI Visuals
 - [x] Add visibility column to documents table (private/professional/management/admin) with default=professional
@@ -909,3 +911,163 @@
 - [ ] Engagement tracking (login frequency, time spent, features used)
 - [ ] Personalized portal based on preferences
 - [ ] portal_engagement table
+
+## V8 Master Prompt — Additional Features (No API Keys)
+
+### B1. Simulation Engine (Living Financial Simulation)
+- [ ] Monte Carlo retirement projections
+- [ ] Social Security optimization
+- [ ] Roth conversion modeling
+- [ ] simulation_results table
+
+### B4. Financial Health Score
+- [ ] Spend/Save/Borrow/Plan scoring (0-100)
+- [ ] Early warning system (score drops)
+- [ ] Peer benchmarking (anonymized)
+- [ ] health_scores table + router + page
+
+### D1. Workflow Orchestrator
+- [ ] Event-driven automation (life events → cascading actions)
+- [ ] Custom event builder for firm admins
+- [ ] workflow_event_chains, workflow_execution_log tables
+
+### D2. Annual Review Engine
+- [ ] 6-phase review lifecycle automation
+- [ ] Year-over-year comparison reports
+- [ ] Review campaign dashboard
+- [ ] annual_reviews table + router + page
+
+### D3. Practice Intelligence
+- [ ] Growth/profitability/engagement/operational metrics
+- [ ] Attrition prediction scoring
+- [ ] Benchmarking against platform aggregates
+- [ ] practice_metrics router + page
+
+### D4. Client Segmentation
+- [ ] 4-dimension scoring (Value/Growth/Engagement/Relationship)
+- [ ] Auto-tier: Platinum/Gold/Silver/Bronze
+- [ ] Service model enforcement
+- [ ] client_segments router + page
+
+### D5. Succession Planner
+- [ ] Practice valuation modeling
+- [ ] Transition timeline planning
+- [ ] succession_plans table + router
+
+### D9. Business Exit Planner
+- [ ] 6 exit path comparison (strategic sale, ESOP, family, MBO, merger, wind-down)
+- [ ] Readiness assessment scoring
+- [ ] business_exit_plans table + router + page
+
+### D10. Plan Adherence Engine
+- [ ] Savings/spending/investment/debt monitoring
+- [ ] 4-tier intervention system
+- [ ] Adherence score (0-100)
+- [ ] plan_adherence router + page
+
+### D14. Client Portal Optimizer
+- [ ] Plan-first portal experience
+- [ ] Portal engagement tracking
+- [ ] portal_engagement router
+
+### C4. Ambient Finance
+- [ ] Smart notification system
+- [ ] Channel selection (in-app, digest)
+- [ ] Intelligent suppression
+- [ ] notification_log router
+
+### E5. Constitutional Finance
+- [ ] 25 financial principles
+- [ ] Self-correction flow (pre-compliance check)
+- [ ] constitutional_violations table + logging
+
+## Chat Input Redesign — Microsoft Copilot Style (March 20, 2026)
+- [x] Condense input bar: single row with + menu for attachments/image/visual
+- [x] Clean pill-shaped input area with minimal visible buttons
+- [x] Overflow menu ("+" button) for: attach file, attach image, generate visual, go live
+- [x] Primary actions visible: mic toggle, send button
+- [x] Hands-free/audio/video controls stay in header (unchanged)
+- [x] Mobile-friendly: fewer visible buttons, more space for text input
+
+## Part F — Market Completeness Calculators (March 20, 2026)
+
+### F1. Tax Projector
+- [ ] Server module: multi-year federal+state tax projection
+- [ ] 10-20 year projection with bracket management
+- [ ] TCJA sunset modeling (current vs 2017 reversion)
+- [ ] Roth conversion optimizer
+- [ ] Frontend page: /tax-projector
+
+### F2. Medicare Planner
+- [ ] Server module: Medicare plan comparison
+- [ ] IRMAA optimization
+- [ ] Enrollment timing + penalty calculator
+- [ ] Lifetime healthcare cost projection
+- [ ] Frontend page: /medicare-planner
+
+### F3. Charitable Optimizer
+- [ ] Server module: charitable giving tax optimization
+- [ ] DAF bunching analysis
+- [ ] QCD optimization for 70.5+
+- [ ] CRT/CLT modeling
+- [ ] Frontend page: /charitable
+
+### F4. Social Security Optimizer
+- [ ] Server module: SS claiming strategy
+- [ ] Single filer 62-70 breakeven
+- [ ] Married coordination
+- [ ] WEP/GPO adjustments
+- [ ] Frontend page: /social-security
+
+### F5. Divorce Planner
+- [ ] Server module: asset division + QDRO
+- [ ] Tax-adjusted equitable division
+- [ ] Alimony/child support modeling
+- [ ] Post-divorce financial plan
+- [ ] Frontend page: /divorce-planner
+
+### F6. HSA Optimizer
+- [ ] Server module: HSA triple-tax advantage
+- [ ] Invest vs spend comparison
+- [ ] Medicare coordination
+- [ ] Frontend page: /hsa-optimizer
+
+### F7. Education Planner (529 + FAFSA)
+- [ ] Server module: 529 + FAFSA optimization
+- [ ] State plan comparison
+- [ ] FAFSA/SAI impact modeling
+- [ ] Frontend page: /education-planner
+
+### F10. Task Engine
+- [ ] Server module: advisor task management
+- [ ] Workflow templates
+- [ ] Frontend page: /tasks
+
+### F12. Fee Billing (E12)
+- [ ] Server module: multi-model fee billing
+- [ ] AUM, flat, tiered, subscription models
+- [ ] Frontend page: /billing
+
+### Part F Database Tables
+- [ ] Create all Part F tables (tax_projections, medicare_analyses, etc.)
+
+## Input Button Consolidation — Copilot Style (March 20, 2026)
+- [x] Combine mic + send into single transitioning button (mic when empty, send when text present)
+- [x] Remove separate voice input button
+- [x] Reposition audio/speaker toggle to optimal spot (left of unified button)
+- [x] Smooth transition animation between mic and send states (animate-in fade-in zoom-in)
+
+## Input Bar Refinement v2 (March 20, 2026)
+- [x] Unified mic/send button stays in send button position (rightmost in input bar)
+- [x] Remove separate mic button entirely — only unified button remains
+- [x] Move mode/focus selection below the input field (Copilot/Claude style)
+- [x] Mode options as compact chips/pills below textarea + audio toggle chip
+
+## Chat Layout Redesign v3 (March 20, 2026)
+- [x] Bring back audio/speaker toggle button (Volume2/VolumeX below textarea)
+- [x] Unified button: hands-free voice (no text) ↔ send (has text) — AudioLines/ArrowUp/PhoneOff/Loader2
+- [x] Move [+] context button and unified send/hands-free button below the textarea
+- [x] Mode selector as popup menu, relocated below input field
+- [x] Textarea becomes full-width (buttons below, not beside)
+- [x] Remove header entirely (mobile-only hamburger remains)
+- [x] Sidebar: contracted state with small icons only, expands to current full layout

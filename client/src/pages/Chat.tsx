@@ -8,9 +8,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
-  AlertTriangle, ArrowUp, BarChart3, BookOpen, Bot, Briefcase, Building2, Calculator, Check, CheckCircle, ClipboardList,
-  ChevronDown, FileText, GraduationCap, Image, Key, Loader2, LogOut, Menu, MessageSquare,
-  Mic, MicOff, Monitor, Package, Paperclip, Phone, PhoneOff, Plus,
+  AlertTriangle, ArrowUp, AudioLines, BarChart3, BookOpen, Bot, Briefcase, Building2, Calculator, Check, CheckCircle, ClipboardList,
+  ChevronDown, ChevronUp, FileText, GraduationCap, Image, Key, Loader2, LogOut, Menu, MessageSquare,
+  Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, Phone, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield
 } from "lucide-react";
@@ -222,6 +222,9 @@ export default function Chat() {
   const [showFocusPicker, setShowFocusPicker] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [liveSessionActive, setLiveSessionActive] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showModeMenu, setShowModeMenu] = useState(false);
 
   // ─── HANDS-FREE & VOICE STATE ──────────────────────────────────
   const [handsFreeActive, setHandsFreeActive] = useState(false);
@@ -236,12 +239,19 @@ export default function Chat() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const handleSendRef = useRef<(text: string) => void>(() => {});
 
+  // ─── COMBINED GUARD REF ────────────────────────────────────────
+  // Blocks voice recognition during BOTH TTS playback AND AI streaming/processing
+  const combinedGuardRef = useRef(false);
+
   // ─── ENHANCED TTS ─────────────────────────────────────────────
   const tts = useTTS({
     enabled: ttsEnabled,
     rate: 1.0,
-    onStart: () => {},
+    onStart: () => {
+      combinedGuardRef.current = true;
+    },
     onEnd: () => {
+      combinedGuardRef.current = false;
       // In hands-free mode, restart listening after TTS completes
       if (handsFreeActive) {
         setTimeout(() => voice.start(), 600);
@@ -255,20 +265,28 @@ export default function Chat() {
     silenceTimeout: 1500,
     lang: "en-US",
     onTranscript: (text) => {
+      // Set guard immediately so recognition doesn't restart during processing
+      combinedGuardRef.current = true;
+      // Clear the input field immediately to prevent flicker
+      setInput("");
       // Auto-send in hands-free mode
       handleSendRef.current(text);
     },
     onInterim: (text) => {
-      if (handsFreeActive) setInput(text);
+      // Only update input if hands-free is active and we're not processing
+      if (handsFreeActive && !isStreaming && !tts.isSpeaking) {
+        setInput(text);
+      }
     },
-    guardRef: tts.guardRef,
+    guardRef: combinedGuardRef,
   });
 
-  // Derive voice state for UI
+  // Derive voice state for UI — stable transitions to prevent flicker
   const voiceState: "idle" | "listening" | "processing" | "speaking" = 
     tts.isSpeaking ? "speaking" : 
+    isStreaming ? "processing" :
     voice.isListening ? "listening" : 
-    isStreaming ? "processing" : "idle";
+    (handsFreeActive && combinedGuardRef.current) ? "processing" : "idle";
 
   // ─── ANONYMOUS MODE ──────────────────────────────────────────
   const isAnonymous = !isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('anonymousMode') === 'true';
@@ -431,6 +449,14 @@ export default function Chat() {
     } finally {
       setIsStreaming(false);
       setAttachments([]);
+      // If hands-free is active and TTS is NOT about to speak (no ttsEnabled or error path),
+      // release the guard so recognition can restart.
+      // If TTS IS speaking, the guard will be released by tts.onEnd.
+      if (handsFreeActive && !ttsEnabled) {
+        combinedGuardRef.current = false;
+        setTimeout(() => voice.start(), 600);
+      }
+      // If ttsEnabled, the guard stays on until TTS finishes (tts.onEnd releases it)
     }
   };
 
@@ -539,39 +565,69 @@ export default function Chat() {
 
       {/* ─── SIDEBAR ──────────────────────────────────────────── */}
       <aside className={`
-        fixed lg:relative z-50 h-full w-72 bg-card border-r border-border flex flex-col
-        transition-transform duration-200
+        fixed lg:relative z-50 h-full bg-card border-r border-border flex flex-col
+        transition-all duration-200
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        ${sidebarCollapsed ? "w-14" : "w-72"}
       `}>
-        <div className="p-3 flex items-center justify-between border-b border-border shrink-0">
-          <Button variant="ghost" size="sm" className="gap-2 text-xs flex-1 justify-start" onClick={handleNewConversation}>
-            <Plus className="w-3.5 h-3.5" /> New Conversation
-          </Button>
-          <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(false)}>
-            <X className="w-4 h-4" />
-          </Button>
+        <div className={`flex items-center border-b border-border shrink-0 ${sidebarCollapsed ? "p-2 justify-center" : "p-3 justify-between"}`}>
+          {sidebarCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewConversation}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">New Conversation</TooltipContent>
+            </Tooltip>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" className="gap-2 text-xs flex-1 justify-start" onClick={handleNewConversation}>
+                <Plus className="w-3.5 h-3.5" /> New Conversation
+              </Button>
+              <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Scrollable conversation list — grows to fill available space */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <div className="p-2 space-y-0.5">
+          <div className={sidebarCollapsed ? "p-1 space-y-1" : "p-2 space-y-0.5"}>
             {conversationsQuery.data?.map((conv: any) => (
-              <div
-                key={conv.id}
-                className={`group flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${
-                  conv.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-foreground"
-                }`}
-                onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
-              >
-                <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />
-                <span className="truncate flex-1">{conv.title || "New Conversation"}</span>
-                <button
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-destructive"
-                  onClick={(e) => { e.stopPropagation(); handleDeleteConversation(conv.id); }}
+              sidebarCollapsed ? (
+                <Tooltip key={conv.id}>
+                  <TooltipTrigger asChild>
+                    <div
+                      className={`flex items-center justify-center p-2 rounded-lg cursor-pointer transition-colors ${
+                        conv.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-muted-foreground"
+                      }`}
+                      onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{conv.title || "New Conversation"}</TooltipContent>
+                </Tooltip>
+              ) : (
+                <div
+                  key={conv.id}
+                  className={`group flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${
+                    conv.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-foreground"
+                  }`}
+                  onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
                 >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
+                  <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                  <span className="truncate flex-1">{conv.title || "New Conversation"}</span>
+                  <button
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteConversation(conv.id); }}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              )
             ))}
             {conversationsQuery.isLoading && (
               <div className="space-y-2 p-2">
@@ -583,184 +639,130 @@ export default function Chat() {
 
         {/* Compact navigation — collapsible sections to preserve conversation space */}
         <div className="border-t border-border shrink-0 max-h-[45%] overflow-y-auto">
-          {/* Tools — collapsible */}
-          <button
-            onClick={() => setToolsExpanded(!toolsExpanded)}
-            className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/70 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
-          >
-            <span>Tools</span>
-            <ChevronDown className={`w-3 h-3 transition-transform ${toolsExpanded ? "rotate-180" : ""}`} />
-          </button>
-          {toolsExpanded && (
-            <div className="px-1 pb-1 grid grid-cols-2 gap-0.5">
-              {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
-                <button
-                  key={item.href}
-                  onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                >
-                  {item.icon} <span className="truncate">{item.label}</span>
-                </button>
+          {sidebarCollapsed ? (
+            <div className="p-1 space-y-1">
+              {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).slice(0, 6).map(item => (
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+                      className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                    >
+                      {item.icon}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
+                </Tooltip>
               ))}
+              <Separator className="mx-1" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                    className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                  >
+                    <Fingerprint className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Settings</TooltipContent>
+              </Tooltip>
             </div>
-          )}
-
-          {/* Admin — collapsible, only for advisor+ */}
-          {adminNav.filter(item => hasMinRole(userRole, item.minRole)).length > 0 && (
+          ) : (
             <>
               <button
-                onClick={() => setAdminExpanded(!adminExpanded)}
+                onClick={() => setToolsExpanded(!toolsExpanded)}
                 className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/70 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
               >
-                <span>Admin</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${adminExpanded ? "rotate-180" : ""}`} />
+                <span>Tools</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${toolsExpanded ? "rotate-180" : ""}`} />
               </button>
-              {adminExpanded && (
-                <div className="px-1 pb-1">
-                  {adminNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
+              {toolsExpanded && (
+                <div className="px-1 pb-1 grid grid-cols-2 gap-0.5">
+                  {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
                     <button
                       key={item.href}
                       onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                     >
-                      {item.icon} {item.label}
+                      {item.icon} <span className="truncate">{item.label}</span>
                     </button>
                   ))}
                 </div>
               )}
+              {adminNav.filter(item => hasMinRole(userRole, item.minRole)).length > 0 && (
+                <>
+                  <button
+                    onClick={() => setAdminExpanded(!adminExpanded)}
+                    className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/70 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
+                  >
+                    <span>Admin</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${adminExpanded ? "rotate-180" : ""}`} />
+                  </button>
+                  {adminExpanded && (
+                    <div className="px-1 pb-1">
+                      {adminNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
+                        <button
+                          key={item.href}
+                          onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+                        >
+                          {item.icon} {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              <div className="px-1 pb-1">
+                <button
+                  onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+                >
+                  <Fingerprint className="w-3.5 h-3.5" /> Settings
+                </button>
+              </div>
             </>
           )}
-
-          {/* Settings — always visible as a single compact row */}
-          <div className="px-1 pb-1">
-            <button
-              onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
-            >
-              <Fingerprint className="w-3.5 h-3.5" /> Settings
-            </button>
-          </div>
-
-          {/* User profile — compact footer */}
           <Separator className="mx-2" />
-          <div className="flex items-center gap-2 px-3 py-2">
-            <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent">
-              {user?.name?.charAt(0)?.toUpperCase() || "U"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="text-xs truncate block">{user?.name || "User"}</span>
-              <span className="text-[10px] text-muted-foreground capitalize">{userRole}</span>
-            </div>
-            <button onClick={() => logout()} className="text-muted-foreground hover:text-foreground">
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
+          <div className={`flex items-center ${sidebarCollapsed ? "justify-center p-2" : "gap-2 px-3 py-2"}`}>
+            {sidebarCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)}>
+                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">{user?.name || "User"} — Click to expand</TooltipContent>
+              </Tooltip>
+            ) : (
+              <>
+                <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent">
+                  {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs truncate block">{user?.name || "User"}</span>
+                  <span className="text-[10px] text-muted-foreground capitalize">{userRole}</span>
+                </div>
+                <button onClick={() => setSidebarCollapsed(true)} className="text-muted-foreground hover:text-foreground" title="Collapse sidebar">
+                  <PanelLeftClose className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => logout()} className="text-muted-foreground hover:text-foreground">
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </aside>
 
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
-        <header className="h-12 border-b border-border flex items-center justify-between px-3 shrink-0">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8" onClick={() => setSidebarOpen(true)}>
-              <Menu className="w-4 h-4" />
-            </Button>
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-accent" />
-              <span className="text-sm font-medium hidden sm:inline">Financial Intelligence</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1">
-            {/* Focus selector (always visible) + Mode selector (role-gated) */}
-            <div className="relative">
-              <Button variant="ghost" size="sm" className="text-xs gap-1.5 h-8" onClick={() => setShowFocusPicker(!showFocusPicker)}>
-                <Sparkles className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{focusLabel}</span>
-                <ChevronDown className="w-3 h-3" />
-              </Button>
-              {showFocusPicker && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowFocusPicker(false)} />
-                  <div className="absolute right-0 top-full mt-1 z-50 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg p-1 w-56">
-                    <p className="px-2 py-1 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Focus</p>
-                    {FOCUS_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs transition-colors ${
-                          selectedFocus.includes(opt.value) ? "bg-accent/10 text-accent" : "hover:bg-secondary/50"
-                        }`}
-                        onClick={() => toggleFocus(opt.value)}
-                      >
-                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${
-                          selectedFocus.includes(opt.value) ? "bg-accent border-accent text-white" : "border-muted-foreground/40"
-                        }`}>
-                          {selectedFocus.includes(opt.value) && <Check className="w-2.5 h-2.5" />}
-                        </div>
-                        {opt.icon}
-                        <div className="text-left">
-                          <div className="font-medium">{opt.label}</div>
-                          <div className="text-[10px] text-muted-foreground">{opt.desc}</div>
-                        </div>
-                      </button>
-                    ))}
-
-                    {/* Mode section — only visible to advisor+ roles */}
-                    {showModes && (
-                      <>
-                        <Separator className="my-1" />
-                        <p className="px-2 py-1 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Advisory Mode</p>
-                        {availableModes.map(opt => (
-                          <button
-                            key={opt.value}
-                            className={`flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs transition-colors ${
-                              mode === opt.value ? "bg-accent/10 text-accent" : "hover:bg-secondary/50"
-                            }`}
-                            onClick={() => { setMode(opt.value); setShowFocusPicker(false); }}
-                          >
-                            <div className="text-left">
-                              <div className="font-medium">{opt.label}</div>
-                              <div className="text-[10px] text-muted-foreground">{opt.desc}</div>
-                            </div>
-                          </button>
-                        ))}
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Hands-free toggle */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={handsFreeActive ? "default" : "ghost"}
-                  size="icon"
-                  className={`h-8 w-8 ${handsFreeActive ? "bg-accent text-accent-foreground" : ""}`}
-                  onClick={toggleHandsFree}
-                >
-                  {handsFreeActive ? <PhoneOff className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{handsFreeActive ? "End hands-free" : "Start hands-free conversation"}</TooltipContent>
-            </Tooltip>
-
-            {/* Audio playback toggle (default ON) */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                  setTtsEnabled(!ttsEnabled);
-                  tts.cancel();
-                }}>
-                  {ttsEnabled ? <Volume2 className="w-4 h-4 text-accent" /> : <VolumeX className="w-4 h-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{ttsEnabled ? "Mute audio responses" : "Enable audio responses"}</TooltipContent>
-            </Tooltip>
-          </div>
-        </header>
+        {/* Mobile-only sidebar toggle */}
+        <div className="lg:hidden flex items-center h-10 px-3 shrink-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSidebarOpen(true)}>
+            <Menu className="w-4 h-4" />
+          </Button>
+        </div>
 
         {/* ─── LIVE SESSION ──────────────────────────────────── */}
         {liveSessionActive && (
@@ -892,30 +894,33 @@ export default function Chat() {
 
         {/* Hands-free status bar with VoiceOrb */}
         {handsFreeActive && (
-          <div className="flex items-center justify-center gap-3 py-2.5 bg-accent/5 border-t border-accent/20">
+          <div className="flex items-center justify-center gap-3 py-2.5 bg-accent/5 border-t border-accent/20 transition-all">
             <VoiceOrb state={voiceState} size={32} />
-            <span className="text-xs text-muted-foreground">
-              {voiceState === "speaking" ? "Speaking..." : voiceState === "listening" ? "Listening..." : voiceState === "processing" ? "Thinking..." : "Ready — speak anytime"}
-            </span>
-            {voice.interimText && (
-              <span className="text-xs text-foreground/60 italic max-w-[200px] truncate">
-                "{voice.interimText}"
+            <div className="flex flex-col items-start min-w-0">
+              <span className="text-xs text-muted-foreground font-medium">
+                {voiceState === "speaking" ? "Speaking..." : voiceState === "listening" ? "Listening..." : voiceState === "processing" ? "Thinking..." : "Ready — speak anytime"}
               </span>
-            )}
-            <Button variant="ghost" size="sm" className="text-xs h-6" onClick={toggleHandsFree}>End</Button>
+              {voiceState === "listening" && voice.interimText && (
+                <span className="text-[11px] text-foreground/50 italic max-w-[250px] truncate">
+                  "{voice.interimText}"
+                </span>
+              )}
+            </div>
+            <Button variant="ghost" size="sm" className="text-xs h-6 shrink-0" onClick={toggleHandsFree}>End</Button>
           </div>
         )}
 
-        {/* ─── INPUT AREA ─────────────────────────────────────── */}
-        <div className="border-t border-border p-3 sm:p-4 shrink-0">
+        {/* ─── INPUT AREA (Copilot-style condensed) ────────────── */}
+        <div className="p-3 sm:p-4 shrink-0">
           <div className="max-w-3xl mx-auto">
+            {/* Attachment chips */}
             {attachments.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="flex flex-wrap gap-1.5 mb-2 px-1">
                 {attachments.map((file, i) => (
-                  <div key={i} className="flex items-center gap-1.5 bg-secondary/50 rounded-lg px-2.5 py-1 text-xs">
+                  <div key={i} className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-3 py-1 text-xs">
                     <Paperclip className="w-3 h-3 text-muted-foreground" />
-                    <span className="truncate max-w-[120px]">{file.name}</span>
-                    <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground">
+                    <span className="truncate max-w-[100px]">{file.name}</span>
+                    <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground ml-0.5">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
@@ -923,111 +928,208 @@ export default function Chat() {
               </div>
             )}
 
-            <div className="relative flex items-end gap-2 bg-secondary/30 rounded-2xl border border-border focus-within:border-accent/40 transition-colors p-2">
-              <div className="flex items-center gap-0.5 shrink-0 pb-0.5">
-                <input ref={fileInputRef} type="file" className="hidden" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,.xml,.yaml,.yml" onChange={handleFileSelect} />
-                <input ref={imageInputRef} type="file" className="hidden" multiple accept="image/*" onChange={handleFileSelect} />
+            {/* Hidden file inputs */}
+            <input ref={fileInputRef} type="file" className="hidden" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,.xml,.yaml,.yml" onChange={handleFileSelect} />
+            <input ref={imageInputRef} type="file" className="hidden" multiple accept="image/*" onChange={handleFileSelect} />
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors" onClick={() => fileInputRef.current?.click()}>
-                      <Paperclip className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>Attach files</TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="p-1.5 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors" onClick={() => imageInputRef.current?.click()}>
-                      <Image className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>Attach image</TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      className={`p-1.5 rounded-lg transition-colors ${visualMutation.isPending ? "bg-accent/20 text-accent" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"}`}
-                      onClick={async () => {
-                        const prompt = input.trim();
-                        if (!prompt) { toast.info("Type a description for the visual you want to generate"); return; }
-                        try {
-                          const result = await visualMutation.mutateAsync({ prompt: `Create a clear, professional visual: ${prompt}` });
-                          if (result.url) {
-                            const imgMsg = { role: "assistant" as const, content: `Here's the visual I created for: **${prompt}**`, metadata: { imageUrl: result.url }, createdAt: new Date() };
-                            setMessages(prev => [...prev, { role: "user" as const, content: `Generate visual: ${prompt}`, createdAt: new Date() }, imgMsg]);
-                            setInput("");
-                          }
-                        } catch (e: any) { toast.error(e.message || "Failed to generate visual"); }
-                      }}
-                      disabled={visualMutation.isPending}
-                    >
-                      {visualMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Palette className="w-4 h-4" />}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>Generate visual / chart</TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      className={`p-1.5 rounded-lg transition-colors hidden sm:flex items-center gap-1 ${
-                        liveSessionActive ? "bg-red-500/20 text-red-400" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
-                      }`}
-                      onClick={() => setLiveSessionActive(!liveSessionActive)}
-                    >
-                      <Video className="w-4 h-4" />
-                      {liveSessionActive && <span className="text-[10px] font-medium">LIVE</span>}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>{liveSessionActive ? "End live session" : "Go Live — camera or screen with voice"}</TooltipContent>
-                </Tooltip>
-              </div>
-
+            {/* Textarea — full width, rounded pill */}
+            <div className="relative bg-secondary/30 rounded-2xl border border-border focus-within:border-accent/40 focus-within:shadow-[0_0_0_1px_oklch(0.68_0.16_230_/_0.15)] transition-all px-3 py-1.5">
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={handsFreeActive && voice.isListening ? "Listening..." : "Ask anything..."}
-                className="flex-1 resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[40px] max-h-[160px] text-sm py-2 px-1"
+                placeholder={handsFreeActive && voice.isListening ? "Listening..." : "Ask Steward anything..."}
+                className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[36px] max-h-[160px] text-sm py-2 px-0"
                 rows={1}
                 disabled={isStreaming}
               />
-
-              <div className="flex items-center gap-0.5 shrink-0 pb-0.5">
-                {!handsFreeActive && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          voice.isListening ? "bg-red-500/20 text-red-400" : "hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
-                        }`}
-                        onClick={voice.isListening ? voice.stop : voice.start}
-                      >
-                        {voice.isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>{voice.isListening ? "Stop listening" : "Voice input"}</TooltipContent>
-                  </Tooltip>
-                )}
-
-                <Button
-                  size="icon"
-                  className="h-8 w-8 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90"
-                  disabled={(!input.trim() && attachments.length === 0) || isStreaming}
-                  onClick={handleSend}
-                >
-                  {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-                </Button>
-              </div>
             </div>
 
-            <p className="text-[10px] text-muted-foreground text-center mt-2">
-              AI responses may contain errors. Verify important information independently.
-            </p>
+            {/* Action bar below textarea — Copilot style: [+] [Mode v] ... [Audio] [hands-free/send] */}
+            <div className="flex items-center gap-1.5 mt-1.5">
+              {/* + Add context button */}
+              <div className="relative">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className={`p-1.5 rounded-full transition-all ${
+                        showAddMenu ? "bg-accent/20 text-accent rotate-45" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() => setShowAddMenu(!showAddMenu)}
+                    >
+                      <Plus className="w-4 h-4 transition-transform" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Add context</TooltipContent>
+                </Tooltip>
+
+                {showAddMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} />
+                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-48 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                      <button
+                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
+                        onClick={() => { fileInputRef.current?.click(); setShowAddMenu(false); }}
+                      >
+                        <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Attach file</span>
+                      </button>
+                      <button
+                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
+                        onClick={() => { imageInputRef.current?.click(); setShowAddMenu(false); }}
+                      >
+                        <Image className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Attach image</span>
+                      </button>
+                      <button
+                        className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors ${visualMutation.isPending ? "opacity-50" : ""}`}
+                        disabled={visualMutation.isPending}
+                        onClick={async () => {
+                          setShowAddMenu(false);
+                          const prompt = input.trim();
+                          if (!prompt) { toast.info("Type a description first, then generate a visual"); return; }
+                          try {
+                            const result = await visualMutation.mutateAsync({ prompt: `Create a clear, professional visual: ${prompt}` });
+                            if (result.url) {
+                              const imgMsg = { role: "assistant" as const, content: `Here's the visual I created for: **${prompt}**`, metadata: { imageUrl: result.url }, createdAt: new Date() };
+                              setMessages(prev => [...prev, { role: "user" as const, content: `Generate visual: ${prompt}`, createdAt: new Date() }, imgMsg]);
+                              setInput("");
+                            }
+                          } catch (e: any) { toast.error(e.message || "Failed to generate visual"); }
+                        }}
+                      >
+                        <Palette className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>{visualMutation.isPending ? "Generating..." : "Generate visual"}</span>
+                      </button>
+                      <div className="h-px bg-border my-0.5" />
+                      <button
+                        className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-colors ${
+                          liveSessionActive ? "bg-red-500/10 text-red-400" : "hover:bg-secondary/60"
+                        }`}
+                        onClick={() => { setLiveSessionActive(!liveSessionActive); setShowAddMenu(false); }}
+                      >
+                        <Video className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>{liveSessionActive ? "End live session" : "Go live (camera / screen)"}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Mode dropdown — Copilot "Smart v" style */}
+              <div className="relative">
+                <button
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-secondary/40 text-foreground hover:bg-secondary/60 border border-border transition-all"
+                  onClick={() => setShowModeMenu(!showModeMenu)}
+                >
+                  {FOCUS_OPTIONS.find(o => selectedFocus.includes(o.value))?.icon || <Sparkles className="w-3 h-3" />}
+                  {FOCUS_OPTIONS.find(o => selectedFocus.includes(o.value))?.label || "General"}
+                  <ChevronDown className={`w-3 h-3 transition-transform ${showModeMenu ? "rotate-180" : ""}`} />
+                </button>
+
+                {showModeMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowModeMenu(false)} />
+                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-52 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                      <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Focus</div>
+                      {FOCUS_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                            selectedFocus.includes(opt.value) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
+                          }`}
+                          onClick={() => { toggleFocus(opt.value); setShowModeMenu(false); }}
+                        >
+                          {opt.icon}
+                          {opt.label}
+                          {selectedFocus.includes(opt.value) && <Check className="w-3 h-3 ml-auto" />}
+                        </button>
+                      ))}
+                      {showModes && (
+                        <>
+                          <div className="h-px bg-border my-1" />
+                          <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Advisory Mode</div>
+                          {availableModes.map(opt => (
+                            <button
+                              key={opt.value}
+                              className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                                mode === opt.value ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
+                              }`}
+                              onClick={() => { setMode(opt.value); setShowModeMenu(false); }}
+                            >
+                              {opt.label}
+                              {mode === opt.value && <Check className="w-3 h-3 ml-auto" />}
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Spacer pushes right-side buttons to far right */}
+              <div className="flex-1" />
+
+              {/* Audio toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={`p-1.5 rounded-full transition-all ${
+                      ttsEnabled
+                        ? "bg-accent/15 text-accent"
+                        : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => { setTtsEnabled(!ttsEnabled); tts.cancel(); }}
+                  >
+                    {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{ttsEnabled ? "Mute audio" : "Enable audio"}</TooltipContent>
+              </Tooltip>
+
+              {/* Unified hands-free / send button (rightmost, same position always) */}
+              {isStreaming ? (
+                <Button
+                  size="icon"
+                  className="h-8 w-8 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
+                  disabled
+                >
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                </Button>
+              ) : (input.trim() || attachments.length > 0) ? (
+                <Button
+                  size="icon"
+                  className="h-8 w-8 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
+                  onClick={handleSend}
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </Button>
+              ) : handsFreeActive ? (
+                <Button
+                  size="icon"
+                  className="h-8 w-8 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse transition-all"
+                  onClick={toggleHandsFree}
+                >
+                  <PhoneOff className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all"
+                      onClick={toggleHandsFree}
+                    >
+                      <AudioLines className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Start hands-free voice</TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           </div>
         </div>
       </main>

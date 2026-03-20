@@ -9,6 +9,7 @@ import { transcribeAudio } from "./_core/voiceTranscription";
 import { storagePut } from "./storage";
 import { generateImage } from "./_core/imageGeneration";
 import { nanoid } from "nanoid";
+import { generateSpeech, getAvailableVoices, type VoiceId } from "./edgeTTS";
 import { callDataApi } from "./_core/dataApi";
 import { SEARCH_TOOLS, executeSearchTool } from "./webSearch";
 import {
@@ -735,6 +736,38 @@ const voiceRouter = router({
       const { url } = await storagePut(fileKey, buffer, input.mimeType);
       return { url };
     }),
+  /** Edge TTS — high-quality neural speech synthesis */
+  speak: publicProcedure
+    .input(z.object({
+      text: z.string().min(1).max(5000),
+      voice: z.enum(["aria", "jenny", "sara", "emma", "guy", "davis", "jason", "tony", "sonia", "ryan"]).default("aria"),
+      rate: z.string().default("+0%"),
+      pitch: z.string().default("+0Hz"),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const audioBuffer = await generateSpeech(
+          input.text,
+          input.voice as VoiceId,
+          input.rate,
+          input.pitch
+        );
+        // Return base64-encoded audio for the frontend to play
+        return {
+          audio: audioBuffer.toString("base64"),
+          mimeType: "audio/webm",
+          voice: input.voice,
+        };
+      } catch (err: any) {
+        console.error("[EdgeTTS] Error:", err.message);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Speech generation failed. Falling back to browser TTS.",
+        });
+      }
+    }),
+  /** List available Edge TTS voices */
+  voices: publicProcedure.query(() => getAvailableVoices()),
 });
 
 // ─── SETTINGS ROUTER ──────────────────────────────────────────────
@@ -957,6 +990,18 @@ import {
   equityCompRouter, digitalAssetsRouter, coiRouter,
   complianceCopilotRouter, memoryEpisodesRouter,
 } from "./routers/v4Features";
+import {
+  planAdherenceRouter, ltcPlannerRouter, financialHealthRouter,
+  clientSegmentationRouter, practiceIntelligenceRouter, businessExitRouter,
+  constitutionalRouter, ambientRouter, workflowOrchestratorRouter,
+  annualReviewRouter, portalOptimizerRouter,
+} from "./routers/v5Features";
+import {
+  taxProjectorRouter, ssOptimizerRouter, hsaOptimizerRouter,
+  medicareRouter as medicareNavRouter, charitableRouter as charitableGivingRouter,
+  divorceRouter, educationPlannerRouter, taskEngineRouter,
+  commsRouter, feeBillingRouter,
+} from "./routers/v6Features";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1002,6 +1047,27 @@ export const appRouter = router({
   coi: coiRouter,
   complianceCopilot: complianceCopilotRouter,
   memoryEpisodes: memoryEpisodesRouter,
+  planAdherence: planAdherenceRouter,
+  ltcPlanner: ltcPlannerRouter,
+  financialHealth: financialHealthRouter,
+  clientSegmentation: clientSegmentationRouter,
+  practiceIntelligence: practiceIntelligenceRouter,
+  businessExit: businessExitRouter,
+  constitutional: constitutionalRouter,
+  ambient: ambientRouter,
+  workflowOrchestrator: workflowOrchestratorRouter,
+  annualReview: annualReviewRouter,
+  portalOptimizer: portalOptimizerRouter,
+  taxProjector: taxProjectorRouter,
+  ssOptimizer: ssOptimizerRouter,
+  hsaOptimizer: hsaOptimizerRouter,
+  medicareNav: medicareNavRouter,
+  charitableGiving: charitableGivingRouter,
+  divorce: divorceRouter,
+  educationPlanner: educationPlannerRouter,
+  taskEngine: taskEngineRouter,
+  comms: commsRouter,
+  feeBilling: feeBillingRouter,
 });
 
 export type AppRouter = typeof appRouter;
