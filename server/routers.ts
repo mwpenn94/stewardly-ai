@@ -10,6 +10,7 @@ import { storagePut } from "./storage";
 import { generateImage } from "./_core/imageGeneration";
 import { nanoid } from "nanoid";
 import { callDataApi } from "./_core/dataApi";
+import { SEARCH_TOOLS, executeSearchTool } from "./webSearch";
 import {
   createConversation, getUserConversations, getConversation, deleteConversation,
   updateConversationTitle, addMessage, getConversationMessages,
@@ -140,11 +141,55 @@ const chatRouter = router({
         })),
       ];
 
-      // Invoke LLM with resolved config parameters
-      const response = await invokeLLM({ messages: llmMessages });
-      let aiContent = typeof response.choices[0]?.message?.content === "string"
-        ? response.choices[0].message.content
-        : "";
+      // Invoke LLM with search tools enabled for financial research
+      const useTools = hasFinancial || input.content.toLowerCase().match(/\b(compare|lookup|research|price|rate|stock|etf|fund|carrier|product|provider)\b/);
+      const response = await invokeLLM({
+        messages: llmMessages,
+        ...(useTools ? { tools: SEARCH_TOOLS, tool_choice: "auto" as const } : {}),
+      });
+
+      let aiContent = "";
+      const firstChoice = response.choices[0]?.message;
+
+      // Handle tool calls — execute them and feed results back to the LLM
+      if (firstChoice?.tool_calls && firstChoice.tool_calls.length > 0) {
+        // Build tool result messages
+        const toolMessages: Array<{ role: "assistant" | "tool"; content: string; tool_calls?: any[]; tool_call_id?: string; name?: string }> = [
+          { role: "assistant", content: (typeof firstChoice.content === "string" ? firstChoice.content : "") || "", tool_calls: firstChoice.tool_calls },
+        ];
+
+        for (const toolCall of firstChoice.tool_calls) {
+          try {
+            const args = JSON.parse(toolCall.function.arguments);
+            const result = await executeSearchTool(toolCall.function.name, args);
+            toolMessages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              name: toolCall.function.name,
+              content: result,
+            });
+          } catch (err: any) {
+            toolMessages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              name: toolCall.function.name,
+              content: JSON.stringify({ error: err.message }),
+            });
+          }
+        }
+
+        // Second LLM call with tool results
+        const followUp = await invokeLLM({
+          messages: [...llmMessages, ...toolMessages] as any,
+        });
+        aiContent = typeof followUp.choices[0]?.message?.content === "string"
+          ? followUp.choices[0].message.content
+          : "";
+      } else {
+        aiContent = typeof firstChoice?.content === "string"
+          ? firstChoice.content
+          : "";
+      }
 
       // Check for financial disclaimer
       const isFinancial = needsFinancialDisclaimer(aiContent, primaryFocus);
@@ -861,6 +906,9 @@ import { meetingsRouter } from "./routers/meetings";
 import { insightsRouter } from "./routers/insights";
 import { complianceRouter } from "./routers/compliance";
 import { portalRouter } from "./routers/portal";
+import { featureFlagsRouter } from "./routers/featureFlags";
+import { workflowRouter } from "./routers/workflow";
+import { matchingRouter } from "./routers/matching";
 
 export const appRouter = router({
   system: systemRouter,
@@ -895,6 +943,9 @@ export const appRouter = router({
   insights: insightsRouter,
   compliance: complianceRouter,
   portal: portalRouter,
+  featureFlags: featureFlagsRouter,
+  workflow: workflowRouter,
+  matching: matchingRouter,
 });
 
 export type AppRouter = typeof appRouter;

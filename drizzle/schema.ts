@@ -706,3 +706,18 @@ export const complianceFlags = mysqlTable("compliance_flags", {
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 export type ComplianceFlag = typeof complianceFlags.$inferSelect;
+
+// ─── FEATURE FLAGS ──────────────────────────────────────────────────
+export const featureFlags = mysqlTable("feature_flags", {
+  id: int("id").autoincrement().primaryKey(),
+  flagKey: varchar("flagKey", { length: 128 }).notNull().unique(),
+  label: varchar("label", { length: 256 }).notNull(),
+  description: text("description"),
+  enabled: mysqlBoolean("enabled").notNull().default(true),
+  scope: mysqlEnum("scope", ["platform", "organization"]).notNull().default("platform"),
+  organizationId: int("organizationId"),
+  updatedBy: int("updatedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FeatureFlag = typeof featureFlags.$inferSelect;

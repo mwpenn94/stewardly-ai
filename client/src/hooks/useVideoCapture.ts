@@ -158,6 +158,21 @@ export function useVideoCapture(options: VideoCaptureOptions = {}) {
     }
   }, [isCapturing]);
 
+  const captureFrame = useCallback(async (): Promise<Blob | null> => {
+    if (!videoRef.current || !streamRef.current) return null;
+    try {
+      const canvas = canvasRef.current || document.createElement("canvas");
+      canvasRef.current = canvas;
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(videoRef.current, 0, 0);
+      return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+    } catch {
+      return null;
+    }
+  }, []);
+
   return {
     isCapturing,
     isPaused,
@@ -165,6 +180,8 @@ export function useVideoCapture(options: VideoCaptureOptions = {}) {
     pauseCapture,
     resumeCapture,
     stopCapture,
+    captureFrame,
     videoRef,
+    stream: streamRef.current,
   };
 }

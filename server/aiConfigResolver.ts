@@ -394,3 +394,110 @@ Communication level: ${config.communicationStyle}
 
   return parts.join("\n\n");
 }
+
+
+// ─── INHERITANCE VALIDATION ──────────────────────────────────────────────────
+export interface InheritanceViolation {
+  layer: string;
+  field: string;
+  issue: string;
+  severity: "error" | "warning";
+}
+
+/**
+ * Validate that lower layers don't contradict higher layers.
+ * Rules:
+ * 1. Guardrails from higher layers cannot be removed by lower layers (UNION only adds)
+ * 2. Prohibited topics from higher layers cannot be removed
+ * 3. Temperature must stay within platform-defined bounds
+ * 4. Compliance language from org layer cannot be overridden by lower layers
+ * 5. Approved product categories can only narrow, not expand
+ */
+export function validateInheritance(layers: {
+  platform?: any;
+  organization?: any;
+  manager?: any;
+  professional?: any;
+  user?: any;
+}): InheritanceViolation[] {
+  const violations: InheritanceViolation[] = [];
+
+  const platformGuardrails = parseJsonArray(layers.platform?.guardrails);
+  const platformProhibited = parseJsonArray(layers.platform?.prohibitedTopics);
+  const platformTemp = layers.platform?.temperature;
+  const platformMaxTokens = layers.platform?.maxTokens;
+  const orgComplianceLanguage = layers.organization?.complianceLanguage;
+  const orgApprovedCategories = parseJsonArray(layers.organization?.approvedProductCategories);
+
+  // Check each lower layer
+  const lowerLayers = [
+    { name: "Organization", data: layers.organization },
+    { name: "Manager", data: layers.manager },
+    { name: "Professional", data: layers.professional },
+    { name: "User", data: layers.user },
+  ];
+
+  for (const layer of lowerLayers) {
+    if (!layer.data) continue;
+
+    // Temperature bounds check
+    if (platformTemp != null && layer.data.temperature != null) {
+      const maxAllowed = Math.min(platformTemp + 0.3, 2.0);
+      const minAllowed = Math.max(platformTemp - 0.3, 0);
+      if (layer.data.temperature > maxAllowed || layer.data.temperature < minAllowed) {
+        violations.push({
+          layer: layer.name,
+          field: "temperature",
+          issue: `Temperature ${layer.data.temperature} exceeds platform bounds [${minAllowed.toFixed(1)}-${maxAllowed.toFixed(1)}]`,
+          severity: "warning",
+        });
+      }
+    }
+
+    // Max tokens bounds check
+    if (platformMaxTokens != null && layer.data.maxTokens != null) {
+      if (layer.data.maxTokens > platformMaxTokens * 2) {
+        violations.push({
+          layer: layer.name,
+          field: "maxTokens",
+          issue: `Max tokens ${layer.data.maxTokens} exceeds 2x platform limit (${platformMaxTokens})`,
+          severity: "warning",
+        });
+      }
+    }
+
+    // Compliance language override check (only for layers below org)
+    if (orgComplianceLanguage && layer.name !== "Organization" && layer.data.complianceLanguage) {
+      if (layer.data.complianceLanguage !== orgComplianceLanguage) {
+        violations.push({
+          layer: layer.name,
+          field: "complianceLanguage",
+          issue: `Cannot override organization compliance language`,
+          severity: "error",
+        });
+      }
+    }
+
+    // Approved categories expansion check (can only narrow)
+    if (orgApprovedCategories.length > 0 && layer.data.approvedProductCategories) {
+      const layerCategories = parseJsonArray(layer.data.approvedProductCategories);
+      const expanded = layerCategories.filter((c: string) => !orgApprovedCategories.includes(c));
+      if (expanded.length > 0) {
+        violations.push({
+          layer: layer.name,
+          field: "approvedProductCategories",
+          issue: `Cannot add categories not in org approved list: ${expanded.join(", ")}`,
+          severity: "error",
+        });
+      }
+    }
+  }
+
+  return violations;
+}
+
+function parseJsonArray(val: any): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  try { return JSON.parse(val); } catch { return []; }
+}

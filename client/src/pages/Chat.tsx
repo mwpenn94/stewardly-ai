@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
-  AlertTriangle, ArrowUp, BarChart3, Bot, Briefcase, Building2, Calculator, Check, CheckCircle,
+  AlertTriangle, ArrowUp, BarChart3, BookOpen, Bot, Briefcase, Building2, Calculator, Check, CheckCircle, ClipboardList,
   ChevronDown, FileText, Image, Loader2, LogOut, Menu, MessageSquare,
   Mic, MicOff, Monitor, Package, Paperclip, Phone, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
@@ -22,6 +22,7 @@ import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
 import { useTTS } from "@/hooks/useTTS";
 import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
+import OnboardingChecklist from "@/components/OnboardingChecklist";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
@@ -41,19 +42,153 @@ const MODE_OPTIONS: { value: AdvisoryMode; label: string; desc: string; minRole:
   { value: "manager", label: "Manager Dashboard", desc: "Team briefings & KPIs", minRole: "manager" },
 ];
 
-const SUGGESTED_PROMPTS = [
-  { text: "Help me think through a career decision", icon: "💡", category: "general" },
-  { text: "Analyze my retirement readiness", icon: "📊", category: "financial" },
-  { text: "What should I know about IUL policies?", icon: "🛡️", category: "financial" },
-  { text: "Help me plan my week effectively", icon: "📋", category: "general" },
-  { text: "Compare term vs whole life insurance", icon: "⚖️", category: "financial" },
-  { text: "Help me write a professional email", icon: "✉️", category: "general" },
+// Dynamic prompt suggestions based on focus modes, user context, and progression
+const PROMPT_BANK: { text: string; icon: string; category: FocusMode; tier: "new" | "returning" | "any" }[] = [
+  // General prompts
+  { text: "Help me think through a career decision", icon: "💡", category: "general", tier: "any" },
+  { text: "Help me plan my week effectively", icon: "📋", category: "general", tier: "any" },
+  { text: "Help me write a professional email", icon: "✉️", category: "general", tier: "any" },
+  { text: "Brainstorm ideas for my side project", icon: "🚀", category: "general", tier: "any" },
+  { text: "Help me prepare for a job interview", icon: "🎯", category: "general", tier: "returning" },
+  { text: "Summarize the pros and cons of a big decision", icon: "⚖️", category: "general", tier: "any" },
+  // Financial prompts
+  { text: "Analyze my retirement readiness", icon: "📊", category: "financial", tier: "returning" },
+  { text: "What should I know about IUL policies?", icon: "🛡️", category: "financial", tier: "any" },
+  { text: "Compare term vs whole life insurance", icon: "⚖️", category: "financial", tier: "any" },
+  { text: "Help me create a savings plan", icon: "💰", category: "financial", tier: "new" },
+  { text: "Review my investment strategy", icon: "📈", category: "financial", tier: "returning" },
+  { text: "Explain Roth conversion strategies", icon: "🔄", category: "financial", tier: "any" },
+  // Study prompts
+  { text: "Summarize this document for me", icon: "📖", category: "study", tier: "any" },
+  { text: "Create study notes from my materials", icon: "📝", category: "study", tier: "any" },
+  { text: "Quiz me on what I've uploaded", icon: "❓", category: "study", tier: "returning" },
+  { text: "Compare these two documents", icon: "🔍", category: "study", tier: "any" },
 ];
+
+function getDynamicPrompts(focus: FocusMode[], hasConversations: boolean): typeof PROMPT_BANK {
+  const tier = hasConversations ? "returning" : "new";
+  const filtered = PROMPT_BANK.filter(p => {
+    const focusMatch = focus.includes(p.category);
+    const tierMatch = p.tier === "any" || p.tier === tier;
+    return focusMatch && tierMatch;
+  });
+  // Shuffle and pick 4, ensuring variety across categories
+  const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+  const result: typeof PROMPT_BANK = [];
+  const usedCategories = new Set<string>();
+  // First pass: one from each active category
+  for (const p of shuffled) {
+    if (result.length >= 4) break;
+    if (!usedCategories.has(p.category)) {
+      result.push(p);
+      usedCategories.add(p.category);
+    }
+  }
+  // Fill remaining slots
+  for (const p of shuffled) {
+    if (result.length >= 4) break;
+    if (!result.includes(p)) result.push(p);
+  }
+  return result;
+}
 
 // Role hierarchy for access checks
 const ROLE_HIERARCHY: Record<UserRole, number> = { user: 0, advisor: 1, manager: 2, admin: 3 };
 function hasMinRole(userRole: string | undefined, minRole: UserRole): boolean {
   return ROLE_HIERARCHY[userRole as UserRole ?? "user"] >= ROLE_HIERARCHY[minRole];
+}
+
+// Typing animation hook
+function useTypingAnimation(text: string, speed = 40) {
+  const [displayed, setDisplayed] = useState("");
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    setDisplayed("");
+    setDone(false);
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) {
+        clearInterval(timer);
+        setDone(true);
+      }
+    }, speed);
+    return () => clearInterval(timer);
+  }, [text, speed]);
+  return { displayed, done };
+}
+
+// ─── WELCOME SCREEN COMPONENT ─────────────────────────────────
+function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, ttsEnabled, onPromptClick }: {
+  avatarUrl?: string | null;
+  userName?: string | null;
+  selectedFocus: FocusMode[];
+  hasConversations: boolean;
+  ttsEnabled: boolean;
+  onPromptClick: (text: string) => void;
+}) {
+  const greeting = `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${userName ? `, ${userName.split(" ")[0]}` : ""}`;
+  const { displayed: typedGreeting, done: greetingDone } = useTypingAnimation(greeting, 35);
+  const [prompts] = useState(() => getDynamicPrompts(selectedFocus, hasConversations));
+
+  return (
+    <div className="h-full flex flex-col items-center justify-center px-4 pb-32">
+      <div className="max-w-2xl w-full text-center">
+        {avatarUrl ? (
+          <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-5 ring-2 ring-accent/20 animate-in fade-in duration-500">
+            <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-5 animate-in fade-in duration-500">
+            <Sparkles className="w-7 h-7 text-accent" />
+          </div>
+        )}
+        <h1 className="text-2xl sm:text-3xl font-semibold mb-3">
+          {typedGreeting}
+          {!greetingDone && <span className="inline-block w-0.5 h-6 bg-accent ml-0.5 animate-pulse" />}
+        </h1>
+        <p className={`text-muted-foreground text-sm mb-8 max-w-md mx-auto transition-opacity duration-700 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
+          What can I help you with?
+        </p>
+
+        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto transition-all duration-700 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+          {prompts.map((prompt, i) => (
+            <button
+              key={i}
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border bg-card hover:bg-secondary/50 hover:border-accent/30 transition-all text-left text-sm group"
+              onClick={() => onPromptClick(prompt.text)}
+              style={{ animationDelay: `${i * 80}ms` }}
+            >
+              <span className="text-accent shrink-0 group-hover:scale-110 transition-transform">{prompt.icon}</span>
+              <span className="text-foreground/80 text-xs leading-snug">{prompt.text}</span>
+            </button>
+          ))}
+        </div>
+
+        <p className={`text-[11px] text-muted-foreground mt-6 transition-opacity duration-700 delay-300 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
+          Press <Phone className="w-3 h-3 inline" /> for hands-free voice &middot; <Volume2 className="w-3 h-3 inline" /> audio is {ttsEnabled ? "on" : "off"}
+        </p>
+
+        {/* Onboarding Checklist */}
+        {!hasConversations && (
+          <div className={`mt-8 max-w-lg mx-auto transition-all duration-700 delay-500 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <OnboardingChecklist
+              workflowType="professional_onboarding"
+              compact
+              onStepAction={(key) => {
+                if (key === "suitability") onPromptClick("Help me complete my suitability assessment");
+                else if (key === "first_chat") onPromptClick("Tell me about your financial planning capabilities");
+                else if (key === "ai_settings") onPromptClick("How do I configure my AI preferences?");
+                else if (key === "knowledge_base") onPromptClick("How do I upload documents to my knowledge base?");
+                else if (key === "explore_tools") onPromptClick("Show me the financial tools available");
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function Chat() {
@@ -297,7 +432,7 @@ export default function Chat() {
       setIsStreaming(false);
       setAttachments([]);
     }
-  };;
+  };
 
   const handleSend = () => handleSendWithText(input);
 
@@ -348,6 +483,10 @@ export default function Chat() {
   }, [userRole]);
   const showModes = availableModes.length > 0;
 
+  // ─── SIDEBAR NAV STATE (must be before auth gate to maintain hook order) ─
+  const [toolsExpanded, setToolsExpanded] = useState(false);
+  const [adminExpanded, setAdminExpanded] = useState(false);
+
   // ─── AUTH GATE ────────────────────────────────────────────────
   if (authLoading) {
     return (
@@ -365,7 +504,7 @@ export default function Chat() {
     : selectedFocus.map(f => FOCUS_OPTIONS.find(o => o.value === f)?.label).filter(Boolean).join(" + ");
 
   // ─── SIDEBAR NAV ITEMS (role-aware) ───────────────────────────
-  // Condensed sidebar groups
+
   const toolsNav = [
     { icon: <Calculator className="w-3.5 h-3.5" />, label: "Calculators", href: "/calculators", minRole: "user" as UserRole },
     { icon: <Package className="w-3.5 h-3.5" />, label: "Products", href: "/products", minRole: "user" as UserRole },
@@ -375,6 +514,8 @@ export default function Chat() {
     { icon: <Brain className="w-3.5 h-3.5" />, label: "Coach", href: "/coach", minRole: "user" as UserRole },
     { icon: <Shield className="w-3.5 h-3.5" />, label: "Compliance", href: "/compliance", minRole: "user" as UserRole },
     { icon: <Users className="w-3.5 h-3.5" />, label: "Marketplace", href: "/marketplace", minRole: "user" as UserRole },
+    { icon: <ClipboardList className="w-3.5 h-3.5" />, label: "Workflows", href: "/workflows", minRole: "user" as UserRole },
+    { icon: <BookOpen className="w-3.5 h-3.5" />, label: "Study Buddy", href: "/study", minRole: "user" as UserRole },
   ];
 
   const adminNav = [
@@ -435,44 +576,70 @@ export default function Chat() {
           </div>
         </div>
 
-        {/* Fixed navigation options — always visible at bottom */}
-        <div className="border-t border-border p-2 shrink-0">
-          {/* Tools section */}
-          <p className="px-3 pt-1 pb-0.5 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">Tools</p>
-          {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
-            <button
-              key={item.href}
-              onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
-            >
-              {item.icon} {item.label}
-            </button>
-          ))}
-          {/* Admin section — only visible to managers+ */}
-          {adminNav.filter(item => hasMinRole(userRole, item.minRole)).length > 0 && (
-            <>
-              <p className="px-3 pt-2 pb-0.5 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">Admin</p>
-              {adminNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
+        {/* Compact navigation — collapsible sections to preserve conversation space */}
+        <div className="border-t border-border shrink-0 max-h-[45%] overflow-y-auto">
+          {/* Tools — collapsible */}
+          <button
+            onClick={() => setToolsExpanded(!toolsExpanded)}
+            className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/70 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
+          >
+            <span>Tools</span>
+            <ChevronDown className={`w-3 h-3 transition-transform ${toolsExpanded ? "rotate-180" : ""}`} />
+          </button>
+          {toolsExpanded && (
+            <div className="px-1 pb-1 grid grid-cols-2 gap-0.5">
+              {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
                 <button
                   key={item.href}
                   onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                 >
-                  {item.icon} {item.label}
+                  {item.icon} <span className="truncate">{item.label}</span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Admin — collapsible, only for advisor+ */}
+          {adminNav.filter(item => hasMinRole(userRole, item.minRole)).length > 0 && (
+            <>
+              <button
+                onClick={() => setAdminExpanded(!adminExpanded)}
+                className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/70 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
+              >
+                <span>Admin</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${adminExpanded ? "rotate-180" : ""}`} />
+              </button>
+              {adminExpanded && (
+                <div className="px-1 pb-1">
+                  {adminNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
+                    <button
+                      key={item.href}
+                      onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+                    >
+                      {item.icon} {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </>
           )}
-          {/* Settings — single entry */}
-          <button
-            onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
-            className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
-          >
-            <Fingerprint className="w-3.5 h-3.5" /> Settings
-          </button>
-          <Separator className="my-1" />
+
+          {/* Settings — always visible as a single compact row */}
+          <div className="px-1 pb-1">
+            <button
+              onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+            >
+              <Fingerprint className="w-3.5 h-3.5" /> Settings
+            </button>
+          </div>
+
+          {/* User profile — compact footer */}
+          <Separator className="mx-2" />
           <div className="flex items-center gap-2 px-3 py-2">
-            <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-xs font-medium text-accent">
+            <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent">
               {user?.name?.charAt(0)?.toUpperCase() || "U"}
             </div>
             <div className="flex-1 min-w-0">
@@ -610,43 +777,14 @@ export default function Chat() {
         {/* ─── MESSAGES AREA ──────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
           {isWelcome ? (
-            <div className="h-full flex flex-col items-center justify-center px-4 pb-32">
-              <div className="max-w-2xl w-full text-center">
-                {avatarUrl ? (
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-5 ring-2 ring-accent/20">
-                    <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" />
-                  </div>
-                ) : (
-                  <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-5">
-                    <Sparkles className="w-7 h-7 text-accent" />
-                  </div>
-                )}
-                <h1 className="text-2xl sm:text-3xl font-semibold mb-2">
-                  Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
-                </h1>
-                <p className="text-muted-foreground text-sm sm:text-base mb-8 max-w-lg mx-auto">
-                  I'm your AI assistant. Ask me anything — from general questions to financial planning, or switch to Study and learn mode to review documents and data.
-                  I adapt to your preferences over time.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">
-                  {SUGGESTED_PROMPTS.filter(p => selectedFocus.length === FOCUS_OPTIONS.length || selectedFocus.includes(p.category as FocusMode)).slice(0, 4).map((prompt, i) => (
-                    <button
-                      key={i}
-                      className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border bg-card hover:bg-secondary/50 hover:border-accent/30 transition-all text-left text-sm"
-                      onClick={() => { setInput(prompt.text); textareaRef.current?.focus(); }}
-                    >
-                      <span className="text-accent shrink-0">{prompt.icon}</span>
-                      <span className="text-foreground/80 text-xs leading-snug">{prompt.text}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <p className="text-[11px] text-muted-foreground mt-6">
-                  Press <Phone className="w-3 h-3 inline" /> for hands-free voice &middot; <Volume2 className="w-3 h-3 inline" /> audio is {ttsEnabled ? "on" : "off"}
-                </p>
-              </div>
-            </div>
+            <WelcomeScreen
+              avatarUrl={avatarUrl}
+              userName={user?.name}
+              selectedFocus={selectedFocus}
+              hasConversations={!!conversationsQuery.data?.length}
+              ttsEnabled={ttsEnabled}
+              onPromptClick={(text) => { setInput(text); textareaRef.current?.focus(); }}
+            />
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
               {messages.map((msg: any, i: number) => (
@@ -698,6 +836,12 @@ export default function Chat() {
                               </button>
                               <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.speak(msg.content)}>
                                 <Volume2 className="w-3 h-3" />
+                              </button>
+                              <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied to clipboard"); }}>
+                                <FileText className="w-3 h-3" />
+                              </button>
+                              <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground hover:text-purple-400 transition-colors" onClick={async () => { toast.info("Generating infographic..."); try { const result = await visualMutation.mutateAsync({ prompt: `Create a professional infographic summarizing: ${msg.content.slice(0, 500)}` }); if (result.url) { setMessages(prev => [...prev, { role: "assistant" as const, content: `Here's the infographic:`, metadata: { imageUrl: result.url }, createdAt: new Date() }]); } } catch (e: any) { toast.error(e.message || "Failed to generate infographic"); } }} title="Generate Infographic">
+                                <Palette className="w-3 h-3" />
                               </button>
                             </div>
                           )}

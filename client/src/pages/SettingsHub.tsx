@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, Camera, Brain, Shield, FileText, Sparkles, User,
-  Loader2, Settings2, ChevronRight,
+  Loader2, Settings2, ChevronRight, Bell, Palette,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
@@ -14,15 +14,19 @@ import ProfileTab from "./settings/ProfileTab";
 import SuitabilityTab from "./settings/SuitabilityTab";
 import KnowledgeBaseTab from "./settings/KnowledgeBaseTab";
 import AITuningTab from "./settings/AITuningTab";
+import NotificationsTab from "./settings/NotificationsTab";
+import AppearanceTab from "./settings/AppearanceTab";
 
 // ─── TAB DEFINITIONS ─────────────────────────────────────────────
-type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning";
+type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "notifications" | "appearance";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: string; slug: string }[] = [
   { id: "profile", label: "Profile & Style", icon: <User className="w-4 h-4" />, desc: "Avatar, memories, communication style", slug: "profile" },
   { id: "suitability", label: "Financial Profile", icon: <Shield className="w-4 h-4" />, desc: "Suitability assessment for personalized advice", slug: "suitability" },
   { id: "knowledge", label: "Knowledge Base", icon: <FileText className="w-4 h-4" />, desc: "Documents and files that train your AI", slug: "knowledge" },
   { id: "ai-tuning", label: "AI Tuning", icon: <Sparkles className="w-4 h-4" />, desc: "5-layer AI personalization cascade", slug: "ai-tuning" },
+  { id: "notifications", label: "Notifications", icon: <Bell className="w-4 h-4" />, desc: "Manage alerts and email digests", slug: "notifications" },
+  { id: "appearance", label: "Appearance", icon: <Palette className="w-4 h-4" />, desc: "Theme, colors, font size, density", slug: "appearance" },
 ];
 
 export default function SettingsHub() {
@@ -126,6 +130,8 @@ export default function SettingsHub() {
           {activeTab === "suitability" && <SuitabilityTab />}
           {activeTab === "knowledge" && <KnowledgeBaseTab />}
           {activeTab === "ai-tuning" && <AITuningTab />}
+          {activeTab === "notifications" && <NotificationsTab />}
+          {activeTab === "appearance" && <AppearanceTab />}
         </main>
       </div>
     </div>

@@ -105,6 +105,34 @@ export function useScreenCapture(options: ScreenCaptureOptions = {}) {
     }
   }, [isCapturing]);
 
+  const captureFrame = useCallback(async (): Promise<Blob | null> => {
+    if (!streamRef.current) return null;
+    const track = streamRef.current.getVideoTracks()[0];
+    if (!track) return null;
+    try {
+      const video = document.createElement("video");
+      video.srcObject = streamRef.current;
+      await video.play();
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(video, 0, 0);
+      video.pause();
+      video.srcObject = null;
+      return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const getPreviewUrl = useCallback((): string | null => {
+    if (!streamRef.current) return null;
+    const video = document.createElement("video");
+    video.srcObject = streamRef.current;
+    return URL.createObjectURL(new MediaSource());
+  }, []);
+
   return {
     isCapturing,
     isPaused,
@@ -112,5 +140,8 @@ export function useScreenCapture(options: ScreenCaptureOptions = {}) {
     pauseCapture,
     resumeCapture,
     stopCapture,
+    captureFrame,
+    getPreviewUrl,
+    stream: streamRef.current,
   };
 }

@@ -1,0 +1,38 @@
+{
+  "query": "\n-- Check existing roles\nSELECT * FROM user_organization_roles WHERE userId = 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute \n-- Check existing roles\nSELECT * FROM user_organization_roles WHERE userId = 1;\n",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "organizationId": "1",
+      "globalRole": "global_admin",
+      "organizationRole": "org_admin",
+      "managerId": "NULL",
+      "professionalId": "NULL",
+      "status": "active",
+      "invitedAt": "NULL",
+      "approvedAt": "NULL",
+      "createdAt": "2026-03-19 21:00:38",
+      "updatedAt": "2026-03-19 21:00:38"
+    },
+    {
+      "id": "2",
+      "userId": "1",
+      "organizationId": "2",
+      "globalRole": "global_admin",
+      "organizationRole": "org_admin",
+      "managerId": "NULL",
+      "professionalId": "NULL",
+      "status": "active",
+      "invitedAt": "NULL",
+      "approvedAt": "NULL",
+      "createdAt": "2026-03-19 21:00:38",
+      "updatedAt": "2026-03-19 21:00:38"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\torganizationId\tglobalRole\torganizationRole\tmanagerId\tprofessionalId\tstatus\tinvitedAt\tapprovedAt\tcreatedAt\tupdatedAt\n1\t1\t1\tglobal_admin\torg_admin\tNULL\tNULL\tactive\tNULL\tNULL\t2026-03-19 21:00:38\t2026-03-19 21:00:38\n2\t1\t2\tglobal_admin\torg_admin\tNULL\tNULL\tactive\tNULL\tNULL\t2026-03-19 21:00:38\t2026-03-19 21:00:38\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

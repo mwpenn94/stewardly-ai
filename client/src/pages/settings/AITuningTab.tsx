@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import {
-  Eye, Layers, Loader2, Save, Settings2, Shield, Users, User, Building2
+  Eye, Layers, Loader2, Save, Settings2, Shield, Users, User, Building2, Plus, X, AlertCircle
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -265,6 +266,221 @@ function ManagerEditor({ userId }: { userId: number }) {
   );
 }
 
+// ─── ORGANIZATION EDITOR (Layer 2) ────────────────────────────────
+function OrganizationEditor() {
+  const orgsQuery = trpc.organizations.list.useQuery();
+  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
+
+  const settingsQuery = trpc.aiLayers.getOrgAISettings.useQuery(
+    { organizationId: selectedOrgId! },
+    { enabled: !!selectedOrgId }
+  );
+  const mutation = trpc.aiLayers.updateOrgAISettings.useMutation({
+    onSuccess: () => toast.success("Organization AI settings saved"),
+    onError: (e) => toast.error(e.message),
+  });
+
+  const [promptOverlay, setPromptOverlay] = useState("");
+  const [brandVoice, setBrandVoice] = useState("");
+  const [complianceLanguage, setComplianceLanguage] = useState("");
+  const [customDisclaimers, setCustomDisclaimers] = useState("");
+  const [approvedCategories, setApprovedCategories] = useState<string[]>([]);
+  const [prohibitedTopics, setProhibitedTopics] = useState<string[]>([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [newProhibited, setNewProhibited] = useState("");
+  const [toneStyle, setToneStyle] = useState("professional");
+  const [responseFormat, setResponseFormat] = useState("mixed");
+  const [responseLength, setResponseLength] = useState("standard");
+  const [temperature, setTemperature] = useState(0.7);
+
+  useEffect(() => {
+    if (settingsQuery.data) {
+      const s = settingsQuery.data;
+      setPromptOverlay(s.promptOverlay || "");
+      setBrandVoice(s.brandVoice || "");
+      setComplianceLanguage(s.complianceLanguage || "");
+      setCustomDisclaimers(s.customDisclaimers || "");
+      setApprovedCategories(Array.isArray(s.approvedProductCategories) ? s.approvedProductCategories as string[] : []);
+      setProhibitedTopics(Array.isArray(s.prohibitedTopics) ? s.prohibitedTopics as string[] : []);
+      setToneStyle(s.toneStyle || "professional");
+      setResponseFormat(s.responseFormat || "mixed");
+      setResponseLength(s.responseLength || "standard");
+      setTemperature(s.temperature ?? 0.7);
+    } else if (!settingsQuery.isLoading && selectedOrgId) {
+      setPromptOverlay(""); setBrandVoice(""); setComplianceLanguage("");
+      setCustomDisclaimers(""); setApprovedCategories([]); setProhibitedTopics([]);
+      setToneStyle("professional"); setResponseFormat("mixed"); setResponseLength("standard");
+      setTemperature(0.7);
+    }
+  }, [settingsQuery.data, selectedOrgId]);
+
+  if (orgsQuery.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
+
+  const orgs = orgsQuery.data || [];
+  if (orgs.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-10">
+        <Building2 className="w-7 h-7 mx-auto mb-2 opacity-50" />
+        <p className="text-sm">You are not a member of any organization yet.</p>
+        <p className="text-xs mt-1">Join or create an organization to configure Layer 2 settings.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+        <p className="text-xs text-blue-400 flex items-center gap-1.5">
+          <Building2 className="w-3.5 h-3.5" />
+          Organization-level settings define brand voice, compliance language, and approved topics for all members.
+        </p>
+      </div>
+
+      {/* Org selector */}
+      <div>
+        <Label className="text-xs font-medium mb-1.5 block">Select Organization</Label>
+        <Select value={selectedOrgId?.toString() || ""} onValueChange={(v) => setSelectedOrgId(parseInt(v))}>
+          <SelectTrigger className="bg-secondary border-border h-8 text-xs"><SelectValue placeholder="Choose an organization..." /></SelectTrigger>
+          <SelectContent>
+            {orgs.map((org: any) => (
+              <SelectItem key={org.id} value={org.id.toString()}>{org.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {selectedOrgId && settingsQuery.isLoading && (
+        <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>
+      )}
+
+      {selectedOrgId && !settingsQuery.isLoading && (
+        <div className="space-y-5">
+          {/* Brand Voice */}
+          <div>
+            <Label className="text-xs font-medium mb-1.5 block">Brand Voice</Label>
+            <Textarea
+              value={brandVoice}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBrandVoice(e.target.value)}
+              placeholder="Describe the organization's brand voice and communication style (e.g., 'Warm, authoritative, client-first. Use plain language for complex financial concepts.')"
+              className="bg-secondary border-border min-h-[80px] text-sm"
+            />
+          </div>
+
+          {/* Compliance Language */}
+          <div>
+            <Label className="text-xs font-medium mb-1.5 block">Compliance Language</Label>
+            <Textarea
+              value={complianceLanguage}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComplianceLanguage(e.target.value)}
+              placeholder="Required compliance language and regulatory disclaimers (e.g., FINRA 2210 requirements, SEC guidelines)"
+              className="bg-secondary border-border min-h-[60px] text-sm"
+            />
+          </div>
+
+          {/* Custom Disclaimers */}
+          <div>
+            <Label className="text-xs font-medium mb-1.5 block">Custom Disclaimers</Label>
+            <Textarea
+              value={customDisclaimers}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCustomDisclaimers(e.target.value)}
+              placeholder="Organization-specific disclaimers appended to financial advice responses"
+              className="bg-secondary border-border min-h-[60px] text-sm"
+            />
+          </div>
+
+          {/* Approved Product Categories */}
+          <div>
+            <Label className="text-xs font-medium mb-1.5 block">Approved Product Categories</Label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {approvedCategories.map((cat, i) => (
+                <Badge key={i} variant="outline" className="text-[10px] gap-1">
+                  {cat}
+                  <button onClick={() => setApprovedCategories(prev => prev.filter((_, j) => j !== i))} className="hover:text-destructive">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={newCategory}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCategory(e.target.value)}
+                placeholder="Add category (e.g., IUL, Term Life)"
+                className="bg-secondary border-border h-7 text-xs flex-1"
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === "Enter" && newCategory.trim()) {
+                    setApprovedCategories(prev => [...prev, newCategory.trim()]);
+                    setNewCategory("");
+                  }
+                }}
+              />
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
+                if (newCategory.trim()) { setApprovedCategories(prev => [...prev, newCategory.trim()]); setNewCategory(""); }
+              }}><Plus className="w-3 h-3" /></Button>
+            </div>
+          </div>
+
+          {/* Prohibited Topics */}
+          <div>
+            <Label className="text-xs font-medium mb-1.5 block">Prohibited Topics</Label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {prohibitedTopics.map((topic, i) => (
+                <Badge key={i} variant="outline" className="text-[10px] gap-1 border-destructive/30 text-destructive">
+                  {topic}
+                  <button onClick={() => setProhibitedTopics(prev => prev.filter((_, j) => j !== i))} className="hover:text-destructive">
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={newProhibited}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewProhibited(e.target.value)}
+                placeholder="Add prohibited topic (e.g., cryptocurrency, specific competitor names)"
+                className="bg-secondary border-border h-7 text-xs flex-1"
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === "Enter" && newProhibited.trim()) {
+                    setProhibitedTopics(prev => [...prev, newProhibited.trim()]);
+                    setNewProhibited("");
+                  }
+                }}
+              />
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => {
+                if (newProhibited.trim()) { setProhibitedTopics(prev => [...prev, newProhibited.trim()]); setNewProhibited(""); }
+              }}><Plus className="w-3 h-3" /></Button>
+            </div>
+          </div>
+
+          {/* Shared layer fields (tone, format, length, temperature) + prompt overlay */}
+          <LayerFields
+            promptOverlay={promptOverlay} setPromptOverlay={setPromptOverlay}
+            toneStyle={toneStyle} setToneStyle={setToneStyle}
+            responseFormat={responseFormat} setResponseFormat={setResponseFormat}
+            responseLength={responseLength} setResponseLength={setResponseLength}
+            temperature={temperature} setTemperature={setTemperature}
+            onSave={() => mutation.mutate({
+              organizationId: selectedOrgId,
+              brandVoice,
+              complianceLanguage,
+              customDisclaimers,
+              approvedProductCategories: approvedCategories,
+              prohibitedTopics,
+              promptOverlay,
+              toneStyle,
+              responseFormat,
+              responseLength,
+              temperature,
+            })}
+            saving={mutation.isPending}
+            layerLabel="Organization"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── PLATFORM EDITOR (Layer 1) ─────────────────────────────────────
 function PlatformEditor() {
   const query = trpc.aiLayers.getPlatformSettings.useQuery();
@@ -463,12 +679,7 @@ export default function AITuningTab() {
       {activeTab === "user" && <UserPreferencesEditor />}
       {activeTab === "professional" && user && <ProfessionalEditor userId={user.id} />}
       {activeTab === "manager" && user && <ManagerEditor userId={user.id} />}
-      {activeTab === "organization" && (
-        <div className="text-center text-muted-foreground py-10">
-          <Building2 className="w-7 h-7 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Organization AI settings are managed from the Organization Settings page.</p>
-        </div>
-      )}
+      {activeTab === "organization" && <OrganizationEditor />}
       {activeTab === "platform" && <PlatformEditor />}
       {activeTab === "preview" && user && <PreviewPanel userId={user.id} />}
     </div>

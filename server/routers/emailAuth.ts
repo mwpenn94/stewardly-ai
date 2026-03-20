@@ -2,7 +2,7 @@ import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
-import { users } from "../../drizzle/schema";
+import { users, organizations, userOrganizationRoles } from "../../drizzle/schema";
 import { hashPassword, verifyPassword, validatePasswordStrength, validateEmail } from "../_core/password";
 import { sdk } from "../_core/sdk";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
@@ -24,6 +24,8 @@ export const emailAuthRouter = router({
         email: z.string().email("Invalid email address"),
         password: z.string().min(8, "Password must be at least 8 characters"),
         name: z.string().min(1, "Name is required").max(256),
+        orgSlug: z.string().optional(), // auto-affiliate from org URL
+        authTier: z.enum(["email", "full"]).optional(), // Tier 1 = email, Tier 2 = full (Google)
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -58,7 +60,14 @@ export const emailAuthRouter = router({
       // Generate a unique openId for email-based users
       const openId = `email_${nanoid(24)}`;
 
-      // Create user
+      // Auto-affiliate: look up org by slug if provided
+      let affiliateOrgId: number | null = null;
+      if (input.orgSlug) {
+        const orgs = await db.select().from(organizations).where(eq(organizations.slug, input.orgSlug)).limit(1);
+        if (orgs.length > 0) affiliateOrgId = orgs[0].id;
+      }
+
+      // Create user with auth tier
       await db.insert(users).values({
         openId,
         name: input.name,
@@ -66,8 +75,22 @@ export const emailAuthRouter = router({
         loginMethod: "email",
         passwordHash,
         role: "user",
+        authTier: input.authTier || "email",
+        affiliateOrgId,
         lastSignedIn: new Date(),
       });
+
+      // Auto-add to org if affiliated
+      if (affiliateOrgId) {
+        const newUser = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+        if (newUser.length > 0) {
+          await db.insert(userOrganizationRoles).values({
+            userId: newUser[0].id,
+            organizationId: affiliateOrgId,
+            organizationRole: "user",
+          }).onDuplicateKeyUpdate({ set: { organizationRole: "user" } });
+        }
+      }
 
       // Create session token
       const sessionToken = await sdk.signSession(

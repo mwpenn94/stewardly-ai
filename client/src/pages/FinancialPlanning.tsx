@@ -382,12 +382,16 @@ function SocialSecurityOptimizer() {
       {/* Monthly Benefits */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { age: 62, monthly: ss.at62, label: "Age 62 (Early)" },
-          { age: fra, monthly: ss.atFRA, label: `Age ${fra} (FRA)` },
-          { age: 67, monthly: ss.at67, label: "Age 67" },
-          { age: 70, monthly: ss.at70, label: "Age 70 (Max)" },
-        ].map(item => (
-          <Card key={item.age} className={item.age === bestAge ? "border-emerald-500/30 bg-emerald-500/5" : ""}>
+          { age: 62, key: "early-62", monthly: ss.at62, label: "Age 62 (Early)" },
+          { age: fra, key: "fra", monthly: ss.atFRA, label: `Age ${fra} (FRA)` },
+          { age: 67, key: "age-67", monthly: ss.at67, label: "Age 67" },
+          { age: 70, key: "max-70", monthly: ss.at70, label: "Age 70 (Max)" },
+        ].filter((item, i, arr) => {
+          // Remove "Age 67" card if FRA is already 67 to avoid duplicate
+          if (item.key === "age-67" && fra === 67) return false;
+          return true;
+        }).map(item => (
+          <Card key={item.key} className={item.age === bestAge ? "border-emerald-500/30 bg-emerald-500/5" : ""}>
             <CardContent className="p-4 text-center">
               <p className="text-xs text-muted-foreground">{item.label}</p>
               <p className={`text-xl font-bold mt-1 ${item.age === bestAge ? "text-emerald-400" : ""}`}>{fmt(item.monthly)}/mo</p>

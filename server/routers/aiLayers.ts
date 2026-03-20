@@ -23,7 +23,7 @@ import {
   userPreferences,
   userOrganizationRoles,
 } from "../../drizzle/schema";
-import { resolveAIConfig, buildLayerOverlayPrompt } from "../aiConfigResolver";
+import { resolveAIConfig, buildLayerOverlayPrompt, validateInheritance } from "../aiConfigResolver";
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -439,5 +439,41 @@ export const aiLayersRouter = router({
         config,
         assembledPrompt,
       };
+    }),
+
+  /** Validate inheritance rules across all 5 layers */
+  validateInheritance: protectedProcedure
+    .input(z.object({ organizationId: z.number().optional() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      // Fetch each layer's raw settings
+      const [platformRows] = await db.select().from(platformAISettings).limit(1);
+      const platform = platformRows || null;
+
+      let organization = null;
+      if (input.organizationId) {
+        const [orgRow] = await db.select().from(organizationAISettings).where(eq(organizationAISettings.organizationId, input.organizationId));
+        organization = orgRow || null;
+      }
+
+      // Find manager/professional settings for the current user
+      let manager = null;
+      let professional = null;
+      if (input.organizationId) {
+        const [mgrRow] = await db.select().from(managerAISettings).where(
+          and(eq(managerAISettings.managerId, ctx.user.id), eq(managerAISettings.organizationId, input.organizationId))
+        );
+        manager = mgrRow || null;
+        const [proRow] = await db.select().from(professionalAISettings).where(
+          and(eq(professionalAISettings.professionalId, ctx.user.id), eq(professionalAISettings.organizationId, input.organizationId))
+        );
+        professional = proRow || null;
+      }
+
+      const [userRow] = await db.select().from(userPreferences).where(eq(userPreferences.userId, ctx.user.id));
+      const user = userRow || null;
+
+      const violations = validateInheritance({ platform, organization, manager, professional, user });
+      return { violations, layerCount: [platform, organization, manager, professional, user].filter(Boolean).length };
     }),
 });

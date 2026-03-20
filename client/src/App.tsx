@@ -25,6 +25,8 @@ import Compliance from "./pages/Compliance";
 import Marketplace from "./pages/Marketplace";
 import Portal from "./pages/Portal";
 import Organizations from "./pages/Organizations";
+import Workflows from "./pages/Workflows";
+import StudyBuddy from "./pages/StudyBuddy";
 
 function Router() {
   return (
@@ -52,6 +54,8 @@ function Router() {
       <Route path={"/marketplace"} component={Marketplace} />
       <Route path={"/portal"} component={Portal} />
       <Route path={"/organizations"} component={Organizations} />
+      <Route path={"/workflows"} component={Workflows} />
+      <Route path={"/study"} component={StudyBuddy} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>

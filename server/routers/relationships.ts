@@ -266,6 +266,79 @@ export const relationshipsRouter = router({
       return { success: true };
     }),
 
+  /**
+   * Connect with an advisor (Tier 3 auth upgrade)
+   * Creates an advisor relationship and upgrades the client's auth tier
+   */
+  connectAdvisor: protectedProcedure
+    .input(
+      z.object({
+        advisorId: z.number(),
+        organizationId: z.number().optional(),
+        message: z.string().max(500).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED" });
+      if (input.advisorId === ctx.user.id) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot connect with yourself" });
+      }
+
+      const db = await (await import("../db")).getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Verify advisor exists and has professional+ role
+      const advisor = await db
+        .select({ id: users.id, role: users.role, name: users.name })
+        .from(users)
+        .where(eq(users.id, input.advisorId))
+        .limit(1);
+
+      if (!advisor.length) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Advisor not found" });
+      }
+
+      const advisorRoles = ["professional", "manager", "org_admin", "admin"];
+      if (!advisorRoles.includes(advisor[0].role || "")) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected user is not a professional advisor" });
+      }
+
+      // Check for existing advisor relationship
+      const existing = await db
+        .select()
+        .from(userRelationships)
+        .where(
+          and(
+            eq(userRelationships.userId, ctx.user.id),
+            eq(userRelationships.relatedUserId, input.advisorId),
+            eq(userRelationships.relationshipType, "advisor")
+          )
+        )
+        .limit(1);
+
+      if (existing.length) {
+        throw new TRPCError({ code: "CONFLICT", message: "Already connected with this advisor" });
+      }
+
+      // Create advisor relationship
+      await db.insert(userRelationships).values({
+        userId: ctx.user.id,
+        relatedUserId: input.advisorId,
+        relationshipType: "advisor",
+        organizationId: input.organizationId || null,
+        status: "pending",
+        metadata: input.message ? JSON.stringify({ message: input.message }) : null,
+      });
+
+      // Upgrade auth tier to advisor_connected
+      await db
+        .update(users)
+        .set({ authTier: "advisor_connected" })
+        .where(eq(users.id, ctx.user.id));
+
+      return { success: true, advisorName: advisor[0].name };
+    }),
+
   // ─── ORGANIZATION RELATIONSHIPS ──────────────────────────────────
 
   /**

@@ -1,0 +1,13 @@
+{
+  "query": "SELECT GROUP_CONCAT(TABLE_NAME ORDER BY TABLE_NAME SEPARATOR ', ') AS all_tables FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT GROUP_CONCAT(TABLE_NAME ORDER BY TABLE_NAME SEPARATOR ', ') AS all_tables FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();",
+  "rows": [
+    {
+      "all_tables": "__drizzle_migrations, affiliated_resources, audit_trail, client_associations, compliance_reviews, conversations, document_chunks, documents, engagement_scores, enrichment_cohorts, enrichment_datasets, enrichment_matches, feature_flags, feedback, manager_ai_settings, meeting_action_items, meetings, memories, messages, organization_ai_settings, organization_landing_page_config, organization_relationships, organizations, platform_ai_settings, proactive_insights, products, professional_ai_settings, professional_context, prompt_experiments, prompt_variants, quality_ratings, review_queue, suitability_assessments, user_organization_roles, user_preferences, user_profiles, user_relationships, users, view_as_audit_log, workflow_checklist"
+    }
+  ],
+  "messages": [],
+  "stdout": "all_tables\n__drizzle_migrations, affiliated_resources, audit_trail, client_associations, compliance_reviews, conversations, document_chunks, documents, engagement_scores, enrichment_cohorts, enrichment_datasets, enrichment_matches, feature_flags, feedback, manager_ai_settings, meeting_action_items, meetings, memories, messages, organization_ai_settings, organization_landing_page_config, organization_relationships, organizations, platform_ai_settings, proactive_insights, products, professional_ai_settings, professional_context, prompt_experiments, prompt_variants, quality_ratings, review_queue, suitability_assessments, user_organization_roles, user_preferences, user_profiles, user_relationships, users, view_as_audit_log, workflow_checklist\n",
+  "stderr": "",
+  "execution_time_ms": 82
+}

@@ -232,7 +232,7 @@ export default function Organizations() {
                   </TableHeader>
                   <TableBody>
                     {members.map((m: any) => (
-                      <TableRow key={m.id}>
+                      <TableRow key={m.roleId || m.userId}>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 text-xs font-medium">
