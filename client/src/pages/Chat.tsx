@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -13,7 +14,7 @@ import {
   Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
-  Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail
+  Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { LiveSession } from "@/components/LiveSession";
@@ -22,6 +23,7 @@ import { ProgressiveMessage } from "@/components/ProgressiveMessage";
 import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
 import { useTTS } from "@/hooks/useTTS";
 import { useAnonymousChat } from "@/hooks/useAnonymousChat";
+import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -216,6 +218,8 @@ export default function Chat() {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showModeMenu, setShowModeMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // ─── HANDS-FREE & VOICE STATE ──────────────────────────────────
   const [handsFreeActive, setHandsFreeActive] = useState(false);
@@ -297,6 +301,7 @@ export default function Chat() {
   const allowQueries = isAuthenticated || isAnonymous;
   const anonChat = useAnonymousChat();
   const anonSendMutation = trpc.anonymousChat.send.useMutation();
+  const guestPrefs = useGuestPreferences();
 
   // ─── QUERIES ──────────────────────────────────────────────────
   const conversationsQuery = trpc.conversations.list.useQuery(undefined, { enabled: isAuthenticated });
@@ -306,6 +311,17 @@ export default function Chat() {
   );
   const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: isAuthenticated });
   const avatarUrl = settingsQuery.data?.avatarUrl;
+
+  // Debounced search
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+  const searchResults = trpc.conversations.search.useQuery(
+    { query: debouncedSearch, limit: 20 },
+    { enabled: isAuthenticated && debouncedSearch.length > 0 }
+  );
 
   // ─── MUTATIONS ────────────────────────────────────────────────
   const sendMutation = trpc.chat.send.useMutation();
@@ -404,6 +420,7 @@ export default function Chat() {
         const result = await anonSendMutation.mutateAsync({
           messages: anonHistory,
           focus: selectedFocus[0] || "general",
+          guestPreferences: guestPrefs.preferences,
         });
 
         anonChat.addMessage("assistant", typeof result.content === 'string' ? result.content : String(result.content));
@@ -585,28 +602,108 @@ export default function Chat() {
       `}>
         <div className={`flex items-center border-b border-border shrink-0 ${sidebarCollapsed ? "p-2 justify-center" : "p-3 justify-between"}`}>
           {sidebarCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={handleNewConversation}>
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">New Conversation</TooltipContent>
-            </Tooltip>
+            <div className="flex flex-col gap-1 items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={handleNewConversation}>
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">New Conversation</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => { setSidebarCollapsed(false); setSearchOpen(true); }}>
+                    <Search className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Search Conversations</TooltipContent>
+              </Tooltip>
+            </div>
           ) : (
             <>
               <Button variant="ghost" size="sm" className="gap-2 text-xs flex-1 justify-start" onClick={handleNewConversation}>
                 <Plus className="w-3.5 h-3.5" /> New Conversation
               </Button>
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-0.5">
+                <Button variant="ghost" size="icon-sm" onClick={() => setSearchOpen(!searchOpen)}>
+                  <Search className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </>
           )}
         </div>
 
+        {/* Search bar */}
+        {searchOpen && !sidebarCollapsed && (
+          <div className="px-2 py-2 border-b border-border shrink-0">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-8 text-xs bg-secondary/30 border-border/50"
+                autoFocus
+              />
+              {searchQuery && (
+                <button
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => { setSearchQuery(""); setSearchOpen(false); }}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Scrollable conversation list — grows to fill available space */}
         <div className="flex-1 min-h-0 overflow-y-auto">
+          {/* Search results */}
+          {searchOpen && debouncedSearch.length > 0 ? (
+            <div className="p-2 space-y-0.5">
+              {searchResults.isLoading && (
+                <div className="space-y-2 p-2">
+                  {[1,2,3].map(i => <Skeleton key={i} className="h-8 w-full" />)}
+                </div>
+              )}
+              {searchResults.data?.length === 0 && !searchResults.isLoading && (
+                <div className="text-center text-muted-foreground text-xs py-8">
+                  <Search className="w-5 h-5 mx-auto mb-2 opacity-40" />
+                  No conversations found
+                </div>
+              )}
+              {searchResults.data?.map((result: any) => (
+                <div
+                  key={result.id}
+                  className={`group flex flex-col gap-0.5 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${
+                    result.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-foreground"
+                  }`}
+                  onClick={() => {
+                    setConversationId(result.id);
+                    navigate(`/chat/${result.id}`);
+                    setSidebarOpen(false);
+                    setSearchQuery("");
+                    setSearchOpen(false);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                    <span className="truncate flex-1 font-medium">{result.title || "New Conversation"}</span>
+                  </div>
+                  {result.matchType === "message" && result.matchSnippet && (
+                    <p className="text-[10px] text-muted-foreground truncate pl-5.5 italic">
+                      ...{result.matchSnippet}...
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className={sidebarCollapsed ? "p-1 space-y-1" : "p-2 space-y-0.5"}>
             {conversationsQuery.data?.map((conv: any) => (
               sidebarCollapsed ? (
@@ -648,6 +745,7 @@ export default function Chat() {
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Compact navigation — collapsible sections to preserve conversation space */}
@@ -668,6 +766,17 @@ export default function Chat() {
                 </Tooltip>
               ))}
               <Separator className="mx-1" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                    className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Help & Support</TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -727,6 +836,12 @@ export default function Chat() {
                 </>
               )}
               <div className="px-1 pb-1">
+                <button
+                  onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" /> Help & Support
+                </button>
                 <button
                   onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
                   className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"

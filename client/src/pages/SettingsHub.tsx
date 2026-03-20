@@ -17,9 +17,10 @@ import KnowledgeBaseTab from "./settings/KnowledgeBaseTab";
 import AITuningTab from "./settings/AITuningTab";
 import NotificationsTab from "./settings/NotificationsTab";
 import AppearanceTab from "./settings/AppearanceTab";
+import GuestPreferencesTab from "./settings/GuestPreferencesTab";
 
 // ─── TAB DEFINITIONS ─────────────────────────────────────────────
-type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "notifications" | "appearance";
+type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "notifications" | "appearance" | "guest-prefs";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: string; slug: string }[] = [
   { id: "profile", label: "Profile & Style", icon: <User className="w-4 h-4" />, desc: "Avatar, memories, communication style", slug: "profile" },
@@ -28,10 +29,11 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: strin
   { id: "ai-tuning", label: "AI Tuning", icon: <Sparkles className="w-4 h-4" />, desc: "5-layer AI personalization cascade", slug: "ai-tuning" },
   { id: "notifications", label: "Notifications", icon: <Bell className="w-4 h-4" />, desc: "Manage alerts and email digests", slug: "notifications" },
   { id: "appearance", label: "Appearance", icon: <Palette className="w-4 h-4" />, desc: "Theme, colors, font size, density", slug: "appearance" },
+  { id: "guest-prefs", label: "Guest Preferences", icon: <Sparkles className="w-4 h-4" />, desc: "Customize AI responses without an account", slug: "guest-prefs" },
 ];
 
 // Tabs accessible without authentication
-const ANONYMOUS_TABS: SettingsTab[] = ["appearance"];
+const ANONYMOUS_TABS: SettingsTab[] = ["appearance", "guest-prefs"];
 
 export default function SettingsHub() {
   const { user, loading } = useAuth();
@@ -180,6 +182,7 @@ export default function SettingsHub() {
               {activeTab === "ai-tuning" && <AITuningTab />}
               {activeTab === "notifications" && <NotificationsTab />}
               {activeTab === "appearance" && <AppearanceTab />}
+              {activeTab === "guest-prefs" && <GuestPreferencesTab />}
             </>
           )}
         </main>

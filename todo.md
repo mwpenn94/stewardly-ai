@@ -1374,3 +1374,29 @@
 
 ## Go-Live Buttons — Split into Chat Input Area (March 20, 2026)
 - [x] Split the single "Go live (camera / screen)" plus-menu item into two separate items: "Go live — Screen" and "Go live — Video"
+
+## AI Conversation Titling + Search (March 20, 2026)
+- [x] Add AI auto-titling: generate title from first user message via LLM (already existed + added regenerateTitle)
+- [x] Add title column to conversations table if missing (already exists)
+- [x] Create search endpoint for conversation history (full-text on title + messages)
+- [x] Update Chat sidebar to show AI-generated titles instead of "New Conversation"
+- [x] Add search bar in Chat sidebar for searching conversation history
+- [x] Allow AI to search conversation history as context (getContext endpoint)
+
+## Keyboard Shortcuts Overlay (March 20, 2026)
+- [x] Create keyboard shortcuts modal triggered by ? key
+- [x] Include shortcuts: new chat, toggle sidebar, focus input, search conversations, navigation
+- [x] Show overlay from help icon in sidebar footer (linked to /help page)
+
+## Help/Support Page (March 20, 2026)
+- [x] Create /help route with searchable FAQ (16 FAQ items across 5 categories)
+- [x] Add feature documentation covering all major features
+- [x] Add "Contact Support" form using notifyOwner system
+- [x] Link help page from sidebar and contextual help
+
+## Guest Personalization — localStorage Preferences (March 20, 2026)
+- [x] Create useGuestPreferences hook with localStorage persistence
+- [x] Add guest-accessible preferences: AI focus, response depth, tone, language style
+- [x] Expand ANONYMOUS_TABS to include a "Guest Preferences" tab in SettingsHub
+- [x] Wire guest preferences into anonymous chat endpoint via request payload
+- [x] Show "Sign in to unlock full personalization" prompt in guest preferences UI

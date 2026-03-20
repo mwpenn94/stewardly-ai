@@ -14,7 +14,8 @@ import { callDataApi } from "./_core/dataApi";
 import { SEARCH_TOOLS, executeSearchTool } from "./webSearch";
 import {
   createConversation, getUserConversations, getConversation, deleteConversation,
-  updateConversationTitle, addMessage, getConversationMessages,
+  updateConversationTitle, searchConversations, getConversationContext,
+  addMessage, getConversationMessages,
   addDocument, getUserDocuments, getAccessibleDocuments, updateDocumentVisibility,
   updateDocumentStatus, addDocumentChunks,
   searchDocumentChunks, deleteDocument, getAllProducts, getProductsByCategory,
@@ -355,6 +356,32 @@ const conversationsRouter = router({
   updateTitle: protectedProcedure
     .input(z.object({ id: z.number(), title: z.string().min(1).max(255) }))
     .mutation(({ ctx, input }) => updateConversationTitle(input.id, ctx.user.id, input.title)),
+  search: protectedProcedure
+    .input(z.object({ query: z.string().min(1).max(500), limit: z.number().min(1).max(50).default(20) }))
+    .query(({ ctx, input }) => searchConversations(ctx.user.id, input.query, input.limit)),
+  getContext: protectedProcedure
+    .input(z.object({ conversationIds: z.array(z.number()).max(5), maxMessages: z.number().min(1).max(10).default(5) }))
+    .query(({ ctx, input }) => getConversationContext(ctx.user.id, input.conversationIds, input.maxMessages)),
+  regenerateTitle: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const conv = await getConversation(input.id, ctx.user.id);
+      if (!conv) throw new TRPCError({ code: "NOT_FOUND" });
+      const msgs = await getConversationMessages(input.id);
+      const userMsgs = msgs.filter(m => m.role === "user").slice(0, 3);
+      if (userMsgs.length === 0) return { title: conv.title };
+      const titleResp = await invokeLLM({
+        messages: [
+          { role: "system", content: "Generate a concise, descriptive title (max 8 words) for this conversation based on the user's messages. Return ONLY the title text, nothing else. Do not use quotes." },
+          ...userMsgs.map(m => ({ role: "user" as const, content: m.content.substring(0, 300) })),
+        ],
+      });
+      const title = typeof titleResp.choices[0]?.message?.content === "string"
+        ? titleResp.choices[0].message.content.replace(/["']/g, "").substring(0, 100).trim()
+        : conv.title || "New Conversation";
+      await updateConversationTitle(input.id, ctx.user.id, title);
+      return { title };
+    }),
 });
 
 // ─── DOCUMENTS ROUTER ─────────────────────────────────────────────

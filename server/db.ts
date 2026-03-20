@@ -1,4 +1,4 @@
-import { eq, desc, and, or, sql, asc, inArray } from "drizzle-orm";
+import { eq, desc, and, or, sql, asc, inArray, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
@@ -112,6 +112,74 @@ export async function updateConversationTitle(id: number, userId: number, title:
   const db = await getDb();
   if (!db) return;
   await db.update(conversations).set({ title }).where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
+}
+
+export async function searchConversations(userId: number, query: string, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  const searchTerm = `%${query}%`;
+  // Search by title match
+  const titleMatches = await db.select({
+    id: conversations.id,
+    title: conversations.title,
+    mode: conversations.mode,
+    createdAt: conversations.createdAt,
+    updatedAt: conversations.updatedAt,
+    matchType: sql<string>`'title'`.as("matchType"),
+    matchSnippet: conversations.title,
+  }).from(conversations)
+    .where(and(eq(conversations.userId, userId), like(conversations.title, searchTerm)))
+    .orderBy(desc(conversations.updatedAt))
+    .limit(limit);
+
+  // Search by message content match
+  const messageMatches = await db.select({
+    id: conversations.id,
+    title: conversations.title,
+    mode: conversations.mode,
+    createdAt: conversations.createdAt,
+    updatedAt: conversations.updatedAt,
+    matchType: sql<string>`'message'`.as("matchType"),
+    matchSnippet: sql<string>`SUBSTRING(${messages.content}, 1, 150)`.as("matchSnippet"),
+  }).from(messages)
+    .innerJoin(conversations, eq(messages.conversationId, conversations.id))
+    .where(and(eq(conversations.userId, userId), like(messages.content, searchTerm)))
+    .orderBy(desc(conversations.updatedAt))
+    .limit(limit);
+
+  // Deduplicate by conversation id, preferring title matches
+  const seen = new Set<number>();
+  const results: typeof titleMatches = [];
+  for (const r of [...titleMatches, ...messageMatches]) {
+    if (!seen.has(r.id)) {
+      seen.add(r.id);
+      results.push(r);
+    }
+  }
+  return results.slice(0, limit);
+}
+
+export async function getConversationContext(userId: number, conversationIds: number[], maxMessages = 5) {
+  const db = await getDb();
+  if (!db) return [];
+  // Get the most recent messages from specified conversations for AI context
+  const results = [];
+  for (const convId of conversationIds.slice(0, 5)) {
+    const conv = await db.select().from(conversations)
+      .where(and(eq(conversations.id, convId), eq(conversations.userId, userId)))
+      .limit(1);
+    if (!conv[0]) continue;
+    const msgs = await db.select().from(messages)
+      .where(eq(messages.conversationId, convId))
+      .orderBy(desc(messages.createdAt))
+      .limit(maxMessages);
+    results.push({
+      conversationId: convId,
+      title: conv[0].title,
+      messages: msgs.reverse().map(m => ({ role: m.role, content: m.content.substring(0, 500) })),
+    });
+  }
+  return results;
 }
 
 // ─── MESSAGE HELPERS ──────────────────────────────────────────────

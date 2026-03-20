@@ -12,10 +12,20 @@ import type { FocusMode, AdvisoryMode } from "@shared/types";
  * - General education only (no personalized financial advice)
  * - No document uploads
  * - No suitability assessment
- * - No memory/style personalization
+ * - No memory/style personalization (but supports localStorage-based guest preferences)
  * - Max 5 conversations, 10 messages each (enforced client-side)
  * - After 3 messages, prompt to create account
  */
+
+const guestPreferencesSchema = z.object({
+  responseDepth: z.enum(["brief", "balanced", "detailed"]).default("balanced"),
+  tone: z.enum(["professional", "friendly", "casual"]).default("friendly"),
+  focusAreas: z.array(z.string()).default(["general"]),
+  languageStyle: z.enum(["simple", "standard", "technical"]).default("standard"),
+  includeExamples: z.boolean().default(true),
+  responseFormat: z.enum(["conversational", "structured", "bullet-points"]).default("conversational"),
+}).optional();
+
 export const anonymousChatRouter = router({
   send: publicProcedure
     .input(z.object({
@@ -24,9 +34,10 @@ export const anonymousChatRouter = router({
         content: z.string(),
       })).min(1).max(20),
       focus: z.enum(["general", "financial", "study"]).default("general"),
+      guestPreferences: guestPreferencesSchema,
     }))
     .mutation(async ({ input }) => {
-      const { messages, focus } = input;
+      const { messages, focus, guestPreferences } = input;
 
       // Build a restricted system prompt for anonymous users
       const systemPrompt = buildSystemPrompt({
@@ -53,8 +64,26 @@ This user is browsing anonymously (not signed in). Important restrictions:
 - You may discuss financial concepts, explain products generally, and answer educational questions
 </anonymous_mode>`;
 
+      // Apply guest preferences if provided
+      let preferencesFragment = "";
+      if (guestPreferences) {
+        const parts: string[] = [];
+        parts.push(`Response depth: ${guestPreferences.responseDepth} (brief = concise 1-2 sentences, balanced = moderate detail, detailed = thorough explanations)`);
+        parts.push(`Tone: ${guestPreferences.tone}`);
+        parts.push(`Language style: ${guestPreferences.languageStyle} (simple = avoid jargon, standard = normal, technical = use precise terminology)`);
+        parts.push(`Include examples: ${guestPreferences.includeExamples ? "yes, include practical examples" : "no, skip examples"}`);
+        parts.push(`Response format: ${guestPreferences.responseFormat} (conversational = natural flow, structured = headers/sections, bullet-points = lists)`);
+        if (guestPreferences.focusAreas.length > 0 && guestPreferences.focusAreas[0] !== "general") {
+          parts.push(`Guest's areas of interest: ${guestPreferences.focusAreas.join(", ")}`);
+        }
+        preferencesFragment = `\n\n<guest_preferences>
+The guest has set the following preferences for how they'd like responses formatted. Honor these preferences:
+${parts.join("\n")}
+</guest_preferences>`;
+      }
+
       const llmMessages = [
-        { role: "system" as const, content: systemPrompt + anonRestrictions },
+        { role: "system" as const, content: systemPrompt + anonRestrictions + preferencesFragment },
         ...messages.map(m => ({
           role: m.role as "user" | "assistant",
           content: m.content,

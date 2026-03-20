@@ -12,6 +12,7 @@ import Welcome from "./pages/Welcome";
 import ConsentBanner from "./components/ConsentBanner";
 import { GuestBanner } from "./components/GuestBanner";
 import { ContextualHelp } from "./components/ContextualHelp";
+import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { useGuestSession } from "./hooks/useGuestSession";
 import Calculators from "./pages/Calculators";
 import ManagerDashboard from "./pages/ManagerDashboard";
@@ -39,6 +40,7 @@ import DataIntelligence from "./pages/DataIntelligence";
 import AgenticHub from "./pages/AgenticHub";
 import { LicensedReview, AgentOperations, InsuranceQuotes, InsuranceApplications, AdvisoryExecution, EstatePlanning, PremiumFinance, CarrierConnector } from "./pages/PartGPages";
 import EmailCampaigns from "./pages/EmailCampaigns";
+import Help from "./pages/Help";
 
 function Router() {
   return (
@@ -101,6 +103,7 @@ function Router() {
       <Route path={"/ai-settings"}>
         <Redirect to="/settings/ai-tuning" />
       </Route>
+      <Route path={"/help"} component={Help} />
 
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
@@ -127,6 +130,7 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
+          <KeyboardShortcuts />
           <AppContent />
         </TooltipProvider>
       </ThemeProvider>
