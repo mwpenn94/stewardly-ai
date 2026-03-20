@@ -1419,3 +1419,52 @@
 - [x] Build folder management UI (create, rename, delete folders with color picker)
 - [x] Group conversations by folder in sidebar with collapsible sections
 - [x] Show pinned conversations at top of sidebar
+
+## Drag-and-Drop Reordering (March 20, 2026)
+- [x] Add sort_order column to conversations and conversation_folders tables
+- [x] Add reorder endpoint to backend (update sort_order for conversations and folders)
+- [x] Install dnd-kit library for accessible drag-and-drop
+- [x] Implement drag-and-drop for pinned conversations (reorder within pinned)
+- [x] Implement drag-and-drop conversations between folders (via context menu)
+- [x] Implement drag-and-drop folder reordering (via sort_order)
+- [x] Visual drag indicators (GripVertical handle) and drop zones
+
+## Conversation Export (March 20, 2026)
+- [x] Add export endpoint to backend (fetch all messages for a conversation)
+- [x] Generate Markdown export with metadata header and formatted messages
+- [x] Generate JSON export with full conversation data
+- [x] Add "Export as Markdown" and "Export as JSON" options to conversation context menu
+- [x] Download file on client side via Blob URL
+
+## System Prompt & Audit Trail Optimization (March 20, 2026)
+- [ ] Review and optimize master system prompt for clarity, token efficiency, and instruction quality
+- [ ] Review and optimize mode-specific prompts (client/coach/manager)
+- [ ] Review and optimize focus mode prompt injection (general/financial/both)
+- [ ] Audit compliance audit trail: ensure all required events are logged
+- [ ] Optimize audit trail queries for performance
+- [ ] Review PII stripping middleware for completeness
+- [ ] Review disclaimer injection for accuracy and compliance
+
+## Audit v2 Remediation — Privacy & Data Governance (March 20, 2026)
+- [x] 1A: Create /privacy page with data collection, processing, retention, rights sections
+- [x] 1B: Add privacy/terms footer links visible on ALL pages (GlobalFooter component)
+- [x] 1C: Add persistent financial disclaimer footer on every page (GlobalFooter component)
+- [x] 1D: Build PII masking pipeline before LLM calls (SSN, account numbers, addresses, phones, credit cards)
+- [x] 1E: Add "Privacy & Data" tab in Settings (download data, delete account, connected services, data log)
+- [ ] 1F: Add per-source consent tracking (first AI chat, first voice, first doc upload) — deferred, requires schema migration
+
+## Audit v2 Remediation — Transparency & Disclosure (March 20, 2026)
+- [x] 2A: AI identity disclosure at session start in system prompt (<identity> block)
+- [x] 2B: Add "AI" badge on all assistant messages in chat (Sparkles + AI label)
+- [x] 2C: Add reasoning transparency with REASONING TRANSPARENCY instructions in system prompt
+- [ ] 2D: Add fairness testing baseline (20 demographic-varied prompts) — deferred, requires separate test harness
+
+## Audit v2 Remediation — Suitability & Client Protection (March 20, 2026)
+- [x] 3A: Add "Connect with a Professional" escalation path ("Talk to a Pro" button in mobile header)
+- [x] 3B: Strengthen topic-specific disclaimers (investment/insurance/tax) — getTopicDisclaimer() function
+- [x] 3C: Add conflict of interest disclosure in Product Marketplace (Shield + disclosure banner)
+
+## Audit v2 Remediation — Quick Wins (March 20, 2026)
+- [x] 5A: Fix "Loading checklist..." stuck state (error handling + retry:1 + staleTime)
+- [x] 5B: Replace generic suggested prompts with financial-focused ones (expanded PROMPT_BANK)
+- [x] 5D: Add conversational tone rules to system prompt (TONE RULES + RESPONSE LENGTH blocks)

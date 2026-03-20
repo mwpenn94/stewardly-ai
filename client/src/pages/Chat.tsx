@@ -22,7 +22,7 @@ import {
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
   Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
-  Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight
+  Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { LiveSession } from "@/components/LiveSession";
@@ -35,6 +35,12 @@ import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
@@ -55,25 +61,27 @@ const MODE_OPTIONS: { value: AdvisoryMode; label: string; desc: string; minRole:
 
 // Dynamic prompt suggestions based on focus modes, user context, and progression
 const PROMPT_BANK: { text: string; icon: string; category: FocusMode; tier: "new" | "returning" | "any" }[] = [
-  // General prompts
-  { text: "Help me think through a career decision", icon: "💡", category: "general", tier: "any" },
-  { text: "Help me plan my week effectively", icon: "📋", category: "general", tier: "any" },
-  { text: "Help me write a professional email", icon: "✉️", category: "general", tier: "any" },
-  { text: "Brainstorm ideas for my side project", icon: "🚀", category: "general", tier: "any" },
-  { text: "Help me prepare for a job interview", icon: "🎯", category: "general", tier: "returning" },
-  { text: "Summarize the pros and cons of a big decision", icon: "⚖️", category: "general", tier: "any" },
-  // Financial prompts
-  { text: "Analyze my retirement readiness", icon: "📊", category: "financial", tier: "returning" },
-  { text: "What should I know about IUL policies?", icon: "🛡️", category: "financial", tier: "any" },
-  { text: "Compare term vs whole life insurance", icon: "⚖️", category: "financial", tier: "any" },
-  { text: "Help me create a savings plan", icon: "💰", category: "financial", tier: "new" },
-  { text: "Review my investment strategy", icon: "📈", category: "financial", tier: "returning" },
-  { text: "Explain Roth conversion strategies", icon: "🔄", category: "financial", tier: "any" },
+  // General prompts — practical life decisions
+  { text: "Walk me through a major life decision I'm facing", icon: "💡", category: "general", tier: "any" },
+  { text: "Help me evaluate the financial impact of a career change", icon: "🎯", category: "general", tier: "any" },
+  { text: "What should I consider before buying vs renting a home?", icon: "🏠", category: "general", tier: "any" },
+  { text: "Help me create a plan for paying off debt faster", icon: "📋", category: "general", tier: "any" },
+  { text: "What's the smartest way to build an emergency fund?", icon: "🛟", category: "general", tier: "new" },
+  { text: "Help me negotiate a raise — what data do I need?", icon: "💼", category: "general", tier: "returning" },
+  // Financial prompts — insurance, planning, investing
+  { text: "Am I on track for retirement? Let's run the numbers", icon: "📊", category: "financial", tier: "returning" },
+  { text: "Compare term vs whole life insurance for my situation", icon: "⚖️", category: "financial", tier: "any" },
+  { text: "What's an IUL and is it right for someone like me?", icon: "🛡️", category: "financial", tier: "any" },
+  { text: "Help me build a tax-efficient investment strategy", icon: "📈", category: "financial", tier: "returning" },
+  { text: "Walk me through Roth conversion strategies", icon: "🔄", category: "financial", tier: "any" },
+  { text: "How much life insurance coverage do I actually need?", icon: "💰", category: "financial", tier: "new" },
+  { text: "Explain premium financing and when it makes sense", icon: "🏦", category: "financial", tier: "any" },
+  { text: "What estate planning steps should I take this year?", icon: "📜", category: "financial", tier: "returning" },
   // Study prompts
-  { text: "Summarize this document for me", icon: "📖", category: "study", tier: "any" },
-  { text: "Create study notes from my materials", icon: "📝", category: "study", tier: "any" },
-  { text: "Quiz me on what I've uploaded", icon: "❓", category: "study", tier: "returning" },
-  { text: "Compare these two documents", icon: "🔍", category: "study", tier: "any" },
+  { text: "Summarize this document and highlight key takeaways", icon: "📖", category: "study", tier: "any" },
+  { text: "Create study notes and flashcards from my materials", icon: "📝", category: "study", tier: "any" },
+  { text: "Quiz me on what I've uploaded so far", icon: "❓", category: "study", tier: "returning" },
+  { text: "Compare these two documents side by side", icon: "🔍", category: "study", tier: "any" },
 ];
 
 function getDynamicPrompts(focus: FocusMode[], hasConversations: boolean): typeof PROMPT_BANK {
@@ -360,6 +368,42 @@ export default function Chat() {
   const deleteFolderMutation = trpc.conversations.deleteFolder.useMutation({
     onSuccess: () => { utils.conversations.folders.invalidate(); utils.conversations.list.invalidate(); },
   });
+  const reorderMutation = trpc.conversations.reorder.useMutation();
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const convs = conversationsQuery.data || [];
+    const pinnedConvs = convs.filter((c: any) => c.pinned);
+    const oldIndex = pinnedConvs.findIndex((c: any) => c.id === active.id);
+    const newIndex = pinnedConvs.findIndex((c: any) => c.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(pinnedConvs, oldIndex, newIndex);
+    const updates = reordered.map((c: any, i: number) => ({ id: c.id, sortOrder: i }));
+    reorderMutation.mutate({ updates }, { onSuccess: () => utils.conversations.list.invalidate() });
+  }, [conversationsQuery.data, reorderMutation, utils]);
+
+  // Export conversation
+  const handleExportConversation = useCallback(async (convId: number, format: "markdown" | "json") => {
+    try {
+      const result = await utils.conversations.export.fetch({ id: convId, format });
+      const blob = new Blob([result.content], { type: format === "json" ? "application/json" : "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+  }, [utils]);
 
   // Group conversations by pinned, folder, and unfiled
   const groupedConversations = useMemo(() => {
@@ -864,19 +908,24 @@ export default function Chat() {
             ) : (
               /* Expanded: grouped by pinned → folders → unfiled */
               <>
-                {/* Pinned section */}
+                {/* Pinned section — draggable */}
                 {groupedConversations.pinned.length > 0 && (
                   <div className="mb-2">
                     <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       <Pin className="w-3 h-3" /> Pinned
                     </div>
-                    {groupedConversations.pinned.map((conv: any) => (
-                      <ConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
-                        setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
-                        handleDeleteConversation={handleDeleteConversation}
-                        togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
-                        folders={foldersQuery.data || []} />
-                    ))}
+                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                      <SortableContext items={groupedConversations.pinned.map((c: any) => c.id)} strategy={verticalListSortingStrategy}>
+                        {groupedConversations.pinned.map((conv: any) => (
+                          <SortableConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
+                            setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
+                            handleDeleteConversation={handleDeleteConversation}
+                            togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
+                            handleExportConversation={handleExportConversation}
+                            folders={foldersQuery.data || []} />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
                   </div>
                 )}
 
@@ -898,6 +947,7 @@ export default function Chat() {
                           setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
                           handleDeleteConversation={handleDeleteConversation}
                           togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
+                          handleExportConversation={handleExportConversation}
                           folders={foldersQuery.data || []} indent />
                       ))}
                     </div>
@@ -925,6 +975,7 @@ export default function Chat() {
                     setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
                     handleDeleteConversation={handleDeleteConversation}
                     togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
+                    handleExportConversation={handleExportConversation}
                     folders={foldersQuery.data || []} />
                 ))}
               </>
@@ -1075,10 +1126,18 @@ export default function Chat() {
 
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Mobile-only sidebar toggle */}
-        <div className="lg:hidden flex items-center h-12 px-3 shrink-0">
+        {/* Mobile-only sidebar toggle + escalation */}
+        <div className="lg:hidden flex items-center h-12 px-3 shrink-0 justify-between">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-[10px] h-7 gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+            onClick={() => toast.info("Professional referral network coming soon. For urgent financial matters, please consult a licensed advisor.")}
+          >
+            <Phone className="w-3 h-3" /> Talk to a Pro
           </Button>
         </div>
 
@@ -1128,6 +1187,13 @@ export default function Chat() {
                       </div>
                     ) : (
                       <div>
+                        {/* AI Badge (2B) */}
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-accent/70 bg-accent/8 px-1.5 py-0.5 rounded">
+                            <Sparkles className="w-2.5 h-2.5" /> AI
+                          </span>
+                          {msg.createdAt && <span className="text-[9px] text-muted-foreground/50">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                        </div>
                         <div className="prose-chat text-sm">
                           <ProgressiveMessage
                             content={msg.content}
@@ -1533,11 +1599,13 @@ export default function Chat() {
 
 /* ─── ConvItem: Single conversation row with context menu ─── */
 function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setConversationId,
-  handleDeleteConversation, togglePinMutation, moveToFolderMutation, folders, indent }: {
+  handleDeleteConversation, togglePinMutation, moveToFolderMutation, handleExportConversation, folders, indent, dragHandle }: {
   conv: any; conversationId: number | null; navigate: (path: string) => void;
   setSidebarOpen: (v: boolean) => void; setConversationId: (v: number | null) => void;
   handleDeleteConversation: (id: number) => void;
-  togglePinMutation: any; moveToFolderMutation: any; folders: any[]; indent?: boolean;
+  togglePinMutation: any; moveToFolderMutation: any;
+  handleExportConversation?: (id: number, format: "markdown" | "json") => void;
+  folders: any[]; indent?: boolean; dragHandle?: React.ReactNode;
 }) {
   return (
     <DropdownMenu>
@@ -1547,6 +1615,7 @@ function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setConversat
         }`}
         onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
       >
+        {dragHandle}
         {conv.pinned ? <Pin className="w-3.5 h-3.5 shrink-0 text-accent" /> : <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />}
         <span className="truncate flex-1">{conv.title || "New Conversation"}</span>
         <DropdownMenuTrigger asChild>
@@ -1582,10 +1651,50 @@ function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setConversat
           </DropdownMenuSub>
         )}
         <DropdownMenuSeparator />
+        {handleExportConversation && (
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Download className="w-3.5 h-3.5 mr-2" /> Export
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem onClick={() => handleExportConversation(conv.id, "markdown")}>
+                <FileText className="w-3 h-3 mr-2" /> Markdown (.md)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportConversation(conv.id, "json")}>
+                <Database className="w-3 h-3 mr-2" /> JSON (.json)
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        )}
+        <DropdownMenuSeparator />
         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteConversation(conv.id)}>
           <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/* ─── SortableConvItem: Draggable wrapper for pinned conversations ─── */
+function SortableConvItem(props: Parameters<typeof ConvItem>[0] & { conv: { id: number } }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.conv.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative" as const,
+    zIndex: isDragging ? 50 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <ConvItem
+        {...props}
+        dragHandle={
+          <button {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 transition-opacity p-0.5 -ml-1" onClick={(e) => e.stopPropagation()}>
+            <GripVertical className="w-3 h-3" />
+          </button>
+        }
+      />
+    </div>
   );
 }

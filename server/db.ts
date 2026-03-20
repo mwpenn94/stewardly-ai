@@ -222,6 +222,23 @@ export async function deleteFolder(id: number, userId: number) {
   await db.delete(conversationFolders).where(and(eq(conversationFolders.id, id), eq(conversationFolders.userId, userId)));
 }
 
+export async function reorderConversations(userId: number, updates: Array<{ id: number; sortOrder: number }>) {
+  const db = await getDb();
+  if (!db) return;
+  for (const u of updates) {
+    await db.update(conversations).set({ sortOrder: u.sortOrder }).where(and(eq(conversations.id, u.id), eq(conversations.userId, userId)));
+  }
+}
+
+export async function exportConversation(conversationId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [conv] = await db.select().from(conversations).where(and(eq(conversations.id, conversationId), eq(conversations.userId, userId)));
+  if (!conv) return null;
+  const msgs = await db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(asc(messages.createdAt));
+  return { conversation: conv, messages: msgs };
+}
+
 // ─── MESSAGE HELPERS ──────────────────────────────────────────────
 export async function addMessage(data: {
   conversationId: number; userId: number; role: "user" | "assistant" | "system";

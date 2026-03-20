@@ -18,9 +18,10 @@ import AITuningTab from "./settings/AITuningTab";
 import NotificationsTab from "./settings/NotificationsTab";
 import AppearanceTab from "./settings/AppearanceTab";
 import GuestPreferencesTab from "./settings/GuestPreferencesTab";
+import PrivacyDataTab from "./settings/PrivacyDataTab";
 
 // ─── TAB DEFINITIONS ─────────────────────────────────────────────
-type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "notifications" | "appearance" | "guest-prefs";
+type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "notifications" | "appearance" | "guest-prefs" | "privacy";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: string; slug: string }[] = [
   { id: "profile", label: "Profile & Style", icon: <User className="w-4 h-4" />, desc: "Avatar, memories, communication style", slug: "profile" },
@@ -30,6 +31,7 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: strin
   { id: "notifications", label: "Notifications", icon: <Bell className="w-4 h-4" />, desc: "Manage alerts and email digests", slug: "notifications" },
   { id: "appearance", label: "Appearance", icon: <Palette className="w-4 h-4" />, desc: "Theme, colors, font size, density", slug: "appearance" },
   { id: "guest-prefs", label: "Guest Preferences", icon: <Sparkles className="w-4 h-4" />, desc: "Customize AI responses without an account", slug: "guest-prefs" },
+  { id: "privacy", label: "Privacy & Data", icon: <Shield className="w-4 h-4" />, desc: "Data rights, consent, export, and deletion", slug: "privacy" },
 ];
 
 // Tabs accessible without authentication
@@ -183,6 +185,7 @@ export default function SettingsHub() {
               {activeTab === "notifications" && <NotificationsTab />}
               {activeTab === "appearance" && <AppearanceTab />}
               {activeTab === "guest-prefs" && <GuestPreferencesTab />}
+              {activeTab === "privacy" && <PrivacyDataTab />}
             </>
           )}
         </main>

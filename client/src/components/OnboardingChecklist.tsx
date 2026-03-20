@@ -27,7 +27,11 @@ export default function OnboardingChecklist({
   const [expanded, setExpanded] = useState(!compact);
   const utils = trpc.useUtils();
 
-  const checklistQuery = trpc.workflow.getChecklist.useQuery({ workflowType }, { enabled });
+  const checklistQuery = trpc.workflow.getChecklist.useQuery({ workflowType }, {
+    enabled,
+    retry: 1,
+    staleTime: 30_000,
+  });
   const completeStep = trpc.workflow.completeStep.useMutation({
     onSuccess: (data) => {
       utils.workflow.getChecklist.invalidate({ workflowType });
@@ -47,6 +51,7 @@ export default function OnboardingChecklist({
     onError: (e) => toast.error(e.message),
   });
 
+  // Fix 5A: Handle loading, error, and empty states to prevent stuck "Loading checklist..."
   if (checklistQuery.isLoading) {
     return (
       <div className="p-4 rounded-xl border border-border bg-card/50 backdrop-blur-sm">
@@ -56,6 +61,11 @@ export default function OnboardingChecklist({
         </div>
       </div>
     );
+  }
+
+  // If query errored or returned no data, render nothing instead of stuck loading
+  if (checklistQuery.isError || !checklistQuery.data) {
+    return null;
   }
 
   const checklist = checklistQuery.data;

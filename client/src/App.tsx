@@ -41,6 +41,8 @@ import AgenticHub from "./pages/AgenticHub";
 import { LicensedReview, AgentOperations, InsuranceQuotes, InsuranceApplications, AdvisoryExecution, EstatePlanning, PremiumFinance, CarrierConnector } from "./pages/PartGPages";
 import EmailCampaigns from "./pages/EmailCampaigns";
 import Help from "./pages/Help";
+import Privacy from "./pages/Privacy";
+import GlobalFooter from "./components/GlobalFooter";
 
 function Router() {
   return (
@@ -51,6 +53,7 @@ function Router() {
       <Route path={"/org/:slug"} component={OrgLanding} />
       <Route path={"/welcome"} component={Welcome} />
       <Route path={"/terms"} component={Terms} />
+      <Route path={"/privacy"} component={Privacy} />
 
       {/* Core app routes */}
       <Route path={"/chat"} component={Chat} />
@@ -119,6 +122,7 @@ function AppContent() {
       <GuestBanner />
       <Router />
       <ConsentBanner />
+      <GlobalFooter />
       <ContextualHelp />
     </>
   );

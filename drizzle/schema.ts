@@ -406,6 +406,7 @@ export const conversations = mysqlTable("conversations", {
   mode: mysqlEnum("mode", ["client", "coach", "manager"]).default("client").notNull(),
   pinned: mysqlBoolean("pinned").default(false).notNull(),
   folderId: int("folderId"),
+  sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   organizationId: int("organizationId"),

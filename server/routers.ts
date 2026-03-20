@@ -27,10 +27,11 @@ import {
   updateUserStyleProfile, updateUserSettings,
   toggleConversationPin, moveConversationToFolder,
   getUserFolders, createFolder, updateFolder, deleteFolder,
+  reorderConversations, exportConversation,
 } from "./db";
 import {
   buildSystemPrompt, FINANCIAL_DISCLAIMER, needsFinancialDisclaimer,
-  detectPII, stripPII, calculateConfidence,
+  detectPII, stripPII, calculateConfidence, getTopicDisclaimer, maskPIIForLLM,
 } from "./prompts";
 import { extractMemoriesFromMessage, saveExtractedMemories, generateEpisodeSummary, saveEpisodeSummary, assembleMemoryContext } from "./memoryEngine";
 import { assembleGraphContext } from "./knowledgeGraph";
@@ -208,6 +209,12 @@ const chatRouter = router({
       const isFinancial = needsFinancialDisclaimer(aiContent, primaryFocus);
       if (isFinancial) {
         aiContent += FINANCIAL_DISCLAIMER;
+      }
+
+      // Topic-specific disclaimers (3B) — investment, insurance, tax
+      const topicDisclaimer = getTopicDisclaimer(aiContent);
+      if (topicDisclaimer) {
+        aiContent += topicDisclaimer;
       }
 
       // Calculate confidence
@@ -403,6 +410,31 @@ const conversationsRouter = router({
   deleteFolder: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(({ ctx, input }) => deleteFolder(input.id, ctx.user.id)),
+
+  // Reorder conversations (drag-and-drop)
+  reorder: protectedProcedure
+    .input(z.object({ updates: z.array(z.object({ id: z.number(), sortOrder: z.number() })) }))
+    .mutation(({ ctx, input }) => reorderConversations(ctx.user.id, input.updates)),
+
+  // Export conversation as Markdown
+  export: protectedProcedure
+    .input(z.object({ id: z.number(), format: z.enum(["markdown", "json"]).default("markdown") }))
+    .query(async ({ ctx, input }) => {
+      const data = await exportConversation(input.id, ctx.user.id);
+      if (!data) throw new TRPCError({ code: "NOT_FOUND" });
+      if (input.format === "json") return { content: JSON.stringify(data, null, 2), filename: `${data.conversation.title || "conversation"}.json` };
+      // Markdown format
+      const title = data.conversation.title || "Conversation";
+      const date = data.conversation.createdAt ? new Date(data.conversation.createdAt).toLocaleDateString() : "";
+      let md = `# ${title}\n\n_Exported from Stewardry on ${date}_\n\n---\n\n`;
+      for (const msg of data.messages) {
+        const role = msg.role === "user" ? "**You**" : msg.role === "assistant" ? "**Stewardry AI**" : "_System_";
+        const ts = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "";
+        md += `### ${role} ${ts ? `— ${ts}` : ""}\n\n${msg.content}\n\n---\n\n`;
+      }
+      md += `\n_This conversation contained ${data.messages.length} messages._\n`;
+      return { content: md, filename: `${title.replace(/[^a-zA-Z0-9]/g, "_")}.md` };
+    }),
 });
 
 // ─── DOCUMENTS ROUTER ─────────────────────────────────────────────

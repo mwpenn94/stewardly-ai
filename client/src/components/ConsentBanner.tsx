@@ -33,7 +33,7 @@ export default function ConsentBanner() {
             By using this service, you agree to our{" "}
             <a href="/terms" className="text-sky-400 hover:underline">Terms of Service</a>{" "}
             and{" "}
-            <a href="/terms" className="text-sky-400 hover:underline">Privacy Policy</a>.
+            <a href="/privacy" className="text-sky-400 hover:underline">Privacy Policy</a>.
             Your data is private by default.
           </p>
           <button
