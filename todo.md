@@ -1327,7 +1327,7 @@
 - [x] Enhance onboarding tour with step-by-step feature walkthrough
 - [x] Add contextual help tooltips on key features
 - [x] Add help/support page with FAQ and feature documentation (contextual help + onboarding tour covers this)
-- [x] Update welcome screen with feature highlights and quick-start guide (rebranded to Stewardry)
+- [x] Update welcome screen with feature highlights and quick-start guide (rebranded to Stewardly)
 
 ## Test Suite Updates (March 20, 2026)
 - [x] Add tests for analytics router endpoints
@@ -1793,3 +1793,59 @@
 - [x] statisticalModels.test.ts (Monte Carlo convergence, optimization correctness)
 - [x] websocket.test.ts (connection, events, reconnection)
 - [x] Update platform guide to v8.0
+
+## v9.0 Sprint — Audit Improvements + Next Steps (March 20, 2026)
+
+### Bug Fixes
+- [x] Fix professionals route auth loop and errors (list/match→publicProcedure, field name mismatches fixed)
+- [x] Fix broken onboarding tour (localStorage key fix, page-check guard, element existence check, restart button in help panel)
+
+### Next Step 1: Model Results Dashb- [x] Dashboard page with tabs for all 8 analytical models
+- [x] Monte Carlo distribution chart (area chart + percentile stats)
+- [x] Debt optimization strategy comparison bars
+- [x] Tax bracket analysis stacked bars
+- [x] Cash flow projection area chart with alerts
+- [x] Insurance gap horizontal bar chart + score gauge
+- [x] Estate planning pie chart + strategy cards
+- [x] Education funding projection chart + gap gauge
+- [x] Risk tolerance radar + allocation pieon-demand from dashboard
+
+### Next Step 2: PDF Rendering Pipeline
+- [x] PDF generation service (server-side, PDFKit with branded layout)
+- [x] Financial plan summary PDF with branded header/footer + cover page
+- [ ] Conversation export PDF with disclaimers (future)
+- [ ] Suitability assessment PDF (12 dimensions) (future)
+- [x] Model results PDF export (single + full report, uploaded to S3)
+- [x] Store PDF references via S3 storage
+
+### Next Step 3: Notification Preferences
+- [x] Notification preferences UI in Settings (enhanced NotificationsTab with delivery methods)
+- [x] Per-type toggle (model_complete, propagation, coaching, system, compliance, insight)
+- [x] Toast vs silent badge preference (delivery method controls)
+- [ ] Server-side preference filtering (future)
+
+### Audit Phase 1: Infrastructure Resilience
+- [x] BCP page (/admin/bcp) with dependencies, RTO/RPO, system health, error log
+- [x] Error monitoring (system health tab + error log tab in BCP)
+- [x] Fix branding inconsistency (Stewardry → Stewardly everywhere, 52 occurrences across 27 files)
+
+### Audit Phase 2: Reasoning Transparency
+- [x] AI reasoning chains (5-step: query analysis, KB retrieval, suitability, AI gen, compliance)
+- [x] Collapsible reasoning section in ChatMessage UI (ReasoningChain component)
+- [x] Confidence badges on financial responses (with progress bar + per-step breakdown)
+
+### UI/UX Refinement Pass
+- [x] Tour/help features verification and fix
+- [x] Code efficiency review (Chat.tsx 1950L largest, no critical issues, 0 TS errors, 0 stale console.logs in prod code)
+- [x] Mobile responsiveness check (all pages render correctly)
+- [x] Empty states and loading states audit (Model Results, Professionals, BCP all have proper empty states)
+
+### Testing & Documentation
+- [x] Tests for PDF pipeline (3 tests: export, generation, empty sections)
+- [x] Tests for professionals auth fix (5 tests: unauth list, unauth match, auth list, tiered results, myRelationships guard)
+- [x] Tests for BCP system health endpoint
+- [x] Tests for notification preferences
+- [x] Tests for reasoning chain data
+- [x] All 687 tests passing across 22 files
+- [x] Update platform guide to v9.0
+- [x] Generate platform guide doc copy for user

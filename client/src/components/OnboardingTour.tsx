@@ -26,7 +26,7 @@ interface TourStep {
 const TOUR_STEPS: TourStep[] = [
   {
     id: "welcome",
-    title: "Welcome to Stewardry",
+    title: "Welcome to Stewardly",
     description: "Your AI-powered digital financial twin. I'll guide you through the platform's key features so you can get the most out of your experience.",
     placement: "center",
     icon: <Sparkles className="w-5 h-5" />,

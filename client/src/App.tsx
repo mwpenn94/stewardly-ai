@@ -49,6 +49,8 @@ import Integrations from "./pages/Integrations";
 import { GuidedTour } from "./components/GuidedTour";
 import IntelligenceFeed from "./pages/IntelligenceFeed";
 import AnalyticsHub from "./pages/AnalyticsHub";
+import ModelResults from "./pages/ModelResults";
+import BCP from "./pages/BCP";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 function Router() {
@@ -101,6 +103,8 @@ function Router() {
       <Route path={"/integrations"} component={Integrations} />
       <Route path={"/intelligence"} component={IntelligenceFeed} />
       <Route path={"/analytics-hub"} component={AnalyticsHub} />
+      <Route path={"/model-results"} component={ModelResults} />
+      <Route path={"/admin/bcp"} component={BCP} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>

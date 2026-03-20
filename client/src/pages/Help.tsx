@@ -28,8 +28,8 @@ interface FAQItem {
 const FAQ_DATA: FAQItem[] = [
   // Getting Started
   {
-    question: "What is Stewardry?",
-    answer: "Stewardry is an AI-powered digital financial twin platform that provides personalized financial guidance, education, and advisory services. It combines advanced AI with your financial profile to deliver tailored insights across investing, budgeting, retirement planning, tax strategy, and more.",
+    question: "What is Stewardly?",
+    answer: "Stewardly is an AI-powered digital financial twin platform that provides personalized financial guidance, education, and advisory services. It combines advanced AI with your financial profile to deliver tailored insights across investing, budgeting, retirement planning, tax strategy, and more.",
     category: "Getting Started",
     tags: ["overview", "about", "what is"],
   },
@@ -46,7 +46,7 @@ const FAQ_DATA: FAQItem[] = [
     tags: ["security", "privacy", "data"],
   },
   {
-    question: "Can I use Stewardry without an account?",
+    question: "Can I use Stewardly without an account?",
     answer: "Yes! Guest users can chat with the AI for general financial education. However, signing in unlocks personalized advice, conversation history, document uploads, suitability assessment, and AI memory features.",
     category: "Getting Started",
     tags: ["guest", "anonymous", "account"],
@@ -87,7 +87,7 @@ const FAQ_DATA: FAQItem[] = [
   // Financial Tools
   {
     question: "What calculators are available?",
-    answer: "Stewardry includes financial calculators for compound interest, loan amortization, retirement projections, and more. Access them from the Calculators page in the sidebar navigation.",
+    answer: "Stewardly includes financial calculators for compound interest, loan amortization, retirement projections, and more. Access them from the Calculators page in the sidebar navigation.",
     category: "Financial Tools",
     tags: ["calculator", "compound", "loan", "retirement"],
   },

@@ -124,7 +124,7 @@ describe("AI Identity Disclosure (2A)", () => {
       focus: "general",
     });
     expect(prompt).toContain("<identity>");
-    expect(prompt).toContain("Stewardry");
+    expect(prompt).toContain("Stewardly");
     expect(prompt).toContain("AI-powered advisory assistant");
     expect(prompt).toContain("NOT a human financial advisor");
   });

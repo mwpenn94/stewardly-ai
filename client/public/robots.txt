@@ -1,4 +1,4 @@
-# Stewardry — robots.txt
+# Stewardly — robots.txt
 # Allow AI auditing bots and search engine crawlers
 
 # Allow all standard search engines

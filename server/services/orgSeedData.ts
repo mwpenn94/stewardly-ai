@@ -1,6 +1,6 @@
 /**
  * Organization Seed Data Service
- * Seeds Stewardry AZ and Stewardry organizations with proper color schemes,
+ * Seeds Stewardly AZ and Stewardly organizations with proper color schemes,
  * and wires the owner user with all permission levels.
  */
 import { getDb } from "../db";
@@ -22,7 +22,7 @@ interface OrgSeedConfig {
 
 const ORG_SEEDS: OrgSeedConfig[] = [
   {
-    name: "Stewardry AZ",
+    name: "Stewardly AZ",
     industry: "Financial Advisory",
     size: "medium",
     colorScheme: {
@@ -34,7 +34,7 @@ const ORG_SEEDS: OrgSeedConfig[] = [
     website: "https://wealthbridgeaz.com",
   },
   {
-    name: "Stewardry",
+    name: "Stewardly",
     industry: "Financial Technology",
     size: "large",
     colorScheme: {

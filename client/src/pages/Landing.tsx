@@ -186,7 +186,7 @@ export default function Landing() {
               </button>
             </div>
             <p className="text-xs text-muted-foreground/50 text-center">
-              © 2026 Stewardry. All rights reserved.
+              © 2026 Stewardly. All rights reserved.
             </p>
           </div>
         </div>

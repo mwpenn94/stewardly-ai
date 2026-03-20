@@ -116,7 +116,10 @@ export default function GlobalAdmin() {
           </Button>
           <Globe className="w-4 h-4 text-accent" />
           <span className="font-semibold text-sm">Global Admin</span>
-          <Badge variant="secondary" className="text-[10px] ml-auto">Platform Level</Badge>
+          <Button variant="outline" size="sm" className="ml-auto gap-1.5 text-xs" onClick={() => navigate("/admin/bcp")}>
+            <Shield className="w-3.5 h-3.5" /> BCP
+          </Button>
+          <Badge variant="secondary" className="text-[10px]">Platform Level</Badge>
         </div>
       </header>
 

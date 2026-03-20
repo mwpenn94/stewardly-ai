@@ -19,7 +19,7 @@ export default function GlobalFooter() {
         <div className="flex items-start gap-2 mb-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
           <Scale className="w-3.5 h-3.5 text-amber-500/70 shrink-0 mt-0.5" />
           <p className="text-[10px] text-muted-foreground/70 leading-relaxed">
-            Stewardry provides AI-powered informational content only. Nothing on this platform constitutes
+            Stewardly provides AI-powered informational content only. Nothing on this platform constitutes
             personalized financial, investment, insurance, tax, or legal advice. Always consult with a
             licensed professional before making financial decisions. Past performance does not guarantee
             future results.
@@ -40,7 +40,7 @@ export default function GlobalFooter() {
             </a>
           </div>
           <p className="text-[10px] text-muted-foreground/40">
-            &copy; {new Date().getFullYear()} Stewardry. AI-assisted advisory platform.
+            &copy; {new Date().getFullYear()} Stewardly. AI-assisted advisory platform.
           </p>
         </div>
       </div>

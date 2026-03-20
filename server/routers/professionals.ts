@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { eq, and, like, or, desc, sql, inArray } from "drizzle-orm";
 import { professionals, professionalRelationships, professionalReviews, userOrganizationRoles } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
@@ -64,7 +64,7 @@ export const professionalsRouter = router({
     }),
 
   // ─── CRUD: Read / List Professionals ────────────────────────────────
-  list: protectedProcedure
+  list: publicProcedure
     .input(z.object({
       search: z.string().optional(),
       specialization: z.string().optional(),
@@ -197,7 +197,7 @@ export const professionalsRouter = router({
     }),
 
   // ─── 5-TIER MATCHING ALGORITHM ─────────────────────────────────────
-  match: protectedProcedure
+  match: publicProcedure
     .input(z.object({
       needs: z.array(z.string()).optional(), // specializations needed
       location: z.string().optional(),
@@ -207,12 +207,17 @@ export const professionalsRouter = router({
       const db = await (await import("../db")).getDb();
       if (!db) return { tiers: [], total: 0 };
 
-      // ── TIER 1: Existing relationships ──────────────────────────────
-      const existingRels = await db.select().from(professionalRelationships)
-        .where(and(
-          eq(professionalRelationships.userId, ctx.user.id),
-          eq(professionalRelationships.status, "active"),
-        ));
+      const userId = ctx.user?.id;
+
+      // ── TIER 1: Existing relationships (only for authenticated users) ──
+      let existingRels: any[] = [];
+      if (userId) {
+        existingRels = await db.select().from(professionalRelationships)
+          .where(and(
+            eq(professionalRelationships.userId, userId),
+            eq(professionalRelationships.status, "active"),
+          ));
+      }
 
       let tier1: any[] = [];
       if (existingRels.length > 0) {
@@ -230,10 +235,13 @@ export const professionalsRouter = router({
         }));
       }
 
-      // ── TIER 2: Organization-affiliated ─────────────────────────────
+      // ── TIER 2: Organization-affiliated (only for authenticated users) ──
       let tier2: any[] = [];
-      const userOrgs = await db.select().from(userOrganizationRoles)
-        .where(eq(userOrganizationRoles.userId, ctx.user.id));
+      let userOrgs: any[] = [];
+      if (userId) {
+        userOrgs = await db.select().from(userOrganizationRoles)
+          .where(eq(userOrganizationRoles.userId, userId));
+      }
       if (userOrgs.length > 0) {
         const orgIds = userOrgs.map(o => o.organizationId);
         // Find professionals linked to users in same orgs

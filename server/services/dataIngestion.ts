@@ -47,7 +47,7 @@ export class WebScraperService {
     try {
       // Use server-side fetch to get page content
       const response = await fetch(url, {
-        headers: { "User-Agent": "Stewardry/1.0 DataIngestion" },
+        headers: { "User-Agent": "Stewardly/1.0 DataIngestion" },
         signal: AbortSignal.timeout(30000),
       });
 

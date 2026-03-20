@@ -95,7 +95,7 @@ export default function SignIn() {
           </h1>
           <p className="text-sm text-muted-foreground">
             {mode === "signin"
-              ? "Sign in to your Stewardry account"
+              ? "Sign in to your Stewardly account"
               : "Get started with personalized financial intelligence"}
           </p>
         </div>

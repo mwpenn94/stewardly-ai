@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { X, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 interface TourStep {
   target: string; // CSS selector
@@ -42,22 +43,31 @@ const TOUR_STEPS: TourStep[] = [
   },
 ];
 
-const TOUR_STORAGE_KEY = "stewardry_tour_completed";
+const TOUR_STORAGE_KEY = "stewardly_tour_completed";
 
 export function GuidedTour() {
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [location] = useLocation();
 
+  // Only auto-start tour on /chat page where the target elements exist
   useEffect(() => {
+    if (!location.startsWith("/chat")) return;
     const completed = localStorage.getItem(TOUR_STORAGE_KEY);
     if (!completed) {
-      // Delay tour start to let the page render
-      const timer = setTimeout(() => setIsActive(true), 2000);
+      // Delay tour start to let the page render fully
+      const timer = setTimeout(() => {
+        // Verify at least one target element exists before starting
+        const firstTarget = document.querySelector(TOUR_STEPS[0].target);
+        if (firstTarget) {
+          setIsActive(true);
+        }
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [location]);
 
   const updateSpotlight = useCallback(() => {
     if (!isActive) return;

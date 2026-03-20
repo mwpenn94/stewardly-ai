@@ -336,7 +336,7 @@ export class InvitationService {
 
     // Get sender info
     const [sender] = await db.select().from(users).where(eq(users.id, fromUserId)).limit(1);
-    const senderName = sender?.name || "A Stewardry user";
+    const senderName = sender?.name || "A Stewardly user";
 
     // Notify owner about the invitation request (in production, this would send an email)
     await notifyOwner({

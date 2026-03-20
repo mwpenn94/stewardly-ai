@@ -1,6 +1,6 @@
-# Stewardry — Comprehensive Platform Guide
+# Stewardly — Comprehensive Platform Guide
 
-**Version:** 8.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
+**Version:** 9.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
 
 ---
 
@@ -48,16 +48,23 @@
 40. [Apollo.io Integration](#apolloio-integration)
 41. [Post-Signup Enrichment Pipeline](#post-signup-enrichment-pipeline)
 42. [Real-Time WebSocket Notifications](#real-time-websocket-notifications)
+43. [Model Results Dashboard](#model-results-dashboard)
+44. [PDF Report Generation Pipeline](#pdf-report-generation-pipeline)
+45. [Notification Preferences](#notification-preferences)
+46. [Business Continuity Plan (BCP)](#business-continuity-plan-bcp)
+47. [Reasoning Transparency](#reasoning-transparency)
 
 ---
 
 ## Executive Summary
 
-Stewardry is an AI-powered digital financial twin platform designed for financial advisors, insurance professionals, and wealth management firms. The platform combines conversational AI with real-time market data, comprehensive financial calculators, compliance automation, data intelligence pipelines, email campaign management, and multi-modal interaction into a unified experience. It is built to function as an always-available co-pilot for financial professionals — handling everything from client suitability assessments to estate document drafting, from premium finance modeling to autonomous agent orchestration.
+Stewardly is an AI-powered digital financial twin platform designed for financial advisors, insurance professionals, and wealth management firms. The platform combines conversational AI with real-time market data, comprehensive financial calculators, compliance automation, data intelligence pipelines, email campaign management, and multi-modal interaction into a unified experience. It is built to function as an always-available co-pilot for financial professionals — handling everything from client suitability assessments to estate document drafting, from premium finance modeling to autonomous agent orchestration.
 
-The platform comprises **134 database tables** defined in the Drizzle ORM schema, **39 sub-routers** plus the main router exposing **430+ procedures**, **46 page-level components**, **25 reusable components** (plus 50+ shadcn/ui primitives), and **310+ source files** totaling approximately **82,000+ lines of TypeScript/TSX**. The automated test suite contains **671 tests** across **21 test files**, all passing. New in v8.0: Full statistical model implementations for all 8 analytical models (Monte Carlo retirement simulation, debt optimization with avalanche/snowball/hybrid strategies, tax optimization with bracket analysis, cash flow projection, insurance gap analysis, estate planning with trust strategies, education funding projection, and risk tolerance assessment), real-time WebSocket notifications via Socket.IO (notification bell with dropdown panel, toast alerts for high-priority events, per-user notification persistence, connection status indicators), server-side event emitters wired into the Propagation Engine and Model Engine for automatic notification delivery, and a comprehensive test suite covering all statistical models and notification infrastructure.
+The platform comprises **134 database tables** defined in the Drizzle ORM schema, **40+ sub-routers** plus the main router exposing **450+ procedures**, **48 page-level components**, **27 reusable components** (plus 50+ shadcn/ui primitives), and **320+ source files** totaling approximately **84,000+ lines of TypeScript/TSX**. The automated test suite contains **687 tests** across **22 test files**, all passing.
 
-Stewardry operates on a tiered access model where anonymous guests receive full feature access with session-scoped data persistence, authenticated users get permanent data storage and cross-device sync, and administrators gain access to organization management and compliance oversight tools. The conversational AI interface serves as the primary entry point, following a design philosophy inspired by Claude, Copilot, and ChatGPT — prioritizing simplicity, intuitiveness, and streamlined interaction.
+New in v9.0: **Model Results Dashboard** with interactive visualizations for all 8 analytical models (Recharts-based area charts, bar charts, pie charts, and gauge indicators), **PDF Report Generation Pipeline** (server-side PDFKit with branded cover pages, data tables, and S3 upload), **Notification Preferences** (per-type toggles for 6 notification categories with delivery method controls), **Business Continuity Plan (BCP) page** with dependency mapping, RTO/RPO targets, system health monitoring, and error logging, **Reasoning Transparency** with collapsible 5-step reasoning chains and confidence badges on AI messages, **branding consistency fix** (Stewardry → Stewardly across 52 occurrences in 27 files), **professionals route auth loop fix** (list/match procedures moved to publicProcedure with graceful fallbacks), and **onboarding tour fix** (localStorage key correction, page guard, element existence check, restart button in help panel).
+
+Stewardly operates on a tiered access model where anonymous guests receive full feature access with session-scoped data persistence, authenticated users get permanent data storage and cross-device sync, and administrators gain access to organization management and compliance oversight tools. The conversational AI interface serves as the primary entry point, following a design philosophy inspired by Claude, Copilot, and ChatGPT — prioritizing simplicity, intuitiveness, and streamlined interaction.
 
 ---
 
@@ -117,7 +124,7 @@ For **AI conversations**, the flow is: User Input (text/voice/image/document) ->
 
 ### Theme and Color Palette
 
-Stewardry uses a dark-first design system built on OKLCH color values in Tailwind CSS 4. The aesthetic is a deep navy base with sky blue accents, designed to convey professional financial intelligence.
+Stewardly uses a dark-first design system built on OKLCH color values in Tailwind CSS 4. The aesthetic is a deep navy base with sky blue accents, designed to convey professional financial intelligence.
 
 | Token | OKLCH Value | Hex Equivalent | Usage |
 |-------|------------|----------------|-------|
@@ -353,7 +360,7 @@ Users can choose between **universal sharing** (one permission level for all top
 
 ## Integration Pipeline
 
-The Integration Pipeline (`/integrations`) connects Stewardry to **20+ external data sources** across 4 ownership tiers, with encrypted credential storage, field mapping, sync scheduling, and webhook event processing.
+The Integration Pipeline (`/integrations`) connects Stewardly to **20+ external data sources** across 4 ownership tiers, with encrypted credential storage, field mapping, sync scheduling, and webhook event processing.
 
 ### Integration Providers
 
@@ -524,7 +531,7 @@ The Data Intelligence Hub is the platform's central data ingestion and analysis 
 
 ### Webhook Ingestion Endpoint
 
-External systems can push data to Stewardry via authenticated webhook endpoints. The endpoint is `POST /api/webhooks/ingest/:sourceId` with HMAC-SHA256 signature validation in the `X-Webhook-Signature` header. Rate limiting is enforced at 100 requests per minute per source. The service accepts JSON and form-encoded payloads, including nested structures, and routes records into the ingestion pipeline for quality scoring and insight generation.
+External systems can push data to Stewardly via authenticated webhook endpoints. The endpoint is `POST /api/webhooks/ingest/:sourceId` with HMAC-SHA256 signature validation in the `X-Webhook-Signature` header. Rate limiting is enforced at 100 requests per minute per source. The service accepts JSON and form-encoded payloads, including nested structures, and routes records into the ingestion pipeline for quality scoring and insight generation.
 
 ### Scheduled Ingestion Automation
 
@@ -597,7 +604,7 @@ Every significant action is logged to the audit trail including user actions (qu
 
 ## Privacy and Data Governance
 
-Stewardry implements comprehensive privacy and data governance controls aligned with financial industry regulations.
+Stewardly implements comprehensive privacy and data governance controls aligned with financial industry regulations.
 
 ### Privacy Page
 
@@ -766,7 +773,7 @@ New users are greeted with a **15-step guided tour** covering:
 
 | Step | Title | Description |
 |------|-------|-------------|
-| 1 | Welcome to Stewardry | Platform overview and purpose |
+| 1 | Welcome to Stewardly | Platform overview and purpose |
 | 2 | AI Chat — Your Digital Twin | Conversation interface and focus modes |
 | 3 | Hands-Free Voice Mode | Voice interaction capabilities |
 | 4 | Share Context with AI | Document, screen, camera, and image sharing |
@@ -862,6 +869,8 @@ The chat sidebar organizes navigation into three sections based on user role:
 | Email Campaigns | `/email-campaigns` | Email campaign management |
 | Integrations | `/integrations` | Integration pipeline management |
 | Professionals | `/professionals` | Professional directory and referrals |
+| Model Results | `/model-results` | Analytical model visualizations dashboard |
+| Analytics Hub | `/analytics` | Analytics and reporting hub |
 
 **Admin Section** (role-gated):
 
@@ -888,6 +897,8 @@ The chat sidebar organizes navigation into three sections based on user role:
 | `/documents` | Documents | Document management |
 | `/suitability` | Suitability | Suitability assessment |
 | `/ai-settings` | AISettings | AI model configuration |
+| `/admin/bcp` | BCP | Business continuity plan and system health |
+| `/model-results` | ModelResults | Model Results Dashboard with 8 model visualizations |
 | `/org-branding` | OrgBrandingEditor | Organization branding |
 | `/carrier-connector` | CarrierConnector | Carrier API connections |
 | `/market` | MarketData | Real-time market data |
@@ -897,9 +908,9 @@ The chat sidebar organizes navigation into three sections based on user role:
 
 ## API Reference
 
-### tRPC Routers (34 sub-routers + main)
+### tRPC Routers (40+ sub-routers + main)
 
-The platform exposes 34 sub-routers plus the main router, organized by domain:
+The platform exposes 40+ sub-routers plus the main router, organized by domain:
 
 | Category | Routers |
 |----------|---------|
@@ -916,6 +927,10 @@ The platform exposes 34 sub-routers plus the main router, organized by domain:
 | **Education** | education, studentLoans, studyBuddy, medicare |
 | **Market** | market |
 | **Privacy & Access** | consent, kbAccess, professionals, fairness |
+| **Notifications** | notifications |
+| **Reports** | reports |
+| **Model Engine** | modelEngine |
+| **Auth Enrichment** | authEnrichment |
 
 ### Express Endpoints
 
@@ -960,7 +975,7 @@ The platform defines **132 MySQL/TiDB tables** in the Drizzle ORM schema. Tables
 
 ## Test Coverage
 
-The platform maintains **565 automated tests** across **19 test suites**, all passing:
+The platform maintains **687 automated tests** across **22 test suites**, all passing:
 
 | Test File | Tests | Coverage Area |
 |-----------|-------|---------------|
@@ -983,6 +998,9 @@ The platform maintains **565 automated tests** across **19 test suites**, all pa
 | auditRemediation.test.ts | 22 | PII masking, topic disclaimers, AI identity |
 | auditV2Features.test.ts | 17 | Consent tracking, professionals, improvement engine |
 | userTypes.test.ts | 39 | All 5 roles (guest, user, advisor, manager, admin) across all major features |
+| authEnrichment.test.ts | 25 | Multi-provider auth, profile merger, enrichment pipeline |
+| websocketAndModels.test.ts | 106 | WebSocket notifications, all 8 statistical models |
+| v9Features.test.ts | 16 | PDF generation, professionals auth fix, BCP health, notification preferences |
 
 ---
 
@@ -1047,7 +1065,7 @@ To publish updates, create a checkpoint via the development workflow and click t
 
 ---
 
-*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 5.0.*
+*This guide reflects the current state of the Stewardly platform as of March 20, 2026. Version 5.0.*
 
 
 ---
@@ -1317,21 +1335,24 @@ Each task runs in isolation — a failure in one task does not affect others. Al
 
 1. **Integration API Keys**: Most integration providers are configured but require API key registration. Currently only Plaid has active credentials.
 2. **Platform Pipeline Data**: Census, BLS, FRED, and BEA data pipelines are stubbed and need API key registration at each agency.
-3. **Document Generation**: The `generated_documents` table exists but the PDF rendering pipeline is not yet implemented.
-4. **Chat.tsx Size**: At 1,950+ lines, the main chat component would benefit from decomposition into smaller sub-components.
+3. **Chat.tsx Size**: At 1,950+ lines, the main chat component would benefit from decomposition into smaller sub-components.
+4. **Conversation Export PDF**: The conversation-to-PDF export with disclaimer headers is planned but not yet implemented.
+5. **Suitability Assessment PDF**: The 12-dimension suitability report PDF is planned but not yet implemented.
+6. **Server-Side Notification Preference Filtering**: Notification preferences are stored client-side in localStorage; server-side filtering is planned.
 
 ### Roadmap (Priority Order)
 
 1. **Integration Activation**: Register API keys for GoHighLevel, BridgeFT, and Schwab to enable live data sync
-2. **Document Generation**: Build PDF rendering pipeline for financial plans, reports, and compliance documents
+2. **Conversation and Suitability PDFs**: Extend the PDF pipeline to cover conversation exports and suitability assessment reports
 3. **Mobile App**: React Native wrapper for native mobile experience
 4. **Multi-language Support**: Internationalization for non-English markets
 5. **Advanced Analytics Dashboards**: Charts, trends, and predictive analytics in the Analytics Hub
 6. **Marketplace**: Third-party plugin and integration marketplace
+7. **Chat.tsx Decomposition**: Break the 1,950-line chat component into sub-components for maintainability
 
 ---
 
-*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 8.0.*
+*This guide reflects the current state of the Stewardly platform as of March 20, 2026. Version 9.0.*
 
 ---
 
@@ -1449,10 +1470,6 @@ A daily cron job (`token-refresh`) runs at 2:00 AM to:
 
 ---
 
-*This guide reflects the current state of the Stewardry platform as of March 20, 2026. Version 8.0.*
-
----
-
 ## Real-Time WebSocket Notifications
 
 ### Overview
@@ -1526,3 +1543,174 @@ The client-side hook implements automatic reconnection with exponential backoff 
 ### Per-User Storage
 
 Notifications are stored in-memory on the server with a maximum of 100 notifications per user (oldest are evicted when the limit is reached). Each notification includes an `id`, `type`, `priority`, `title`, `body`, `createdAt` timestamp, `readAt` timestamp (null if unread), and optional `metadata` object for type-specific data.
+
+---
+
+## Model Results Dashboard
+
+### Overview
+
+Version 9.0 introduces a dedicated Model Results Dashboard (`/model-results`) that provides interactive visualizations for all 8 analytical models. Users can execute models with custom parameters, view results through charts and data tables, download individual or comprehensive PDF reports, and browse historical run results.
+
+### Architecture
+
+| Component | Location | Responsibility |
+|-----------|----------|---------------|
+| **ModelResults Page** | `client/src/pages/ModelResults.tsx` | Tab-based dashboard with 8 model panels, run controls, PDF export |
+| **PDF Generator** | `server/services/pdfGenerator.ts` | Server-side PDFKit report generation with branded layout |
+| **Reports Router** | `server/routers/reports.ts` | tRPC procedures for PDF generation and S3 upload |
+| **Model Engine Router** | `server/routers/modelEngine.ts` | tRPC procedures for model execution and history |
+
+### Model Visualization Panels
+
+| Model | Chart Type | Key Metrics Displayed |
+|-------|-----------|----------------------|
+| Monte Carlo Retirement | Area chart + stats grid | Success rate, median outcome, percentile breakdowns (10th/25th/50th/75th/90th), recommended additional savings |
+| Debt Optimization | Horizontal bar chart | Strategy comparison (avalanche/snowball/hybrid), total interest, payoff timeline, monthly payment |
+| Tax Strategy | Stacked bar chart | Bracket analysis, standard vs. itemized comparison, Roth conversion break-even, effective rate |
+| Cash Flow | Area chart with alerts | Monthly income/expense/net flow, emergency fund ratio, cumulative balance projection |
+| Insurance Gaps | Horizontal bar chart + gauge | Coverage score, per-type gap analysis (life, disability, home, auto, umbrella, LTC), priority recommendations |
+| Estate Plan | Pie chart + strategy cards | Estate value breakdown, tax exposure, trust strategy recommendations (ILIT, GRAT, QPRT, CRT, FLP) |
+| Education Fund | Area chart + gauge | Projected cost vs. current savings, funding gap, 529 growth projection, tax benefits |
+| Risk Profile | Radar chart + allocation pie | Risk score, 5-dimension assessment, recommended asset allocation |
+
+### PDF Export
+
+The dashboard provides two PDF export modes: **Single Model PDF** (exports the currently selected model's results) and **Full Report** (generates a comprehensive financial plan covering all models with a branded cover page). PDFs are generated server-side using PDFKit, uploaded to S3 via `storagePut`, and returned as download URLs.
+
+### Run History
+
+Each model execution is stored in the `model_runs` table with input parameters, output results, execution time, and status. Users can browse and reload previous runs from the History panel.
+
+---
+
+## PDF Report Generation Pipeline
+
+### Overview
+
+The PDF generation pipeline (`server/services/pdfGenerator.ts`) produces branded financial reports using PDFKit. Reports include a cover page with the Stewardly branding, table of contents, data tables, and section-based content with automatic page breaks.
+
+### Report Structure
+
+Each generated PDF follows this structure:
+
+1. **Cover Page**: Stewardly logo placeholder, report title, user name, generation date, confidentiality notice
+2. **Table of Contents**: Auto-generated from section titles
+3. **Report Sections**: Each section includes a title, narrative content, and optional data table
+4. **Footer**: Page numbers, generation timestamp, disclaimer text
+
+### Service API
+
+| Function | Input | Output |
+|----------|-------|--------|
+| `generateFinancialReport` | `PDFReportInput` (userName, generatedAt, sections[]) | `Buffer` (PDF bytes) |
+
+### tRPC Router: `reports`
+
+| Procedure | Type | Auth | Description |
+|-----------|------|------|-------------|
+| `generate` | Mutation | Protected | Generate a PDF report, upload to S3, return download URL |
+
+---
+
+## Notification Preferences
+
+### Overview
+
+The Notification Preferences panel (Settings > Notifications) allows users to control which notification types trigger toasts, sounds, and badge counts. Preferences are stored client-side in `localStorage` and applied by the `useWebSocket` hook before displaying notifications.
+
+### Preference Categories
+
+| Category | Default | Description |
+|----------|---------|-------------|
+| Model Complete | Enabled (toast + badge) | Analytical model execution finished |
+| Propagation Events | Enabled (toast + badge) | Cross-layer intelligence cascade events |
+| Coaching Messages | Enabled (toast + badge) | Behavioral coaching from the AI engine |
+| System Alerts | Enabled (toast + badge) | Platform maintenance, admin broadcasts |
+| Compliance Alerts | Enabled (toast + badge) | Compliance flags and risk threshold breaches |
+| Insight Updates | Enabled (badge only) | New AI-generated insights available |
+
+### Delivery Methods
+
+| Method | Description | User Toggle |
+|--------|-------------|-------------|
+| Toast | Sonner toast notification with auto-dismiss | Per-category |
+| Sound | Audible alert on notification receipt | Global toggle |
+| Badge | Unread count on notification bell | Always on |
+| Email | Email digest of notifications | Per-category (future) |
+
+### Quiet Hours
+
+Users can configure quiet hours (e.g., 10 PM to 7 AM) during which only critical notifications trigger toasts. All other notifications are silently added to the badge count.
+
+---
+
+## Business Continuity Plan (BCP)
+
+### Overview
+
+The BCP page (`/admin/bcp`) provides a comprehensive view of system dependencies, recovery targets, and real-time health monitoring. It is accessible to all authenticated users and organized into three tabs: Dependencies, System Health, and Error Log.
+
+### Dependencies Tab
+
+Lists all 8 system dependencies with criticality tier, description, RTO/RPO targets, monitoring strategy, and fallback plan:
+
+| Dependency | Tier | RTO | RPO |
+|------------|------|-----|-----|
+| TiDB Cloud (MySQL) | Critical | < 5 min | 0 (synchronous replication) |
+| S3 Object Storage | Critical | < 1 min | 0 (11 nines durability) |
+| Manus OAuth | Critical | < 2 min | N/A (stateless) |
+| LLM API (Forge) | High | < 10 min | N/A (stateless) |
+| Socket.IO (WebSocket) | Medium | < 1 min | N/A (ephemeral) |
+| Deepgram (Voice) | Low | < 30 min | N/A |
+| Daily.co (Video) | Low | < 30 min | N/A |
+| PDFKit (Reports) | Medium | < 5 min | N/A (regenerable) |
+
+### System Health Tab
+
+Displays real-time health indicators for database connectivity, API response times, WebSocket connections, and memory usage. Data is refreshed via the `system.health` tRPC procedure.
+
+### Error Log Tab
+
+Shows recent server errors with timestamps, error types, messages, and stack traces. Supports filtering by severity level and time range.
+
+---
+
+## Reasoning Transparency
+
+### Overview
+
+Version 9.0 adds reasoning transparency to AI chat messages through the `ReasoningChain` component. Each AI response includes a collapsible reasoning section showing the 5-step process the AI followed to generate its answer, along with a confidence score and compliance status badge.
+
+### Reasoning Chain Steps
+
+| Step | Name | Description | Confidence Contribution |
+|------|------|-------------|------------------------|
+| 1 | Query Analysis | Parse user intent, detect financial topics, identify required data | 15-20% |
+| 2 | Knowledge Retrieval | Search knowledge base, retrieve relevant documents and precedents | 20-25% |
+| 3 | Suitability Check | Cross-reference with user's suitability profile and risk dimensions | 15-20% |
+| 4 | AI Generation | Generate response using LLM with context from steps 1-3 | 25-30% |
+| 5 | Compliance Review | Check response against regulatory rules, disclaimers, and guardrails | 10-15% |
+
+### Visual Treatment
+
+The reasoning chain appears as a collapsible section below each AI message. When collapsed, it shows a summary line with the overall confidence score (0-100%) and compliance status badge. When expanded, it reveals:
+
+1. **Step cards** with step number, name, description, and individual confidence score
+2. **Progress bar** showing overall confidence with color coding (green > 80%, amber 60-80%, red < 60%)
+3. **Compliance badge** showing approved (green), pending review (amber), or flagged (red) status
+4. **Data source indicators** showing which sources contributed to the response (RAG, suitability profile, analytical models)
+
+### Component: `ReasoningChain`
+
+Located at `client/src/components/ReasoningChain.tsx`, the component accepts:
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `confidenceScore` | number (0-100) | Overall confidence percentage |
+| `complianceStatus` | string | "approved", "pending_review", or "flagged" |
+| `metadata` | object | Optional reasoning metadata from the AI response |
+
+---
+
+*This guide reflects the current state of the Stewardly platform as of March 20, 2026. Version 9.0.*

@@ -103,7 +103,7 @@ export function generateRecommendations(
       }
       break;
     case "power_user":
-      recs.push("Share your experience — refer a colleague to Stewardry");
+      recs.push("Share your experience — refer a colleague to Stewardly");
       recs.push("Review your annual financial health report");
       break;
     case "at_risk":

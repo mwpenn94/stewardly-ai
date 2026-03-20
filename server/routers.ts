@@ -466,9 +466,9 @@ const conversationsRouter = router({
       // Markdown format
       const title = data.conversation.title || "Conversation";
       const date = data.conversation.createdAt ? new Date(data.conversation.createdAt).toLocaleDateString() : "";
-      let md = `# ${title}\n\n_Exported from Stewardry on ${date}_\n\n---\n\n`;
+      let md = `# ${title}\n\n_Exported from Stewardly on ${date}_\n\n---\n\n`;
       for (const msg of data.messages) {
-        const role = msg.role === "user" ? "**You**" : msg.role === "assistant" ? "**Stewardry AI**" : "_System_";
+        const role = msg.role === "user" ? "**You**" : msg.role === "assistant" ? "**Stewardly AI**" : "_System_";
         const ts = msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "";
         md += `### ${role} ${ts ? `— ${ts}` : ""}\n\n${msg.content}\n\n---\n\n`;
       }
@@ -1149,6 +1149,7 @@ import { propagationRouter } from "./routers/propagation";
 import { fileProcessingRouter } from "./routers/fileProcessing";
 import { authEnrichmentRouter } from "./routers/authEnrichment";
 import { notificationsRouter } from "./routers/notifications";
+import { reportsRouter } from "./routers/reports";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1238,6 +1239,7 @@ export const appRouter = router({
   fileProcessing: fileProcessingRouter,
   authEnrichment: authEnrichmentRouter,
   notifications: notificationsRouter,
+  reports: reportsRouter,
 });
 
 export type AppRouter = typeof appRouter;

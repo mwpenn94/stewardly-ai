@@ -47,9 +47,13 @@ export default function ProfessionalDirectory() {
     search: searchQuery || undefined,
     specialization: specialtyFilter || undefined,
     limit: 50,
-  }, { staleTime: 30000 });
+  }, { staleTime: 30000, retry: 1 });
 
-  const myProsQuery = trpc.professionals.myRelationships.useQuery(undefined, { staleTime: 30000 });
+  const myProsQuery = trpc.professionals.myRelationships.useQuery(undefined, {
+    staleTime: 30000,
+    enabled: !!user,
+    retry: 1,
+  });
 
   // match is a query, not mutation — use refetch pattern
   const [referralInput, setReferralInput] = useState<{ needs?: string[]; location?: string } | null>(null);
@@ -218,21 +222,21 @@ export default function ProfessionalDirectory() {
                           <Icon className={`w-4 h-4 ${t?.color || ""}`} />
                           <span className="text-sm font-semibold">{t?.label || `Tier ${tier.tier}`}</span>
                           <span className="text-[10px] text-muted-foreground ml-2">{t?.desc}</span>
-                          <Badge variant="secondary" className="ml-auto text-[10px]">{tier.results.length}</Badge>
+                          <Badge variant="secondary" className="ml-auto text-[10px]">{tier.items.length}</Badge>
                         </>
                       );
                     })()}
                   </div>
-                  {tier.results.length === 0 ? (
+                  {tier.items.length === 0 ? (
                     <p className="px-4 py-3 text-xs text-muted-foreground">No matches at this tier</p>
                   ) : (
                     <div className="divide-y divide-border/30">
-                      {tier.results.map((pro: any) => (
+                      {tier.items.map((pro: any) => (
                         <div key={pro.id} className="px-4 py-3 flex items-center justify-between gap-4">
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate">{pro.name}</p>
                             <p className="text-[10px] text-muted-foreground">
-                              {pro.specialty} {pro.organization ? `· ${pro.organization}` : ""} {pro.location ? `· ${pro.location}` : ""}
+                              {(() => { const s = typeof pro.specializations === 'string' ? JSON.parse(pro.specializations) : (pro.specializations || []); return s.join(', '); })()} {pro.firm ? `· ${pro.firm}` : ""} {pro.location ? `· ${pro.location}` : ""}
                             </p>
                             {pro.matchReason && (
                               <p className="text-[10px] text-accent mt-0.5">{pro.matchReason}</p>
@@ -375,9 +379,9 @@ function ProfessionalCard({ pro, isConnected, onConnect, onEdit, onDelete, isOwn
         )}
       </div>
 
-      {pro.firmName && (
+      {pro.firm && (
         <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-          <Building2 className="w-3 h-3" /> {pro.firmName}
+          <Building2 className="w-3 h-3" /> {pro.firm}
         </p>
       )}
       {pro.location && (
@@ -388,11 +392,11 @@ function ProfessionalCard({ pro, isConnected, onConnect, onEdit, onDelete, isOwn
 
       {/* Specialties */}
       <div className="flex flex-wrap gap-1 mt-2 mb-3">
-        {(pro.specialties || []).slice(0, 3).map((s: string) => (
+        {((() => { const specs = typeof pro.specializations === 'string' ? JSON.parse(pro.specializations) : (pro.specializations || []); return specs; })()).slice(0, 3).map((s: string) => (
           <Badge key={s} variant="secondary" className="text-[9px]">{s}</Badge>
         ))}
-        {(pro.specialties || []).length > 3 && (
-          <Badge variant="secondary" className="text-[9px]">+{pro.specialties.length - 3}</Badge>
+        {((() => { const specs = typeof pro.specializations === 'string' ? JSON.parse(pro.specializations) : (pro.specializations || []); return specs; })()).length > 3 && (
+          <Badge variant="secondary" className="text-[9px]">+{(typeof pro.specializations === 'string' ? JSON.parse(pro.specializations) : (pro.specializations || [])).length - 3}</Badge>
         )}
       </div>
 
@@ -454,14 +458,14 @@ function ProfessionalFormDialog({ open, onOpenChange, onSubmit, isPending, title
   const [form, setForm] = useState({
     name: initial?.name || "",
     title: initial?.title || "",
-    firmName: initial?.firmName || "",
+    firmName: initial?.firm || "",
     email: initial?.email || "",
     phone: initial?.phone || "",
     website: initial?.website || "",
     location: initial?.location || "",
     bio: initial?.bio || "",
-    specialties: (initial?.specialties || []).join(", "),
-    certifications: (initial?.certifications || []).join(", "),
+    specialties: (() => { const s = initial?.specializations; return (typeof s === 'string' ? JSON.parse(s) : (s || [])).join(', '); })(),
+    certifications: (() => { const c = initial?.certifications; return (typeof c === 'string' ? JSON.parse(c) : (c || [])).join(', '); })(),
     yearsExperience: initial?.yearsExperience || "",
   });
 
@@ -470,13 +474,13 @@ function ProfessionalFormDialog({ open, onOpenChange, onSubmit, isPending, title
     onSubmit({
       name: form.name.trim(),
       title: form.title.trim() || undefined,
-      firmName: form.firmName.trim() || undefined,
+      firm: form.firmName.trim() || undefined,
       email: form.email.trim() || undefined,
       phone: form.phone.trim() || undefined,
       website: form.website.trim() || undefined,
       location: form.location.trim() || undefined,
       bio: form.bio.trim() || undefined,
-      specialties: form.specialties ? form.specialties.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
+      specializations: form.specialties ? form.specialties.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
       certifications: form.certifications ? form.certifications.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
       yearsExperience: form.yearsExperience ? Number(form.yearsExperience) : undefined,
     });

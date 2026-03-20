@@ -357,7 +357,7 @@ async function generateDirectionalAnalysis(
     messages: [
       {
         role: "system",
-        content: `You are an AI improvement engine for Stewardry, a financial advisory platform with 5 layers: Platform → Organization → Manager → Professional → User.
+        content: `You are an AI improvement engine for Stewardly, a financial advisory platform with 5 layers: Platform → Organization → Manager → Professional → User.
 
 You are auditing the "${layer}" layer in the "${direction}" direction.
 

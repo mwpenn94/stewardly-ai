@@ -85,7 +85,7 @@ export default function Privacy() {
         <div className="mb-10">
           <h1 className="text-2xl font-bold mb-3">Privacy Policy</h1>
           <p className="text-muted-foreground text-sm leading-relaxed max-w-2xl">
-            Stewardry is committed to protecting your privacy. This policy explains what data we collect,
+            Stewardly is committed to protecting your privacy. This policy explains what data we collect,
             how we process it, how long we retain it, and what rights you have over your information.
             We believe in transparency and give you full control over your data.
           </p>
@@ -134,7 +134,7 @@ export default function Privacy() {
           </h2>
           <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
             <p>
-              Stewardry uses artificial intelligence to provide advisory services. All AI-generated responses
+              Stewardly uses artificial intelligence to provide advisory services. All AI-generated responses
               are clearly marked with an "AI" badge. The AI does not make autonomous financial decisions
               on your behalf.
             </p>
@@ -144,7 +144,7 @@ export default function Privacy() {
               recommendations always include appropriate disclaimers.
             </p>
             <p>
-              The AI models used by Stewardry do not retain your personal data between sessions. Your
+              The AI models used by Stewardly do not retain your personal data between sessions. Your
               conversation context is assembled fresh for each interaction from your stored profile,
               memories, and documents.
             </p>

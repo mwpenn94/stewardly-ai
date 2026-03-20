@@ -26,6 +26,7 @@ import {
   LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2
 } from "lucide-react";
 import { Streamdown } from "streamdown";
+import { ReasoningChain } from "@/components/ReasoningChain";
 import { LiveSession } from "@/components/LiveSession";
 import { VoiceOrb } from "@/components/VoiceOrb";
 import { ProgressiveMessage } from "@/components/ProgressiveMessage";
@@ -904,6 +905,7 @@ export default function Chat() {
     { icon: <Link2 className="w-3.5 h-3.5" />, label: "Integrations", href: "/integrations", minRole: "user" as UserRole },
     { icon: <Lightbulb className="w-3.5 h-3.5" />, label: "Intelligence", href: "/intelligence", minRole: "user" as UserRole },
     { icon: <Activity className="w-3.5 h-3.5" />, label: "Analytics Hub", href: "/analytics-hub", minRole: "advisor" as UserRole },
+    { icon: <BarChart3 className="w-3.5 h-3.5" />, label: "Model Results", href: "/model-results", minRole: "user" as UserRole },
   ];
 
   const adminNav = [
@@ -1454,18 +1456,18 @@ export default function Chat() {
                             </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          {msg.confidenceScore != null && (
-                            <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ${
-                              msg.confidenceScore >= 0.8 ? "bg-green-500/10 text-green-400" :
-                              msg.confidenceScore >= 0.6 ? "bg-yellow-500/10 text-yellow-400" :
-                              "bg-red-500/10 text-red-400"
-                            }`}>
-                              {msg.confidenceScore >= 0.8 ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                              {Math.round(msg.confidenceScore * 100)}%
-                              {msg.complianceStatus === "flagged" && <span className="text-red-400 ml-1">Review</span>}
-                            </span>
-                          )}
+                        {msg.confidenceScore != null && (
+                          <ReasoningChain
+                            confidenceScore={msg.confidenceScore}
+                            complianceStatus={msg.complianceStatus}
+                            focus={msg.metadata?.focus}
+                            mode={msg.metadata?.mode}
+                            hasRAG={msg.metadata?.hasRAG}
+                            hasSuitability={!!user?.suitabilityCompleted}
+                            responseLength={msg.content?.length}
+                          />
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
                           {msg.id && (
                             <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
                               <Tooltip><TooltipTrigger asChild>
