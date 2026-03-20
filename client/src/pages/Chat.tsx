@@ -135,15 +135,6 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
   return (
     <div className="h-full flex flex-col items-center justify-center px-4 pb-32">
       <div className="max-w-2xl w-full text-center">
-        {avatarUrl ? (
-          <div className="w-16 h-16 rounded-2xl overflow-hidden mx-auto mb-5 ring-2 ring-accent/20 animate-in fade-in duration-500">
-            <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" />
-          </div>
-        ) : (
-          <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-5 animate-in fade-in duration-500">
-            <Sparkles className="w-7 h-7 text-accent" />
-          </div>
-        )}
         <h1 className="text-2xl sm:text-3xl font-semibold mb-3">
           {typedGreeting}
           {!greetingDone && <span className="inline-block w-0.5 h-6 bg-accent ml-0.5 animate-pulse" />}
