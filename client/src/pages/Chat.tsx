@@ -121,13 +121,14 @@ function useTypingAnimation(text: string, speed = 40) {
 }
 
 // ─── WELCOME SCREEN COMPONENT ─────────────────────────────────
-function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, ttsEnabled, onPromptClick }: {
+function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, ttsEnabled, onPromptClick, isAuthenticated }: {
   avatarUrl?: string | null;
   userName?: string | null;
   selectedFocus: FocusMode[];
   hasConversations: boolean;
   ttsEnabled: boolean;
   onPromptClick: (text: string) => void;
+  isAuthenticated: boolean;
 }) {
   const greeting = `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${userName ? `, ${userName.split(" ")[0]}` : ""}`;
   const { displayed: typedGreeting, done: greetingDone } = useTypingAnimation(greeting, 35);
@@ -165,6 +166,7 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
             <OnboardingChecklist
               workflowType="professional_onboarding"
               compact
+              enabled={isAuthenticated}
               onStepAction={(key) => {
                 if (key === "suitability") onPromptClick("Help me complete my suitability assessment");
                 else if (key === "first_chat") onPromptClick("Tell me about your financial planning capabilities");
@@ -297,12 +299,12 @@ export default function Chat() {
   const anonSendMutation = trpc.anonymousChat.send.useMutation();
 
   // ─── QUERIES ──────────────────────────────────────────────────
-  const conversationsQuery = trpc.conversations.list.useQuery(undefined, { enabled: allowQueries });
+  const conversationsQuery = trpc.conversations.list.useQuery(undefined, { enabled: isAuthenticated });
   const messagesQuery = trpc.conversations.messages.useQuery(
     { conversationId: conversationId! },
-    { enabled: !!conversationId && allowQueries }
+    { enabled: !!conversationId && isAuthenticated }
   );
-  const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: allowQueries });
+  const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: isAuthenticated });
   const avatarUrl = settingsQuery.data?.avatarUrl;
 
   // ─── MUTATIONS ────────────────────────────────────────────────
@@ -801,6 +803,7 @@ export default function Chat() {
               hasConversations={!!conversationsQuery.data?.length}
               ttsEnabled={ttsEnabled}
               onPromptClick={(text) => { setInput(text); textareaRef.current?.focus(); }}
+              isAuthenticated={isAuthenticated}
             />
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">

@@ -1009,7 +1009,11 @@ import {
 import { multiModelRouter } from "./routers/multiModel";
 import { dataIngestionRouter } from "./routers/dataIngestion";
 import { dataIngestionEnhancedRouter } from "./routers/dataIngestionEnhanced";
+import { scheduledIngestionRouter } from "./routers/scheduledIngestion";
 import { agenticRouter } from "./routers/agenticExecution";
+import { searchEnhancedRouter } from "./routers/searchEnhanced";
+import { multiModalProcessingRouter } from "./routers/multiModalProcessing";
+import { recommendationRouter } from "./routers/recommendation";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1079,7 +1083,11 @@ export const appRouter = router({
   multiModel: multiModelRouter,
   dataIngestion: dataIngestionRouter,
   dataIngestionEnhanced: dataIngestionEnhancedRouter,
+  scheduledIngestion: scheduledIngestionRouter,
   agentic: agenticRouter,
+  searchEnhanced: searchEnhancedRouter,
+  multiModalProcessing: multiModalProcessingRouter,
+  recommendation: recommendationRouter,
 });
 
 export type AppRouter = typeof appRouter;

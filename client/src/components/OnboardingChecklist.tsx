@@ -14,6 +14,7 @@ interface OnboardingChecklistProps {
   onStepAction?: (stepKey: string) => void;
   onDismiss?: () => void;
   compact?: boolean;
+  enabled?: boolean;
 }
 
 export default function OnboardingChecklist({
@@ -21,11 +22,12 @@ export default function OnboardingChecklist({
   onStepAction,
   onDismiss,
   compact = false,
+  enabled = true,
 }: OnboardingChecklistProps) {
   const [expanded, setExpanded] = useState(!compact);
   const utils = trpc.useUtils();
 
-  const checklistQuery = trpc.workflow.getChecklist.useQuery({ workflowType });
+  const checklistQuery = trpc.workflow.getChecklist.useQuery({ workflowType }, { enabled });
   const completeStep = trpc.workflow.completeStep.useMutation({
     onSuccess: (data) => {
       utils.workflow.getChecklist.invalidate({ workflowType });

@@ -48,6 +48,16 @@ export default function DataIntelligence() {
 
   // Competitor state
   const [competitorUrl, setCompetitorUrl] = useState("");
+
+  // CSV Upload state
+  const [csvContent, setCsvContent] = useState("");
+  const [csvBatchName, setCsvBatchName] = useState("");
+  const [csvRecordType, setCsvRecordType] = useState("entity");
+  const [csvFormat, setCsvFormat] = useState<"csv" | "tsv">("csv");
+
+  // Schedule state
+  const [schedDataSourceId, setSchedDataSourceId] = useState("");
+  const [schedCron, setSchedCron] = useState("every_1h");
   const [competitorName, setCompetitorName] = useState("");
 
   // Product catalog state
@@ -151,6 +161,49 @@ export default function DataIntelligence() {
     onSuccess: (data) => {
       toast.success(`Quality score: ${data.overall.toFixed(0)}%`);
       qualityScores.refetch();
+    },
+  });
+
+  // ─── Scheduled Ingestion Queries ──────────────────────────────────
+  const schedules = trpc.scheduledIngestion.schedules.list.useQuery();
+  const csvBatches = trpc.scheduledIngestion.csvUpload.batches.useQuery();
+  const pendingActions = trpc.scheduledIngestion.insightActions.pending.useQuery();
+  const actionStats = trpc.scheduledIngestion.insightActions.stats.useQuery();
+  const actionHistory = trpc.scheduledIngestion.insightActions.history.useQuery();
+
+  // ─── Scheduled Ingestion Mutations ────────────────────────────────
+  const createSchedule = trpc.scheduledIngestion.schedules.create.useMutation({
+    onSuccess: () => { toast.success("Schedule created"); schedules.refetch(); setSchedDataSourceId(""); },
+    onError: (err) => toast.error(`Failed: ${err.message}`),
+  });
+  const deleteSchedule = trpc.scheduledIngestion.schedules.delete.useMutation({
+    onSuccess: () => { toast.success("Schedule deleted"); schedules.refetch(); },
+  });
+  const toggleSchedule = trpc.scheduledIngestion.schedules.update.useMutation({
+    onSuccess: () => { toast.success("Schedule updated"); schedules.refetch(); },
+  });
+  const runScheduleNow = trpc.scheduledIngestion.schedules.runNow.useMutation({
+    onSuccess: () => { toast.success("Schedule triggered"); schedules.refetch(); jobs.refetch(); },
+  });
+  const uploadCSV = trpc.scheduledIngestion.csvUpload.ingest.useMutation({
+    onSuccess: (data) => {
+      toast.success(`CSV imported — ${data.success}/${data.total} records`);
+      csvBatches.refetch(); records.refetch(); stats.refetch();
+      setCsvContent(""); setCsvBatchName("");
+    },
+    onError: (err) => toast.error(`CSV import failed: ${err.message}`),
+  });
+  const previewCSV = trpc.scheduledIngestion.csvUpload.previewHeaders.useMutation();
+  const completeAction = trpc.scheduledIngestion.insightActions.complete.useMutation({
+    onSuccess: () => { toast.success("Action completed"); pendingActions.refetch(); actionStats.refetch(); actionHistory.refetch(); },
+  });
+  const dismissAction = trpc.scheduledIngestion.insightActions.dismiss.useMutation({
+    onSuccess: () => { toast.info("Action dismissed"); pendingActions.refetch(); actionStats.refetch(); actionHistory.refetch(); },
+  });
+  const generateAndProcess = trpc.scheduledIngestion.insightActions.generateAndProcess.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Generated ${data.insightsGenerated} insights → ${data.actions.length} actions`);
+      pendingActions.refetch(); actionStats.refetch(); actionHistory.refetch(); insights.refetch();
     },
   });
 
@@ -308,6 +361,9 @@ export default function DataIntelligence() {
           <TabsTrigger value="quality" className="text-xs">Data Quality</TabsTrigger>
           <TabsTrigger value="jobs" className="text-xs">Jobs</TabsTrigger>
           <TabsTrigger value="records" className="text-xs">Records</TabsTrigger>
+          <TabsTrigger value="schedules" className="text-xs">Schedules</TabsTrigger>
+          <TabsTrigger value="csv-upload" className="text-xs">CSV Upload</TabsTrigger>
+          <TabsTrigger value="actions" className="text-xs">Actions</TabsTrigger>
         </TabsList>
 
         {/* ─── Sources Tab ─────────────────────────────────────────── */}
@@ -861,6 +917,268 @@ export default function DataIntelligence() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* ─── Schedules Tab ──────────────────────────────────────── */}
+        <TabsContent value="schedules" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2"><Clock className="h-4 w-4" /> Create Ingestion Schedule</CardTitle>
+              <CardDescription>Automate data source refresh on a recurring cadence</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Select value={schedDataSourceId} onValueChange={setSchedDataSourceId}>
+                  <SelectTrigger><SelectValue placeholder="Select data source" /></SelectTrigger>
+                  <SelectContent>
+                    {(sources.data || []).map((s: any) => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={schedCron} onValueChange={setSchedCron}>
+                  <SelectTrigger><SelectValue placeholder="Frequency" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="every_5m">Every 5 minutes</SelectItem>
+                    <SelectItem value="every_15m">Every 15 minutes</SelectItem>
+                    <SelectItem value="every_30m">Every 30 minutes</SelectItem>
+                    <SelectItem value="every_1h">Every hour</SelectItem>
+                    <SelectItem value="every_6h">Every 6 hours</SelectItem>
+                    <SelectItem value="every_12h">Every 12 hours</SelectItem>
+                    <SelectItem value="every_24h">Daily</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={() => createSchedule.mutate({ dataSourceId: Number(schedDataSourceId), cronExpression: schedCron })}
+                  disabled={!schedDataSourceId || createSchedule.isPending}
+                >
+                  {createSchedule.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                  Create Schedule
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {schedules.isLoading ? (
+            <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : !(schedules.data || []).length ? (
+            <Card><CardContent className="py-8 text-center text-muted-foreground"><Clock className="h-8 w-8 mx-auto mb-2 opacity-50" /><p>No schedules configured yet</p></CardContent></Card>
+          ) : (
+            <div className="space-y-2">
+              {(schedules.data || []).map((s: any) => (
+                <Card key={s.id}>
+                  <CardContent className="py-3 flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${s.enabled ? "bg-emerald-500" : "bg-gray-400"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{s.dataSourceName || `Source #${s.dataSourceId}`}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {s.cronExpression} · Last: {s.lastRunAt ? new Date(s.lastRunAt).toLocaleString() : "Never"}
+                        · Next: {s.nextRunAt ? new Date(s.nextRunAt).toLocaleString() : "—"}
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" onClick={() => runScheduleNow.mutate({ id: s.id })} disabled={runScheduleNow.isPending}>
+                        <Play className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => toggleSchedule.mutate({ id: s.id, enabled: !s.enabled })}>
+                        {s.enabled ? "Pause" : "Enable"}
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteSchedule.mutate({ id: s.id })}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ─── CSV Upload Tab ─────────────────────────────────────── */}
+        <TabsContent value="csv-upload" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4" /> CSV / TSV Bulk Upload</CardTitle>
+              <CardDescription>Import customer lists, organization data, or product catalogs from spreadsheets</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input placeholder="Batch name" value={csvBatchName} onChange={e => setCsvBatchName(e.target.value)} />
+                <Select value={csvRecordType} onValueChange={setCsvRecordType}>
+                  <SelectTrigger><SelectValue placeholder="Record type" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="customer_profile">Customer Profile</SelectItem>
+                    <SelectItem value="organization">Organization</SelectItem>
+                    <SelectItem value="product">Product</SelectItem>
+                    <SelectItem value="entity">Entity (General)</SelectItem>
+                    <SelectItem value="competitor_intel">Competitor Intel</SelectItem>
+                    <SelectItem value="market_price">Market Price</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={csvFormat} onValueChange={(v) => setCsvFormat(v as "csv" | "tsv")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="csv">CSV (comma-separated)</SelectItem>
+                    <SelectItem value="tsv">TSV (tab-separated)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Textarea
+                placeholder={`Paste your ${csvFormat.toUpperCase()} data here (include headers in the first row)...\n\nExample:\nName,Email,Company,Notes\nJohn Doe,john@example.com,Acme Corp,High priority lead`}
+                value={csvContent}
+                onChange={e => setCsvContent(e.target.value)}
+                rows={8}
+                className="font-mono text-xs"
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => previewCSV.mutate({ csvContent, format: csvFormat })}
+                  disabled={!csvContent || previewCSV.isPending}
+                >
+                  <Eye className="h-4 w-4 mr-1" /> Preview
+                </Button>
+                <Button
+                  onClick={() => uploadCSV.mutate({ csvContent, batchName: csvBatchName || "Untitled", recordType: csvRecordType, format: csvFormat })}
+                  disabled={!csvContent || uploadCSV.isPending}
+                >
+                  {uploadCSV.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ArrowUpRight className="h-4 w-4 mr-1" />}
+                  Import {csvFormat.toUpperCase()}
+                </Button>
+              </div>
+              {previewCSV.data && (
+                <div className="border rounded-lg p-3 bg-secondary/30">
+                  <p className="text-xs font-medium mb-2">Preview: {previewCSV.data.totalRows} rows, {previewCSV.data.headers.length} columns</p>
+                  <div className="overflow-x-auto">
+                    <table className="text-xs w-full">
+                      <thead><tr>{previewCSV.data.headers.map((h: string, i: number) => <th key={i} className="px-2 py-1 text-left font-medium border-b">{h}</th>)}</tr></thead>
+                      <tbody>
+                        {previewCSV.data.sampleRows.map((row: string[], ri: number) => (
+                          <tr key={ri}>{row.map((cell: string, ci: number) => <td key={ci} className="px-2 py-1 border-b border-border/30 truncate max-w-[200px]">{cell}</td>)}</tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent CSV Batches */}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Recent CSV Imports</CardTitle></CardHeader>
+            <CardContent>
+              {csvBatches.isLoading ? (
+                <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
+              ) : !(csvBatches.data || []).length ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No CSV imports yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {(csvBatches.data || []).map((b: any) => (
+                    <div key={b.id} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/30">
+                      <Badge variant={b.status === "completed" ? "default" : b.status === "failed" ? "destructive" : "outline"}>{b.status}</Badge>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{b.batchName}</p>
+                        <p className="text-xs text-muted-foreground">{b.successItems}/{b.totalItems} records · {new Date(b.createdAt).toLocaleString()}</p>
+                      </div>
+                      {b.status === "processing" && <Progress value={(b.processedItems / (b.totalItems || 1)) * 100} className="w-24 h-2" />}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── Actions Tab (Insight-to-Action) ────────────────────── */}
+        <TabsContent value="actions" className="space-y-4">
+          {/* Action Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card><CardContent className="py-3 text-center">
+              <p className="text-2xl font-bold text-amber-500">{actionStats.data?.pending || 0}</p>
+              <p className="text-xs text-muted-foreground">Pending</p>
+            </CardContent></Card>
+            <Card><CardContent className="py-3 text-center">
+              <p className="text-2xl font-bold text-red-500">{actionStats.data?.overdue || 0}</p>
+              <p className="text-xs text-muted-foreground">Overdue</p>
+            </CardContent></Card>
+            <Card><CardContent className="py-3 text-center">
+              <p className="text-2xl font-bold text-emerald-500">{actionStats.data?.completed || 0}</p>
+              <p className="text-xs text-muted-foreground">Completed</p>
+            </CardContent></Card>
+            <Card><CardContent className="py-3 text-center">
+              <p className="text-2xl font-bold text-gray-400">{actionStats.data?.dismissed || 0}</p>
+              <p className="text-xs text-muted-foreground">Dismissed</p>
+            </CardContent></Card>
+          </div>
+
+          <div className="flex gap-2">
+            <Button onClick={() => generateAndProcess.mutate()} disabled={generateAndProcess.isPending}>
+              {generateAndProcess.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Sparkles className="h-4 w-4 mr-1" />}
+              Generate Insights & Actions
+            </Button>
+          </div>
+
+          {/* Pending Actions */}
+          <Card>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> Pending Actions</CardTitle></CardHeader>
+            <CardContent>
+              {pendingActions.isLoading ? (
+                <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
+              ) : !(pendingActions.data || []).length ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No pending actions — all clear!</p>
+              ) : (
+                <div className="space-y-2">
+                  {(pendingActions.data || []).map((a: any) => (
+                    <div key={a.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card">
+                      <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
+                        a.priority === "urgent" ? "bg-red-500" : a.priority === "high" ? "bg-amber-500" : a.priority === "medium" ? "bg-blue-500" : "bg-gray-400"
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{a.insight?.title || `Action #${a.id}`}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{a.insight?.description?.slice(0, 150) || ""}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[10px]">{a.actionType?.replace(/_/g, " ")}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{a.priority}</Badge>
+                          {a.dueAt && <span className="text-[10px] text-muted-foreground">Due: {new Date(a.dueAt).toLocaleDateString()}</span>}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button size="sm" variant="outline" onClick={() => completeAction.mutate({ actionId: a.id })} disabled={completeAction.isPending}>
+                          <CheckCircle2 className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => dismissAction.mutate({ actionId: a.id })} disabled={dismissAction.isPending}>
+                          Dismiss
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Action History */}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Action History</CardTitle></CardHeader>
+            <CardContent>
+              {actionHistory.isLoading ? (
+                <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
+              ) : !(actionHistory.data || []).length ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No action history yet</p>
+              ) : (
+                <div className="space-y-1">
+                  {(actionHistory.data || []).slice(0, 20).map((a: any) => (
+                    <div key={a.id} className="flex items-center gap-3 p-2 rounded bg-secondary/20">
+                      <Badge variant={a.status === "completed" ? "default" : a.status === "dismissed" ? "secondary" : "outline"} className="text-[10px]">{a.status}</Badge>
+                      <p className="text-xs flex-1 truncate">{a.insight?.title || `Action #${a.id}`}</p>
+                      <span className="text-[10px] text-muted-foreground">{new Date(a.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

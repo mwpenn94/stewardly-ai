@@ -1575,3 +1575,32 @@ export const bulkImportBatches = mysqlTable("bulk_import_batches", {
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 export type BulkImportBatch = typeof bulkImportBatches.$inferSelect;
+
+// ─── Insight Actions (Insight-to-Action Workflow) ─────────────────────────
+export const insightActions = mysqlTable("insight_actions", {
+  id: int("id").autoincrement().primaryKey(),
+  insightId: int("insight_id").notNull(),
+  actionType: mysqlEnum("action_type", ["task_created", "notification_sent", "alert_escalated", "review_scheduled", "auto_dismissed"]).notNull(),
+  actionPayload: json("action_payload"),
+  assignedTo: int("assigned_to"),
+  status: mysqlEnum("status", ["pending", "in_progress", "completed", "dismissed"]).default("pending"),
+  priority: mysqlEnum("priority", ["low", "medium", "high", "urgent"]).default("medium"),
+  dueAt: bigint("due_at", { mode: "number" }),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type InsightAction = typeof insightActions.$inferSelect;
+
+// ─── Search Cache ──────────────────────────────────────────────────────────
+export const searchCache = mysqlTable("search_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  queryHash: varchar("query_hash", { length: 64 }).notNull(),
+  queryText: text("query_text").notNull(),
+  category: varchar("category", { length: 50 }),
+  resultJson: json("result_json"),
+  sourceCitations: json("source_citations"),
+  hitCount: int("hit_count").default(1),
+  expiresAt: bigint("expires_at", { mode: "number" }).notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+});
+export type SearchCache = typeof searchCache.$inferSelect;
