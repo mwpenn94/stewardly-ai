@@ -125,8 +125,8 @@ describe("AI Identity Disclosure (2A)", () => {
     });
     expect(prompt).toContain("<identity>");
     expect(prompt).toContain("Stewardly");
-    expect(prompt).toContain("AI-powered advisory assistant");
-    expect(prompt).toContain("NOT a human financial advisor");
+    expect(prompt).toContain("AI advisory assistant");
+    expect(prompt).toContain("not a licensed financial advisor");
   });
 });
 
@@ -153,9 +153,9 @@ describe("Conversational Tone Rules (5D)", () => {
       mode: "client",
       focus: "general",
     });
-    expect(prompt).toContain("TONE RULES");
+    expect(prompt).toContain("TONE");
     expect(prompt).toContain("contractions");
-    expect(prompt).toContain("NEVER start with");
+    expect(prompt).toContain("Never start with filler");
   });
 
   it("should include response length guidelines", () => {
@@ -165,7 +165,7 @@ describe("Conversational Tone Rules (5D)", () => {
       focus: "financial",
     });
     expect(prompt).toContain("RESPONSE LENGTH");
-    expect(prompt).toContain("NEVER pad responses");
+    expect(prompt).toContain("Never pad");
   });
 });
 

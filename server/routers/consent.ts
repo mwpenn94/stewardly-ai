@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { eq, and } from "drizzle-orm";
 import { userConsents } from "../../drizzle/schema";
+import { addAuditEntry, AUDIT_EVENTS } from "../db";
 
 const CONSENT_TYPES = ["ai_chat", "voice_input", "document_upload", "data_sharing", "marketing", "analytics"] as const;
 
@@ -64,6 +65,7 @@ export const consentRouter = router({
           updatedAt: now,
         });
       }
+      await addAuditEntry({ userId: ctx.user.id, action: AUDIT_EVENTS.CONSENT_GRANTED, details: `Consent granted: ${input.consentType} v${input.version}` });
       return { success: true, consentType: input.consentType };
     }),
 
@@ -81,6 +83,7 @@ export const consentRouter = router({
           eq(userConsents.userId, ctx.user.id),
           eq(userConsents.consentType, input.consentType),
         ));
+      await addAuditEntry({ userId: ctx.user.id, action: AUDIT_EVENTS.CONSENT_REVOKED, details: `Consent revoked: ${input.consentType}` });
       return { success: true, consentType: input.consentType };
     }),
 

@@ -51,6 +51,7 @@ import IntelligenceFeed from "./pages/IntelligenceFeed";
 import AnalyticsHub from "./pages/AnalyticsHub";
 import ModelResults from "./pages/ModelResults";
 import BCP from "./pages/BCP";
+import FairnessTestDashboard from "./pages/FairnessTestDashboard";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 function Router() {
@@ -105,6 +106,7 @@ function Router() {
       <Route path={"/analytics-hub"} component={AnalyticsHub} />
       <Route path={"/model-results"} component={ModelResults} />
       <Route path={"/admin/bcp"} component={BCP} />
+      <Route path={"/admin/fairness"} component={FairnessTestDashboard} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>

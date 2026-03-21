@@ -1437,13 +1437,13 @@
 - [x] Download file on client side via Blob URL
 
 ## System Prompt & Audit Trail Optimization (March 20, 2026)
-- [ ] Review and optimize master system prompt for clarity, token efficiency, and instruction quality
-- [ ] Review and optimize mode-specific prompts (client/coach/manager)
-- [ ] Review and optimize focus mode prompt injection (general/financial/both)
-- [ ] Audit compliance audit trail: ensure all required events are logged
-- [ ] Optimize audit trail queries for performance
-- [ ] Review PII stripping middleware for completeness
-- [ ] Review disclaimer injection for accuracy and compliance
+- [x] Review and optimize master system prompt (identity condensed, guidelines tightened, ~30% token reduction)
+- [x] Review and optimize mode-specific prompts (client/coach/manager — verified clear and distinct)
+- [x] Review and optimize focus mode prompt injection (general/financial/both/study — verified)
+- [x] Audit compliance audit trail (added AUDIT_EVENTS constants, logging to consent, reports, model execution)
+- [x] Optimize audit trail queries (added action/since filters with gte, date-range support)
+- [x] Review PII stripping middleware (added DOB, government ID, EIN, account number patterns)
+- [x] Review disclaimer injection (added estate planning disclaimer, fixed study mode exclusion)
 
 ## Audit v2 Remediation — Privacy & Data Governance (March 20, 2026)
 - [x] 1A: Create /privacy page with data collection, processing, retention, rights sections
@@ -1480,7 +1480,7 @@
 - [x] Create fairness_test_prompts table (promptId, demographic, category, text)
 - [x] Backend: fairness test runner procedure (sends 20+ demographic-varied prompts, scores responses)
 - [x] Backend: fairness report generator (bias detection, tone analysis, recommendation quality)
-- [ ] Admin UI: fairness test dashboard with run history and results — backend ready, frontend deferred
+- [x] Admin UI: fairness test dashboard (/admin/fairness) with run history, score cards, expandable results, bias indicators
 
 ## Professional Referral Directory — March 20, 2026
 - [x] Create professionals table (id, name, title, firm, credentials, specializations, tier, location, contact, bio, verified, source)
@@ -1638,13 +1638,13 @@
 - [x] Enhance encryption service with AES-256-GCM (IV + auth tag) — already implemented
 
 ### Phase 3: Seed Data
-- [ ] Seed 20 integration providers with full metadata
-- [ ] Seed carrier_import_templates (7 templates)
-- [ ] Seed analytical_models (16 models across 5 layers)
-- [ ] Seed model_schedules (default schedules)
+- [x] Seed 20 integration providers with full metadata (CRM, messaging, carrier, investments, economic, regulatory, enrichment, middleware, property)
+- [x] Seed carrier_import_templates (7 templates: NWM, MassMutual, Prudential, Guardian, Transamerica, Pacific Life, Nationwide)
+- [x] Seed analytical_models (16 models across 5 layers: platform/org/manager/professional/user)
+- [x] Seed model_schedules (16 default schedules with cron expressions and timezones)
 
 ### Phase 4: Core Services
-- [ ] Platform pipelines service (Census, BLS, FRED, BEA, EDGAR, BrokerCheck)
+- [x] Platform pipelines service (Census, BLS, FRED, BEA, EDGAR, BrokerCheck) — already implemented
 - [x] Suitability engine (12-dimension profiles, synthesis, decay, questions)
 - [x] Model engine (run models with dependency resolution)
 - [x] Propagation engine (cross-layer intelligence cascading)
@@ -1813,8 +1813,8 @@
 ### Next Step 2: PDF Rendering Pipeline
 - [x] PDF generation service (server-side, PDFKit with branded layout)
 - [x] Financial plan summary PDF with branded header/footer + cover page
-- [ ] Conversation export PDF with disclaimers (future)
-- [ ] Suitability assessment PDF (12 dimensions) (future)
+- [x] Conversation export PDF with disclaimers
+- [x] Suitability assessment PDF (12 dimensions, cover page, per-dimension pages, change history)
 - [x] Model results PDF export (single + full report, uploaded to S3)
 - [x] Store PDF references via S3 storage
 
@@ -1822,7 +1822,7 @@
 - [x] Notification preferences UI in Settings (enhanced NotificationsTab with delivery methods)
 - [x] Per-type toggle (model_complete, propagation, coaching, system, compliance, insight)
 - [x] Toast vs silent badge preference (delivery method controls)
-- [ ] Server-side preference filtering (future)
+- [x] Server-side notification preference filtering (type toggle, quiet hours, delivery methods)
 
 ### Audit Phase 1: Infrastructure Resilience
 - [x] BCP page (/admin/bcp) with dependencies, RTO/RPO, system health, error log
@@ -1849,3 +1849,238 @@
 - [x] All 687 tests passing across 22 files
 - [x] Update platform guide to v9.0
 - [x] Generate platform guide doc copy for user
+
+## v10.0 Sprint — Complete All Remaining Items
+
+### Chat.tsx Decomposition
+- [x] Extract MessageList sub-component (chat/MessageList.tsx, 182 lines)
+- [x] Extract InputBar sub-component (chat/ChatInputBar.tsx, 325 lines)
+- [x] Extract SidebarNav sub-component (chat/ChatSidebar.tsx, 438 lines)
+- [x] Extract ConvItem + SortableConvItem (chat/ConvItem.tsx, 115 lines)
+- [x] Chat.tsx reduced from 1,951 to 1,850 lines (ConvItem extracted, sub-components available for future delegation)
+
+## Max-Scores Audit (v9.0 → v11.0) — Target: 4.75+ composite
+
+### Phase 1: AI Core + Skills + Suitability (35% weight)
+- [ ] 1A: LLM Provider Failover + Model Routing (failover chain, cost tracking, /admin/model-analytics)
+- [ ] 1B: Adaptive Suggested Prompts (prompt_interactions tracking, personalized prompts)
+- [ ] 1C: Meeting Intelligence (transcription pipeline, pre-meeting briefs, post-meeting automation)
+- [ ] 1D: Reg BI Documentation Generator (care obligation docs, review workflow, /compliance/reg-bi)
+- [ ] 1E: Conflict of Interest Disclosure (coi_disclosures table, auto-attach to recommendations)
+- [ ] 1F: Branded Report Builder (/reports page with template selection, recurring reports)
+
+### Phase 2: Governance + Transparency (17% weight)
+- [ ] 2A: Model Card + AI Documentation (/admin/model-card + public /model-card)
+- [ ] 2B: CI/CD Documentation (/admin/deployments page, feature flag workflow docs)
+- [ ] 2C: Automated Fairness Testing (fairnessRunner service, monthly cron, report generation)
+- [ ] 2D: Performance Monitoring Dashboard (/admin/performance, SLA tracking, drift detection)
+- [ ] 2E: Structured Recommendation Explanations (recommendation cards in chat, recommendations_log table)
+
+### Phase 3: Security + Privacy (19% weight)
+- [ ] 3A: MFA (TOTP, backup codes, session management, Settings > Security tab)
+- [ ] 3B: Security Hardening (CSP headers, security headers middleware, XSS test suite, rate limiting)
+- [ ] 3C: Database-Level Row Security (tenant isolation middleware, cross-tenant tests, tamper-evident audit)
+- [ ] 3D: Privacy Enhancement (per-integration consent, DSAR fulfillment, ROPA page, PII test suite)
+
+### Phase 4: Infrastructure + Agentic (14% weight)
+- [ ] 4A: Infrastructure Resilience (backup/recovery docs, DR enhancement, scaling docs, multi-provider strategy, error monitoring)
+- [ ] 4B.1: Browser Automation Foundation (Playwright pool, domain allowlist, action logging)
+- [ ] 4B.2: Workflow Checkpoint/Retry (saga pattern, compensation actions)
+- [ ] 4B.3: Live Carrier Integration (quote API connector, caching)
+- [ ] 4B.4: Paper Trading Simulation (paper_trades table, AI suggestions vs market)
+
+### Phase 5: UX + Multi-Tenant + Data Ingestion (15% weight)
+- [ ] 5A: UX Polish (collapsible responses, micro-interactions, offline handling, dynamic onboarding)
+- [ ] 5B: Multi-Tenant Enhancement (white-label, tenant lifecycle, self-service provisioning, isolation tests)
+- [ ] 5C: Data Ingestion Activation (security master, pipeline observability, per-source consent, self-healing scraper)
+
+### Phase 6: Guide + Tests
+- [ ] 6A: 28 new guide sections documenting all new features
+- [ ] 6B: 170+ new tests (target 857+)
+- [ ] 6C: Executive summary update to v11.0
+
+## Addendum: Every Criterion to 5.0 (v11.0 → v13.0)
+
+### Task #21: Prompt A/B Testing + Regression (A3: 4→5)
+- [ ] Activate prompt_experiments as live A/B framework (50/50 traffic split, per-variant metrics)
+- [ ] Auto-promote winner after statistical significance (p<0.05, min 100 samples)
+- [ ] Prompt regression testing service (golden set of 50 prompt-response pairs)
+- [ ] /admin/prompt-experiments page (active experiments, history, golden test pass rates, diff view)
+
+### Task #22: Compliance Pre-Screening (A4: 4→5)
+- [ ] Automated compliance pre-screening on every AI response (5 fast checks)
+- [ ] compliance_prescreening table + conversation compliance scoring
+- [ ] Warning banner injection for flagged responses, hold for severe violations
+
+### Task #23: Canary Deployments (A7: 3→5)
+- [ ] Pre-publish validation script (test suite, TS compilation, schema check, dead code, bundle size)
+- [ ] Canary deployment pattern (feature flag percentage rollout: 5→25→50→100%)
+- [ ] /admin/deployments page (history, per-deployment metrics, one-click rollback)
+
+### Task #24: Dynamic Knowledge Graph (B1: 4→5)
+- [ ] Real-time knowledge graph updates from integrations
+- [ ] Entity resolution (detect/merge duplicates, aliases, canonical names)
+- [ ] Temporal tagging (valid_from/valid_until, stale fact detection)
+- [ ] Knowledge graph queryable from chat ("What do you know about X?")
+
+### Task #25: What-If Scenarios + Backtesting (B2: 4→5)
+- [ ] What-if scenario engine (fork model results, adjust inputs, side-by-side comparison)
+- [ ] Model chaining UI ("Run Full Analysis" across all 8 models)
+- [ ] Backtesting for portfolio_risk model (historical market events: 2008, 2020, 2022)
+
+### Task #26: Adaptive Context Management (B3: 4→5)
+- [ ] Context relevance scoring (recency, topic match, engagement, source quality)
+- [ ] Adaptive context window (minimal for simple, full for complex queries)
+- [ ] Context preview for professionals ("What context did the AI use?")
+
+### Task #27: Error Handling Hardening (B7: V→5)
+- [ ] Comprehensive error handling (network disconnect, LLM timeout, rate limit, malformed input)
+- [ ] Error boundary wrapping on all page components with fallback UI
+- [ ] server_errors table for error logging
+
+### Task #28: Interactive Charts + Export (B8: 4→5)
+- [ ] Interactive what-if visualizations (click to fork, slider adjustments)
+- [ ] Streaming chart updates via WebSocket
+- [ ] Comparison views (side-by-side, overlay, time-series)
+- [ ] Chart export (PNG/SVG download, embed in PDF, shareable link)
+
+### Task #29: Calculator Persistence + NLP (C1: 4→5)
+- [ ] Real-time data integration to calculators (FRED rates, market data)
+- [ ] Calculator state persistence (calculator_scenarios table, save/load)
+- [ ] Natural language calculator entry from chat
+
+### Task #30: Predictive Insights + Benchmarks (C4: 4→5)
+- [ ] Predictive insight engine (income increase, age milestones, college, volatility)
+- [ ] Anonymized peer benchmarking (percentile scores by age/income bracket)
+- [ ] "Morning Brief" daily digest via WebSocket notification
+
+### Task #31: Regulatory Change Monitor (C7: 4→5, C8: 3→5)
+- [ ] Regulatory change monitor (SEC, FINRA, NAIC RSS feeds)
+- [ ] Dynamic disclaimer versioning (disclaimers table, auto-apply new versions)
+- [ ] SEC EDGAR automated alerts for portfolio companies
+- [ ] Compliance scoring per conversation + auto-flag <80%
+
+### Task #32: Role-Adaptive Onboarding (C9: 4→5)
+- [ ] Role-adaptive onboarding paths (advisor/client/admin)
+- [ ] Skip-ahead for experienced users
+- [ ] Onboarding analytics (/admin/onboarding-analytics with funnel visualization)
+
+### Task #33: Product Disqualification Engine (D2: 4→5)
+- [ ] Automated product disqualification on suitability change
+- [ ] Product suitability matrix visualization (12 dimensions × products)
+- [ ] Inverse suitability search ("products that fit this profile")
+
+### Task #34: Dynamic Disclaimers + Tracking (D3: 4→5)
+- [ ] Dynamic disclaimer adaptation (topic-shift detection, transition-point injection)
+- [ ] Disclaimer effectiveness tracking (shown/scrolled/clicked)
+- [ ] Multi-language disclaimers (English, Spanish, Mandarin)
+
+### Task #35: Proactive Escalation + Video (D5: 4→5)
+- [ ] Proactive escalation triggers (complexity, dissatisfaction, threshold)
+- [ ] Professional availability routing (availability hours, queue system)
+- [ ] Video consultation booking (Daily.co integration, pre-call brief)
+
+### Task #36: Financial Literacy Detection (D7: 4→5)
+- [ ] Financial literacy level detection (beginner/intermediate/advanced)
+- [ ] Auto-adjust explanation complexity based on literacy level
+- [ ] "Never recommend" personal guardrails (user_guardrails table)
+
+### Task #37: Dynamic Permissions + ABAC (E2: 4→5)
+- [ ] Temporary role elevation (admin grants, auto-revoke on expiry)
+- [ ] Delegation workflows (advisor delegates client access)
+- [ ] Attribute-based access control (ABAC) layer (access_policies table)
+
+### Task #38: Key Rotation + Field Encryption (E8: 4→5)
+- [ ] Encryption key rotation (90-day cycle, encryption_keys table)
+- [ ] Field-level encryption for PII columns (AES-256-GCM)
+- [ ] Certificate/key management documentation
+
+### Task #39: Retention Enforcement (F5: 4→5)
+- [ ] Automated retention enforcement (daily cron, auto-delete/archive)
+- [ ] Data lifecycle visualization (Settings > Privacy & Data)
+- [ ] Per-data-category retention configuration (org_retention_policies table)
+
+### Task #40: AI Badge + Watermark + Version (G1: 4→5)
+- [ ] AI badge on every AI message (model version indicator)
+- [ ] AI watermark on all exports (PDF, conversation, shared links)
+- [ ] Model version tracking per message (store + display on hover)
+
+### Task #41: AI Boundaries + Feedback Loop (G7: 4→5)
+- [ ] "AI Boundaries" in Settings > Personalize (topics, sources, style)
+- [ ] AI behavior feedback loop (thumbs down → "What should AI have done differently?")
+
+### Task #42: Command Palette + Breadcrumbs (H1: 4→5)
+- [ ] Enhanced Ctrl+K command palette (fuzzy search, recent items, actions)
+- [ ] Breadcrumb navigation on all pages
+- [ ] "Recently Visited" in sidebar (last 5 pages)
+
+### Task #43: PWA + Mobile Gestures (H2: 4→5)
+- [ ] Progressive Web App support (manifest.json, service worker, splash screen)
+- [ ] Responsive image optimization (WebP, srcset, lazy loading)
+- [ ] Native-like mobile gestures (swipe sidebar, pull-to-refresh)
+
+### Task #44: WCAG AAA Audit + High Contrast (H3: 4→5)
+- [ ] WCAG 2.2 Level AAA comprehensive audit across all pages
+- [ ] Screen reader compatibility (ARIA labels, aria-live, text alternatives)
+- [ ] High contrast mode toggle in Settings > Accessibility
+- [ ] Keyboard-only navigation verification (tab order, focus indicators, skip-to-content)
+
+### Task #45: Multi-Region + IaC Docs (I1: 3→5)
+- [ ] CDN and edge caching strategy documentation
+- [ ] Geographic redundancy documentation
+- [ ] Infrastructure-as-code documentation (infrastructure.md)
+- [ ] Health check endpoint (GET /health with JSON status)
+
+### Task #46: Field-Level Sharing + Time-Limited (J1: 4→5)
+- [ ] Field-level data sharing controls
+- [ ] Time-limited sharing (30/60/90 days, auto-revoke)
+- [ ] Real-time sharing status indicators
+
+### Task #47: Per-Org Model + Token Budget (J3: 4→5)
+- [ ] Per-org model configuration (org_ai_config table)
+- [ ] Per-org token budget (monthly limit, alerts at 80%/100%)
+- [ ] Org-level prompt customization with admin review
+
+### Task #48: Agent Templates + Builder (K1: 4→5)
+- [ ] Agent templates library (4 pre-built templates)
+- [ ] Custom agent builder (drag-and-drop workflow)
+- [ ] Agent performance metrics (success rate, duration, cost, satisfaction)
+
+### Task #49: Compliance Prediction + Simulation (K2: 4→5)
+- [ ] Predictive compliance scoring (0-100 risk score before execution)
+- [ ] Compliance simulation ("dry run" mode)
+
+### Task #50: Graduated Autonomy + Kill Switch (K7: 4→5)
+- [ ] Graduated autonomy levels (3 levels based on successful runs)
+- [ ] Agent kill switch ("Stop All Agents" button)
+
+### Task #51: Agent Replay + Search (K9: 4→5)
+- [ ] Agent action replay (step-by-step with timestamps)
+- [ ] Searchable agent history (full-text search, filters, export)
+
+### Task #52: Real-Time Accounts + Reconciliation (L1: 4→5)
+- [ ] Webhook-based real-time account updates (Plaid webhooks)
+- [ ] Automatic transaction categorization (AI-based)
+- [ ] Account reconciliation engine (discrepancy detection)
+
+### Task #53: Bidirectional CRM + Carrier Submit (L2: 4→5)
+- [ ] Bidirectional CRM sync (push/pull with logging)
+- [ ] Automated carrier submission (pre-filled applications)
+
+### Task #54: Real-Time Market Streaming (L3: 4→5)
+- [ ] Real-time market data streaming via WebSocket
+- [ ] Market event detection (>2% moves, earnings, dividends)
+
+### Task #55: Regulatory Impact Analysis (L4: 4→5)
+- [ ] Regulatory change impact analysis (AI-powered, 3 impact levels)
+- [ ] Compliance brief auto-generation (weekly digest)
+
+### Task #56: Load Testing + Capacity Planning (L9: 3→5)
+- [ ] Load testing documentation (max concurrent users, requests/sec, latency)
+- [ ] Auto-scaling documentation (TiDB thresholds, connection pools)
+- [ ] Capacity planning (/admin/capacity page)
+
+### Task #57: Guide Update v13.0 + 155 Tests
+- [ ] 14 new test files (~155 tests total)
+- [ ] Platform guide update to v13.0 (150+ tables, 95K+ lines, 1,000+ tests)
+- [ ] Executive summary update

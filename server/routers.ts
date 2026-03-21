@@ -42,6 +42,7 @@ import { eq, and } from "drizzle-orm";
 import { integrationConnections, integrationProviders } from "../drizzle/schema";
 import { getDb } from "./db";
 import { aiLayersRouter } from "./routers/aiLayers";
+import { exportsRouter } from "./routers/exports";
 import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
@@ -1240,6 +1241,7 @@ export const appRouter = router({
   authEnrichment: authEnrichmentRouter,
   notifications: notificationsRouter,
   reports: reportsRouter,
+  exports: exportsRouter,
 });
 
 export type AppRouter = typeof appRouter;

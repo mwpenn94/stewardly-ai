@@ -1,4 +1,4 @@
-import { eq, desc, and, or, sql, asc, inArray, like } from "drizzle-orm";
+import { eq, desc, and, or, sql, asc, inArray, like, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
@@ -434,12 +434,32 @@ export async function addAuditEntry(data: {
   });
 }
 
-export async function getAuditTrail(userId?: number, limit = 50) {
+export async function getAuditTrail(userId?: number, limit = 50, opts?: { action?: string; since?: Date }) {
   const db = await getDb();
   if (!db) return [];
-  const conditions = userId ? [eq(auditTrail.userId, userId)] : [];
+  const conditions: any[] = [];
+  if (userId) conditions.push(eq(auditTrail.userId, userId));
+  if (opts?.action) conditions.push(eq(auditTrail.action, opts.action));
+  if (opts?.since) conditions.push(gte(auditTrail.createdAt, opts.since));
   return db.select().from(auditTrail).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(auditTrail.createdAt)).limit(limit);
 }
+
+/** Standard audit event types for consistent logging */
+export const AUDIT_EVENTS = {
+  AI_RESPONSE: "ai_response",
+  FILE_UPLOAD: "file_upload",
+  DOCUMENT_DELETE: "document_delete",
+  CONSENT_GRANTED: "consent_granted",
+  CONSENT_REVOKED: "consent_revoked",
+  REVIEW_ACTION: "review_action",
+  SUITABILITY_COMPLETE: "suitability_complete",
+  MODEL_EXECUTION: "model_execution",
+  PDF_EXPORT: "pdf_export",
+  PROFESSIONAL_MATCH: "professional_match",
+  ROLE_CHANGE: "role_change",
+  LOGIN: "login",
+  SETTINGS_CHANGE: "settings_change",
+} as const;
 
 // ─── REVIEW QUEUE HELPERS ─────────────────────────────────────────
 export async function addToReviewQueue(data: {

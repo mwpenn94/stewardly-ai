@@ -119,6 +119,9 @@ export default function GlobalAdmin() {
           <Button variant="outline" size="sm" className="ml-auto gap-1.5 text-xs" onClick={() => navigate("/admin/bcp")}>
             <Shield className="w-3.5 h-3.5" /> BCP
           </Button>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => navigate("/admin/fairness")}>
+            <Shield className="w-3.5 h-3.5" /> Fairness
+          </Button>
           <Badge variant="secondary" className="text-[10px]">Platform Level</Badge>
         </div>
       </header>

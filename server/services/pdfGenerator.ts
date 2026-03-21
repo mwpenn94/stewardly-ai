@@ -519,3 +519,405 @@ function drawPageFooter(doc: PDFKit.PDFDocument, page: number, total: number, fi
     .text(`${firm} — Confidential`, 55, 760, { width: 250 })
     .text(`Page ${page} of ${total}`, 305, 760, { width: 250, align: "right" });
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONVERSATION EXPORT PDF
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface ConversationExportInput {
+  clientName: string;
+  advisorName?: string;
+  firmName?: string;
+  conversationTitle: string;
+  mode: string;
+  messages: Array<{
+    role: "user" | "assistant" | "system";
+    content: string;
+    createdAt: Date | string;
+    confidenceScore?: number | null;
+    complianceStatus?: string | null;
+  }>;
+  generatedAt: Date;
+  disclaimer?: string;
+}
+
+export function generateConversationPDF(input: ConversationExportInput): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({
+      size: "LETTER",
+      margins: { top: 60, bottom: 60, left: 55, right: 55 },
+      bufferPages: true,
+      info: {
+        Title: `Conversation Export — ${input.conversationTitle}`,
+        Author: input.advisorName || "Stewardly AI",
+        Subject: "Conversation Transcript",
+        Creator: "Stewardly — Digital Financial Twin",
+      },
+    });
+
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    // ─── HEADER ──────────────────────────────────────────────
+    doc.rect(0, 0, 612, 80).fill(C.primary);
+    doc.fontSize(20).fillColor(C.white)
+      .text("Conversation Transcript", 55, 25, { width: 500 });
+    doc.fontSize(10).fillColor([180, 200, 240])
+      .text(`${input.conversationTitle} — ${input.mode.charAt(0).toUpperCase() + input.mode.slice(1)} Mode`, 55, 52, { width: 500 });
+
+    doc.moveDown(2);
+
+    // ─── METADATA BAR ────────────────────────────────────────
+    const metaY = doc.y;
+    doc.rect(55, metaY, 500, 30).fill(C.bg);
+    doc.fontSize(8).fillColor(C.muted)
+      .text(`Client: ${input.clientName}`, 65, metaY + 5, { width: 150 })
+      .text(`Messages: ${input.messages.length}`, 220, metaY + 5, { width: 100 })
+      .text(`Exported: ${input.generatedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, 340, metaY + 5, { width: 200 });
+    if (input.advisorName) {
+      doc.text(`Advisor: ${input.advisorName}`, 65, metaY + 17, { width: 200 });
+    }
+    doc.y = metaY + 40;
+
+    // ─── DISCLAIMER BANNER ───────────────────────────────────
+    const disclaimerBannerY = doc.y;
+    doc.rect(55, disclaimerBannerY, 500, 36).fill([255, 248, 230]);
+    doc.rect(55, disclaimerBannerY, 3, 36).fill(C.warning);
+    doc.fontSize(7).fillColor([120, 100, 40])
+      .text("IMPORTANT: This transcript is provided for reference purposes only. AI-generated responses do not constitute financial, legal, or tax advice. All information should be independently verified by a qualified professional before any action is taken.", 65, disclaimerBannerY + 5, { width: 480, lineGap: 2 });
+    doc.y = disclaimerBannerY + 44;
+
+    // ─── MESSAGES ────────────────────────────────────────────
+    for (const msg of input.messages) {
+      if (msg.role === "system") continue; // Skip system messages
+
+      const isUser = msg.role === "user";
+      const msgDate = msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt);
+      const timeStr = msgDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      const dateStr = msgDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+      // Check page space
+      if (doc.y > 680) {
+        doc.addPage();
+      }
+
+      // Role label
+      const labelColor = isUser ? C.accent : C.primary;
+      const label = isUser ? "You" : "Stewardly AI";
+      doc.fontSize(9).fillColor(labelColor).text(label, 55, doc.y, { continued: true });
+      doc.fontSize(7).fillColor(C.muted).text(`  ${dateStr} ${timeStr}`, { continued: false });
+
+      // Confidence/compliance badges
+      if (!isUser && msg.confidenceScore) {
+        doc.fontSize(7).fillColor(C.muted)
+          .text(`Confidence: ${(msg.confidenceScore * 100).toFixed(0)}%${msg.complianceStatus ? ` | ${msg.complianceStatus}` : ""}`, 55, doc.y);
+      }
+
+      doc.moveDown(0.2);
+
+      // Message content (truncate very long messages for PDF)
+      const content = msg.content.length > 3000 ? msg.content.substring(0, 3000) + "\n\n[Message truncated for PDF export]" : msg.content;
+
+      // Background for AI messages
+      const contentY = doc.y;
+      if (!isUser) {
+        const textHeight = doc.heightOfString(content, { width: 480, lineGap: 2 });
+        doc.rect(55, contentY - 2, 500, textHeight + 8).fill([245, 247, 252]);
+      }
+
+      doc.fontSize(9).fillColor(C.text).text(content, 65, contentY, { width: 480, lineGap: 2 });
+      doc.moveDown(0.5);
+
+      // Separator
+      doc.rect(55, doc.y, 500, 0.5).fill(C.divider);
+      doc.moveDown(0.4);
+    }
+
+    // ─── FULL DISCLAIMER PAGE ────────────────────────────────
+    doc.addPage();
+    drawConversationDisclaimer(doc, input.disclaimer);
+
+    // ─── PAGE NUMBERS ────────────────────────────────────────
+    const pageCount = doc.bufferedPageRange().count;
+    for (let i = 0; i < pageCount; i++) {
+      doc.switchToPage(i);
+      drawPageFooter(doc, i + 1, pageCount, input.firmName || "Stewardly");
+    }
+
+    doc.end();
+  });
+}
+
+function drawConversationDisclaimer(doc: PDFKit.PDFDocument, custom?: string) {
+  doc.fontSize(14).fillColor(C.primary).text("Important Disclosures — Conversation Export");
+  doc.moveDown(0.5);
+  doc.rect(55, doc.y, 500, 1).fill(C.divider);
+  doc.moveDown(0.5);
+
+  const disclaimer = custom || `This conversation transcript was generated by Stewardly, a digital financial twin platform. The AI assistant's responses are generated using large language models and do not constitute personalized financial advice, investment recommendations, legal advice, or tax advice.
+
+Key Disclosures:
+
+1. NOT FINANCIAL ADVICE: The AI responses in this transcript are informational only. They should not be relied upon as the sole basis for any financial decision. Always consult with a qualified financial advisor, attorney, or tax professional before making financial decisions.
+
+2. NO FIDUCIARY RELATIONSHIP: The use of this AI assistant does not create a fiduciary, advisory, or professional relationship between the user and Stewardly or any affiliated entity.
+
+3. ACCURACY LIMITATIONS: While the AI strives for accuracy, responses may contain errors, omissions, or outdated information. Market conditions, tax laws, and regulations change frequently.
+
+4. CONFIDENTIALITY: This transcript is confidential and intended solely for the named recipient. Unauthorized distribution, reproduction, or use of this document is prohibited.
+
+5. COMPLIANCE: All AI responses undergo automated compliance screening. Responses flagged for review should be treated with additional caution until verified by a qualified professional.
+
+6. DATA PRIVACY: Conversation data is processed in accordance with Stewardly's Privacy Policy. Personal information shared during conversations is encrypted and stored securely.
+
+7. REGULATORY NOTICE: Stewardly is a technology platform and is not a registered investment advisor, broker-dealer, or insurance company. Any product information discussed is for educational purposes only.
+
+This document was auto-generated and has not been reviewed by a human advisor unless otherwise noted.`;
+
+  doc.fontSize(8.5).fillColor(C.muted).text(disclaimer, { width: 500, lineGap: 2.5 });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUITABILITY ASSESSMENT PDF (12 DIMENSIONS)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export interface SuitabilityPDFInput {
+  clientName: string;
+  advisorName?: string;
+  firmName?: string;
+  generatedAt: Date;
+  overallScore: number;
+  confidenceLevel: number;
+  dataCompleteness: number;
+  status: string;
+  dimensions: Array<{
+    key: string;
+    label: string;
+    score: number;
+    confidence: number;
+    value?: any;
+    sources?: string[];
+  }>;
+  changeHistory?: Array<{
+    date: string;
+    dimension: string;
+    changeType: string;
+    previousScore?: number;
+    newScore?: number;
+    notes?: string;
+  }>;
+  disclaimer?: string;
+}
+
+const DIMENSION_DESCRIPTIONS: Record<string, string> = {
+  risk_tolerance: "Measures willingness and ability to accept investment risk, including emotional tolerance for market volatility and financial capacity to absorb losses.",
+  time_horizon: "Evaluates the investment time frame, considering retirement age, major planned expenses, and liquidity needs.",
+  income_stability: "Assesses the reliability and predictability of income sources, employment stability, and income diversification.",
+  net_worth: "Analyzes total assets minus liabilities, including real estate, investments, retirement accounts, and outstanding debts.",
+  liquidity_needs: "Determines short-term cash requirements, emergency fund adequacy, and upcoming major expenses.",
+  tax_situation: "Reviews current tax bracket, deduction opportunities, tax-advantaged account utilization, and state tax considerations.",
+  insurance_coverage: "Evaluates adequacy of life, disability, health, property, and liability insurance relative to needs.",
+  estate_planning: "Assesses the completeness of estate documents, beneficiary designations, trust structures, and succession planning.",
+  investment_experience: "Gauges familiarity with various asset classes, investment strategies, and financial market concepts.",
+  financial_goals: "Identifies and prioritizes short-term, medium-term, and long-term financial objectives.",
+  debt_management: "Analyzes debt-to-income ratio, interest rates, repayment strategies, and overall debt health.",
+  retirement_readiness: "Evaluates progress toward retirement goals, including savings rate, projected income replacement, and Social Security optimization.",
+};
+
+export function generateSuitabilityPDF(input: SuitabilityPDFInput): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({
+      size: "LETTER",
+      margins: { top: 60, bottom: 60, left: 55, right: 55 },
+      bufferPages: true,
+      info: {
+        Title: `Suitability Assessment — ${input.clientName}`,
+        Author: input.advisorName || "Stewardly AI",
+        Subject: "Comprehensive Suitability Profile",
+        Creator: "Stewardly — Digital Financial Twin",
+      },
+    });
+
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    // ─── COVER PAGE ──────────────────────────────────────────
+    doc.rect(0, 0, 612, 792).fill(C.primary);
+    doc.rect(0, 280, 612, 6).fill(C.accent);
+
+    doc.fontSize(32).fillColor(C.white)
+      .text("Suitability", 55, 160, { width: 500 })
+      .fontSize(32).text("Assessment", 55, 200, { width: 500 });
+    doc.fontSize(14).fillColor([180, 200, 240])
+      .text("12-Dimension Financial Profile Analysis", 55, 245, { width: 500 });
+
+    doc.fontSize(16).fillColor(C.white)
+      .text(`Prepared for: ${input.clientName}`, 55, 320, { width: 500 });
+    if (input.advisorName) {
+      doc.fontSize(12).fillColor([180, 200, 240])
+        .text(`Advisor: ${input.advisorName}`, 55, 350);
+    }
+    doc.fontSize(11).fillColor([180, 200, 240])
+      .text(`Generated: ${input.generatedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, 55, 375);
+
+    // Overall score on cover
+    const scoreColor = input.overallScore >= 70 ? C.success : input.overallScore >= 40 ? C.warning : C.danger;
+    doc.fontSize(60).fillColor(scoreColor)
+      .text(`${Math.round(input.overallScore)}`, 400, 140, { width: 150, align: "center" });
+    doc.fontSize(12).fillColor([180, 200, 240])
+      .text("Overall Score", 400, 210, { width: 150, align: "center" });
+
+    doc.fontSize(10).fillColor([120, 140, 180])
+      .text(input.firmName || "Stewardly — Digital Financial Twin", 55, 700, { width: 500, align: "center" });
+
+    // ─── EXECUTIVE SUMMARY PAGE ──────────────────────────────
+    doc.addPage();
+    doc.fontSize(20).fillColor(C.primary).text("Executive Summary");
+    doc.moveDown(0.3);
+    doc.rect(55, doc.y, 200, 2).fill(C.accent);
+    doc.moveDown(0.8);
+
+    // Summary stats
+    drawStatTable(doc, [
+      { label: "Overall Score", value: `${Math.round(input.overallScore)}/100` },
+      { label: "Confidence Level", value: `${Math.round(input.confidenceLevel)}%` },
+      { label: "Data Completeness", value: `${Math.round(input.dataCompleteness)}%` },
+      { label: "Profile Status", value: input.status.charAt(0).toUpperCase() + input.status.slice(1) },
+      { label: "Dimensions Assessed", value: `${input.dimensions.length}/12` },
+      { label: "Assessment Date", value: input.generatedAt.toLocaleDateString("en-US") },
+    ]);
+
+    doc.moveDown(0.8);
+
+    // Dimension overview table
+    doc.fontSize(14).fillColor(C.primary).text("Dimension Scores Overview");
+    doc.moveDown(0.3);
+
+    const sortedDims = [...input.dimensions].sort((a, b) => b.score - a.score);
+    drawDataTable(doc,
+      ["Dimension", "Score", "Confidence", "Status"],
+      sortedDims.map(d => {
+        const status = d.score >= 70 ? "Strong" : d.score >= 40 ? "Moderate" : "Needs Attention";
+        return [d.label, `${Math.round(d.score)}/100`, `${Math.round(d.confidence)}%`, status];
+      })
+    );
+
+    // ─── INDIVIDUAL DIMENSION PAGES ──────────────────────────
+    for (const dim of input.dimensions) {
+      doc.addPage();
+
+      // Dimension header
+      const dimColor = dim.score >= 70 ? C.success : dim.score >= 40 ? C.warning : C.danger;
+      doc.fontSize(18).fillColor(C.primary).text(dim.label);
+      doc.moveDown(0.2);
+      doc.rect(55, doc.y, 500, 2).fill(dimColor);
+      doc.moveDown(0.6);
+
+      // Score display
+      doc.fontSize(36).fillColor(dimColor).text(`${Math.round(dim.score)}`, { continued: true });
+      doc.fontSize(14).fillColor(C.muted).text("/100", { continued: true });
+      doc.fontSize(10).fillColor(C.muted).text(`   Confidence: ${Math.round(dim.confidence)}%`);
+      doc.moveDown(0.5);
+
+      // Score bar
+      const barY = doc.y;
+      doc.rect(55, barY, 500, 12).fill(C.bg);
+      doc.rect(55, barY, Math.max(1, 500 * dim.score / 100), 12).fill(dimColor);
+      doc.y = barY + 20;
+
+      // Description
+      const desc = DIMENSION_DESCRIPTIONS[dim.key];
+      if (desc) {
+        doc.fontSize(9).fillColor(C.muted).text(desc, { width: 500, lineGap: 2 });
+        doc.moveDown(0.5);
+      }
+
+      // Value details
+      if (dim.value) {
+        doc.fontSize(11).fillColor(C.primary).text("Assessment Details");
+        doc.moveDown(0.3);
+        const valueStr = typeof dim.value === "object" ? JSON.stringify(dim.value, null, 2) : String(dim.value);
+        if (valueStr.length > 1500) {
+          doc.fontSize(9).fillColor(C.text).text(valueStr.substring(0, 1500) + "\n[Truncated]", { width: 500, lineGap: 2 });
+        } else {
+          doc.fontSize(9).fillColor(C.text).text(valueStr, { width: 500, lineGap: 2 });
+        }
+        doc.moveDown(0.5);
+      }
+
+      // Data sources
+      if (dim.sources?.length) {
+        doc.fontSize(10).fillColor(C.primary).text("Data Sources");
+        doc.moveDown(0.2);
+        dim.sources.forEach(src => {
+          doc.fontSize(8).fillColor(C.muted).text(`• ${src}`, { indent: 10 });
+        });
+      }
+    }
+
+    // ─── CHANGE HISTORY ──────────────────────────────────────
+    if (input.changeHistory?.length) {
+      doc.addPage();
+      doc.fontSize(18).fillColor(C.primary).text("Profile Change History");
+      doc.moveDown(0.3);
+      doc.rect(55, doc.y, 500, 2).fill(C.accent);
+      doc.moveDown(0.8);
+
+      const historyRows = input.changeHistory.slice(0, 30).map(ch => [
+        ch.date,
+        ch.dimension,
+        ch.changeType.replace(/_/g, " "),
+        ch.previousScore != null ? String(Math.round(ch.previousScore)) : "—",
+        ch.newScore != null ? String(Math.round(ch.newScore)) : "—",
+      ]);
+      drawDataTable(doc, ["Date", "Dimension", "Type", "Previous", "New"], historyRows);
+    }
+
+    // ─── DISCLAIMER ──────────────────────────────────────────
+    doc.addPage();
+    drawSuitabilityDisclaimer(doc, input.disclaimer);
+
+    // ─── PAGE NUMBERS ────────────────────────────────────────
+    const pageCount = doc.bufferedPageRange().count;
+    for (let i = 0; i < pageCount; i++) {
+      doc.switchToPage(i);
+      drawPageFooter(doc, i + 1, pageCount, input.firmName || "Stewardly");
+    }
+
+    doc.end();
+  });
+}
+
+function drawSuitabilityDisclaimer(doc: PDFKit.PDFDocument, custom?: string) {
+  doc.fontSize(14).fillColor(C.primary).text("Important Disclosures — Suitability Assessment");
+  doc.moveDown(0.5);
+  doc.rect(55, doc.y, 500, 1).fill(C.divider);
+  doc.moveDown(0.5);
+
+  const disclaimer = custom || `This suitability assessment is generated by Stewardly, a digital financial twin platform. The assessment uses a multi-dimensional scoring model that evaluates 12 key financial dimensions based on user-provided data, conversational inputs, and available third-party data sources.
+
+Key Disclosures:
+
+1. ASSESSMENT LIMITATIONS: Scores are based on available data and may not reflect the complete financial picture. Data completeness directly affects assessment accuracy.
+
+2. NOT A RECOMMENDATION: This assessment identifies areas of financial strength and areas needing attention. It does not constitute a specific product recommendation or investment advice.
+
+3. CONFIDENCE LEVELS: Each dimension includes a confidence score reflecting data quality and recency. Lower confidence scores indicate areas where additional information would improve accuracy.
+
+4. DATA DECAY: Suitability profiles are subject to temporal decay. Scores may decrease over time if not refreshed with current data, reflecting the changing nature of financial circumstances.
+
+5. PROFESSIONAL REVIEW: This assessment should be reviewed by a qualified financial professional before being used as the basis for any financial planning decisions.
+
+6. REGULATORY COMPLIANCE: This assessment is designed to support, not replace, the suitability determination requirements under FINRA Rule 2111 and Regulation Best Interest (Reg BI).
+
+7. PRIVACY: All assessment data is encrypted and stored in accordance with Stewardly's Privacy Policy. Access is controlled by the user's visibility settings.
+
+This document was auto-generated and should be verified by a qualified professional.`;
+
+  doc.fontSize(8.5).fillColor(C.muted).text(disclaimer, { width: 500, lineGap: 2.5 });
+}

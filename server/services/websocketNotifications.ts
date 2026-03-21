@@ -22,11 +22,24 @@ interface UserSocket {
   userId: number | string;
   role: string;
   socketId: string;
+  preferences?: NotificationPreferences;
+}
+
+export interface NotificationPreferences {
+  enabledTypes: Record<string, boolean>;
+  deliveryMethods: {
+    toast: boolean;
+    sound: boolean;
+    badge: boolean;
+  };
+  quietHoursStart?: string; // HH:MM
+  quietHoursEnd?: string;   // HH:MM
 }
 
 // ─── In-Memory Notification Store (per-session) ────────────────────────────
 
 const userNotifications = new Map<string, NotificationPayload[]>();
+const userPreferences = new Map<string, NotificationPreferences>();
 const MAX_NOTIFICATIONS_PER_USER = 100;
 
 // ─── Singleton ─────────────────────────────────────────────────────────────
@@ -99,6 +112,24 @@ export function initWebSocket(httpServer: HttpServer): Server {
       socket.emit("notifications:list", { notifications });
     });
 
+    // Handle preference sync from client
+    socket.on("preferences:sync", (prefs: NotificationPreferences) => {
+      const userEntry = connectedUsers.get(socket.id);
+      if (userEntry) {
+        userEntry.preferences = prefs;
+        connectedUsers.set(socket.id, userEntry);
+      }
+      // Store in per-user preferences map
+      userPreferences.set(String(userId), prefs);
+      socket.emit("preferences:synced", { success: true });
+    });
+
+    // Handle preference request
+    socket.on("preferences:get", () => {
+      const prefs = userPreferences.get(String(userId));
+      socket.emit("preferences:current", prefs || null);
+    });
+
     // Handle disconnect
     socket.on("disconnect", () => {
       connectedUsers.delete(socket.id);
@@ -118,8 +149,13 @@ export function sendNotification(userId: string | number, notification: Omit<Not
     readAt: null,
   };
 
-  // Store in memory
   const key = String(userId);
+
+  // Check user preferences — skip if type is disabled
+  const prefs = userPreferences.get(key);
+  const shouldDeliver = shouldDeliverNotification(payload, prefs);
+
+  // Always store in memory (for history), but mark delivery flags
   const existing = userNotifications.get(key) || [];
   existing.unshift(payload);
   if (existing.length > MAX_NOTIFICATIONS_PER_USER) {
@@ -127,9 +163,12 @@ export function sendNotification(userId: string | number, notification: Omit<Not
   }
   userNotifications.set(key, existing);
 
-  // Emit via WebSocket if connected
-  if (io) {
-    io.to(`user:${userId}`).emit("notification:new", payload);
+  // Only emit via WebSocket if preferences allow delivery
+  if (io && shouldDeliver) {
+    io.to(`user:${userId}`).emit("notification:new", {
+      ...payload,
+      _delivery: prefs?.deliveryMethods || { toast: true, sound: false, badge: true },
+    });
   }
 
   return payload;
@@ -221,4 +260,58 @@ export function getConnectionStats() {
 
 export function getIO(): Server | null {
   return io;
+}
+
+
+// ─── Preference-Based Filtering ───────────────────────────────────────────
+
+function shouldDeliverNotification(
+  notification: NotificationPayload,
+  prefs: NotificationPreferences | undefined
+): boolean {
+  // No preferences set = deliver everything
+  if (!prefs) return true;
+
+  // Check if the notification type is enabled
+  const typeEnabled = prefs.enabledTypes[notification.type];
+  if (typeEnabled === false) return false; // Explicitly disabled
+
+  // Check quiet hours
+  if (prefs.quietHoursStart && prefs.quietHoursEnd) {
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const [startH, startM] = prefs.quietHoursStart.split(":").map(Number);
+    const [endH, endM] = prefs.quietHoursEnd.split(":").map(Number);
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    if (startMinutes <= endMinutes) {
+      // Same-day range (e.g., 22:00 to 23:00)
+      if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+        // Allow critical notifications even during quiet hours
+        return notification.priority === "critical";
+      }
+    } else {
+      // Overnight range (e.g., 22:00 to 07:00)
+      if (currentMinutes >= startMinutes || currentMinutes < endMinutes) {
+        return notification.priority === "critical";
+      }
+    }
+  }
+
+  // Check if any delivery method is enabled
+  const { toast, sound, badge } = prefs.deliveryMethods;
+  if (!toast && !sound && !badge) return false;
+
+  return true;
+}
+
+// ─── Get/Set User Preferences ─────────────────────────────────────────────
+
+export function getUserPreferences(userId: string | number): NotificationPreferences | null {
+  return userPreferences.get(String(userId)) || null;
+}
+
+export function setUserPreferences(userId: string | number, prefs: NotificationPreferences): void {
+  userPreferences.set(String(userId), prefs);
 }

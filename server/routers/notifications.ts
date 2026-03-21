@@ -6,6 +6,9 @@ import {
   getConnectionStats,
   sendNotification,
   broadcastToAll,
+  getUserPreferences,
+  setUserPreferences,
+  type NotificationPreferences,
 } from "../services/websocketNotifications";
 
 export const notificationsRouter = router({
@@ -71,4 +74,39 @@ export const notificationsRouter = router({
     }
     return getConnectionStats();
   }),
+
+  // Get notification preferences
+  getPreferences: protectedProcedure.query(({ ctx }) => {
+    const prefs = getUserPreferences(ctx.user.id);
+    return prefs || {
+      enabledTypes: {
+        coaching: true, propagation: true, alert: true,
+        model_complete: true, enrichment: true, system: true,
+      },
+      deliveryMethods: { toast: true, sound: false, badge: true },
+    };
+  }),
+
+  // Save notification preferences
+  savePreferences: protectedProcedure
+    .input(z.object({
+      enabledTypes: z.record(z.string(), z.boolean()),
+      deliveryMethods: z.object({
+        toast: z.boolean(),
+        sound: z.boolean(),
+        badge: z.boolean(),
+      }),
+      quietHoursStart: z.string().optional(),
+      quietHoursEnd: z.string().optional(),
+    }))
+    .mutation(({ ctx, input }) => {
+      const prefs: NotificationPreferences = {
+        enabledTypes: input.enabledTypes,
+        deliveryMethods: input.deliveryMethods,
+        quietHoursStart: input.quietHoursStart,
+        quietHoursEnd: input.quietHoursEnd,
+      };
+      setUserPreferences(ctx.user.id, prefs);
+      return { success: true };
+    }),
 });
