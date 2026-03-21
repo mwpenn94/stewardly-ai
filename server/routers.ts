@@ -216,6 +216,16 @@ const chatRouter = router({
         }
       } catch { /* integration health context is optional */ }
 
+      // ── LIVE ECONOMIC DATA INJECTION ───────────────────────────────
+      // Inject cached government data so AI can reference real economic indicators
+      try {
+        const { getEconomicDataSummary } = await import("./services/governmentDataPipelines");
+        const econSummary = await getEconomicDataSummary();
+        if (econSummary) {
+          fullSystemPrompt += `\n\n${econSummary}`;
+        }
+      } catch { /* economic data injection is optional */ }
+
       // C13: Knowledge base context injection
       try {
         const { searchArticles } = await import("./services/knowledgeBase");

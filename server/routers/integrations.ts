@@ -720,4 +720,48 @@ export const integrationsRouter = router({
       const { assembleIntegrationHealthContext } = await import("../services/integrationHealth");
       return assembleIntegrationHealthContext();
     }),
+
+  // ─── Data Pipeline Endpoints ──────────────────────────────────────────
+  runAllPipelines: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const { runAllDataPipelines } = await import("../services/governmentDataPipelines");
+      const { trackEvent } = await import("../services/exponentialEngine");
+      const results = await runAllDataPipelines();
+      try { await trackEvent({ userId: ctx.user.id, eventType: "feature_use", featureKey: "data_pipeline_run", metadata: { pipelinesRun: results.length } }); } catch {}
+      return results;
+    }),
+
+  runSinglePipeline: protectedProcedure
+    .input(z.object({ providerSlug: z.string() }))
+    .mutation(async ({ input }) => {
+      const { runSinglePipeline } = await import("../services/governmentDataPipelines");
+      return runSinglePipeline(input.providerSlug);
+    }),
+
+  getPipelineCachedData: protectedProcedure
+    .input(z.object({ providerSlug: z.string(), category: z.string().optional() }))
+    .query(async ({ input }) => {
+      const { getCachedData } = await import("../services/governmentDataPipelines");
+      return getCachedData(input.providerSlug, input.category);
+    }),
+
+  getEconomicDataSummary: protectedProcedure
+    .query(async () => {
+      const { getEconomicDataSummary } = await import("../services/governmentDataPipelines");
+      return getEconomicDataSummary();
+    }),
+
+  // ─── Scheduler Endpoints ──────────────────────────────────────────────
+  getSchedulerStatus: protectedProcedure
+    .query(async () => {
+      const { getSchedulerStatus } = await import("../services/scheduler");
+      return getSchedulerStatus();
+    }),
+
+  triggerSchedulerJob: protectedProcedure
+    .input(z.object({ jobName: z.string() }))
+    .mutation(async ({ input }) => {
+      const { triggerJob } = await import("../services/scheduler");
+      return triggerJob(input.jobName);
+    }),
 });

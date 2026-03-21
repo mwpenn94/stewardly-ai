@@ -1,0 +1,28 @@
+{
+  "query": "SELECT p.id, p.slug, p.name, p.auth_method, c.id as conn_id, c.status, c.credentials_encrypted IS NOT NULL as has_creds\nFROM integration_providers p\nLEFT JOIN integration_connections c ON c.provider_id = p.id\nWHERE p.slug IN ('sec-edgar', 'finra-brokercheck');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT p.id, p.slug, p.name, p.auth_method, c.id as conn_id, c.status, c.credentials_encrypted IS NOT NULL as has_creds\nFROM integration_providers p\nLEFT JOIN integration_connections c ON c.provider_id = p.id\nWHERE p.slug IN ('sec-edgar', 'finra-brokercheck');",
+  "rows": [
+    {
+      "id": "d6e7f8a9-b0c1-2345-6789-345678901234",
+      "slug": "finra-brokercheck",
+      "name": "FINRA BrokerCheck",
+      "auth_method": "none",
+      "conn_id": "NULL",
+      "status": "NULL",
+      "has_creds": "0"
+    },
+    {
+      "id": "c5d6e7f8-a9b0-1234-5678-234567890123",
+      "slug": "sec-edgar",
+      "name": "SEC EDGAR",
+      "auth_method": "none",
+      "conn_id": "NULL",
+      "status": "NULL",
+      "has_creds": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tslug\tname\tauth_method\tconn_id\tstatus\thas_creds\nd6e7f8a9-b0c1-2345-6789-345678901234\tfinra-brokercheck\tFINRA BrokerCheck\tnone\tNULL\tNULL\t0\nc5d6e7f8-a9b0-1234-5678-234567890123\tsec-edgar\tSEC EDGAR\tnone\tNULL\tNULL\t0\n",
+  "stderr": "",
+  "execution_time_ms": 352
+}

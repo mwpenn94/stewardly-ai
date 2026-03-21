@@ -1,0 +1,146 @@
+{
+  "query": "DESCRIBE integration_connections;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute DESCRIBE integration_connections;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "provider_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "MUL",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "ownership_tier",
+      "Type": "enum('platform','organization','professional','client')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "owner_id",
+      "Type": "varchar(36)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "organization_id",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "user_id",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "status",
+      "Type": "enum('connected','disconnected','error','pending','expired')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "pending",
+      "Extra": ""
+    },
+    {
+      "Field": "credentials_encrypted",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "config_json",
+      "Type": "json",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "last_sync_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "last_sync_status",
+      "Type": "enum('success','partial','failed')",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "last_sync_error",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "records_synced",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "usage_this_period",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "usage_period_start",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "created_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "updated_at",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tvarchar(36)\tNO\tPRI\tNULL\t\nprovider_id\tvarchar(36)\tNO\tMUL\tNULL\t\nownership_tier\tenum('platform','organization','professional','client')\tNO\t\tNULL\t\nowner_id\tvarchar(36)\tNO\t\tNULL\t\norganization_id\tint\tYES\t\tNULL\t\nuser_id\tint\tYES\t\tNULL\t\nstatus\tenum('connected','disconnected','error','pending','expired')\tYES\t\tpending\t\ncredentials_encrypted\ttext\tYES\t\tNULL\t\nconfig_json\tjson\tYES\t\tNULL\t\nlast_sync_at\ttimestamp\tYES\t\tNULL\t\nlast_sync_status\tenum('success','partial','failed')\tYES\t\tNULL\t\nlast_sync_error\ttext\tYES\t\tNULL\t\nrecords_synced\tint\tYES\t\t0\t\nusage_this_period\tint\tYES\t\t0\t\nusage_period_start\ttimestamp\tYES\t\tNULL\t\ncreated_at\ttimestamp\tYES\t\tCURRENT_TIMESTAMP\t\nupdated_at\ttimestamp\tYES\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}

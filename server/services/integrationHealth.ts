@@ -18,6 +18,7 @@ import {
 } from "../../drizzle/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { decryptCredentials } from "./encryption";
+import { notifyOwner } from "../_core/notification";
 import crypto from "crypto";
 
 const uuid = () => crypto.randomUUID();
@@ -310,7 +311,7 @@ async function runImprovementAgent(results: HealthCheckResult[]) {
           suggestedAction: "Verify API key is still valid. Check provider status page for outages.",
         });
       } else if (consecutiveFailures >= 3) {
-        // Persistent failure — escalate
+        // Persistent failure — escalate + notify owner
         await db.insert(integrationImprovementLog).values({
           id: uuid(),
           connectionId: result.connectionId,
@@ -320,6 +321,15 @@ async function runImprovementAgent(results: HealthCheckResult[]) {
           description: `The ${result.providerName} API has failed ${consecutiveFailures} consecutive health checks. Last error: ${result.message}`,
           suggestedAction: "Consider rotating the API key, checking rate limits, or contacting the provider.",
         });
+        // Send critical alert notification to owner
+        try {
+          await notifyOwner({
+            title: `\u26a0\ufe0f Critical: ${result.providerName} data source down (${consecutiveFailures} failures)`,
+            content: `The ${result.providerName} integration has failed ${consecutiveFailures} consecutive health checks.\n\nLast error: ${result.message}\nLatency: ${result.latencyMs}ms\n\nSuggested action: Verify API key validity, check provider status page, or rotate credentials.\n\nVisit the Integration Health Dashboard to investigate.`,
+          });
+        } catch (e) {
+          console.warn(`[ImprovementAgent] Failed to send critical alert for ${result.providerName}:`, e);
+        }
       }
     }
 

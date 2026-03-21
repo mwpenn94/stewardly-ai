@@ -1,0 +1,26 @@
+{
+  "query": "SELECT p.slug, p.name, c.id as conn_id, c.status, c.last_sync_at, c.last_sync_status\nFROM integration_providers p\nJOIN integration_connections c ON c.provider_id = p.id\nWHERE p.slug IN ('sec-edgar', 'finra-brokercheck');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT p.slug, p.name, c.id as conn_id, c.status, c.last_sync_at, c.last_sync_status\nFROM integration_providers p\nJOIN integration_connections c ON c.provider_id = p.id\nWHERE p.slug IN ('sec-edgar', 'finra-brokercheck');",
+  "rows": [
+    {
+      "slug": "sec-edgar",
+      "name": "SEC EDGAR",
+      "conn_id": "a01197fe-256e-11f1-bd22-9e0227203397",
+      "status": "connected",
+      "last_sync_at": "2026-03-21 21:40:48",
+      "last_sync_status": "success"
+    },
+    {
+      "slug": "finra-brokercheck",
+      "name": "FINRA BrokerCheck",
+      "conn_id": "a011af35-256e-11f1-bd22-9e0227203397",
+      "status": "connected",
+      "last_sync_at": "2026-03-21 21:40:48",
+      "last_sync_status": "success"
+    }
+  ],
+  "messages": [],
+  "stdout": "slug\tname\tconn_id\tstatus\tlast_sync_at\tlast_sync_status\nsec-edgar\tSEC EDGAR\ta01197fe-256e-11f1-bd22-9e0227203397\tconnected\t2026-03-21 21:40:48\tsuccess\nfinra-brokercheck\tFINRA BrokerCheck\ta011af35-256e-11f1-bd22-9e0227203397\tconnected\t2026-03-21 21:40:48\tsuccess\n",
+  "stderr": "",
+  "execution_time_ms": 359
+}

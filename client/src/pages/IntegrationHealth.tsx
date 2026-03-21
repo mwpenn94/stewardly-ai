@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import {
   Activity, CheckCircle2, XCircle, AlertTriangle, Clock, RefreshCw,
   Loader2, ArrowLeft, Zap, Shield, TrendingUp, Brain, Wifi, WifiOff,
-  ChevronRight, BarChart3, History, Bot, Sparkles,
+  ChevronRight, BarChart3, History, Bot, Sparkles, Database, Play,
+  Timer, Download,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -68,10 +69,15 @@ function timeAgo(date: Date | string | null) {
 // ─── Main Component ────────────────────────────────────────────────────
 export default function IntegrationHealth() {
   const [isRunning, setIsRunning] = useState(false);
+  const [isPipelinesRunning, setIsPipelinesRunning] = useState(false);
+  const [pipelineResults, setPipelineResults] = useState<any[] | null>(null);
   const dashboard = trpc.integrations.getHealthDashboard.useQuery();
   const improvements = trpc.integrations.getImprovementLog.useQuery();
   const healthContext = trpc.integrations.getIntegrationHealthContext.useQuery();
+  const schedulerStatus = trpc.integrations.getSchedulerStatus.useQuery();
+  const economicSummary = trpc.integrations.getEconomicDataSummary.useQuery();
   const runChecks = trpc.integrations.runHealthChecks.useMutation();
+  const runPipelines = trpc.integrations.runAllPipelines.useMutation();
   const utils = trpc.useUtils();
 
   const handleRunAllChecks = async () => {
@@ -88,6 +94,24 @@ export default function IntegrationHealth() {
       toast.error(err.message || "Failed to run health checks");
     } finally {
       setIsRunning(false);
+    }
+  };
+
+  const handleRunAllPipelines = async () => {
+    setIsPipelinesRunning(true);
+    try {
+      const results = await runPipelines.mutateAsync();
+      setPipelineResults(results);
+      const success = results.filter((r: any) => r.status === "success").length;
+      const totalRecords = results.reduce((sum: number, r: any) => sum + r.recordsFetched, 0);
+      toast.success(`Data pipelines complete: ${success}/${results.length} succeeded, ${totalRecords} records fetched`);
+      utils.integrations.getHealthDashboard.invalidate();
+      utils.integrations.getEconomicDataSummary.invalidate();
+      utils.integrations.getSchedulerStatus.invalidate();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to run data pipelines");
+    } finally {
+      setIsPipelinesRunning(false);
     }
   };
 
@@ -197,6 +221,9 @@ export default function IntegrationHealth() {
             </TabsTrigger>
             <TabsTrigger value="improvements" className="gap-2">
               <Bot className="h-4 w-4" /> Improvement Agent
+            </TabsTrigger>
+            <TabsTrigger value="pipelines" className="gap-2">
+              <Database className="h-4 w-4" /> Data Pipelines
             </TabsTrigger>
             <TabsTrigger value="ai-context" className="gap-2">
               <Brain className="h-4 w-4" /> AI Awareness
@@ -319,6 +346,128 @@ export default function IntegrationHealth() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Data Pipelines Tab */}
+          <TabsContent value="pipelines" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-5 w-5 text-primary" />
+                    <div>
+                      <CardTitle className="text-base">Government Data Pipelines</CardTitle>
+                      <CardDescription>Fetch live economic data from BLS, FRED, BEA, and Census Bureau APIs</CardDescription>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleRunAllPipelines}
+                    disabled={isPipelinesRunning}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {isPipelinesRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                    {isPipelinesRunning ? "Fetching Data..." : "Run All Pipelines"}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Scheduler Status */}
+                {schedulerStatus.data && (
+                  <div className="p-4 rounded-lg border bg-muted/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Timer className="h-4 w-4 text-primary" />
+                      <h4 className="text-sm font-medium">Automated Scheduler</h4>
+                      <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                        Active
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {Object.entries(schedulerStatus.data.jobs || {}).map(([name, job]: [string, any]) => (
+                        <div key={name} className="p-3 rounded-lg bg-background border">
+                          <p className="text-xs text-muted-foreground font-medium">{name.replace(/_/g, " ")}</p>
+                          <p className="text-sm font-medium mt-1">{job.intervalMinutes}m interval</p>
+                          <p className="text-xs text-muted-foreground">
+                            Runs: {job.runCount} &middot; Last: {job.lastRun ? timeAgo(job.lastRun) : "Never"}
+                          </p>
+                          {job.lastError && (
+                            <p className="text-xs text-red-400 mt-1 truncate">{job.lastError}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Pipeline Results */}
+                {pipelineResults && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <Download className="h-4 w-4" /> Latest Pipeline Results
+                    </h4>
+                    <div className="grid gap-3">
+                      {pipelineResults.map((result: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30 transition-colors">
+                          <div className="flex items-center gap-3">
+                            {result.status === "success" ? (
+                              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                            ) : result.status === "skipped" ? (
+                              <Clock className="h-5 w-5 text-amber-500" />
+                            ) : (
+                              <XCircle className="h-5 w-5 text-red-500" />
+                            )}
+                            <div>
+                              <p className="text-sm font-medium">{result.pipeline}</p>
+                              <p className="text-xs text-muted-foreground">{result.providerSlug}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <p className="text-sm font-medium">{result.recordsFetched} records</p>
+                              <p className="text-xs text-muted-foreground">{(result.duration / 1000).toFixed(1)}s</p>
+                            </div>
+                            <StatusBadge status={result.status} />
+                            {result.error && (
+                              <span className="text-xs text-red-400 max-w-[200px] truncate">{result.error}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-center p-3 bg-muted/30 rounded-lg">
+                      <p className="text-sm font-medium">
+                        Total: {pipelineResults.reduce((s: number, r: any) => s + r.recordsFetched, 0)} records fetched
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Economic Data Preview */}
+                {economicSummary.data && (
+                  <div>
+                    <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-primary" /> Cached Economic Data (AI Context)
+                    </h4>
+                    <div className="bg-muted/50 rounded-lg p-4 border">
+                      <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed max-h-[400px] overflow-y-auto">
+                        {economicSummary.data || "No economic data cached yet. Run pipelines to fetch data."}
+                      </pre>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      This data is automatically injected into AI conversations so the assistant can reference real economic indicators.
+                    </p>
+                  </div>
+                )}
+
+                {!pipelineResults && !economicSummary.data && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Database className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No pipeline data yet. Click "Run All Pipelines" to fetch live economic data.</p>
+                    <p className="text-xs mt-1">The scheduler will automatically run pipelines every hour.</p>
                   </div>
                 )}
               </CardContent>

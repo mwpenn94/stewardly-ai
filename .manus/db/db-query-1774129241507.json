@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, owner_id, ownership_tier FROM integration_connections LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT id, owner_id, ownership_tier FROM integration_connections LIMIT 1;",
+  "rows": [
+    {
+      "id": "ba390f0d-8ef2-4e05-90ce-0f400b3183a5",
+      "owner_id": "platform-global",
+      "ownership_tier": "platform"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\towner_id\townership_tier\nba390f0d-8ef2-4e05-90ce-0f400b3183a5\tplatform-global\tplatform\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}

@@ -2282,3 +2282,21 @@
 - [ ] Register for free BEA API key at apps.bea.gov
 - [ ] Register for free Census Bureau API key at api.census.gov
 - [ ] Connect all 4 keys and verify active status
+
+## Scheduled Health Checks + Data Pipelines + Alert Notifications
+- [x] Build server-side scheduler for automated health checks every 15 minutes
+- [x] Build BLS data fetching pipeline (employment, CPI, unemployment rate)
+- [x] Build FRED data fetching pipeline (GDP, interest rates, inflation, money supply)
+- [x] Build BEA data fetching pipeline (GDP components, personal income, trade balance)
+- [x] Build Census data fetching pipeline (population, housing, income demographics)
+- [x] Store fetched data in enrichment cache with proper expiration
+- [x] Create tRPC endpoints for data pipeline management (trigger, status, results)
+- [x] Wire critical-severity improvement agent detections to notifyOwner alerts
+- [x] Update Integration Health Dashboard with data pipeline status tab
+- [x] Inject fetched economic data into AI system prompt for contextual awareness
+- [x] Write comprehensive tests for scheduler, pipelines, and alerts (19 tests passing)
+
+## Bug Fix: SEC EDGAR & FINRA BrokerCheck
+- [x] Auto-connect SEC EDGAR and FINRA BrokerCheck (keyless public APIs) and verify them
+- [x] Trigger initial data fetch for all 4 government APIs to populate records_synced (via tRPC endpoint)
+- [x] Update records_synced count on integration_connections after each pipeline run
