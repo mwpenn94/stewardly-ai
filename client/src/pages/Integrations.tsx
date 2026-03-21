@@ -14,6 +14,7 @@ import {
   Shield, Activity, Settings2, Loader2, Plus, ArrowUpDown, FileUp, ArrowLeft,
 } from "lucide-react";
 import { Link } from "wouter";
+import { getLoginUrl } from "@/const";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 type Provider = {
@@ -131,7 +132,7 @@ function ProviderCard({
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">API Key</span>
-              <span className="font-mono text-xs">{connection.credentialsEncrypted ? "•••••••• (configured)" : "Not set"}</span>
+              <span className="font-mono text-xs truncate max-w-[120px] sm:max-w-[200px]">{connection.credentialsEncrypted ? "•••• (set)" : "Not set"}</span>
             </div>
             {isConnected && (
               <>
@@ -148,7 +149,7 @@ function ProviderCard({
             {connection.lastSyncError && (
               <div className="flex justify-between text-xs">
                 <span className="text-destructive">Error</span>
-                <span className="text-destructive truncate max-w-[200px]">{connection.lastSyncError}</span>
+                <span className="text-destructive truncate max-w-[120px] sm:max-w-[200px]">{connection.lastSyncError}</span>
               </div>
             )}
             <div className="flex justify-between text-xs">
@@ -158,13 +159,13 @@ function ProviderCard({
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {isConnected ? (
             <>
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1"
+                className="flex-1 min-w-[100px]"
                 onClick={() => {
                   setSyncing(true);
                   onSync(connection!.id);
@@ -173,7 +174,7 @@ function ProviderCard({
                 disabled={syncing}
               >
                 {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
-                Sync Now
+                Sync
               </Button>
               <Button
                 variant="ghost"
@@ -181,14 +182,15 @@ function ProviderCard({
                 onClick={() => onDisconnect(connection!.id)}
               >
                 <Unlink className="h-3.5 w-3.5 mr-1" />
-                Disconnect
+                <span className="hidden sm:inline">Disconnect</span>
+                <span className="sm:hidden">Remove</span>
               </Button>
             </>
           ) : (isPending || hasError) && connection ? (
             <>
               <Button
                 size="sm"
-                className="flex-1"
+                className="flex-1 min-w-[100px]"
                 onClick={() => {
                   setTesting(true);
                   onTest(connection.id);
@@ -211,7 +213,7 @@ function ProviderCard({
           ) : (
             <Button
               size="sm"
-              className="flex-1"
+              className="flex-1 min-w-[100px]"
               onClick={() => onConnect(provider)}
             >
               <Link2 className="h-3.5 w-3.5 mr-1" />
@@ -499,7 +501,7 @@ export default function Integrations() {
     <div className="min-h-screen bg-background">
       {/* Navigation Header */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="container flex items-center gap-3 h-14">
+        <div className="container flex items-center gap-2 sm:gap-3 h-14">
           <Link href="/chat">
             <Button variant="ghost" size="icon" className="shrink-0">
               <ArrowLeft className="h-4 w-4" />
@@ -509,9 +511,10 @@ export default function Integrations() {
             <h1 className="text-lg font-semibold truncate">Data Integrations</h1>
           </div>
           <Link href="/integration-health">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Activity className="h-4 w-4" />
-              Health Dashboard
+            <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Health Dashboard</span>
+              <span className="sm:hidden">Health</span>
             </Button>
           </Link>
         </div>
@@ -525,8 +528,25 @@ export default function Integrations() {
         </p>
       </div>
 
+      {/* Login prompt for unauthenticated users */}
+      {!user && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardContent className="pt-4 pb-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                <span className="text-sm">Sign in to connect integrations and view your connection status.</span>
+              </div>
+              <Button size="sm" onClick={() => { window.location.href = getLoginUrl(); }}>
+                Sign In
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="pt-4 pb-3">
             <div className="text-2xl font-bold">{providers?.length || 0}</div>
@@ -605,7 +625,7 @@ export default function Integrations() {
                   </h2>
                   <p className="text-sm text-muted-foreground">{tierLabels[tier].desc}</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {tierProviders.map(provider => (
                     <ProviderCard
                       key={provider.id}
@@ -649,17 +669,17 @@ export default function Integrations() {
               {connections?.filter((c: any) => c.status === "connected").slice(0, 5).map((conn: any) => {
                 const provider = (providers as unknown as Provider[] | undefined)?.find((p) => p.id === conn.providerId);
                 return (
-                  <div key={conn.id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div className="flex items-center gap-3">
-                      <Database className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <div className="text-sm font-medium">{provider?.name || "Unknown"}</div>
-                        <div className="text-xs text-muted-foreground">
+                  <div key={conn.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border p-3 gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Database className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium truncate">{provider?.name || "Unknown"}</div>
+                        <div className="text-xs text-muted-foreground truncate">
                           {conn.lastSyncAt ? `Last sync: ${new Date(conn.lastSyncAt).toLocaleString()}` : "Never synced"}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 pl-7 sm:pl-0 shrink-0">
                       <span className="text-xs text-muted-foreground">{conn.recordsSynced || 0} records</span>
                       <StatusBadge status={conn.lastSyncStatus} />
                     </div>

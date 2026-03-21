@@ -13,3 +13,16 @@ Both desktop and mobile views should work since the SettingsHub already has a mo
 The "Save User Settings" button in the Response Style card and "Save All Preferences" button at the bottom both call the same mutation.
 
 Issue: There are TWO save buttons - one in the LayerFields component and one at the bottom. Should remove the one in LayerFields for the user layer to avoid confusion.
+
+
+---
+Integration Page Debug (March 21, 2026)
+
+Deployed page findings:
+- Providers ARE loading (7 platform, 16 org, 7 professional providers visible in markdown)
+- BUT: No connection status badges, no Connect buttons visible in markdown extraction
+- Stats show 0/0/0 which contradicts visible providers
+- The markdown extraction shows descriptions but NOT interactive elements (buttons, badges)
+- Need to check: is the user logged in? Are connections loading?
+- The card content IS rendering (descriptions visible) but status/buttons may be missing
+- Key issue may be: the stats counter uses providers?.length but providers might be undefined initially

@@ -2327,3 +2327,6 @@
 - [x] Build SEC EDGAR data pipeline — 25 records (AAPL/MSFT/GOOGL/AMZN/TSLA financials + filing counts)
 - [x] Build FINRA BrokerCheck data pipeline — 6 records (Schwab/Fidelity/MS/GS/JPM + individual search)
 - [x] Validate all 6 pipelines — 76 total records, 5/6 successful (BEA pending user key activation)
+
+## Bug Fix: Integration Connections Blank on Mobile
+- [x] Fix integration connection cards appearing blank/empty on mobile viewport (login prompt, responsive grid, truncation, button wrapping)
