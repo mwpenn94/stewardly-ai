@@ -60,6 +60,7 @@ import KnowledgeAdmin from "./pages/KnowledgeAdmin";
 import AdminIntegrations from "./pages/AdminIntegrations";
 import AdvisorIntegrations from "./pages/AdvisorIntegrations";
 import SuitabilityPanel from "./pages/SuitabilityPanel";
+import ProficiencyDashboard from "./pages/ProficiencyDashboard";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { usePageTracking } from "./hooks/useExponentialTracking";
 
@@ -97,6 +98,7 @@ function Router() {
       <Route path={"/admin/integrations"} component={AdminIntegrations} />
       <Route path={"/my-integrations"} component={AdvisorIntegrations} />
       <Route path={"/suitability-panel"} component={SuitabilityPanel} />
+      <Route path={"/proficiency"} component={ProficiencyDashboard} />
 
       {/* Consolidated Hub Pages */}
       <Route path={"/operations"} component={OperationsHub} />

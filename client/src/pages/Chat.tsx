@@ -36,6 +36,8 @@ import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
+import AIOnboardingWidget from "@/components/AIOnboardingWidget";
+import ChangelogBell from "@/components/ChangelogBell";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -906,6 +908,7 @@ export default function Chat() {
     { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Market Data", href: "/market-data", minRole: "user" as UserRole },
     { icon: <FileText className="w-3.5 h-3.5" />, label: "Documents", href: "/documents", minRole: "user" as UserRole },
     { icon: <Link2 className="w-3.5 h-3.5" />, label: "Integrations", href: "/integrations", minRole: "user" as UserRole },
+    { icon: <Activity className="w-3.5 h-3.5" />, label: "My Progress", href: "/proficiency", minRole: "user" as UserRole },
   ];
 
   const adminNav = [
@@ -1238,8 +1241,10 @@ export default function Chat() {
                   <Fingerprint className="w-3.5 h-3.5" /> Settings
                 </button>
               </div>
-              {/* Desktop notification bell */}
-              <div className="hidden lg:flex items-center justify-center px-2 pb-1">
+              {/* AI Onboarding Widget */}
+              {!sidebarCollapsed && <AIOnboardingWidget />}
+              {/* Desktop notification bell + changelog bell */}
+              <div className="hidden lg:flex items-center gap-1 px-2 pb-1">
                 <NotificationBell
                   notifications={notifications}
                   unreadCount={unreadCount}
@@ -1248,6 +1253,7 @@ export default function Chat() {
                   onMarkAllAsRead={markAllAsRead}
                   onClear={clearNotifications}
                 />
+                <ChangelogBell collapsed={sidebarCollapsed} />
                 {!sidebarCollapsed && unreadCount > 0 && (
                   <span className="text-[10px] text-muted-foreground ml-1">{unreadCount} unread</span>
                 )}

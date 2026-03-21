@@ -360,3 +360,206 @@ describe("Exponential Engine — Context Assembly", () => {
     expect(ctx.newUpdates.length).toBeGreaterThan(0);
   });
 });
+
+// ─── v2: 5-Layer Context Tests ────────────────────────────────────────────
+
+describe("Exponential Engine v2 — 5-Layer Hierarchy", () => {
+  it("context includes userLayer with activeLayer and accessibleLayers", async () => {
+    const { assembleExponentialContext } = await import("./services/exponentialEngine");
+    const ctx = await assembleExponentialContext(1, "user");
+    expect(ctx.userLayer).toBeDefined();
+    expect(ctx.userLayer.activeLayer).toBeTruthy();
+    expect(ctx.userLayer.layerLabel).toBeTruthy();
+    expect(Array.isArray(ctx.userLayer.accessibleLayers)).toBe(true);
+    expect(ctx.userLayer.accessibleLayers.length).toBeGreaterThan(0);
+  });
+
+  it("admin user gets platform layer", async () => {
+    const { assembleExponentialContext } = await import("./services/exponentialEngine");
+    const ctx = await assembleExponentialContext(88888, "admin");
+    expect(ctx.userLayer.activeLayer).toBe("platform");
+    expect(ctx.userLayer.accessibleLayers).toContain("platform");
+    expect(ctx.userLayer.accessibleLayers).toContain("client");
+  });
+
+  it("manager user gets manager layer", async () => {
+    const { assembleExponentialContext } = await import("./services/exponentialEngine");
+    const ctx = await assembleExponentialContext(88888, "manager");
+    expect(ctx.userLayer.activeLayer).toBe("manager");
+    expect(ctx.userLayer.accessibleLayers).toContain("manager");
+    expect(ctx.userLayer.accessibleLayers).toContain("client");
+  });
+
+  it("advisor user gets professional layer", async () => {
+    const { assembleExponentialContext } = await import("./services/exponentialEngine");
+    const ctx = await assembleExponentialContext(88888, "advisor");
+    expect(ctx.userLayer.activeLayer).toBe("professional");
+    expect(ctx.userLayer.accessibleLayers).toContain("professional");
+    expect(ctx.userLayer.accessibleLayers).toContain("client");
+  });
+
+  it("regular user gets client layer", async () => {
+    const { assembleExponentialContext } = await import("./services/exponentialEngine");
+    const ctx = await assembleExponentialContext(88888, "user");
+    expect(ctx.userLayer.activeLayer).toBe("client");
+    expect(ctx.userLayer.accessibleLayers).toContain("client");
+  });
+
+  it("prompt fragment includes 5-Layer Hierarchy Context section", async () => {
+    const { assembleExponentialContext } = await import("./services/exponentialEngine");
+    const ctx = await assembleExponentialContext(88888, "admin");
+    expect(ctx.promptFragment).toContain("5-Layer Hierarchy Context");
+    expect(ctx.promptFragment).toContain("Platform (L1)");
+    expect(ctx.promptFragment).toContain("Client (L5)");
+  });
+
+  it("prompt fragment includes layer-specific onboarding guidance", async () => {
+    const { assembleExponentialContext } = await import("./services/exponentialEngine");
+    const ctx = await assembleExponentialContext(88888, "user");
+    expect(ctx.promptFragment).toContain("Onboarding Mode:");
+  });
+
+  it("streak tracking is included in context", async () => {
+    const { assembleExponentialContext } = await import("./services/exponentialEngine");
+    const ctx = await assembleExponentialContext(1, "user");
+    expect(typeof ctx.streak).toBe("number");
+    expect(ctx.streak).toBeGreaterThanOrEqual(0);
+  });
+});
+
+// ─── v2: Router Endpoint Tests ────────────────────────────────────────────
+
+describe("Exponential Engine v2 — New Endpoints", () => {
+  let appRouter: any;
+
+  beforeEach(async () => {
+    const mod = await import("./routers");
+    appRouter = mod.appRouter;
+  });
+
+  it("getOnboardingChecklist requires authentication", async () => {
+    const caller = appRouter.createCaller(createGuestContext());
+    await expect(caller.exponentialEngine.getOnboardingChecklist()).rejects.toThrow();
+  });
+
+  it("getOnboardingChecklist returns array of checklist items", async () => {
+    const caller = appRouter.createCaller(createAuthContext());
+    const result = await caller.exponentialEngine.getOnboardingChecklist();
+    expect(Array.isArray(result)).toBe(true);
+    if (result.length > 0) {
+      const item = result[0];
+      expect(item).toHaveProperty("id");
+      expect(item).toHaveProperty("title");
+      expect(item).toHaveProperty("description");
+      expect(item).toHaveProperty("href");
+      expect(item).toHaveProperty("layer");
+      expect(item).toHaveProperty("completed");
+      expect(typeof item.completed).toBe("boolean");
+    }
+  });
+
+  it("dismissOnboarding requires authentication", async () => {
+    const caller = appRouter.createCaller(createGuestContext());
+    await expect(caller.exponentialEngine.dismissOnboarding()).rejects.toThrow();
+  });
+
+  it("dismissOnboarding succeeds for authenticated user", async () => {
+    const caller = appRouter.createCaller(createAuthContext());
+    const result = await caller.exponentialEngine.dismissOnboarding();
+    expect(result).toEqual({ success: true });
+  });
+
+  it("getUnreadChangelogCount requires authentication", async () => {
+    const caller = appRouter.createCaller(createGuestContext());
+    await expect(caller.exponentialEngine.getUnreadChangelogCount()).rejects.toThrow();
+  });
+
+  it("getUnreadChangelogCount returns unreadCount number", async () => {
+    const caller = appRouter.createCaller(createAuthContext());
+    const result = await caller.exponentialEngine.getUnreadChangelogCount();
+    expect(result).toHaveProperty("unreadCount");
+    expect(typeof result.unreadCount).toBe("number");
+    expect(result.unreadCount).toBeGreaterThanOrEqual(0);
+  });
+
+  it("getChangelogFeed requires authentication", async () => {
+    const caller = appRouter.createCaller(createGuestContext());
+    await expect(caller.exponentialEngine.getChangelogFeed()).rejects.toThrow();
+  });
+
+  it("getChangelogFeed returns entries array", async () => {
+    const caller = appRouter.createCaller(createAuthContext());
+    const result = await caller.exponentialEngine.getChangelogFeed();
+    expect(result).toHaveProperty("entries");
+    expect(Array.isArray(result.entries)).toBe(true);
+    if (result.entries.length > 0) {
+      const entry = result.entries[0];
+      expect(entry).toHaveProperty("id");
+      expect(entry).toHaveProperty("title");
+      expect(entry).toHaveProperty("description");
+      expect(entry).toHaveProperty("version");
+      expect(entry).toHaveProperty("changeType");
+      expect(entry).toHaveProperty("isRead");
+      expect(entry).toHaveProperty("announcedAt");
+    }
+  });
+
+  it("markAllChangelogRead requires authentication", async () => {
+    const caller = appRouter.createCaller(createGuestContext());
+    await expect(caller.exponentialEngine.markAllChangelogRead()).rejects.toThrow();
+  });
+
+  it("markAllChangelogRead succeeds for authenticated user", async () => {
+    const caller = appRouter.createCaller(createAuthContext());
+    const result = await caller.exponentialEngine.markAllChangelogRead();
+    expect(result).toHaveProperty("success", true);
+  });
+
+  it("getInsights requires authentication", async () => {
+    const caller = appRouter.createCaller(createGuestContext());
+    await expect(caller.exponentialEngine.getInsights()).rejects.toThrow();
+  });
+
+  it("getInsights returns structured insights", async () => {
+    const caller = appRouter.createCaller(createAuthContext());
+    const result = await caller.exponentialEngine.getInsights();
+    expect(result).toHaveProperty("summary");
+    expect(result).toHaveProperty("strengths");
+    expect(result).toHaveProperty("growthAreas");
+    expect(result).toHaveProperty("nextSteps");
+    expect(result).toHaveProperty("layerProgress");
+    expect(Array.isArray(result.strengths)).toBe(true);
+    expect(Array.isArray(result.growthAreas)).toBe(true);
+    expect(Array.isArray(result.nextSteps)).toBe(true);
+    expect(Array.isArray(result.layerProgress)).toBe(true);
+  });
+});
+
+// ─── v2: Feature Catalog Layer Tests ──────────────────────────────────────
+
+describe("Exponential Engine v2 — Catalog Layer Coverage", () => {
+  it("every feature has a valid layer field", () => {
+    const validLayers = ["platform", "organization", "manager", "professional", "client"];
+    for (const feature of FEATURE_CATALOG) {
+      expect(validLayers).toContain(feature.layer);
+    }
+  });
+
+  it("has features across multiple layers", () => {
+    const layers = new Set(FEATURE_CATALOG.map(f => f.layer));
+    expect(layers.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it("client layer has the most features (accessible to all)", () => {
+    const clientFeatures = FEATURE_CATALOG.filter(f => f.layer === "client");
+    const platformFeatures = FEATURE_CATALOG.filter(f => f.layer === "platform");
+    expect(clientFeatures.length).toBeGreaterThanOrEqual(platformFeatures.length);
+  });
+
+  it("features have consistent key naming convention", () => {
+    for (const feature of FEATURE_CATALOG) {
+      // Keys should be snake_case
+      expect(feature.key).toMatch(/^[a-z][a-z0-9_]*$/);
+    }
+  });
+});

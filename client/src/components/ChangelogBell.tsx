@@ -1,0 +1,209 @@
+/**
+ * Changelog Notification Bell
+ * 
+ * Shows a bell icon with unread badge in the sidebar.
+ * Clicking opens a dropdown feed of platform updates.
+ * Powered by the Exponential Engine's changelog system.
+ */
+import { useState, useRef, useEffect } from "react";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import {
+  Megaphone, Check, CheckCheck, Sparkles, Wrench, Bug, Trash2,
+  ChevronRight, X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+const CHANGE_TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+  new_feature: { icon: <Sparkles className="w-3.5 h-3.5" />, color: "text-violet-400", label: "New" },
+  improvement: { icon: <Wrench className="w-3.5 h-3.5" />, color: "text-sky-400", label: "Improved" },
+  fix: { icon: <Bug className="w-3.5 h-3.5" />, color: "text-amber-400", label: "Fixed" },
+  removal: { icon: <Trash2 className="w-3.5 h-3.5" />, color: "text-red-400", label: "Removed" },
+};
+
+interface ChangelogBellProps {
+  collapsed?: boolean;
+}
+
+export default function ChangelogBell({ collapsed = false }: ChangelogBellProps) {
+  const { user } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const utils = trpc.useUtils();
+
+  const unreadQuery = trpc.exponentialEngine.getUnreadChangelogCount.useQuery(undefined, {
+    enabled: !!user && user.authTier !== "anonymous",
+    refetchInterval: 60_000, // Check every minute
+  });
+
+  const feedQuery = trpc.exponentialEngine.getChangelogFeed.useQuery(undefined, {
+    enabled: !!user && user.authTier !== "anonymous" && isOpen,
+  });
+
+  const markReadMutation = trpc.exponentialEngine.markChangelogRead.useMutation({
+    onSuccess: () => {
+      utils.exponentialEngine.getUnreadChangelogCount.invalidate();
+      utils.exponentialEngine.getChangelogFeed.invalidate();
+    },
+  });
+
+  const markAllReadMutation = trpc.exponentialEngine.markAllChangelogRead.useMutation({
+    onSuccess: () => {
+      utils.exponentialEngine.getUnreadChangelogCount.invalidate();
+      utils.exponentialEngine.getChangelogFeed.invalidate();
+    },
+  });
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  if (!user || user.authTier === "anonymous") return null;
+
+  const unreadCount = unreadQuery.data?.unreadCount || 0;
+  const entries = feedQuery.data?.entries || [];
+
+  return (
+    <div className="relative" ref={panelRef}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+              isOpen ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+            }`}
+          >
+            <Megaphone className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-accent text-[9px] font-bold text-accent-foreground flex items-center justify-center">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          What's New {unreadCount > 0 ? `(${unreadCount} unread)` : ""}
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Dropdown Feed Panel */}
+      {isOpen && (
+        <div className="absolute bottom-full left-0 mb-2 w-80 max-h-[480px] bg-popover text-popover-foreground border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <Megaphone className="w-4 h-4 text-accent" />
+              <span className="text-sm font-semibold">What's New</span>
+              {unreadCount > 0 && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-accent border-accent/30">
+                  {unreadCount} new
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-7 h-7"
+                      onClick={() => markAllReadMutation.mutate()}
+                      disabled={markAllReadMutation.isPending}
+                    >
+                      <CheckCheck className="w-3.5 h-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Mark all as read</TooltipContent>
+                </Tooltip>
+              )}
+              <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => setIsOpen(false)}>
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Entries */}
+          <ScrollArea className="max-h-[380px]">
+            {entries.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Megaphone className="w-8 h-8 mb-3 opacity-30" />
+                <p className="text-sm">No updates yet</p>
+                <p className="text-xs mt-1 opacity-60">Platform updates will appear here</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border/50">
+                {entries.map((entry) => {
+                  const typeConfig = CHANGE_TYPE_CONFIG[entry.changeType] || CHANGE_TYPE_CONFIG.improvement;
+                  return (
+                    <div
+                      key={entry.id}
+                      className={`px-4 py-3 transition-colors ${
+                        !entry.isRead ? "bg-accent/[0.03]" : ""
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`mt-0.5 ${typeConfig.color}`}>
+                          {typeConfig.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className={`text-xs font-medium ${!entry.isRead ? "text-foreground" : "text-muted-foreground"}`}>
+                              {entry.title}
+                            </span>
+                            {!entry.isRead && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                            {entry.description}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <Badge variant="outline" className={`text-[9px] px-1 py-0 ${typeConfig.color} border-current/20`}>
+                              {typeConfig.label}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground/60">
+                              v{entry.version}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground/60">
+                              {new Date(entry.announcedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        {!entry.isRead && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                className="mt-1 p-1 rounded hover:bg-muted shrink-0"
+                                onClick={() => markReadMutation.mutate({ changelogId: entry.id, via: "changelog_page" })}
+                              >
+                                <Check className="w-3 h-3 text-muted-foreground" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>Mark as read</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+      )}
+    </div>
+  );
+}

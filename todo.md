@@ -2180,3 +2180,16 @@
 - [x] Add platform changelog table so AI knows about new/updated features
 - [x] AI adapts onboarding/training based on user's growing proficiency and exploration history
 - [x] Write tests for exponential engine (32 tests, all passing)
+
+## Exponential Engine v2 — 5-Layer AI Integration (March 21, 2026)
+- [x] Enhance engine backend: 5-layer hierarchy awareness (Platform→Org→Manager→Professional→Client)
+- [x] Add proficiency decay for stale features, streak tracking, layer-specific scoring
+- [x] AI-generated proficiency insights endpoint (analyzes user patterns per layer)
+- [x] Onboarding checklist generator: AI-adaptive actions based on role, layer, and explored features
+- [x] Changelog feed endpoint with unread count and layer-filtered updates
+- [x] Proficiency Dashboard page (/proficiency) with 5-layer exploration map and AI recommendations
+- [x] Onboarding Checklist Widget — dismissible, AI-driven, adapts per layer and proficiency
+- [x] Changelog Notification Bell in sidebar with unread badge and feed panel
+- [x] Wire 5-layer proficiency + onboarding context into AI system prompt
+- [x] Register /proficiency route and add to sidebar navigation
+- [x] Write tests for all new features (56 tests, all passing; 1211 total)

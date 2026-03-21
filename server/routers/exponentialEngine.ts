@@ -1,21 +1,26 @@
 /**
- * Exponential Engine Router
+ * Exponential Engine Router v2
  * 
- * Provides endpoints for:
- * - Tracking user platform events (page visits, feature usage, etc.)
- * - Retrieving user proficiency data
- * - Managing platform changelog
+ * 5-Layer hierarchy-aware endpoints for:
+ * - Event tracking (page visits, feature usage, etc.)
+ * - Proficiency data with layer context
+ * - AI-generated insights and recommendations
+ * - Adaptive onboarding checklist
+ * - Changelog feed with unread counts
  */
-
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import {
   trackEvent,
   recalculateProficiency,
   assembleExponentialContext,
+  generateAIInsights,
+  generateOnboardingChecklist,
+  getChangelogFeed,
   markChangelogInformed,
   addChangelogEntry,
   FEATURE_CATALOG,
+  LAYER_HIERARCHY,
 } from "../services/exponentialEngine";
 
 export const exponentialEngineRouter = router({
@@ -61,9 +66,8 @@ export const exponentialEngineRouter = router({
       return { success: true, tracked: input.events.length };
     }),
 
-  // ── Get user's proficiency summary ──────────────────────────────
+  // ── Get user's proficiency summary (5-layer aware) ──────────────
   getProficiency: protectedProcedure.query(async ({ ctx }) => {
-    // Recalculate first to ensure freshness
     await recalculateProficiency(ctx.user.id);
     const context = await assembleExponentialContext(
       ctx.user.id,
@@ -77,7 +81,66 @@ export const exponentialEngineRouter = router({
       exploredFeatures: context.exploredFeatures,
       undiscoveredFeatures: context.undiscoveredFeatures,
       recentActivity: context.recentActivity,
+      userLayer: context.userLayer,
+      streak: context.streak,
     };
+  }),
+
+  // ── AI-generated proficiency insights ───────────────────────────
+  getInsights: protectedProcedure.query(async ({ ctx }) => {
+    await recalculateProficiency(ctx.user.id);
+    return generateAIInsights(ctx.user.id, ctx.user.role || "user");
+  }),
+
+  // ── Adaptive onboarding checklist ───────────────────────────────
+  getOnboardingChecklist: protectedProcedure.query(async ({ ctx }) => {
+    await recalculateProficiency(ctx.user.id);
+    return generateOnboardingChecklist(ctx.user.id, ctx.user.role || "user");
+  }),
+
+  // ── Dismiss onboarding (mark as seen) ───────────────────────────
+  dismissOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+    await trackEvent({
+      userId: ctx.user.id,
+      eventType: "onboarding_dismissed",
+      featureKey: "chat",
+      metadata: { dismissed: true },
+    });
+    return { success: true };
+  }),
+
+  // ── Changelog feed with unread count ────────────────────────────
+  getChangelogFeed: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+    .query(async ({ ctx, input }) => {
+      return getChangelogFeed(ctx.user.id, input?.limit || 20);
+    }),
+
+  // ── Get unread changelog count (lightweight) ────────────────────
+  getUnreadChangelogCount: protectedProcedure.query(async ({ ctx }) => {
+    const { unreadCount } = await getChangelogFeed(ctx.user.id, 50);
+    return { unreadCount };
+  }),
+
+  // ── Mark changelog as read ──────────────────────────────────────
+  markChangelogRead: protectedProcedure
+    .input(z.object({
+      changelogId: z.number(),
+      via: z.enum(["ai_chat", "notification", "changelog_page", "onboarding"]).default("changelog_page"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await markChangelogInformed(ctx.user.id, input.changelogId, input.via);
+      return { success: true };
+    }),
+
+  // ── Mark all changelog as read ──────────────────────────────────
+  markAllChangelogRead: protectedProcedure.mutation(async ({ ctx }) => {
+    const { entries } = await getChangelogFeed(ctx.user.id, 50);
+    const unread = entries.filter(e => !e.isRead);
+    for (const entry of unread) {
+      await markChangelogInformed(ctx.user.id, entry.id, "changelog_page");
+    }
+    return { success: true, marked: unread.length };
   }),
 
   // ── Get feature catalog ─────────────────────────────────────────
@@ -86,21 +149,16 @@ export const exponentialEngineRouter = router({
       key: f.key,
       label: f.label,
       category: f.category,
+      layer: f.layer,
       description: f.description,
       roles: f.roles,
     }));
   }),
 
-  // ── Mark changelog as informed ──────────────────────────────────
-  markChangelogRead: protectedProcedure
-    .input(z.object({
-      changelogId: z.number(),
-      via: z.enum(["ai_chat", "notification", "changelog_page", "onboarding"]).default("ai_chat"),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      await markChangelogInformed(ctx.user.id, input.changelogId, input.via);
-      return { success: true };
-    }),
+  // ── Get layer hierarchy ─────────────────────────────────────────
+  getLayerHierarchy: publicProcedure.query(() => {
+    return LAYER_HIERARCHY;
+  }),
 
   // ── Admin: Add changelog entry ──────────────────────────────────
   addChangelog: adminProcedure
