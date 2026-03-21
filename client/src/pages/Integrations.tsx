@@ -36,6 +36,7 @@ type Connection = {
   lastSyncStatus: string | null;
   lastSyncError: string | null;
   recordsSynced: number | null;
+  credentialsEncrypted?: string | null;
   createdAt: Date;
 };
 
@@ -83,15 +84,20 @@ function ProviderCard({
   onConnect,
   onDisconnect,
   onSync,
+  onTest,
 }: {
   provider: Provider;
   connection?: Connection;
   onConnect: (provider: Provider) => void;
   onDisconnect: (connectionId: string) => void;
   onSync: (connectionId: string) => void;
+  onTest: (connectionId: string) => void;
 }) {
   const isConnected = connection?.status === "connected";
+  const isPending = connection?.status === "pending" || connection?.status === "pending_api_key";
+  const hasError = connection?.status === "error";
   const [syncing, setSyncing] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   return (
     <Card className={`transition-all hover:shadow-md ${isConnected ? "border-emerald-500/30" : ""}`}>
@@ -120,19 +126,35 @@ function ProviderCard({
         {connection && (
           <div className="mb-4 rounded-lg bg-muted/50 p-3 space-y-1">
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Last sync</span>
-              <span>{connection.lastSyncAt ? new Date(connection.lastSyncAt).toLocaleString() : "Never"}</span>
+              <span className="text-muted-foreground">Status</span>
+              <StatusBadge status={connection.status} />
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Records synced</span>
-              <span>{connection.recordsSynced?.toLocaleString() || 0}</span>
+              <span className="text-muted-foreground">API Key</span>
+              <span className="font-mono text-xs">{connection.credentialsEncrypted ? "•••••••• (configured)" : "Not set"}</span>
             </div>
+            {isConnected && (
+              <>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Last sync</span>
+                  <span>{connection.lastSyncAt ? new Date(connection.lastSyncAt).toLocaleString() : "Never"}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Records synced</span>
+                  <span>{connection.recordsSynced?.toLocaleString() || 0}</span>
+                </div>
+              </>
+            )}
             {connection.lastSyncError && (
               <div className="flex justify-between text-xs">
                 <span className="text-destructive">Error</span>
                 <span className="text-destructive truncate max-w-[200px]">{connection.lastSyncError}</span>
               </div>
             )}
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Connected</span>
+              <span>{new Date(connection.createdAt).toLocaleDateString()}</span>
+            </div>
           </div>
         )}
 
@@ -160,6 +182,30 @@ function ProviderCard({
               >
                 <Unlink className="h-3.5 w-3.5 mr-1" />
                 Disconnect
+              </Button>
+            </>
+          ) : (isPending || hasError) && connection ? (
+            <>
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  setTesting(true);
+                  onTest(connection.id);
+                  setTimeout(() => setTesting(false), 12000);
+                }}
+                disabled={testing}
+              >
+                {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+                {hasError ? "Retry Test" : "Verify Connection"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDisconnect(connection.id)}
+              >
+                <Unlink className="h-3.5 w-3.5 mr-1" />
+                Remove
               </Button>
             </>
           ) : (
@@ -379,10 +425,26 @@ export default function Integrations() {
   );
 
   // Mutations
-  const createConnection = trpc.integrations.createConnection.useMutation({
-    onSuccess: () => {
-      toast.success("Connection created successfully");
+  const testConnectionMutation = trpc.integrations.testConnection.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(`${data.message} (${data.latencyMs}ms)`);
+      } else {
+        toast.error(data.message);
+      }
       refetchConnections();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const createConnection = trpc.integrations.createConnection.useMutation({
+    onSuccess: (data) => {
+      toast.success("Connection created — verifying API key...");
+      refetchConnections();
+      // Auto-test the connection immediately after creation
+      if (data?.id) {
+        testConnectionMutation.mutate({ connectionId: data.id });
+      }
     },
     onError: (e) => toast.error(e.message),
   });
@@ -554,6 +616,9 @@ export default function Integrations() {
                       }}
                       onSync={(id) => {
                         syncMutation.mutate({ connectionId: id, syncType: "incremental" });
+                      }}
+                      onTest={(id) => {
+                        testConnectionMutation.mutate({ connectionId: id });
                       }}
                     />
                   ))}

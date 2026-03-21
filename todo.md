@@ -2241,3 +2241,25 @@
 - [x] Generate and set INTEGRATION_ENCRYPTION_KEY (auto-generated, validated with 3 tests)
 - [x] Audit all integrations by 5-layer hierarchy and free-tier status
 - [x] Deliver prioritized integration guide organized by layer
+
+## Integration Connection Fix (March 21, 2026)
+- [ ] Fix: Connected integrations (BLS, FRED, BEA, Census) showing as "pending" instead of "connected"
+- [ ] Fix: API keys not visible after connection — show masked key and connection status
+- [ ] Fix: No indication of how/where connected integrations are being used
+- [ ] Wire connected government API integrations into actual data fetching endpoints
+
+## Government API Integration Connection Fixes
+- [x] Fix credential key normalization (api_key vs apiKey vs access_token)
+- [x] Implement proper query-parameter auth for Census Bureau (?key=)
+- [x] Implement proper query-parameter auth for FRED (?api_key=)
+- [x] Implement proper POST body auth for BLS (registrationkey)
+- [x] Implement proper query-parameter auth for BEA (?UserID=)
+- [x] Add auto-test after connection creation (verify credentials immediately)
+- [x] Add "Verify Connection" / "Retry Test" buttons for pending/error connections
+- [x] Add masked credential indicator in connection details (shows "configured" or "Not set")
+- [x] Return credential existence flag from listConnections API
+- [x] Add connection date display in connection details panel
+- [x] Show status badge inside connection details panel
+- [x] Handle 200 responses with error body (some APIs return 200 with error JSON)
+- [x] 20 new integration connection tests (1,266 total tests passing)
+- [x] 0 TypeScript errors

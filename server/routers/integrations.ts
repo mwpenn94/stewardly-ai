@@ -94,7 +94,7 @@ export const integrationsRouter = router({
 
       return visible.map(c => ({
         ...c,
-        credentialsEncrypted: undefined, // Never expose credentials
+        credentialsEncrypted: c.credentialsEncrypted ? "[encrypted]" : null, // Indicate if credentials exist without exposing them
         provider: providerMap.get(c.providerId) || null,
       }));
     }),
@@ -223,45 +223,95 @@ export const integrationsRouter = router({
 
       const start = Date.now();
       try {
-        // Decrypt credentials for the test
         if (!conn.credentialsEncrypted) {
           return { success: false, message: "No credentials configured", latencyMs: 0 };
         }
         const creds = decryptCredentials(conn.credentialsEncrypted);
+        // Normalize credential key: frontend stores as api_key, some code expects apiKey
+        const apiKey = (creds.api_key || creds.apiKey || creds.access_token || "") as string;
 
-        // Provider-specific lightweight test
+        // Provider-specific test endpoints with correct auth methods
         let testUrl = "";
         const headers: Record<string, string> = {};
+        let fetchOpts: RequestInit = { headers, signal: AbortSignal.timeout(10000) };
 
-        if (provider.slug === "smsit") {
-          testUrl = "https://tool-it.smsit.ai/api/user";
-          headers["Authorization"] = `Bearer ${creds.apiKey}`;
-        } else if (provider.baseUrl) {
-          testUrl = provider.baseUrl;
-          if (creds.apiKey) headers["Authorization"] = `Bearer ${creds.apiKey}`;
-        } else {
-          // For providers without a test endpoint, just verify credentials exist
-          const latencyMs = Date.now() - start;
-          await db.update(integrationConnections)
-            .set({ status: "connected" })
-            .where(eq(integrationConnections.id, input.connectionId));
-          return { success: true, message: "Credentials verified (no test endpoint available)", latencyMs };
+        switch (provider.slug) {
+          case "census-bureau":
+            // Census uses ?key= query param
+            testUrl = `https://api.census.gov/data/2021/acs/acs5?get=NAME&for=state:01&key=${apiKey}`;
+            break;
+          case "bls":
+            // BLS v2 uses registrationkey in POST body
+            testUrl = "https://api.bls.gov/publicAPI/v2/timeseries/data/";
+            headers["Content-Type"] = "application/json";
+            fetchOpts = {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ seriesid: ["CUUR0000SA0"], startyear: "2024", endyear: "2024", registrationkey: apiKey }),
+              signal: AbortSignal.timeout(10000),
+            };
+            break;
+          case "fred":
+            // FRED uses ?api_key= query param
+            testUrl = `https://api.stlouisfed.org/fred/series?series_id=GDP&api_key=${apiKey}&file_type=json`;
+            break;
+          case "bea":
+            // BEA uses ?UserID= query param
+            testUrl = `https://apps.bea.gov/api/data?&UserID=${apiKey}&method=GETDATASETLIST&ResultFormat=JSON`;
+            break;
+          case "sec-edgar":
+            // SEC EDGAR is free, no key needed — just test the endpoint
+            testUrl = "https://efts.sec.gov/LATEST/search-index?q=test&dateRange=custom&startdt=2024-01-01&enddt=2024-01-02";
+            break;
+          case "finra-brokercheck":
+            // FINRA BrokerCheck is free, no key needed
+            testUrl = "https://api.brokercheck.finra.org/search/individual?query=test&start=0&rows=1";
+            break;
+          case "smsit":
+            testUrl = "https://tool-it.smsit.ai/api/user";
+            headers["Authorization"] = `Bearer ${apiKey}`;
+            break;
+          default:
+            if (provider.baseUrl) {
+              testUrl = provider.baseUrl;
+              if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+            } else {
+              // No test endpoint — just verify credentials exist
+              const latencyMs = Date.now() - start;
+              if (apiKey) {
+                await db.update(integrationConnections)
+                  .set({ status: "connected" })
+                  .where(eq(integrationConnections.id, input.connectionId));
+                return { success: true, message: "Credentials verified (no test endpoint available)", latencyMs };
+              }
+              return { success: false, message: "No credentials found", latencyMs };
+            }
         }
 
-        const resp = await fetch(testUrl, { headers, signal: AbortSignal.timeout(10000) });
+        const resp = await fetch(testUrl, fetchOpts);
         const latencyMs = Date.now() - start;
 
-        if (resp.ok || resp.status === 401) {
-          // 401 means the endpoint exists but creds may be wrong
-          const success = resp.ok;
+        // Check response — government APIs return 200 with error messages in body
+        if (resp.ok) {
+          const text = await resp.text();
+          // Some APIs return 200 but with error in body (e.g., BEA returns error JSON)
+          const hasError = text.toLowerCase().includes('"error"') && text.toLowerCase().includes('invalid');
+          const success = !hasError;
           await db.update(integrationConnections)
-            .set({ status: success ? "connected" : "error" })
+            .set({ status: success ? "connected" : "error", lastSyncError: success ? null : "Invalid API key" })
             .where(eq(integrationConnections.id, input.connectionId));
           return {
             success,
-            message: success ? "Connection successful" : "Authentication failed",
+            message: success ? "Connection successful — API key verified" : "API key appears invalid",
             latencyMs,
           };
+        }
+
+        if (resp.status === 401 || resp.status === 403) {
+          await db.update(integrationConnections)
+            .set({ status: "error", lastSyncError: "Authentication failed" })
+            .where(eq(integrationConnections.id, input.connectionId));
+          return { success: false, message: "Authentication failed — check your API key", latencyMs };
         }
 
         await db.update(integrationConnections)
