@@ -30,17 +30,43 @@ interface ChangelogBellProps {
 
 export default function ChangelogBell({ collapsed = false }: ChangelogBellProps) {
   const { user } = useAuth();
+  const isGuest = !user || user.authTier === "anonymous";
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
 
+  // Guest: track which changelog IDs have been "read" in localStorage
+  const [guestReadIds, setGuestReadIds] = useState<Set<number>>(() => {
+    try {
+      const raw = localStorage.getItem("stewardly_guest_changelog_read");
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  const markGuestRead = (id: number) => {
+    setGuestReadIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      localStorage.setItem("stewardly_guest_changelog_read", JSON.stringify(Array.from(next)));
+      return next;
+    });
+  };
+
+  const markAllGuestRead = () => {
+    if (feedQuery.data?.entries) {
+      const allIds = feedQuery.data.entries.map(e => e.id);
+      setGuestReadIds(new Set(allIds));
+      localStorage.setItem("stewardly_guest_changelog_read", JSON.stringify(allIds));
+    }
+  };
+
+  // Queries work for both guests (public endpoints) and authenticated users
   const unreadQuery = trpc.exponentialEngine.getUnreadChangelogCount.useQuery(undefined, {
-    enabled: !!user && user.authTier !== "anonymous",
-    refetchInterval: 60_000, // Check every minute
+    refetchInterval: 60_000,
   });
 
   const feedQuery = trpc.exponentialEngine.getChangelogFeed.useQuery(undefined, {
-    enabled: !!user && user.authTier !== "anonymous" && isOpen,
+    enabled: isOpen,
   });
 
   const markReadMutation = trpc.exponentialEngine.markChangelogRead.useMutation({
@@ -70,10 +96,16 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
     }
   }, [isOpen]);
 
-  if (!user || user.authTier === "anonymous") return null;
-
-  const unreadCount = unreadQuery.data?.unreadCount || 0;
-  const entries = feedQuery.data?.entries || [];
+  const entriesRaw = feedQuery.data?.entries || [];
+  // For guests, compute unread count from localStorage tracking
+  const serverUnread = unreadQuery.data?.unreadCount || 0;
+  const guestUnreadCount = isGuest && entriesRaw.length > 0
+    ? entriesRaw.filter(e => !guestReadIds.has(e.id)).length
+    : 0;
+  const unreadCount = isGuest ? guestUnreadCount : serverUnread;
+  const entries = isGuest
+    ? entriesRaw.map(e => ({ ...e, isRead: guestReadIds.has(e.id) }))
+    : entriesRaw;
 
   return (
     <div className="relative" ref={panelRef}>
@@ -120,8 +152,8 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
                       variant="ghost"
                       size="icon"
                       className="w-7 h-7"
-                      onClick={() => markAllReadMutation.mutate()}
-                      disabled={markAllReadMutation.isPending}
+                      onClick={() => isGuest ? markAllGuestRead() : markAllReadMutation.mutate()}
+                      disabled={!isGuest && markAllReadMutation.isPending}
                     >
                       <CheckCheck className="w-3.5 h-3.5" />
                     </Button>
@@ -187,7 +219,7 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
                             <TooltipTrigger asChild>
                               <button
                                 className="mt-1 p-1 rounded hover:bg-muted shrink-0"
-                                onClick={() => markReadMutation.mutate({ changelogId: entry.id, via: "changelog_page" })}
+                                onClick={() => isGuest ? markGuestRead(entry.id) : markReadMutation.mutate({ changelogId: entry.id, via: "changelog_page" })}
                               >
                                 <Check className="w-3 h-3 text-muted-foreground" />
                               </button>

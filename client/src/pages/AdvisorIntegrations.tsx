@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { navigateToChat } from "@/lib/navigateToChat";
-import { Plug, Link2, Unlink, RefreshCw, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Plug, Link2, Unlink, RefreshCw, CheckCircle, XCircle, Clock, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 
 export default function AdvisorIntegrations() {
   const [tab, setTab] = useState("my-connections");
@@ -32,6 +33,7 @@ export default function AdvisorIntegrations() {
 
   return (
     <div className="space-y-6">
+      <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
       <div>
         <h1 className="text-2xl font-bold">My Integrations</h1>
         <p className="text-muted-foreground">Connect your accounts to enable real-time data sync and automation</p>

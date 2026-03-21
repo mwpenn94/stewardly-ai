@@ -1474,8 +1474,9 @@ export default function Chat() {
                           />
                         )}
                         <div className="flex items-center gap-2 mt-1">
-                          {msg.id && (
-                            <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                          {msg.content && (
+                            <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover/msg:opacity-100 transition-opacity">
+                              {msg.id && (<>
                               <Tooltip><TooltipTrigger asChild>
                                 <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => handleFeedback(msg.id, "up")}>
                                   <ThumbsUp className="w-4 h-4" />
@@ -1486,6 +1487,7 @@ export default function Chat() {
                                   <ThumbsDown className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Bad response</TooltipContent></Tooltip>
+                              </>)}
                               <Tooltip><TooltipTrigger asChild>
                                 <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
                                   <Copy className="w-4 h-4" />

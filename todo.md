@@ -2193,3 +2193,27 @@
 - [x] Wire 5-layer proficiency + onboarding context into AI system prompt
 - [x] Register /proficiency route and add to sidebar navigation
 - [x] Write tests for all new features (56 tests, all passing; 1211 total)
+
+## Navigation Fix — All Pages (March 21, 2026)
+- [x] Fix Proficiency Dashboard (/proficiency) — already has sticky header with back navigation to /chat
+- [x] Audit all standalone pages for consistent navigation (back button or sidebar)
+
+## Guest Proficiency & Navigation Fixes (March 21, 2026)
+- [x] Backend: Guest-aware exponential engine with session-based tracking (not persisted to DB)
+- [x] Backend: tRPC endpoints allow public/guest access with session fallback for proficiency
+- [x] Frontend: Proficiency Dashboard accessible to guests (session data, sign-in prompt to persist)
+- [x] Frontend: Onboarding Widget works for guests with session-based progress
+- [x] Frontend: Tracking hook supports guest sessions (localStorage-based)
+- [x] Frontend: AI learning/training/personalization leverages guest interactions on all 5 layers
+- [x] Fix nav: ImprovementEngine (/improvement) — added back button
+- [x] Fix nav: KnowledgeAdmin (/admin/knowledge) — added back button
+- [x] Fix nav: AdminIntegrations (/admin/integrations) — added back button
+- [x] Fix nav: AdvisorIntegrations (/my-integrations) — added back button
+- [x] Fix nav: SuitabilityPanel (/suitability-panel) — added back button
+- [x] Fix nav: ProficiencyDashboard unauthenticated state — already has back button
+- [x] Write tests for guest proficiency features (1225 tests, all passing)
+
+## Chat Audio & Message Actions Fix (March 21, 2026)
+- [x] Fix chat audio playback in hands-free mode (rewritten useTTS with audio unlock, retry, processing cues)
+- [x] Implement chat message action buttons (copy, regenerate, read aloud, infographic — visible for all messages)
+- [x] Audible cues for hands-free mode processing status (tone cues in useTTS hook)

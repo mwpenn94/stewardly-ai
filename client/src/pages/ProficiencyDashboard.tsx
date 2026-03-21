@@ -1,11 +1,12 @@
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useLocation } from "wouter";
 import {
   ArrowLeft, Brain, ChevronRight, Flame, Layers, Lightbulb,
   Sparkles, Target, TrendingUp, Zap, CheckCircle, Circle,
-  BarChart3, BookOpen, Shield, Users, Globe, Briefcase,
+  BarChart3, BookOpen, Shield, Users, Globe, Briefcase, LogIn,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -39,34 +40,50 @@ const OVERALL_LABELS: Record<string, { label: string; color: string }> = {
   power_user: { label: "Power User", color: "text-violet-400" },
 };
 
+const FEATURE_ROUTES: Record<string, string> = {
+  chat: "/chat", voice_mode: "/chat", focus_mode: "/chat",
+  suitability: "/suitability", style_profile: "/settings/profile",
+  intelligence_hub: "/intelligence-hub", advisory_hub: "/advisory",
+  relationships_hub: "/relationships", operations_hub: "/operations",
+  documents: "/documents", calculators: "/calculators",
+  integrations: "/integrations", ai_settings: "/ai-settings",
+  ai_layers: "/ai-settings", knowledge_base: "/admin/knowledge",
+  admin_users: "/admin", admin_organizations: "/organizations",
+  admin_compliance: "/operations", improvement_engine: "/improvement",
+  manager_dashboard: "/manager", portal: "/portal", market_data: "/market-data",
+};
+
+/** Read guest session events from localStorage */
+function getGuestSessionEvents(): { featureKey: string; eventType: string; count: number; durationMs: number; lastUsed: number }[] {
+  try {
+    const raw = localStorage.getItem("stewardly_guest_events");
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
 export default function ProficiencyDashboard() {
   const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
 
-  const proficiency = trpc.exponentialEngine.getProficiency.useQuery(undefined, {
-    enabled: !!user && user.authTier !== "anonymous",
-  });
-  const insights = trpc.exponentialEngine.getInsights.useQuery(undefined, {
-    enabled: !!user && user.authTier !== "anonymous",
-  });
+  const isGuest = !user || user.authTier === "anonymous";
+
+  // Stabilize guest session events for query input
+  const [guestEvents] = useState(() => getGuestSessionEvents());
+
+  const proficiency = trpc.exponentialEngine.getProficiency.useQuery(
+    isGuest ? { sessionEvents: guestEvents } : undefined,
+    { staleTime: 30_000 },
+  );
+  const insights = trpc.exponentialEngine.getInsights.useQuery(
+    isGuest ? { sessionEvents: guestEvents } : undefined,
+    { staleTime: 60_000 },
+  );
 
   if (authLoading) {
     return <DashboardSkeleton />;
-  }
-
-  if (!user || user.authTier === "anonymous") {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6 text-center space-y-4">
-            <Brain className="w-12 h-12 text-accent mx-auto" />
-            <h2 className="text-xl font-heading font-semibold">Sign in to view your progress</h2>
-            <p className="text-sm text-muted-foreground">Track your platform proficiency and get personalized AI recommendations.</p>
-            <Button onClick={() => window.location.href = getLoginUrl()}>Sign In</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
   }
 
   const prof = proficiency.data;
@@ -83,18 +100,48 @@ export default function ProficiencyDashboard() {
           </Button>
           <div className="flex-1">
             <h1 className="text-lg font-heading font-semibold">Proficiency Dashboard</h1>
-            <p className="text-xs text-muted-foreground">Your platform mastery across all 5 layers</p>
+            <p className="text-xs text-muted-foreground">
+              {isGuest ? "Guest session — sign in to save progress" : "Your platform mastery across all 5 layers"}
+            </p>
           </div>
-          {prof && (
-            <Badge variant="outline" className={`${overallInfo.color} border-current/30`}>
-              <Sparkles className="w-3 h-3 mr-1" />
-              {overallInfo.label}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {prof && (
+              <Badge variant="outline" className={`${overallInfo.color} border-current/30`}>
+                <Sparkles className="w-3 h-3 mr-1" />
+                {overallInfo.label}
+              </Badge>
+            )}
+            {isGuest && (
+              <Badge variant="outline" className="text-amber-400 border-amber-500/30 bg-amber-500/10">
+                Guest
+              </Badge>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Guest CTA Banner */}
+        {isGuest && (
+          <Card className="border-accent/20 bg-gradient-to-r from-accent/5 to-violet-500/5">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                <LogIn className="w-5 h-5 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Your progress is session-based</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Sign in to persist your proficiency data, unlock all 5 layers, and get personalized AI recommendations that improve over time.
+                </p>
+              </div>
+              <Button size="sm" onClick={() => window.location.href = getLoginUrl()} className="shrink-0">
+                <LogIn className="w-3.5 h-3.5 mr-1.5" />
+                Sign In
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Summary Row */}
         {proficiency.isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -118,13 +165,13 @@ export default function ProficiencyDashboard() {
               icon={<Flame className="w-4 h-4 text-orange-400" />}
               label="Usage Streak"
               value={`${prof.streak} day${prof.streak !== 1 ? "s" : ""}`}
-              sub={prof.streak > 3 ? "Keep it going!" : "Build momentum"}
+              sub={isGuest ? "Sign in to track streaks" : prof.streak > 3 ? "Keep it going!" : "Build momentum"}
             />
             <StatCard
               icon={<Layers className="w-4 h-4 text-violet-400" />}
               label="Active Layer"
               value={prof.userLayer.layerLabel}
-              sub={`${prof.userLayer.accessibleLayers.length} layers accessible`}
+              sub={isGuest ? "Client layer (guest)" : `${prof.userLayer.accessibleLayers.length} layers accessible`}
             />
           </div>
         )}
@@ -136,6 +183,11 @@ export default function ProficiencyDashboard() {
               <CardTitle className="text-base flex items-center gap-2">
                 <Lightbulb className="w-4 h-4 text-accent" />
                 AI Insights
+                {isGuest && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                    Guest Preview
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription className="text-sm">{ins.summary}</CardDescription>
             </CardHeader>
@@ -149,21 +201,11 @@ export default function ProficiencyDashboard() {
                       <button
                         key={i}
                         onClick={() => {
-                          const feature = step.feature;
-                          // Navigate to the feature's page
-                          const featureRoutes: Record<string, string> = {
-                            chat: "/chat", voice_mode: "/chat", focus_mode: "/chat",
-                            suitability: "/suitability", style_profile: "/settings/profile",
-                            intelligence_hub: "/intelligence-hub", advisory_hub: "/advisory",
-                            relationships_hub: "/relationships", operations_hub: "/operations",
-                            documents: "/documents", calculators: "/calculators",
-                            integrations: "/integrations", ai_settings: "/ai-settings",
-                            ai_layers: "/ai-settings", knowledge_base: "/admin/knowledge",
-                            admin_users: "/admin", admin_organizations: "/organizations",
-                            admin_compliance: "/operations", improvement_engine: "/improvement",
-                            manager_dashboard: "/manager", portal: "/portal", market_data: "/market-data",
-                          };
-                          navigate(featureRoutes[feature] || "/chat");
+                          if (step.action.includes("Create an account") || step.action.includes("Sign in")) {
+                            window.location.href = getLoginUrl();
+                          } else {
+                            navigate(FEATURE_ROUTES[step.feature] || "/chat");
+                          }
                         }}
                         className="w-full flex items-start gap-3 p-3 rounded-lg bg-card/50 border border-border/50 hover:border-accent/30 hover:bg-card transition-all text-left group"
                       >
@@ -223,7 +265,11 @@ export default function ProficiencyDashboard() {
                 <Layers className="w-4 h-4" />
                 5-Layer Exploration Map
               </CardTitle>
-              <CardDescription>Your progress across each platform layer</CardDescription>
+              <CardDescription>
+                {isGuest
+                  ? "Guest access is limited to the Client layer — sign in to unlock all 5 layers"
+                  : "Your progress across each platform layer"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

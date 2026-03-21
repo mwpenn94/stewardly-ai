@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { navigateToChat } from "@/lib/navigateToChat";
-import { Plug, Search, RefreshCw, Activity, AlertTriangle, CheckCircle, XCircle, Settings2 } from "lucide-react";
+import { Plug, Search, RefreshCw, Activity, AlertTriangle, CheckCircle, XCircle, Settings2, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 
 export default function AdminIntegrations() {
   const [search, setSearch] = useState("");
@@ -36,6 +37,7 @@ export default function AdminIntegrations() {
 
   return (
     <div className="space-y-6">
+      <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Integration Management</h1>

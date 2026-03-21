@@ -858,6 +858,219 @@ export async function markChangelogInformed(
   }
 }
 
+// ─── GUEST-AWARE PROFICIENCY (Session-Based) ──────────────────────────────
+
+/**
+ * Build proficiency context for a guest user based on session data.
+ * Session data is passed from the frontend (localStorage-based tracking).
+ * No DB writes — purely computed from the provided session events.
+ */
+export function assembleGuestContext(sessionData: {
+  events: { featureKey: string; eventType: string; count: number; durationMs: number; lastUsed: number }[];
+}): ExponentialContext {
+  const guestLayer: UserLayerContext = {
+    activeLayer: "client",
+    layerLabel: "Client",
+    accessibleLayers: ["client"],
+  };
+
+  // Guest can only see features available to "user" role at client layer
+  const accessibleFeatures = FEATURE_CATALOG.filter(f => f.roles.includes("user"));
+  const totalFeatures = accessibleFeatures.length;
+
+  const eventMap = new Map(sessionData.events.map(e => [e.featureKey, e]));
+
+  const explored: ExponentialContext["exploredFeatures"] = [];
+  const undiscovered: ExponentialContext["undiscoveredFeatures"] = [];
+  let totalInteractions = 0;
+
+  for (const feature of accessibleFeatures) {
+    const event = eventMap.get(feature.key);
+    if (event && event.count > 0) {
+      const rawScore = calculateRawScore(event.count, event.durationMs);
+      const level = calculateProficiencyLevel(rawScore);
+      explored.push({
+        key: feature.key,
+        label: feature.label,
+        level,
+        score: rawScore,
+        layer: feature.layer,
+      });
+      totalInteractions += event.count;
+    } else {
+      undiscovered.push({
+        key: feature.key,
+        label: feature.label,
+        description: feature.description,
+        layer: feature.layer,
+      });
+    }
+  }
+
+  // Recent activity from session
+  const recentActivity = sessionData.events
+    .filter(e => e.count > 0)
+    .sort((a, b) => b.lastUsed - a.lastUsed)
+    .slice(0, 10)
+    .map(e => {
+      const catalog = FEATURE_CATALOG.find(f => f.key === e.featureKey);
+      const daysAgo = Math.floor((Date.now() - e.lastUsed) / (24 * 60 * 60 * 1000));
+      return { featureKey: e.featureKey, label: catalog?.label || e.featureKey, daysAgo };
+    });
+
+  // Overall proficiency
+  const avgScore = explored.length > 0
+    ? explored.reduce((sum, e) => sum + e.score, 0) / explored.length
+    : 0;
+  let overallProficiency = "new_user";
+  if (explored.length === 0) overallProficiency = "new_user";
+  else if (avgScore < 15) overallProficiency = "beginner";
+  else if (avgScore < 40) overallProficiency = "intermediate";
+  else if (avgScore < 70) overallProficiency = "advanced";
+  else overallProficiency = "power_user";
+
+  const promptFragment = buildExponentialPrompt({
+    overallProficiency,
+    totalInteractions,
+    explored,
+    undiscovered,
+    recentActivity,
+    newUpdates: [],
+    userRole: "user",
+    userLayer: guestLayer,
+    streak: 0,
+  });
+
+  return {
+    overallProficiency,
+    totalInteractions,
+    featuresExplored: explored.length,
+    featuresTotal: totalFeatures,
+    exploredFeatures: explored,
+    undiscoveredFeatures: undiscovered,
+    recentActivity,
+    newUpdates: [],
+    userLayer: guestLayer,
+    streak: 0,
+    promptFragment,
+  };
+}
+
+/**
+ * Generate insights for a guest user based on session data.
+ */
+export function generateGuestInsights(sessionData: {
+  events: { featureKey: string; eventType: string; count: number; durationMs: number; lastUsed: number }[];
+}): ProficiencyInsight {
+  const context = assembleGuestContext(sessionData);
+
+  const layerProgress = LAYER_HIERARCHY
+    .filter(l => l.key === "client")
+    .map(l => {
+      const layerFeatures = FEATURE_CATALOG.filter(f => f.layer === l.key && f.roles.includes("user"));
+      const explored = context.exploredFeatures.filter(f => f.layer === l.key).length;
+      return {
+        layer: l.label,
+        explored,
+        total: layerFeatures.length,
+        percentage: layerFeatures.length > 0 ? Math.round((explored / layerFeatures.length) * 100) : 0,
+      };
+    });
+
+  const strengths = context.exploredFeatures.filter(f => f.score >= 55).map(f => f.label);
+  const growthAreas = [
+    ...context.exploredFeatures.filter(f => f.score < 30 && f.score > 0).map(f => `${f.label} (needs more practice)`),
+    ...context.undiscoveredFeatures.filter(f => f.layer === "client").slice(0, 3).map(f => `${f.label} (not yet explored)`),
+  ];
+
+  const nextSteps: ProficiencyInsight["nextSteps"] = [];
+  const clientUndiscovered = context.undiscoveredFeatures.filter(f => f.layer === "client");
+  for (const f of clientUndiscovered.slice(0, 3)) {
+    nextSteps.push({ action: `Try ${f.label}`, feature: f.key, layer: f.layer, reason: f.description });
+  }
+
+  // Always suggest signing in as a next step for guests
+  nextSteps.push({
+    action: "Create an account to save your progress",
+    feature: "chat",
+    layer: "client",
+    reason: "Sign in to persist your proficiency data, unlock personalized AI recommendations, and access all 5 layers",
+  });
+
+  const summary = context.overallProficiency === "new_user"
+    ? `Welcome to Stewardly! Explore the platform as a guest — sign in anytime to save your progress.`
+    : `You've explored ${context.featuresExplored} of ${context.featuresTotal} features as a guest. Sign in to persist your progress and unlock all layers!`;
+
+  return {
+    summary,
+    strengths: strengths.slice(0, 5),
+    growthAreas: growthAreas.slice(0, 5),
+    nextSteps: nextSteps.slice(0, 5),
+    layerProgress,
+  };
+}
+
+/**
+ * Generate onboarding checklist for a guest user based on session data.
+ */
+export function generateGuestOnboardingChecklist(sessionData: {
+  events: { featureKey: string; eventType: string; count: number; durationMs: number; lastUsed: number }[];
+}): OnboardingItem[] {
+  const exploredKeys = new Set(sessionData.events.filter(e => e.count > 0).map(e => e.featureKey));
+
+  // Guest only gets client-layer onboarding actions
+  const guestActions: Omit<OnboardingItem, "completed">[] = [
+    { id: "ob-chat", title: "Have your first AI conversation", description: "Ask Stewardly anything to get started", featureKey: "chat", layer: "client", href: "/chat", priority: 1 },
+    { id: "ob-suitability", title: "Complete your suitability profile", description: "Help the AI understand your financial situation and goals", featureKey: "suitability", layer: "client", href: "/suitability", priority: 2 },
+    { id: "ob-voice", title: "Try voice mode", description: "Have a hands-free conversation with the AI", featureKey: "voice_mode", layer: "client", href: "/chat", priority: 3 },
+    { id: "ob-docs", title: "Upload a document", description: "Give the AI context from your files", featureKey: "documents", layer: "client", href: "/documents", priority: 4 },
+    { id: "ob-calc", title: "Run a financial calculator", description: "Try the IUL projection or retirement aggregator", featureKey: "calculators", layer: "client", href: "/calculators", priority: 5 },
+    { id: "ob-focus", title: "Switch focus modes", description: "Try Financial, General, or Study focus", featureKey: "focus_mode", layer: "client", href: "/chat", priority: 6 },
+    { id: "ob-signin", title: "Create an account", description: "Save your progress and unlock all 5 layers", featureKey: "chat", layer: "client", href: "/signin", priority: 7 },
+  ];
+
+  const checklist: OnboardingItem[] = guestActions.map(item => ({
+    ...item,
+    completed: item.id === "ob-signin" ? false : exploredKeys.has(item.featureKey),
+  }));
+
+  checklist.sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    return a.priority - b.priority;
+  });
+
+  return checklist;
+}
+
+/**
+ * Get changelog feed for guests (no read tracking, all entries are "unread")
+ */
+export async function getGuestChangelogFeed(limit: number = 20): Promise<{ entries: ChangelogEntry[]; unreadCount: number }> {
+  const db = await getDb();
+  if (!db) return { entries: [], unreadCount: 0 };
+
+  try {
+    const allEntries = await db
+      .select({
+        id: platformChangelog.id,
+        version: platformChangelog.version,
+        title: platformChangelog.title,
+        description: platformChangelog.description,
+        changeType: platformChangelog.changeType,
+        announcedAt: platformChangelog.announcedAt,
+      })
+      .from(platformChangelog)
+      .orderBy(desc(platformChangelog.announcedAt))
+      .limit(limit);
+
+    const entries: ChangelogEntry[] = allEntries.map(e => ({ ...e, isRead: false }));
+    return { entries, unreadCount: entries.length };
+  } catch (e) {
+    console.error("[ExponentialEngine] getGuestChangelogFeed error:", e);
+    return { entries: [], unreadCount: 0 };
+  }
+}
+
 export async function addChangelogEntry(params: {
   version: string;
   title: string;

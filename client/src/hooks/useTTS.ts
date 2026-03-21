@@ -24,7 +24,17 @@ export interface TTSReturn {
   cancel: () => void;
   /** Guard ref — true while TTS is playing (use to block recognition) */
   guardRef: React.MutableRefObject<boolean>;
+  /** Play an audible processing cue */
+  playCue: (type: "listening" | "thinking" | "speaking" | "done") => void;
 }
+
+// ─── Audio cue frequencies ──────────────────────────────────────────
+const AUDIO_CUES = {
+  listening: { freq: 440, duration: 150, gain: 0.08 },
+  thinking: { freq: 330, duration: 200, gain: 0.06 },
+  speaking: { freq: 520, duration: 100, gain: 0.06 },
+  done: { freq: 660, duration: 120, gain: 0.07 },
+};
 
 /**
  * Clean markdown/formatting from text for natural speech (browser fallback only).
@@ -69,6 +79,40 @@ function chunkText(text: string, maxWords = 200): string[] {
   return chunks;
 }
 
+/**
+ * Unlock AudioContext on first user interaction.
+ * Browsers require a user gesture before audio can play.
+ */
+let audioContextUnlocked = false;
+function ensureAudioUnlocked() {
+  if (audioContextUnlocked) return;
+  try {
+    const ctx = new AudioContext();
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+    ctx.close();
+    audioContextUnlocked = true;
+  } catch {
+    // Ignore — will retry on next user interaction
+  }
+}
+
+// Unlock on any user interaction
+if (typeof window !== "undefined") {
+  const unlock = () => {
+    ensureAudioUnlocked();
+    window.removeEventListener("click", unlock);
+    window.removeEventListener("touchstart", unlock);
+    window.removeEventListener("keydown", unlock);
+  };
+  window.addEventListener("click", unlock, { once: true });
+  window.addEventListener("touchstart", unlock, { once: true });
+  window.addEventListener("keydown", unlock, { once: true });
+}
+
 export function useTTS({
   enabled,
   voice = "aria",
@@ -88,6 +132,28 @@ export function useTTS({
 
   const speakMutation = trpc.voice.speak.useMutation();
 
+  /**
+   * Play an audible processing cue (short tone).
+   */
+  const playCue = useCallback((type: "listening" | "thinking" | "speaking" | "done") => {
+    try {
+      const cue = AUDIO_CUES[type];
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = cue.freq;
+      gain.gain.setValueAtTime(cue.gain, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + cue.duration / 1000);
+      osc.start();
+      osc.stop(ctx.currentTime + cue.duration / 1000);
+      setTimeout(() => ctx.close(), cue.duration + 100);
+    } catch {
+      // AudioContext not available
+    }
+  }, []);
+
   const cancel = useCallback(() => {
     cancelledRef.current = true;
     // Cancel browser synthesis
@@ -95,7 +161,8 @@ export function useTTS({
     // Cancel audio element
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.src = "";
+      audioRef.current.currentTime = 0;
+      try { audioRef.current.src = ""; } catch { /* ignore */ }
       audioRef.current = null;
     }
     guardRef.current = false;
@@ -121,6 +188,9 @@ export function useTTS({
       const audio = new Audio(url);
       audioRef.current = audio;
 
+      // Set volume to ensure audibility
+      audio.volume = 1.0;
+
       audio.onplay = () => {
         if (cancelledRef.current) {
           audio.pause();
@@ -133,10 +203,12 @@ export function useTTS({
         audioRef.current = null;
         guardRef.current = false;
         setIsSpeaking(false);
+        playCue("done");
         onEndRef.current?.();
       };
 
-      audio.onerror = () => {
+      audio.onerror = (e) => {
+        console.warn("[TTS] Audio playback error:", e);
         URL.revokeObjectURL(url);
         audioRef.current = null;
         guardRef.current = false;
@@ -144,16 +216,30 @@ export function useTTS({
         onEndRef.current?.();
       };
 
-      audio.play().catch(() => {
-        // Autoplay blocked — clean up
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-        guardRef.current = false;
-        setIsSpeaking(false);
-        onEndRef.current?.();
+      // Play with retry — if autoplay is blocked, try after a short delay
+      audio.play().catch((err) => {
+        console.warn("[TTS] Autoplay blocked, retrying...", err.message);
+        // Retry once after a short delay (some browsers need this)
+        setTimeout(() => {
+          if (cancelledRef.current) {
+            URL.revokeObjectURL(url);
+            audioRef.current = null;
+            guardRef.current = false;
+            setIsSpeaking(false);
+            onEndRef.current?.();
+            return;
+          }
+          audio.play().catch(() => {
+            console.warn("[TTS] Retry failed, falling back to browser TTS");
+            URL.revokeObjectURL(url);
+            audioRef.current = null;
+            // Don't reset speaking state — let the browser fallback handle it
+            return "fallback";
+          });
+        }, 100);
       });
     },
-    []
+    [playCue]
   );
 
   /**
@@ -187,27 +273,33 @@ export function useTTS({
           utterance.onend = () => {
             guardRef.current = false;
             setIsSpeaking(false);
+            playCue("done");
+            onEndRef.current?.();
+          };
+          utterance.onerror = () => {
+            guardRef.current = false;
+            setIsSpeaking(false);
             onEndRef.current?.();
           };
         }
         window.speechSynthesis.speak(utterance);
       });
     },
-    [rate]
+    [rate, playCue]
   );
 
   /**
-   * Main speak function — tries Edge TTS server first, falls back to browser.
+   * Core speak implementation — shared by speak() and forceSpeak()
    */
-  const speak = useCallback(
+  const doSpeak = useCallback(
     (text: string) => {
-      if (!enabled) return;
       cancel();
       cancelledRef.current = false;
 
       guardRef.current = true;
       setIsSpeaking(true);
       onStartRef.current?.();
+      playCue("speaking");
 
       // Try Edge TTS via server
       speakMutation.mutate(
@@ -231,7 +323,18 @@ export function useTTS({
         }
       );
     },
-    [enabled, cancel, voice, speakMutation, playEdgeAudio, speakWithBrowser]
+    [cancel, voice, speakMutation, playEdgeAudio, speakWithBrowser, playCue]
+  );
+
+  /**
+   * Main speak function — respects enabled flag.
+   */
+  const speak = useCallback(
+    (text: string) => {
+      if (!enabled) return;
+      doSpeak(text);
+    },
+    [enabled, doSpeak]
   );
 
   // Cancel on unmount
@@ -249,34 +352,10 @@ export function useTTS({
    */
   const forceSpeak = useCallback(
     (text: string) => {
-      cancel();
-      cancelledRef.current = false;
-
-      guardRef.current = true;
-      setIsSpeaking(true);
-      onStartRef.current?.();
-
-      speakMutation.mutate(
-        { text, voice: voice as any },
-        {
-          onSuccess: (data) => {
-            if (cancelledRef.current) return;
-            if (data.audio) {
-              playEdgeAudio(data.audio);
-            } else {
-              speakWithBrowser(text);
-            }
-          },
-          onError: () => {
-            if (cancelledRef.current) return;
-            console.info("[TTS] Edge TTS unavailable, using browser fallback");
-            speakWithBrowser(text);
-          },
-        }
-      );
+      doSpeak(text);
     },
-    [cancel, voice, speakMutation, playEdgeAudio, speakWithBrowser]
+    [doSpeak]
   );
 
-  return { isSpeaking, speak, forceSpeak, cancel, guardRef };
+  return { isSpeaking, speak, forceSpeak, cancel, guardRef, playCue };
 }
