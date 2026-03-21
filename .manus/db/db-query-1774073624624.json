@@ -1,0 +1,220 @@
+{
+  "query": "SELECT slug, name, category, ownership_tier, auth_method, base_url, free_tier_limit, description FROM integration_providers ORDER BY ownership_tier, category;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT slug, name, category, ownership_tier, auth_method, base_url, free_tier_limit, description FROM integration_providers ORDER BY ownership_tier, category;",
+  "rows": [
+    {
+      "slug": "plaid-investments",
+      "name": "Plaid",
+      "category": "investments",
+      "ownership_tier": "platform",
+      "auth_method": "api_key",
+      "base_url": "https://production.plaid.com",
+      "free_tier_limit": "100 sandbox items",
+      "description": "Financial account aggregation for investment accounts, balances, and transactions."
+    },
+    {
+      "slug": "morningstar-data",
+      "name": "Morningstar Data",
+      "category": "investments",
+      "ownership_tier": "platform",
+      "auth_method": "api_key",
+      "base_url": "https://api.morningstar.com/v2",
+      "free_tier_limit": "500 calls/month",
+      "description": "Investment research data including fund ratings, performance, and portfolio analytics."
+    },
+    {
+      "slug": "yodlee-aggregation",
+      "name": "Yodlee (Envestnet)",
+      "category": "investments",
+      "ownership_tier": "platform",
+      "auth_method": "oauth2",
+      "base_url": "https://production.api.yodlee.com/ysl",
+      "free_tier_limit": "Sandbox only",
+      "description": "Financial data aggregation covering 17,000+ financial institutions worldwide."
+    },
+    {
+      "slug": "census-bureau",
+      "name": "US Census Bureau",
+      "category": "demographics",
+      "ownership_tier": "platform",
+      "auth_method": "api_key",
+      "base_url": "https://api.census.gov/data",
+      "free_tier_limit": "500 requests/day",
+      "description": "Demographic data including population, income, education, and housing statistics."
+    },
+    {
+      "slug": "fred-data",
+      "name": "FRED (Federal Reserve)",
+      "category": "economic",
+      "ownership_tier": "platform",
+      "auth_method": "api_key",
+      "base_url": "https://api.stlouisfed.org/fred",
+      "free_tier_limit": "120 requests/min",
+      "description": "Economic data including interest rates, GDP, unemployment, and monetary policy indicators."
+    },
+    {
+      "slug": "bls-data",
+      "name": "Bureau of Labor Statistics",
+      "category": "economic",
+      "ownership_tier": "platform",
+      "auth_method": "api_key",
+      "base_url": "https://api.bls.gov/publicAPI/v2",
+      "free_tier_limit": "500 queries/day",
+      "description": "Employment, inflation (CPI), wages, and productivity data."
+    },
+    {
+      "slug": "fullstory-enrichment",
+      "name": "FullStory",
+      "category": "enrichment",
+      "ownership_tier": "platform",
+      "auth_method": "api_key",
+      "base_url": "https://api.fullstory.com",
+      "free_tier_limit": "1,000 sessions/month",
+      "description": "Digital experience analytics with session replay and behavioral insights."
+    },
+    {
+      "slug": "finra-brokercheck",
+      "name": "FINRA BrokerCheck",
+      "category": "regulatory",
+      "ownership_tier": "platform",
+      "auth_method": "none",
+      "base_url": "https://api.brokercheck.finra.org",
+      "free_tier_limit": "Rate limited",
+      "description": "Broker and advisor background verification, disciplinary history, and registration status."
+    },
+    {
+      "slug": "sec-edgar",
+      "name": "SEC EDGAR",
+      "category": "regulatory",
+      "ownership_tier": "platform",
+      "auth_method": "none",
+      "base_url": "https://efts.sec.gov/LATEST",
+      "free_tier_limit": "10 requests/sec",
+      "description": "SEC filings, company disclosures, and regulatory documents."
+    },
+    {
+      "slug": "zillow-property",
+      "name": "Zillow (Bridge Interactive)",
+      "category": "property",
+      "ownership_tier": "platform",
+      "auth_method": "api_key",
+      "base_url": "https://api.bridgedataoutput.com/api/v2",
+      "free_tier_limit": "1,000 calls/day",
+      "description": "Property valuation, listing data, and real estate market analytics."
+    },
+    {
+      "slug": "hubspot-crm",
+      "name": "HubSpot CRM",
+      "category": "crm",
+      "ownership_tier": "organization",
+      "auth_method": "oauth2",
+      "base_url": "https://api.hubapi.com",
+      "free_tier_limit": "Unlimited contacts",
+      "description": "Free CRM with contact management, deal tracking, and email integration."
+    },
+    {
+      "slug": "salesforce-crm",
+      "name": "Salesforce CRM",
+      "category": "crm",
+      "ownership_tier": "organization",
+      "auth_method": "oauth2",
+      "base_url": "https://login.salesforce.com",
+      "free_tier_limit": "30 days",
+      "description": "Enterprise CRM for client relationship management, pipeline tracking, and activity logging."
+    },
+    {
+      "slug": "sendgrid-email",
+      "name": "SendGrid",
+      "category": "messaging",
+      "ownership_tier": "organization",
+      "auth_method": "api_key",
+      "base_url": "https://api.sendgrid.com/v3",
+      "free_tier_limit": "100 emails/day",
+      "description": "Transactional and marketing email delivery with analytics and templates."
+    },
+    {
+      "slug": "twilio-messaging",
+      "name": "Twilio",
+      "category": "messaging",
+      "ownership_tier": "organization",
+      "auth_method": "api_key",
+      "base_url": "https://api.twilio.com/2010-04-01",
+      "free_tier_limit": "$15.50 credit",
+      "description": "Programmable SMS, voice, and WhatsApp messaging for client communications."
+    },
+    {
+      "slug": "vertafore-ams360",
+      "name": "Vertafore AMS360",
+      "category": "carrier",
+      "ownership_tier": "organization",
+      "auth_method": "api_key",
+      "base_url": "https://api.vertafore.com",
+      "free_tier_limit": "NULL",
+      "description": "Insurance agency management with carrier connectivity and commission tracking."
+    },
+    {
+      "slug": "applied-epic",
+      "name": "Applied Epic",
+      "category": "carrier",
+      "ownership_tier": "organization",
+      "auth_method": "oauth2",
+      "base_url": "https://api.appliedsystems.com",
+      "free_tier_limit": "NULL",
+      "description": "Insurance agency management system for policy administration, accounting, and client management."
+    },
+    {
+      "slug": "ipipeline-insurance",
+      "name": "iPipeline",
+      "category": "insurance",
+      "ownership_tier": "organization",
+      "auth_method": "api_key",
+      "base_url": "https://api.ipipeline.com",
+      "free_tier_limit": "NULL",
+      "description": "Life insurance quoting, e-application, and underwriting automation."
+    },
+    {
+      "slug": "zapier-middleware",
+      "name": "Zapier",
+      "category": "middleware",
+      "ownership_tier": "organization",
+      "auth_method": "api_key",
+      "base_url": "https://hooks.zapier.com",
+      "free_tier_limit": "100 tasks/month",
+      "description": "No-code automation platform connecting 6,000+ apps with triggers and actions."
+    },
+    {
+      "slug": "redtail-crm",
+      "name": "Redtail CRM",
+      "category": "crm",
+      "ownership_tier": "professional",
+      "auth_method": "api_key",
+      "base_url": "https://api.redtailtechnology.com/crm/v1",
+      "free_tier_limit": "30 days",
+      "description": "Financial services CRM with compliance archiving and workflow automation."
+    },
+    {
+      "slug": "wealthbox-crm",
+      "name": "Wealthbox CRM",
+      "category": "crm",
+      "ownership_tier": "professional",
+      "auth_method": "api_key",
+      "base_url": "https://api.wealthbox.com/v1",
+      "free_tier_limit": "14 days",
+      "description": "Purpose-built CRM for financial advisors with compliance workflows and client portal."
+    },
+    {
+      "slug": "apollo",
+      "name": "Apollo.io",
+      "category": "enrichment",
+      "ownership_tier": "professional",
+      "auth_method": "api_key",
+      "base_url": "https://api.apollo.io/api/v1",
+      "free_tier_limit": "10000 credits/month",
+      "description": "People and company enrichment platform with verified emails, phone numbers, employment history, and company data. 10,000 free credits/month per API key."
+    }
+  ],
+  "messages": [],
+  "stdout": "slug\tname\tcategory\townership_tier\tauth_method\tbase_url\tfree_tier_limit\tdescription\nplaid-investments\tPlaid\tinvestments\tplatform\tapi_key\thttps://production.plaid.com\t100 sandbox items\tFinancial account aggregation for investment accounts, balances, and transactions.\nmorningstar-data\tMorningstar Data\tinvestments\tplatform\tapi_key\thttps://api.morningstar.com/v2\t500 calls/month\tInvestment research data including fund ratings, performance, and portfolio analytics.\nyodlee-aggregation\tYodlee (Envestnet)\tinvestments\tplatform\toauth2\thttps://production.api.yodlee.com/ysl\tSandbox only\tFinancial data aggregation covering 17,000+ financial institutions worldwide.\ncensus-bureau\tUS Census Bureau\tdemographics\tplatform\tapi_key\thttps://api.census.gov/data\t500 requests/day\tDemographic data including population, income, education, and housing statistics.\nfred-data\tFRED (Federal Reserve)\teconomic\tplatform\tapi_key\thttps://api.stlouisfed.org/fred\t120 requests/min\tEconomic data including interest rates, GDP, unemployment, and monetary policy indicators.\nbls-data\tBureau of Labor Statistics\teconomic\tplatform\tapi_key\thttps://api.bls.gov/publicAPI/v2\t500 queries/day\tEmployment, inflation (CPI), wages, and productivity data.\nfullstory-enrichment\tFullStory\tenrichment\tplatform\tapi_key\thttps://api.fullstory.com\t1,000 sessions/month\tDigital experience analytics with session replay and behavioral insights.\nfinra-brokercheck\tFINRA BrokerCheck\tregulatory\tplatform\tnone\thttps://api.brokercheck.finra.org\tRate limited\tBroker and advisor background verification, disciplinary history, and registration status.\nsec-edgar\tSEC EDGAR\tregulatory\tplatform\tnone\thttps://efts.sec.gov/LATEST\t10 requests/sec\tSEC filings, company disclosures, and regulatory documents.\nzillow-property\tZillow (Bridge Interactive)\tproperty\tplatform\tapi_key\thttps://api.bridgedataoutput.com/api/v2\t1,000 calls/day\tProperty valuation, listing data, and real estate market analytics.\nhubspot-crm\tHubSpot CRM\tcrm\torganization\toauth2\thttps://api.hubapi.com\tUnlimited contacts\tFree CRM with contact management, deal tracking, and email integration.\nsalesforce-crm\tSalesforce CRM\tcrm\torganization\toauth2\thttps://login.salesforce.com\t30 days\tEnterprise CRM for client relationship management, pipeline tracking, and activity logging.\nsendgrid-email\tSendGrid\tmessaging\torganization\tapi_key\thttps://api.sendgrid.com/v3\t100 emails/day\tTransactional and marketing email delivery with analytics and templates.\ntwilio-messaging\tTwilio\tmessaging\torganization\tapi_key\thttps://api.twilio.com/2010-04-01\t$15.50 credit\tProgrammable SMS, voice, and WhatsApp messaging for client communications.\nvertafore-ams360\tVertafore AMS360\tcarrier\torganization\tapi_key\thttps://api.vertafore.com\tNULL\tInsurance agency management with carrier connectivity and commission tracking.\napplied-epic\tApplied Epic\tcarrier\torganization\toauth2\thttps://api.appliedsystems.com\tNULL\tInsurance agency management system for policy administration, accounting, and client management.\nipipeline-insurance\tiPipeline\tinsurance\torganization\tapi_key\thttps://api.ipipeline.com\tNULL\tLife insurance quoting, e-application, and underwriting automation.\nzapier-middleware\tZapier\tmiddleware\torganization\tapi_key\thttps://hooks.zapier.com\t100 tasks/month\tNo-code automation platform connecting 6,000+ apps with triggers and actions.\nredtail-crm\tRedtail CRM\tcrm\tprofessional\tapi_key\thttps://api.redtailtechnology.com/crm/v1\t30 days\tFinancial services CRM with compliance archiving and workflow automation.\nwealthbox-crm\tWealthbox CRM\tcrm\tprofessional\tapi_key\thttps://api.wealthbox.com/v1\t14 days\tPurpose-built CRM for financial advisors with compliance workflows and client portal.\napollo\tApollo.io\tenrichment\tprofessional\tapi_key\thttps://api.apollo.io/api/v1\t10000 credits/month\tPeople and company enrichment platform with verified emails, phone numbers, employment history, and company data. 10,000 free credits/month per API key.\n",
+  "stderr": "",
+  "execution_time_ms": 104
+}

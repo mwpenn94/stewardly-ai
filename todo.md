@@ -2144,3 +2144,11 @@
 - [x] AdvisorIntegrations: 2 buttons (disconnect, connect OAuth) → wire to real action or chat
 - [x] AISettings: 1 button (feature coming soon) → wire to real action or chat
 - [x] GlobalAdmin: 1 button (org management coming soon) → wire to real action or chat
+
+## Integration Audit & Access Control
+- [x] Audit all integration providers — identify which are live vs need credentials
+- [x] Fix data connection access control to enforce role hierarchy (admin > manager > professional > user > guest)
+- [x] Ensure guests cannot access/modify platform-level or organization-level data connections
+- [x] Admins can access and affect all tiers; each lower role can only access their own tier
+- [x] Block guest users from setting up data connections for higher layers
+- [x] Compile comprehensive credentials reference with signup links for all 21 integration providers
