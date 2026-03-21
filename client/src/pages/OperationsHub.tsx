@@ -117,7 +117,7 @@ function QuickStat({ icon: Icon, label, value, color }: { icon: any; label: stri
 
 function ActiveWorkSection() {
   const workflows = { data: undefined, isLoading: false }; // Workflows are managed via chat AI
-  const gateReviews = trpc.agentic?.gate?.list?.useQuery?.({} as any) ?? { data: undefined, isLoading: false };
+  const gateReviews = trpc.agentic.gate.list.useQuery({ status: "pending" as const, limit: 10 });
 
   return (
     <div className="space-y-4">
@@ -170,7 +170,7 @@ function ActiveWorkSection() {
             </div>
           ) : (
             <div className="space-y-2">
-              {(gateReviews.data as any)?.reviews?.slice(0, 5)?.map((review: any) => (
+              {(gateReviews.data ?? []).slice(0, 5).map((review: any) => (
                 <div key={review.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div className="flex items-center gap-3">
                     <Eye className="h-4 w-4 text-amber-500" />

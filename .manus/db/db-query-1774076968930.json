@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM integration_providers WHERE slug IN ('bls-data', 'fred-data', 'plaid-investments', 'fullstory-enrichment', 'morningstar-data', 'yodlee-aggregation', 'zillow-property', 'stewardly-firm');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute DELETE FROM integration_providers WHERE slug IN ('bls-data', 'fred-data', 'plaid-investments', 'fullstory-enrichment', 'morningstar-data', 'yodlee-aggregation', 'zillow-property', 'stewardly-firm');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 376
+}

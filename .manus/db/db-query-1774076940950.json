@@ -1,0 +1,28 @@
+{
+  "query": "SELECT id, slug, name, created_at FROM integration_providers WHERE slug IN ('bls', 'fred', 'plaid') ORDER BY slug, created_at;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT id, slug, name, created_at FROM integration_providers WHERE slug IN ('bls', 'fred', 'plaid') ORDER BY slug, created_at;",
+  "rows": [
+    {
+      "id": "1ae76935-1535-41c4-aa7c-6c2c3628e8a1",
+      "slug": "bls",
+      "name": "Bureau of Labor Statistics",
+      "created_at": "2026-03-21 06:48:19"
+    },
+    {
+      "id": "7439b231-eb08-4693-b9b8-470cf496acde",
+      "slug": "fred",
+      "name": "FRED (Federal Reserve Economic Data)",
+      "created_at": "2026-03-21 06:48:19"
+    },
+    {
+      "id": "cb6684db-3415-4d0b-a295-1e5dd4df960c",
+      "slug": "plaid",
+      "name": "Plaid",
+      "created_at": "2026-03-21 06:48:19"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tslug\tname\tcreated_at\n1ae76935-1535-41c4-aa7c-6c2c3628e8a1\tbls\tBureau of Labor Statistics\t2026-03-21 06:48:19\n7439b231-eb08-4693-b9b8-470cf496acde\tfred\tFRED (Federal Reserve Economic Data)\t2026-03-21 06:48:19\ncb6684db-3415-4d0b-a295-1e5dd4df960c\tplaid\tPlaid\t2026-03-21 06:48:19\n",
+  "stderr": "",
+  "execution_time_ms": 505
+}

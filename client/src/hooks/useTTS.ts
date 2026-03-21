@@ -16,8 +16,10 @@ export interface TTSOptions {
 
 export interface TTSReturn {
   isSpeaking: boolean;
-  /** Speak text — tries Edge TTS first, falls back to browser */
+  /** Speak text — tries Edge TTS first, falls back to browser. Respects enabled flag. */
   speak: (text: string) => void;
+  /** Speak text regardless of enabled flag — for explicit user actions like per-message read aloud */
+  forceSpeak: (text: string) => void;
   /** Cancel any current speech */
   cancel: () => void;
   /** Guard ref — true while TTS is playing (use to block recognition) */
@@ -242,5 +244,39 @@ export function useTTS({
     if (!enabled) cancel();
   }, [enabled, cancel]);
 
-  return { isSpeaking, speak, cancel, guardRef };
+  /**
+   * Force speak — bypasses the enabled check for explicit user actions (e.g. per-message read aloud button).
+   */
+  const forceSpeak = useCallback(
+    (text: string) => {
+      cancel();
+      cancelledRef.current = false;
+
+      guardRef.current = true;
+      setIsSpeaking(true);
+      onStartRef.current?.();
+
+      speakMutation.mutate(
+        { text, voice: voice as any },
+        {
+          onSuccess: (data) => {
+            if (cancelledRef.current) return;
+            if (data.audio) {
+              playEdgeAudio(data.audio);
+            } else {
+              speakWithBrowser(text);
+            }
+          },
+          onError: () => {
+            if (cancelledRef.current) return;
+            console.info("[TTS] Edge TTS unavailable, using browser fallback");
+            speakWithBrowser(text);
+          },
+        }
+      );
+    },
+    [cancel, voice, speakMutation, playEdgeAudio, speakWithBrowser]
+  );
+
+  return { isSpeaking, speak, forceSpeak, cancel, guardRef };
 }

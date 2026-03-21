@@ -31,7 +31,7 @@ const ORG_SEEDS: OrgSeedConfig[] = [
       accent: "#B8860B",    // Dark Gold
     },
     description: "Arizona-based wealth management firm specializing in comprehensive financial planning, insurance solutions, and estate planning with a focus on high-net-worth individuals and families.",
-    website: "https://wealthbridgeaz.com",
+    website: "https://stewardlyaz.com",
   },
   {
     name: "Stewardly",
@@ -43,7 +43,7 @@ const ORG_SEEDS: OrgSeedConfig[] = [
       accent: "#3B82F6",    // Blue accent
     },
     description: "National financial technology platform providing AI-powered advisory tools, digital financial twin modeling, and comprehensive wealth management solutions for advisors and their clients.",
-    website: "https://wealthbridge.com",
+    website: "https://stewardly.com",
   },
 ];
 

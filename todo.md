@@ -2144,3 +2144,22 @@
 - [x] AdvisorIntegrations: 2 buttons (disconnect, connect OAuth) → wire to real action or chat
 - [x] AISettings: 1 button (feature coming soon) → wire to real action or chat
 - [x] GlobalAdmin: 1 button (org management coming soon) → wire to real action or chat
+
+## Integration Audit & Access Control (March 21, 2026)
+- [x] Audit all integration providers — identify which are live vs need credentials
+- [x] Fix data connection access control to enforce role hierarchy (admin > manager > professional > user > guest)
+- [x] Ensure guests cannot access/modify platform-level or organization-level data connections
+- [x] Admins can access and affect all tiers; each lower role can only access their own tier
+- [x] Block guest users from setting up data connections for higher layers
+
+## Comprehensive App Audit & Fixes (March 21, 2026)
+- [x] Fix browser tab title to "Stewardly" (was "WealthBridge AI")
+- [x] Fix per-message TTS read aloud — works independently of global TTS toggle via forceSpeak
+- [x] Add follow-up suggestion pills after AI responses (3 contextual prompts via LLM)
+- [x] Add GoHighLevel integration provider (Organization tier, OAuth2)
+- [x] Add SMS-iT integration provider (Organization tier, bearer_token)
+- [x] Remove duplicate integration providers from database (30 unique providers)
+- [x] Remove self-referential stewardly-firm provider from seed file
+- [x] Fix all remaining WealthBridge references → Stewardly (code, database, seed data)
+- [x] Fix OperationsHub Pending Reviews data access pattern (flat array, not .reviews)
+- [x] Compile comprehensive credentials reference with signup links for all providers

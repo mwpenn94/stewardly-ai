@@ -390,12 +390,49 @@ const chatRouter = router({
         } catch { /* compliance logging is optional */ }
       })();
 
+      // Generate follow-up suggestions (non-blocking, best-effort)
+      let followUpSuggestions: string[] = [];
+      try {
+        const sugResp = await invokeLLM({
+          messages: [
+            { role: "system", content: "Based on this conversation, generate exactly 3 short follow-up questions the user might want to ask next. Each should be 5-12 words. Return ONLY a JSON object with a \"suggestions\" key containing an array of 3 strings." },
+            { role: "user", content: (typeof input.content === 'string' ? input.content : '').substring(0, 300) },
+            { role: "assistant", content: aiContent.substring(0, 500) },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "follow_up_suggestions",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  suggestions: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "3 follow-up question suggestions",
+                  },
+                },
+                required: ["suggestions"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const rawContent = sugResp.choices[0]?.message?.content;
+        const parsed = JSON.parse(typeof rawContent === "string" ? rawContent : "{}");
+        if (Array.isArray(parsed.suggestions)) {
+          followUpSuggestions = parsed.suggestions.slice(0, 3);
+        }
+      } catch { /* follow-up suggestions are optional */ }
+
       return {
         id: assistantMsg.id,
         content: aiContent,
         confidenceScore: confidence,
         complianceStatus,
         model: response.model,
+        followUpSuggestions,
       };
     }),
 });

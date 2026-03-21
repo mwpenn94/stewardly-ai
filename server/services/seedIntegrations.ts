@@ -58,12 +58,6 @@ const PROVIDERS = [
     freeTierLimit: "Partnership required",
   },
   {
-    id: uuid(), slug: "wealthbridge", name: "WealthBridge Financial", description: "Independent firm data via custodial integrations.", category: "investments" as const,
-    ownershipTier: "organization" as const, authMethod: "api_key" as const,
-    freeTierDescription: "Independent firm — data via custodial integrations (LPL, Schwab). No direct API.",
-    freeTierLimit: "Via custodian",
-  },
-  {
     id: uuid(), slug: "plaid", name: "Plaid", description: "Bank account linking, transaction data, and investment holdings.", category: "investments" as const,
     ownershipTier: "organization" as const, authMethod: "api_key" as const,
     baseUrl: "https://production.plaid.com",

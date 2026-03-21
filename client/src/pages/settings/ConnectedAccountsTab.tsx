@@ -256,7 +256,7 @@ export default function ConnectedAccountsTab() {
         <CardContent className="p-4">
           <h4 className="text-sm font-medium mb-2">How Data Merging Works</h4>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            When you connect multiple accounts, WealthBridge uses a confidence hierarchy to determine
+            When you connect multiple accounts, Stewardly uses a confidence hierarchy to determine
             which data source is most authoritative for each field. For example, LinkedIn is the most
             trusted source for employer and job title (95% confidence), while Google is preferred for
             phone and birthday (90% confidence). Lower-confidence data never overwrites higher-confidence

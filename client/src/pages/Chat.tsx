@@ -385,6 +385,7 @@ export default function Chat() {
     return stored !== "false"; // Default ON
   });
 
+  const [followUpSuggestions, setFollowUpSuggestions] = useState<string[]>([]);
   // ─── REFS ──────────────────────────────────────────────────────
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -640,6 +641,7 @@ export default function Chat() {
     const userMsg = { role: "user" as const, content: trimmed, createdAt: new Date() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
+    setFollowUpSuggestions([]);
     setIsStreaming(true);
 
     try {
@@ -712,6 +714,11 @@ export default function Chat() {
         createdAt: new Date(),
       };
       setMessages(prev => [...prev, assistantMsg]);
+
+      // Set follow-up suggestions if returned
+      if (result.followUpSuggestions && result.followUpSuggestions.length > 0) {
+        setFollowUpSuggestions(result.followUpSuggestions);
+      }
 
       if (ttsEnabled) {
         tts.speak(result.content);
@@ -1479,7 +1486,7 @@ export default function Chat() {
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Copy</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.speak(msg.content)}>
+                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.forceSpeak(msg.content)}>
                                   <Volume2 className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Read aloud</TooltipContent></Tooltip>
@@ -1528,6 +1535,24 @@ export default function Chat() {
                     messageCount={anonChat.totalMessages}
                     compact
                   />
+                </div>
+              )}
+              {/* Follow-up suggestion pills */}
+              {followUpSuggestions.length > 0 && !isStreaming && (
+                <div className="flex flex-wrap gap-2 px-2 py-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {followUpSuggestions.map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setFollowUpSuggestions([]);
+                        setInput(suggestion);
+                        setTimeout(() => handleSendWithText(suggestion), 100);
+                      }}
+                      className="px-3 py-1.5 text-xs rounded-full border border-accent/30 bg-accent/5 text-accent hover:bg-accent/15 hover:border-accent/50 transition-all cursor-pointer"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
                 </div>
               )}
               <div ref={messagesEndRef} />
