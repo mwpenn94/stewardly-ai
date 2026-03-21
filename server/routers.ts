@@ -12,6 +12,7 @@ import { nanoid } from "nanoid";
 import { generateSpeech, getVoiceCatalog } from "./edgeTTS";
 import { callDataApi } from "./_core/dataApi";
 import { SEARCH_TOOLS, executeSearchTool } from "./webSearch";
+import { ALL_AI_TOOLS, executeAITool } from "./aiToolCalling";
 import {
   createConversation, getUserConversations, getConversation, deleteConversation,
   updateConversationTitle, searchConversations, getConversationContext,
@@ -178,6 +179,16 @@ const chatRouter = router({
         ? `${systemPrompt}\n\n${layerOverlay}`
         : systemPrompt;
 
+      // C13: Knowledge base context injection
+      try {
+        const { searchArticles } = await import("./services/knowledgeBase");
+        const kbResults = await searchArticles(input.content, { limit: 3 });
+        if (kbResults.length > 0) {
+          const kbContext = kbResults.map(a => `[KB: ${a.title}] ${a.content.slice(0, 500)}`).join("\n");
+          fullSystemPrompt += `\n\n## Knowledge Base Context\n${kbContext}`;
+        }
+      } catch { /* KB not available, skip */ }
+
       // Use resolved temperature/maxTokens if available
       // Creativity slider overrides temperature when set
       const llmTemperature = resolvedConfig?.creativity ?? resolvedConfig?.temperature ?? 0.7;
@@ -196,11 +207,17 @@ const chatRouter = router({
         })),
       ];
 
-      // Invoke LLM with search tools enabled for financial research
-      const useTools = hasFinancial || input.content.toLowerCase().match(/\b(compare|lookup|research|price|rate|stock|etf|fund|carrier|product|provider)\b/);
+      // Invoke LLM with search + calculator/model tools
+      const contentLower = input.content.toLowerCase();
+      const useSearchTools = hasFinancial || contentLower.match(/\b(compare|lookup|research|price|rate|stock|etf|fund|carrier|product|provider)\b/);
+      const useCalcTools = contentLower.match(/\b(calculat|project|estimat|iul|premium finance|retirement|debt|tax|estate|student loan|portfolio|insurance|suitab|behavioral)\b/);
+      const activeTools = [
+        ...(useSearchTools ? SEARCH_TOOLS : []),
+        ...(useCalcTools ? ALL_AI_TOOLS : []),
+      ];
       const response = await invokeLLM({
         messages: llmMessages,
-        ...(useTools ? { tools: SEARCH_TOOLS, tool_choice: "auto" as const } : {}),
+        ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "auto" as const } : {}),
       });
 
       let aiContent = "";
@@ -216,7 +233,9 @@ const chatRouter = router({
         for (const toolCall of firstChoice.tool_calls) {
           try {
             const args = JSON.parse(toolCall.function.arguments);
-            const result = await executeSearchTool(toolCall.function.name, args);
+            const result = toolCall.function.name.startsWith("calc_") || toolCall.function.name.startsWith("model_")
+              ? await executeAITool(toolCall.function.name, args)
+              : await executeSearchTool(toolCall.function.name, args);
             toolMessages.push({
               role: "tool",
               tool_call_id: toolCall.id,
@@ -1151,6 +1170,10 @@ import { fileProcessingRouter } from "./routers/fileProcessing";
 import { authEnrichmentRouter } from "./routers/authEnrichment";
 import { notificationsRouter } from "./routers/notifications";
 import { reportsRouter } from "./routers/reports";
+import { knowledgeBaseRouter } from "./routers/knowledgeBase";
+import { aiPlatformRouter } from "./routers/aiPlatform";
+import { operationsRouter } from "./routers/operations";
+import { addendumFeaturesRouter } from "./routers/addendumFeatures";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1242,6 +1265,10 @@ export const appRouter = router({
   notifications: notificationsRouter,
   reports: reportsRouter,
   exports: exportsRouter,
+  knowledgeBase: knowledgeBaseRouter,
+  aiPlatform: aiPlatformRouter,
+  operations: operationsRouter,
+  addendum: addendumFeaturesRouter,
 });
 
 export type AppRouter = typeof appRouter;

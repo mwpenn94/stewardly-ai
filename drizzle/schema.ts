@@ -2495,3 +2495,837 @@ export const authEnrichmentLog = mysqlTable("auth_enrichment_log", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type AuthEnrichmentLogEntry = typeof authEnrichmentLog.$inferSelect;
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ADDENDUM TABLES — Tasks #21-57: Every Criterion to 5.0
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Task #21: Prompt A/B Testing + Regression ───────────────────────────
+export const promptExperimentResults = mysqlTable("prompt_experiment_results", {
+  id: int("id").autoincrement().primaryKey(),
+  experimentName: varchar("experiment_name", { length: 256 }).notNull(),
+  variantAId: int("variant_a_id").notNull(),
+  variantBId: int("variant_b_id").notNull(),
+  totalSamples: int("total_samples").default(0),
+  variantAPositive: int("variant_a_positive").default(0),
+  variantBPositive: int("variant_b_positive").default(0),
+  variantAAvgLatency: float("variant_a_avg_latency"),
+  variantBAvgLatency: float("variant_b_avg_latency"),
+  pValue: float("p_value"),
+  significanceReached: mysqlBoolean("significance_reached").default(false),
+  winnerId: int("winner_id"),
+  autoPromoted: mysqlBoolean("auto_promoted").default(false),
+  status: mysqlEnum("status", ["running", "completed", "cancelled"]).default("running"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+export type PromptExperimentResult = typeof promptExperimentResults.$inferSelect;
+
+export const promptGoldenTests = mysqlTable("prompt_golden_tests", {
+  id: int("id").autoincrement().primaryKey(),
+  promptText: text("prompt_text").notNull(),
+  expectedResponsePattern: text("expected_response_pattern").notNull(),
+  category: varchar("category", { length: 64 }).default("general"),
+  complianceMustPass: mysqlBoolean("compliance_must_pass").default(true),
+  minSimilarityScore: float("min_similarity_score").default(0.7),
+  isActive: mysqlBoolean("is_active").default(true),
+  lastTestedAt: timestamp("last_tested_at"),
+  lastPassedAt: timestamp("last_passed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PromptGoldenTest = typeof promptGoldenTests.$inferSelect;
+
+export const promptRegressionRuns = mysqlTable("prompt_regression_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  variantId: int("variant_id"),
+  totalTests: int("total_tests").default(0),
+  passedTests: int("passed_tests").default(0),
+  avgSimilarity: float("avg_similarity"),
+  compliancePassRate: float("compliance_pass_rate"),
+  qualityDrop: mysqlBoolean("quality_drop").default(false),
+  promotionBlocked: mysqlBoolean("promotion_blocked").default(false),
+  runAt: timestamp("run_at").defaultNow().notNull(),
+});
+export type PromptRegressionRun = typeof promptRegressionRuns.$inferSelect;
+
+// ─── Task #22: Compliance Pre-Screening ──────────────────────────────────
+export const compliancePrescreening = mysqlTable("compliance_prescreening", {
+  id: int("id").autoincrement().primaryKey(),
+  messageId: int("message_id").notNull(),
+  conversationId: int("conversation_id").notNull(),
+  checkType: mysqlEnum("check_type", ["unsuitable_recommendation", "promissory_language", "unauthorized_practice", "concentration_risk", "missing_disclosure"]).notNull(),
+  severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).default("low"),
+  details: text("details"),
+  actionTaken: mysqlEnum("action_taken", ["passed", "warning_injected", "held_for_review"]).default("passed"),
+  reviewedBy: int("reviewed_by"),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type CompliancePrescreeningEntry = typeof compliancePrescreening.$inferSelect;
+
+export const conversationComplianceScores = mysqlTable("conversation_compliance_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversation_id").notNull(),
+  score: int("score").default(100),
+  checksRun: int("checks_run").default(0),
+  checksPassed: int("checks_passed").default(0),
+  flaggedForReview: mysqlBoolean("flagged_for_review").default(false),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+});
+export type ConversationComplianceScore = typeof conversationComplianceScores.$inferSelect;
+
+// ─── Task #23: Canary Deployments ────────────────────────────────────────
+export const deploymentChecks = mysqlTable("deployment_checks", {
+  id: int("id").autoincrement().primaryKey(),
+  checkType: varchar("check_type", { length: 64 }).notNull(),
+  passed: mysqlBoolean("passed").default(false),
+  details: text("details"),
+  durationMs: int("duration_ms"),
+  runAt: timestamp("run_at").defaultNow().notNull(),
+});
+export type DeploymentCheck = typeof deploymentChecks.$inferSelect;
+
+export const deploymentHistory = mysqlTable("deployment_history", {
+  id: int("id").autoincrement().primaryKey(),
+  version: varchar("version", { length: 64 }).notNull(),
+  description: text("description"),
+  testsPassed: int("tests_passed"),
+  testsTotal: int("tests_total"),
+  bundleSizeKb: int("bundle_size_kb"),
+  rolloutPercentage: int("rollout_percentage").default(5),
+  status: mysqlEnum("status", ["deploying", "canary", "rolling_out", "complete", "rolled_back"]).default("deploying"),
+  errorRate: float("error_rate"),
+  previousVersion: varchar("previous_version", { length: 64 }),
+  deployedBy: int("deployed_by"),
+  deployedAt: timestamp("deployed_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+export type DeploymentHistoryEntry = typeof deploymentHistory.$inferSelect;
+
+// ─── Task #24: Dynamic Knowledge Graph ───────────────────────────────────
+export const knowledgeGraphEntities = mysqlTable("knowledge_graph_entities", {
+  id: int("id").autoincrement().primaryKey(),
+  entityType: mysqlEnum("entity_type", ["person", "company", "product", "concept", "regulation", "account"]).notNull(),
+  canonicalName: varchar("canonical_name", { length: 512 }).notNull(),
+  aliases: json("aliases"),
+  metadata: json("metadata"),
+  lastVerified: timestamp("last_verified"),
+  confidence: float("confidence").default(1.0),
+  source: varchar("source", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type KnowledgeGraphEntity = typeof knowledgeGraphEntities.$inferSelect;
+
+export const knowledgeGraphEdges = mysqlTable("knowledge_graph_edges", {
+  id: int("id").autoincrement().primaryKey(),
+  fromEntityId: int("from_entity_id").notNull(),
+  toEntityId: int("to_entity_id").notNull(),
+  relationshipType: varchar("relationship_type", { length: 128 }).notNull(),
+  weight: float("weight").default(1.0),
+  validFrom: timestamp("valid_from"),
+  validUntil: timestamp("valid_until"),
+  source: varchar("source", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type KnowledgeGraphEdge = typeof knowledgeGraphEdges.$inferSelect;
+
+export const entityResolutionRules = mysqlTable("entity_resolution_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  pattern: varchar("pattern", { length: 512 }).notNull(),
+  canonicalEntityId: int("canonical_entity_id").notNull(),
+  confidence: float("confidence").default(0.9),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type EntityResolutionRule = typeof entityResolutionRules.$inferSelect;
+
+// ─── Task #25: What-If Scenarios + Backtesting ──────────────────────────
+export const modelScenarios = mysqlTable("model_scenarios", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  baseRunId: int("base_run_id"),
+  modelType: varchar("model_type", { length: 64 }).notNull(),
+  scenarioName: varchar("scenario_name", { length: 256 }).notNull(),
+  adjustedParams: json("adjusted_params"),
+  resultJson: json("result_json"),
+  comparisonNotes: text("comparison_notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ModelScenario = typeof modelScenarios.$inferSelect;
+
+export const modelBacktests = mysqlTable("model_backtests", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  modelType: varchar("model_type", { length: 64 }).notNull(),
+  historicalEvent: varchar("historical_event", { length: 128 }).notNull(),
+  eventYear: int("event_year").notNull(),
+  portfolioParams: json("portfolio_params"),
+  resultJson: json("result_json"),
+  maxDrawdown: float("max_drawdown"),
+  recoveryMonths: int("recovery_months"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ModelBacktest = typeof modelBacktests.$inferSelect;
+
+// ─── Task #26: Adaptive Context Management ──────────────────────────────
+export const contextAssemblyLog = mysqlTable("context_assembly_log", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversation_id").notNull(),
+  messageId: int("message_id"),
+  layer: varchar("layer", { length: 64 }).notNull(),
+  itemsConsidered: int("items_considered").default(0),
+  itemsIncluded: int("items_included").default(0),
+  itemsPruned: int("items_pruned").default(0),
+  tokenBudget: int("token_budget"),
+  tokensUsed: int("tokens_used"),
+  complexityLevel: mysqlEnum("complexity_level", ["simple", "moderate", "complex"]).default("moderate"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ContextAssemblyLogEntry = typeof contextAssemblyLog.$inferSelect;
+
+// ─── Task #27: Error Handling ────────────────────────────────────────────
+export const serverErrors = mysqlTable("server_errors", {
+  id: int("id").autoincrement().primaryKey(),
+  errorType: varchar("error_type", { length: 128 }).notNull(),
+  message: text("message"),
+  stack: text("stack"),
+  componentName: varchar("component_name", { length: 256 }),
+  userId: int("user_id"),
+  url: varchar("url", { length: 1024 }),
+  metadata: json("metadata"),
+  resolved: mysqlBoolean("resolved").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ServerError = typeof serverErrors.$inferSelect;
+
+// ─── Task #29: Calculator Persistence ────────────────────────────────────
+export const calculatorScenarios = mysqlTable("calculator_scenarios", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  calculatorType: varchar("calculator_type", { length: 64 }).notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  inputsJson: json("inputs_json"),
+  resultsJson: json("results_json"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type CalculatorScenario = typeof calculatorScenarios.$inferSelect;
+
+// ─── Task #30: Predictive Insights + Benchmarks ─────────────────────────
+export const predictiveTriggers = mysqlTable("predictive_triggers", {
+  id: int("id").autoincrement().primaryKey(),
+  triggerType: varchar("trigger_type", { length: 128 }).notNull(),
+  conditionJson: json("condition_json"),
+  actionType: varchar("action_type", { length: 64 }).notNull(),
+  actionJson: json("action_json"),
+  active: mysqlBoolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PredictiveTrigger = typeof predictiveTriggers.$inferSelect;
+
+export const benchmarkAggregates = mysqlTable("benchmark_aggregates", {
+  id: int("id").autoincrement().primaryKey(),
+  dimension: varchar("dimension", { length: 128 }).notNull(),
+  ageBracket: varchar("age_bracket", { length: 32 }),
+  incomeBracket: varchar("income_bracket", { length: 32 }),
+  percentile25: float("percentile_25"),
+  percentile50: float("percentile_50"),
+  percentile75: float("percentile_75"),
+  sampleSize: int("sample_size").default(0),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type BenchmarkAggregate = typeof benchmarkAggregates.$inferSelect;
+
+// ─── Task #31: Regulatory Change Monitor ─────────────────────────────────
+export const regulatoryUpdates = mysqlTable("regulatory_updates", {
+  id: int("id").autoincrement().primaryKey(),
+  source: varchar("source", { length: 128 }).notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  summary: text("summary"),
+  relevanceScore: float("relevance_score"),
+  categories: json("categories"),
+  actionRequired: mysqlBoolean("action_required").default(false),
+  reviewedBy: int("reviewed_by"),
+  publishedAt: timestamp("published_at"),
+  ingestedAt: timestamp("ingested_at").defaultNow().notNull(),
+});
+export type RegulatoryUpdate = typeof regulatoryUpdates.$inferSelect;
+
+export const disclaimerVersions = mysqlTable("disclaimer_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  topic: varchar("topic", { length: 128 }).notNull(),
+  disclaimerText: text("disclaimer_text").notNull(),
+  version: int("version").default(1),
+  effectiveDate: timestamp("effective_date").defaultNow().notNull(),
+  supersededBy: int("superseded_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type DisclaimerVersion = typeof disclaimerVersions.$inferSelect;
+
+export const disclaimerAudit = mysqlTable("disclaimer_audit", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversation_id").notNull(),
+  disclaimerId: int("disclaimer_id").notNull(),
+  disclaimerVersion: int("disclaimer_version").default(1),
+  shownAt: timestamp("shown_at").defaultNow().notNull(),
+});
+export type DisclaimerAuditEntry = typeof disclaimerAudit.$inferSelect;
+
+export const regulatoryAlerts = mysqlTable("regulatory_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  source: varchar("source", { length: 128 }).notNull(),
+  filingType: varchar("filing_type", { length: 64 }),
+  entity: varchar("entity", { length: 256 }),
+  relevanceToUser: text("relevance_to_user"),
+  summary: text("summary"),
+  alertSent: mysqlBoolean("alert_sent").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type RegulatoryAlert = typeof regulatoryAlerts.$inferSelect;
+
+// ─── Task #32: Role-Adaptive Onboarding ──────────────────────────────────
+export const onboardingProgress = mysqlTable("onboarding_progress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  path: mysqlEnum("path", ["advisor", "client", "admin"]).notNull(),
+  currentStep: int("current_step").default(0),
+  totalSteps: int("total_steps").default(5),
+  completedSteps: json("completed_steps"),
+  skippedBasics: mysqlBoolean("skipped_basics").default(false),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type OnboardingProgressEntry = typeof onboardingProgress.$inferSelect;
+
+// ─── Task #33: Product Disqualification ──────────────────────────────────
+export const productSuitabilityEvaluations = mysqlTable("product_suitability_evaluations", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("product_id").notNull(),
+  userId: int("user_id").notNull(),
+  suitabilityScore: float("suitability_score"),
+  evaluationDate: timestamp("evaluation_date").defaultNow().notNull(),
+  qualifyingDimensions: json("qualifying_dimensions"),
+  disqualifyingDimensions: json("disqualifying_dimensions"),
+  status: mysqlEnum("status", ["qualified", "marginal", "disqualified", "needs_review"]).default("qualified"),
+});
+export type ProductSuitabilityEvaluation = typeof productSuitabilityEvaluations.$inferSelect;
+
+// ─── Task #34: Dynamic Disclaimers + Tracking ────────────────────────────
+export const disclaimerInteractions = mysqlTable("disclaimer_interactions", {
+  id: int("id").autoincrement().primaryKey(),
+  disclaimerId: int("disclaimer_id").notNull(),
+  userId: int("user_id").notNull(),
+  action: mysqlEnum("action", ["shown", "scrolled", "clicked", "acknowledged"]).default("shown"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type DisclaimerInteraction = typeof disclaimerInteractions.$inferSelect;
+
+export const disclaimerTranslations = mysqlTable("disclaimer_translations", {
+  id: int("id").autoincrement().primaryKey(),
+  disclaimerId: int("disclaimer_id").notNull(),
+  language: varchar("language", { length: 10 }).notNull(),
+  translatedText: text("translated_text").notNull(),
+  verifiedBy: int("verified_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type DisclaimerTranslation = typeof disclaimerTranslations.$inferSelect;
+
+export const conversationTopics = mysqlTable("conversation_topics", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversation_id").notNull(),
+  messageId: int("message_id"),
+  topic: varchar("topic", { length: 128 }).notNull(),
+  previousTopic: varchar("previous_topic", { length: 128 }),
+  disclaimerInjected: mysqlBoolean("disclaimer_injected").default(false),
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+});
+export type ConversationTopic = typeof conversationTopics.$inferSelect;
+
+// ─── Task #35: Proactive Escalation + Video ──────────────────────────────
+export const proactiveEscalationRules = mysqlTable("proactive_escalation_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  triggerType: varchar("trigger_type", { length: 128 }).notNull(),
+  conditionText: text("condition_text"),
+  threshold: float("threshold"),
+  active: mysqlBoolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ProactiveEscalationRule = typeof proactiveEscalationRules.$inferSelect;
+
+export const professionalAvailability = mysqlTable("professional_availability", {
+  id: int("id").autoincrement().primaryKey(),
+  professionalId: int("professional_id").notNull(),
+  dayOfWeek: int("day_of_week").notNull(),
+  startTime: varchar("start_time", { length: 8 }).notNull(),
+  endTime: varchar("end_time", { length: 8 }).notNull(),
+  timezone: varchar("timezone", { length: 64 }).default("America/New_York"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ProfessionalAvailabilityEntry = typeof professionalAvailability.$inferSelect;
+
+export const consultationBookings = mysqlTable("consultation_bookings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  professionalId: int("professional_id").notNull(),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  durationMinutes: int("duration_minutes").default(30),
+  preBriefId: int("pre_brief_id"),
+  status: mysqlEnum("status", ["scheduled", "confirmed", "in_progress", "completed", "cancelled"]).default("scheduled"),
+  dailyRoomUrl: varchar("daily_room_url", { length: 512 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ConsultationBooking = typeof consultationBookings.$inferSelect;
+
+// ─── Task #36: Financial Literacy Detection ──────────────────────────────
+export const userGuardrails = mysqlTable("user_guardrails", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  guardrailType: varchar("guardrail_type", { length: 64 }).notNull(),
+  value: varchar("value", { length: 256 }).notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type UserGuardrail = typeof userGuardrails.$inferSelect;
+
+// ─── Task #37: Dynamic Permissions + ABAC ────────────────────────────────
+export const roleElevations = mysqlTable("role_elevations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  fromRole: varchar("from_role", { length: 32 }).notNull(),
+  toRole: varchar("to_role", { length: 32 }).notNull(),
+  grantedBy: int("granted_by").notNull(),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  reason: text("reason"),
+  revokedAt: timestamp("revoked_at"),
+});
+export type RoleElevation = typeof roleElevations.$inferSelect;
+
+export const delegations = mysqlTable("delegations", {
+  id: int("id").autoincrement().primaryKey(),
+  delegatorId: int("delegator_id").notNull(),
+  delegateId: int("delegate_id").notNull(),
+  scope: json("scope"),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+  active: mysqlBoolean("active").default(true),
+});
+export type Delegation = typeof delegations.$inferSelect;
+
+export const accessPolicies = mysqlTable("access_policies", {
+  id: int("id").autoincrement().primaryKey(),
+  resourceType: varchar("resource_type", { length: 128 }).notNull(),
+  requiredAttributes: json("required_attributes"),
+  effect: mysqlEnum("effect", ["allow", "deny"]).default("allow"),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type AccessPolicy = typeof accessPolicies.$inferSelect;
+
+// ─── Task #38: Key Rotation + Field Encryption ──────────────────────────
+export const encryptionKeys = mysqlTable("encryption_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  keyAlias: varchar("key_alias", { length: 128 }).notNull(),
+  status: mysqlEnum("status", ["active", "rotating", "retired"]).default("active"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  rotatedAt: timestamp("rotated_at"),
+  retiredAt: timestamp("retired_at"),
+});
+export type EncryptionKey = typeof encryptionKeys.$inferSelect;
+
+export const encryptedFieldsRegistry = mysqlTable("encrypted_fields_registry", {
+  id: int("id").autoincrement().primaryKey(),
+  tableName: varchar("table_name", { length: 128 }).notNull(),
+  columnName: varchar("column_name", { length: 128 }).notNull(),
+  encryptionMethod: varchar("encryption_method", { length: 64 }).default("AES-256-GCM"),
+  keyAlias: varchar("key_alias", { length: 128 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type EncryptedFieldsRegistryEntry = typeof encryptedFieldsRegistry.$inferSelect;
+
+// ─── Task #39: Retention Enforcement ─────────────────────────────────────
+export const retentionActionsLog = mysqlTable("retention_actions_log", {
+  id: int("id").autoincrement().primaryKey(),
+  dataType: varchar("data_type", { length: 128 }).notNull(),
+  action: mysqlEnum("action", ["delete", "archive", "anonymize"]).notNull(),
+  recordsAffected: int("records_affected").default(0),
+  executedAt: timestamp("executed_at").defaultNow().notNull(),
+});
+export type RetentionActionLogEntry = typeof retentionActionsLog.$inferSelect;
+
+export const orgRetentionPolicies = mysqlTable("org_retention_policies", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("org_id").notNull(),
+  dataCategory: varchar("data_category", { length: 128 }).notNull(),
+  retentionDays: int("retention_days").notNull(),
+  action: mysqlEnum("action", ["delete", "archive", "anonymize"]).default("archive"),
+  configuredBy: int("configured_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type OrgRetentionPolicy = typeof orgRetentionPolicies.$inferSelect;
+
+// ─── Task #41: AI Boundaries ─────────────────────────────────────────────
+export const userAiBoundaries = mysqlTable("user_ai_boundaries", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  boundaryType: varchar("boundary_type", { length: 64 }).notNull(),
+  value: text("value").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type UserAiBoundary = typeof userAiBoundaries.$inferSelect;
+
+// ─── Task #46: Field-Level Sharing ───────────────────────────────────────
+export const fieldSharingControls = mysqlTable("field_sharing_controls", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  fieldName: varchar("field_name", { length: 128 }).notNull(),
+  shareWithRole: varchar("share_with_role", { length: 32 }),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+});
+export type FieldSharingControl = typeof fieldSharingControls.$inferSelect;
+
+// ─── Task #47: Per-Org Model + Token Budget ──────────────────────────────
+export const orgAiConfig = mysqlTable("org_ai_config", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("org_id").notNull(),
+  preferredModel: varchar("preferred_model", { length: 128 }),
+  monthlyTokenBudget: int("monthly_token_budget"),
+  tokensUsedThisMonth: int("tokens_used_this_month").default(0),
+  customSystemPromptAdditions: text("custom_system_prompt_additions"),
+  budgetAlertSent: mysqlBoolean("budget_alert_sent").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type OrgAiConfigEntry = typeof orgAiConfig.$inferSelect;
+
+export const orgPromptCustomizations = mysqlTable("org_prompt_customizations", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("org_id").notNull(),
+  promptText: text("prompt_text").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending"),
+  reviewedBy: int("reviewed_by"),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type OrgPromptCustomization = typeof orgPromptCustomizations.$inferSelect;
+
+// ─── Task #48: Agent Templates ───────────────────────────────────────────
+export const agentTemplates = mysqlTable("agent_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  stepsJson: json("steps_json"),
+  category: varchar("category", { length: 64 }),
+  orgId: int("org_id"),
+  isBuiltIn: mysqlBoolean("is_built_in").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type AgentTemplate = typeof agentTemplates.$inferSelect;
+
+export const agentPerformance = mysqlTable("agent_performance", {
+  id: int("id").autoincrement().primaryKey(),
+  agentTemplateId: int("agent_template_id").notNull(),
+  runs: int("runs").default(0),
+  successes: int("successes").default(0),
+  avgDurationMs: int("avg_duration_ms"),
+  avgCostUsd: float("avg_cost_usd"),
+  avgSatisfactionScore: float("avg_satisfaction_score"),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type AgentPerformanceEntry = typeof agentPerformance.$inferSelect;
+
+// ─── Task #49: Compliance Prediction ─────────────────────────────────────
+export const compliancePredictions = mysqlTable("compliance_predictions", {
+  id: int("id").autoincrement().primaryKey(),
+  agentActionId: int("agent_action_id"),
+  predictedRiskScore: int("predicted_risk_score"),
+  riskFactors: json("risk_factors"),
+  predictionModelVersion: varchar("prediction_model_version", { length: 32 }),
+  requiresApproval: mysqlBoolean("requires_approval").default(false),
+  approved: mysqlBoolean("approved"),
+  approvedBy: int("approved_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type CompliancePrediction = typeof compliancePredictions.$inferSelect;
+
+// ─── Task #50: Graduated Autonomy ────────────────────────────────────────
+export const agentAutonomyLevels = mysqlTable("agent_autonomy_levels", {
+  id: int("id").autoincrement().primaryKey(),
+  agentTemplateId: int("agent_template_id").notNull(),
+  currentLevel: int("current_level").default(1),
+  level1Runs: int("level_1_runs").default(0),
+  level2Runs: int("level_2_runs").default(0),
+  promotedAt: timestamp("promoted_at"),
+  promotedBy: int("promoted_by"),
+});
+export type AgentAutonomyLevel = typeof agentAutonomyLevels.$inferSelect;
+
+// ─── Task #52: Account Reconciliation ────────────────────────────────────
+export const plaidWebhooksLog = mysqlTable("plaid_webhooks_log", {
+  id: int("id").autoincrement().primaryKey(),
+  webhookType: varchar("webhook_type", { length: 128 }).notNull(),
+  itemId: varchar("item_id", { length: 256 }),
+  payload: json("payload"),
+  processedAt: timestamp("processed_at"),
+  status: mysqlEnum("status", ["received", "processing", "processed", "failed"]).default("received"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PlaidWebhookLogEntry = typeof plaidWebhooksLog.$inferSelect;
+
+export const transactionCategories = mysqlTable("transaction_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  transactionId: varchar("transaction_id", { length: 256 }).notNull(),
+  userId: int("user_id").notNull(),
+  aiCategory: varchar("ai_category", { length: 128 }),
+  userOverrideCategory: varchar("user_override_category", { length: 128 }),
+  confidence: float("confidence"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type TransactionCategory = typeof transactionCategories.$inferSelect;
+
+export const reconciliationLog = mysqlTable("reconciliation_log", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: varchar("account_id", { length: 256 }).notNull(),
+  expectedBalance: decimal("expected_balance", { precision: 18, scale: 2 }),
+  actualBalance: decimal("actual_balance", { precision: 18, scale: 2 }),
+  discrepancy: decimal("discrepancy", { precision: 18, scale: 2 }),
+  resolved: mysqlBoolean("resolved").default(false),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ReconciliationLogEntry = typeof reconciliationLog.$inferSelect;
+
+// ─── Task #53: CRM Sync ─────────────────────────────────────────────────
+export const crmSyncLog = mysqlTable("crm_sync_log", {
+  id: int("id").autoincrement().primaryKey(),
+  direction: mysqlEnum("direction", ["push", "pull"]).notNull(),
+  crmProvider: varchar("crm_provider", { length: 128 }).notNull(),
+  recordsSynced: int("records_synced").default(0),
+  syncType: varchar("sync_type", { length: 64 }),
+  status: mysqlEnum("status", ["started", "completed", "failed"]).default("started"),
+  errorDetails: text("error_details"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type CrmSyncLogEntry = typeof crmSyncLog.$inferSelect;
+
+export const carrierSubmissions = mysqlTable("carrier_submissions", {
+  id: int("id").autoincrement().primaryKey(),
+  quoteId: int("quote_id"),
+  carrierId: int("carrier_id"),
+  submissionMethod: mysqlEnum("submission_method", ["api", "pdf", "manual"]).default("manual"),
+  status: mysqlEnum("status", ["draft", "submitted", "accepted", "rejected", "pending"]).default("draft"),
+  submittedAt: timestamp("submitted_at"),
+  responseReceivedAt: timestamp("response_received_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type CarrierSubmission = typeof carrierSubmissions.$inferSelect;
+
+// ─── Task #54: Real-Time Market Streaming ────────────────────────────────
+export const marketDataSubscriptions = mysqlTable("market_data_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  symbol: varchar("symbol", { length: 16 }).notNull(),
+  subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
+});
+export type MarketDataSubscription = typeof marketDataSubscriptions.$inferSelect;
+
+export const marketEvents = mysqlTable("market_events", {
+  id: int("id").autoincrement().primaryKey(),
+  eventType: varchar("event_type", { length: 64 }).notNull(),
+  symbol: varchar("symbol", { length: 16 }).notNull(),
+  magnitude: float("magnitude"),
+  details: text("details"),
+  insightGenerated: mysqlBoolean("insight_generated").default(false),
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+});
+export type MarketEvent = typeof marketEvents.$inferSelect;
+
+// ─── Task #55: Regulatory Impact Analysis ────────────────────────────────
+export const regulatoryImpactAnalyses = mysqlTable("regulatory_impact_analyses", {
+  id: int("id").autoincrement().primaryKey(),
+  updateId: int("update_id").notNull(),
+  impactLevel: mysqlEnum("impact_level", ["high", "medium", "low"]).default("low"),
+  affectedAreas: json("affected_areas"),
+  recommendedActions: json("recommended_actions"),
+  generatedAt: timestamp("generated_at").defaultNow().notNull(),
+});
+export type RegulatoryImpactAnalysis = typeof regulatoryImpactAnalyses.$inferSelect;
+
+export const complianceWeeklyBriefs = mysqlTable("compliance_weekly_briefs", {
+  id: int("id").autoincrement().primaryKey(),
+  weekStart: date("week_start").notNull(),
+  briefJson: json("brief_json"),
+  distributedAt: timestamp("distributed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type ComplianceWeeklyBrief = typeof complianceWeeklyBriefs.$inferSelect;
+
+// ─── Task #56: Load Testing + Capacity ───────────────────────────────────
+export const loadTestResults = mysqlTable("load_test_results", {
+  id: int("id").autoincrement().primaryKey(),
+  testDate: timestamp("test_date").defaultNow().notNull(),
+  scenario: varchar("scenario", { length: 256 }).notNull(),
+  concurrentUsers: int("concurrent_users"),
+  requestsPerSecond: float("requests_per_second"),
+  p95LatencyMs: int("p95_latency_ms"),
+  errors: int("errors").default(0),
+  notes: text("notes"),
+});
+export type LoadTestResult = typeof loadTestResults.$inferSelect;
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONSOLIDATION TABLES (v13→v15)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Knowledge Base ──────────────────────────────────────────────────────
+export const knowledgeArticles = mysqlTable("knowledge_articles", {
+  id: int("id").autoincrement().primaryKey(),
+  category: varchar("category", { length: 100 }).notNull(),
+  subcategory: varchar("subcategory", { length: 100 }),
+  title: varchar("title", { length: 500 }).notNull(),
+  content: text("content").notNull(),
+  contentType: mysqlEnum("content_type", ["process", "concept", "reference", "template", "faq", "policy", "guide"]).notNull().default("concept"),
+  metadata: json("metadata"),
+  version: int("version").notNull().default(1),
+  effectiveDate: timestamp("effective_date"),
+  expiryDate: timestamp("expiry_date"),
+  source: mysqlEnum("source", ["manual", "ingested", "ai_generated", "conversation_mining"]).notNull().default("manual"),
+  sourceUrl: text("source_url"),
+  createdBy: int("created_by"),
+  approvedBy: int("approved_by"),
+  approvedAt: timestamp("approved_at"),
+  usageCount: int("usage_count").notNull().default(0),
+  avgHelpfulnessScore: float("avg_helpfulness_score").default(0),
+  freshnessScore: float("freshness_score").default(100),
+  lastUsedAt: timestamp("last_used_at"),
+  active: mysqlBoolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type KnowledgeArticle = typeof knowledgeArticles.$inferSelect;
+
+export const knowledgeArticleVersions = mysqlTable("knowledge_article_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  articleId: int("article_id").notNull(),
+  version: int("version").notNull(),
+  content: text("content").notNull(),
+  changedBy: int("changed_by"),
+  changedAt: timestamp("changed_at").defaultNow().notNull(),
+  changeReason: text("change_reason"),
+});
+export type KnowledgeArticleVersion = typeof knowledgeArticleVersions.$inferSelect;
+
+export const knowledgeArticleFeedback = mysqlTable("knowledge_article_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  articleId: int("article_id").notNull(),
+  userId: int("user_id"),
+  helpful: mysqlBoolean("helpful").notNull(),
+  feedbackText: text("feedback_text"),
+  context: text("context"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type KnowledgeArticleFeedback = typeof knowledgeArticleFeedback.$inferSelect;
+
+export const knowledgeGaps = mysqlTable("knowledge_gaps", {
+  id: int("id").autoincrement().primaryKey(),
+  topicCluster: varchar("topic_cluster", { length: 200 }).notNull(),
+  queryCount: int("query_count").notNull().default(1),
+  sampleQueries: json("sample_queries"),
+  suggestedArticleDraft: text("suggested_article_draft"),
+  status: mysqlEnum("status", ["open", "in_progress", "resolved", "dismissed"]).notNull().default("open"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+});
+export type KnowledgeGap = typeof knowledgeGaps.$inferSelect;
+
+export const knowledgeIngestionJobs = mysqlTable("knowledge_ingestion_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  sourceType: mysqlEnum("source_type", ["document", "url", "conversation", "api", "template", "bulk"]).notNull(),
+  sourceUrl: text("source_url"),
+  sourceFilename: varchar("source_filename", { length: 500 }),
+  status: mysqlEnum("status_col", ["pending", "processing", "completed", "failed"]).notNull().default("pending"),
+  articlesCreated: int("articles_created").notNull().default(0),
+  articlesUpdated: int("articles_updated").notNull().default(0),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type KnowledgeIngestionJob = typeof knowledgeIngestionJobs.$inferSelect;
+
+// ─── Capability Modes ────────────────────────────────────────────────────
+export const capabilityModes = mysqlTable("capability_modes", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  icon: varchar("icon", { length: 50 }),
+  systemPromptAdditions: text("system_prompt_additions"),
+  requiredKnowledgeCategories: json("required_knowledge_categories"),
+  availableTools: json("available_tools"),
+  availableModels: json("available_models"),
+  defaultForRoles: json("default_for_roles"),
+  active: mysqlBoolean("active").notNull().default(true),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type CapabilityMode = typeof capabilityModes.$inferSelect;
+
+// ─── AI Tools Registry ───────────────────────────────────────────────────
+export const aiTools = mysqlTable("ai_tools", {
+  id: int("id").autoincrement().primaryKey(),
+  toolName: varchar("tool_name", { length: 200 }).notNull(),
+  toolType: mysqlEnum("tool_type", ["calculator", "model", "action", "query", "report"]).notNull(),
+  description: text("description").notNull(),
+  inputSchema: json("input_schema").notNull(),
+  outputSchema: json("output_schema"),
+  trpcProcedure: varchar("trpc_procedure", { length: 200 }).notNull(),
+  requiresAuth: mysqlBoolean("requires_auth").notNull().default(true),
+  requiresConfirmation: mysqlBoolean("requires_confirmation").notNull().default(false),
+  usageCount: int("usage_count").notNull().default(0),
+  successRate: float("success_rate").default(1.0),
+  active: mysqlBoolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type AiTool = typeof aiTools.$inferSelect;
+
+export const aiToolCalls = mysqlTable("ai_tool_calls", {
+  id: int("id").autoincrement().primaryKey(),
+  toolId: int("tool_id").notNull(),
+  conversationId: int("conversation_id"),
+  messageId: int("message_id"),
+  userId: int("user_id"),
+  inputJson: json("input_json"),
+  outputJson: json("output_json"),
+  success: mysqlBoolean("success").notNull().default(true),
+  latencyMs: int("latency_ms"),
+  userModifiedInput: mysqlBoolean("user_modified_input").notNull().default(false),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type AiToolCall = typeof aiToolCalls.$inferSelect;
+
+// ─── Study Progress ──────────────────────────────────────────────────────
+export const studyProgress = mysqlTable("study_progress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  certification: varchar("certification", { length: 100 }).notNull(),
+  topicsCovered: json("topics_covered"),
+  quizScores: json("quiz_scores"),
+  weakAreas: json("weak_areas"),
+  studyTimeMinutes: int("study_time_minutes").notNull().default(0),
+  totalQuestionsAttempted: int("total_questions_attempted").notNull().default(0),
+  totalQuestionsCorrect: int("total_questions_correct").notNull().default(0),
+  currentDifficulty: mysqlEnum("current_difficulty", ["beginner", "intermediate", "advanced"]).notNull().default("beginner"),
+  lastSessionAt: timestamp("last_session_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type StudyProgressRecord = typeof studyProgress.$inferSelect;

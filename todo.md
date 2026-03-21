@@ -1895,192 +1895,234 @@
 - [ ] 5C: Data Ingestion Activation (security master, pipeline observability, per-source consent, self-healing scraper)
 
 ### Phase 6: Guide + Tests
-- [ ] 6A: 28 new guide sections documenting all new features
-- [ ] 6B: 170+ new tests (target 857+)
-- [ ] 6C: Executive summary update to v11.0
+- [x] 6A: 28 new guide sections documenting all new features (PLATFORM_GUIDE_v15.md)
+- [x] 6B: 345 new tests added (1,032 total, exceeds 857+ target)
+- [x] 6C: Executive summary update to v15.0 (in PLATFORM_GUIDE_v15.md)
 
 ## Addendum: Every Criterion to 5.0 (v11.0 → v13.0)
 
 ### Task #21: Prompt A/B Testing + Regression (A3: 4→5)
-- [ ] Activate prompt_experiments as live A/B framework (50/50 traffic split, per-variant metrics)
-- [ ] Auto-promote winner after statistical significance (p<0.05, min 100 samples)
-- [ ] Prompt regression testing service (golden set of 50 prompt-response pairs)
-- [ ] /admin/prompt-experiments page (active experiments, history, golden test pass rates, diff view)
+- [x] Activate prompt_experiments as live A/B framework (50/50 traffic split, per-variant metrics)
+- [x] Auto-promote winner after statistical significance (p<0.05, min 100 samples)
+- [x] Prompt regression testing service (golden set of 50 prompt-response pairs)
+- [x] /admin/prompt-experiments page (active experiments, history, golden test pass rates, diff view)
 
 ### Task #22: Compliance Pre-Screening (A4: 4→5)
-- [ ] Automated compliance pre-screening on every AI response (5 fast checks)
-- [ ] compliance_prescreening table + conversation compliance scoring
-- [ ] Warning banner injection for flagged responses, hold for severe violations
+- [x] Automated compliance pre-screening on every AI response (5 fast checks)
+- [x] compliance_prescreening table + conversation compliance scoring
+- [x] Warning banner injection for flagged responses, hold for severe violations
 
 ### Task #23: Canary Deployments (A7: 3→5)
-- [ ] Pre-publish validation script (test suite, TS compilation, schema check, dead code, bundle size)
-- [ ] Canary deployment pattern (feature flag percentage rollout: 5→25→50→100%)
-- [ ] /admin/deployments page (history, per-deployment metrics, one-click rollback)
+- [x] Pre-publish validation script (test suite, TS compilation, schema check, dead code, bundle size)
+- [x] Canary deployment pattern (feature flag percentage rollout: 5→25→50→100%)
+- [x] /admin/deployments page (history, per-deployment metrics, one-click rollback)
 
 ### Task #24: Dynamic Knowledge Graph (B1: 4→5)
-- [ ] Real-time knowledge graph updates from integrations
-- [ ] Entity resolution (detect/merge duplicates, aliases, canonical names)
-- [ ] Temporal tagging (valid_from/valid_until, stale fact detection)
-- [ ] Knowledge graph queryable from chat ("What do you know about X?")
+- [x] Real-time knowledge graph updates from integrations
+- [x] Entity resolution (detect/merge duplicates, aliases, canonical names)
+- [x] Temporal tagging (valid_from/valid_until, stale fact detection)
+- [x] Knowledge graph queryable from chat ("What do you know about X?")
 
 ### Task #25: What-If Scenarios + Backtesting (B2: 4→5)
-- [ ] What-if scenario engine (fork model results, adjust inputs, side-by-side comparison)
-- [ ] Model chaining UI ("Run Full Analysis" across all 8 models)
-- [ ] Backtesting for portfolio_risk model (historical market events: 2008, 2020, 2022)
+- [x] What-if scenario engine (fork model results, adjust inputs, side-by-side comparison)
+- [x] Model chaining UI ("Run Full Analysis" across all 8 models)
+- [x] Backtesting for portfolio_risk model (historical market events: 2008, 2020, 2022)
 
 ### Task #26: Adaptive Context Management (B3: 4→5)
-- [ ] Context relevance scoring (recency, topic match, engagement, source quality)
-- [ ] Adaptive context window (minimal for simple, full for complex queries)
-- [ ] Context preview for professionals ("What context did the AI use?")
+- [x] Context relevance scoring (recency, topic match, engagement, source quality)
+- [x] Adaptive context window (minimal for simple, full for complex queries)
+- [x] Context preview for professionals ("What context did the AI use?")
 
 ### Task #27: Error Handling Hardening (B7: V→5)
-- [ ] Comprehensive error handling (network disconnect, LLM timeout, rate limit, malformed input)
-- [ ] Error boundary wrapping on all page components with fallback UI
-- [ ] server_errors table for error logging
+- [x] Comprehensive error handling (network disconnect, LLM timeout, rate limit, malformed input)
+- [x] Error boundary wrapping on all page components with fallback UI
+- [x] server_errors table for error logging
 
 ### Task #28: Interactive Charts + Export (B8: 4→5)
-- [ ] Interactive what-if visualizations (click to fork, slider adjustments)
-- [ ] Streaming chart updates via WebSocket
-- [ ] Comparison views (side-by-side, overlay, time-series)
-- [ ] Chart export (PNG/SVG download, embed in PDF, shareable link)
+- [x] Interactive what-if visualizations (click to fork, slider adjustments)
+- [x] Streaming chart updates via WebSocket
+- [x] Comparison views (side-by-side, overlay, time-series)
+- [x] Chart export (PNG/SVG download, embed in PDF, shareable link)
 
 ### Task #29: Calculator Persistence + NLP (C1: 4→5)
-- [ ] Real-time data integration to calculators (FRED rates, market data)
-- [ ] Calculator state persistence (calculator_scenarios table, save/load)
-- [ ] Natural language calculator entry from chat
+- [x] Real-time data integration to calculators (FRED rates, market data)
+- [x] Calculator state persistence (calculator_scenarios table, save/load)
+- [x] Natural language calculator entry from chat
 
 ### Task #30: Predictive Insights + Benchmarks (C4: 4→5)
-- [ ] Predictive insight engine (income increase, age milestones, college, volatility)
-- [ ] Anonymized peer benchmarking (percentile scores by age/income bracket)
-- [ ] "Morning Brief" daily digest via WebSocket notification
+- [x] Predictive insight engine (income increase, age milestones, college, volatility)
+- [x] Anonymized peer benchmarking (percentile scores by age/income bracket)
+- [x] "Morning Brief" daily digest via WebSocket notification
 
 ### Task #31: Regulatory Change Monitor (C7: 4→5, C8: 3→5)
-- [ ] Regulatory change monitor (SEC, FINRA, NAIC RSS feeds)
-- [ ] Dynamic disclaimer versioning (disclaimers table, auto-apply new versions)
-- [ ] SEC EDGAR automated alerts for portfolio companies
-- [ ] Compliance scoring per conversation + auto-flag <80%
+- [x] Regulatory change monitor (SEC, FINRA, NAIC RSS feeds)
+- [x] Dynamic disclaimer versioning (disclaimers table, auto-apply new versions)
+- [x] SEC EDGAR automated alerts for portfolio companies
+- [x] Compliance scoring per conversation + auto-flag <80%
 
 ### Task #32: Role-Adaptive Onboarding (C9: 4→5)
-- [ ] Role-adaptive onboarding paths (advisor/client/admin)
-- [ ] Skip-ahead for experienced users
-- [ ] Onboarding analytics (/admin/onboarding-analytics with funnel visualization)
+- [x] Role-adaptive onboarding paths (advisor/client/admin)
+- [x] Skip-ahead for experienced users
+- [x] Onboarding analytics (/admin/onboarding-analytics with funnel visualization)
 
 ### Task #33: Product Disqualification Engine (D2: 4→5)
-- [ ] Automated product disqualification on suitability change
-- [ ] Product suitability matrix visualization (12 dimensions × products)
-- [ ] Inverse suitability search ("products that fit this profile")
+- [x] Automated product disqualification on suitability change
+- [x] Product suitability matrix visualization (12 dimensions × products)
+- [x] Inverse suitability search ("products that fit this profile")
 
 ### Task #34: Dynamic Disclaimers + Tracking (D3: 4→5)
-- [ ] Dynamic disclaimer adaptation (topic-shift detection, transition-point injection)
-- [ ] Disclaimer effectiveness tracking (shown/scrolled/clicked)
-- [ ] Multi-language disclaimers (English, Spanish, Mandarin)
+- [x] Dynamic disclaimer adaptation (topic-shift detection, transition-point injection)
+- [x] Disclaimer effectiveness tracking (shown/scrolled/clicked)
+- [x] Multi-language disclaimers (English, Spanish, Mandarin)
 
 ### Task #35: Proactive Escalation + Video (D5: 4→5)
-- [ ] Proactive escalation triggers (complexity, dissatisfaction, threshold)
-- [ ] Professional availability routing (availability hours, queue system)
-- [ ] Video consultation booking (Daily.co integration, pre-call brief)
+- [x] Proactive escalation triggers (complexity, dissatisfaction, threshold)
+- [x] Professional availability routing (availability hours, queue system)
+- [x] Video consultation booking (Daily.co integration, pre-call brief)
 
 ### Task #36: Financial Literacy Detection (D7: 4→5)
-- [ ] Financial literacy level detection (beginner/intermediate/advanced)
-- [ ] Auto-adjust explanation complexity based on literacy level
-- [ ] "Never recommend" personal guardrails (user_guardrails table)
+- [x] Financial literacy level detection (beginner/intermediate/advanced)
+- [x] Auto-adjust explanation complexity based on literacy level
+- [x] "Never recommend" personal guardrails (user_guardrails table)
 
 ### Task #37: Dynamic Permissions + ABAC (E2: 4→5)
-- [ ] Temporary role elevation (admin grants, auto-revoke on expiry)
-- [ ] Delegation workflows (advisor delegates client access)
-- [ ] Attribute-based access control (ABAC) layer (access_policies table)
+- [x] Temporary role elevation (admin grants, auto-revoke on expiry)
+- [x] Delegation workflows (advisor delegates client access)
+- [x] Attribute-based access control (ABAC) layer (access_policies table)
 
 ### Task #38: Key Rotation + Field Encryption (E8: 4→5)
-- [ ] Encryption key rotation (90-day cycle, encryption_keys table)
-- [ ] Field-level encryption for PII columns (AES-256-GCM)
-- [ ] Certificate/key management documentation
+- [x] Encryption key rotation (90-day cycle, encryption_keys table)
+- [x] Field-level encryption for PII columns (AES-256-GCM)
+- [x] Certificate/key management documentation
 
 ### Task #39: Retention Enforcement (F5: 4→5)
-- [ ] Automated retention enforcement (daily cron, auto-delete/archive)
-- [ ] Data lifecycle visualization (Settings > Privacy & Data)
-- [ ] Per-data-category retention configuration (org_retention_policies table)
+- [x] Automated retention enforcement (daily cron, auto-delete/archive)
+- [x] Data lifecycle visualization (Settings > Privacy & Data)
+- [x] Per-data-category retention configuration (org_retention_policies table)
 
 ### Task #40: AI Badge + Watermark + Version (G1: 4→5)
-- [ ] AI badge on every AI message (model version indicator)
-- [ ] AI watermark on all exports (PDF, conversation, shared links)
-- [ ] Model version tracking per message (store + display on hover)
+- [x] AI badge on every AI message (model version indicator)
+- [x] AI watermark on all exports (PDF, conversation, shared links)
+- [x] Model version tracking per message (store + display on hover)
 
 ### Task #41: AI Boundaries + Feedback Loop (G7: 4→5)
-- [ ] "AI Boundaries" in Settings > Personalize (topics, sources, style)
-- [ ] AI behavior feedback loop (thumbs down → "What should AI have done differently?")
+- [x] "AI Boundaries" in Settings > Personalize (topics, sources, style)
+- [x] AI behavior feedback loop (thumbs down → "What should AI have done differently?")
 
 ### Task #42: Command Palette + Breadcrumbs (H1: 4→5)
-- [ ] Enhanced Ctrl+K command palette (fuzzy search, recent items, actions)
-- [ ] Breadcrumb navigation on all pages
-- [ ] "Recently Visited" in sidebar (last 5 pages)
+- [x] Enhanced Ctrl+K command palette (fuzzy search, recent items, actions)
+- [x] Breadcrumb navigation on all pages
+- [x] "Recently Visited" in sidebar (last 5 pages)
 
 ### Task #43: PWA + Mobile Gestures (H2: 4→5)
-- [ ] Progressive Web App support (manifest.json, service worker, splash screen)
-- [ ] Responsive image optimization (WebP, srcset, lazy loading)
-- [ ] Native-like mobile gestures (swipe sidebar, pull-to-refresh)
+- [x] Progressive Web App support (manifest.json, service worker, splash screen)
+- [x] Responsive image optimization (WebP, srcset, lazy loading)
+- [x] Native-like mobile gestures (swipe sidebar, pull-to-refresh)
 
 ### Task #44: WCAG AAA Audit + High Contrast (H3: 4→5)
-- [ ] WCAG 2.2 Level AAA comprehensive audit across all pages
-- [ ] Screen reader compatibility (ARIA labels, aria-live, text alternatives)
-- [ ] High contrast mode toggle in Settings > Accessibility
-- [ ] Keyboard-only navigation verification (tab order, focus indicators, skip-to-content)
+- [x] WCAG 2.2 Level AAA comprehensive audit across all pages
+- [x] Screen reader compatibility (ARIA labels, aria-live, text alternatives)
+- [x] High contrast mode toggle in Settings > Accessibility
+- [x] Keyboard-only navigation verification (tab order, focus indicators, skip-to-content)
 
 ### Task #45: Multi-Region + IaC Docs (I1: 3→5)
-- [ ] CDN and edge caching strategy documentation
-- [ ] Geographic redundancy documentation
-- [ ] Infrastructure-as-code documentation (infrastructure.md)
-- [ ] Health check endpoint (GET /health with JSON status)
+- [x] CDN and edge caching strategy documentation
+- [x] Geographic redundancy documentation
+- [x] Infrastructure-as-code documentation (infrastructure.md)
+- [x] Health check endpoint (GET /health with JSON status)
 
 ### Task #46: Field-Level Sharing + Time-Limited (J1: 4→5)
-- [ ] Field-level data sharing controls
-- [ ] Time-limited sharing (30/60/90 days, auto-revoke)
-- [ ] Real-time sharing status indicators
+- [x] Field-level data sharing controls
+- [x] Time-limited sharing (30/60/90 days, auto-revoke)
+- [x] Real-time sharing status indicators
 
 ### Task #47: Per-Org Model + Token Budget (J3: 4→5)
-- [ ] Per-org model configuration (org_ai_config table)
-- [ ] Per-org token budget (monthly limit, alerts at 80%/100%)
-- [ ] Org-level prompt customization with admin review
+- [x] Per-org model configuration (org_ai_config table)
+- [x] Per-org token budget (monthly limit, alerts at 80%/100%)
+- [x] Org-level prompt customization with admin review
 
 ### Task #48: Agent Templates + Builder (K1: 4→5)
-- [ ] Agent templates library (4 pre-built templates)
-- [ ] Custom agent builder (drag-and-drop workflow)
-- [ ] Agent performance metrics (success rate, duration, cost, satisfaction)
+- [x] Agent templates library (4 pre-built templates)
+- [x] Custom agent builder (drag-and-drop workflow)
+- [x] Agent performance metrics (success rate, duration, cost, satisfaction)
 
 ### Task #49: Compliance Prediction + Simulation (K2: 4→5)
-- [ ] Predictive compliance scoring (0-100 risk score before execution)
-- [ ] Compliance simulation ("dry run" mode)
+- [x] Predictive compliance scoring (0-100 risk score before execution)
+- [x] Compliance simulation ("dry run" mode)
 
 ### Task #50: Graduated Autonomy + Kill Switch (K7: 4→5)
-- [ ] Graduated autonomy levels (3 levels based on successful runs)
-- [ ] Agent kill switch ("Stop All Agents" button)
+- [x] Graduated autonomy levels (3 levels based on successful runs)
+- [x] Agent kill switch ("Stop All Agents" button)
 
 ### Task #51: Agent Replay + Search (K9: 4→5)
-- [ ] Agent action replay (step-by-step with timestamps)
-- [ ] Searchable agent history (full-text search, filters, export)
+- [x] Agent action replay (step-by-step with timestamps)
+- [x] Searchable agent history (full-text search, filters, export)
 
 ### Task #52: Real-Time Accounts + Reconciliation (L1: 4→5)
-- [ ] Webhook-based real-time account updates (Plaid webhooks)
-- [ ] Automatic transaction categorization (AI-based)
-- [ ] Account reconciliation engine (discrepancy detection)
+- [x] Webhook-based real-time account updates (Plaid webhooks)
+- [x] Automatic transaction categorization (AI-based)
+- [x] Account reconciliation engine (discrepancy detection)
 
 ### Task #53: Bidirectional CRM + Carrier Submit (L2: 4→5)
-- [ ] Bidirectional CRM sync (push/pull with logging)
-- [ ] Automated carrier submission (pre-filled applications)
+- [x] Bidirectional CRM sync (push/pull with logging)
+- [x] Automated carrier submission (pre-filled applications)
 
 ### Task #54: Real-Time Market Streaming (L3: 4→5)
-- [ ] Real-time market data streaming via WebSocket
-- [ ] Market event detection (>2% moves, earnings, dividends)
+- [x] Real-time market data streaming via WebSocket
+- [x] Market event detection (>2% moves, earnings, dividends)
 
 ### Task #55: Regulatory Impact Analysis (L4: 4→5)
-- [ ] Regulatory change impact analysis (AI-powered, 3 impact levels)
-- [ ] Compliance brief auto-generation (weekly digest)
+- [x] Regulatory change impact analysis (AI-powered, 3 impact levels)
+- [x] Compliance brief auto-generation (weekly digest)
 
 ### Task #56: Load Testing + Capacity Planning (L9: 3→5)
-- [ ] Load testing documentation (max concurrent users, requests/sec, latency)
-- [ ] Auto-scaling documentation (TiDB thresholds, connection pools)
-- [ ] Capacity planning (/admin/capacity page)
+- [x] Load testing documentation (max concurrent users, requests/sec, latency)
+- [x] Auto-scaling documentation (TiDB thresholds, connection pools)
+- [x] Capacity planning (/admin/capacity page)
 
 ### Task #57: Guide Update v13.0 + 155 Tests
-- [ ] 14 new test files (~155 tests total)
-- [ ] Platform guide update to v13.0 (150+ tables, 95K+ lines, 1,000+ tests)
-- [ ] Executive summary update
+- [x] 14 new test files (345 new tests, 1,032 total across 36 files)
+- [x] Platform guide update to v15.0 (150+ tables, 95K+ lines, 1,032 tests across 36 files)
+- [x] Executive summary update
+
+## Architectural Consolidation (v13→v15)
+
+### Phase A: Foundation
+- [x] C1. Create knowledge_articles + knowledge_article_versions + knowledge_article_feedback + knowledge_gaps + knowledge_ingestion_jobs tables
+- [x] C2. Create capability_modes table and seed with 7 default modes
+- [x] C3. Create ai_tools + ai_tool_calls tables and seed with existing calculators/models
+- [x] C4. Create study_progress table (enhanced)
+- [x] C5. Build knowledge base service (CRUD, search, freshness scoring, gap detection)
+- [x] C6. Build AI tools registry service (register, call, chain, discover)
+- [x] C7. Build capability modes service (CRUD, auto-suggest, mode switching)
+- [x] C8. Build knowledge ingestion pipeline service (document upload, URL scrape, conversation mining)
+- [x] C9. Build consolidation routers (knowledgeBase, aiPlatform, operations, addendumFeatures)
+- [x] C10. Wire all new routers into appRouter
+
+### Phase B: AI Capability Delivery
+- [x] C11. Enable AI tool calling for all calculators from chat
+- [x] C12. Enable AI tool calling for all models from chat
+- [x] C13. Integrate knowledge base injection into AI context assembly
+- [x] C14. Build rich response component library (ResultCard, ComparisonView, TimelineView, ChartView, QuizCard, ProgressView, KnowledgeCard)
+- [x] C15. Build rich response rendering in ChatMessage component
+
+### Phase C: Absorb Tier 1 Pages
+- [x] C16. Absorb Study Buddy, Education, Coach into AI capabilities
+- [x] C17. Absorb Planning, Insights, Market Data into AI capabilities
+- [x] C18. Absorb Calculators page into AI tool calling
+- [x] C19. Absorb Student Loans, Equity Comp, Digital Assets into AI
+- [x] C20. Absorb Onboarding into AI-driven onboarding
+- [x] C21. Add redirects from old routes to chat with pre-filled prompts
+
+### Phase D: Consolidate Hubs
+- [x] C22. Build /operations hub (Active Work, Agents, Compliance, History views)
+- [x] C23. Build /intelligence hub (Overview, Models, Data, Analytics views)
+- [x] C24. Build /advisory hub (Products, Cases, Recommendations views)
+- [x] C25. Build /relationships hub (Network, Meetings, Outreach views)
+- [x] C26. Update sidebar to consolidated navigation (7 tools + admin section)
+- [x] C27. Add redirects from old routes to new hubs
+
+### Phase E: Optimize
+- [x] C28. Knowledge base usage analytics dashboard
+- [x] C29. AI tool calling precision/recall monitoring
+- [x] C30. Capability mode usage tracking and auto-suggestions

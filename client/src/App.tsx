@@ -52,6 +52,11 @@ import AnalyticsHub from "./pages/AnalyticsHub";
 import ModelResults from "./pages/ModelResults";
 import BCP from "./pages/BCP";
 import FairnessTestDashboard from "./pages/FairnessTestDashboard";
+import OperationsHub from "./pages/OperationsHub";
+import IntelligenceHub from "./pages/IntelligenceHub";
+import AdvisoryHub from "./pages/AdvisoryHub";
+import RelationshipsHub from "./pages/RelationshipsHub";
+import KnowledgeAdmin from "./pages/KnowledgeAdmin";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 function Router() {
@@ -73,40 +78,24 @@ function Router() {
       <Route path={"/manager"} component={ManagerDashboard} />
       <Route path={"/org-branding"} component={OrgBrandingEditor} />
       <Route path={"/admin"} component={GlobalAdmin} />
-      <Route path={"/meetings"} component={Meetings} />
-      <Route path={"/insights"} component={Insights} />
-      <Route path={"/planning"} component={FinancialPlanning} />
-      <Route path={"/coach"} component={BehavioralCoach} />
-      <Route path={"/compliance"} component={Compliance} />
-      <Route path={"/marketplace"} component={Marketplace} />
+      {/* meetings, insights, planning, coach, compliance, marketplace → redirected to hubs */}
       <Route path={"/portal"} component={Portal} />
       <Route path={"/organizations"} component={Organizations} />
-      <Route path={"/workflows"} component={Workflows} />
-      <Route path={"/study"} component={StudyBuddy} />
-      <Route path={"/education"} component={EducationCenter} />
-      <Route path={"/student-loans"} component={StudentLoans} />
-      <Route path={"/equity-comp"} component={EquityComp} />
-      <Route path={"/digital-assets"} component={DigitalAssets} />
-      <Route path={"/coi-network"} component={CoiNetwork} />
-      <Route path={"/data-intelligence"} component={DataIntelligence} />
-      <Route path={"/agentic"} component={AgenticHub} />
-      <Route path={"/licensed-review"} component={LicensedReview} />
-      <Route path={"/agent-operations"} component={AgentOperations} />
-      <Route path={"/insurance-quotes"} component={InsuranceQuotes} />
+      {/* Non-redirected feature pages (still standalone) */}
       <Route path={"/insurance-applications"} component={InsuranceApplications} />
       <Route path={"/advisory-execution"} component={AdvisoryExecution} />
-      <Route path={"/estate-planning"} component={EstatePlanning} />
-      <Route path={"/premium-finance"} component={PremiumFinance} />
       <Route path={"/carrier-connector"} component={CarrierConnector} />
-      <Route path={"/email-campaigns"} component={EmailCampaigns} />
-      <Route path={"/professionals"} component={ProfessionalDirectory} />
       <Route path={"/improvement"} component={ImprovementEngine} />
       <Route path={"/integrations"} component={Integrations} />
-      <Route path={"/intelligence"} component={IntelligenceFeed} />
-      <Route path={"/analytics-hub"} component={AnalyticsHub} />
-      <Route path={"/model-results"} component={ModelResults} />
       <Route path={"/admin/bcp"} component={BCP} />
       <Route path={"/admin/fairness"} component={FairnessTestDashboard} />
+      <Route path={"/admin/knowledge"} component={KnowledgeAdmin} />
+
+      {/* Consolidated Hub Pages */}
+      <Route path={"/operations"} component={OperationsHub} />
+      <Route path={"/intelligence-hub"} component={IntelligenceHub} />
+      <Route path={"/advisory"} component={AdvisoryHub} />
+      <Route path={"/relationships"} component={RelationshipsHub} />
 
       {/* Unified Settings hub */}
       <Route path={"/settings"}>
@@ -125,6 +114,33 @@ function Router() {
         <Redirect to="/settings/ai-tuning" />
       </Route>
       <Route path={"/help"} component={Help} />
+
+      {/* C27: Redirects from absorbed Tier 1 pages to hubs */}
+      <Route path={"/study"}><Redirect to="/chat" /></Route>
+      <Route path={"/education"}><Redirect to="/chat" /></Route>
+      <Route path={"/meetings"}><Redirect to="/relationships" /></Route>
+      <Route path={"/coach"}><Redirect to="/chat" /></Route>
+      <Route path={"/planning"}><Redirect to="/chat" /></Route>
+      <Route path={"/insights"}><Redirect to="/chat" /></Route>
+      <Route path={"/student-loans"}><Redirect to="/chat" /></Route>
+      <Route path={"/equity-comp"}><Redirect to="/chat" /></Route>
+      <Route path={"/digital-assets"}><Redirect to="/chat" /></Route>
+      <Route path={"/agentic"}><Redirect to="/operations" /></Route>
+      <Route path={"/agent-operations"}><Redirect to="/operations" /></Route>
+      <Route path={"/licensed-review"}><Redirect to="/operations" /></Route>
+      <Route path={"/workflows"}><Redirect to="/operations" /></Route>
+      <Route path={"/compliance"}><Redirect to="/operations" /></Route>
+      <Route path={"/data-intelligence"}><Redirect to="/intelligence-hub" /></Route>
+      <Route path={"/analytics-hub"}><Redirect to="/intelligence-hub" /></Route>
+      <Route path={"/model-results"}><Redirect to="/intelligence-hub" /></Route>
+      <Route path={"/intelligence"}><Redirect to="/intelligence-hub" /></Route>
+      <Route path={"/insurance-quotes"}><Redirect to="/advisory" /></Route>
+      <Route path={"/estate-planning"}><Redirect to="/advisory" /></Route>
+      <Route path={"/premium-finance"}><Redirect to="/advisory" /></Route>
+      <Route path={"/marketplace"}><Redirect to="/advisory" /></Route>
+      <Route path={"/coi-network"}><Redirect to="/relationships" /></Route>
+      <Route path={"/email-campaigns"}><Redirect to="/relationships" /></Route>
+      <Route path={"/professionals"}><Redirect to="/relationships" /></Route>
 
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />

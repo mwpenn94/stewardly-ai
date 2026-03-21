@@ -877,35 +877,15 @@ export default function Chat() {
 
   // ─── SIDEBAR NAV ITEMS (role-aware) ───────────────────────────
 
+  // Consolidated navigation (C26) — 7 hub items replacing 28 individual pages
   const toolsNav = [
-    { icon: <Calculator className="w-3.5 h-3.5" />, label: "Calculators", href: "/calculators", minRole: "user" as UserRole },
-    { icon: <Package className="w-3.5 h-3.5" />, label: "Products", href: "/products", minRole: "user" as UserRole },
-    { icon: <Calendar className="w-3.5 h-3.5" />, label: "Meetings", href: "/meetings", minRole: "user" as UserRole },
-    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Insights", href: "/insights", minRole: "user" as UserRole },
-    { icon: <DollarSign className="w-3.5 h-3.5" />, label: "Planning", href: "/planning", minRole: "user" as UserRole },
-    { icon: <Brain className="w-3.5 h-3.5" />, label: "Coach", href: "/coach", minRole: "user" as UserRole },
-    { icon: <Shield className="w-3.5 h-3.5" />, label: "Compliance", href: "/compliance", minRole: "user" as UserRole },
-    { icon: <Users className="w-3.5 h-3.5" />, label: "Marketplace", href: "/marketplace", minRole: "user" as UserRole },
-    { icon: <ClipboardList className="w-3.5 h-3.5" />, label: "Workflows", href: "/workflows", minRole: "user" as UserRole },
-    { icon: <BookOpen className="w-3.5 h-3.5" />, label: "Study Buddy", href: "/study", minRole: "user" as UserRole },
-    { icon: <GraduationCap className="w-3.5 h-3.5" />, label: "Education", href: "/education", minRole: "user" as UserRole },
-    { icon: <GraduationCap className="w-3.5 h-3.5" />, label: "Student Loans", href: "/student-loans", minRole: "user" as UserRole },
-    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Equity Comp", href: "/equity-comp", minRole: "user" as UserRole },
-    { icon: <Key className="w-3.5 h-3.5" />, label: "Digital Assets", href: "/digital-assets", minRole: "user" as UserRole },
-    { icon: <Users className="w-3.5 h-3.5" />, label: "COI Network", href: "/coi-network", minRole: "advisor" as UserRole },
-    { icon: <Database className="w-3.5 h-3.5" />, label: "Data Intelligence", href: "/data-intelligence", minRole: "advisor" as UserRole },
-    { icon: <Zap className="w-3.5 h-3.5" />, label: "Agentic Hub", href: "/agentic", minRole: "advisor" as UserRole },
-    { icon: <Shield className="w-3.5 h-3.5" />, label: "Licensed Review", href: "/licensed-review", minRole: "advisor" as UserRole },
-    { icon: <Bot className="w-3.5 h-3.5" />, label: "Agent Ops", href: "/agent-operations", minRole: "advisor" as UserRole },
-    { icon: <FileCheck className="w-3.5 h-3.5" />, label: "Insurance", href: "/insurance-quotes", minRole: "advisor" as UserRole },
-    { icon: <Scale className="w-3.5 h-3.5" />, label: "Estate Planning", href: "/estate-planning", minRole: "advisor" as UserRole },
-    { icon: <DollarSign className="w-3.5 h-3.5" />, label: "Premium Finance", href: "/premium-finance", minRole: "advisor" as UserRole },
-    { icon: <Mail className="w-3.5 h-3.5" />, label: "Email Campaigns", href: "/email-campaigns", minRole: "advisor" as UserRole },
-    { icon: <UserPlus className="w-3.5 h-3.5" />, label: "Find a Pro", href: "/professionals", minRole: "user" as UserRole },
+    { icon: <Zap className="w-3.5 h-3.5" />, label: "Operations", href: "/operations", minRole: "user" as UserRole },
+    { icon: <Brain className="w-3.5 h-3.5" />, label: "Intelligence", href: "/intelligence-hub", minRole: "user" as UserRole },
+    { icon: <Package className="w-3.5 h-3.5" />, label: "Advisory", href: "/advisory", minRole: "user" as UserRole },
+    { icon: <Users className="w-3.5 h-3.5" />, label: "Relationships", href: "/relationships", minRole: "user" as UserRole },
+    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Market Data", href: "/market-data", minRole: "user" as UserRole },
+    { icon: <FileText className="w-3.5 h-3.5" />, label: "Documents", href: "/documents", minRole: "user" as UserRole },
     { icon: <Link2 className="w-3.5 h-3.5" />, label: "Integrations", href: "/integrations", minRole: "user" as UserRole },
-    { icon: <Lightbulb className="w-3.5 h-3.5" />, label: "Intelligence", href: "/intelligence", minRole: "user" as UserRole },
-    { icon: <Activity className="w-3.5 h-3.5" />, label: "Analytics Hub", href: "/analytics-hub", minRole: "advisor" as UserRole },
-    { icon: <BarChart3 className="w-3.5 h-3.5" />, label: "Model Results", href: "/model-results", minRole: "user" as UserRole },
   ];
 
   const adminNav = [
