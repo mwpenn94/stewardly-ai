@@ -2312,3 +2312,18 @@
 - [x] Fix encryption fallback: ensure decrypt retry on transient failures
 - [x] Fix AI context assembly: add resilience to integration/economic data injection in routers.ts
 - [x] Create shared safeDbQuery utility (dbResilience.ts) for consistent retry across all integration code
+
+## Bug Fix: Pipeline Sync Issues (BLS error, BEA/Census/SEC/FINRA 0 records)
+- [x] Diagnose BLS pipeline error — was working, 16 records
+- [x] Fix BEA pipeline — API key needs user activation (proper error reporting added)
+- [x] Fix Census pipeline — now fetches 14 records
+- [x] Fix SEC EDGAR pipeline — built new pipeline, 25 records
+- [x] Fix FINRA pipeline — built new pipeline with correct field names, 6 records
+- [x] Verify FRED — now fetches 15 records (all 15 series)
+
+## Fix Pipeline Decryption + Build SEC/FINRA Pipelines
+- [x] Fix credential decryption — encryption key migration fallback working
+- [x] Validate FRED pipeline — 15 records (all series working)
+- [x] Build SEC EDGAR data pipeline — 25 records (AAPL/MSFT/GOOGL/AMZN/TSLA financials + filing counts)
+- [x] Build FINRA BrokerCheck data pipeline — 6 records (Schwab/Fidelity/MS/GS/JPM + individual search)
+- [x] Validate all 6 pipelines — 76 total records, 5/6 successful (BEA pending user key activation)

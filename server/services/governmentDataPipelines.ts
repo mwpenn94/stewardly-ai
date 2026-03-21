@@ -280,6 +280,13 @@ const BEA_DATASETS = [
   },
 ];
 
+// Helper: check BEA API response for errors
+function checkBEAError(data: any): string | null {
+  const error = data?.BEAAPI?.Results?.Error;
+  if (error) return `BEA API Error ${error.APIErrorCode}: ${error.APIErrorDescription}`;
+  return null;
+}
+
 async function fetchBEAData(): Promise<PipelineResult> {
   const start = Date.now();
   const apiKey = await getApiKeyForProvider("bea");
@@ -287,8 +294,9 @@ async function fetchBEAData(): Promise<PipelineResult> {
 
   try {
     const dataPoints: FetchedDataPoint[] = [];
+    const errors: string[] = [];
 
-    // Fetch GDP summary data
+    // Fetch GDP summary data (NIPA Table T10101 — % change from preceding period)
     try {
       const gdpResp = await fetch(
         `https://apps.bea.gov/api/data?&UserID=${apiKey}&method=GetData&DatasetName=NIPA&Frequency=Q&TableName=T10101&Year=LAST5&ResultFormat=JSON`,
@@ -296,43 +304,44 @@ async function fetchBEAData(): Promise<PipelineResult> {
       );
       if (gdpResp.ok) {
         const gdpData = await gdpResp.json();
-        const results = gdpData?.BEAAPI?.Results?.Data;
-        if (Array.isArray(results)) {
-          // Get the most recent quarter's key GDP metrics
-          const gdpLines: Record<string, string> = {
-            "1": "GDP",
-            "2": "Personal Consumption Expenditures",
-            "7": "Gross Private Domestic Investment",
-            "13": "Net Exports",
-            "22": "Government Consumption & Investment",
-          };
-          
-          // Group by time period, get latest
-          const byLine: Record<string, any> = {};
-          for (const row of results) {
-            const lineNum = row.LineNumber;
-            if (gdpLines[lineNum]) {
-              if (!byLine[lineNum] || row.TimePeriod > byLine[lineNum].TimePeriod) {
-                byLine[lineNum] = row;
+        const beaErr = checkBEAError(gdpData);
+        if (beaErr) {
+          errors.push(beaErr);
+        } else {
+          const results = gdpData?.BEAAPI?.Results?.Data;
+          if (Array.isArray(results) && results.length > 0) {
+            const gdpLines: Record<string, string> = {
+              "1": "GDP",
+              "2": "Personal Consumption Expenditures",
+              "7": "Gross Private Domestic Investment",
+              "13": "Net Exports",
+              "22": "Government Consumption & Investment",
+            };
+            const byLine: Record<string, any> = {};
+            for (const row of results) {
+              const lineNum = row.LineNumber;
+              if (gdpLines[lineNum]) {
+                if (!byLine[lineNum] || row.TimePeriod > byLine[lineNum].TimePeriod) {
+                  byLine[lineNum] = row;
+                }
               }
             }
-          }
-          
-          for (const [lineNum, row] of Object.entries(byLine)) {
-            dataPoints.push({
-              key: `bea_gdp_line_${lineNum}`,
-              label: `${gdpLines[lineNum]} (% Change)`,
-              value: row.DataValue,
-              date: row.TimePeriod,
-              unit: "% Change",
-              category: "gdp_components",
-            });
+            for (const [lineNum, row] of Object.entries(byLine)) {
+              dataPoints.push({
+                key: `bea_gdp_line_${lineNum}`,
+                label: `${gdpLines[lineNum]} (% Change)`,
+                value: row.DataValue,
+                date: row.TimePeriod,
+                unit: "% Change",
+                category: "gdp_components",
+              });
+            }
           }
         }
       }
-    } catch { /* skip GDP fetch failure */ }
+    } catch (e: any) { errors.push(`GDP fetch: ${e.message}`); }
 
-    // Fetch Personal Income data
+    // Fetch Personal Income data (NIPA Table T20100)
     try {
       const piResp = await fetch(
         `https://apps.bea.gov/api/data?&UserID=${apiKey}&method=GetData&DatasetName=NIPA&Frequency=M&TableName=T20100&Year=X&ResultFormat=JSON`,
@@ -340,36 +349,39 @@ async function fetchBEAData(): Promise<PipelineResult> {
       );
       if (piResp.ok) {
         const piData = await piResp.json();
-        const results = piData?.BEAAPI?.Results?.Data;
-        if (Array.isArray(results)) {
-          const piLines: Record<string, string> = {
-            "1": "Personal Income",
-            "27": "Disposable Personal Income",
-            "34": "Personal Saving Rate",
-          };
-          
-          const byLine: Record<string, any> = {};
-          for (const row of results) {
-            if (piLines[row.LineNumber]) {
-              if (!byLine[row.LineNumber] || row.TimePeriod > byLine[row.LineNumber].TimePeriod) {
-                byLine[row.LineNumber] = row;
+        const beaErr = checkBEAError(piData);
+        if (beaErr) {
+          errors.push(beaErr);
+        } else {
+          const results = piData?.BEAAPI?.Results?.Data;
+          if (Array.isArray(results) && results.length > 0) {
+            const piLines: Record<string, string> = {
+              "1": "Personal Income",
+              "27": "Disposable Personal Income",
+              "34": "Personal Saving Rate",
+            };
+            const byLine: Record<string, any> = {};
+            for (const row of results) {
+              if (piLines[row.LineNumber]) {
+                if (!byLine[row.LineNumber] || row.TimePeriod > byLine[row.LineNumber].TimePeriod) {
+                  byLine[row.LineNumber] = row;
+                }
               }
             }
-          }
-          
-          for (const [lineNum, row] of Object.entries(byLine)) {
-            dataPoints.push({
-              key: `bea_pi_line_${lineNum}`,
-              label: piLines[lineNum],
-              value: row.DataValue,
-              date: row.TimePeriod,
-              unit: lineNum === "34" ? "%" : "Billions $",
-              category: "personal_income",
-            });
+            for (const [lineNum, row] of Object.entries(byLine)) {
+              dataPoints.push({
+                key: `bea_pi_line_${lineNum}`,
+                label: piLines[lineNum],
+                value: row.DataValue,
+                date: row.TimePeriod,
+                unit: lineNum === "34" ? "%" : "Billions $",
+                category: "personal_income",
+              });
+            }
           }
         }
       }
-    } catch { /* skip PI fetch failure */ }
+    } catch (e: any) { errors.push(`PI fetch: ${e.message}`); }
 
     // Fetch International Trade data
     try {
@@ -379,23 +391,31 @@ async function fetchBEAData(): Promise<PipelineResult> {
       );
       if (tradeResp.ok) {
         const tradeData = await tradeResp.json();
-        const results = tradeData?.BEAAPI?.Results?.Data;
-        if (Array.isArray(results) && results.length > 0) {
-          // Get latest trade balance
-          const latest = results[results.length - 1];
-          dataPoints.push({
-            key: "bea_trade_balance",
-            label: "Trade Balance (Goods)",
-            value: latest.DataValue,
-            date: latest.TimePeriod,
-            unit: "Millions $",
-            category: "trade",
-          });
+        const beaErr = checkBEAError(tradeData);
+        if (beaErr) {
+          errors.push(beaErr);
+        } else {
+          const results = tradeData?.BEAAPI?.Results?.Data;
+          if (Array.isArray(results) && results.length > 0) {
+            const latest = results[results.length - 1];
+            dataPoints.push({
+              key: "bea_trade_balance",
+              label: "Trade Balance (Goods)",
+              value: latest.DataValue,
+              date: latest.TimePeriod,
+              unit: "Millions $",
+              category: "trade",
+            });
+          }
         }
       }
-    } catch { /* skip trade fetch failure */ }
+    } catch (e: any) { errors.push(`Trade fetch: ${e.message}`); }
 
     const stored = await storeDataPoints("bea", dataPoints);
+    // If we got 0 records but had errors, report as error with details
+    if (stored === 0 && errors.length > 0) {
+      return { pipeline: "BEA", providerSlug: "bea", status: "error", recordsFetched: 0, error: errors[0], duration: Date.now() - start };
+    }
     return { pipeline: "BEA", providerSlug: "bea", status: "success", recordsFetched: stored, duration: Date.now() - start };
   } catch (err: any) {
     return { pipeline: "BEA", providerSlug: "bea", status: "error", recordsFetched: 0, error: err.message, duration: Date.now() - start };
@@ -533,20 +553,288 @@ async function updateConnectionSyncStatus(providerSlug: string, recordsFetched: 
   }
 }
 
+// ─── SEC EDGAR Pipeline ─────────────────────────────────────────────────
+// Free public API — no key required, just a User-Agent header
+const SEC_EDGAR_USER_AGENT = "WealthBridgeAI support@wealthbridge.ai";
+
+// Major market indices and popular tickers for general market data
+const SEC_TICKERS = [
+  { cik: "0000320193", ticker: "AAPL", name: "Apple Inc." },
+  { cik: "0000789019", ticker: "MSFT", name: "Microsoft Corporation" },
+  { cik: "0001652044", ticker: "GOOGL", name: "Alphabet Inc." },
+  { cik: "0001018724", ticker: "AMZN", name: "Amazon.com Inc." },
+  { cik: "0001318605", ticker: "TSLA", name: "Tesla Inc." },
+  { cik: "0001067983", ticker: "BRK-B", name: "Berkshire Hathaway" },
+  { cik: "0000051143", ticker: "IBM", name: "IBM Corporation" },
+  { cik: "0000078003", ticker: "PFE", name: "Pfizer Inc." },
+  { cik: "0000093410", ticker: "CVX", name: "Chevron Corporation" },
+  { cik: "0000200406", ticker: "JNJ", name: "Johnson & Johnson" },
+];
+
+async function fetchSECEdgarData(): Promise<PipelineResult> {
+  const start = Date.now();
+  try {
+    const dataPoints: FetchedDataPoint[] = [];
+    const errors: string[] = [];
+
+    // 1. Fetch recent filings from EDGAR full-text search
+    try {
+      const resp = await fetch(
+        "https://efts.sec.gov/LATEST/search-index?q=%22annual+report%22&dateRange=custom&startdt=2025-01-01&enddt=2026-12-31&forms=10-K&from=0&size=10",
+        { headers: { "User-Agent": SEC_EDGAR_USER_AGENT }, signal: AbortSignal.timeout(15000) },
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const hits = data?.hits?.hits;
+        if (Array.isArray(hits)) {
+          dataPoints.push({
+            key: "sec_recent_10k_count",
+            label: "Recent 10-K Filings (2025-2026)",
+            value: String(data?.hits?.total?.value || hits.length),
+            date: new Date().toISOString().split("T")[0],
+            unit: "filings",
+            category: "sec_filings",
+          });
+        }
+      }
+    } catch (e: any) { errors.push(`EDGAR search: ${e.message}`); }
+
+    // 2. Fetch company facts for major companies
+    for (const company of SEC_TICKERS.slice(0, 5)) {
+      try {
+        const resp = await fetch(
+          `https://data.sec.gov/api/xbrl/companyfacts/CIK${company.cik}.json`,
+          { headers: { "User-Agent": SEC_EDGAR_USER_AGENT }, signal: AbortSignal.timeout(15000) },
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          const facts = data?.facts;
+          const usGaap = facts?.["us-gaap"];
+          if (usGaap) {
+            // Extract key financial metrics
+            const metrics: Record<string, { label: string; taxonomy: string }> = {
+              "Revenues": { label: `${company.ticker} Revenue`, taxonomy: "Revenues" },
+              "NetIncomeLoss": { label: `${company.ticker} Net Income`, taxonomy: "NetIncomeLoss" },
+              "Assets": { label: `${company.ticker} Total Assets`, taxonomy: "Assets" },
+              "StockholdersEquity": { label: `${company.ticker} Stockholders Equity`, taxonomy: "StockholdersEquity" },
+              "EarningsPerShareBasic": { label: `${company.ticker} EPS (Basic)`, taxonomy: "EarningsPerShareBasic" },
+            };
+
+            for (const [key, meta] of Object.entries(metrics)) {
+              const concept = usGaap[key];
+              if (!concept) continue;
+              const units = concept.units;
+              // Try USD first, then USD/shares for EPS
+              const unitKey = key === "EarningsPerShareBasic" ? "USD/shares" : "USD";
+              const entries = units?.[unitKey];
+              if (!Array.isArray(entries) || entries.length === 0) continue;
+              // Get the most recent annual (10-K) filing
+              const annual = entries.filter((e: any) => e.form === "10-K");
+              const latest = annual.length > 0 ? annual[annual.length - 1] : entries[entries.length - 1];
+              if (latest?.val !== undefined) {
+                const unit = key === "EarningsPerShareBasic" ? "$/share" : "USD";
+                const displayVal = key === "EarningsPerShareBasic"
+                  ? String(latest.val)
+                  : (latest.val >= 1e9 ? `$${(latest.val / 1e9).toFixed(1)}B` : `$${(latest.val / 1e6).toFixed(0)}M`);
+                dataPoints.push({
+                  key: `sec_${company.ticker.toLowerCase()}_${key.toLowerCase()}`,
+                  label: meta.label,
+                  value: displayVal,
+                  date: latest.end || latest.filed || new Date().toISOString().split("T")[0],
+                  unit,
+                  category: "sec_company_financials",
+                });
+              }
+            }
+          }
+        }
+        // SEC EDGAR rate limit: 10 requests/second
+        await new Promise(r => setTimeout(r, 150));
+      } catch (e: any) {
+        errors.push(`${company.ticker}: ${e.message}`);
+      }
+    }
+
+    // 3. Fetch recent EDGAR filings feed
+    try {
+      const resp = await fetch(
+        "https://efts.sec.gov/LATEST/search-index?q=*&forms=10-K,10-Q,8-K&from=0&size=5",
+        { headers: { "User-Agent": SEC_EDGAR_USER_AGENT }, signal: AbortSignal.timeout(15000) },
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const total = data?.hits?.total?.value;
+        if (total) {
+          dataPoints.push({
+            key: "sec_total_recent_filings",
+            label: "Total Recent SEC Filings (10-K/10-Q/8-K)",
+            value: String(total),
+            date: new Date().toISOString().split("T")[0],
+            unit: "filings",
+            category: "sec_filings",
+          });
+        }
+      }
+    } catch (e: any) { errors.push(`EDGAR feed: ${e.message}`); }
+
+    const stored = await storeDataPoints("sec-edgar", dataPoints);
+    if (stored === 0 && errors.length > 0) {
+      return { pipeline: "SEC EDGAR", providerSlug: "sec-edgar", status: "error", recordsFetched: 0, error: errors.join("; "), duration: Date.now() - start };
+    }
+    return { pipeline: "SEC EDGAR", providerSlug: "sec-edgar", status: "success", recordsFetched: stored, duration: Date.now() - start };
+  } catch (err: any) {
+    return { pipeline: "SEC EDGAR", providerSlug: "sec-edgar", status: "error", recordsFetched: 0, error: err.message, duration: Date.now() - start };
+  }
+}
+
+// ─── FINRA BrokerCheck Pipeline ─────────────────────────────────────────
+// Free public API — no key required
+async function fetchFINRAData(): Promise<PipelineResult> {
+  const start = Date.now();
+  try {
+    const dataPoints: FetchedDataPoint[] = [];
+    const errors: string[] = [];
+
+    // 1. Fetch major broker-dealer firm data
+    const majorFirms = [
+      { name: "Charles Schwab", query: "charles+schwab" },
+      { name: "Fidelity", query: "fidelity" },
+      { name: "Morgan Stanley", query: "morgan+stanley" },
+      { name: "Goldman Sachs", query: "goldman+sachs" },
+      { name: "JP Morgan", query: "jp+morgan" },
+    ];
+
+    for (const firm of majorFirms) {
+      try {
+        const resp = await fetch(
+          `https://api.brokercheck.finra.org/search/firm?query=${firm.query}&filter=active=true&hl=true&nrows=1&start=0`,
+          {
+            headers: {
+              "Accept": "application/json",
+              "User-Agent": SEC_EDGAR_USER_AGENT,
+            },
+            signal: AbortSignal.timeout(15000),
+          },
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          const hits = data?.hits?.hits;
+          if (Array.isArray(hits) && hits.length > 0) {
+            const firmData = hits[0]?._source;
+            if (firmData) {
+              // Correct field names from FINRA BrokerCheck API
+              const branchCount = firmData.firm_branches_count ?? "N/A";
+              const regCount = firmData.firm_approved_finra_registration_count ?? "N/A";
+              const firmName = firmData.firm_name || firmData.ia_firm_name || firm.name;
+              const crdNumber = firmData.firm_source_id || "";
+              const scope = firmData.firm_scope || "";
+              const bdSec = firmData.firm_bd_full_sec_number || "";
+              const iaSec = firmData.firm_ia_full_sec_number || "";
+
+              // Parse address from JSON string
+              let city = "", state = "";
+              try {
+                const addrJson = JSON.parse(firmData.firm_address_details || "{}");
+                city = addrJson?.officeAddress?.city || "";
+                state = addrJson?.officeAddress?.state || "";
+              } catch { /* skip */ }
+
+              const locationStr = city && state ? ` | ${city}, ${state}` : "";
+              const secStr = bdSec ? ` | BD SEC: ${bdSec}` : "";
+
+              dataPoints.push({
+                key: `finra_firm_${firm.query.replace(/\+/g, "_")}`,
+                label: `${firmName} (CRD: ${crdNumber})`,
+                value: `${regCount} registered reps, ${branchCount} branches${locationStr}${secStr}`,
+                date: new Date().toISOString().split("T")[0],
+                unit: "firm_info",
+                category: "finra_firms",
+              });
+            }
+          }
+        }
+        await new Promise(r => setTimeout(r, 300));
+      } catch (e: any) {
+        errors.push(`${firm.name}: ${e.message}`);
+      }
+    }
+
+    // 2. Fetch FINRA industry snapshot (total registered firms/individuals)
+    try {
+      const resp = await fetch(
+        "https://api.brokercheck.finra.org/search/firm?query=*&filter=active=true&nrows=0&start=0",
+        {
+          headers: { "Accept": "application/json", "User-Agent": SEC_EDGAR_USER_AGENT },
+          signal: AbortSignal.timeout(15000),
+        },
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const totalFirms = data?.hits?.total;
+        if (totalFirms) {
+          dataPoints.push({
+            key: "finra_total_active_firms",
+            label: "Total Active FINRA-Registered Firms",
+            value: String(typeof totalFirms === "object" ? totalFirms.value : totalFirms),
+            date: new Date().toISOString().split("T")[0],
+            unit: "firms",
+            category: "finra_industry",
+          });
+        }
+      }
+    } catch (e: any) { errors.push(`Industry snapshot: ${e.message}`); }
+
+    // 3. Fetch total registered individuals (use a common name search since wildcard returns 0)
+    try {
+      const resp = await fetch(
+        "https://api.brokercheck.finra.org/search/individual?query=smith&filter=active=true&nrows=0&start=0",
+        {
+          headers: { "Accept": "application/json", "User-Agent": SEC_EDGAR_USER_AGENT },
+          signal: AbortSignal.timeout(15000),
+        },
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const totalIndividuals = data?.hits?.total;
+        if (totalIndividuals) {
+          dataPoints.push({
+            key: "finra_individual_search_sample",
+            label: "FINRA-Registered Individuals (sample: 'Smith')",
+            value: String(typeof totalIndividuals === "object" ? totalIndividuals.value : totalIndividuals),
+            date: new Date().toISOString().split("T")[0],
+            unit: "individuals",
+            category: "finra_industry",
+          });
+        }
+      }
+    } catch (e: any) { errors.push(`Individual count: ${e.message}`); }
+
+    const stored = await storeDataPoints("finra-brokercheck", dataPoints);
+    if (stored === 0 && errors.length > 0) {
+      return { pipeline: "FINRA BrokerCheck", providerSlug: "finra-brokercheck", status: "error", recordsFetched: 0, error: errors.join("; "), duration: Date.now() - start };
+    }
+    return { pipeline: "FINRA BrokerCheck", providerSlug: "finra-brokercheck", status: "success", recordsFetched: stored, duration: Date.now() - start };
+  } catch (err: any) {
+    return { pipeline: "FINRA BrokerCheck", providerSlug: "finra-brokercheck", status: "error", recordsFetched: 0, error: err.message, duration: Date.now() - start };
+  }
+}
+
 // ─── Run All Pipelines ──────────────────────────────────────────────────
 export async function runAllDataPipelines(): Promise<PipelineResult[]> {
-  console.log("[DataPipelines] Starting all government data pipelines...");
+  console.log("[DataPipelines] Starting all data pipelines (6 providers)...");
   
   const results = await Promise.allSettled([
     fetchBLSData(),
     fetchFREDData(),
     fetchBEAData(),
     fetchCensusData(),
+    fetchSECEdgarData(),
+    fetchFINRAData(),
   ]);
 
   const finalResults = results.map((r, i) => {
-    const names = ["BLS", "FRED", "BEA", "Census"];
-    const slugs = ["bls", "fred", "bea", "census-bureau"];
+    const names = ["BLS", "FRED", "BEA", "Census", "SEC EDGAR", "FINRA BrokerCheck"];
+    const slugs = ["bls", "fred", "bea", "census-bureau", "sec-edgar", "finra-brokercheck"];
     if (r.status === "fulfilled") return r.value;
     return {
       pipeline: names[i],
@@ -582,6 +870,8 @@ export async function runSinglePipeline(providerSlug: string): Promise<PipelineR
     "fred": fetchFREDData,
     "bea": fetchBEAData,
     "census-bureau": fetchCensusData,
+    "sec-edgar": fetchSECEdgarData,
+    "finra-brokercheck": fetchFINRAData,
   };
 
   const fetcher = pipelineMap[providerSlug];
@@ -684,6 +974,32 @@ export async function getEconomicDataSummary(): Promise<string> {
     }
   }
 
+  // SEC EDGAR Section
+  const secData = await db.select().from(enrichmentCache)
+    .where(eq(enrichmentCache.providerSlug, "sec-edgar"));
+  if (secData.length > 0) {
+    sections.push("\n### SEC EDGAR (Company Filings)");
+    for (const entry of secData) {
+      const d = entry.resultJson as any;
+      if (d?.label && d?.value) {
+        sections.push(`- ${d.label}: ${d.value} (as of ${d.date})`);
+      }
+    }
+  }
+
+  // FINRA Section
+  const finraData = await db.select().from(enrichmentCache)
+    .where(eq(enrichmentCache.providerSlug, "finra-brokercheck"));
+  if (finraData.length > 0) {
+    sections.push("\n### FINRA BrokerCheck");
+    for (const entry of finraData) {
+      const d = entry.resultJson as any;
+      if (d?.label && d?.value) {
+        sections.push(`- ${d.label}: ${d.value} (as of ${d.date})`);
+      }
+    }
+  }
+
   if (sections.length === 0) return "";
-  return `## Live Economic Data (Government Sources)\n${sections.join("\n")}`;
+  return `## Live Economic & Financial Data (Government Sources)\n${sections.join("\n")}`;
 }
