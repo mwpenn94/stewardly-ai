@@ -258,7 +258,7 @@ describe("Apollo Service — Enrichment Logic", () => {
     const { apolloService } = await import("./services/auth/apolloService");
     const result = await apolloService.testConnection("invalid-key");
     expect(typeof result).toBe("boolean");
-  });
+  }, 15000);
 });
 
 // ═══════════════════════════════════════════════════════════════════

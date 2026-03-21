@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { navigateToChat } from "@/lib/navigateToChat";
 import { Plug, Link2, Unlink, RefreshCw, CheckCircle, XCircle, Clock } from "lucide-react";
 
 export default function AdvisorIntegrations() {
@@ -63,7 +64,7 @@ export default function AdvisorIntegrations() {
                   <Button variant="outline" size="sm" onClick={() => toast.info("Re-syncing data...")}>
                     <RefreshCw className="h-3 w-3 mr-1" /> Sync
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => toast.info("Feature coming soon")}>
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => navigateToChat(`Help me disconnect the ${conn.provider?.name || 'integration'} connection. What data will be affected and what steps are needed?`)}>
                     <Unlink className="h-3 w-3" />
                   </Button>
                 </div>
@@ -93,7 +94,7 @@ export default function AdvisorIntegrations() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Auth: {provider.authType}</span>
-                    <Button size="sm" onClick={() => toast.info(`Connect ${provider.name}: OAuth flow coming soon`)}>
+                    <Button size="sm" onClick={() => navigateToChat(`Help me connect ${provider.name} (${provider.category}) to my account. Walk me through the setup process and what permissions are needed.`)}>
                       <Link2 className="h-3 w-3 mr-1" /> Connect
                     </Button>
                   </div>

@@ -45,6 +45,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { useLocation, useRoute } from "wouter";
+import { consumePendingPrompt } from "@/lib/navigateToChat";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
 import { ConvItem, SortableConvItem } from "@/components/chat/ConvItem";
@@ -569,6 +570,18 @@ export default function Chat() {
   };
 
   // ─── EFFECTS ──────────────────────────────────────────────────
+  // Consume pending prompt from hub navigation (sessionStorage)
+  useEffect(() => {
+    const pending = consumePendingPrompt();
+    if (pending) {
+      setInput(pending.prompt);
+      if (pending.focus) {
+        setSelectedFocus([pending.focus]);
+      }
+      // Focus the textarea after a brief delay to let the component render
+      setTimeout(() => textareaRef.current?.focus(), 300);
+    }
+  }, []);
   useEffect(() => {
     if (matchChat && paramsChat?.id) setConversationId(parseInt(paramsChat.id));
   }, [matchChat, paramsChat?.id]);

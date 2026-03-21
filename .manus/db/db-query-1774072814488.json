@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, name, company, category, isPlatform FROM products LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT id, name, company, category, isPlatform FROM products LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "WealthBridge IUL Accumulator",
+      "company": "WealthBridge Financial Group",
+      "category": "iul",
+      "isPlatform": "1"
+    },
+    {
+      "id": "2",
+      "name": "WealthBridge IUL Protector",
+      "company": "WealthBridge Financial Group",
+      "category": "iul",
+      "isPlatform": "1"
+    },
+    {
+      "id": "3",
+      "name": "WealthBridge Premium Finance Solution",
+      "company": "WealthBridge Financial Group",
+      "category": "premium_finance",
+      "isPlatform": "1"
+    },
+    {
+      "id": "4",
+      "name": "WealthBridge Executive Bonus Plan (162)",
+      "company": "WealthBridge Financial Group",
+      "category": "whole_life",
+      "isPlatform": "1"
+    },
+    {
+      "id": "5",
+      "name": "WealthBridge Key Person Insurance",
+      "company": "WealthBridge Financial Group",
+      "category": "term_life",
+      "isPlatform": "1"
+    },
+    {
+      "id": "6",
+      "name": "WealthBridge Retirement Income Maximizer",
+      "company": "WealthBridge Financial Group",
+      "category": "iul",
+      "isPlatform": "1"
+    },
+    {
+      "id": "7",
+      "name": "WealthBridge Charitable Legacy Plan",
+      "company": "WealthBridge Financial Group",
+      "category": "whole_life",
+      "isPlatform": "1"
+    },
+    {
+      "id": "8",
+      "name": "WealthBridge Disability Income Protection",
+      "company": "WealthBridge Financial Group",
+      "category": "disability",
+      "isPlatform": "1"
+    },
+    {
+      "id": "30001",
+      "name": "NWM Custom Whole Life",
+      "company": "Northwestern Mutual",
+      "category": "whole_life",
+      "isPlatform": "1"
+    },
+    {
+      "id": "30002",
+      "name": "NWM Select Term",
+      "company": "Northwestern Mutual",
+      "category": "term_life",
+      "isPlatform": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tcompany\tcategory\tisPlatform\n1\tWealthBridge IUL Accumulator\tWealthBridge Financial Group\tiul\t1\n2\tWealthBridge IUL Protector\tWealthBridge Financial Group\tiul\t1\n3\tWealthBridge Premium Finance Solution\tWealthBridge Financial Group\tpremium_finance\t1\n4\tWealthBridge Executive Bonus Plan (162)\tWealthBridge Financial Group\twhole_life\t1\n5\tWealthBridge Key Person Insurance\tWealthBridge Financial Group\tterm_life\t1\n6\tWealthBridge Retirement Income Maximizer\tWealthBridge Financial Group\tiul\t1\n7\tWealthBridge Charitable Legacy Plan\tWealthBridge Financial Group\twhole_life\t1\n8\tWealthBridge Disability Income Protection\tWealthBridge Financial Group\tdisability\t1\n30001\tNWM Custom Whole Life\tNorthwestern Mutual\twhole_life\t1\n30002\tNWM Select Term\tNorthwestern Mutual\tterm_life\t1\n",
+  "stderr": "",
+  "execution_time_ms": 136
+}

@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Link } from "wouter";
+import { navigateToChat } from "@/lib/navigateToChat";
 import {
   ArrowLeft, Activity, Bot, Shield, History, Play, Pause, Square,
   CheckCircle2, XCircle, Clock, AlertTriangle, Loader2, Eye,
@@ -79,22 +80,18 @@ export default function OperationsHub() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Active Work Tab */}
           <TabsContent value="active" className="space-y-4 mt-4">
             <ActiveWorkSection />
           </TabsContent>
 
-          {/* Agents Tab */}
           <TabsContent value="agents" className="space-y-4 mt-4">
             <AgentsSection />
           </TabsContent>
 
-          {/* Compliance Tab */}
           <TabsContent value="compliance" className="space-y-4 mt-4">
             <ComplianceSection />
           </TabsContent>
 
-          {/* History Tab */}
           <TabsContent value="history" className="space-y-4 mt-4">
             <HistorySection />
           </TabsContent>
@@ -149,7 +146,11 @@ function ActiveWorkSection() {
                 </div>
               )) ?? (
                 <div className="text-center py-6 text-muted-foreground text-sm">
-                  No active workflows. Start one from chat by asking the AI.
+                  No active workflows.
+                  <br />
+                  <Button variant="link" size="sm" className="mt-1 text-xs" onClick={() => navigateToChat("Help me start a new workflow. What types of automated workflows can I create for my advisory practice?")}>
+                    Ask the AI to start a workflow →
+                  </Button>
                 </div>
               )}
             </div>
@@ -179,10 +180,10 @@ function ActiveWorkSection() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => toast.info("Feature coming soon")}>
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigateToChat(`Review and approve the pending action: "${review.actionType || "Action"}" — ${review.summary || "Pending review"}. Show me the details and let me confirm approval.`)}>
                       <CheckCircle2 className="h-3 w-3 mr-1" /> Approve
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => toast.info("Feature coming soon")}>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => navigateToChat(`I want to reject the pending action: "${review.actionType || "Action"}" — ${review.summary || "Pending review"}. Help me document the reason for rejection.`)}>
                       <XCircle className="h-3 w-3" />
                     </Button>
                   </div>
@@ -207,7 +208,7 @@ function AgentsSection() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Agent Fleet</h3>
-        <Button size="sm" onClick={() => toast.info("Create agents from chat by describing the task")}>
+        <Button size="sm" onClick={() => navigateToChat("Help me create a new AI agent for my practice. What types of agents can I set up? I'm interested in automating recurring tasks like client follow-ups, market monitoring, or compliance checks.")}>
           <Bot className="h-3 w-3 mr-1" /> New Agent
         </Button>
       </div>
@@ -234,10 +235,10 @@ function AgentsSection() {
                   </Badge>
                 </div>
                 <div className="mt-3 flex gap-1">
-                  <Button size="sm" variant="outline" className="h-7 text-xs flex-1" onClick={() => toast.info("Feature coming soon")}>
+                  <Button size="sm" variant="outline" className="h-7 text-xs flex-1" onClick={() => navigateToChat(`Run the "${agent.name}" agent now. Show me what it will do and let me confirm before executing.`)}>
                     <Play className="h-3 w-3 mr-1" /> Run
                   </Button>
-                  <Button size="sm" variant="outline" className="h-7 text-xs flex-1" onClick={() => toast.info("Feature coming soon")}>
+                  <Button size="sm" variant="outline" className="h-7 text-xs flex-1" onClick={() => navigateToChat(`Show me the details and recent activity of the "${agent.name}" agent. What has it done recently and what's its current status?`)}>
                     <Eye className="h-3 w-3 mr-1" /> View
                   </Button>
                 </div>
@@ -245,7 +246,12 @@ function AgentsSection() {
             </Card>
           )) ?? (
             <div className="col-span-2 text-center py-12 text-muted-foreground text-sm">
-              No agents configured yet. Ask the AI to create one for you.
+              <Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              No agents configured yet.
+              <br />
+              <Button variant="link" size="sm" className="mt-1 text-xs" onClick={() => navigateToChat("Help me set up my first AI agent. I want to automate some recurring tasks in my advisory practice.")}>
+                Ask the AI to create one for you →
+              </Button>
             </div>
           )}
         </div>

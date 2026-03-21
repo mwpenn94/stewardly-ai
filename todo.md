@@ -2134,3 +2134,13 @@
 ## Post-Launch Bug Fixes
 - [x] Fix mobile view crowding — hide redundant guest elements on mobile chat
 - [x] Fix tour wizard — reorder steps, ensure targets exist, prevent overlay click from closing tour
+
+## Wire Placeholder Toasts to Real Actions
+- [x] IntelligenceHub: 6 buttons (full analysis, morning brief, compare products, market insights, run all models, run model) → navigate to chat with pre-filled prompt
+- [x] AdvisoryHub: 4 buttons (analyze product, create case, start template, category click) → navigate to chat with pre-filled prompt
+- [x] RelationshipsHub: 8 buttons (add contact, network click, schedule meeting, video/phone/brief/notes, email campaign, templates) → navigate to chat with pre-filled prompt
+- [x] OperationsHub: 4 buttons (feature coming soon) → navigate to chat with contextual prompt
+- [x] AdminIntegrations: 1 button (feature coming soon) → wire to real action or chat
+- [x] AdvisorIntegrations: 2 buttons (disconnect, connect OAuth) → wire to real action or chat
+- [x] AISettings: 1 button (feature coming soon) → wire to real action or chat
+- [x] GlobalAdmin: 1 button (org management coming soon) → wire to real action or chat

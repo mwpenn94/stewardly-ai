@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { navigateToChat } from "@/lib/navigateToChat";
 import { Plug, Search, RefreshCw, Activity, AlertTriangle, CheckCircle, XCircle, Settings2 } from "lucide-react";
 
 export default function AdminIntegrations() {
@@ -73,7 +74,7 @@ export default function AdminIntegrations() {
                   <p className="text-sm text-muted-foreground mb-3">{provider.description || "No description"}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>Auth: {provider.authType}</span>
-                    <Button variant="outline" size="sm" onClick={() => toast.info("Feature coming soon")}>
+                    <Button variant="outline" size="sm" onClick={() => navigateToChat(`Help me configure the ${provider.name} integration (${provider.category}). Walk me through the setup process and what credentials are needed.`)}>
                       Configure
                     </Button>
                   </div>

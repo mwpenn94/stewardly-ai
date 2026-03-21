@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
 import { Link } from "wouter";
+import { navigateToChat } from "@/lib/navigateToChat";
 import {
   ArrowLeft, Package, Briefcase, Lightbulb, Search, Filter,
   Star, TrendingUp, Shield, FileText, Calculator, DollarSign,
@@ -107,12 +107,12 @@ function ProductsSection({ searchQuery }: { searchQuery: string }) {
   const products = trpc.products.list.useQuery({});
 
   const categories = [
-    { name: "Life Insurance", icon: Shield, count: "—", color: "text-blue-500" },
-    { name: "Annuities", icon: DollarSign, count: "—", color: "text-green-500" },
-    { name: "Estate Planning", icon: Scale, count: "—", color: "text-purple-500" },
-    { name: "Premium Finance", icon: Building2, count: "—", color: "text-amber-500" },
-    { name: "Investment Products", icon: TrendingUp, count: "—", color: "text-cyan-500" },
-    { name: "Marketplace", icon: Star, count: "—", color: "text-pink-500" },
+    { name: "Life Insurance", icon: Shield, color: "text-blue-500", prompt: "Tell me about the life insurance products available on the platform. What are the top options and how do they compare?" },
+    { name: "Annuities", icon: DollarSign, color: "text-green-500", prompt: "Walk me through the annuity products available. Compare fixed, variable, and indexed annuities with their current rates and features." },
+    { name: "Estate Planning", icon: Scale, color: "text-purple-500", prompt: "Help me understand the estate planning tools and strategies available. What products support estate planning for high-net-worth clients?" },
+    { name: "Premium Finance", icon: Building2, color: "text-amber-500", prompt: "Explain the premium finance options available. What are the current rates, terms, and which carriers support premium financing?" },
+    { name: "Investment Products", icon: TrendingUp, color: "text-cyan-500", prompt: "Show me the investment products available on the platform. Compare mutual funds, ETFs, and managed accounts." },
+    { name: "Marketplace", icon: Star, color: "text-pink-500", prompt: "Browse the marketplace for available financial products and services. What's new and trending?" },
   ];
 
   return (
@@ -120,12 +120,12 @@ function ProductsSection({ searchQuery }: { searchQuery: string }) {
       {/* Category Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {categories.map((cat) => (
-          <Card key={cat.name} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => toast.info("Ask the AI about " + cat.name)}>
+          <Card key={cat.name} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigateToChat(cat.prompt, "financial")}>
             <CardContent className="p-4 flex items-center gap-3">
               <cat.icon className={`h-5 w-5 ${cat.color}`} />
               <div>
                 <div className="text-sm font-medium">{cat.name}</div>
-                <div className="text-xs text-muted-foreground">{cat.count} products</div>
+                <div className="text-xs text-muted-foreground">Explore →</div>
               </div>
             </CardContent>
           </Card>
@@ -155,7 +155,7 @@ function ProductsSection({ searchQuery }: { searchQuery: string }) {
                     {product.suitabilityScore && (
                       <Badge variant="outline" className="text-xs">{product.suitabilityScore}% match</Badge>
                     )}
-                    <Button size="sm" variant="ghost" className="h-7" onClick={() => toast.info("Ask the AI to analyze this product")}>
+                    <Button size="sm" variant="ghost" className="h-7" onClick={() => navigateToChat(`Analyze the product "${product.name}" by ${product.carrier}. Give me a detailed breakdown of features, costs, suitability, and how it compares to alternatives.`, "financial")}>
                       <Eye className="h-3 w-3" />
                     </Button>
                   </div>
@@ -163,7 +163,11 @@ function ProductsSection({ searchQuery }: { searchQuery: string }) {
               )) ?? (
                 <div className="text-center py-8 text-muted-foreground text-sm">
                   <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  Ask the AI to search for products matching your needs.
+                  No products loaded yet.
+                  <br />
+                  <Button variant="link" size="sm" className="mt-1 text-xs" onClick={() => navigateToChat("Search for financial products matching my client's needs. I'm looking for suitable insurance and investment options.", "financial")}>
+                    Ask the AI to search for products →
+                  </Button>
                 </div>
               )}
             </div>
@@ -197,7 +201,7 @@ function CasesSection() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Active Cases</h3>
-        <Button size="sm" onClick={() => toast.info("Ask the AI to create a new case")}>
+        <Button size="sm" onClick={() => navigateToChat("I need to create a new advisory case. Help me set up the case details including client information, objectives, and the type of advisory work needed.", "financial")}>
           <Plus className="h-3 w-3 mr-1" /> New Case
         </Button>
       </div>
@@ -210,7 +214,9 @@ function CasesSection() {
             <br />
             on insurance applications, estate planning, or premium finance.
             <br />
-            <span className="text-xs">Ask the AI to start a new advisory case.</span>
+            <Button variant="link" size="sm" className="mt-1 text-xs" onClick={() => navigateToChat("Help me start a new advisory case for a client.", "financial")}>
+              Ask the AI to start a new case →
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -223,12 +229,12 @@ function CasesSection() {
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-2">
           {[
-            { name: "Insurance Application", icon: Shield },
-            { name: "Estate Plan Review", icon: Scale },
-            { name: "Premium Finance Setup", icon: Building2 },
-            { name: "Retirement Analysis", icon: Calculator },
+            { name: "Insurance Application", icon: Shield, prompt: "Start a new insurance application case. Walk me through the process: client intake, needs analysis, carrier selection, application preparation, and submission." },
+            { name: "Estate Plan Review", icon: Scale, prompt: "Start an estate plan review case. Help me analyze the client's current estate plan, identify gaps, and recommend updates to their wills, trusts, and beneficiary designations." },
+            { name: "Premium Finance Setup", icon: Building2, prompt: "Start a premium finance setup case. Guide me through evaluating whether premium financing is appropriate, selecting a lender, structuring the loan, and managing the collateral." },
+            { name: "Retirement Analysis", icon: Calculator, prompt: "Start a retirement analysis case. Help me build a comprehensive retirement plan including income projections, Social Security optimization, withdrawal strategies, and gap analysis." },
           ].map((template) => (
-            <Button key={template.name} variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => toast.info("Ask the AI to start a " + template.name)}>
+            <Button key={template.name} variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => navigateToChat(template.prompt, "financial")}>
               <template.icon className="h-4 w-4" />
               <span className="text-xs">{template.name}</span>
             </Button>

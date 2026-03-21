@@ -997,7 +997,7 @@ export default function AISettings() {
               <div className="text-center text-muted-foreground py-12">
                 <Building2 className="w-8 h-8 mx-auto mb-3 opacity-50" />
                 <p className="text-sm">Organization AI settings are managed from the Organization Settings page.</p>
-                <Button variant="outline" size="sm" className="mt-3" onClick={() => toast.info("Feature coming soon")}>
+                <Button variant="outline" size="sm" className="mt-3" onClick={() => window.location.assign("/organizations")}>
                   Go to Organization Settings
                 </Button>
               </div>

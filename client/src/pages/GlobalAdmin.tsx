@@ -223,7 +223,7 @@ export default function GlobalAdmin() {
                         <div
                           key={org.id}
                           className="flex items-center gap-4 p-4 rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer group"
-                          onClick={() => toast.info(`Org management for "${org.name}" — coming soon`)}
+                          onClick={() => window.location.assign(`/organizations`)}
                         >
                           <div
                             className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0"

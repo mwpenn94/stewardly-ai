@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
 import { Link } from "wouter";
+import { navigateToChat } from "@/lib/navigateToChat";
 import {
   ArrowLeft, Brain, BarChart3, Database, TrendingUp, Loader2,
   Play, Eye, RefreshCw, Lightbulb, Target, Activity, Zap,
@@ -142,19 +142,19 @@ function OverviewSection() {
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-2">
-          <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => toast.info("Ask the AI to run a full analysis")}>
+          <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => navigateToChat("Run a full portfolio risk analysis and provide a comprehensive report on my current positions, risk exposure, and recommendations", "financial")}>
             <Zap className="h-4 w-4" />
             <span className="text-xs">Run Full Analysis</span>
           </Button>
-          <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => toast.info("Ask the AI for a morning brief")}>
+          <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => navigateToChat("Give me a morning brief: summarize today's key market movements, any portfolio alerts, upcoming client meetings, and action items for the day", "financial")}>
             <Lightbulb className="h-4 w-4" />
             <span className="text-xs">Morning Brief</span>
           </Button>
-          <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => toast.info("Ask the AI to compare products")}>
+          <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => navigateToChat("Compare the top insurance and annuity products available on the platform. Show me a side-by-side comparison of features, costs, and suitability scores", "financial")}>
             <BarChart3 className="h-4 w-4" />
             <span className="text-xs">Compare Products</span>
           </Button>
-          <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => toast.info("Ask the AI for market insights")}>
+          <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => navigateToChat("What are the latest market insights and trends? Cover equities, fixed income, and insurance product trends that are relevant to my practice", "financial")}>
             <TrendingUp className="h-4 w-4" />
             <span className="text-xs">Market Insights</span>
           </Button>
@@ -201,7 +201,7 @@ function ModelsSection() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">AI Model Fleet</h3>
-        <Button size="sm" variant="outline" onClick={() => toast.info("Ask the AI to run all models")}>
+        <Button size="sm" variant="outline" onClick={() => navigateToChat("Run all AI models and give me a consolidated report: Portfolio Risk, Retirement Projection, Product Suitability, Tax Optimization, Insurance Needs, Estate Planning, Debt Optimization, and Behavioral Finance analysis", "financial")}>
           <Play className="h-3 w-3 mr-1" /> Run All
         </Button>
       </div>
@@ -228,7 +228,7 @@ function ModelsSection() {
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" /> {model.lastRun}
                 </span>
-                <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => toast.info("Ask the AI to run this model")}>
+                <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => navigateToChat(`Run the ${model.name} model (${model.type}) and provide detailed results with recommendations`, "financial")}>
                   <Play className="h-3 w-3 mr-1" /> Run
                 </Button>
               </div>
@@ -340,7 +340,9 @@ function AnalyticsSection() {
             <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
             Analytics will populate as you use the platform.
             <br />
-            <span className="text-xs">Ask the AI for detailed analytics reports.</span>
+            <Button variant="link" size="sm" className="mt-1 text-xs" onClick={() => navigateToChat("Show me detailed analytics on AI model performance, response accuracy, and usage patterns across the platform")}>
+              Ask the AI for detailed analytics reports →
+            </Button>
           </div>
         </CardContent>
       </Card>
