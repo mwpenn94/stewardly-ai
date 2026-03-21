@@ -206,6 +206,16 @@ const chatRouter = router({
         fullSystemPrompt += `\n\n${exponentialPrompt}`;
       }
 
+      // ── INTEGRATION HEALTH AWARENESS ──────────────────────────────
+      // Inject live data source status so AI knows which APIs are available
+      try {
+        const { assembleIntegrationHealthContext } = await import("./services/integrationHealth");
+        const healthCtx = await assembleIntegrationHealthContext();
+        if (healthCtx.promptFragment) {
+          fullSystemPrompt += `\n\n${healthCtx.promptFragment}`;
+        }
+      } catch { /* integration health context is optional */ }
+
       // C13: Knowledge base context injection
       try {
         const { searchArticles } = await import("./services/knowledgeBase");

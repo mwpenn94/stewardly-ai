@@ -2263,3 +2263,22 @@
 - [x] Handle 200 responses with error body (some APIs return 200 with error JSON)
 - [x] 20 new integration connection tests (1,266 total tests passing)
 - [x] 0 TypeScript errors
+
+## Integration Health Dashboard + AI Self-Awareness Integration
+- [x] Reset stale government API connections and re-verify all 4 keys (BLS, FRED, BEA, Census)
+- [x] Build Integration Health Dashboard page (/integration-health) with connection status grid, error rates, uptime tracking, last sync times
+- [x] Add integration_health_checks table for tracking periodic health check results
+- [x] Add integration_improvement_log table for agent-based continuous improvement actions
+- [x] Add integration_health_summary table for aggregated health per connection
+- [x] Wire integration health into AI system prompt (AI knows which data sources are live/degraded/offline)
+- [x] Add integration features to Exponential Engine feature catalog (track user exploration of integrations)
+- [x] Feed integration health events into Exponential Engine proficiency scoring
+- [x] Build agent-based continuous improvement service: auto-detect degraded connections, suggest fixes, log actions
+- [x] Add integration health summary to AI context assembly (data source awareness)
+- [ ] Add sidebar navigation entry for Integration Health Dashboard
+- [x] Write comprehensive tests for all new features (14 tests passing)
+- [ ] Register for free BLS API key at api.bls.gov
+- [ ] Register for free FRED API key at fred.stlouisfed.org
+- [ ] Register for free BEA API key at apps.bea.gov
+- [ ] Register for free Census Bureau API key at api.census.gov
+- [ ] Connect all 4 keys and verify active status

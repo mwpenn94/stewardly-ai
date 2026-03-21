@@ -508,6 +508,12 @@ export default function Integrations() {
           <div className="flex-1 min-w-0">
             <h1 className="text-lg font-semibold truncate">Data Integrations</h1>
           </div>
+          <Link href="/integration-health">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Activity className="h-4 w-4" />
+              Health Dashboard
+            </Button>
+          </Link>
         </div>
       </div>
 

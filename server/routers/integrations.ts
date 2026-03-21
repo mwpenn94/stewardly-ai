@@ -8,6 +8,9 @@ import {
   integrationFieldMappings,
   integrationWebhookEvents,
   enrichmentCache,
+  integrationHealthChecks,
+  integrationHealthSummary,
+  integrationImprovementLog,
   carrierImportTemplates,
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, lte } from "drizzle-orm";
@@ -665,5 +668,56 @@ export const integrationsRouter = router({
       }
 
       return results;
+    }),
+
+  // ─── Health Dashboard ─────────────────────────────────────────────
+  getHealthDashboard: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { getHealthDashboardData } = await import("../services/integrationHealth");
+      // Track this as an Exponential Engine event
+      try {
+        const { trackEvent } = await import("../services/exponentialEngine");
+        trackEvent({ userId: ctx.user.id, eventType: "page_view", featureKey: "integration_health", metadata: {} }).catch(() => {});
+      } catch {}
+      return getHealthDashboardData();
+    }),
+
+  runHealthChecks: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const { runAllHealthChecks } = await import("../services/integrationHealth");
+      const results = await runAllHealthChecks();
+      // Track health check run as improvement agent interaction
+      try {
+        const { trackEvent } = await import("../services/exponentialEngine");
+        trackEvent({ userId: ctx.user.id, eventType: "feature_use", featureKey: "integration_improvement", metadata: { checksRun: results.length } }).catch(() => {});
+      } catch {}
+      return { results, checkedAt: new Date() };
+    }),
+
+  runSingleHealthCheck: protectedProcedure
+    .input(z.object({ connectionId: z.string() }))
+    .mutation(async ({ input }) => {
+      const { runHealthCheck } = await import("../services/integrationHealth");
+      return runHealthCheck(input.connectionId);
+    }),
+
+  getImprovementLog: protectedProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(50),
+      severity: z.enum(["info", "warning", "critical"]).optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const db = (await getDb())!;
+      const limit = input?.limit || 50;
+      let query = db.select().from(integrationImprovementLog)
+        .orderBy(desc(integrationImprovementLog.createdAt))
+        .limit(limit);
+      return query;
+    }),
+
+  getIntegrationHealthContext: protectedProcedure
+    .query(async () => {
+      const { assembleIntegrationHealthContext } = await import("../services/integrationHealth");
+      return assembleIntegrationHealthContext();
     }),
 });

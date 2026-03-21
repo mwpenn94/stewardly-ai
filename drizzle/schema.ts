@@ -3681,3 +3681,60 @@ export const selfDiscoveryHistory = mysqlTable("self_discovery_history", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type SelfDiscoveryEntry = typeof selfDiscoveryHistory.$inferSelect;
+
+
+// ─── INTEGRATION HEALTH CHECKS (Periodic health monitoring) ────────────────
+export const integrationHealthChecks = mysqlTable("integration_health_checks", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  connectionId: varchar("connection_id", { length: 36 }).notNull(),
+  providerId: varchar("provider_id", { length: 36 }).notNull(),
+  checkType: mysqlEnum("check_type", ["connectivity", "auth", "data_freshness", "rate_limit", "schema_drift"]).notNull(),
+  status: mysqlEnum("status", ["healthy", "degraded", "unhealthy", "unknown"]).notNull(),
+  latencyMs: int("latency_ms"),
+  responseCode: int("response_code"),
+  errorMessage: text("error_message"),
+  metadata: json("metadata"), // Additional check-specific data (e.g., rate limit remaining, data age)
+  checkedAt: timestamp("checked_at").defaultNow().notNull(),
+});
+export type IntegrationHealthCheck = typeof integrationHealthChecks.$inferSelect;
+
+// ─── INTEGRATION HEALTH SUMMARY (Aggregated health per connection) ─────────
+export const integrationHealthSummary = mysqlTable("integration_health_summary", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  connectionId: varchar("connection_id", { length: 36 }).notNull(),
+  overallStatus: mysqlEnum("overall_status", ["healthy", "degraded", "unhealthy", "unknown"]).default("unknown"),
+  uptimePercent: decimal("uptime_percent", { precision: 5, scale: 2 }).default("0"),
+  avgLatencyMs: int("avg_latency_ms"),
+  checksTotal: int("checks_total").default(0),
+  checksHealthy: int("checks_healthy").default(0),
+  checksFailed: int("checks_failed").default(0),
+  lastHealthyAt: timestamp("last_healthy_at"),
+  lastUnhealthyAt: timestamp("last_unhealthy_at"),
+  consecutiveFailures: int("consecutive_failures").default(0),
+  dataFreshnessMinutes: int("data_freshness_minutes"),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type IntegrationHealthSummaryRow = typeof integrationHealthSummary.$inferSelect;
+
+// ─── INTEGRATION IMPROVEMENT LOG (Agent-based continuous improvement) ──────
+export const integrationImprovementLog = mysqlTable("integration_improvement_log", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  connectionId: varchar("connection_id", { length: 36 }),
+  providerId: varchar("provider_id", { length: 36 }),
+  actionType: mysqlEnum("action_type", [
+    "auto_reconnect", "key_rotation_reminder", "rate_limit_backoff",
+    "schema_migration", "data_quality_alert", "performance_optimization",
+    "degradation_detected", "recovery_confirmed", "user_notification",
+    "ai_context_updated", "feature_suggestion"
+  ]).notNull(),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("info"),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  suggestedAction: text("suggested_action"),
+  actionTaken: text("action_taken"),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: varchar("resolved_by", { length: 100 }),
+  aiGenerated: mysqlBoolean("ai_generated").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type IntegrationImprovementLogEntry = typeof integrationImprovementLog.$inferSelect;

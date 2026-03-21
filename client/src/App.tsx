@@ -48,6 +48,7 @@ import ImprovementEngine from "./pages/ImprovementEngine";
 import Integrations from "./pages/Integrations";
 import { GuidedTour } from "./components/GuidedTour";
 import IntelligenceFeed from "./pages/IntelligenceFeed";
+import IntegrationHealth from "./pages/IntegrationHealth";
 import AnalyticsHub from "./pages/AnalyticsHub";
 import ModelResults from "./pages/ModelResults";
 import BCP from "./pages/BCP";
@@ -97,6 +98,7 @@ function Router() {
       <Route path={"/admin/knowledge"} component={KnowledgeAdmin} />
       <Route path={"/admin/integrations"} component={AdminIntegrations} />
       <Route path={"/my-integrations"} component={AdvisorIntegrations} />
+      <Route path={"/integration-health"} component={IntegrationHealth} />
       <Route path={"/suitability-panel"} component={SuitabilityPanel} />
       <Route path={"/proficiency"} component={ProficiencyDashboard} />
 

@@ -74,6 +74,10 @@ export const FEATURE_CATALOG: FeatureDefinition[] = [
   { key: "manager_dashboard", label: "Manager Dashboard", category: "tools", layer: "manager", description: "Team performance, oversight, and delegation dashboard", roles: ["manager", "admin"] },
   { key: "portal", label: "Advisor Portal", category: "tools", layer: "professional", description: "Professional workspace with client management and case tools", roles: ["advisor", "manager", "admin"] },
   { key: "market_data", label: "Market Data", category: "tools", layer: "professional", description: "Real-time market data, economic indicators, and trend analysis", roles: ["user", "professional", "manager", "admin"] },
+  // Integration Health & Continuous Improvement
+  { key: "integration_health", label: "Integration Health Dashboard", category: "tools", layer: "organization", description: "Monitor connected data source health, uptime, latency, and AI data awareness", roles: ["professional", "manager", "admin"] },
+  { key: "integration_improvement", label: "Integration Improvement Agent", category: "ai_features", layer: "organization", description: "AI-driven monitoring that detects degraded connections, suggests fixes, and logs improvement actions", roles: ["manager", "admin"] },
+  { key: "data_source_awareness", label: "AI Data Source Awareness", category: "ai_features", layer: "organization", description: "AI automatically knows which external data sources are live, degraded, or offline and adapts responses accordingly", roles: ["user", "professional", "manager", "admin"] },
 ];
 
 export interface FeatureDefinition {
