@@ -2233,3 +2233,11 @@
 - [x] Wire into exponential engine: discovery context in AI system prompt + proficiency tracking
 - [x] Wire into improvement engine: discovery patterns inform AI continuous improvement
 - [x] Write tests for self-discovery service and endpoints (18 tests, 1243 total, all passing)
+
+## Bug Fix — Invalid Response Error (March 21, 2026)
+- [x] Fix dev server returning "invalid response" error (transient proxy issue, resolved with restart)
+
+## Integration Secrets Setup (March 21, 2026)
+- [x] Generate and set INTEGRATION_ENCRYPTION_KEY (auto-generated, validated with 3 tests)
+- [x] Audit all integrations by 5-layer hierarchy and free-tier status
+- [x] Deliver prioritized integration guide organized by layer
