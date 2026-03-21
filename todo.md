@@ -2126,3 +2126,11 @@
 - [x] C28. Knowledge base usage analytics dashboard
 - [x] C29. AI tool calling precision/recall monitoring
 - [x] C30. Capability mode usage tracking and auto-suggestions
+
+## Bug Fixes (March 21, 2026)
+- [x] Fix mobile view crowding: hide/collapse guest banner, redundant sign-in, Professional Setup on small screens
+- [x] Fix tour wizard: broken after first callout box — does not advance past Step 1
+
+## Post-Launch Bug Fixes
+- [x] Fix mobile view crowding — hide redundant guest elements on mobile chat
+- [x] Fix tour wizard — reorder steps, ensure targets exist, prevent overlay click from closing tour

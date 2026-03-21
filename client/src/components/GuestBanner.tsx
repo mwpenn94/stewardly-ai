@@ -3,19 +3,23 @@ import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { LogIn, X, Shield } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
 
 /**
  * GuestBanner — persistent but dismissible banner shown to anonymous/guest users.
  * Encourages them to sign in to save their session data permanently.
+ * Hidden on /chat pages where the chat header already provides sign-in controls.
  */
 export function GuestBanner() {
   const { user } = useAuth();
+  const [location] = useLocation();
   const [dismissed, setDismissed] = useState(() => {
     return sessionStorage.getItem("guest-banner-dismissed") === "true";
   });
 
-  // Only show for guest/anonymous users
+  // Only show for guest/anonymous users, and hide on chat pages (redundant with chat header)
   if (!user || user.authTier !== "anonymous" || dismissed) return null;
+  if (location.startsWith("/chat")) return null;
 
   return (
     <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-b border-amber-500/20 px-4 py-2.5">

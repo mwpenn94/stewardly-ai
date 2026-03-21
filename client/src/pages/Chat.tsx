@@ -258,13 +258,13 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
   const [prompts] = useState(() => getDynamicPrompts(selectedFocus, hasConversations, userRole));
 
   return (
-    <div className="h-full flex flex-col items-center justify-center px-4 pb-32">
+    <div className="h-full flex flex-col items-center justify-center px-4 pb-16 sm:pb-32">
       <div className="max-w-2xl w-full text-center">
-        <h1 className="text-2xl sm:text-3xl font-semibold mb-3">
+        <h1 className="text-xl sm:text-3xl font-semibold mb-2 sm:mb-3">
           {typedGreeting}
           {!greetingDone && <span className="inline-block w-0.5 h-6 bg-accent ml-0.5 animate-pulse" />}
         </h1>
-        <p className={`text-muted-foreground text-sm mb-8 max-w-md mx-auto transition-opacity duration-700 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
+        <p className={`text-muted-foreground text-sm mb-4 sm:mb-8 max-w-md mx-auto transition-opacity duration-700 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
           What can I help you with?
         </p>
 
@@ -282,9 +282,9 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
           ))}
         </div>
 
-        {/* Guest sign-in prompt */}
+        {/* Guest sign-in prompt — hidden on mobile where header already has sign-in */}
         {isGuest && greetingDone && (
-          <div className="mt-6 max-w-lg mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="hidden sm:block mt-6 max-w-lg mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
               <div className="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
                 <LogIn className="w-4 h-4 text-emerald-400" />
@@ -303,9 +303,9 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
           </div>
         )}
 
-        {/* Onboarding Checklist */}
-        {!hasConversations && (
-          <div className={`mt-8 max-w-lg mx-auto transition-all duration-700 delay-500 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+        {/* Onboarding Checklist — hidden on mobile for guests to reduce crowding */}
+        {!hasConversations && !isGuest && (
+          <div className={`mt-4 sm:mt-8 max-w-lg mx-auto transition-all duration-700 delay-500 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             <OnboardingChecklist
               workflowType="professional_onboarding"
               compact

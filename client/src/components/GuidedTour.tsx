@@ -8,6 +8,8 @@ interface TourStep {
   title: string;
   description: string;
   position?: "top" | "bottom" | "left" | "right";
+  /** If true, skip this step when the target element is not found */
+  optional?: boolean;
 }
 
 const TOUR_STEPS: TourStep[] = [
@@ -21,25 +23,27 @@ const TOUR_STEPS: TourStep[] = [
     target: "[data-tour='focus-mode']",
     title: "Focus Modes",
     description: "Switch between General, Financial, or Study modes. Each mode tailors the AI's expertise and response style to your current need.",
-    position: "bottom",
-  },
-  {
-    target: "[data-tour='sidebar-nav']",
-    title: "Your Tools",
-    description: "Access your financial calculators, document library, professional directory, integrations, and settings from the sidebar.",
-    position: "right",
+    position: "top",
   },
   {
     target: "[data-tour='voice-toggle']",
     title: "Voice Mode",
     description: "Toggle voice mode for hands-free conversations. The AI will speak responses aloud and listen for your voice input.",
-    position: "bottom",
+    position: "top",
   },
   {
     target: "[data-tour='suggested-prompts']",
     title: "Suggested Prompts",
     description: "These prompts are personalized to your role and usage. They help you discover platform features and get actionable insights.",
     position: "top",
+    optional: true,
+  },
+  {
+    target: "[data-tour='sidebar-nav']",
+    title: "Your Tools",
+    description: "Access your financial calculators, document library, professional directory, integrations, and settings from the sidebar.",
+    position: "right",
+    optional: true, // Sidebar tools section may be collapsed
   },
 ];
 
@@ -51,6 +55,8 @@ export function GuidedTour() {
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [location] = useLocation();
+  // Track the effective steps (skipping ones whose targets don't exist)
+  const [effectiveSteps, setEffectiveSteps] = useState<TourStep[]>([]);
 
   // Only auto-start tour on /chat page where the target elements exist
   useEffect(() => {
@@ -59,9 +65,14 @@ export function GuidedTour() {
     if (!completed) {
       // Delay tour start to let the page render fully
       const timer = setTimeout(() => {
-        // Verify at least one target element exists before starting
-        const firstTarget = document.querySelector(TOUR_STEPS[0].target);
-        if (firstTarget) {
+        // Build effective steps list by checking which targets exist
+        const available = TOUR_STEPS.filter(step => {
+          const el = document.querySelector(step.target);
+          return el || !step.optional;
+        });
+        if (available.length > 0 && document.querySelector(available[0].target)) {
+          setEffectiveSteps(available);
+          setCurrentStep(0);
           setIsActive(true);
         }
       }, 3000);
@@ -69,51 +80,73 @@ export function GuidedTour() {
     }
   }, [location]);
 
+  const currentTourStep = effectiveSteps[currentStep];
+
   const updateSpotlight = useCallback(() => {
-    if (!isActive) return;
-    const step = TOUR_STEPS[currentStep];
-    const el = document.querySelector(step.target);
+    if (!isActive || !currentTourStep) return;
+    const el = document.querySelector(currentTourStep.target);
     if (el) {
       const rect = el.getBoundingClientRect();
       setSpotlightRect(rect);
     } else {
       setSpotlightRect(null);
     }
-  }, [currentStep, isActive]);
+  }, [currentStep, isActive, currentTourStep]);
 
   useEffect(() => {
-    updateSpotlight();
+    if (!isActive) return;
+    // Small delay to let DOM settle after step change
+    const timer = setTimeout(updateSpotlight, 100);
     window.addEventListener("resize", updateSpotlight);
-    return () => window.removeEventListener("resize", updateSpotlight);
-  }, [updateSpotlight]);
+    window.addEventListener("scroll", updateSpotlight, true);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", updateSpotlight);
+      window.removeEventListener("scroll", updateSpotlight, true);
+    };
+  }, [updateSpotlight, isActive]);
+
+  const findNextVisibleStep = (fromIndex: number, direction: 1 | -1): number => {
+    let idx = fromIndex + direction;
+    while (idx >= 0 && idx < effectiveSteps.length) {
+      const el = document.querySelector(effectiveSteps[idx].target);
+      if (el) return idx;
+      if (!effectiveSteps[idx].optional) return idx; // Required step, show even without target
+      idx += direction;
+    }
+    return -1; // No more steps
+  };
 
   const handleNext = () => {
-    if (currentStep < TOUR_STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
+    const nextIdx = findNextVisibleStep(currentStep, 1);
+    if (nextIdx >= 0 && nextIdx < effectiveSteps.length) {
+      setCurrentStep(nextIdx);
     } else {
       handleComplete();
     }
   };
 
   const handlePrev = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+    const prevIdx = findNextVisibleStep(currentStep, -1);
+    if (prevIdx >= 0) {
+      setCurrentStep(prevIdx);
     }
   };
 
   const handleComplete = () => {
     setIsActive(false);
+    setCurrentStep(0);
     localStorage.setItem(TOUR_STORAGE_KEY, "true");
   };
 
   const handleSkip = () => {
     setIsActive(false);
+    setCurrentStep(0);
     localStorage.setItem(TOUR_STORAGE_KEY, "true");
   };
 
-  if (!isActive) return null;
+  if (!isActive || !currentTourStep) return null;
 
-  const step = TOUR_STEPS[currentStep];
   const padding = 8;
 
   // Calculate tooltip position
@@ -126,8 +159,8 @@ export function GuidedTour() {
       };
     }
 
-    const pos = step.position || "bottom";
-    const tooltipWidth = 340;
+    const pos = currentTourStep.position || "bottom";
+    const tooltipWidth = Math.min(340, window.innerWidth - 32);
     const tooltipGap = 16;
 
     switch (pos) {
@@ -135,34 +168,39 @@ export function GuidedTour() {
         return {
           bottom: `${window.innerHeight - spotlightRect.top + tooltipGap}px`,
           left: `${Math.max(16, Math.min(spotlightRect.left + spotlightRect.width / 2 - tooltipWidth / 2, window.innerWidth - tooltipWidth - 16))}px`,
+          maxWidth: `${tooltipWidth}px`,
         };
       case "bottom":
         return {
           top: `${spotlightRect.bottom + tooltipGap}px`,
           left: `${Math.max(16, Math.min(spotlightRect.left + spotlightRect.width / 2 - tooltipWidth / 2, window.innerWidth - tooltipWidth - 16))}px`,
+          maxWidth: `${tooltipWidth}px`,
         };
       case "left":
         return {
-          top: `${spotlightRect.top + spotlightRect.height / 2 - 60}px`,
+          top: `${Math.max(16, spotlightRect.top + spotlightRect.height / 2 - 60)}px`,
           right: `${window.innerWidth - spotlightRect.left + tooltipGap}px`,
+          maxWidth: `${tooltipWidth}px`,
         };
       case "right":
         return {
-          top: `${spotlightRect.top + spotlightRect.height / 2 - 60}px`,
-          left: `${spotlightRect.right + tooltipGap}px`,
+          top: `${Math.max(16, spotlightRect.top + spotlightRect.height / 2 - 60)}px`,
+          left: `${Math.min(spotlightRect.right + tooltipGap, window.innerWidth - tooltipWidth - 16)}px`,
+          maxWidth: `${tooltipWidth}px`,
         };
       default:
         return {
           top: `${spotlightRect.bottom + tooltipGap}px`,
-          left: `${spotlightRect.left}px`,
+          left: `${Math.max(16, spotlightRect.left)}px`,
+          maxWidth: `${tooltipWidth}px`,
         };
     }
   };
 
   return (
-    <div ref={overlayRef} className="fixed inset-0 z-[9999]" onClick={handleSkip}>
-      {/* Dark overlay with spotlight cutout */}
-      <svg className="absolute inset-0 w-full h-full" onClick={handleSkip}>
+    <div ref={overlayRef} className="fixed inset-0 z-[9999]">
+      {/* Dark overlay with spotlight cutout — clicking overlay does NOT close tour */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
           <mask id="tour-mask">
             <rect width="100%" height="100%" fill="white" />
@@ -186,6 +224,9 @@ export function GuidedTour() {
         />
       </svg>
 
+      {/* Transparent click-blocker over the entire page (prevents interaction with page elements) */}
+      <div className="absolute inset-0" />
+
       {/* Spotlight ring */}
       {spotlightRect && (
         <div
@@ -201,37 +242,37 @@ export function GuidedTour() {
 
       {/* Tooltip card */}
       <div
-        className="absolute z-10 w-[340px] bg-card border border-border rounded-xl shadow-2xl p-5"
+        className="absolute z-10 bg-card border border-border rounded-xl shadow-2xl p-4 sm:p-5"
         style={getTooltipStyle()}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-4 h-4 text-emerald-400" />
           <span className="text-xs text-muted-foreground font-medium">
-            Step {currentStep + 1} of {TOUR_STEPS.length}
+            Step {currentStep + 1} of {effectiveSteps.length}
           </span>
           <button
             onClick={handleSkip}
-            className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
+            className="ml-auto text-muted-foreground hover:text-foreground transition-colors p-1"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <h3 className="text-base font-semibold text-foreground mb-1.5">
-          {step.title}
+        <h3 className="text-sm sm:text-base font-semibold text-foreground mb-1.5">
+          {currentTourStep.title}
         </h3>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-          {step.description}
+        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mb-4">
+          {currentTourStep.description}
         </p>
 
         <div className="flex items-center justify-between">
           <div className="flex gap-1">
-            {TOUR_STEPS.map((_, i) => (
+            {effectiveSteps.map((_, i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  i === currentStep ? "bg-emerald-400" : "bg-muted"
+                  i === currentStep ? "bg-emerald-400" : i < currentStep ? "bg-emerald-400/40" : "bg-muted"
                 }`}
               />
             ))}
@@ -249,8 +290,8 @@ export function GuidedTour() {
               onClick={handleNext}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
-              {currentStep === TOUR_STEPS.length - 1 ? "Get Started" : "Next"}
-              {currentStep < TOUR_STEPS.length - 1 && (
+              {currentStep === effectiveSteps.length - 1 ? "Get Started" : "Next"}
+              {currentStep < effectiveSteps.length - 1 && (
                 <ChevronRight className="w-4 h-4 ml-1" />
               )}
             </Button>
