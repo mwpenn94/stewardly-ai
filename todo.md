@@ -2217,3 +2217,19 @@
 - [x] Fix chat audio playback in hands-free mode (rewritten useTTS with audio unlock, retry, processing cues)
 - [x] Implement chat message action buttons (copy, regenerate, read aloud, infographic — visible for all messages)
 - [x] Audible cues for hands-free mode processing status (tone cues in useTTS hook)
+
+## Continuous Self-Discovery Loop (March 21, 2026)
+- [x] Database: self_discovery_history table with userPreferences extensions for settings
+- [x] Service: LLM-driven query generator using last user message + AI response + exponential engine context
+- [x] Service: 5-layer personalization — discovery adapts to user's layer, proficiency, undiscovered features
+- [x] Service: Direction modes — deeper, broader, applied, auto (AI picks based on proficiency)
+- [x] tRPC: selfDiscovery.trigger endpoint — generates follow-up query with LLM
+- [x] tRPC: selfDiscovery.getSettings / updateSettings endpoints
+- [x] tRPC: selfDiscovery.getHistory / engage / dismiss endpoints
+- [x] Frontend: Idle detection timer in chat (useSelfDiscovery hook, configurable threshold)
+- [x] Frontend: SelfDiscoveryBubble appears as AI-initiated follow-up in chat
+- [x] Frontend: Settings panel for direction, idle wait time, continuous mode
+- [x] Frontend: Visual indicator (pulsing animation) when self-discovery is generating
+- [x] Wire into exponential engine: discovery context in AI system prompt + proficiency tracking
+- [x] Wire into improvement engine: discovery patterns inform AI continuous improvement
+- [x] Write tests for self-discovery service and endpoints (18 tests, 1243 total, all passing)

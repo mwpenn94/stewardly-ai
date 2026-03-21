@@ -295,6 +295,9 @@ export const userPreferences = mysqlTable("user_preferences", {
   disclaimerVerbosity: mysqlEnum("disclaimerVerbosity", ["minimal", "standard", "comprehensive"]).default("standard"),
   autoFollowUp: mysqlBoolean("autoFollowUp").default(false),
   autoFollowUpCount: int("autoFollowUpCount").default(1),
+  discoveryDirection: mysqlEnum("discoveryDirection", ["deeper", "broader", "applied", "auto"]).default("auto"),
+  discoveryIdleThresholdMs: int("discoveryIdleThresholdMs").default(120000),
+  discoveryContinuous: mysqlBoolean("discoveryContinuous").default(false),
   crossModelVerify: mysqlBoolean("crossModelVerify").default(false),
   citationStyle: mysqlEnum("citationStyle", ["none", "inline", "footnotes"]).default("none"),
   reasoningTransparency: mysqlBoolean("reasoningTransparency").default(false),
@@ -3658,3 +3661,23 @@ export const userChangelogAwareness = mysqlTable("user_changelog_awareness", {
   informedAt: timestamp("informed_at").defaultNow().notNull(),
 });
 export type UserChangelogAwareness = typeof userChangelogAwareness.$inferSelect;
+
+// ─── SELF-DISCOVERY HISTORY ──────────────────────────────────────────────
+// Tracks AI-generated follow-up exploration queries triggered by idle detection
+export const selfDiscoveryHistory = mysqlTable("self_discovery_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  conversationId: int("conversation_id").notNull(),
+  triggerMessageId: int("trigger_message_id"),
+  lastUserQuery: text("last_user_query"),
+  lastAiResponse: text("last_ai_response"),
+  generatedQuery: text("generated_query").notNull(),
+  direction: mysqlEnum("direction", ["deeper", "broader", "applied"]).notNull(),
+  layerContext: varchar("layer_context", { length: 32 }),
+  proficiencyLevel: varchar("proficiency_level", { length: 32 }),
+  featureContext: json("feature_context"),
+  status: mysqlEnum("status", ["generated", "sent", "dismissed", "completed"]).default("generated"),
+  userEngaged: mysqlBoolean("user_engaged").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type SelfDiscoveryEntry = typeof selfDiscoveryHistory.$inferSelect;

@@ -553,6 +553,9 @@ function AITuningSettings() {
   const [disclaimerVerbosity, setDisclaimerVerbosity] = useState("standard");
   const [autoFollowUp, setAutoFollowUp] = useState(false);
   const [autoFollowUpCount, setAutoFollowUpCount] = useState(1);
+  const [discoveryDirection, setDiscoveryDirection] = useState("auto");
+  const [discoveryIdleThreshold, setDiscoveryIdleThreshold] = useState(120000);
+  const [discoveryContinuous, setDiscoveryContinuous] = useState(false);
   const [crossModelVerify, setCrossModelVerify] = useState(false);
   const [citationStyle, setCitationStyle] = useState("none");
   const [reasoningTransparency, setReasoningTransparency] = useState(false);
@@ -573,6 +576,9 @@ function AITuningSettings() {
       if (p.disclaimerVerbosity) setDisclaimerVerbosity(p.disclaimerVerbosity);
       setAutoFollowUp(!!p.autoFollowUp);
       if (p.autoFollowUpCount != null) setAutoFollowUpCount(p.autoFollowUpCount);
+      if ((p as any).discoveryDirection) setDiscoveryDirection((p as any).discoveryDirection);
+      if ((p as any).discoveryIdleThresholdMs != null) setDiscoveryIdleThreshold((p as any).discoveryIdleThresholdMs);
+      setDiscoveryContinuous(!!(p as any).discoveryContinuous);
       setCrossModelVerify(!!p.crossModelVerify);
       if (p.citationStyle) setCitationStyle(p.citationStyle);
       setReasoningTransparency(!!p.reasoningTransparency);
@@ -603,6 +609,9 @@ function AITuningSettings() {
       disclaimerVerbosity: disclaimerVerbosity as any,
       autoFollowUp,
       autoFollowUpCount,
+      discoveryDirection: discoveryDirection as any,
+      discoveryIdleThresholdMs: discoveryIdleThreshold,
+      discoveryContinuous,
       crossModelVerify,
       citationStyle: citationStyle as any,
       reasoningTransparency,
@@ -784,6 +793,55 @@ function AITuningSettings() {
               <Switch checked={autoFollowUp} onCheckedChange={setAutoFollowUp} />
             </div>
           </div>
+
+          {/* Self-Discovery Loop */}
+          {autoFollowUp && (
+            <div className="space-y-3 p-3 rounded-lg border border-primary/15 bg-primary/[0.02]">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-primary/60" />
+                <span className="text-xs font-medium">Self-Discovery Loop</span>
+                <span className="text-[10px] text-muted-foreground">AI explores topics deeper when you're idle</span>
+              </div>
+
+              {/* Direction */}
+              <div className="flex items-center justify-between">
+                <div className="text-[11px] text-muted-foreground">Discovery Direction</div>
+                <Select value={discoveryDirection} onValueChange={setDiscoveryDirection}>
+                  <SelectTrigger className="w-28 h-7 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto (AI picks)</SelectItem>
+                    <SelectItem value="deeper">Go Deeper</SelectItem>
+                    <SelectItem value="broader">Explore Broader</SelectItem>
+                    <SelectItem value="applied">Apply It</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Idle Threshold */}
+              <div className="flex items-center justify-between">
+                <div className="text-[11px] text-muted-foreground">Idle Wait Time</div>
+                <Select value={String(discoveryIdleThreshold)} onValueChange={v => setDiscoveryIdleThreshold(Number(v))}>
+                  <SelectTrigger className="w-28 h-7 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30000">30 seconds</SelectItem>
+                    <SelectItem value="60000">1 minute</SelectItem>
+                    <SelectItem value="120000">2 minutes</SelectItem>
+                    <SelectItem value="300000">5 minutes</SelectItem>
+                    <SelectItem value="600000">10 minutes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Continuous mode */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[11px] text-muted-foreground">Continuous Mode</div>
+                  <div className="text-[10px] text-muted-foreground/60">Keep exploring beyond the occurrence limit</div>
+                </div>
+                <Switch checked={discoveryContinuous} onCheckedChange={setDiscoveryContinuous} />
+              </div>
+            </div>
+          )}
 
           {/* Cross-Model Verification */}
           <div className="flex items-center justify-between p-3 rounded-lg border border-border">

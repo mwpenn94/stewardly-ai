@@ -38,6 +38,8 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import AIOnboardingWidget from "@/components/AIOnboardingWidget";
 import ChangelogBell from "@/components/ChangelogBell";
+import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
+import { useSelfDiscovery } from "@/hooks/useSelfDiscovery";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -469,6 +471,31 @@ export default function Chat() {
   const anonChat = useAnonymousChat();
   const anonSendMutation = trpc.anonymousChat.send.useMutation();
   const guestPrefs = useGuestPreferences();
+
+  // ─── SELF-DISCOVERY LOOP ──────────────────────────────────────
+  const lastUserMsg = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") return messages[i];
+    }
+    return null;
+  }, [messages]);
+  const lastAiMsg = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") return messages[i];
+    }
+    return null;
+  }, [messages]);
+  const selfDiscovery = useSelfDiscovery({
+    conversationId,
+    isStreaming,
+    lastUserQuery: lastUserMsg?.content || "",
+    lastAiResponse: lastAiMsg?.content || "",
+    lastAiMessageId: lastAiMsg?.id,
+    onSendQuery: (query) => {
+      setInput(query);
+      setTimeout(() => handleSendWithText(query), 100);
+    },
+  });
 
   // ─── QUERIES ──────────────────────────────────────────────────
   const conversationsQuery = trpc.conversations.list.useQuery(undefined, { enabled: isAuthenticated });
@@ -1562,6 +1589,18 @@ export default function Chat() {
                     </button>
                   ))}
                 </div>
+              )}
+              {/* Self-Discovery Loop Bubble */}
+              {(selfDiscovery.isVisible || selfDiscovery.isLoading) && !isStreaming && (
+                <SelfDiscoveryBubble
+                  query={selfDiscovery.query}
+                  direction={selfDiscovery.direction}
+                  reasoning={selfDiscovery.reasoning}
+                  relatedFeatures={selfDiscovery.relatedFeatures}
+                  isLoading={selfDiscovery.isLoading}
+                  onAccept={selfDiscovery.acceptDiscovery}
+                  onDismiss={selfDiscovery.dismissDiscovery}
+                />
               )}
               <div ref={messagesEndRef} />
             </div>

@@ -1240,6 +1240,7 @@ import { operationsRouter } from "./routers/operations";
 import { addendumFeaturesRouter } from "./routers/addendumFeatures";
 import { maxScoresRouter } from "./routers/maxScores";
 import { exponentialEngineRouter } from "./routers/exponentialEngine";
+import { selfDiscoveryRouter } from "./routers/selfDiscovery";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1337,6 +1338,7 @@ export const appRouter = router({
   addendum: addendumFeaturesRouter,
   maxScores: maxScoresRouter,
   exponentialEngine: exponentialEngineRouter,
+  selfDiscovery: selfDiscoveryRouter,
 });
 
 export type AppRouter = typeof appRouter;
