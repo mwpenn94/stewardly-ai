@@ -61,6 +61,7 @@ import AdminIntegrations from "./pages/AdminIntegrations";
 import AdvisorIntegrations from "./pages/AdvisorIntegrations";
 import SuitabilityPanel from "./pages/SuitabilityPanel";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { usePageTracking } from "./hooks/useExponentialTracking";
 
 function Router() {
   return (
@@ -157,6 +158,8 @@ function Router() {
 function AppContent() {
   // Auto-provision guest session for anonymous visitors
   useGuestSession();
+  // Track page visits for the Exponential Engine (adaptive AI personalization)
+  usePageTracking();
   return (
     <>
       <GuestBanner />

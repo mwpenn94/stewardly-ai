@@ -38,6 +38,7 @@ import {
 import { extractMemoriesFromMessage, saveExtractedMemories, generateEpisodeSummary, saveEpisodeSummary, assembleMemoryContext } from "./memoryEngine";
 import { assembleGraphContext } from "./knowledgeGraph";
 import { classifyContent, applyModifications, logComplianceAudit, logPrivacyAudit } from "./complianceCopilot";
+import { trackEvent, recalculateProficiency, assembleExponentialContext } from "./services/exponentialEngine";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
 import { eq, and } from "drizzle-orm";
 import { integrationConnections, integrationProviders } from "../drizzle/schema";
@@ -97,6 +98,26 @@ const chatRouter = router({
         const userRole = ctx.user.role || "user";
         insightContext = await buildInsightContext(ctx.user.id, userRole);
       } catch (e) { /* insights are optional, degrade gracefully */ }
+
+      // ── EXPONENTIAL ENGINE CONTEXT ────────────────────────────────
+      // Assembles user proficiency, feature discovery, and platform
+      // awareness context so the AI becomes progressively personalized.
+      let exponentialPrompt = "";
+      try {
+        const expCtx = await assembleExponentialContext(
+          ctx.user.id,
+          ctx.user.role || "user"
+        );
+        exponentialPrompt = expCtx.promptFragment;
+      } catch (e) { /* exponential context is optional */ }
+
+      // Track this chat interaction as a platform event (non-blocking)
+      trackEvent({
+        userId: ctx.user.id,
+        eventType: "chat_message",
+        featureKey: "chat",
+        metadata: { focus: input.focus, mode: input.mode },
+      }).catch(() => {});
 
       // Parse multi-select focus modes
       const focusModes = input.focus.split(",").filter(Boolean);
@@ -165,6 +186,7 @@ const chatRouter = router({
         mode: input.mode as AdvisoryMode,
         focus: primaryFocus,
         focusModes,
+        userRole: ctx.user.role || "user",
         styleProfile: ctx.user.styleProfile,
         ragContext: ragContext || undefined,
         memories: memoriesStr || undefined,
@@ -174,10 +196,15 @@ const chatRouter = router({
         insightContext: insightContext || undefined,
       });
 
-      // Combine: existing system prompt + layer overlays
+      // Combine: existing system prompt + layer overlays + exponential engine
       let fullSystemPrompt = layerOverlay
         ? `${systemPrompt}\n\n${layerOverlay}`
         : systemPrompt;
+
+      // Inject exponential engine context (user proficiency & platform awareness)
+      if (exponentialPrompt) {
+        fullSystemPrompt += `\n\n${exponentialPrompt}`;
+      }
 
       // C13: Knowledge base context injection
       try {
@@ -1212,6 +1239,7 @@ import { aiPlatformRouter } from "./routers/aiPlatform";
 import { operationsRouter } from "./routers/operations";
 import { addendumFeaturesRouter } from "./routers/addendumFeatures";
 import { maxScoresRouter } from "./routers/maxScores";
+import { exponentialEngineRouter } from "./routers/exponentialEngine";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1308,6 +1336,7 @@ export const appRouter = router({
   operations: operationsRouter,
   addendum: addendumFeaturesRouter,
   maxScores: maxScoresRouter,
+  exponentialEngine: exponentialEngineRouter,
 });
 
 export type AppRouter = typeof appRouter;

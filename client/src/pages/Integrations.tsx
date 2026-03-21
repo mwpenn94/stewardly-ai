@@ -11,8 +11,9 @@ import { toast } from "sonner";
 import {
   Link2, Unlink, RefreshCw, Search, Database, Building2, Briefcase, User,
   Globe, CheckCircle2, XCircle, Clock, AlertTriangle, ChevronRight,
-  Shield, Activity, Settings2, Loader2, Plus, ArrowUpDown, FileUp,
+  Shield, Activity, Settings2, Loader2, Plus, ArrowUpDown, FileUp, ArrowLeft,
 } from "lucide-react";
+import { Link } from "wouter";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 type Provider = {
@@ -433,11 +434,25 @@ export default function Integrations() {
   const totalRecords = Array.isArray(connections) ? connections.reduce((sum: number, c: any) => sum + (c.recordsSynced || 0), 0) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="min-h-screen bg-background">
+      {/* Navigation Header */}
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="container flex items-center gap-3 h-14">
+          <Link href="/chat">
+            <Button variant="ghost" size="icon" className="shrink-0">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-semibold truncate">Data Integrations</h1>
+          </div>
+        </div>
+      </div>
+
+      <div className="container py-6 space-y-6">
+      {/* Subtitle */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Data Integrations</h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-muted-foreground">
           Connect your financial accounts, CRM, and data sources to power personalized AI insights.
         </p>
       </div>
@@ -594,6 +609,7 @@ export default function Integrations() {
           createConnection.mutate({ providerSlug: slug, credentials: creds });
         }}
       />
+      </div>{/* close container */}
     </div>
   );
 }

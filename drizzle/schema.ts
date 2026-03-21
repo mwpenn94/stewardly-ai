@@ -3598,3 +3598,63 @@ export const workflowCheckpoints = mysqlTable("workflow_checkpoints", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 export type WorkflowCheckpoint = typeof workflowCheckpoints.$inferSelect;
+
+
+// ─── EXPONENTIAL ENGINE ─────────────────────────────────────────────────────
+// Tracks user platform interactions to build progressively richer AI context
+
+// Platform events: every meaningful user action
+export const userPlatformEvents = mysqlTable("user_platform_events", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  eventType: varchar("event_type", { length: 64 }).notNull(), // page_visit, feature_use, button_click, setting_change, chat_topic, integration_connect, doc_upload
+  featureKey: varchar("feature_key", { length: 128 }).notNull(), // e.g. "intelligence_hub", "voice_mode", "iul_calculator", "suitability"
+  metadata: json("metadata"), // { page: "/intelligence", action: "run_model", duration_ms: 12000, ... }
+  sessionId: varchar("session_id", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type UserPlatformEvent = typeof userPlatformEvents.$inferSelect;
+export type InsertUserPlatformEvent = typeof userPlatformEvents.$inferInsert;
+
+// Feature proficiency: aggregated per-user per-feature scores
+export const userFeatureProficiency = mysqlTable("user_feature_proficiency", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  featureKey: varchar("feature_key", { length: 128 }).notNull(),
+  featureLabel: varchar("feature_label", { length: 256 }).notNull(), // human-readable name
+  category: varchar("category", { length: 64 }).notNull(), // navigation, tools, settings, integrations, ai_features
+  totalInteractions: int("total_interactions").notNull().default(0),
+  totalDurationMs: bigint("total_duration_ms", { mode: "number" }).notNull().default(0),
+  proficiencyScore: float("proficiency_score").notNull().default(0), // 0-100 scale
+  proficiencyLevel: mysqlEnum("proficiency_level", ["undiscovered", "novice", "familiar", "proficient", "expert"]).notNull().default("undiscovered"),
+  firstUsedAt: timestamp("first_used_at"),
+  lastUsedAt: timestamp("last_used_at"),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type UserFeatureProficiency = typeof userFeatureProficiency.$inferSelect;
+export type InsertUserFeatureProficiency = typeof userFeatureProficiency.$inferInsert;
+
+// Platform changelog: tracks new/updated features so AI can inform users
+export const platformChangelog = mysqlTable("platform_changelog", {
+  id: int("id").autoincrement().primaryKey(),
+  version: varchar("version", { length: 32 }).notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description").notNull(),
+  featureKeys: json("feature_keys"), // ["intelligence_hub", "voice_mode"] — affected features
+  changeType: mysqlEnum("change_type", ["new_feature", "improvement", "fix", "removal"]).notNull(),
+  impactedRoles: json("impacted_roles"), // ["user", "admin", "professional"] — who should know
+  announcedAt: timestamp("announced_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PlatformChangelog = typeof platformChangelog.$inferSelect;
+export type InsertPlatformChangelog = typeof platformChangelog.$inferInsert;
+
+// User changelog awareness: tracks which changelog entries each user has been informed about
+export const userChangelogAwareness = mysqlTable("user_changelog_awareness", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  changelogId: int("changelog_id").notNull(),
+  informedVia: mysqlEnum("informed_via", ["ai_chat", "notification", "changelog_page", "onboarding"]).notNull(),
+  informedAt: timestamp("informed_at").defaultNow().notNull(),
+});
+export type UserChangelogAwareness = typeof userChangelogAwareness.$inferSelect;

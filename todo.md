@@ -2163,3 +2163,20 @@
 - [x] Fix all remaining WealthBridge references → Stewardly (code, database, seed data)
 - [x] Fix OperationsHub Pending Reviews data access pattern (flat array, not .reviews)
 - [x] Compile comprehensive credentials reference with signup links for all providers
+
+## Navigation & AI Platform Knowledge Fixes (March 21, 2026)
+- [x] Fix Integrations page navigation — already has sticky header with back button to /chat
+- [x] Enhance AI system prompt with full platform knowledge (features, capabilities, navigation)
+- [x] AI should know how to onboard and train users about the platform
+- [x] AI should personalize responses based on user role, preferences, and interaction history
+- [x] AI should guide users through features contextually (e.g., "You can find that in the Intelligence Hub")
+
+## Exponential Engine
+- [x] Design exponential engine schema: user_platform_events, user_feature_proficiency, platform_changelog
+- [x] Create database migration for exponential engine tables
+- [x] Build server-side exponential engine service: event tracking, proficiency scoring, context assembly
+- [x] Wire frontend event tracking (page visits, feature usage, button clicks, time-on-page)
+- [x] Inject exponential context into AI system prompt (features explored, proficiency level, undiscovered features, interaction patterns)
+- [x] Add platform changelog table so AI knows about new/updated features
+- [x] AI adapts onboarding/training based on user's growing proficiency and exploration history
+- [x] Write tests for exponential engine (32 tests, all passing)
