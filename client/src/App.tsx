@@ -57,6 +57,9 @@ import IntelligenceHub from "./pages/IntelligenceHub";
 import AdvisoryHub from "./pages/AdvisoryHub";
 import RelationshipsHub from "./pages/RelationshipsHub";
 import KnowledgeAdmin from "./pages/KnowledgeAdmin";
+import AdminIntegrations from "./pages/AdminIntegrations";
+import AdvisorIntegrations from "./pages/AdvisorIntegrations";
+import SuitabilityPanel from "./pages/SuitabilityPanel";
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 function Router() {
@@ -90,6 +93,9 @@ function Router() {
       <Route path={"/admin/bcp"} component={BCP} />
       <Route path={"/admin/fairness"} component={FairnessTestDashboard} />
       <Route path={"/admin/knowledge"} component={KnowledgeAdmin} />
+      <Route path={"/admin/integrations"} component={AdminIntegrations} />
+      <Route path={"/my-integrations"} component={AdvisorIntegrations} />
+      <Route path={"/suitability-panel"} component={SuitabilityPanel} />
 
       {/* Consolidated Hub Pages */}
       <Route path={"/operations"} component={OperationsHub} />

@@ -1174,6 +1174,7 @@ import { knowledgeBaseRouter } from "./routers/knowledgeBase";
 import { aiPlatformRouter } from "./routers/aiPlatform";
 import { operationsRouter } from "./routers/operations";
 import { addendumFeaturesRouter } from "./routers/addendumFeatures";
+import { maxScoresRouter } from "./routers/maxScores";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1269,6 +1270,7 @@ export const appRouter = router({
   aiPlatform: aiPlatformRouter,
   operations: operationsRouter,
   addendum: addendumFeaturesRouter,
+  maxScores: maxScoresRouter,
 });
 
 export type AppRouter = typeof appRouter;

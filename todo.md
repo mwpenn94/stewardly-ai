@@ -1451,13 +1451,13 @@
 - [x] 1C: Add persistent financial disclaimer footer on every page (GlobalFooter component)
 - [x] 1D: Build PII masking pipeline before LLM calls (SSN, account numbers, addresses, phones, credit cards)
 - [x] 1E: Add "Privacy & Data" tab in Settings (download data, delete account, connected services, data log)
-- [ ] 1F: Add per-source consent tracking (first AI chat, first voice, first doc upload) — deferred, requires schema migration
+- [x] 1F: Add per-source consent tracking (first AI chat, first voice, first doc upload) — implemented via consentTracking table + recordConsent procedure
 
 ## Audit v2 Remediation — Transparency & Disclosure (March 20, 2026)
 - [x] 2A: AI identity disclosure at session start in system prompt (<identity> block)
 - [x] 2B: Add "AI" badge on all assistant messages in chat (Sparkles + AI label)
 - [x] 2C: Add reasoning transparency with REASONING TRANSPARENCY instructions in system prompt
-- [ ] 2D: Add fairness testing baseline (20 demographic-varied prompts) — deferred, requires separate test harness
+- [x] 2D: Add fairness testing baseline (20 demographic-varied prompts) — implemented via fairnessTesting service + 21 test prompts + runFairnessTests procedure
 
 ## Audit v2 Remediation — Suitability & Client Protection (March 20, 2026)
 - [x] 3A: Add "Connect with a Professional" escalation path ("Talk to a Pro" button in mobile header)
@@ -1649,15 +1649,15 @@
 - [x] Model engine (run models with dependency resolution)
 - [x] Propagation engine (cross-layer intelligence cascading)
 - [x] File processor service (6-stage pipeline)
-- [ ] Export service (CSV, Excel, PDF, DOCX, JSON)
-- [ ] Document templates service (9 templates)
+- [x] Export service (CSV, Excel, PDF, DOCX, JSON)
+- [x] Document templates service (9 templates)
 
 ### Phase 5-6: Webhook Endpoint & New Routers
-- [ ] Webhook receiver endpoint (POST /api/webhooks/provider/:connectionId)
+- [x] Webhook receiver endpoint (POST /api/webhooks/provider/:connectionId)
 - [x] File ingestion router
 - [x] Models router
-- [ ] Exports router
-- [ ] Document generation router
+- [x] Exports router
+- [x] Document generation router
 - [x] Suitability intelligence router
 - [x] Intelligence router (propagation, coaching, education)
 
@@ -1668,13 +1668,13 @@
 - [x] Full 5-layer AI context assembly with cross-layer intelligence
 
 ### Phase 9: Frontend Enhancements
-- [ ] Platform admin integrations dashboard
-- [ ] Organization admin integrations management
-- [ ] Advisor integrations settings
-- [ ] Client profile suitability intelligence panel
+- [x] Platform admin integrations dashboard
+- [x] Organization admin integrations management
+- [x] Advisor integrations settings
+- [x] Client profile suitability intelligence panel
 - [x] Analytics hub with models, dashboards, records, exports
 - [x] Intelligence feed (coaching, alerts, education)
-- [ ] Chat enhancement: file layer-routing, document generation
+- [x] Chat enhancement: file layer-routing, document generation
 
 ### Phase 10: Cron Jobs
 - [x] Platform pipeline schedules (Census monthly, BLS weekly, FRED daily, etc.) — stub, needs API keys
@@ -1683,11 +1683,11 @@
 - [x] Integration health cron (webhook health, token expiry, cache expiry)
 
 ### Phase 11: Testing
-- [ ] integrations.test.ts (30+ tests)
-- [ ] suitabilityEngine.test.ts (25+ tests)
-- [ ] propagationEngine.test.ts (20+ tests)
-- [ ] fileIngestion.test.ts (20+ tests)
-- [ ] models.test.ts (20+ tests)
+- [x] integrations.test.ts (30+ tests)
+- [x] suitabilityEngine.test.ts (25+ tests)
+- [x] propagationEngine.test.ts (20+ tests)
+- [x] fileIngestion.test.ts (20+ tests)
+- [x] models.test.ts (20+ tests)
 
 ## UI/UX Refinement Pass (March 20, 2026)
 - [x] Tour/help feature review and polish
@@ -1862,37 +1862,37 @@
 ## Max-Scores Audit (v9.0 → v11.0) — Target: 4.75+ composite
 
 ### Phase 1: AI Core + Skills + Suitability (35% weight)
-- [ ] 1A: LLM Provider Failover + Model Routing (failover chain, cost tracking, /admin/model-analytics)
-- [ ] 1B: Adaptive Suggested Prompts (prompt_interactions tracking, personalized prompts)
-- [ ] 1C: Meeting Intelligence (transcription pipeline, pre-meeting briefs, post-meeting automation)
-- [ ] 1D: Reg BI Documentation Generator (care obligation docs, review workflow, /compliance/reg-bi)
-- [ ] 1E: Conflict of Interest Disclosure (coi_disclosures table, auto-attach to recommendations)
-- [ ] 1F: Branded Report Builder (/reports page with template selection, recurring reports)
+- [x] 1A: LLM Provider Failover + Model Routing (failover chain, cost tracking, /admin/model-analytics)
+- [x] 1B: Adaptive Suggested Prompts (prompt_interactions tracking, personalized prompts)
+- [x] 1C: Meeting Intelligence (transcription pipeline, pre-meeting briefs, post-meeting automation)
+- [x] 1D: Reg BI Documentation Generator (care obligation docs, review workflow, /compliance/reg-bi)
+- [x] 1E: Conflict of Interest Disclosure (coi_disclosures table, auto-attach to recommendations)
+- [x] 1F: Branded Report Builder (/reports page with template selection, recurring reports)
 
 ### Phase 2: Governance + Transparency (17% weight)
-- [ ] 2A: Model Card + AI Documentation (/admin/model-card + public /model-card)
-- [ ] 2B: CI/CD Documentation (/admin/deployments page, feature flag workflow docs)
-- [ ] 2C: Automated Fairness Testing (fairnessRunner service, monthly cron, report generation)
-- [ ] 2D: Performance Monitoring Dashboard (/admin/performance, SLA tracking, drift detection)
-- [ ] 2E: Structured Recommendation Explanations (recommendation cards in chat, recommendations_log table)
+- [x] 2A: Model Card + AI Documentation (/admin/model-card + public /model-card)
+- [x] 2B: CI/CD Documentation (/admin/deployments page, feature flag workflow docs)
+- [x] 2C: Automated Fairness Testing (fairnessRunner service, monthly cron, report generation)
+- [x] 2D: Performance Monitoring Dashboard (/admin/performance, SLA tracking, drift detection)
+- [x] 2E: Structured Recommendation Explanations (recommendation cards in chat, recommendations_log table)
 
 ### Phase 3: Security + Privacy (19% weight)
-- [ ] 3A: MFA (TOTP, backup codes, session management, Settings > Security tab)
-- [ ] 3B: Security Hardening (CSP headers, security headers middleware, XSS test suite, rate limiting)
-- [ ] 3C: Database-Level Row Security (tenant isolation middleware, cross-tenant tests, tamper-evident audit)
-- [ ] 3D: Privacy Enhancement (per-integration consent, DSAR fulfillment, ROPA page, PII test suite)
+- [x] 3A: MFA (TOTP, backup codes, session management, Settings > Security tab)
+- [x] 3B: Security Hardening (CSP headers, security headers middleware, XSS test suite, rate limiting)
+- [x] 3C: Database-Level Row Security (tenant isolation middleware, cross-tenant tests, tamper-evident audit)
+- [x] 3D: Privacy Enhancement (per-integration consent, DSAR fulfillment, ROPA page, PII test suite)
 
 ### Phase 4: Infrastructure + Agentic (14% weight)
-- [ ] 4A: Infrastructure Resilience (backup/recovery docs, DR enhancement, scaling docs, multi-provider strategy, error monitoring)
-- [ ] 4B.1: Browser Automation Foundation (Playwright pool, domain allowlist, action logging)
-- [ ] 4B.2: Workflow Checkpoint/Retry (saga pattern, compensation actions)
-- [ ] 4B.3: Live Carrier Integration (quote API connector, caching)
-- [ ] 4B.4: Paper Trading Simulation (paper_trades table, AI suggestions vs market)
+- [x] 4A: Infrastructure Resilience (backup/recovery docs, DR enhancement, scaling docs, multi-provider strategy, error monitoring)
+- [x] 4B.1: Browser Automation Foundation (Playwright pool, domain allowlist, action logging)
+- [x] 4B.2: Workflow Checkpoint/Retry (saga pattern, compensation actions)
+- [x] 4B.3: Live Carrier Integration (quote API connector, caching)
+- [x] 4B.4: Paper Trading Simulation (paper_trades table, AI suggestions vs market)
 
 ### Phase 5: UX + Multi-Tenant + Data Ingestion (15% weight)
-- [ ] 5A: UX Polish (collapsible responses, micro-interactions, offline handling, dynamic onboarding)
-- [ ] 5B: Multi-Tenant Enhancement (white-label, tenant lifecycle, self-service provisioning, isolation tests)
-- [ ] 5C: Data Ingestion Activation (security master, pipeline observability, per-source consent, self-healing scraper)
+- [x] 5A: UX Polish (collapsible responses, micro-interactions, offline handling, dynamic onboarding)
+- [x] 5B: Multi-Tenant Enhancement (white-label, tenant lifecycle, self-service provisioning, isolation tests)
+- [x] 5C: Data Ingestion Activation (security master, pipeline observability, per-source consent, self-healing scraper)
 
 ### Phase 6: Guide + Tests
 - [x] 6A: 28 new guide sections documenting all new features (PLATFORM_GUIDE_v15.md)
