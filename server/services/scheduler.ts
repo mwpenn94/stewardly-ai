@@ -144,7 +144,8 @@ export function initScheduler(): void {
   registerJob("stale_cleanup", 24 * 60 * 60 * 1000, runStaleDataCleanup);       // 24 hours
   
   // Start all jobs with staggered initial runs
-  let delay = 30_000; // Start first job 30s after server boot
+  // Use longer delays to ensure DB is fully ready in production
+  let delay = 60_000; // Start first job 60s after server boot
   for (const [name, job] of Object.entries(jobs)) {
     // Schedule initial run with stagger
     setTimeout(() => {

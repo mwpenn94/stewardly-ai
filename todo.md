@@ -2300,3 +2300,15 @@
 - [x] Auto-connect SEC EDGAR and FINRA BrokerCheck (keyless public APIs) and verify them
 - [x] Trigger initial data fetch for all 4 government APIs to populate records_synced (via tRPC endpoint)
 - [x] Update records_synced count on integration_connections after each pipeline run
+
+## Bug Fix: Data Pipeline DB Query Failures
+- [x] Fix all 4 data pipelines failing on provider slug lookup query (added retry logic + increased scheduler delay)
+
+## Cross-Integration Resilience Hardening
+- [ ] Audit all integration code paths for fragile DB query patterns
+- [ ] Fix integrationHealth.ts: add retry + safer destructuring to health checks and improvement agent
+- [ ] Fix integrations router: add retry + error handling to testConnection, createConnection, listConnections
+- [ ] Fix scheduler: add DB readiness check before running jobs
+- [ ] Fix encryption fallback: ensure decrypt retry on transient failures
+- [ ] Fix AI context assembly: add resilience to integration/economic data injection in routers.ts
+- [ ] Create shared safeDbQuery utility for consistent retry across all integration code

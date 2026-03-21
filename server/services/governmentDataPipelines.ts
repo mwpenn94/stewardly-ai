@@ -38,28 +38,47 @@ interface FetchedDataPoint {
   category: string;
 }
 
-// ─── Helper: get API key for a provider slug ────────────────────────────
-async function getApiKeyForProvider(slug: string): Promise<string | null> {
-  const db = await getDb();
-  if (!db) return null;
+// ─── Helper: get API key for a provider slug (with retry) ──────────────
+async function getApiKeyForProvider(slug: string, retries = 2): Promise<string | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const db = await getDb();
+      if (!db) {
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+          continue;
+        }
+        return null;
+      }
 
-  const [provider] = await db.select().from(integrationProviders)
-    .where(eq(integrationProviders.slug, slug));
-  if (!provider) return null;
+      const providers = await db.select().from(integrationProviders)
+        .where(eq(integrationProviders.slug, slug));
+      const provider = providers[0];
+      if (!provider) return null;
 
-  const connections = await db.select().from(integrationConnections)
-    .where(and(
-      eq(integrationConnections.providerId, provider.id),
-      eq(integrationConnections.status, "connected"),
-    ));
+      const connections = await db.select().from(integrationConnections)
+        .where(and(
+          eq(integrationConnections.providerId, provider.id),
+          eq(integrationConnections.status, "connected"),
+        ));
 
-  for (const conn of connections) {
-    if (conn.credentialsEncrypted) {
-      try {
-        const creds = decryptCredentials(conn.credentialsEncrypted);
-        const key = (creds.api_key || creds.apiKey || creds.access_token || "") as string;
-        if (key) return key;
-      } catch { /* skip bad creds */ }
+      for (const conn of connections) {
+        if (conn.credentialsEncrypted) {
+          try {
+            const creds = decryptCredentials(conn.credentialsEncrypted);
+            const key = (creds.api_key || creds.apiKey || creds.access_token || "") as string;
+            if (key) return key;
+          } catch { /* skip bad creds */ }
+        }
+      }
+      return null;
+    } catch (err: any) {
+      console.warn(`[Pipeline] getApiKeyForProvider("${slug}") attempt ${attempt + 1} failed:`, err.message);
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
+      } else {
+        throw err; // Re-throw on final attempt so the pipeline reports the error
+      }
     }
   }
   return null;
@@ -487,25 +506,30 @@ async function fetchCensusData(): Promise<PipelineResult> {
 
 // ─── Helper: update connection sync status after pipeline run ──────────
 async function updateConnectionSyncStatus(providerSlug: string, recordsFetched: number, status: "success" | "error", error?: string): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
+  try {
+    const db = await getDb();
+    if (!db) return;
 
-  const [provider] = await db.select().from(integrationProviders)
-    .where(eq(integrationProviders.slug, providerSlug));
-  if (!provider) return;
+    const providers = await db.select().from(integrationProviders)
+      .where(eq(integrationProviders.slug, providerSlug));
+    const provider = providers[0];
+    if (!provider) return;
 
-  const connections = await db.select().from(integrationConnections)
-    .where(eq(integrationConnections.providerId, provider.id));
+    const connections = await db.select().from(integrationConnections)
+      .where(eq(integrationConnections.providerId, provider.id));
 
-  for (const conn of connections) {
-    await db.update(integrationConnections)
-      .set({
-        lastSyncAt: new Date(),
-        lastSyncStatus: status === "success" ? "success" : "failed",
-        lastSyncError: error || null,
-        recordsSynced: recordsFetched,
-      })
-      .where(eq(integrationConnections.id, conn.id));
+    for (const conn of connections) {
+      await db.update(integrationConnections)
+        .set({
+          lastSyncAt: new Date(),
+          lastSyncStatus: status === "success" ? "success" : "failed",
+          lastSyncError: error || null,
+          recordsSynced: recordsFetched,
+        })
+        .where(eq(integrationConnections.id, conn.id));
+    }
+  } catch (e: any) {
+    console.warn(`[Pipeline] updateConnectionSyncStatus("${providerSlug}") failed:`, e.message);
   }
 }
 
