@@ -16,52 +16,14 @@ import crypto from "crypto";
 
 const uuid = () => crypto.randomUUID();
 
-// ─── Helper: role hierarchy for data connections ──────────────────────────
-// Hierarchy: admin > manager > advisor/professional > user > guest
-// Each role can MANAGE (create/edit/delete) connections at their tier and below.
-// Each role can VIEW providers at their tier and below (read-only browse).
-// Guests (unauthenticated) can only VIEW — never create connections.
-
-const TIER_LEVEL: Record<string, number> = {
-  platform: 4,       // admin only
-  organization: 3,   // admin + manager
-  professional: 2,   // admin + manager + advisor/professional
-  client: 1,         // admin + manager + advisor + user
-};
-
-const ROLE_MANAGE_LEVEL: Record<string, number> = {
-  admin: 4,          // can manage all tiers (platform, org, professional, client)
-  manager: 3,        // can manage org, professional, client
-  advisor: 2,        // can manage professional, client
-  professional: 2,   // alias for advisor
-  user: 1,           // can manage client tier only (their own connections)
-  guest: 0,          // cannot manage anything
-};
-
-const ROLE_VIEW_LEVEL: Record<string, number> = {
-  admin: 4,          // can see all tiers
-  manager: 3,        // can see org, professional, client
-  advisor: 2,        // can see professional, client
-  professional: 2,
-  user: 1,           // can see client tier only
-  guest: 1,          // can browse client-tier providers (read-only)
-};
-
+// ─── Helper: check tier permission ──────────────────────────────────────
 function canManageTier(userRole: string, tier: string): boolean {
-  const roleLevel = ROLE_MANAGE_LEVEL[userRole] ?? 0;
-  const tierLevel = TIER_LEVEL[tier] ?? 0;
-  return roleLevel >= tierLevel;
-}
-
-function canViewTier(userRole: string, tier: string): boolean {
-  const roleLevel = ROLE_VIEW_LEVEL[userRole] ?? 0;
-  const tierLevel = TIER_LEVEL[tier] ?? 0;
-  return roleLevel >= tierLevel;
-}
-
-/** Filter providers list to only those the user's role can see */
-function filterProvidersByRole<T extends { ownershipTier: string }>(providers: T[], userRole: string): T[] {
-  return providers.filter(p => canViewTier(userRole, p.ownershipTier));
+  if (userRole === "admin") return true;
+  if (tier === "organization" && (userRole === "admin" || userRole === "manager")) return true;
+  if (tier === "professional") return true; // any authenticated user can manage their own
+  if (tier === "client" && (userRole === "admin" || userRole === "manager" || userRole === "professional")) return true;
+  if (tier === "platform" && userRole === "admin") return true;
+  return false;
 }
 
 export const integrationsRouter = router({
@@ -70,15 +32,12 @@ export const integrationsRouter = router({
     .input(z.object({
       category: z.string().optional(),
       ownershipTier: z.string().optional(),
-      userRole: z.string().optional(), // pass from frontend for role-based filtering
     }).optional())
     .query(async ({ input }) => {
       const db = (await getDb())!;
       let query = db.select().from(integrationProviders).where(eq(integrationProviders.isActive, true));
       const results = await query;
-      // Filter by role visibility first
-      const role = input?.userRole || "guest";
-      let filtered = filterProvidersByRole(results, role);
+      let filtered = results;
       if (input?.category) {
         filtered = filtered.filter(p => p.category === input.category);
       }
@@ -91,14 +50,7 @@ export const integrationsRouter = router({
         if (!grouped[p.ownershipTier]) grouped[p.ownershipTier] = [];
         grouped[p.ownershipTier].push(p);
       }
-      // Also return the user's manage permissions per tier
-      const permissions = {
-        canManagePlatform: canManageTier(role, "platform"),
-        canManageOrganization: canManageTier(role, "organization"),
-        canManageProfessional: canManageTier(role, "professional"),
-        canManageClient: canManageTier(role, "client"),
-      };
-      return { providers: filtered, grouped, permissions };
+      return { providers: filtered, grouped };
     }),
 
   getProvider: publicProcedure

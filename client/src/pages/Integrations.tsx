@@ -82,14 +82,12 @@ function ProviderCard({
   onConnect,
   onDisconnect,
   onSync,
-  canManage,
 }: {
   provider: Provider;
   connection?: Connection;
   onConnect: (provider: Provider) => void;
   onDisconnect: (connectionId: string) => void;
   onSync: (connectionId: string) => void;
-  canManage: boolean;
 }) {
   const isConnected = connection?.status === "connected";
   const [syncing, setSyncing] = useState(false);
@@ -149,7 +147,7 @@ function ProviderCard({
                   onSync(connection!.id);
                   setTimeout(() => setSyncing(false), 3000);
                 }}
-                disabled={syncing || !canManage}
+                disabled={syncing}
               >
                 {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
                 Sync Now
@@ -158,13 +156,12 @@ function ProviderCard({
                 variant="ghost"
                 size="sm"
                 onClick={() => onDisconnect(connection!.id)}
-                disabled={!canManage}
               >
                 <Unlink className="h-3.5 w-3.5 mr-1" />
                 Disconnect
               </Button>
             </>
-          ) : canManage ? (
+          ) : (
             <Button
               size="sm"
               className="flex-1"
@@ -173,11 +170,6 @@ function ProviderCard({
               <Link2 className="h-3.5 w-3.5 mr-1" />
               Connect
             </Button>
-          ) : (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Shield className="h-3.5 w-3.5" />
-              <span>Requires higher role to connect</span>
-            </div>
           )}
         </div>
       </CardContent>
@@ -375,14 +367,11 @@ export default function Integrations() {
   const [connectOpen, setConnectOpen] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState<string | null>(null);
 
-  const userRole = (user?.role as string) || "guest";
-
-  // Queries — pass userRole so backend filters by visibility
+  // Queries
   const { data: providersData, isLoading: loadingProviders } = trpc.integrations.listProviders.useQuery(
-    tierFilter === "all" ? { userRole } : { ownershipTier: tierFilter, userRole }
+    tierFilter === "all" ? {} : { ownershipTier: tierFilter }
   );
   const providers = providersData?.providers;
-  const permissions = providersData?.permissions;
   const { data: connections, isLoading: loadingConnections, refetch: refetchConnections } = trpc.integrations.listConnections.useQuery(
     undefined,
     { enabled: !!user }
@@ -498,17 +487,10 @@ export default function Integrations() {
         <Tabs value={tierFilter} onValueChange={setTierFilter}>
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
-            {permissions?.canManagePlatform !== undefined && (
-              <>
-                {(permissions?.canManagePlatform || userRole === "admin") && <TabsTrigger value="platform">Platform</TabsTrigger>}
-                {["admin", "manager"].includes(userRole) && <TabsTrigger value="organization">Org</TabsTrigger>}
-                {["admin", "manager", "advisor", "professional"].includes(userRole) && <TabsTrigger value="professional">Pro</TabsTrigger>}
-                <TabsTrigger value="client">Client</TabsTrigger>
-              </>
-            )}
-            {!permissions && (
-              <TabsTrigger value="client">Client</TabsTrigger>
-            )}
+            <TabsTrigger value="platform">Platform</TabsTrigger>
+            <TabsTrigger value="organization">Org</TabsTrigger>
+            <TabsTrigger value="professional">Pro</TabsTrigger>
+            <TabsTrigger value="client">Client</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -541,36 +523,25 @@ export default function Integrations() {
                   <p className="text-sm text-muted-foreground">{tierLabels[tier].desc}</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {tierProviders.map(provider => {
-                    // Determine if user can manage this tier
-                    const tierKey = provider.ownershipTier as "platform" | "organization" | "professional" | "client";
-                    const canManageMap: Record<string, boolean> = {
-                      platform: permissions?.canManagePlatform ?? false,
-                      organization: permissions?.canManageOrganization ?? false,
-                      professional: permissions?.canManageProfessional ?? false,
-                      client: permissions?.canManageClient ?? false,
-                    };
-                    return (
-                      <ProviderCard
-                        key={provider.id}
-                        provider={provider}
-                        connection={connectionMap.get(provider.id)}
-                        canManage={canManageMap[tierKey] ?? false}
-                        onConnect={(p) => {
-                          setConnectProvider(p);
-                          setConnectOpen(true);
-                        }}
-                        onDisconnect={(id) => {
-                          if (confirm("Are you sure you want to disconnect this integration?")) {
-                            disconnectMutation.mutate({ connectionId: id });
-                          }
-                        }}
-                        onSync={(id) => {
-                          syncMutation.mutate({ connectionId: id, syncType: "incremental" });
-                        }}
-                      />
-                    );                  })}
-                  
+                  {tierProviders.map(provider => (
+                    <ProviderCard
+                      key={provider.id}
+                      provider={provider}
+                      connection={connectionMap.get(provider.id)}
+                      onConnect={(p) => {
+                        setConnectProvider(p);
+                        setConnectOpen(true);
+                      }}
+                      onDisconnect={(id) => {
+                        if (confirm("Are you sure you want to disconnect this integration?")) {
+                          disconnectMutation.mutate({ connectionId: id });
+                        }
+                      }}
+                      onSync={(id) => {
+                        syncMutation.mutate({ connectionId: id, syncType: "incremental" });
+                      }}
+                    />
+                  ))}
                 </div>
               </div>
             );
