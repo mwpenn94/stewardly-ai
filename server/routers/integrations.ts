@@ -15,6 +15,7 @@ import {
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, lte } from "drizzle-orm";
 import { encrypt, decrypt, encryptCredentials, decryptCredentials } from "../services/encryption";
+import { firstOrNull } from "../services/dbResilience";
 import crypto from "crypto";
 
 const uuid = () => crypto.randomUUID();
@@ -60,9 +61,9 @@ export const integrationsRouter = router({
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       const db = (await getDb())!;
-      const [provider] = await db.select().from(integrationProviders)
+      const rows = await db.select().from(integrationProviders)
         .where(eq(integrationProviders.slug, input.slug));
-      return provider || null;
+      return firstOrNull(rows);
     }),
 
   // ─── Connection Management (tier-gated) ─────────────────────────────
@@ -112,8 +113,9 @@ export const integrationsRouter = router({
       const db = (await getDb())!;
       const user = ctx.user;
       // Find provider
-      const [provider] = await db.select().from(integrationProviders)
+      const providerRows = await db.select().from(integrationProviders)
         .where(eq(integrationProviders.slug, input.providerSlug));
+      const provider = firstOrNull(providerRows);
       if (!provider) throw new Error("Provider not found");
 
       // Permission check
@@ -152,7 +154,8 @@ export const integrationsRouter = router({
         usagePeriodStart: new Date(),
       });
 
-      const [created] = await db.select().from(integrationConnections).where(eq(integrationConnections.id, id));
+      const createdRows = await db.select().from(integrationConnections).where(eq(integrationConnections.id, id));
+      const created = firstOrNull(createdRows);
       return { ...created, credentialsEncrypted: undefined };
     }),
 
@@ -165,8 +168,9 @@ export const integrationsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = (await getDb())!;
-      const [conn] = await db.select().from(integrationConnections)
+      const connRows = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, input.connectionId));
+      const conn = firstOrNull(connRows);
       if (!conn) throw new Error("Connection not found");
 
       // Permission: must own or be admin
@@ -187,8 +191,9 @@ export const integrationsRouter = router({
           .where(eq(integrationConnections.id, input.connectionId));
       }
 
-      const [updated] = await db.select().from(integrationConnections)
+      const updatedRows = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, input.connectionId));
+      const updated = firstOrNull(updatedRows);
       return { ...updated, credentialsEncrypted: undefined };
     }),
 
@@ -196,8 +201,9 @@ export const integrationsRouter = router({
     .input(z.object({ connectionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const db = (await getDb())!;
-      const [conn] = await db.select().from(integrationConnections)
+      const delConnRows = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, input.connectionId));
+      const conn = firstOrNull(delConnRows);
       if (!conn) throw new Error("Connection not found");
 
       if (conn.userId !== ctx.user.id && ctx.user.role !== "admin") {
@@ -216,12 +222,14 @@ export const integrationsRouter = router({
     .input(z.object({ connectionId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const db = (await getDb())!;
-      const [conn] = await db.select().from(integrationConnections)
+      const testConnRows = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, input.connectionId));
+      const conn = firstOrNull(testConnRows);
       if (!conn) throw new Error("Connection not found");
 
-      const [provider] = await db.select().from(integrationProviders)
+      const testProviderRows = await db.select().from(integrationProviders)
         .where(eq(integrationProviders.id, conn.providerId));
+      const provider = firstOrNull(testProviderRows);
       if (!provider) throw new Error("Provider not found");
 
       const start = Date.now();
@@ -438,8 +446,9 @@ export const integrationsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = (await getDb())!;
       // Get template
-      const [template] = await db.select().from(carrierImportTemplates)
+      const templateRows = await db.select().from(carrierImportTemplates)
         .where(eq(carrierImportTemplates.id, input.templateId));
+      const template = firstOrNull(templateRows);
       if (!template) throw new Error("Import template not found");
 
       const mappings = template.columnMappings as Record<string, string>;
@@ -530,12 +539,14 @@ export const integrationsRouter = router({
       }
 
       // Check usage limits
-      const [conn] = await db.select().from(integrationConnections)
+      const enrichConnRows = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, input.connectionId));
+      const conn = firstOrNull(enrichConnRows);
       if (!conn) throw new Error("Connection not found");
 
-      const [provider] = await db.select().from(integrationProviders)
+      const enrichProviderRows = await db.select().from(integrationProviders)
         .where(eq(integrationProviders.id, conn.providerId));
+      const provider = firstOrNull(enrichProviderRows);
 
       // Parse free tier limit (e.g., "100 records/month per key")
       const limitMatch = provider?.freeTierLimit?.match(/(\d+)/);
@@ -628,12 +639,13 @@ export const integrationsRouter = router({
     }))
     .query(async ({ input }) => {
       const db = (await getDb())!;
-      const [cached] = await db.select().from(enrichmentCache)
+      const cachedRows = await db.select().from(enrichmentCache)
         .where(and(
           eq(enrichmentCache.providerSlug, input.providerSlug),
           eq(enrichmentCache.lookupKey, input.lookupKey),
           eq(enrichmentCache.lookupType, input.lookupType),
         ));
+      const cached = firstOrNull(cachedRows);
 
       if (cached && cached.expiresAt > new Date()) {
         return { found: true, data: cached.resultJson, fetchedAt: cached.fetchedAt };
@@ -655,12 +667,13 @@ export const integrationsRouter = router({
       const results: Record<string, unknown> = {};
 
       for (const lookup of input.lookups) {
-        const [cached] = await db.select().from(enrichmentCache)
+        const cachedLookupRows = await db.select().from(enrichmentCache)
           .where(and(
             eq(enrichmentCache.providerSlug, lookup.providerSlug),
             eq(enrichmentCache.lookupKey, lookup.lookupKey),
             eq(enrichmentCache.lookupType, lookup.lookupType),
           ));
+        const cached = firstOrNull(cachedLookupRows);
 
         if (cached && cached.expiresAt > new Date()) {
           results[`${lookup.providerSlug}:${lookup.lookupType}:${lookup.lookupKey}`] = cached.resultJson;

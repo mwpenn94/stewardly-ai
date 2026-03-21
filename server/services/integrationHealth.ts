@@ -19,6 +19,7 @@ import {
 import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { decryptCredentials } from "./encryption";
 import { notifyOwner } from "../_core/notification";
+import { safeDbOperation, firstOrNull, withRetry } from "./dbResilience";
 import crypto from "crypto";
 
 const uuid = () => crypto.randomUUID();
@@ -129,14 +130,30 @@ export interface HealthCheckResult {
  * Run a health check on a single connection.
  */
 export async function runHealthCheck(connectionId: string): Promise<HealthCheckResult> {
-  const db = await getDb();
-  if (!db) return { connectionId, providerSlug: "", providerName: "", status: "unknown", latencyMs: 0, message: "Database unavailable" };
+  const unknownResult = (msg: string): HealthCheckResult => ({ connectionId, providerSlug: "", providerName: "", status: "unknown", latencyMs: 0, message: msg });
 
-  const [conn] = await db.select().from(integrationConnections).where(eq(integrationConnections.id, connectionId));
-  if (!conn) return { connectionId, providerSlug: "", providerName: "", status: "unknown", latencyMs: 0, message: "Connection not found" };
+  let db: Awaited<ReturnType<typeof getDb>>;
+  try {
+    db = await getDb();
+  } catch (e: any) {
+    return unknownResult(`Database error: ${e.message}`);
+  }
+  if (!db) return unknownResult("Database unavailable");
 
-  const [provider] = await db.select().from(integrationProviders).where(eq(integrationProviders.id, conn.providerId));
-  if (!provider) return { connectionId, providerSlug: "", providerName: "", status: "unknown", latencyMs: 0, message: "Provider not found" };
+  let conn: any;
+  let provider: any;
+  try {
+    const conns = await db.select().from(integrationConnections).where(eq(integrationConnections.id, connectionId));
+    conn = firstOrNull(conns);
+    if (!conn) return unknownResult("Connection not found");
+
+    const providers = await db.select().from(integrationProviders).where(eq(integrationProviders.id, conn.providerId));
+    provider = firstOrNull(providers);
+    if (!provider) return unknownResult("Provider not found");
+  } catch (e: any) {
+    console.warn(`[HealthCheck] DB query failed for connection ${connectionId}:`, e.message);
+    return unknownResult(`Database query failed: ${e.message}`);
+  }
 
   const config = PROVIDER_TEST_CONFIGS[provider.slug];
   if (!config) {
@@ -166,42 +183,52 @@ export async function runHealthCheck(connectionId: string): Promise<HealthCheckR
       ? (latencyMs > 5000 ? "degraded" : "healthy")
       : "unhealthy";
 
-    // Record the health check
-    await db.insert(integrationHealthChecks).values({
-      id: uuid(),
-      connectionId,
-      providerId: provider.id,
-      checkType: "connectivity",
-      status,
-      latencyMs,
-      responseCode: resp.status,
-      errorMessage: healthy ? null : message,
-      metadata: { apiResponsePreview: text.substring(0, 200) },
-    });
+    // Record the health check (non-critical — don't fail if this write fails)
+    try {
+      await db.insert(integrationHealthChecks).values({
+        id: uuid(),
+        connectionId,
+        providerId: provider.id,
+        checkType: "connectivity",
+        status,
+        latencyMs,
+        responseCode: resp.status,
+        errorMessage: healthy ? null : message,
+        metadata: { apiResponsePreview: text.substring(0, 200) },
+      });
+    } catch (e: any) {
+      console.warn(`[HealthCheck] Failed to record check for ${provider.slug}:`, e.message);
+    }
 
-    // Update connection status
-    if (healthy && conn.status !== "connected") {
-      await db.update(integrationConnections)
-        .set({ status: "connected", lastSyncError: null })
-        .where(eq(integrationConnections.id, connectionId));
-    } else if (!healthy && conn.status === "connected") {
-      await db.update(integrationConnections)
-        .set({ status: "error", lastSyncError: message })
-        .where(eq(integrationConnections.id, connectionId));
+    // Update connection status (non-critical)
+    try {
+      if (healthy && conn.status !== "connected") {
+        await db.update(integrationConnections)
+          .set({ status: "connected", lastSyncError: null })
+          .where(eq(integrationConnections.id, connectionId));
+      } else if (!healthy && conn.status === "connected") {
+        await db.update(integrationConnections)
+          .set({ status: "error", lastSyncError: message })
+          .where(eq(integrationConnections.id, connectionId));
+      }
+    } catch (e: any) {
+      console.warn(`[HealthCheck] Failed to update connection status for ${provider.slug}:`, e.message);
     }
 
     return { connectionId, providerSlug: provider.slug, providerName: provider.name, status, latencyMs, message, responseCode: resp.status };
   } catch (err: any) {
     const latencyMs = Date.now() - start;
-    await db.insert(integrationHealthChecks).values({
-      id: uuid(),
-      connectionId,
-      providerId: provider.id,
-      checkType: "connectivity",
-      status: "unhealthy",
-      latencyMs,
-      errorMessage: err.message,
-    });
+    try {
+      await db!.insert(integrationHealthChecks).values({
+        id: uuid(),
+        connectionId,
+        providerId: provider.id,
+        checkType: "connectivity",
+        status: "unhealthy",
+        latencyMs,
+        errorMessage: err.message,
+      });
+    } catch { /* non-critical write failure */ }
     return { connectionId, providerSlug: provider.slug, providerName: provider.name, status: "unhealthy", latencyMs, message: err.message };
   }
 }
@@ -210,11 +237,23 @@ export async function runHealthCheck(connectionId: string): Promise<HealthCheckR
  * Run health checks on ALL active connections.
  */
 export async function runAllHealthChecks(): Promise<HealthCheckResult[]> {
-  const db = await getDb();
+  let db: Awaited<ReturnType<typeof getDb>>;
+  try {
+    db = await getDb();
+  } catch (e: any) {
+    console.warn("[HealthCheck] runAllHealthChecks: DB unavailable:", e.message);
+    return [];
+  }
   if (!db) return [];
 
-  const connections = await db.select().from(integrationConnections)
-    .where(sql`${integrationConnections.status} != 'disconnected'`);
+  let connections: any[];
+  try {
+    connections = await db.select().from(integrationConnections)
+      .where(sql`${integrationConnections.status} != 'disconnected'`);
+  } catch (e: any) {
+    console.warn("[HealthCheck] runAllHealthChecks: Failed to query connections:", e.message);
+    return [];
+  }
 
   const results: HealthCheckResult[] = [];
   for (const conn of connections) {
@@ -234,12 +273,17 @@ export async function runAllHealthChecks(): Promise<HealthCheckResult[]> {
 // ─── Health Summary Aggregation ───────────────────────────────────────────
 
 async function updateHealthSummaries(results: HealthCheckResult[]) {
-  const db = await getDb();
+  let db: Awaited<ReturnType<typeof getDb>>;
+  try {
+    db = await getDb();
+  } catch { return; }
   if (!db) return;
 
   for (const result of results) {
-    const [existing] = await db.select().from(integrationHealthSummary)
+    try {
+    const rows = await db.select().from(integrationHealthSummary)
       .where(eq(integrationHealthSummary.connectionId, result.connectionId));
+    const existing = firstOrNull(rows);
 
     if (existing) {
       const newTotal = (existing.checksTotal || 0) + 1;
@@ -282,20 +326,28 @@ async function updateHealthSummaries(results: HealthCheckResult[]) {
         lastUnhealthyAt: result.status === "unhealthy" ? new Date() : null,
       });
     }
+    } catch (e: any) {
+      console.warn(`[HealthCheck] Failed to update summary for ${result.connectionId}:`, e.message);
+    }
   }
 }
 
 // ─── Improvement Agent ────────────────────────────────────────────────────
 
 async function runImprovementAgent(results: HealthCheckResult[]) {
-  const db = await getDb();
+  let db: Awaited<ReturnType<typeof getDb>>;
+  try {
+    db = await getDb();
+  } catch { return; }
   if (!db) return;
 
   for (const result of results) {
+    try {
     // Check for degradation
     if (result.status === "unhealthy") {
-      const [summary] = await db.select().from(integrationHealthSummary)
+      const summaryRows = await db.select().from(integrationHealthSummary)
         .where(eq(integrationHealthSummary.connectionId, result.connectionId));
+      const summary = firstOrNull(summaryRows);
 
       const consecutiveFailures = summary?.consecutiveFailures || 1;
 
@@ -335,8 +387,9 @@ async function runImprovementAgent(results: HealthCheckResult[]) {
 
     // Check for recovery
     if (result.status === "healthy") {
-      const [summary] = await db.select().from(integrationHealthSummary)
+      const recoverySummaryRows = await db.select().from(integrationHealthSummary)
         .where(eq(integrationHealthSummary.connectionId, result.connectionId));
+      const summary = firstOrNull(recoverySummaryRows);
 
       if (summary && summary.consecutiveFailures && summary.consecutiveFailures > 0) {
         await db.insert(integrationImprovementLog).values({
@@ -362,6 +415,9 @@ async function runImprovementAgent(results: HealthCheckResult[]) {
         description: `Response time: ${result.latencyMs}ms (threshold: 5000ms). Consider caching responses or adjusting request frequency.`,
         suggestedAction: "Enable response caching for this provider to reduce latency impact.",
       });
+    }
+    } catch (e: any) {
+      console.warn(`[ImprovementAgent] Error processing ${result.providerSlug}:`, e.message);
     }
   }
 }

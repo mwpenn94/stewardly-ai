@@ -11,6 +11,7 @@
  */
 
 import { notifyOwner } from "../_core/notification";
+import { ensureDbReady } from "./dbResilience";
 
 // ─── Job Registry ──────────────────────────────────────────────────────
 interface ScheduledJob {
@@ -78,15 +79,23 @@ async function runScheduledDataPipelines(): Promise<void> {
 
 // ─── Stale Data Cleanup (daily) ────────────────────────────────────────
 async function runStaleDataCleanup(): Promise<void> {
-  const { getDb } = await import("../db");
-  const { enrichmentCache } = await import("../../drizzle/schema");
-  const { lt } = await import("drizzle-orm");
-  
-  const db = (await getDb())!;
-  const result = await db.delete(enrichmentCache)
-    .where(lt(enrichmentCache.expiresAt, new Date()));
-  
-  console.log(`[Scheduler] Stale data cleanup complete`);
+  try {
+    const { getDb } = await import("../db");
+    const { enrichmentCache } = await import("../../drizzle/schema");
+    const { lt } = await import("drizzle-orm");
+    
+    const db = await getDb();
+    if (!db) {
+      console.warn("[Scheduler] Stale data cleanup skipped: DB unavailable");
+      return;
+    }
+    await db.delete(enrichmentCache)
+      .where(lt(enrichmentCache.expiresAt, new Date()));
+    
+    console.log(`[Scheduler] Stale data cleanup complete`);
+  } catch (e: any) {
+    console.warn(`[Scheduler] Stale data cleanup failed: ${e.message}`);
+  }
 }
 
 // ─── Scheduler Control ─────────────────────────────────────────────────
@@ -145,16 +154,23 @@ export function initScheduler(): void {
   
   // Start all jobs with staggered initial runs
   // Use longer delays to ensure DB is fully ready in production
-  let delay = 60_000; // Start first job 60s after server boot
+  let delay = 90_000; // Start first job 90s after server boot
   for (const [name, job] of Object.entries(jobs)) {
-    // Schedule initial run with stagger
-    setTimeout(() => {
+    // Schedule initial run with stagger + DB readiness check
+    setTimeout(async () => {
+      // Wait for DB to be ready before running any jobs
+      const dbReady = await ensureDbReady(30_000);
+      if (!dbReady) {
+        console.warn(`[Scheduler] DB not ready for job "${name}", will retry on next interval`);
+        job.timerId = setInterval(() => executeJob(job), job.intervalMs);
+        return;
+      }
       executeJob(job);
       // Then set up recurring interval
       job.timerId = setInterval(() => executeJob(job), job.intervalMs);
     }, delay);
     
-    delay += 15_000; // Stagger each job by 15s
+    delay += 20_000; // Stagger each job by 20s
     console.log(`[Scheduler] Registered job "${name}" (interval: ${Math.round(job.intervalMs / 1000)}s, first run in ${Math.round(delay / 1000)}s)`);
   }
   
