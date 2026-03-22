@@ -777,4 +777,43 @@ export const integrationsRouter = router({
       const { triggerJob } = await import("../services/scheduler");
       return triggerJob(input.jobName);
     }),
+
+  // ─── Public Pipeline Health (no auth, for monitoring) ──────────────────
+  pipelineHealth: publicProcedure
+    .query(async () => {
+      const { getSchedulerStatus } = await import("../services/scheduler");
+      const status = getSchedulerStatus();
+      
+      // Return a simplified view without sensitive data
+      return {
+        initialized: status.initialized,
+        selfTest: status.selfTest ? {
+          overall: status.selfTest.overall,
+          dbConnected: status.selfTest.dbConnected,
+          timestamp: status.selfTest.timestamp,
+          providers: status.selfTest.results?.map((r: any) => ({
+            slug: r.slug,
+            dbLookup: r.dbLookup,
+            apiReachable: r.apiReachable,
+            credentialDecrypt: r.credentialDecrypt,
+          })) || [],
+        } : null,
+        jobs: status.jobs.map(j => ({
+          name: j.name,
+          lastRun: j.lastRun,
+          lastError: j.lastError,
+          runCount: j.runCount,
+          errorCount: j.errorCount,
+          isRunning: j.isRunning,
+          nextRun: j.nextRun,
+        })),
+      };
+    }),
+
+  // ─── Run Self-Test on Demand ───────────────────────────────────────────
+  runSelfTest: protectedProcedure
+    .mutation(async () => {
+      const { runPipelineSelfTest } = await import("../services/pipelineSelfTest");
+      return runPipelineSelfTest();
+    }),
 });

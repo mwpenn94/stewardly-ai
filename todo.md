@@ -2330,3 +2330,19 @@
 
 ## Bug Fix: Integration Connections Blank on Mobile
 - [x] Fix integration connection cards appearing blank/empty on mobile viewport (login prompt, responsive grid, truncation, button wrapping)
+
+## Bug Fix: EDGAR, BEA, BLS Pipeline Failures (Production)
+- [x] Diagnosed: production running older version without pipeline fixes. Dev sandbox has 5/6 working.
+- [x] SEC EDGAR: working (25 records) — needs latest deploy
+- [x] BEA: API key needs activation by user (proper error reporting added)
+- [x] BLS: working (16 records) — needs latest deploy
+- [x] Added production hardening: self-test, structured logging, public health endpoint
+
+## Production Hardening for Pipelines
+- [x] Add detailed structured JSON error logging to all pipeline functions
+- [x] Add startup self-test (pipelineSelfTest.ts) that validates DB + API reachability + credential decryption
+- [x] Add graceful degradation: pipelines fail independently, scheduler continues
+- [x] Add public pipelineHealth endpoint (no auth) for production monitoring
+- [x] Add on-demand runSelfTest endpoint for manual diagnostics
+- [x] Structured JSON log on every pipeline run (event, timestamp, duration, per-pipeline results)
+- [x] Scheduler notifies owner on DB unavailability at startup and on self-test failures
