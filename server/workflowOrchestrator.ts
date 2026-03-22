@@ -15,7 +15,7 @@ export type EventType =
   | "life_event_detected";
 
 export interface WorkflowAction {
-  type: "notification" | "task_create" | "email" | "flag" | "escalate" | "schedule_meeting";
+  type: "notification" | "task_create" | "in_app_message" | "flag" | "escalate" | "schedule_meeting";
   target: "client" | "advisor" | "admin" | "system";
   config: Record<string, unknown>;
 }
@@ -147,8 +147,8 @@ async function executeAction(action: WorkflowAction, eventSource: string): Promi
       return { actionType: "notification", success: true, message: `Notification queued: ${(action.config as Record<string, string>).title}` };
     case "task_create":
       return { actionType: "task_create", success: true, message: `Task created: ${(action.config as Record<string, string>).title}` };
-    case "email":
-      return { actionType: "email", success: true, message: `Email queued to ${action.target}` };
+    case "in_app_message":
+      return { actionType: "in_app_message", success: true, message: `In-app message queued to ${action.target}` };
     case "flag":
       return { actionType: "flag", success: true, message: `Flag set: ${(action.config as Record<string, string>).flagType}` };
     case "escalate":

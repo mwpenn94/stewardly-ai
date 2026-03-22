@@ -4372,3 +4372,45 @@ export const dataValueScores = mysqlTable("data_value_scores", {
 
 export type DataValueScore = typeof dataValueScores.$inferSelect;
 export type InsertDataValueScore = typeof dataValueScores.$inferInsert;
+
+// ============================================================
+// PASSIVE ACTION PREFERENCES — per-user automation toggles
+// ============================================================
+export const passiveActionPreferences = mysqlTable("passive_action_preferences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  source: varchar("source", { length: 100 }).notNull(),
+  actionType: mysqlEnum("action_type", [
+    "auto_refresh",
+    "background_sync",
+    "monitoring_alerts",
+    "scheduled_reports",
+    "anomaly_detection",
+    "smart_enrichment",
+  ]).notNull(),
+  enabled: mysqlBoolean("enabled").default(false).notNull(),
+  configJson: json("config_json"),
+  lastTriggeredAt: timestamp("last_triggered_at"),
+  triggerCount: int("trigger_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type PassiveActionPreference = typeof passiveActionPreferences.$inferSelect;
+export type InsertPassiveActionPreference = typeof passiveActionPreferences.$inferInsert;
+
+// Passive action execution log — track what happened
+export const passiveActionLog = mysqlTable("passive_action_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  preferenceId: int("preference_id").notNull(),
+  source: varchar("source", { length: 100 }).notNull(),
+  actionType: varchar("action_type", { length: 50 }).notNull(),
+  status: mysqlEnum("status", ["success", "failed", "skipped", "partial"]).notNull(),
+  resultSummary: text("result_summary"),
+  recordsAffected: int("records_affected").default(0),
+  durationMs: int("duration_ms"),
+  errorMessage: text("error_message"),
+  executedAt: timestamp("executed_at").defaultNow().notNull(),
+});
+export type PassiveActionLogEntry = typeof passiveActionLog.$inferSelect;
+export type InsertPassiveActionLogEntry = typeof passiveActionLog.$inferInsert;

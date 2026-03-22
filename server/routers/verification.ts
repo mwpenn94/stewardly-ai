@@ -23,8 +23,8 @@ import {
   type VerificationSource,
 } from "../services/verification";
 import { getDb } from "../db";
-import { professionals } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { professionals, premiumFinanceRates } from "../../drizzle/schema";
+import { eq, desc } from "drizzle-orm";
 
 export const verificationRouter = router({
   // ─── Verify a professional (run all applicable checks) ────────────
@@ -188,5 +188,16 @@ export const verificationRouter = router({
         await saveBadges(input.professionalId, input.badges, vId);
       }
       return { verificationId: vId, status: input.status };
+    }),
+  // ─── Rate History for SOFR Sparkline ─────────────────────────────
+  getRateHistory: protectedProcedure
+    .input(z.object({ days: z.number().default(30) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db.select().from(premiumFinanceRates)
+        .orderBy(desc(premiumFinanceRates.rateDate))
+        .limit(input.days);
+      return rows.reverse();
     }),
 });

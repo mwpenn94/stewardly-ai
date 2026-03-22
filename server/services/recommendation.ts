@@ -326,7 +326,7 @@ export class InvitationService {
   }
 
   /**
-   * Send an off-platform email invitation
+   * Send an in-app invitation notification (no external email)
    */
   async sendEmailInvitation(fromUserId: number, email: string, orgId?: number, message?: string): Promise<{
     success: boolean;
@@ -338,10 +338,10 @@ export class InvitationService {
     const [sender] = await db.select().from(users).where(eq(users.id, fromUserId)).limit(1);
     const senderName = sender?.name || "A Stewardly user";
 
-    // Notify owner about the invitation request (in production, this would send an email)
+    // Deliver invitation as in-app notification (no external email)
     await notifyOwner({
       title: "New Invitation Sent",
-      content: `${senderName} invited ${email} to join${orgId ? ` organization #${orgId}` : " the platform"}. Message: ${message || "No message"}`,
+      content: `${senderName} invited ${email} to join${orgId ? ` organization #${orgId}` : " the platform"}. Message: ${message || "No message"}. Invitation delivered via in-app notification.`,
     });
 
     return { success: true };

@@ -8,14 +8,14 @@ export interface AmbientInsight {
   title: string;
   body: string;
   priority: "low" | "medium" | "high" | "critical";
-  channel: "in_app" | "digest" | "push" | "email";
+  channel: "in_app" | "digest" | "push";
   actionUrl?: string;
   suppressible: boolean;
 }
 
 export interface NotificationPreferences {
   enabled: boolean;
-  channels: ("in_app" | "digest" | "push" | "email")[];
+  channels: ("in_app" | "digest" | "push")[];
   quietHoursStart?: number; // 0-23
   quietHoursEnd?: number;
   maxPerDay: number;
@@ -103,8 +103,8 @@ export function shouldSuppress(
 export async function saveNotification(userId: number, insight: AmbientInsight, suppressedReason?: string) {
   const db = await getDb();
   if (!db) return;
-  const channelMap: Record<string, "in_app" | "email" | "push" | "sms"> = {
-    in_app: "in_app", email: "email", push: "push", digest: "email",
+  const channelMap: Record<string, "in_app" | "push" | "sms"> = {
+    in_app: "in_app", push: "in_app", digest: "in_app",
   };
   return db.insert(notificationLog).values({
     userId,

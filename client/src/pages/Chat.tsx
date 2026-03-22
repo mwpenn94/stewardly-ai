@@ -23,7 +23,7 @@ import {
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
   Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
-  LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2
+  LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2, HeartPulse
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
@@ -935,6 +935,8 @@ export default function Chat() {
     { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Market Data", href: "/market-data", minRole: "user" as UserRole },
     { icon: <FileText className="w-3.5 h-3.5" />, label: "Documents", href: "/documents", minRole: "user" as UserRole },
     { icon: <Link2 className="w-3.5 h-3.5" />, label: "Integrations", href: "/integrations", minRole: "user" as UserRole },
+    { icon: <HeartPulse className="w-3.5 h-3.5" />, label: "Integration Health", href: "/integration-health", minRole: "advisor" as UserRole },
+    { icon: <RefreshCw className="w-3.5 h-3.5" />, label: "Passive Actions", href: "/passive-actions", minRole: "user" as UserRole },
     { icon: <Activity className="w-3.5 h-3.5" />, label: "My Progress", href: "/proficiency", minRole: "user" as UserRole },
   ];
 

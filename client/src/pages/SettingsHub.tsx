@@ -33,7 +33,7 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: strin
   { id: "knowledge", label: "Knowledge Base", icon: <FileText className="w-4 h-4" />, desc: "Documents and files that train your AI", slug: "knowledge" },
   { id: "ai-tuning", label: "AI Tuning", icon: <Sparkles className="w-4 h-4" />, desc: "5-layer AI personalization cascade", slug: "ai-tuning" },
   { id: "voice", label: "Voice & Speech", icon: <Mic className="w-4 h-4" />, desc: "Edge TTS voice selection and speech settings", slug: "voice" },
-  { id: "notifications", label: "Notifications", icon: <Bell className="w-4 h-4" />, desc: "Manage alerts and email digests", slug: "notifications" },
+  { id: "notifications", label: "Notifications", icon: <Bell className="w-4 h-4" />, desc: "Manage in-app alerts and notification preferences", slug: "notifications" },
   { id: "appearance", label: "Appearance", icon: <Palette className="w-4 h-4" />, desc: "Theme, colors, font size, density", slug: "appearance" },
   { id: "guest-prefs", label: "Guest Preferences", icon: <Sparkles className="w-4 h-4" />, desc: "Customize AI responses without an account", slug: "guest-prefs" },
   { id: "privacy", label: "Privacy & Data", icon: <Shield className="w-4 h-4" />, desc: "Data rights, consent, export, and deletion", slug: "privacy" },

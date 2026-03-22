@@ -74,11 +74,11 @@ const PAGE_HELP: Record<string, PageHelp> = {
     ],
   },
   "/email-campaigns": {
-    title: "Email Campaigns",
-    description: "Create, manage, and send personalized email campaigns to clients.",
+    title: "Message Campaigns",
+    description: "Create, manage, and send personalized in-app message campaigns to clients.",
     tips: [
-      { title: "AI Content Generation", description: "Click 'AI Generate' when creating a campaign. Describe your purpose and the AI writes professional email content.", category: "tip" },
-      { title: "Personalization", description: "Use {{recipientName}} and {{recipientEmail}} in your email body for automatic personalization.", category: "tip" },
+      { title: "AI Content Generation", description: "Click 'AI Generate' when creating a campaign. Describe your purpose and the AI writes professional message content.", category: "tip" },
+      { title: "Personalization", description: "Use {{recipientName}} in your message body for automatic personalization.", category: "tip" },
       { title: "Bulk Recipients", description: "Add recipients by pasting a list: one per line, format: email, name (name optional).", category: "tip" },
     ],
   },

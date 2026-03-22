@@ -1,6 +1,7 @@
 /**
- * Email Campaigns Page
+ * Message Campaigns Page (In-App Only)
  * Full campaign management: create, edit, send, track analytics.
+ * All messages delivered as in-app notifications — no external email.
  * Includes AI content generation, recipient management, and campaign analytics.
  */
 import { useState } from "react";
@@ -107,9 +108,9 @@ export default function EmailCampaigns() {
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Mail className="w-6 h-6 text-primary" /> Email Campaigns
+            <Mail className="w-6 h-6 text-primary" /> Message Campaigns
           </h1>
-          <p className="text-sm text-muted-foreground">Create, manage, and send personalized email campaigns to your clients</p>
+          <p className="text-sm text-muted-foreground">Create, manage, and send personalized in-app message campaigns to your clients</p>
         </div>
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
           <DialogTrigger asChild>
@@ -118,7 +119,7 @@ export default function EmailCampaigns() {
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create Campaign</DialogTitle>
-              <DialogDescription>Set up a new email campaign with AI-powered content generation</DialogDescription>
+              <DialogDescription>Set up a new in-app message campaign with AI-powered content generation</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div>

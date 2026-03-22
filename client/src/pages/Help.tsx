@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
@@ -12,6 +13,9 @@ import {
   HelpCircle, ChevronDown, ChevronUp, Send, Loader2, Keyboard,
   Brain, FileText, Users, Settings, Monitor, Mic, Globe,
   Calculator, BarChart3, Mail, ExternalLink, CheckCircle,
+  Zap, Database, Link2, TrendingUp, Package, Activity,
+  RefreshCw, Building2, Briefcase, HeartPulse, Eye,
+  Lock, Layers, Server, Cpu, Bell, Palette, Camera,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
@@ -73,7 +77,7 @@ const FAQ_DATA: FAQItem[] = [
   },
   {
     question: "What is the Knowledge Base?",
-    answer: "The Knowledge Base lets you upload documents (PDFs, financial statements, etc.) that the AI uses as context when answering your questions. This enables highly personalized advice based on your actual financial documents.",
+    answer: "The Knowledge Base lets you upload documents (PDFs, financial statements, etc.) that the AI uses as context when answering your questions. This enables highly personalized advice based on your actual financial documents. Files are auto-categorized by AI.",
     category: "AI Features",
     tags: ["knowledge", "documents", "upload", "RAG"],
   },
@@ -83,11 +87,17 @@ const FAQ_DATA: FAQItem[] = [
     category: "AI Features",
     tags: ["live", "video", "screen share", "camera"],
   },
+  {
+    question: "How does Voice Mode work?",
+    answer: "Toggle voice mode for a hands-free experience. The AI listens via your microphone, responds with natural Edge TTS speech, and can automatically continue the conversation. Configure voice settings in Settings > Voice & Speech.",
+    category: "AI Features",
+    tags: ["voice", "speech", "tts", "microphone"],
+  },
 
   // Financial Tools
   {
     question: "What calculators are available?",
-    answer: "Stewardly includes financial calculators for compound interest, loan amortization, retirement projections, and more. Access them from the Calculators page in the sidebar navigation.",
+    answer: "Stewardly includes financial calculators for compound interest, loan amortization, retirement projections, IUL illustrations, premium finance ROI, and more. Access them from the Calculators page in the sidebar navigation.",
     category: "Financial Tools",
     tags: ["calculator", "compound", "loan", "retirement"],
   },
@@ -98,10 +108,42 @@ const FAQ_DATA: FAQItem[] = [
     tags: ["suitability", "risk", "assessment", "profile"],
   },
   {
-    question: "Can the AI analyze charts and images?",
-    answer: "Yes! You can attach images (charts, screenshots, financial documents) to your messages. The AI can analyze stock charts, portfolio screenshots, financial statements, and other visual content to provide insights.",
+    question: "What is the Advisory Hub?",
+    answer: "The Advisory Hub consolidates insurance quoting (COMPULIFE), estate planning benchmarks, premium finance analysis with live SOFR rates, and the product marketplace. It's your one-stop shop for client-facing advisory workflows.",
     category: "Financial Tools",
-    tags: ["image", "chart", "visual", "analyze"],
+    tags: ["advisory", "insurance", "estate", "premium finance"],
+  },
+  {
+    question: "How does Product Intelligence work?",
+    answer: "Product Intelligence provides IUL crediting rate history, market index tracking, risk profiling (Nitrogen/Riskalyze adapter), and eSignature tracking (DocuSign adapter). It helps you make data-driven product recommendations.",
+    category: "Financial Tools",
+    tags: ["product", "IUL", "risk", "esignature"],
+  },
+
+  // Integrations
+  {
+    question: "What integrations are available?",
+    answer: "Stewardly integrates with Plaid (bank accounts), Canopy Connect (insurance policies), SnapTrade (brokerage accounts), COMPULIFE (insurance quotes), SOFR (premium finance rates), credit bureaus, CRM systems (Wealthbox, Redtail), and government data APIs (BLS, FRED, Census, SEC EDGAR, FINRA, BEA).",
+    category: "Integrations",
+    tags: ["plaid", "canopy", "snaptrade", "compulife", "integration"],
+  },
+  {
+    question: "How do Passive Actions work?",
+    answer: "Passive Actions let you enable automated background operations for any data source. Once enabled, the system automatically refreshes data, syncs accounts, monitors for changes, and sends alerts — all running silently in the background.",
+    category: "Integrations",
+    tags: ["passive", "automation", "background", "sync"],
+  },
+  {
+    question: "How do I connect my bank accounts?",
+    answer: "Go to Integrations and use the Plaid Link button to securely connect your bank accounts. Plaid uses bank-level encryption and never stores your login credentials. Transaction data is automatically categorized and analyzed.",
+    category: "Integrations",
+    tags: ["plaid", "bank", "accounts", "connect"],
+  },
+  {
+    question: "What is Integration Health?",
+    answer: "Integration Health monitors the status of all connected services and data pipelines. It shows uptime, error rates, last sync times, and alerts you to any issues. Available to advisors and admins.",
+    category: "Integrations",
+    tags: ["health", "monitoring", "status", "uptime"],
   },
 
   // Account & Settings
@@ -113,15 +155,21 @@ const FAQ_DATA: FAQItem[] = [
   },
   {
     question: "How do I manage notifications?",
-    answer: "Go to Settings > Notifications to configure email digests, alert preferences, and notification frequency. You can choose which types of updates you want to receive.",
+    answer: "Go to Settings > Notifications to configure in-app alert preferences and notification frequency. All notifications are delivered within the platform — no external emails are sent.",
     category: "Account & Settings",
-    tags: ["notifications", "email", "alerts"],
+    tags: ["notifications", "alerts", "in-app"],
   },
   {
     question: "How do I delete my account or data?",
     answer: "Contact support using the form below. We'll process your request within 48 hours. You can also delete individual conversations and memories from the chat sidebar and Settings respectively.",
     category: "Account & Settings",
     tags: ["delete", "account", "data", "privacy"],
+  },
+  {
+    question: "What are Connected Accounts?",
+    answer: "Connected Accounts (Settings > Connected Accounts) lets you link your LinkedIn, Google, or other social accounts for profile enrichment. This helps the AI understand your professional background and provide more relevant advice.",
+    category: "Account & Settings",
+    tags: ["connected", "linkedin", "google", "social"],
   },
 
   // Keyboard Shortcuts
@@ -139,9 +187,201 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   "Getting Started": <BookOpen className="w-4 h-4" />,
   "AI Features": <Brain className="w-4 h-4" />,
   "Financial Tools": <Calculator className="w-4 h-4" />,
+  "Integrations": <Link2 className="w-4 h-4" />,
   "Account & Settings": <Settings className="w-4 h-4" />,
   "Keyboard Shortcuts": <Keyboard className="w-4 h-4" />,
 };
+
+// ─── PLATFORM GUIDE DATA ─────────────────────────────────────────
+interface GuideSection {
+  title: string;
+  icon: React.ReactNode;
+  description: string;
+  features: { name: string; desc: string; route?: string }[];
+}
+
+const GUIDE_SECTIONS: GuideSection[] = [
+  {
+    title: "AI Chat & Conversation",
+    icon: <MessageSquare className="w-5 h-5" />,
+    description: "The core of Stewardly — your AI-powered digital financial twin that understands both general topics and deep financial advisory.",
+    features: [
+      { name: "Multi-Focus Modes", desc: "Switch between General, Financial, and Study modes to steer the AI's expertise. Combine modes for hybrid responses.", route: "/chat" },
+      { name: "Advisory Modes", desc: "Client Advisor, Professional Coach, and Manager Dashboard modes for role-specific interactions.", route: "/chat" },
+      { name: "Voice Mode", desc: "Hands-free conversation with Edge TTS speech synthesis and microphone input. iOS-compatible.", route: "/chat" },
+      { name: "Live Video & Screen Share", desc: "Share your camera or screen for real-time AI analysis of visual content.", route: "/chat" },
+      { name: "Document & Image Analysis", desc: "Upload PDFs, images, charts, and financial documents for AI-powered analysis.", route: "/chat" },
+      { name: "Conversation History", desc: "Full conversation history with search, pinning, and export capabilities.", route: "/chat" },
+      { name: "AI Memory", desc: "The AI remembers key facts across conversations for increasingly personalized advice.", route: "/settings/profile" },
+    ],
+  },
+  {
+    title: "Operations Hub",
+    icon: <Zap className="w-5 h-5" />,
+    description: "Centralized operational command center for workflows, compliance, agent operations, and licensed review.",
+    features: [
+      { name: "Workflow Orchestrator", desc: "Event-driven workflow engine with configurable triggers, conditions, and automated actions.", route: "/operations" },
+      { name: "Compliance Engine", desc: "Built-in Reg BI documentation, dynamic disclaimers, compliance prescreening, and audit trails.", route: "/operations" },
+      { name: "Agentic Execution", desc: "AI agents that autonomously execute multi-step tasks with human-in-the-loop review.", route: "/operations" },
+      { name: "Licensed Review Queue", desc: "Review queue for AI-generated financial advice requiring licensed professional approval.", route: "/operations" },
+      { name: "BCP (Business Continuity)", desc: "Business continuity planning dashboard with disaster recovery procedures.", route: "/admin/bcp" },
+    ],
+  },
+  {
+    title: "Intelligence Hub",
+    icon: <Brain className="w-5 h-5" />,
+    description: "Data intelligence, analytics, and AI-powered insights from multiple data sources.",
+    features: [
+      { name: "Data Intelligence", desc: "Ingest data from web scraping, RSS feeds, CSV uploads, and API feeds. AI learns from ingested data.", route: "/intelligence-hub" },
+      { name: "Analytics Dashboard", desc: "Ingestion volume, quality trends, insight distribution, and data pipeline health monitoring.", route: "/intelligence-hub" },
+      { name: "Model Results", desc: "Statistical models, predictive insights, and AI model performance tracking.", route: "/intelligence-hub" },
+      { name: "Government Data Pipelines", desc: "Automated data from BLS, FRED, BEA, Census, SEC EDGAR, and FINRA BrokerCheck.", route: "/intelligence-hub" },
+      { name: "Fairness Testing", desc: "AI fairness and bias testing dashboard to ensure equitable outcomes.", route: "/admin/fairness" },
+    ],
+  },
+  {
+    title: "Advisory Hub",
+    icon: <Package className="w-5 h-5" />,
+    description: "Client-facing advisory tools including insurance quoting, estate planning, premium finance, and product marketplace.",
+    features: [
+      { name: "Insurance Quoting (COMPULIFE)", desc: "Real-time life insurance quotes from 100+ carriers via COMPULIFE integration.", route: "/advisory" },
+      { name: "Estate Planning", desc: "Estate planning benchmarks, trust planning guidance, TCJA sunset analysis, and charitable giving strategies.", route: "/advisory" },
+      { name: "Premium Finance", desc: "Premium finance analysis with live SOFR rates, ROI calculations, and sparkline visualization.", route: "/advisory" },
+      { name: "Product Marketplace", desc: "Browse financial products with AI-powered suitability scoring and side-by-side comparison.", route: "/advisory" },
+      { name: "Product Intelligence", desc: "IUL crediting rates, market indices, risk profiling, and eSignature tracking.", route: "/product-intelligence" },
+    ],
+  },
+  {
+    title: "Relationships & CRM",
+    icon: <Users className="w-5 h-5" />,
+    description: "Client relationship management, professional networking, and message campaigns.",
+    features: [
+      { name: "Contact Management", desc: "Manage client contacts with enrichment from Clearbit and FullContact.", route: "/relationships" },
+      { name: "COI Network", desc: "Center of Influence network management for professional referrals and collaboration.", route: "/relationships" },
+      { name: "Message Campaigns", desc: "Create and send personalized in-app message campaigns with AI-generated content.", route: "/relationships" },
+      { name: "Professional Directory", desc: "Verified professional directory with SEC IAPD, CFP Board, and state bar verification badges.", route: "/relationships" },
+      { name: "CRM Sync", desc: "Bidirectional sync with Wealthbox and Redtail CRM systems.", route: "/integrations" },
+      { name: "Meeting Intelligence", desc: "Meeting scheduling, transcription, and AI-powered meeting insights.", route: "/relationships" },
+    ],
+  },
+  {
+    title: "Market Data & Research",
+    icon: <TrendingUp className="w-5 h-5" />,
+    description: "Real-time market data, economic indicators, and research tools.",
+    features: [
+      { name: "Market Quotes", desc: "Live stock quotes, indices, and financial market data.", route: "/market-data" },
+      { name: "Economic Indicators", desc: "BLS employment data, FRED interest rates, Census demographics, and BEA GDP data.", route: "/market-data" },
+      { name: "SEC EDGAR Filings", desc: "Company financials and SEC filing data for AAPL, MSFT, GOOGL, AMZN, TSLA, and more.", route: "/market-data" },
+      { name: "FINRA BrokerCheck", desc: "Broker-dealer information and registration data from FINRA.", route: "/market-data" },
+    ],
+  },
+  {
+    title: "Financial Planning Tools",
+    icon: <Calculator className="w-5 h-5" />,
+    description: "Comprehensive financial calculators and planning tools.",
+    features: [
+      { name: "Compound Interest Calculator", desc: "Calculate compound growth with customizable parameters.", route: "/calculators" },
+      { name: "Loan Amortization", desc: "Full amortization schedules with payment breakdowns.", route: "/calculators" },
+      { name: "Retirement Projections", desc: "Monte Carlo simulations with configurable scenarios and success rates.", route: "/calculators" },
+      { name: "IUL Illustrations", desc: "Indexed Universal Life back-testing with S&P 500 historical data.", route: "/calculators" },
+      { name: "Premium Finance ROI", desc: "Premium finance return-on-investment analysis with SOFR-based rates.", route: "/calculators" },
+      { name: "What-If Scenarios", desc: "Scenario modeling for financial decisions with side-by-side comparison.", route: "/calculators" },
+    ],
+  },
+  {
+    title: "Integrations & Data Sources",
+    icon: <Link2 className="w-5 h-5" />,
+    description: "Connect external services and data sources to enrich your financial intelligence.",
+    features: [
+      { name: "Plaid (Bank Accounts)", desc: "Securely connect bank accounts for transaction categorization and budget analysis.", route: "/integrations" },
+      { name: "Canopy Connect", desc: "Link insurance policies for comprehensive coverage analysis.", route: "/integrations" },
+      { name: "SnapTrade (Brokerage)", desc: "Connect brokerage accounts for portfolio tracking and analysis.", route: "/integrations" },
+      { name: "Credit Bureau (Soft Pull)", desc: "FICO 8 and VantageScore 3.0 with DTI analysis and insurance impact assessment.", route: "/integrations" },
+      { name: "Passive Actions", desc: "Enable automated background operations for any data source — auto-refresh, sync, monitoring, and alerts.", route: "/passive-actions" },
+      { name: "Integration Health", desc: "Monitor status, uptime, and error rates for all connected services.", route: "/integration-health" },
+    ],
+  },
+  {
+    title: "Settings & Personalization",
+    icon: <Settings className="w-5 h-5" />,
+    description: "Customize every aspect of your Stewardly experience.",
+    features: [
+      { name: "Profile & Style", desc: "Avatar, communication style, and AI memory management.", route: "/settings/profile" },
+      { name: "Connected Accounts", desc: "Link LinkedIn, Google, and other social accounts for profile enrichment.", route: "/settings/connected-accounts" },
+      { name: "Financial Profile", desc: "Suitability assessment for personalized, risk-appropriate advice.", route: "/settings/suitability" },
+      { name: "Knowledge Base", desc: "Upload documents that train your AI with drag-and-drop and AI auto-categorization.", route: "/settings/knowledge" },
+      { name: "AI Tuning", desc: "5-layer personalization cascade for fine-grained AI behavior control.", route: "/settings/ai-tuning" },
+      { name: "Voice & Speech", desc: "Edge TTS voice selection, speech rate, and microphone settings.", route: "/settings/voice" },
+      { name: "Notifications", desc: "In-app alert preferences and notification frequency.", route: "/settings/notifications" },
+      { name: "Appearance", desc: "Theme (dark/light), colors, font size, and UI density.", route: "/settings/appearance" },
+      { name: "Privacy & Data", desc: "Data rights, consent management, export, and deletion.", route: "/settings/privacy" },
+      { name: "Data Sharing", desc: "Granular control over who sees what financial data.", route: "/settings/data-sharing" },
+    ],
+  },
+  {
+    title: "Administration",
+    icon: <Shield className="w-5 h-5" />,
+    description: "Admin-only tools for platform management, compliance, and oversight.",
+    features: [
+      { name: "Global Admin", desc: "Platform-wide administration, user management, and system configuration.", route: "/admin" },
+      { name: "Manager Dashboard", desc: "Team performance KPIs, briefings, and advisor oversight.", route: "/manager" },
+      { name: "Organizations", desc: "Multi-org support with custom branding, AI configuration, and member management.", route: "/organizations" },
+      { name: "Org Branding Editor", desc: "Customize organization landing pages, logos, and color schemes.", route: "/org-branding" },
+      { name: "Knowledge Admin", desc: "Manage platform-wide knowledge base content and categories.", route: "/admin/knowledge" },
+      { name: "Admin Integrations", desc: "Configure platform-level API credentials and integration settings.", route: "/admin/integrations" },
+      { name: "Improvement Engine", desc: "AI self-improvement tracking, prompt A/B testing, and capability expansion.", route: "/improvement" },
+      { name: "Proficiency Dashboard", desc: "Track your progress and proficiency across platform features.", route: "/proficiency" },
+    ],
+  },
+];
+
+// ─── ARCHITECTURE DATA ───────────────────────────────────────────
+const ARCHITECTURE_LAYERS = [
+  {
+    name: "Layer 1 — Foundation",
+    icon: <Server className="w-4 h-4" />,
+    items: [
+      "Web scraping engine with rate limiting and caching",
+      "Adaptive rate management for API calls",
+      "Foundation data layer with resilient DB operations",
+      "Encryption service for sensitive credential storage",
+      "Infrastructure resilience with retry logic and circuit breakers",
+    ],
+  },
+  {
+    name: "Layer 2 — Intelligence",
+    icon: <Brain className="w-4 h-4" />,
+    items: [
+      "LLM integration with multi-model failover",
+      "Knowledge graph with dynamic entity relationships",
+      "Predictive insights engine with statistical models",
+      "Adaptive context management for conversation quality",
+      "Prompt A/B testing for continuous improvement",
+    ],
+  },
+  {
+    name: "Layer 3 — Advisory",
+    icon: <Briefcase className="w-4 h-4" />,
+    items: [
+      "COMPULIFE insurance quoting integration",
+      "SOFR-based premium finance calculations",
+      "Credit bureau soft-pull with DTI analysis",
+      "Estate planning benchmarks and knowledge base",
+      "Product suitability scoring engine",
+    ],
+  },
+  {
+    name: "Layer 4 — Compliance",
+    icon: <Shield className="w-4 h-4" />,
+    items: [
+      "Reg BI documentation and audit trails",
+      "Dynamic disclaimers based on conversation context",
+      "Compliance prescreening for financial advice",
+      "Graduated autonomy with human-in-the-loop review",
+      "Fairness testing and bias detection",
+    ],
+  },
+];
 
 export default function Help() {
   const [, navigate] = useLocation();
@@ -149,6 +389,7 @@ export default function Help() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [expandedGuide, setExpandedGuide] = useState<Set<number>>(new Set());
 
   // Contact form
   const [contactName, setContactName] = useState(user?.name || "");
@@ -184,6 +425,15 @@ export default function Help() {
     });
   };
 
+  const toggleGuideSection = (index: number) => {
+    setExpandedGuide(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactSubject.trim() || !contactMessage.trim()) {
@@ -209,210 +459,393 @@ export default function Help() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-3">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
           <Button variant="ghost" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/chat")}>
             <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Chat</span>
           </Button>
           <Separator orientation="vertical" className="h-5" />
           <div className="flex items-center gap-2 min-w-0">
             <HelpCircle className="w-4 h-4 text-accent shrink-0" />
-            <h1 className="text-sm font-semibold truncate">Help & Support</h1>
+            <h1 className="text-sm font-semibold truncate">Help & Platform Guide</h1>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* Hero */}
         <div className="text-center space-y-3">
           <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
-            <HelpCircle className="w-7 h-7 text-accent" />
+            <BookOpen className="w-7 h-7 text-accent" />
           </div>
-          <h2 className="text-2xl font-bold">How can we help?</h2>
-          <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            Search our FAQ, browse by category, or contact support directly.
+          <h2 className="text-2xl font-bold">Stewardly Platform Guide</h2>
+          <p className="text-muted-foreground text-sm max-w-lg mx-auto">
+            Comprehensive guide to all 62 pages, 102 services, and 53 API routers powering your digital financial twin.
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-lg mx-auto">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search for help..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-11 text-sm bg-card border-border/50"
-          />
-        </div>
+        {/* Tabs: Guide / FAQ / Architecture / Contact */}
+        <Tabs defaultValue="guide" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 max-w-lg mx-auto">
+            <TabsTrigger value="guide" className="text-xs gap-1"><BookOpen className="w-3 h-3" /> Guide</TabsTrigger>
+            <TabsTrigger value="faq" className="text-xs gap-1"><HelpCircle className="w-3 h-3" /> FAQ</TabsTrigger>
+            <TabsTrigger value="architecture" className="text-xs gap-1"><Layers className="w-3 h-3" /> Architecture</TabsTrigger>
+            <TabsTrigger value="contact" className="text-xs gap-1"><Send className="w-3 h-3" /> Contact</TabsTrigger>
+          </TabsList>
 
-        {/* Category filters */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          <button
-            onClick={() => setActiveCategory(null)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
-              !activeCategory
-                ? "border-accent bg-accent/10 text-accent"
-                : "border-border hover:border-accent/30 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            All Topics
-          </button>
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
-                activeCategory === cat
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-border hover:border-accent/30 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {CATEGORY_ICONS[cat]}
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* FAQ List */}
-        <div className="space-y-2">
-          {filteredFAQ.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Search className="w-8 h-8 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No results found for "{searchQuery}"</p>
-              <p className="text-xs mt-1">Try different keywords or browse by category</p>
-            </div>
-          ) : (
-            filteredFAQ.map((faq, i) => {
-              const globalIndex = FAQ_DATA.indexOf(faq);
-              const isExpanded = expandedItems.has(globalIndex);
+          {/* ─── GUIDE TAB ─── */}
+          <TabsContent value="guide" className="mt-6 space-y-4">
+            <p className="text-sm text-muted-foreground text-center max-w-2xl mx-auto">
+              Click any section to expand and see all features. Click a feature name to navigate directly to that page.
+            </p>
+            {GUIDE_SECTIONS.map((section, si) => {
+              const isOpen = expandedGuide.has(si);
               return (
-                <Card key={globalIndex} className="overflow-hidden">
+                <Card key={si} className="overflow-hidden">
                   <button
-                    onClick={() => toggleExpand(globalIndex)}
+                    onClick={() => toggleGuideSection(si)}
                     className="w-full flex items-start gap-3 p-4 text-left hover:bg-secondary/20 transition-colors"
                   >
-                    <div className="mt-0.5 shrink-0 text-accent">
-                      {CATEGORY_ICONS[faq.category] || <HelpCircle className="w-4 h-4" />}
+                    <div className="mt-0.5 shrink-0 p-1.5 rounded-md bg-accent/10 text-accent">
+                      {section.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{faq.question}</p>
-                      <Badge variant="outline" className="mt-1 text-[9px]">{faq.category}</Badge>
+                      <p className="text-sm font-semibold">{section.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{section.description}</p>
+                      <Badge variant="outline" className="mt-1.5 text-[9px]">{section.features.length} features</Badge>
                     </div>
-                    {isExpanded ? (
+                    {isOpen ? (
                       <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                     ) : (
                       <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                     )}
                   </button>
-                  {isExpanded && (
-                    <div className="px-4 pb-4 pl-11">
-                      <p className="text-sm text-muted-foreground leading-relaxed">{faq.answer}</p>
+                  {isOpen && (
+                    <div className="px-4 pb-4 pl-14 space-y-2">
+                      {section.features.map((feat, fi) => (
+                        <div
+                          key={fi}
+                          className={`flex items-start gap-2 p-2 rounded-md ${feat.route ? "hover:bg-accent/5 cursor-pointer" : ""}`}
+                          onClick={() => feat.route && navigate(feat.route)}
+                        >
+                          <CheckCircle className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-medium flex items-center gap-1.5">
+                              {feat.name}
+                              {feat.route && <ExternalLink className="w-2.5 h-2.5 text-muted-foreground" />}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">{feat.desc}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </Card>
               );
-            })
-          )}
-        </div>
+            })}
 
-        <Separator />
-
-        {/* Contact Support */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Mail className="w-5 h-5 text-accent" />
-              <CardTitle>Contact Support</CardTitle>
+            {/* Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-2xl font-bold text-accent">62</p>
+                  <p className="text-[10px] text-muted-foreground">Pages</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-2xl font-bold text-accent">102</p>
+                  <p className="text-[10px] text-muted-foreground">Services</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-2xl font-bold text-accent">53</p>
+                  <p className="text-[10px] text-muted-foreground">API Routers</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3 text-center">
+                  <p className="text-2xl font-bold text-accent">1,627+</p>
+                  <p className="text-[10px] text-muted-foreground">Tests Passing</p>
+                </CardContent>
+              </Card>
             </div>
-            <CardDescription>
-              Can't find what you're looking for? Send us a message and we'll get back to you.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {sent ? (
-              <div className="text-center py-8">
-                <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-7 h-7 text-green-500" />
-                </div>
-                <h3 className="text-lg font-semibold mb-1">Message Sent</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  We'll review your message and get back to you as soon as possible.
-                </p>
-                <Button variant="outline" size="sm" onClick={() => { setSent(false); setContactSubject(""); setContactMessage(""); }}>
-                  Send Another Message
-                </Button>
-              </div>
-            ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Name</Label>
-                    <Input
-                      placeholder="Your name"
-                      value={contactName}
-                      onChange={(e) => setContactName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Subject *</Label>
-                    <Input
-                      placeholder="What's this about?"
-                      value={contactSubject}
-                      onChange={(e) => setContactSubject(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Message *</Label>
-                  <Textarea
-                    placeholder="Describe your issue or question in detail..."
-                    value={contactMessage}
-                    onChange={(e) => setContactMessage(e.target.value)}
-                    rows={5}
-                    required
-                  />
-                </div>
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={sending} className="gap-2">
-                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    Send Message
-                  </Button>
-                </div>
-              </form>
-            )}
-          </CardContent>
-        </Card>
+          </TabsContent>
 
-        {/* Quick links */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Card className="hover:border-accent/30 transition-colors cursor-pointer" onClick={() => navigate("/chat")}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <MessageSquare className="w-5 h-5 text-accent shrink-0" />
-              <div>
-                <p className="text-sm font-medium">Chat with AI</p>
-                <p className="text-xs text-muted-foreground">Ask the AI directly</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="hover:border-accent/30 transition-colors cursor-pointer" onClick={() => navigate("/settings/guest-prefs")}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Sparkles className="w-5 h-5 text-accent shrink-0" />
-              <div>
-                <p className="text-sm font-medium">Preferences</p>
-                <p className="text-xs text-muted-foreground">Customize AI responses</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="hover:border-accent/30 transition-colors cursor-pointer" onClick={() => navigate("/settings/ai-tuning")}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Brain className="w-5 h-5 text-accent shrink-0" />
-              <div>
-                <p className="text-sm font-medium">AI Tuning</p>
-                <p className="text-xs text-muted-foreground">Fine-tune your AI</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* ─── FAQ TAB ─── */}
+          <TabsContent value="faq" className="mt-6 space-y-6">
+            {/* Search */}
+            <div className="relative max-w-lg mx-auto">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search help topics..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-11 text-sm bg-card border-border/50"
+              />
+            </div>
+
+            {/* Category filters */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              <button
+                onClick={() => setActiveCategory(null)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                  !activeCategory
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border hover:border-accent/30 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                All Topics
+              </button>
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                    activeCategory === cat
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border hover:border-accent/30 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {CATEGORY_ICONS[cat]}
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* FAQ List */}
+            <div className="space-y-2">
+              {filteredFAQ.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Search className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No results found for "{searchQuery}"</p>
+                  <p className="text-xs mt-1">Try different keywords or browse by category</p>
+                </div>
+              ) : (
+                filteredFAQ.map((faq, i) => {
+                  const globalIndex = FAQ_DATA.indexOf(faq);
+                  const isExpanded = expandedItems.has(globalIndex);
+                  return (
+                    <Card key={globalIndex} className="overflow-hidden">
+                      <button
+                        onClick={() => toggleExpand(globalIndex)}
+                        className="w-full flex items-start gap-3 p-4 text-left hover:bg-secondary/20 transition-colors"
+                      >
+                        <div className="mt-0.5 shrink-0 text-accent">
+                          {CATEGORY_ICONS[faq.category] || <HelpCircle className="w-4 h-4" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{faq.question}</p>
+                          <Badge variant="outline" className="mt-1 text-[9px]">{faq.category}</Badge>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                        )}
+                      </button>
+                      {isExpanded && (
+                        <div className="px-4 pb-4 pl-11">
+                          <p className="text-sm text-muted-foreground leading-relaxed">{faq.answer}</p>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </TabsContent>
+
+          {/* ─── ARCHITECTURE TAB ─── */}
+          <TabsContent value="architecture" className="mt-6 space-y-6">
+            <div className="text-center space-y-2 mb-6">
+              <h3 className="text-lg font-semibold">4-Layer Architecture</h3>
+              <p className="text-sm text-muted-foreground max-w-lg mx-auto">
+                Stewardly implements a comprehensive 4-layer architecture: Foundation, Intelligence, Advisory, and Compliance.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {ARCHITECTURE_LAYERS.map((layer, li) => (
+                <Card key={li}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-md bg-accent/10 text-accent">{layer.icon}</div>
+                      <CardTitle className="text-sm">{layer.name}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <ul className="space-y-1.5">
+                      {layer.items.map((item, ii) => (
+                        <li key={ii} className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <CheckCircle className="w-3 h-3 text-accent shrink-0 mt-0.5" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Tech Stack */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-md bg-accent/10 text-accent"><Cpu className="w-4 h-4" /></div>
+                  <CardTitle className="text-sm">Technology Stack</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { label: "Frontend", value: "React 19, TypeScript, Tailwind CSS 4" },
+                    { label: "Backend", value: "Node.js, Express, tRPC 11" },
+                    { label: "Database", value: "PostgreSQL with Drizzle ORM" },
+                    { label: "AI/LLM", value: "Multi-model with failover (17+ models)" },
+                    { label: "Voice", value: "Edge TTS, Whisper transcription" },
+                    { label: "Real-time", value: "WebSocket notifications" },
+                    { label: "Auth", value: "OAuth + Social (Google, LinkedIn)" },
+                    { label: "Testing", value: "Vitest with 1,627+ tests" },
+                    { label: "Data Pipelines", value: "6 government APIs, automated sync" },
+                  ].map((tech, ti) => (
+                    <div key={ti} className="p-2 rounded-md bg-secondary/30">
+                      <p className="text-[10px] text-muted-foreground font-medium">{tech.label}</p>
+                      <p className="text-xs">{tech.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Key Integrations */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-md bg-accent/10 text-accent"><Globe className="w-4 h-4" /></div>
+                  <CardTitle className="text-sm">External Integrations</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    "Plaid (Banking)", "Canopy Connect (Insurance)", "SnapTrade (Brokerage)",
+                    "COMPULIFE (Quoting)", "SOFR (Rates)", "Credit Bureaus",
+                    "DocuSign (eSignature)", "Wealthbox CRM", "Redtail CRM",
+                    "Clearbit (Enrichment)", "FullContact", "n8n (Workflows)",
+                    "BLS API", "FRED API", "BEA API",
+                    "Census API", "SEC EDGAR", "FINRA BrokerCheck",
+                  ].map((name, ni) => (
+                    <div key={ni} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <CheckCircle className="w-3 h-3 text-accent shrink-0" />
+                      {name}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ─── CONTACT TAB ─── */}
+          <TabsContent value="contact" className="mt-6 space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Send className="w-5 h-5 text-accent" />
+                  <CardTitle>Contact Support</CardTitle>
+                </div>
+                <CardDescription>
+                  Can't find what you're looking for? Send us a message and we'll get back to you.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {sent ? (
+                  <div className="text-center py-8">
+                    <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle className="w-7 h-7 text-green-500" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-1">Message Sent</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      We'll review your message and get back to you as soon as possible.
+                    </p>
+                    <Button variant="outline" size="sm" onClick={() => { setSent(false); setContactSubject(""); setContactMessage(""); }}>
+                      Send Another Message
+                    </Button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleContactSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Name</Label>
+                        <Input
+                          placeholder="Your name"
+                          value={contactName}
+                          onChange={(e) => setContactName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Subject *</Label>
+                        <Input
+                          placeholder="What's this about?"
+                          value={contactSubject}
+                          onChange={(e) => setContactSubject(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Message *</Label>
+                      <Textarea
+                        placeholder="Describe your issue or question in detail..."
+                        value={contactMessage}
+                        onChange={(e) => setContactMessage(e.target.value)}
+                        rows={5}
+                        required
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button type="submit" disabled={sending} className="gap-2">
+                        {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        Send Message
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick links */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Card className="hover:border-accent/30 transition-colors cursor-pointer" onClick={() => navigate("/chat")}>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <MessageSquare className="w-5 h-5 text-accent shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Chat with AI</p>
+                    <p className="text-xs text-muted-foreground">Ask the AI directly</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="hover:border-accent/30 transition-colors cursor-pointer" onClick={() => navigate("/settings/guest-prefs")}>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <Sparkles className="w-5 h-5 text-accent shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Preferences</p>
+                    <p className="text-xs text-muted-foreground">Customize AI responses</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="hover:border-accent/30 transition-colors cursor-pointer" onClick={() => navigate("/settings/ai-tuning")}>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <Brain className="w-5 h-5 text-accent shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">AI Tuning</p>
+                    <p className="text-xs text-muted-foreground">Fine-tune your AI</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

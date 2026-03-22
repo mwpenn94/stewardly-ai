@@ -275,7 +275,7 @@ export const commsRouter = router({
     .input(z.object({
       templateId: z.string(),
       variables: z.record(z.string(), z.string()),
-      channel: z.enum(["email", "sms", "letter", "portal_message"]).optional(),
+      channel: z.enum(["portal_message", "sms", "letter"]).optional(),
       scheduledAt: z.string().optional(),
     }))
     .mutation(({ input }) => {

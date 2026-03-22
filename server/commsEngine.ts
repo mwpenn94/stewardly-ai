@@ -5,7 +5,7 @@
  * No API keys needed. Generates communication drafts from templates.
  */
 
-export type CommChannel = "email" | "sms" | "letter" | "portal_message";
+export type CommChannel = "portal_message" | "sms" | "letter";
 export type CommCategory = "review_reminder" | "market_update" | "birthday" | "life_event" | "onboarding" | "compliance" | "general" | "referral_thank_you" | "annual_summary";
 
 export interface CommTemplate {
@@ -37,10 +37,10 @@ export interface CommDraft {
 // Built-in templates
 const TEMPLATES: CommTemplate[] = [
   {
-    id: "review_reminder_email",
+    id: "review_reminder_message",
     name: "Review Meeting Reminder",
     category: "review_reminder",
-    channel: "email",
+    channel: "portal_message",
     subject: "Your Upcoming Financial Review — {{meetingDate}}",
     body: `Dear {{clientName}},
 
@@ -67,10 +67,10 @@ Best regards,
     variables: ["clientName", "meetingDate", "meetingTime", "advisorName", "firmName"],
   },
   {
-    id: "market_update_email",
+    id: "market_update_message",
     name: "Market Update",
     category: "market_update",
-    channel: "email",
+    channel: "portal_message",
     subject: "Market Update: {{updateTitle}}",
     body: `Dear {{clientName}},
 
@@ -91,10 +91,10 @@ Best regards,
     variables: ["clientName", "updateTitle", "marketSummary", "clientImpact", "advisorAction", "advisorName"],
   },
   {
-    id: "birthday_email",
+    id: "birthday_message",
     name: "Birthday Greeting",
     category: "birthday",
-    channel: "email",
+    channel: "portal_message",
     subject: "Happy Birthday, {{clientName}}! 🎂",
     body: `Dear {{clientName}},
 
@@ -113,7 +113,7 @@ Warm regards,
     id: "onboarding_welcome",
     name: "New Client Welcome",
     category: "onboarding",
-    channel: "email",
+    channel: "portal_message",
     subject: "Welcome to {{firmName}} — Getting Started",
     body: `Dear {{clientName}},
 
@@ -135,7 +135,7 @@ To get started, please:
 • Upload any relevant financial documents
 • Review and sign the advisory agreement
 
-If you have any questions, I'm just a phone call or email away.
+If you have any questions, I'm just a message away.
 
 Welcome aboard!
 
@@ -145,10 +145,10 @@ Welcome aboard!
     variables: ["clientName", "firmName", "discoveryDate", "portalLink", "advisorName", "advisorTitle"],
   },
   {
-    id: "annual_summary_email",
+    id: "annual_summary_message",
     name: "Annual Summary",
     category: "annual_summary",
-    channel: "email",
+    channel: "portal_message",
     subject: "Your {{year}} Financial Year in Review",
     body: `Dear {{clientName}},
 
@@ -176,7 +176,7 @@ Best regards,
     id: "referral_thank_you",
     name: "Referral Thank You",
     category: "referral_thank_you",
-    channel: "email",
+    channel: "portal_message",
     subject: "Thank You for the Referral!",
     body: `Dear {{clientName}},
 

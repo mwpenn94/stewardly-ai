@@ -56,7 +56,7 @@ export const recommendationRouter = router({
       return invitationService.sendInvitation(ctx.user.id, input.toUserId, input.message);
     }),
 
-  // Off-platform email invitation
+  // In-app invitation (no external email)
   sendEmailInvitation: protectedProcedure
     .input(z.object({
       email: z.string().email(),

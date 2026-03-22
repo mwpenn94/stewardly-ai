@@ -12,6 +12,7 @@ import {
   Link2, Unlink, RefreshCw, Search, Database, Building2, Briefcase, User,
   Globe, CheckCircle2, XCircle, Clock, AlertTriangle, ChevronRight,
   Shield, Activity, Settings2, Loader2, Plus, ArrowUpDown, FileUp, ArrowLeft,
+  TrendingUp, TrendingDown, Minus, ArrowLeftRight,
 } from "lucide-react";
 import { Link } from "wouter";
 import { getLoginUrl } from "@/const";
@@ -698,6 +699,306 @@ function SnapTradeBrokerageSection() {
   );
 }
 
+// ─── SOFR / Premium Finance Rate Dashboard ─────────────────────────────
+function SOFRDashboard() {
+  const latestRates = trpc.verification.getLatestRates.useQuery(undefined, { retry: false });
+  const rateHistory = trpc.verification.getRateHistory.useQuery({ days: 30 }, { retry: false });
+  const refreshRates = trpc.verification.refreshRates.useMutation({
+    onSuccess: () => { toast.success("Rates refreshed"); latestRates.refetch(); rateHistory.refetch(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const rates = latestRates.data;
+  const history = rateHistory.data || [];
+  const sofrHistory = history.map((r: any) => parseFloat(r.sofr || "0")).filter((v: number) => v > 0);
+  const maxSofr = Math.max(...sofrHistory, 0.01);
+  const minSofr = Math.min(...sofrHistory, 0);
+  const range = maxSofr - minSofr || 0.01;
+  const rateCards = [
+    { label: "SOFR", value: rates?.sofr, icon: TrendingUp },
+    { label: "SOFR 30-Day", value: rates?.sofr30, icon: TrendingUp },
+    { label: "SOFR 90-Day", value: rates?.sofr90, icon: TrendingUp },
+    { label: "10Y Treasury", value: rates?.treasury10y, icon: Activity },
+    { label: "30Y Treasury", value: rates?.treasury30y, icon: Activity },
+    { label: "Prime Rate", value: rates?.primeRate, icon: TrendingDown },
+  ];
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" /> Premium Finance Rates</CardTitle>
+          <CardDescription>SOFR and benchmark rates for premium financing calculations</CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => refreshRates.mutate()} disabled={refreshRates.isPending}>
+          <RefreshCw className={`h-4 w-4 mr-1 ${refreshRates.isPending ? "animate-spin" : ""}`} /> Refresh
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {!rates ? (
+          <div className="text-center py-6 text-muted-foreground text-sm">No rate data yet. Click Refresh to fetch latest rates.</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+              {rateCards.map((rc) => {
+                const Icon = rc.icon;
+                return (
+                  <div key={rc.label} className="rounded-lg border p-3 text-center">
+                    <div className="text-xs text-muted-foreground mb-1 flex items-center justify-center gap-1"><Icon className="h-3 w-3" />{rc.label}</div>
+                    <div className="text-lg font-bold">{rc.value ? `${parseFloat(rc.value).toFixed(2)}%` : "—"}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {sofrHistory.length > 1 && (
+              <div>
+                <div className="text-xs text-muted-foreground mb-2">SOFR 30-Day Trend</div>
+                <div className="flex items-end gap-[2px] h-16">
+                  {sofrHistory.map((v: number, i: number) => (
+                    <div key={i} className="flex-1 bg-primary/70 rounded-t-sm hover:bg-primary transition-colors" style={{ height: `${Math.max(4, ((v - minSofr) / range) * 100)}%` }} title={`${v.toFixed(4)}%`} />
+                  ))}
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                  <span>{minSofr.toFixed(2)}%</span><span>{maxSofr.toFixed(2)}%</span>
+                </div>
+              </div>
+            )}
+            <div className="text-xs text-muted-foreground mt-3">Last updated: {rates.fetchedAt ? new Date(rates.fetchedAt).toLocaleString() : "Unknown"}</div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── CRM Sync Status Panel ──────────────────────────────────────────────
+function CRMSyncPanel() {
+  const syncStats = trpc.operations.crm.stats.useQuery(undefined, { retry: false });
+  const crmConns = trpc.operations.crm.connections.useQuery(undefined, { retry: false });
+  const stats = syncStats.data;
+  const conns = crmConns.data || [];
+  const providerColors: Record<string, string> = {
+    salesforce: "bg-blue-500", hubspot: "bg-orange-500", dynamics: "bg-indigo-500", zoho: "bg-red-500", custom: "bg-gray-500",
+  };
+  const statusIcons: Record<string, typeof CheckCircle2> = {
+    connected: CheckCircle2, disconnected: Unlink, error: XCircle, syncing: RefreshCw,
+  };
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><ArrowLeftRight className="h-5 w-5" /> CRM Sync Status</CardTitle>
+        <CardDescription>Bidirectional CRM synchronization overview</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {!stats || stats.totalConnections === 0 ? (
+          <div className="text-center py-6">
+            <ArrowLeftRight className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">No CRM connections configured yet.</p>
+            <p className="text-xs text-muted-foreground mt-1">Connect Salesforce, HubSpot, or other CRMs from the Org Admin panel.</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="rounded-lg border p-3 text-center">
+                <div className="text-xs text-muted-foreground">Total</div>
+                <div className="text-2xl font-bold">{stats.totalConnections}</div>
+              </div>
+              <div className="rounded-lg border p-3 text-center">
+                <div className="text-xs text-muted-foreground">Active</div>
+                <div className="text-2xl font-bold text-green-600">{stats.activeConnections}</div>
+              </div>
+              <div className="rounded-lg border p-3 text-center">
+                <div className="text-xs text-muted-foreground">Records Synced</div>
+                <div className="text-2xl font-bold">{stats.totalRecordsSynced.toLocaleString()}</div>
+              </div>
+              <div className="rounded-lg border p-3 text-center">
+                <div className="text-xs text-muted-foreground">Errors</div>
+                <div className={`text-2xl font-bold ${stats.totalErrors > 0 ? "text-red-500" : ""}`}>{stats.totalErrors}</div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {conns.map((conn: any) => {
+                const StatusIcon = statusIcons[conn.status] || Clock;
+                return (
+                  <div key={conn.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`h-2 w-2 rounded-full ${providerColors[conn.provider] || "bg-gray-400"}`} />
+                      <div>
+                        <div className="text-sm font-medium capitalize">{conn.provider}</div>
+                        <div className="text-xs text-muted-foreground">{conn.syncDirection} · {conn.syncFrequency}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{conn.recordsSynced} records</span>
+                      <StatusIcon className={`h-4 w-4 ${conn.status === "connected" ? "text-green-500" : conn.status === "error" ? "text-red-500" : "text-muted-foreground"}`} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Client Account Connections (Plaid Link + Canopy Connect) ────────────
+function ClientAccountConnections() {
+  const { user } = useAuth();
+  const connections = trpc.integrations.listConnections.useQuery(undefined, { enabled: !!user });
+  const providers = trpc.integrations.listProviders.useQuery();
+
+  // Find Plaid and Canopy providers
+  const plaidProvider = (providers.data as unknown as Provider[] | undefined)?.find(p => p.slug === "plaid");
+  const canopyProvider = (providers.data as unknown as Provider[] | undefined)?.find(p => p.slug === "canopy-connect");
+  const plaidConn = (connections.data as unknown as Connection[] | undefined)?.find((c: any) => c.providerId === plaidProvider?.id);
+  const canopyConn = (connections.data as unknown as Connection[] | undefined)?.find((c: any) => c.providerId === canopyProvider?.id);
+
+  if (!user) return null;
+
+  const accounts = [
+    {
+      key: "plaid",
+      name: "Plaid",
+      description: "Link bank accounts, credit cards, and investment accounts to sync transactions and balances automatically.",
+      icon: <Briefcase className="h-5 w-5 text-blue-500" />,
+      color: "border-blue-500/20",
+      features: ["Transaction history", "Account balances", "Investment holdings", "Income verification"],
+      connection: plaidConn,
+      provider: plaidProvider,
+      setupUrl: "https://dashboard.plaid.com",
+      howItWorks: [
+        "Your organization admin configures Plaid credentials",
+        "You click \"Link Account\" and select your bank",
+        "Log in securely through Plaid's portal",
+        "Transactions and balances sync automatically",
+      ],
+    },
+    {
+      key: "canopy",
+      name: "Canopy Connect",
+      description: "Aggregate insurance policy data across carriers for a complete view of your coverage.",
+      icon: <Shield className="h-5 w-5 text-purple-500" />,
+      color: "border-purple-500/20",
+      features: ["Policy aggregation", "Coverage verification", "Premium tracking", "Renewal alerts"],
+      connection: canopyConn,
+      provider: canopyProvider,
+      setupUrl: "https://www.usecanopy.com",
+      howItWorks: [
+        "Your organization admin configures Canopy Connect credentials",
+        "You click \"Connect Policies\" and select your carriers",
+        "Authorize access to your policy data",
+        "All your insurance policies appear in one dashboard",
+      ],
+    },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <User className="h-5 w-5 text-emerald-500" />
+          Client Account Connections
+        </CardTitle>
+        <CardDescription>
+          Link your personal financial accounts to enable AI-powered insights, automated tracking, and comprehensive financial planning.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {accounts.map(acct => {
+          const isConnected = acct.connection?.status === "connected";
+          const isPending = acct.connection?.status === "pending";
+          const providerConfigured = !!acct.provider;
+
+          return (
+            <div key={acct.key} className={`rounded-lg border ${acct.color} p-4 space-y-3`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {acct.icon}
+                  <div>
+                    <h4 className="text-sm font-semibold">{acct.name}</h4>
+                    <p className="text-xs text-muted-foreground max-w-md">{acct.description}</p>
+                  </div>
+                </div>
+                {isConnected ? (
+                  <Badge variant="default" className="gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Connected
+                  </Badge>
+                ) : isPending ? (
+                  <Badge variant="outline" className="gap-1">
+                    <Clock className="h-3 w-3" />
+                    Pending
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="gap-1">
+                    <Unlink className="h-3 w-3" />
+                    Not Connected
+                  </Badge>
+                )}
+              </div>
+
+              {/* Features grid */}
+              <div className="grid grid-cols-2 gap-2">
+                {acct.features.map(f => (
+                  <div key={f} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <CheckCircle2 className={`h-3 w-3 ${isConnected ? "text-emerald-500" : "text-muted-foreground/40"}`} />
+                    {f}
+                  </div>
+                ))}
+              </div>
+
+              {/* How it works */}
+              {!isConnected && (
+                <div className="rounded-md bg-muted/50 p-3 space-y-2">
+                  <h5 className="text-xs font-medium">How it works</h5>
+                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                    {acct.howItWorks.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {/* Connection status details */}
+              {isConnected && acct.connection && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-2">
+                  <span>Last synced: {acct.connection.lastSyncAt ? new Date(acct.connection.lastSyncAt).toLocaleString() : "Never"}</span>
+                  <span>{acct.connection.recordsSynced || 0} records synced</span>
+                </div>
+              )}
+
+              {/* Action button */}
+              {!providerConfigured ? (
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                    <span>Not yet configured by your organization admin. Contact your advisor to enable {acct.name}.</span>
+                  </div>
+                </div>
+              ) : !isConnected ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => toast.info(`${acct.name} Link flow coming soon. Your organization admin needs to complete the setup first.`)}
+                >
+                  <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                  {acct.key === "plaid" ? "Link Bank Account" : "Connect Insurance Policies"}
+                </Button>
+              ) : null}
+
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t">
+                <Shield className="h-3 w-3" />
+                <span>Your credentials are never stored by Stewardly — {acct.name} handles authentication securely.</span>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main Integrations Page ────────────────────────────────────────────
 export default function Integrations() {
   const { user } = useAuth();
@@ -946,8 +1247,17 @@ export default function Integrations() {
         </div>
       )}
 
+      {/* Client Account Connections (Plaid Link + Canopy Connect) */}
+      <ClientAccountConnections />
+
       {/* SnapTrade Brokerage Connections */}
       <SnapTradeBrokerageSection />
+
+      {/* Premium Finance Rates / SOFR Dashboard */}
+      <SOFRDashboard />
+
+      {/* CRM Sync Status Panel */}
+      <CRMSyncPanel />
 
       {/* My Connections — Sync History */}
       {connectedCount > 0 && (

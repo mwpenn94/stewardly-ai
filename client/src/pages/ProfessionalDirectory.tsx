@@ -16,8 +16,9 @@ import {
   Users, Search, Star, MapPin, Briefcase, Shield, Phone, Mail,
   Globe, Plus, Edit, Trash2, CheckCircle, Clock, ArrowRight,
   Building2, UserPlus, Loader2, ExternalLink, Filter, X,
-  Award, TrendingUp, Heart, Handshake,
+  Award, TrendingUp, Heart, Handshake, ShieldCheck, FileCheck, Scale as ScaleIcon,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const TIER_LABELS: Record<number, { label: string; icon: any; color: string; desc: string }> = {
   1: { label: "Your Professionals", icon: Heart, color: "text-rose-400", desc: "Professionals you're already connected with" },
@@ -361,10 +362,29 @@ export default function ProfessionalDirectory() {
   );
 }
 
+// ─── Verification Badge Config ──────────────────────────────────────
+const BADGE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
+  license_active: { icon: ShieldCheck, color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/30", label: "License Active" },
+  cfp_certified: { icon: Award, color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/30", label: "CFP Certified" },
+  cpa_active: { icon: FileCheck, color: "text-indigo-400", bg: "bg-indigo-400/10 border-indigo-400/30", label: "CPA Active" },
+  bar_good_standing: { icon: ScaleIcon, color: "text-purple-400", bg: "bg-purple-400/10 border-purple-400/30", label: "Bar Good Standing" },
+  nmls_authorized: { icon: Shield, color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/30", label: "NMLS Authorized" },
+  nipr_licensed: { icon: ShieldCheck, color: "text-teal-400", bg: "bg-teal-400/10 border-teal-400/30", label: "NIPR Licensed" },
+  no_disclosures: { icon: CheckCircle, color: "text-green-400", bg: "bg-green-400/10 border-green-400/30", label: "No Disclosures" },
+  fiduciary: { icon: Heart, color: "text-rose-400", bg: "bg-rose-400/10 border-rose-400/30", label: "Fiduciary" },
+  am_best_rated: { icon: Star, color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/30", label: "AM Best Rated" },
+  peer_rated: { icon: Users, color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/30", label: "Peer Rated" },
+};
+
 function ProfessionalCard({ pro, isConnected, onConnect, onEdit, onDelete, isOwner }: {
   pro: any; isConnected: boolean; onConnect: () => void;
   onEdit: () => void; onDelete: () => void; isOwner: boolean;
 }) {
+  const badges = trpc.verification.getBadges.useQuery(
+    { professionalId: pro.id },
+    { enabled: !!pro.id, staleTime: 60_000 }
+  );
+  const badgeList = (badges.data || []) as Array<{ badgeType: string; badgeLabel?: string; confidenceScore?: string }>;
   return (
     <div className="p-4 rounded-xl bg-card border border-border/50 hover:border-border transition-colors group">
       <div className="flex items-start justify-between mb-3">
@@ -378,6 +398,30 @@ function ProfessionalCard({ pro, isConnected, onConnect, onEdit, onDelete, isOwn
           </Badge>
         )}
       </div>
+      {/* Verification Badges */}
+      {badgeList.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {badgeList.slice(0, 4).map((b, i) => {
+            const cfg = BADGE_CONFIG[b.badgeType] || { icon: CheckCircle, color: "text-muted-foreground", bg: "bg-secondary border-border", label: b.badgeType };
+            const Icon = cfg.icon;
+            return (
+              <Tooltip key={i}>
+                <TooltipTrigger asChild>
+                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[9px] font-medium ${cfg.bg} ${cfg.color}`}>
+                    <Icon className="w-2.5 h-2.5" /> {b.badgeLabel || cfg.label}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  {cfg.label}{b.confidenceScore ? ` (${(Number(b.confidenceScore) * 100).toFixed(0)}% confidence)` : ""}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+          {badgeList.length > 4 && (
+            <span className="text-[9px] text-muted-foreground self-center">+{badgeList.length - 4} more</span>
+          )}
+        </div>
+      )}
 
       {pro.firm && (
         <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1">

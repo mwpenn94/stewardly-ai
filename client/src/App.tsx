@@ -64,6 +64,8 @@ import ProductIntelligence from "./pages/ProductIntelligence";
 import AdminIntelligenceDashboard from "./pages/AdminIntelligenceDashboard";
 import SuitabilityPanel from "./pages/SuitabilityPanel";
 import ProficiencyDashboard from "./pages/ProficiencyDashboard";
+import PassiveActions from "./pages/PassiveActions";
+import MarketData from "./pages/MarketData";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { usePageTracking } from "./hooks/useExponentialTracking";
 
@@ -105,6 +107,8 @@ function Router() {
       <Route path={"/proficiency"} component={ProficiencyDashboard} />
       <Route path={"/product-intelligence"} component={ProductIntelligence} />
       <Route path={"/admin/intelligence"} component={AdminIntelligenceDashboard} />
+      <Route path={"/passive-actions"} component={PassiveActions} />
+      <Route path={"/market-data"} component={MarketData} />
 
       {/* Consolidated Hub Pages */}
       <Route path={"/operations"} component={OperationsHub} />

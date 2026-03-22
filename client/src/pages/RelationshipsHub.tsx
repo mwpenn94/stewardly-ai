@@ -233,8 +233,8 @@ function OutreachSection() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Email Campaigns</h3>
-        <Button size="sm" onClick={() => navigateToChat("Help me create a new email campaign. I need to define the audience, craft the message, and set up the sending schedule. What type of campaign should we create?")}>
+        <h3 className="font-semibold">Message Campaigns</h3>
+        <Button size="sm" onClick={() => navigateToChat("Help me create a new in-app message campaign. I need to define the audience, craft the message, and set up the sending schedule. What type of campaign should we create?")}>
           <Plus className="h-3 w-3 mr-1" /> New Campaign
         </Button>
       </div>
@@ -242,14 +242,14 @@ function OutreachSection() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Active Campaigns</CardTitle>
-          <CardDescription>Email campaigns and their performance</CardDescription>
+          <CardDescription>In-app message campaigns and their performance</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground text-sm">
             <Mail className="h-8 w-8 mx-auto mb-2 opacity-50" />
             No active campaigns.
             <br />
-            <Button variant="link" size="sm" className="mt-1 text-xs" onClick={() => navigateToChat("Help me create my first email campaign. I want to reach out to my client base with a professional newsletter.")}>
+            <Button variant="link" size="sm" className="mt-1 text-xs" onClick={() => navigateToChat("Help me create my first in-app message campaign. I want to reach out to my client base with a professional notification.")}>
               Ask the AI to help create one →
             </Button>
           </div>

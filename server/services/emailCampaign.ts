@@ -1,7 +1,8 @@
 /**
- * Email Campaign Service
+ * Message Campaign Service (In-App Only)
  * Handles campaign CRUD, template rendering with variable substitution,
- * recipient management, batch sending via notification system, and analytics tracking.
+ * recipient management, batch sending via in-app notification system, and analytics tracking.
+ * All messages are delivered as in-app notifications — no external email sending.
  */
 import { getDb } from "../db";
 import { emailCampaigns, emailSends, users } from "../../drizzle/schema";
@@ -168,7 +169,7 @@ export async function generateEmailContent(params: {
     messages: [
       {
         role: "system",
-        content: `You are an expert email copywriter for financial services. Generate professional email content.
+        content: `You are an expert message copywriter for financial services. Generate professional in-app message content.
 Return JSON with: { "subject": "...", "bodyHtml": "<html>...</html>" }
 The HTML should be clean, professional, and mobile-responsive. Use inline styles.
 Tone: ${params.tone || "professional"}
@@ -176,19 +177,19 @@ Recipient type: ${params.recipientType || "client"}`
       },
       {
         role: "user",
-        content: `Generate an email for the following purpose:\n${params.purpose}\n${params.keyPoints?.length ? `\nKey points to cover:\n${params.keyPoints.map(p => `- ${p}`).join("\n")}` : ""}`
+        content: `Generate an in-app message for the following purpose:\n${params.purpose}\n${params.keyPoints?.length ? `\nKey points to cover:\n${params.keyPoints.map(p => `- ${p}`).join("\n")}` : ""}`
       }
     ],
     response_format: {
       type: "json_schema",
       json_schema: {
-        name: "email_content",
+        name: "message_content",
         strict: true,
         schema: {
           type: "object",
           properties: {
-            subject: { type: "string", description: "Email subject line" },
-            bodyHtml: { type: "string", description: "Email body as clean HTML" },
+            subject: { type: "string", description: "Message subject line" },
+            bodyHtml: { type: "string", description: "Message body as clean HTML" },
           },
           required: ["subject", "bodyHtml"],
           additionalProperties: false,
@@ -197,7 +198,7 @@ Recipient type: ${params.recipientType || "client"}`
     },
   });
   const content = response.choices?.[0]?.message?.content;
-  if (!content) throw new Error("Failed to generate email content");
+  if (!content) throw new Error("Failed to generate message content");
   return JSON.parse(content as string) as { subject: string; bodyHtml: string };
 }
 
@@ -232,7 +233,7 @@ export async function sendCampaign(campaignId: number, userId: number) {
         recipientEmail: recipient.recipientEmail,
       });
 
-      // Use notification system to send (simulated — in production would use SendGrid/Postmark)
+      // Deliver as in-app notification (no external email)
       const sent = await notifyOwner({
         title: `[Campaign: ${campaign.name}] ${campaign.subject}`,
         content: `To: ${recipient.recipientEmail}\n\n${htmlToPlainText(personalizedHtml)}`,

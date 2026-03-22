@@ -1297,6 +1297,7 @@ import { verificationRouter } from "./routers/verification";
 import { dataSeedRouter } from "./routers/dataSeed";
 import { productIntelligenceRouter } from "./routers/productIntelligence";
 import { adminIntelligenceRouter } from "./routers/adminIntelligence";
+import { passiveActionsRouter } from "./routers/passiveActions";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1399,6 +1400,7 @@ export const appRouter = router({
   dataSeed: dataSeedRouter,
   productIntelligence: productIntelligenceRouter,
   adminIntelligence: adminIntelligenceRouter,
+  passiveActions: passiveActionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

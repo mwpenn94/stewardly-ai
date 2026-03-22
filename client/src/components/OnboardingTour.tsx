@@ -115,8 +115,8 @@ const TOUR_STEPS: TourStep[] = [
   },
   {
     id: "email-campaigns",
-    title: "Email Campaigns",
-    description: "Create and send personalized email campaigns to clients. Use AI to generate professional content, manage recipients, and track campaign performance.",
+    title: "Message Campaigns",
+    description: "Create and send personalized in-app message campaigns to clients. Use AI to generate professional content, manage recipients, and track campaign performance.",
     target: "[data-tour='email-campaigns']",
     placement: "right",
     icon: <Globe className="w-5 h-5" />,

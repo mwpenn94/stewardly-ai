@@ -261,7 +261,7 @@ export const workflowOrchestratorRouter = router({
       name: z.string().min(1),
       eventType: z.string(),
       actions: z.array(z.object({
-        type: z.enum(["notification", "task_create", "email", "flag", "escalate", "schedule_meeting"]),
+        type: z.enum(["notification", "task_create", "in_app_message", "flag", "escalate", "schedule_meeting"]),
         target: z.enum(["client", "advisor", "admin", "system"]),
         config: z.record(z.string(), z.unknown()),
       })),
