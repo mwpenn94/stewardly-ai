@@ -60,6 +60,7 @@ import RelationshipsHub from "./pages/RelationshipsHub";
 import KnowledgeAdmin from "./pages/KnowledgeAdmin";
 import AdminIntegrations from "./pages/AdminIntegrations";
 import AdvisorIntegrations from "./pages/AdvisorIntegrations";
+import ProductIntelligence from "./pages/ProductIntelligence";
 import SuitabilityPanel from "./pages/SuitabilityPanel";
 import ProficiencyDashboard from "./pages/ProficiencyDashboard";
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -101,6 +102,7 @@ function Router() {
       <Route path={"/integration-health"} component={IntegrationHealth} />
       <Route path={"/suitability-panel"} component={SuitabilityPanel} />
       <Route path={"/proficiency"} component={ProficiencyDashboard} />
+      <Route path={"/product-intelligence"} component={ProductIntelligence} />
 
       {/* Consolidated Hub Pages */}
       <Route path={"/operations"} component={OperationsHub} />

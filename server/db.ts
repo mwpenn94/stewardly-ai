@@ -298,6 +298,12 @@ export async function updateDocumentStatus(id: number, status: "uploading" | "pr
   await db.update(documents).set(update).where(eq(documents.id, id));
 }
 
+export async function updateDocumentCategory(id: number, category: "personal_docs" | "financial_products" | "regulations" | "training_materials" | "artifacts" | "skills") {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(documents).set({ category }).where(eq(documents.id, id));
+}
+
 export async function addDocumentChunks(chunks: Array<{ documentId: number; userId: number; content: string; chunkIndex: number; category: "personal_docs" | "financial_products" | "regulations" | "training_materials" | "artifacts" | "skills" }>) {
   const db = await getDb();
   if (!db) return;

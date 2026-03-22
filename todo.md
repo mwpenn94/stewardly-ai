@@ -2437,9 +2437,39 @@
 - [x] 99+ new tests across all verification, CRM, enrichment, and workflow modules (45 tests in verification.test.ts)
 
 ## File Upload Fix + AI Auto-Categorization
-- [ ] Diagnose why file uploads are failing
-- [ ] Increase upload size limit to at least 31MB
-- [ ] Fix file upload pipeline end-to-end
-- [ ] Replace manual category selection with AI auto-categorization
-- [ ] AI analyzes file name, content type, and metadata to assign category automatically
-- [ ] Remove category picker from upload UI (no user input needed)
+- [x] Diagnose why file uploads are failing
+- [x] Increase upload size limit to at least 31MB
+- [x] Fix file upload pipeline end-to-end
+- [x] Replace manual category selection with AI auto-categorization
+- [x] AI analyzes file name, content type, and metadata to assign category automatically
+- [x] Remove category picker from upload UI (no user input needed)
+
+## Data Seeding & Product Intelligence Integrations (Prompt 2, v15→v17)
+### Phase 1: Tax & Government Data Seeds
+- [ ] Create tax_parameters table + seed 2025/2026 IRS data
+- [ ] Create ssa_parameters + ssa_life_tables + seed SSA data
+- [ ] Create medicare_parameters table + seed CMS data
+- [ ] Integrate tax params into tax optimization and estate planning models
+- [ ] SSA PIA calculation engine + claiming strategy optimizer
+- [ ] Medicare IRMAA calculator + HSA cutoff logic
+### Phase 2: Insurance Product & Carrier Data
+- [ ] Create insurance_carriers table + seed top 50 carriers with AM Best ratings
+- [ ] Create insurance_products table + seed product catalog
+- [ ] Create iul_crediting_history table + seed crediting rates
+- [ ] Carrier rating badges in Product Marketplace and Comparator
+### Phase 3: Investment Intelligence
+- [ ] Create market_index_history table + seed S&P 500/DJIA/NASDAQ data
+- [ ] Create economic_history table + seed Shiller CAPE data
+- [ ] IUL back-test feature with actual market history
+- [ ] Monte Carlo with actual return distributions
+### Phase 4: Estate & Planning Data
+- [ ] Seed estate planning knowledge articles and templates
+- [ ] Create industry_benchmarks table + seed LIMRA/LOMA data
+### Phase 5: Professional-Layer Data Seeds
+- [ ] Risk scoring integration (Nitrogen/Riskalyze adapter)
+- [ ] DocuSign e-signature tracking integration
+### Phase 6: Client-Layer Expansion
+- [ ] Plaid production webhook handler + transaction categorization + holdings sync
+- [ ] Credit bureau soft-pull integration (Experian/TransUnion)
+### Phase 7: Tests
+- [ ] 101+ new tests across all data seeding modules

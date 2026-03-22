@@ -604,13 +604,37 @@ const documentsRouter = router({
       filename: z.string(),
       content: z.string(), // base64 encoded
       mimeType: z.string().optional(),
-      category: z.enum(["personal_docs", "financial_products", "regulations", "training_materials", "artifacts", "skills"]).default("personal_docs"),
+      category: z.enum(["personal_docs", "financial_products", "regulations", "training_materials", "artifacts", "skills"]).optional(),
       visibility: z.enum(["private", "professional", "management", "admin"]).default("professional"),
     }))
     .mutation(async ({ ctx, input }) => {
       const buffer = Buffer.from(input.content, "base64");
+      // Enforce 31MB raw file limit (base64 is ~33% larger)
+      if (buffer.length > 31 * 1024 * 1024) {
+        throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "File exceeds 31MB limit" });
+      }
       const fileKey = `docs/${ctx.user.id}/${nanoid()}-${input.filename}`;
       const { url } = await storagePut(fileKey, buffer, input.mimeType || "application/octet-stream");
+
+      // AI auto-categorization: determine category from filename + content preview
+      let resolvedCategory = input.category || "personal_docs";
+      if (!input.category) {
+        try {
+          const preview = buffer.toString("utf-8").substring(0, 2000);
+          const catResult = await invokeLLM({
+            messages: [
+              { role: "system", content: `You classify documents into exactly one of these categories. Respond with ONLY the category key, nothing else.\nCategories:\n- personal_docs: Personal documents (tax returns, IDs, wills, trusts, bank statements, pay stubs, personal letters)\n- financial_products: Financial product guides, brochures, prospectuses, fund fact sheets, insurance illustrations\n- regulations: Regulatory documents, compliance guides, SEC filings, DOL rules, state regulations\n- training_materials: Training courses, certifications, CE credits, study guides, exam prep\n- artifacts: Reports, analyses, spreadsheets, presentations, meeting notes, proposals\n- skills: Domain knowledge files, playbooks, scripts, templates, checklists` },
+              { role: "user", content: `Filename: ${input.filename}\nMIME type: ${input.mimeType || "unknown"}\nContent preview:\n${preview}` },
+            ],
+          });
+          const rawContent = catResult?.choices?.[0]?.message?.content;
+          const raw = (typeof rawContent === "string" ? rawContent : "").trim().toLowerCase();
+          const validCats = ["personal_docs", "financial_products", "regulations", "training_materials", "artifacts", "skills"];
+          if (validCats.includes(raw)) resolvedCategory = raw as any;
+        } catch {
+          // fallback to personal_docs on LLM failure
+        }
+      }
 
       const doc = await addDocument({
         userId: ctx.user.id,
@@ -618,7 +642,7 @@ const documentsRouter = router({
         fileUrl: url,
         fileKey,
         mimeType: input.mimeType,
-        category: input.category,
+        category: resolvedCategory as any,
         visibility: input.visibility,
       });
 
@@ -639,14 +663,14 @@ const documentsRouter = router({
           userId: ctx.user.id,
           content,
           chunkIndex: index,
-          category: input.category,
+          category: resolvedCategory as any,
         })));
         await updateDocumentStatus(doc.id, "ready", text.substring(0, 5000), chunks.length);
       } catch (e) {
         await updateDocumentStatus(doc.id, "error");
       }
 
-      return { id: doc.id, url };
+      return { id: doc.id, url, category: resolvedCategory };
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
@@ -1262,6 +1286,8 @@ import { maxScoresRouter } from "./routers/maxScores";
 import { exponentialEngineRouter } from "./routers/exponentialEngine";
 import { selfDiscoveryRouter } from "./routers/selfDiscovery";
 import { verificationRouter } from "./routers/verification";
+import { dataSeedRouter } from "./routers/dataSeed";
+import { productIntelligenceRouter } from "./routers/productIntelligence";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1361,6 +1387,8 @@ export const appRouter = router({
   exponentialEngine: exponentialEngineRouter,
   selfDiscovery: selfDiscoveryRouter,
   verification: verificationRouter,
+  dataSeed: dataSeedRouter,
+  productIntelligence: productIntelligenceRouter,
 });
 
 export type AppRouter = typeof appRouter;

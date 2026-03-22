@@ -3904,3 +3904,249 @@ export const premiumFinanceRates = mysqlTable("premium_finance_rates", {
 export type PremiumFinanceRate = typeof premiumFinanceRates.$inferSelect;
 export type InsertPremiumFinanceRate = typeof premiumFinanceRates.$inferInsert;
 
+// ============================================================
+// DATA SEEDING & PRODUCT INTELLIGENCE TABLES (Prompt 2)
+// ============================================================
+
+// --- Phase 1: Tax & Government Data Seeds ---
+
+export const taxParameters = mysqlTable("tax_parameters", {
+  id: int("id").autoincrement().primaryKey(),
+  taxYear: int("tax_year").notNull(),
+  parameterName: varchar("parameter_name", { length: 100 }).notNull(),
+  parameterCategory: varchar("parameter_category", { length: 50 }).notNull(),
+  filingStatus: varchar("filing_status", { length: 50 }).default("all"),
+  valueJson: json("value_json").notNull(),
+  sourceUrl: varchar("source_url", { length: 500 }),
+  effectiveDate: varchar("effective_date", { length: 20 }).notNull(),
+  expiryDate: varchar("expiry_date", { length: 20 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type TaxParameter = typeof taxParameters.$inferSelect;
+export type InsertTaxParameter = typeof taxParameters.$inferInsert;
+
+export const ssaParameters = mysqlTable("ssa_parameters", {
+  id: int("id").autoincrement().primaryKey(),
+  parameterYear: int("parameter_year").notNull(),
+  parameterName: varchar("parameter_name", { length: 100 }).notNull(),
+  valueJson: json("value_json").notNull(),
+  sourceUrl: varchar("source_url", { length: 500 }),
+  effectiveDate: varchar("effective_date", { length: 20 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type SsaParameter = typeof ssaParameters.$inferSelect;
+export type InsertSsaParameter = typeof ssaParameters.$inferInsert;
+
+export const ssaLifeTables = mysqlTable("ssa_life_tables", {
+  id: int("id").autoincrement().primaryKey(),
+  age: int("age").notNull(),
+  sex: varchar("sex", { length: 10 }).notNull(),
+  probabilityOfDeath: varchar("probability_of_death", { length: 20 }).notNull(),
+  lifeExpectancy: varchar("life_expectancy", { length: 10 }).notNull(),
+  tableYear: int("table_year").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type SsaLifeTable = typeof ssaLifeTables.$inferSelect;
+export type InsertSsaLifeTable = typeof ssaLifeTables.$inferInsert;
+
+export const medicareParameters = mysqlTable("medicare_parameters", {
+  id: int("id").autoincrement().primaryKey(),
+  parameterYear: int("parameter_year").notNull(),
+  parameterName: varchar("parameter_name", { length: 100 }).notNull(),
+  valueJson: json("value_json").notNull(),
+  sourceUrl: varchar("source_url", { length: 500 }),
+  effectiveDate: varchar("effective_date", { length: 20 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type MedicareParameter = typeof medicareParameters.$inferSelect;
+export type InsertMedicareParameter = typeof medicareParameters.$inferInsert;
+
+// --- Phase 2: Insurance Product & Carrier Data ---
+
+export const insuranceCarriers = mysqlTable("insurance_carriers", {
+  id: int("id").autoincrement().primaryKey(),
+  carrierName: varchar("carrier_name", { length: 200 }).notNull(),
+  carrierNameAliases: json("carrier_name_aliases"),
+  amBestId: varchar("am_best_id", { length: 50 }),
+  amBestFsr: varchar("am_best_fsr", { length: 10 }),
+  amBestFsrNumeric: int("am_best_fsr_numeric"),
+  amBestOutlook: varchar("am_best_outlook", { length: 20 }),
+  spRating: varchar("sp_rating", { length: 10 }),
+  moodysRating: varchar("moodys_rating", { length: 10 }),
+  fitchRating: varchar("fitch_rating", { length: 10 }),
+  naicId: varchar("naic_id", { length: 20 }),
+  domicileState: varchar("domicile_state", { length: 2 }),
+  companyType: varchar("company_type", { length: 20 }),
+  yearFounded: int("year_founded"),
+  totalAssetsBillions: varchar("total_assets_billions", { length: 20 }),
+  statutorySurplusBillions: varchar("statutory_surplus_billions", { length: 20 }),
+  complaintRatio: varchar("complaint_ratio", { length: 10 }),
+  productLines: json("product_lines"),
+  ratingLastUpdated: varchar("rating_last_updated", { length: 20 }),
+  active: mysqlBoolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type InsuranceCarrier = typeof insuranceCarriers.$inferSelect;
+export type InsertInsuranceCarrier = typeof insuranceCarriers.$inferInsert;
+
+export const insuranceProducts = mysqlTable("insurance_products", {
+  id: int("id").autoincrement().primaryKey(),
+  carrierId: int("carrier_id").notNull(),
+  productName: varchar("product_name", { length: 200 }).notNull(),
+  productType: varchar("product_type", { length: 50 }).notNull(),
+  productCategory: varchar("product_category", { length: 30 }).notNull(),
+  features: json("features"),
+  minFaceAmount: varchar("min_face_amount", { length: 20 }),
+  maxFaceAmount: varchar("max_face_amount", { length: 20 }),
+  minIssueAge: int("min_issue_age"),
+  maxIssueAge: int("max_issue_age"),
+  underwritingTypes: json("underwriting_types"),
+  ridersAvailable: json("riders_available"),
+  stateAvailability: json("state_availability"),
+  compulifeProductId: varchar("compulife_product_id", { length: 50 }),
+  active: mysqlBoolean("active").default(true),
+  lastRateUpdate: varchar("last_rate_update", { length: 20 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+export type InsuranceProduct = typeof insuranceProducts.$inferSelect;
+export type InsertInsuranceProduct = typeof insuranceProducts.$inferInsert;
+
+export const iulCreditingHistory = mysqlTable("iul_crediting_history", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("product_id").notNull(),
+  effectiveDate: varchar("effective_date", { length: 20 }).notNull(),
+  indexStrategy: varchar("index_strategy", { length: 100 }).notNull(),
+  capRate: varchar("cap_rate", { length: 10 }),
+  participationRate: varchar("participation_rate", { length: 10 }),
+  floorRate: varchar("floor_rate", { length: 10 }),
+  spread: varchar("spread", { length: 10 }),
+  multiplierBonus: varchar("multiplier_bonus", { length: 10 }),
+  source: varchar("source", { length: 30 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type IulCreditingHistoryRow = typeof iulCreditingHistory.$inferSelect;
+export type InsertIulCreditingHistory = typeof iulCreditingHistory.$inferInsert;
+
+// --- Phase 3: Investment Intelligence ---
+
+export const marketIndexHistory = mysqlTable("market_index_history", {
+  id: int("id").autoincrement().primaryKey(),
+  indexSymbol: varchar("index_symbol", { length: 20 }).notNull(),
+  date: varchar("date", { length: 20 }).notNull(),
+  openPrice: varchar("open_price", { length: 20 }),
+  closePrice: varchar("close_price", { length: 20 }),
+  dailyReturn: varchar("daily_return", { length: 20 }),
+  totalReturnIndex: varchar("total_return_index", { length: 20 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type MarketIndexHistoryRow = typeof marketIndexHistory.$inferSelect;
+export type InsertMarketIndexHistory = typeof marketIndexHistory.$inferInsert;
+
+export const economicHistory = mysqlTable("economic_history", {
+  id: int("id").autoincrement().primaryKey(),
+  date: varchar("date", { length: 20 }).notNull(),
+  metricName: varchar("metric_name", { length: 50 }).notNull(),
+  value: varchar("value", { length: 20 }),
+  source: varchar("source", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type EconomicHistoryRow = typeof economicHistory.$inferSelect;
+export type InsertEconomicHistory = typeof economicHistory.$inferInsert;
+
+// --- Phase 4: Estate & Planning Data ---
+
+export const industryBenchmarks = mysqlTable("industry_benchmarks", {
+  id: int("id").autoincrement().primaryKey(),
+  benchmarkCategory: varchar("benchmark_category", { length: 100 }).notNull(),
+  benchmarkName: varchar("benchmark_name", { length: 200 }).notNull(),
+  benchmarkValue: varchar("benchmark_value", { length: 20 }),
+  benchmarkUnit: varchar("benchmark_unit", { length: 50 }),
+  reportingPeriod: varchar("reporting_period", { length: 20 }),
+  source: varchar("source", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type IndustryBenchmark = typeof industryBenchmarks.$inferSelect;
+export type InsertIndustryBenchmark = typeof industryBenchmarks.$inferInsert;
+
+// --- Phase 5: Professional-Layer Data Seeds ---
+
+export const nitrogenRiskProfiles = mysqlTable("nitrogen_risk_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  nitrogenRiskNumber: int("nitrogen_risk_number"),
+  portfolioRiskNumber: int("portfolio_risk_number"),
+  riskAlignmentScore: int("risk_alignment_score"),
+  lastSyncedAt: bigint("last_synced_at", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type NitrogenRiskProfile = typeof nitrogenRiskProfiles.$inferSelect;
+export type InsertNitrogenRiskProfile = typeof nitrogenRiskProfiles.$inferInsert;
+
+export const esignatureTracking = mysqlTable("esignature_tracking", {
+  id: int("id").autoincrement().primaryKey(),
+  professionalId: int("professional_id").notNull(),
+  clientUserId: int("client_user_id"),
+  envelopeId: varchar("envelope_id", { length: 100 }).notNull(),
+  provider: varchar("provider", { length: 20 }).notNull(),
+  documentType: varchar("document_type", { length: 100 }),
+  status: varchar("status", { length: 20 }).notNull().default("created"),
+  sentAt: bigint("sent_at", { mode: "number" }),
+  signedAt: bigint("signed_at", { mode: "number" }),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  relatedProductId: int("related_product_id"),
+  relatedQuoteId: int("related_quote_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type EsignatureTrackingRow = typeof esignatureTracking.$inferSelect;
+export type InsertEsignatureTracking = typeof esignatureTracking.$inferInsert;
+
+// --- Phase 6: Client-Layer Expansion ---
+
+export const plaidWebhookLog = mysqlTable("plaid_webhook_log", {
+  id: int("id").autoincrement().primaryKey(),
+  itemId: varchar("item_id", { length: 100 }),
+  webhookType: varchar("webhook_type", { length: 50 }).notNull(),
+  webhookCode: varchar("webhook_code", { length: 50 }).notNull(),
+  errorCode: varchar("error_code", { length: 50 }),
+  processedAt: bigint("processed_at", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PlaidWebhookLogRow = typeof plaidWebhookLog.$inferSelect;
+export type InsertPlaidWebhookLog = typeof plaidWebhookLog.$inferInsert;
+
+export const plaidHoldings = mysqlTable("plaid_holdings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  accountId: varchar("account_id", { length: 100 }).notNull(),
+  securityId: varchar("security_id", { length: 100 }),
+  ticker: varchar("ticker", { length: 20 }),
+  name: varchar("name", { length: 200 }),
+  quantity: varchar("quantity", { length: 20 }),
+  costBasis: varchar("cost_basis", { length: 20 }),
+  currentValue: varchar("current_value", { length: 20 }),
+  lastSynced: bigint("last_synced", { mode: "number" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PlaidHolding = typeof plaidHoldings.$inferSelect;
+export type InsertPlaidHolding = typeof plaidHoldings.$inferInsert;
+
+export const creditProfiles = mysqlTable("credit_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  pullDate: varchar("pull_date", { length: 20 }).notNull(),
+  creditScore: int("credit_score"),
+  scoreModel: varchar("score_model", { length: 50 }),
+  utilizationPercent: varchar("utilization_percent", { length: 10 }),
+  totalDebt: varchar("total_debt", { length: 20 }),
+  openAccounts: int("open_accounts"),
+  derogatoryMarks: int("derogatory_marks"),
+  hardInquiries: int("hard_inquiries"),
+  oldestAccountYears: int("oldest_account_years"),
+  consentId: int("consent_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type CreditProfile = typeof creditProfiles.$inferSelect;
+export type InsertCreditProfile = typeof creditProfiles.$inferInsert;

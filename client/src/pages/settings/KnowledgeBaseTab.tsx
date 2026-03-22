@@ -10,7 +10,7 @@ import {
   Upload, FileText, Trash2, Loader2,
   CheckCircle, AlertCircle, Clock, BookOpen, Briefcase,
   GraduationCap, FileCode, ScrollText, FolderOpen,
-  Eye, EyeOff, Shield, Users, Lock,
+  Eye, EyeOff, Shield, Users, Lock, Sparkles,
 } from "lucide-react";
 import { useState, useRef } from "react";
 
@@ -29,20 +29,18 @@ const VISIBILITY_OPTIONS = [
 ];
 
 const CATEGORIES = [
-  { value: "personal_docs", label: "Personal Documents", icon: <FolderOpen className="w-3.5 h-3.5" />, desc: "Your personal files" },
-  { value: "financial_products", label: "Financial Products", icon: <Briefcase className="w-3.5 h-3.5" />, desc: "Product guides, brochures" },
-  { value: "regulations", label: "Regulations", icon: <ScrollText className="w-3.5 h-3.5" />, desc: "Regulatory docs" },
-  { value: "training_materials", label: "Training", icon: <GraduationCap className="w-3.5 h-3.5" />, desc: "Courses, certifications" },
-  { value: "artifacts", label: "Artifacts", icon: <FileCode className="w-3.5 h-3.5" />, desc: "Reports, analyses" },
-  { value: "skills", label: "Skills", icon: <BookOpen className="w-3.5 h-3.5" />, desc: "Domain knowledge" },
+  { value: "personal_docs", label: "Personal Documents", icon: <FolderOpen className="w-3.5 h-3.5" /> },
+  { value: "financial_products", label: "Financial Products", icon: <Briefcase className="w-3.5 h-3.5" /> },
+  { value: "regulations", label: "Regulations", icon: <ScrollText className="w-3.5 h-3.5" /> },
+  { value: "training_materials", label: "Training", icon: <GraduationCap className="w-3.5 h-3.5" /> },
+  { value: "artifacts", label: "Artifacts", icon: <FileCode className="w-3.5 h-3.5" /> },
+  { value: "skills", label: "Skills", icon: <BookOpen className="w-3.5 h-3.5" /> },
 ];
-
-type CategoryValue = typeof CATEGORIES[number]["value"];
 
 export default function KnowledgeBaseTab() {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [category, setCategory] = useState<CategoryValue>("personal_docs");
+  const [uploadCount, setUploadCount] = useState(0);
   const [visibility, setVisibility] = useState("professional");
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,8 +48,24 @@ export default function KnowledgeBaseTab() {
 
   const docs = trpc.documents.list.useQuery();
   const uploadDoc = trpc.documents.upload.useMutation({
-    onSuccess: () => { utils.documents.list.invalidate(); toast.success("Document uploaded — your AI is learning from it"); setUploading(false); },
-    onError: (e) => { toast.error(e.message); setUploading(false); },
+    onSuccess: (data) => {
+      utils.documents.list.invalidate();
+      const catLabel = CATEGORIES.find(c => c.value === data.category)?.label || data.category;
+      toast.success(`Uploaded — AI categorized as "${catLabel}"`);
+      setUploadCount(prev => {
+        const next = prev - 1;
+        if (next <= 0) setUploading(false);
+        return Math.max(0, next);
+      });
+    },
+    onError: (e) => {
+      toast.error(e.message);
+      setUploadCount(prev => {
+        const next = prev - 1;
+        if (next <= 0) setUploading(false);
+        return Math.max(0, next);
+      });
+    },
   });
   const deleteDoc = trpc.documents.delete.useMutation({
     onSuccess: () => { utils.documents.list.invalidate(); toast.success("Document removed"); },
@@ -60,20 +74,48 @@ export default function KnowledgeBaseTab() {
     onSuccess: () => { utils.documents.list.invalidate(); toast.success("Visibility updated"); },
   });
 
+  const MAX_FILE_SIZE = 31 * 1024 * 1024; // 31MB
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    const validFiles: File[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.size > 10 * 1024 * 1024) { toast.error(`${file.name} is too large (max 10MB)`); continue; }
-      setUploading(true);
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`${file.name} is too large (max 31MB)`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setUploading(true);
+    setUploadCount(validFiles.length);
+
+    for (const file of validFiles) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = (reader.result as string).split(",")[1];
+        // No category passed — AI will auto-categorize on the server
         uploadDoc.mutate({
-          filename: file.name, content: base64, mimeType: file.type,
-          category: category as any,
+          filename: file.name,
+          content: base64,
+          mimeType: file.type,
           visibility: visibility as any,
+        });
+      };
+      reader.onerror = () => {
+        toast.error(`Failed to read ${file.name}`);
+        setUploadCount(prev => {
+          const next = prev - 1;
+          if (next <= 0) setUploading(false);
+          return Math.max(0, next);
         });
       };
       reader.readAsDataURL(file);
@@ -105,7 +147,7 @@ export default function KnowledgeBaseTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold mb-1">Knowledge Base</h2>
-          <p className="text-sm text-muted-foreground">Upload documents, artifacts, and skills to personalize your AI.</p>
+          <p className="text-sm text-muted-foreground">Upload documents to personalize your AI. Categories are assigned automatically.</p>
         </div>
         {totalDocs > 0 && (
           <Badge variant="secondary" className="text-[10px] shrink-0">
@@ -117,34 +159,15 @@ export default function KnowledgeBaseTab() {
       {/* Upload section */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Upload Files</CardTitle>
-          <CardDescription className="text-xs">Choose a category and visibility level, then upload your files.</CardDescription>
+          <CardTitle className="text-sm flex items-center gap-1.5">
+            <Upload className="w-3.5 h-3.5" /> Upload Files
+          </CardTitle>
+          <CardDescription className="text-xs flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-accent" />
+            AI automatically categorizes your uploads — just drop files and go.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Category selector */}
-          <div>
-            <p className="text-[10px] font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">Category</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-              {CATEGORIES.map(c => (
-                <button
-                  key={c.value}
-                  onClick={() => setCategory(c.value)}
-                  className={`text-left p-2.5 rounded-lg border transition-all text-xs ${
-                    category === c.value
-                      ? "border-accent/50 bg-accent/5"
-                      : "border-border/50 hover:border-accent/20"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-accent">{c.icon}</span>
-                    <span className="font-medium text-[11px]">{c.label}</span>
-                  </div>
-                  <p className="text-muted-foreground text-[9px]">{c.desc}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Visibility selector */}
           <div>
             <p className="text-[10px] font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">Visibility</p>
@@ -185,10 +208,10 @@ export default function KnowledgeBaseTab() {
               disabled={uploading}
             >
               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-              {uploading ? "Uploading..." : "Upload Files"}
+              {uploading ? `Uploading (${uploadCount} remaining)...` : "Upload Files"}
             </Button>
             <p className="text-[9px] text-muted-foreground">
-              Max 10MB each. TXT, MD, PDF, DOC, DOCX, CSV, JSON, XLSX, PPTX, and more.
+              Max 31MB each. TXT, MD, PDF, DOC, DOCX, CSV, JSON, XLSX, PPTX, and more.
             </p>
           </div>
         </CardContent>
@@ -202,6 +225,7 @@ export default function KnowledgeBaseTab() {
             <div key={cat}>
               <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 {catMeta?.icon} {catMeta?.label || cat.replace(/_/g, " ")}
+                <Badge variant="outline" className="text-[8px] ml-1">{catDocs.length}</Badge>
               </h3>
               <div className="space-y-1.5">
                 {catDocs.map((doc: any) => {
@@ -290,7 +314,10 @@ export default function KnowledgeBaseTab() {
               </div>
               <div className="p-2.5 rounded-lg bg-secondary/50">
                 <p className="text-[9px] text-muted-foreground">Category</p>
-                <p className="text-xs font-medium">{CATEGORIES.find(c => c.value === selectedDoc?.category)?.label || selectedDoc?.category}</p>
+                <p className="text-xs font-medium flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-accent" />
+                  {CATEGORIES.find(c => c.value === selectedDoc?.category)?.label || selectedDoc?.category}
+                </p>
               </div>
               <div className="p-2.5 rounded-lg bg-secondary/50">
                 <p className="text-[9px] text-muted-foreground">Visibility</p>
