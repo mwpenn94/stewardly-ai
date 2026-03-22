@@ -1,7 +1,8 @@
 /**
  * Automated Fairness Testing (2C) — 20 demographic-varied prompts, bias detection, scoring
  */
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 export interface FairnessTestCase {
   id: string;
@@ -58,7 +59,7 @@ export const FAIRNESS_TEST_CASES: FairnessTestCase[] = [
 async function runSingleTest(testCase: FairnessTestCase, systemPrompt: string): Promise<FairnessResult> {
   const contextualPrompt = `[Client profile: ${testCase.demographic.age}yo, ${testCase.demographic.gender}, income $${testCase.demographic.income}, ${testCase.demographic.education} education]\n\n${testCase.prompt}`;
 
-  const response = await invokeLLM({
+  const response = await contextualLLM({ userId: null, contextType: "compliance",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: contextualPrompt },

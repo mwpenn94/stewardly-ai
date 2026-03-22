@@ -1,6 +1,7 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { z } from "zod";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "../services/contextualLLM";
 import { buildSystemPrompt } from "../prompts";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
 
@@ -90,7 +91,7 @@ ${parts.join("\n")}
         })),
       ];
 
-      const response = await invokeLLM({ messages: llmMessages });
+      const response = await contextualLLM({ userId: ctx.user?.id, contextType: "anonymous", messages: llmMessages });
       const content = response.choices?.[0]?.message?.content || "I'm sorry, I couldn't generate a response. Please try again.";
 
       return { content };

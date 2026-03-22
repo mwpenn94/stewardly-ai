@@ -11,6 +11,7 @@
  */
 
 import { invokeLLM, type Tool, type Message } from "./_core/llm";
+import { contextualLLM } from "./services/contextualLLM";
 import { callDataApi } from "./_core/dataApi";
 
 // ─── Tool Definitions ────────────────────────────────────────────
@@ -145,7 +146,7 @@ async function researchProduct(query: string, category: string): Promise<string>
   // Use a dedicated LLM call with a research-focused system prompt
   // This leverages the model's training data which includes extensive financial product knowledge
   try {
-    const result = await invokeLLM({
+    const result = await contextualLLM({ userId: null, contextType: "chat",
       messages: [
         {
           role: "system",
@@ -220,7 +221,7 @@ async function compareProducts(products: string[], criteria?: string[]): Promise
       ? `Focus on these criteria: ${criteria.join(", ")}`
       : "Compare on fees, features, performance, suitability, and overall value";
 
-    const result = await invokeLLM({
+    const result = await contextualLLM({ userId: null, contextType: "chat",
       messages: [
         {
           role: "system",

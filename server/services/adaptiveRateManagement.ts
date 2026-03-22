@@ -11,7 +11,8 @@ import {
   probeResults, integrationAnalysisLog, extractionPlans, extractionPlanJobs,
   rateRecommendations, dataValueScores, rateProfiles, rateSignalLog,
 } from "../../drizzle/schema";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 // ─── DB HELPER ──────────────────────────────────────────────────────────
 
@@ -154,7 +155,7 @@ export async function analyzeNewIntegration(
   category?: string
 ): Promise<OnboardingAnalysis> {
   try {
-    const response = await invokeLLM({
+    const response = await contextualLLM({ userId: null, contextType: "analysis",
       messages: [
         {
           role: "system",

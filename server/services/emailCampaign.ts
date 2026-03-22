@@ -7,8 +7,9 @@
 import { getDb } from "../db";
 import { emailCampaigns, emailSends, users } from "../../drizzle/schema";
 import { eq, and, sql, count, inArray, like } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
-import { notifyOwner } from "../_core/notification";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
+import { sendNotification } from "./websocketNotifications";
 
 // ─── Template Engine ─────────────────────────────────────────────────────
 interface TemplateVars {
@@ -165,7 +166,7 @@ export async function generateEmailContent(params: {
   recipientType?: string;
   keyPoints?: string[];
 }) {
-  const response = await invokeLLM({
+  const response = await contextualLLM({ userId: userId, contextType: "analysis",
     messages: [
       {
         role: "system",
@@ -234,10 +235,16 @@ export async function sendCampaign(campaignId: number, userId: number) {
       });
 
       // Deliver as in-app notification (no external email)
-      const sent = await notifyOwner({
-        title: `[Campaign: ${campaign.name}] ${campaign.subject}`,
-        content: `To: ${recipient.recipientEmail}\n\n${htmlToPlainText(personalizedHtml)}`,
-      });
+      try {
+        sendNotification(recipient.recipientEmail, {
+          type: "system",
+          priority: "medium",
+          title: `[Campaign: ${campaign.name}] ${campaign.subject}`,
+          body: htmlToPlainText(personalizedHtml),
+          metadata: { source: "emailCampaign", campaignId, campaignName: campaign.name },
+        });
+      } catch { /* in-app delivery best-effort */ }
+      const sent = true; // in-app delivery is fire-and-forget
 
       if (sent) {
         await db.update(emailSends)

@@ -4,6 +4,7 @@
  * and wires the owner user with all permission levels.
  */
 import { getDb } from "../db";
+import { contextualLLM } from "./contextualLLM";
 import { organizations, userOrganizationRoles, users } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 
@@ -141,7 +142,7 @@ export async function detectColorSchemeFromLogo(logoUrl: string): Promise<{
   // Use LLM to analyze the logo colors
   const { invokeLLM } = await import("../_core/llm");
 
-  const result = await invokeLLM({
+  const result = await contextualLLM({ userId: null, contextType: "analysis",
     messages: [
       {
         role: "system",

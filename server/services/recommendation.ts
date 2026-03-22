@@ -8,8 +8,9 @@
 import { getDb } from "../db";
 import { users, userProfiles, organizations, userOrganizationRoles, userRelationships, organizationRelationships } from "../../drizzle/schema";
 import { eq, and, sql, ne, inArray } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
-import { notifyOwner } from "../_core/notification";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
+import { broadcastToRole } from "./websocketNotifications";
 
 // ─── Matching Score Weights ────────────────────────────────────────────────
 const WEIGHTS = {
@@ -240,7 +241,7 @@ export class MatchingService {
       .from(organizationRelationships)
       .where(eq(organizationRelationships.parentOrgId, orgId));
 
-    const result = await invokeLLM({
+    const result = await contextualLLM({ userId: userId, contextType: "recommendation",
       messages: [
         {
           role: "system",
@@ -339,9 +340,12 @@ export class InvitationService {
     const senderName = sender?.name || "A Stewardly user";
 
     // Deliver invitation as in-app notification (no external email)
-    await notifyOwner({
+    broadcastToRole("admin", {
+      type: "system",
+      priority: "low",
       title: "New Invitation Sent",
-      content: `${senderName} invited ${email} to join${orgId ? ` organization #${orgId}` : " the platform"}. Message: ${message || "No message"}. Invitation delivered via in-app notification.`,
+      body: `${senderName} invited ${email} to join${orgId ? ` organization #${orgId}` : " the platform"}. Message: ${message || "No message"}.`,
+      metadata: { source: "recommendation", fromUserId, email },
     });
 
     return { success: true };

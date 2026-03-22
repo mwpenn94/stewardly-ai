@@ -8,10 +8,27 @@
  * 
  * Uses setInterval-based scheduling with error isolation.
  * Each job runs independently — a failure in one doesn't affect others.
+ * 
+ * ALL notifications are in-app only (WebSocket broadcastToRole) — no external emails.
  */
 
-import { notifyOwner } from "../_core/notification";
+import { broadcastToRole } from "./websocketNotifications";
 import { ensureDbReady } from "./dbResilience";
+
+// ─── In-App Alert Helper ──────────────────────────────────────────────────
+function alertAdmins(title: string, body: string, priority: "low" | "medium" | "high" | "critical" = "high") {
+  try {
+    broadcastToRole("admin", {
+      type: "system",
+      priority,
+      title,
+      body,
+      metadata: { source: "scheduler", timestamp: Date.now() },
+    });
+  } catch (e) {
+    console.warn("[Scheduler] Failed to send in-app alert:", e);
+  }
+}
 
 // ─── Job Registry ──────────────────────────────────────────────────────
 interface ScheduledJob {
@@ -35,20 +52,17 @@ async function runScheduledHealthChecks(): Promise<void> {
   const { runAllHealthChecks } = await import("./integrationHealth");
   const results = await runAllHealthChecks();
   
-  // Check for critical failures and notify owner
+  // Check for critical failures and alert admins in-app
   const criticalFailures = results.filter(r => r.status === "unhealthy");
   if (criticalFailures.length > 0) {
     const failedNames = criticalFailures.map(r => r.providerSlug).join(", ");
-    try {
-      await notifyOwner({
-        title: `⚠️ Integration Health Alert: ${criticalFailures.length} connection(s) unhealthy`,
-        content: `The following data sources failed health checks:\n\n${criticalFailures.map(f => 
-          `• ${f.providerSlug}: ${f.message}`
-        ).join("\n")}\n\nAffected connections: ${failedNames}\n\nVisit the Integration Health Dashboard to review and take action.`,
-      });
-    } catch (e) {
-      console.warn("[Scheduler] Failed to send health alert notification:", e);
-    }
+    alertAdmins(
+      `⚠️ Integration Health Alert: ${criticalFailures.length} connection(s) unhealthy`,
+      `The following data sources failed health checks:\n\n${criticalFailures.map(f => 
+        `• ${f.providerSlug}: ${f.message}`
+      ).join("\n")}\n\nAffected connections: ${failedNames}\n\nVisit the Integration Health Dashboard to review and take action.`,
+      "critical"
+    );
   }
   
   console.log(`[Scheduler] Health checks complete: ${results.filter(r => r.status === "healthy").length}/${results.length} healthy`);
@@ -84,18 +98,15 @@ async function runScheduledDataPipelines(): Promise<void> {
     })),
   }));
   
-  // Only notify on failures (not on every run)
+  // Only alert on failures (not on every run) — in-app only
   if (failed.length > 0) {
-    try {
-      await notifyOwner({
-        title: `📊 Data Pipeline Alert: ${failed.length}/${results.length} pipeline(s) failed`,
-        content: `Data pipeline run completed in ${Math.round(totalDuration / 1000)}s:\n\n${results.map((r: any) => 
-          `• ${r.pipeline}: ${r.status} — ${r.recordsFetched} records${r.error ? ` (${r.error})` : ""}`
-        ).join("\n")}\n\nTotal records synced: ${totalRecords}\nSuccessful: ${successful}/${results.length}`,
-      });
-    } catch (e) {
-      console.warn("[Scheduler] Failed to send pipeline alert notification:", e);
-    }
+    alertAdmins(
+      `📊 Data Pipeline Alert: ${failed.length}/${results.length} pipeline(s) failed`,
+      `Data pipeline run completed in ${Math.round(totalDuration / 1000)}s:\n\n${results.map((r: any) => 
+        `• ${r.pipeline}: ${r.status} — ${r.recordsFetched} records${r.error ? ` (${r.error})` : ""}`
+      ).join("\n")}\n\nTotal records synced: ${totalRecords}\nSuccessful: ${successful}/${results.length}`,
+      "high"
+    );
   }
   
   console.log(`[Scheduler] Data pipelines complete: ${successful}/${results.length} successful, ${totalRecords} records, ${Math.round(totalDuration / 1000)}s`);
@@ -185,12 +196,11 @@ export function initScheduler(): void {
     const dbReady = await ensureDbReady(60_000);
     if (!dbReady) {
       console.error("[Scheduler] CRITICAL: DB not ready after 60s. Starting jobs anyway (they will retry internally).");
-      try {
-        await notifyOwner({
-          title: "⚠️ Scheduler: Database not ready at startup",
-          content: "The scheduler started but the database was not ready after 60 seconds. Pipelines may fail on their first run but will retry automatically.",
-        });
-      } catch { /* non-critical */ }
+      alertAdmins(
+        "⚠️ Scheduler: Database not ready at startup",
+        "The scheduler started but the database was not ready after 60 seconds. Pipelines may fail on their first run but will retry automatically.",
+        "critical"
+      );
     }
     
     // Run self-test
@@ -201,16 +211,15 @@ export function initScheduler(): void {
       
       if (testResult.overall === "fail") {
         console.error(`[Scheduler] Self-test FAILED. Pipelines will likely fail.`);
-        try {
-          const failedProviders = testResult.results
-            .filter(r => r.dbLookup === "fail" || r.apiReachable === "fail")
-            .map(r => `• ${r.slug}: db=${r.dbLookup}, api=${r.apiReachable}${r.error ? ` — ${r.error}` : ""}`)
-            .join("\n");
-          await notifyOwner({
-            title: "🚨 Pipeline Self-Test Failed",
-            content: `The startup self-test detected critical issues:\n\n${failedProviders}\n\nPipelines will attempt to run but may fail. Check the Integration Health Dashboard for details.`,
-          });
-        } catch { /* non-critical */ }
+        const failedProviders = testResult.results
+          .filter(r => r.dbLookup === "fail" || r.apiReachable === "fail")
+          .map(r => `• ${r.slug}: db=${r.dbLookup}, api=${r.apiReachable}${r.error ? ` — ${r.error}` : ""}`)
+          .join("\n");
+        alertAdmins(
+          "🚨 Pipeline Self-Test Failed",
+          `The startup self-test detected critical issues:\n\n${failedProviders}\n\nPipelines will attempt to run but may fail. Check the Integration Health Dashboard for details.`,
+          "critical"
+        );
       } else {
         console.log(`[Scheduler] Self-test ${testResult.overall.toUpperCase()}: ${testResult.results.filter(r => r.apiReachable === "pass").length}/${testResult.results.length} APIs reachable`);
       }
@@ -279,17 +288,23 @@ export function getSchedulerStatus(): {
   };
 }
 
-/** Manually trigger a specific job by name */
-export async function triggerJob(jobName: string): Promise<{ success: boolean; error?: string }> {
-  const job = jobs[jobName];
-  if (!job) {
-    return { success: false, error: `Job "${jobName}" not found` };
-  }
-  
+/** Manually trigger a job by name. Returns success/failure. */
+export async function triggerJob(name: string): Promise<{ success: boolean; error?: string }> {
+  const job = jobs[name];
+  if (!job) return { success: false, error: `Unknown job: ${name}` };
+  if (job.isRunning) return { success: false, error: `Job "${name}" is already running` };
   try {
-    await executeJob(job);
+    job.isRunning = true;
+    await job.handler();
+    job.runCount++;
+    job.lastRun = new Date();
+    job.lastError = null;
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (e: any) {
+    job.errorCount++;
+    job.lastError = e.message;
+    return { success: false, error: e.message };
+  } finally {
+    job.isRunning = false;
   }
 }

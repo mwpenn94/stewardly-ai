@@ -12,7 +12,8 @@
 import { getDb } from "./db";
 import { complianceAudit, privacyAudit } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { invokeLLM } from "./_core/llm";
+import { invokeLLM } from "./_core/llm"
+import { contextualLLM } from "./services/contextualLLM";
 
 // ─── TYPES ──────────────────────────────────────────────────────
 export type ContentClassification =
@@ -59,7 +60,7 @@ export async function classifyContent(
   userContext: { hasSuitability: boolean; focus: string },
 ): Promise<ClassificationResult> {
   try {
-    const resp = await invokeLLM({
+    const resp = await contextualLLM({ userId: userId, contextType: "compliance",
       messages: [
         { role: "system", content: CLASSIFICATION_PROMPT },
         {

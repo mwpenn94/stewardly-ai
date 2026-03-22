@@ -305,91 +305,178 @@ export default function KnowledgeAdmin() {
             </div>
           </TabsContent>
 
-          {/* Analytics Tab (C28-C30) */}
+          {/* Analytics Tab — Knowledge Base Health Score */}
           <TabsContent value="analytics">
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Knowledge Base Usage */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4" /> Knowledge Base Usage
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Total Articles</span>
-                      <span className="font-semibold">{allArticlesQ.data?.length ?? 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Active Articles</span>
-                      <span className="font-semibold">{allArticlesQ.data?.filter((a: any) => a.active).length ?? 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Avg Freshness</span>
-                      <span className="font-semibold">
-                        {allArticlesQ.data?.length ? `${Math.round((allArticlesQ.data.reduce((s: number, a: any) => s + (a.freshnessScore ?? 0), 0) / allArticlesQ.data.length) * 100)}%` : "—"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Open Gaps</span>
-                      <span className="font-semibold text-amber-500">{gapsQ.data?.filter((g: any) => g.status === "open").length ?? 0}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            {(() => {
+              const articles = allArticlesQ.data ?? [];
+              const gaps = gapsQ.data ?? [];
+              const tools = toolsQ.data ?? [];
+              const modes = modesQ.data ?? [];
+              const totalArticles = articles.length;
+              const activeArticles = articles.filter((a: any) => a.active).length;
+              const avgFreshness = totalArticles ? articles.reduce((s: number, a: any) => s + (a.freshnessScore ?? 0), 0) / totalArticles : 0;
+              const openGaps = gaps.filter((g: any) => g.status === "open").length;
+              const avgToolSuccess = tools.length ? tools.reduce((s: number, t: any) => s + (t.successRate ?? 0), 0) / tools.length : 0;
+              const activeModes = modes.filter((m: any) => m.active).length;
 
-              {/* AI Tool Calling Stats */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Zap className="w-4 h-4" /> AI Tool Calling
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Registered Tools</span>
-                      <span className="font-semibold">{toolsQ.data?.length ?? 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Active Tools</span>
-                      <span className="font-semibold">{toolsQ.data?.filter((t: any) => t.active).length ?? 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Avg Success Rate</span>
-                      <span className="font-semibold text-green-500">
-                        {toolsQ.data?.length ? `${Math.round((toolsQ.data.reduce((s: number, t: any) => s + (t.successRate ?? 0), 0) / toolsQ.data.length) * 100)}%` : "—"}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              // Composite Health Score (0-100)
+              const coverageScore = Math.min(totalArticles / 20, 1) * 25; // 25pts for 20+ articles
+              const freshnessScorePt = avgFreshness * 25; // 25pts for freshness
+              const gapPenalty = Math.min(openGaps * 5, 20); // -5pts per gap, max -20
+              const toolScore = avgToolSuccess * 15; // 15pts for tool success
+              const modeScore = (activeModes / Math.max(modes.length, 1)) * 15; // 15pts for active modes
+              const healthScore = Math.round(Math.max(0, Math.min(100, coverageScore + freshnessScorePt - gapPenalty + toolScore + modeScore)));
+              const healthColor = healthScore >= 80 ? "text-green-500" : healthScore >= 60 ? "text-amber-500" : "text-red-500";
+              const healthLabel = healthScore >= 80 ? "Excellent" : healthScore >= 60 ? "Good" : healthScore >= 40 ? "Needs Attention" : "Critical";
 
-              {/* Capability Mode Usage */}
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Brain className="w-4 h-4" /> Capability Modes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {modesQ.data?.map((mode: any) => (
-                      <div key={mode.id} className="text-center p-3 rounded-lg bg-muted/50">
-                        <p className="font-semibold text-sm">{mode.displayName}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {mode.capabilities?.length ?? 0} capabilities
-                        </p>
-                        <Badge variant={mode.active ? "default" : "secondary"} className="mt-2 text-xs">
-                          {mode.active ? "Active" : "Inactive"}
-                        </Badge>
+              // Category coverage
+              const categories = ["general", "financial", "insurance", "compliance", "tax", "estate", "education"];
+              const coveredCategories = new Set(articles.map((a: any) => a.category));
+              const categoryPct = Math.round((coveredCategories.size / categories.length) * 100);
+
+              // Stale articles (freshness < 0.5)
+              const staleArticles = articles.filter((a: any) => (a.freshnessScore ?? 1) < 0.5).length;
+
+              return (
+                <div className="space-y-6">
+                  {/* Health Score Hero */}
+                  <Card className="border-accent/20">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-6">
+                        <div className="relative w-28 h-28 shrink-0">
+                          <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                            <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="8" className="text-muted/20" />
+                            <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="8" className={healthColor}
+                              strokeDasharray={`${healthScore * 2.64} ${264 - healthScore * 2.64}`}
+                              strokeLinecap="round" />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className={`text-2xl font-bold ${healthColor}`}>{healthScore}</span>
+                            <span className="text-[9px] text-muted-foreground">/ 100</span>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold">Knowledge Base Health</h3>
+                          <p className={`text-sm font-medium ${healthColor}`}>{healthLabel}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Composite score based on article coverage, freshness, knowledge gaps, tool reliability, and capability mode activation.
+                          </p>
+                        </div>
                       </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Score Breakdown */}
+                  <div className="grid gap-4 md:grid-cols-5">
+                    {[
+                      { label: "Coverage", value: `${Math.round(coverageScore)}/25`, sub: `${totalArticles} articles`, color: coverageScore > 18 ? "text-green-500" : "text-amber-500" },
+                      { label: "Freshness", value: `${Math.round(freshnessScorePt)}/25`, sub: `${Math.round(avgFreshness * 100)}% avg`, color: avgFreshness > 0.7 ? "text-green-500" : "text-amber-500" },
+                      { label: "Gap Penalty", value: `-${Math.round(gapPenalty)}/20`, sub: `${openGaps} open gaps`, color: openGaps === 0 ? "text-green-500" : "text-red-500" },
+                      { label: "Tool Health", value: `${Math.round(toolScore)}/15`, sub: `${Math.round(avgToolSuccess * 100)}% success`, color: avgToolSuccess > 0.8 ? "text-green-500" : "text-amber-500" },
+                      { label: "Modes", value: `${Math.round(modeScore)}/15`, sub: `${activeModes}/${modes.length} active`, color: modeScore > 10 ? "text-green-500" : "text-amber-500" },
+                    ].map(item => (
+                      <Card key={item.label}>
+                        <CardContent className="pt-4 pb-3 text-center">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.label}</p>
+                          <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
+                          <p className="text-[10px] text-muted-foreground">{item.sub}</p>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {/* Category Coverage */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <BarChart3 className="w-4 h-4" /> Category Coverage
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {categories.map(cat => {
+                            const count = articles.filter((a: any) => a.category === cat).length;
+                            const pct = totalArticles ? Math.round((count / totalArticles) * 100) : 0;
+                            return (
+                              <div key={cat} className="flex items-center gap-3">
+                                <span className="text-xs w-20 capitalize text-muted-foreground">{cat}</span>
+                                <div className="flex-1 h-2 rounded-full bg-muted/30 overflow-hidden">
+                                  <div className={`h-full rounded-full ${count > 0 ? "bg-accent" : "bg-muted/10"}`} style={{ width: `${Math.max(pct, 2)}%` }} />
+                                </div>
+                                <span className="text-xs font-mono w-8 text-right">{count}</span>
+                              </div>
+                            );
+                          })}
+                          <p className="text-[10px] text-muted-foreground mt-2">{categoryPct}% of categories covered ({coveredCategories.size}/{categories.length})</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Alerts & Recommendations */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4" /> Recommendations
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {staleArticles > 0 && (
+                            <div className="flex items-start gap-2 p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                              <Clock className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                              <p className="text-xs"><strong>{staleArticles}</strong> article{staleArticles > 1 ? "s" : ""} with low freshness — consider updating</p>
+                            </div>
+                          )}
+                          {openGaps > 0 && (
+                            <div className="flex items-start gap-2 p-2 rounded bg-red-500/10 border border-red-500/20">
+                              <XCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
+                              <p className="text-xs"><strong>{openGaps}</strong> open knowledge gap{openGaps > 1 ? "s" : ""} — create articles to fill</p>
+                            </div>
+                          )}
+                          {categories.filter(c => !coveredCategories.has(c)).length > 0 && (
+                            <div className="flex items-start gap-2 p-2 rounded bg-blue-500/10 border border-blue-500/20">
+                              <Eye className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
+                              <p className="text-xs">Missing categories: {categories.filter(c => !coveredCategories.has(c)).join(", ")}</p>
+                            </div>
+                          )}
+                          {healthScore >= 80 && openGaps === 0 && staleArticles === 0 && (
+                            <div className="flex items-start gap-2 p-2 rounded bg-green-500/10 border border-green-500/20">
+                              <CheckCircle className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
+                              <p className="text-xs">Knowledge base is in excellent health. Keep it up!</p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Capability Modes */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Brain className="w-4 h-4" /> Capability Modes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {modes.map((mode: any) => (
+                          <div key={mode.id} className="text-center p-3 rounded-lg bg-muted/50">
+                            <p className="font-semibold text-sm">{mode.displayName}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {mode.capabilities?.length ?? 0} capabilities
+                            </p>
+                            <Badge variant={mode.active ? "default" : "secondary"} className="mt-2 text-xs">
+                              {mode.active ? "Active" : "Inactive"}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()}
           </TabsContent>
         </Tabs>
 

@@ -20,7 +20,8 @@ import {
   advisoryExecutions, estateDocuments,
   premiumFinanceCases, carrierConnections,
 } from "../../drizzle/schema";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "../services/contextualLLM";
 
 // ─── G8: Licensed Review Gate ──────────────────────────────────────────────
 const gateRouter = router({
@@ -40,7 +41,7 @@ const gateRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       // AI-powered compliance classification
-      const classificationResponse = await invokeLLM({
+      const classificationResponse = await contextualLLM({ userId: ctx.user?.id, contextType: "agentic",
         messages: [
           { role: "system", content: "You are a financial compliance classifier. Given an action type and tier, provide a brief rationale for the compliance classification. Return JSON with 'rationale' and 'suggestedTier' fields." },
           { role: "user", content: `Action: ${input.actionType}, Requested Tier: ${input.complianceTier}, Workflow: ${input.workflowType || "general"}` },
@@ -267,7 +268,7 @@ const quoteRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       // Use AI to generate illustrative quotes from multiple carriers
-      const quoteResponse = await invokeLLM({
+      const quoteResponse = await contextualLLM({ userId: ctx.user?.id, contextType: "agentic",
         messages: [
           { role: "system", content: "You are an insurance quoting engine. Given client parameters, generate realistic illustrative quotes from 3-5 carriers. Include premium, death benefit, cash values, and AM Best ratings. Return JSON array." },
           { role: "user", content: `Generate insurance quotes for: Product: ${input.productType}, Face Amount: $${input.faceAmount || 500000}, Age: ${input.clientAge || 45}, Health: ${input.healthClass || "standard"}, Riders: ${(input.riders || []).join(", ") || "none"}` },
@@ -374,7 +375,7 @@ const applicationRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       // AI-powered compliance preflight
-      const preflightResponse = await invokeLLM({
+      const preflightResponse = await contextualLLM({ userId: ctx.user?.id, contextType: "agentic",
         messages: [
           { role: "system", content: "You are an insurance compliance specialist. Review the application data and identify any compliance issues, missing fields, or suitability concerns. Return JSON with 'issues' array and 'readyToSubmit' boolean." },
           { role: "user", content: `Review insurance application for ${input.carrierName}: ${JSON.stringify(input.applicationData).slice(0, 3000)}` },
@@ -461,7 +462,7 @@ const advisoryRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       // AI tax impact estimation
-      const taxResponse = await invokeLLM({
+      const taxResponse = await contextualLLM({ userId: ctx.user?.id, contextType: "agentic",
         messages: [
           { role: "system", content: "You are a tax impact analyst. Estimate the tax impact of the proposed advisory action. Return JSON with 'estimatedTaxImpact' (number) and 'explanation' (string)." },
           { role: "user", content: `Estimate tax impact for ${input.executionType}: ${JSON.stringify(input.executionData).slice(0, 2000)}` },
@@ -534,7 +535,7 @@ const estateDocRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       // AI-powered document generation
-      const docResponse = await invokeLLM({
+      const docResponse = await contextualLLM({ userId: ctx.user?.id, contextType: "agentic",
         messages: [
           { role: "system", content: `You are an estate planning document specialist for ${input.stateJurisdiction}. Generate a ${input.complexityLevel} ${input.documentType} document outline with key provisions. This is a DRAFT for attorney review, not legal advice. Return JSON with 'outline' (string), 'keyProvisions' (array of strings), and 'attorneyNotes' (string).` },
           { role: "user", content: `Generate ${input.documentType} draft for client in ${input.stateJurisdiction}. Client data: ${JSON.stringify(input.clientData || {}).slice(0, 2000)}` },
@@ -605,7 +606,7 @@ const premiumFinanceRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
       // AI stress test
-      const stressResponse = await invokeLLM({
+      const stressResponse = await contextualLLM({ userId: ctx.user?.id, contextType: "agentic",
         messages: [
           { role: "system", content: "You are a premium finance analyst. Run stress tests on the proposed financing structure. Test scenarios: rate increase +200bps, collateral decline -30%, policy lapse. Return JSON with 'scenarios' array." },
           { role: "user", content: `Stress test: Premium $${input.financedPremiumAnnual}/yr, Rate ${input.interestRate || 5}%, Term ${input.termYears || 10}yr, Collateral $${input.collateralValue || 0}` },

@@ -2,7 +2,8 @@
  * LLM Provider Failover + Model Routing (Max-Scores 1A)
  * Primary → fallback chain, latency tracking, automatic failover, model selection
  */
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 export interface LLMProvider {
   id: string;
@@ -107,7 +108,7 @@ export async function invokeLLMWithFailover(messages: Array<{ role: string; cont
     const provider = selectProvider();
     const start = Date.now();
     try {
-      const response = await invokeLLM({ messages: messages as any, ...options });
+      const response = await contextualLLM({ userId: null, contextType: "chat", messages: messages as any, ...options });
       recordSuccess(provider.id, Date.now() - start);
       return { response, providerId: provider.id, latencyMs: Date.now() - start, attempt: attempt + 1 };
     } catch (error: any) {

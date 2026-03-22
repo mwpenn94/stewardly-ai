@@ -2,7 +2,8 @@
  * Task #55 — Regulatory Impact Analysis Service
  * Assess impact of regulatory changes on products, processes, and compliance
  */
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 export interface RegulatoryChange {
   id: string;
@@ -113,7 +114,7 @@ export function assessImpact(change: RegulatoryChange): ImpactAssessment {
 }
 
 export async function getAIRegulatoryAnalysis(change: RegulatoryChange): Promise<string> {
-  const resp = await invokeLLM({
+  const resp = await contextualLLM({ userId: null, contextType: "compliance",
     messages: [
       { role: "system", content: "You are a financial regulatory expert. Analyze the regulatory change and provide a detailed impact assessment for a financial advisory AI platform. Be specific about compliance requirements and deadlines." },
       { role: "user", content: `Regulatory Change: ${change.regulation}\nEffective Date: ${change.effectiveDate}\nSummary: ${change.summary}\nStatus: ${change.status}` },

@@ -5,7 +5,8 @@
 import { getDb } from "../db";
 import { knowledgeIngestionJobs, knowledgeArticles } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 // ─── Job Management ──────────────────────────────────────────────────────
 export async function createIngestionJob(data: {
@@ -45,7 +46,7 @@ export async function ingestDocument(jobId: number, content: string, filename: s
   await updateJob(jobId, { status: "processing" as any, startedAt: new Date() });
 
   try {
-    const resp = await invokeLLM({
+    const resp = await contextualLLM({ userId: null, contextType: "ingestion",
       messages: [
         {
           role: "system",
@@ -119,7 +120,7 @@ export async function mineConversation(jobId: number, messages: Array<{ role: st
   try {
     const conversationText = messages.map(m => `${m.role}: ${m.content}`).join("\n");
 
-    const resp = await invokeLLM({
+    const resp = await contextualLLM({ userId: null, contextType: "ingestion",
       messages: [
         {
           role: "system",

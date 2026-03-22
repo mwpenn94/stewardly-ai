@@ -36,6 +36,7 @@ import {
   getUserTags, createTag, deleteTag, updateTag,
   addTagToDocument, removeTagFromDocument, getDocumentTags, getDocumentsForTag, bulkAddTagsToDocument,
   addGapFeedback, getUserGapFeedback, getGapFeedbackByGapId,
+  getDocumentAnnotations, createAnnotation, resolveAnnotation, deleteAnnotation,
 } from "./db";
 import { buildInsightContext, invalidateInsightCache } from "./insightCollectors";
 import {
@@ -44,6 +45,7 @@ import {
 } from "./prompts";
 import { extractMemoriesFromMessage, saveExtractedMemories, generateEpisodeSummary, saveEpisodeSummary, assembleMemoryContext } from "./memoryEngine";
 import { assembleGraphContext } from "./knowledgeGraph";
+import { assembleDeepContext, getQuickContext } from "./services/deepContextAssembler";
 import { classifyContent, applyModifications, logComplianceAudit, logPrivacyAudit } from "./complianceCopilot";
 import { trackEvent, recalculateProficiency, assembleExponentialContext } from "./services/exponentialEngine";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
@@ -79,37 +81,26 @@ const chatRouter = router({
       // Get conversation history
       const history = await getConversationMessages(input.conversationId);
 
-      // Get RAG context if available
-      let ragContext = "";
+      // ── UNIFIED DEEP CONTEXT ASSEMBLY ──────────────────────────────
+      // Assembles ALL data sources in parallel: document chunks (enhanced TF-IDF),
+      // knowledge base articles, user profile, suitability, memories, knowledge graph,
+      // pipeline data, conversation history, integrations, calculators, insights,
+      // client relationships, activity log, tags, and gap feedback.
+      let deepContext: Awaited<ReturnType<typeof assembleDeepContext>> | null = null;
       try {
-        const chunks = await searchDocumentChunks(ctx.user.id, input.content, undefined, 5);
-        if (chunks.length > 0) {
-          ragContext = chunks.map((c, i) => `[Doc ${i + 1}]: ${c.content}`).join("\n\n");
-        }
-      } catch (e) { /* RAG is optional */ }
+        deepContext = await assembleDeepContext({
+          userId: ctx.user.id,
+          query: input.content,
+          contextType: "chat",
+          conversationId: input.conversationId,
+        });
+      } catch (e) { /* deep context is optional, degrade gracefully */ }
 
-      // Get user memories (3-tier Memory Engine + Knowledge Graph)
-      let memoriesStr = "";
-      try {
-        const [memCtx, graphCtx] = await Promise.all([
-          assembleMemoryContext(ctx.user.id),
-          assembleGraphContext(ctx.user.id),
-        ]);
-        memoriesStr = [memCtx, graphCtx].filter(Boolean).join("\n\n");
-      } catch (e) { /* memories are optional */ }
-
-      // ── CONTEXTUAL INSIGHTS (audit-direction prompts) ──────────────
-      // Always collect insights so the AI has real data about the user's
-      // platform usage, configuration, and performance.
-      let insightContext = "";
-      try {
-        const userRole = ctx.user.role || "user";
-        insightContext = await buildInsightContext(ctx.user.id, userRole);
-      } catch (e) { /* insights are optional, degrade gracefully */ }
+      const ragContext = deepContext?.documentContext || "";
+      const memoriesStr = [deepContext?.memoryContext, deepContext?.graphContext].filter(Boolean).join("\n\n");
+      const insightContext = deepContext?.insightContext || "";
 
       // ── EXPONENTIAL ENGINE CONTEXT ────────────────────────────────
-      // Assembles user proficiency, feature discovery, and platform
-      // awareness context so the AI becomes progressively personalized.
       let exponentialPrompt = "";
       try {
         const expCtx = await assembleExponentialContext(
@@ -163,30 +154,8 @@ const chatRouter = router({
       // Build the layer overlay prompt (injected alongside existing system prompt)
       const layerOverlay = resolvedConfig ? buildLayerOverlayPrompt(resolvedConfig) : "";
 
-      // ── INTEGRATION DATA CONTEXT ──────────────────────────────────
-      // Assemble data from user's connected integrations (Plaid, etc.)
-      let integrationContext = "";
-      try {
-        const db = (await getDb())!;
-        const connections = await db.select()
-          .from(integrationConnections)
-          .where(and(
-            eq(integrationConnections.ownerId, String(ctx.user.id)),
-            eq(integrationConnections.status, "connected")
-          ));
-        if (connections.length > 0) {
-          const summaries: string[] = [];
-          for (const conn of connections) {
-            const provider = await db.select()
-              .from(integrationProviders)
-              .where(eq(integrationProviders.id, conn.providerId))
-              .limit(1);
-            const providerName = provider[0]?.name || "Unknown";
-            summaries.push(`- ${providerName}: ${conn.recordsSynced || 0} records synced, last sync ${conn.lastSyncAt ? new Date(conn.lastSyncAt).toLocaleDateString() : "never"}, status: ${conn.lastSyncStatus || "unknown"}`);
-          }
-          integrationContext = `Connected integrations (${connections.length}):\n${summaries.join("\n")}`;
-        }
-      } catch (e) { /* integration context is optional */ }
+      // Integration context from deep assembler
+      const integrationContext = deepContext?.integrationContext || "";
 
       // Build system prompt (existing logic + new context params)
       const systemPrompt = buildSystemPrompt({
@@ -204,7 +173,7 @@ const chatRouter = router({
         insightContext: insightContext || undefined,
       });
 
-      // Combine: existing system prompt + layer overlays + exponential engine
+      // Combine: system prompt + layer overlays + exponential engine + deep context
       let fullSystemPrompt = layerOverlay
         ? `${systemPrompt}\n\n${layerOverlay}`
         : systemPrompt;
@@ -215,7 +184,6 @@ const chatRouter = router({
       }
 
       // ── INTEGRATION HEALTH AWARENESS ──────────────────────────────
-      // Inject live data source status so AI knows which APIs are available
       try {
         const { assembleIntegrationHealthContext } = await import("./services/integrationHealth");
         const healthCtx = await assembleIntegrationHealthContext();
@@ -224,25 +192,13 @@ const chatRouter = router({
         }
       } catch { /* integration health context is optional */ }
 
-      // ── LIVE ECONOMIC DATA INJECTION ───────────────────────────────
-      // Inject cached government data so AI can reference real economic indicators
-      try {
-        const { getEconomicDataSummary } = await import("./services/governmentDataPipelines");
-        const econSummary = await getEconomicDataSummary();
-        if (econSummary) {
-          fullSystemPrompt += `\n\n${econSummary}`;
-        }
-      } catch { /* economic data injection is optional */ }
-
-      // C13: Knowledge base context injection
-      try {
-        const { searchArticles } = await import("./services/knowledgeBase");
-        const kbResults = await searchArticles(input.content, { limit: 3 });
-        if (kbResults.length > 0) {
-          const kbContext = kbResults.map(a => `[KB: ${a.title}] ${a.content.slice(0, 500)}`).join("\n");
-          fullSystemPrompt += `\n\n## Knowledge Base Context\n${kbContext}`;
-        }
-      } catch { /* KB not available, skip */ }
+      // ── UNIFIED DEEP CONTEXT INJECTION ─────────────────────────────
+      // Injects ALL data sources: documents, KB, pipeline data, integrations,
+      // calculators, insights, client data, activity log, tags, gap feedback,
+      // conversation history — with citation instructions.
+      if (deepContext?.fullContextPrompt) {
+        fullSystemPrompt += `\n\n${deepContext.fullContextPrompt}`;
+      }
 
       // Use resolved temperature/maxTokens if available
       // Creativity slider overrides temperature when set
@@ -1067,6 +1023,42 @@ const documentsRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: `Failed to extract archive: ${e.message}` });
       }
       return { results, extracted: results.length, imported: results.filter(r => r.success).length, failed: results.filter(r => !r.success).length };
+    }),
+
+  // ─── COLLABORATIVE ANNOTATIONS ─────────────────────────────────────────────────
+  listAnnotations: protectedProcedure
+    .input(z.object({ documentId: z.number() }))
+    .query(async ({ input }) => {
+      return getDocumentAnnotations(input.documentId);
+    }),
+
+  addAnnotation: protectedProcedure
+    .input(z.object({
+      documentId: z.number(),
+      content: z.string().min(1),
+      highlightText: z.string().optional(),
+      highlightStart: z.number().optional(),
+      highlightEnd: z.number().optional(),
+      annotationType: z.enum(["comment", "highlight", "question", "action_item", "ai_insight"]).default("comment"),
+      parentId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await createAnnotation({ ...input, userId: ctx.user.id });
+      return result;
+    }),
+
+  resolveAnnotation: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      await resolveAnnotation(input.id, ctx.user.id);
+      return { success: true };
+    }),
+
+  deleteAnnotation: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await deleteAnnotation(input.id);
+      return { success: true };
     }),
 });
 

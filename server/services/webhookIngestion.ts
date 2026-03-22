@@ -16,7 +16,7 @@ import { getDb } from "../db";
 import { dataSources, ingestionJobs, ingestedRecords } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import crypto from "crypto";
-import { notifyOwner } from "../_core/notification";
+import { broadcastToRole } from "./websocketNotifications";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -332,12 +332,17 @@ export async function processWebhook(
     signature: signature || "", sourceIp, status: "accepted", recordsCreated: accepted,
   });
 
-  // Notify owner for large batches
+  // Notify admins in-app for large batches (no external email)
   if (accepted >= 50) {
-    await notifyOwner({
-      title: `Webhook "${webhook.name}" ingested ${accepted} records`,
-      content: `Webhook ${webhookId} received ${records.length} records (${accepted} accepted, ${rejected} rejected) from ${sourceIp}.`,
-    }).catch(() => {});
+    try {
+      broadcastToRole("admin", {
+        type: "system",
+        priority: "medium",
+        title: `Webhook "${webhook.name}" ingested ${accepted} records`,
+        body: `Webhook ${webhookId} received ${records.length} records (${accepted} accepted, ${rejected} rejected) from ${sourceIp}.`,
+        metadata: { source: "webhookIngestion", webhookId, accepted, rejected },
+      });
+    } catch { /* non-critical */ }
   }
 
   return { accepted, rejected, errors, jobId, webhookId };

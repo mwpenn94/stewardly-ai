@@ -162,7 +162,7 @@ export default function Terms() {
 
               <div>
                 <h2 className="text-base font-medium mb-2">8. Changes to This Policy</h2>
-                <p>We may update this Privacy Policy from time to time. We will notify you of material changes through the Service or via email. Your continued use after changes constitutes acceptance of the updated policy.</p>
+                <p>We may update this Privacy Policy from time to time. We will notify you of material changes through the Service via in-app notifications. Your continued use after changes constitutes acceptance of the updated policy.</p>
               </div>
 
               <div>

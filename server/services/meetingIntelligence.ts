@@ -4,7 +4,8 @@
 import { getDb } from "../db";
 import { meetings } from "../../drizzle/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 export interface TranscriptionSegment {
   speaker: string;
@@ -52,7 +53,7 @@ export async function generatePreMeetingBrief(userId: number, clientId: number):
     .limit(5);
 
   const lastMeeting = recentMeetings[0];
-  const response = await invokeLLM({
+  const response = await contextualLLM({ userId: userId, contextType: "meeting",
     messages: [
       { role: "system", content: "You are a financial meeting preparation assistant. Generate a pre-meeting brief based on the client's history. Return JSON." },
       { role: "user", content: `Generate a pre-meeting brief for client ${clientId}. Recent meetings: ${JSON.stringify(recentMeetings.map(m => ({ type: m.meetingType, date: m.scheduledAt, summary: m.postMeetingSummary })))}` },
@@ -89,7 +90,7 @@ export async function generatePreMeetingBrief(userId: number, clientId: number):
 
 // ─── Post-Meeting Summary ──────────────────────────────────────────────────
 export async function generateMeetingSummary(transcription: string, meetingId: number): Promise<MeetingSummary> {
-  const response = await invokeLLM({
+  const response = await contextualLLM({ userId: userId, contextType: "meeting",
     messages: [
       { role: "system", content: `You are a financial meeting analyst. Analyze the meeting transcription and extract key information. Return JSON with: keyTopics (array of strings), decisions (array of strings), actionItems (array of {description, assignee, priority, category}), clientSentiment (positive/neutral/concerned), complianceNotes (array), nextSteps (string).` },
       { role: "user", content: `Analyze this meeting transcription:\n\n${transcription.slice(0, 8000)}` },

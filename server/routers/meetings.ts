@@ -7,7 +7,8 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { meetings, meetingActionItems } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "../services/contextualLLM";
 
 async function db() {
   return (await import("../db")).getDb();
@@ -92,7 +93,7 @@ Include the following sections:
 
 Keep it concise and actionable. Format in markdown.`;
 
-      const response = await invokeLLM({
+      const response = await contextualLLM({ userId: ctx.user?.id, contextType: "meeting",
         messages: [
           { role: "system", content: "You are a financial advisor's meeting preparation assistant. Generate thorough but concise pre-meeting briefs." },
           { role: "user", content: prompt },
@@ -137,7 +138,7 @@ Generate the following sections:
 
 Format in markdown. Be specific and actionable.`;
 
-      const response = await invokeLLM({
+      const response = await contextualLLM({ userId: ctx.user?.id, contextType: "meeting",
         messages: [
           { role: "system", content: "You are a financial advisor's meeting summary assistant. Generate thorough post-meeting summaries with clear action items." },
           { role: "user", content: prompt },
@@ -147,7 +148,7 @@ Format in markdown. Be specific and actionable.`;
       const summary = String(response.choices?.[0]?.message?.content ?? "Unable to generate summary.");
 
       // Extract action items from the summary using AI
-      const actionResponse = await invokeLLM({
+      const actionResponse = await contextualLLM({ userId: ctx.user?.id, contextType: "meeting",
         messages: [
           { role: "system", content: "Extract action items from this meeting summary. Return a JSON array of objects with fields: title (string), description (string), assignedTo (string), priority (low|medium|high|urgent), dueDate (ISO string or null)." },
           { role: "user", content: summary },
@@ -238,7 +239,7 @@ The email should:
 - Be warm but professional
 - Be concise (under 300 words)`;
 
-      const response = await invokeLLM({
+      const response = await contextualLLM({ userId: ctx.user?.id, contextType: "meeting",
         messages: [
           { role: "system", content: "You are a financial advisor drafting a follow-up email. Write in a warm, professional tone." },
           { role: "user", content: prompt },

@@ -2,7 +2,8 @@
  * Task #49 — Compliance Prediction Service
  * Predictive compliance risk scoring and proactive violation detection
  */
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 export interface ComplianceRiskFactor {
   factor: string;
@@ -137,7 +138,7 @@ export function calculateComplianceRisk(data: {
 }
 
 export async function getAIComplianceAssessment(context: string): Promise<string> {
-  const resp = await invokeLLM({
+  const resp = await contextualLLM({ userId: null, contextType: "compliance",
     messages: [
       { role: "system", content: "You are a financial compliance expert. Assess the compliance posture described and provide specific, actionable recommendations. Be concise and prioritize by risk severity." },
       { role: "user", content: context },

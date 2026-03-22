@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  Bell, Mail, MessageSquare, TrendingUp, Shield, Calendar, Save,
-  Zap, BarChart3, RefreshCw, Brain, Volume2, VolumeX, Smartphone,
+  Bell, MessageSquare, TrendingUp, Shield, Calendar, Save,
+  Zap, BarChart3, RefreshCw, Brain, Volume2, VolumeX, Smartphone, Info,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -86,17 +86,12 @@ export default function NotificationsTab() {
     return defaults;
   });
 
-  const [emailDigest, setEmailDigest] = useState<"none" | "daily" | "weekly">(() => {
-    return (localStorage.getItem("wb_email_digest") as any) || "weekly";
-  });
-
   const toggle = (key: string) => {
     setPrefs(p => ({ ...p, [key]: !p[key] }));
   };
 
   const save = () => {
     localStorage.setItem("wb_notification_prefs", JSON.stringify(prefs));
-    localStorage.setItem("wb_email_digest", emailDigest);
     toast.success("Notification preferences saved");
   };
 
@@ -112,13 +107,24 @@ export default function NotificationsTab() {
         </p>
       </div>
 
+      {/* In-App Only Notice */}
+      <div className="flex items-start gap-3 rounded-lg border border-accent/30 bg-accent/5 p-4">
+        <Info className="w-5 h-5 text-accent mt-0.5 shrink-0" />
+        <div>
+          <p className="text-sm font-medium">In-App Notifications Only</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            All notifications are delivered exclusively within the platform. Stewardly does not send any external emails, SMS, or push notifications. Your inbox stays clean.
+          </p>
+        </div>
+      </div>
+
       {/* Delivery Methods */}
       <Card className="border-accent/20">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             <Zap className="w-4 h-4 text-accent" /> Delivery Methods
           </CardTitle>
-          <CardDescription className="text-xs">Control how real-time notifications are displayed</CardDescription>
+          <CardDescription className="text-xs">Control how in-app notifications are displayed</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {DELIVERY_METHODS.map(method => (
@@ -163,35 +169,6 @@ export default function NotificationsTab() {
       ))}
 
       <Separator />
-
-      {/* Email Digest */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Mail className="w-4 h-4 text-accent" /> Email Digest
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            {(["none", "daily", "weekly"] as const).map(opt => (
-              <button
-                key={opt}
-                onClick={() => setEmailDigest(opt)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  emailDigest === opt
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {opt === "none" ? "Off" : opt.charAt(0).toUpperCase() + opt.slice(1)}
-              </button>
-            ))}
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-2">
-            {emailDigest === "none" ? "No email summaries." : `Receive a ${emailDigest} summary of your notifications.`}
-          </p>
-        </CardContent>
-      </Card>
 
       {/* Standard Notification Groups */}
       {NOTIFICATION_GROUPS.map(group => (

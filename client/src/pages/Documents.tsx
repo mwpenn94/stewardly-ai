@@ -1111,9 +1111,30 @@ export default function Documents() {
               </Button>
             )}
 
+            {/* Inline Document Preview */}
+            {selectedDoc?.fileUrl && (() => {
+              const mime = selectedDoc.mimeType || "";
+              const isImage = mime.startsWith("image/");
+              const isPdf = mime === "application/pdf" || selectedDoc.filename?.endsWith(".pdf");
+              return (
+                <div>
+                  <p className="text-xs font-medium mb-1.5 flex items-center gap-1"><Eye className="w-3 h-3 text-accent" /> Document Preview</p>
+                  {isImage ? (
+                    <div className="rounded-lg border border-border overflow-hidden bg-black/20">
+                      <img src={selectedDoc.fileUrl} alt={selectedDoc.filename} className="w-full max-h-72 object-contain" />
+                    </div>
+                  ) : isPdf ? (
+                    <div className="rounded-lg border border-border overflow-hidden bg-muted/30">
+                      <iframe src={`${selectedDoc.fileUrl}#toolbar=0&navpanes=0`} className="w-full h-72 border-0" title="PDF Preview" />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })()}
+
             {selectedDoc?.extractedText && (
               <div>
-                <p className="text-xs font-medium mb-1">Extracted Content Preview</p>
+                <p className="text-xs font-medium mb-1">Extracted Content</p>
                 <div className="p-3 rounded-lg bg-secondary/30 text-xs text-muted-foreground max-h-48 overflow-y-auto whitespace-pre-wrap font-mono">
                   {selectedDoc.extractedText.substring(0, 2000)}
                   {selectedDoc.extractedText.length > 2000 && "..."}
@@ -1132,9 +1153,116 @@ export default function Documents() {
                 <VersionHistoryPanel doc={selectedDoc} onUploadNewVersion={(doc: any) => { setSelectedDoc(null); setVersionUploadDoc(doc); }} />
               </div>
             )}
+
+            {/* Collaborative Annotations */}
+            {selectedDoc && <AnnotationsPanel documentId={selectedDoc.id} />}
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/* ─── Annotations Panel (collaborative) ─────────────────────────── */
+function AnnotationsPanel({ documentId }: { documentId: number }) {
+  const [newComment, setNewComment] = useState("");
+  const [annotationType, setAnnotationType] = useState<"comment" | "question" | "action_item">("comment");
+  const annotationsQ = trpc.documents.listAnnotations.useQuery({ documentId });
+  const addMut = trpc.documents.addAnnotation.useMutation({
+    onSuccess: () => { annotationsQ.refetch(); setNewComment(""); toast.success("Annotation added"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const resolveMut = trpc.documents.resolveAnnotation.useMutation({
+    onSuccess: () => { annotationsQ.refetch(); toast.success("Resolved"); },
+  });
+  const deleteMut = trpc.documents.deleteAnnotation.useMutation({
+    onSuccess: () => { annotationsQ.refetch(); toast.success("Deleted"); },
+  });
+
+  const typeIcon = (t: string) => {
+    if (t === "question") return <MessageSquare className="w-3 h-3 text-blue-400" />;
+    if (t === "action_item") return <CheckSquare className="w-3 h-3 text-amber-400" />;
+    if (t === "ai_insight") return <Brain className="w-3 h-3 text-purple-400" />;
+    if (t === "highlight") return <Sparkles className="w-3 h-3 text-yellow-400" />;
+    return <MessageSquare className="w-3 h-3 text-muted-foreground" />;
+  };
+
+  return (
+    <div className="border-t border-border pt-4 mt-2">
+      <p className="text-xs font-medium mb-2 flex items-center gap-1">
+        <MessageSquare className="w-3 h-3 text-accent" /> Annotations
+        {annotationsQ.data && annotationsQ.data.length > 0 && (
+          <Badge variant="secondary" className="text-[9px] ml-1">{annotationsQ.data.length}</Badge>
+        )}
+      </p>
+
+      {/* Existing annotations */}
+      <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
+        {annotationsQ.data?.map((ann: any) => (
+          <div key={ann.id} className={`p-2 rounded-lg text-xs ${ann.resolved ? "bg-green-500/5 border border-green-500/20" : "bg-secondary/30 border border-border"}`}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                {typeIcon(ann.annotationType)}
+                <div className="flex-1 min-w-0">
+                  <p className={`${ann.resolved ? "line-through text-muted-foreground" : ""}`}>{ann.content}</p>
+                  {ann.highlightText && (
+                    <p className="text-[10px] text-accent/70 mt-0.5 italic">"{ann.highlightText}"</p>
+                  )}
+                  <p className="text-[9px] text-muted-foreground mt-0.5">
+                    {new Date(ann.createdAt).toLocaleDateString()} · {ann.annotationType}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-0.5 shrink-0">
+                {!ann.resolved && (
+                  <Button variant="ghost" size="icon" className="w-5 h-5" onClick={() => resolveMut.mutate({ id: ann.id })}>
+                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="icon" className="w-5 h-5" onClick={() => deleteMut.mutate({ id: ann.id })}>
+                  <Trash2 className="w-3 h-3 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {annotationsQ.data?.length === 0 && (
+          <p className="text-[10px] text-muted-foreground text-center py-2">No annotations yet. Add the first one below.</p>
+        )}
+      </div>
+
+      {/* Add new annotation */}
+      <div className="flex gap-2">
+        <Select value={annotationType} onValueChange={(v: any) => setAnnotationType(v)}>
+          <SelectTrigger className="w-28 h-7 text-[10px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="comment">Comment</SelectItem>
+            <SelectItem value="question">Question</SelectItem>
+            <SelectItem value="action_item">Action Item</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
+          placeholder="Add annotation..."
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          className="h-7 text-xs flex-1"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && newComment.trim()) {
+              addMut.mutate({ documentId, content: newComment, annotationType });
+            }
+          }}
+        />
+        <Button
+          size="sm"
+          className="h-7 text-[10px] px-2"
+          disabled={!newComment.trim() || addMut.isPending}
+          onClick={() => addMut.mutate({ documentId, content: newComment, annotationType })}
+        >
+          {addMut.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+        </Button>
+      </div>
     </div>
   );
 }

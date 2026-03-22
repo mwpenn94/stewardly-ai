@@ -11,7 +11,8 @@ import {
   webScrapeResults, bulkImportBatches, dataQualityScores,
   ingestionInsights, scrapeSchedules,
 } from "../../drizzle/schema";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 import { dataIngestion } from "./dataIngestion";
 
 // ─── Bulk Scraper Service ─────────────────────────────────────────────────
@@ -386,7 +387,7 @@ export class InsightGeneratorService {
       .slice(0, 12000);
 
     try {
-      const response = await invokeLLM({
+      const response = await contextualLLM({ userId: userId, contextType: "ingestion",
         messages: [
           {
             role: "system",
@@ -526,7 +527,7 @@ export class CompetitorIntelService {
     // Use LLM for deeper competitive analysis
     let analysis: any = {};
     try {
-      const response = await invokeLLM({
+      const response = await contextualLLM({ userId: userId, contextType: "ingestion",
         messages: [
           {
             role: "system",

@@ -7,7 +7,8 @@
 import { getDb } from "../db";
 import { searchCache } from "../../drizzle/schema";
 import { eq, and, gt, sql } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 import { callDataApi } from "../_core/dataApi";
 import crypto from "crypto";
 
@@ -174,7 +175,7 @@ export class ProductResearchService {
     }
 
     // Use LLM for comprehensive research
-    const result = await invokeLLM({
+    const result = await contextualLLM({ userId: null, contextType: "analysis",
       messages: [
         {
           role: "system",
@@ -216,7 +217,7 @@ export class ProductResearchService {
       ? `Focus on: ${criteria.join(", ")}`
       : "Compare on fees, features, performance, suitability, and overall value";
 
-    const result = await invokeLLM({
+    const result = await contextualLLM({ userId: null, contextType: "analysis",
       messages: [
         {
           role: "system",
@@ -241,7 +242,7 @@ export class ProductResearchService {
   async proactiveResearch(userContext: string): Promise<{
     suggestions: Array<{ query: string; reason: string; category: string }>;
   }> {
-    const result = await invokeLLM({
+    const result = await contextualLLM({ userId: null, contextType: "analysis",
       messages: [
         {
           role: "system",

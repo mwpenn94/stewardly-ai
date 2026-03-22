@@ -6,7 +6,8 @@
 import { getDb } from "../db";
 import { knowledgeGraphEntities, knowledgeGraphEdges, entityResolutionRules } from "../../drizzle/schema";
 import { eq, and, desc, like, sql, or } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 type EntityType = "person" | "company" | "product" | "concept" | "regulation" | "account";
 
@@ -30,7 +31,7 @@ export async function extractEntitiesFromText(text: string): Promise<{
   relationships: ExtractedRelationship[];
 }> {
   try {
-    const response = await invokeLLM({
+    const response = await contextualLLM({ userId: null, contextType: "analysis",
       messages: [
         {
           role: "system",

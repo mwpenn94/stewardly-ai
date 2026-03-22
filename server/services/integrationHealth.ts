@@ -18,7 +18,7 @@ import {
 } from "../../drizzle/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { decryptCredentials } from "./encryption";
-import { notifyOwner } from "../_core/notification";
+import { broadcastToRole } from "./websocketNotifications";
 import { safeDbOperation, firstOrNull, withRetry } from "./dbResilience";
 import crypto from "crypto";
 
@@ -373,11 +373,14 @@ async function runImprovementAgent(results: HealthCheckResult[]) {
           description: `The ${result.providerName} API has failed ${consecutiveFailures} consecutive health checks. Last error: ${result.message}`,
           suggestedAction: "Consider rotating the API key, checking rate limits, or contacting the provider.",
         });
-        // Send critical alert notification to owner
+        // Send critical alert as in-app notification (no external email)
         try {
-          await notifyOwner({
-            title: `\u26a0\ufe0f Critical: ${result.providerName} data source down (${consecutiveFailures} failures)`,
-            content: `The ${result.providerName} integration has failed ${consecutiveFailures} consecutive health checks.\n\nLast error: ${result.message}\nLatency: ${result.latencyMs}ms\n\nSuggested action: Verify API key validity, check provider status page, or rotate credentials.\n\nVisit the Integration Health Dashboard to investigate.`,
+          broadcastToRole("admin", {
+            type: "alert",
+            priority: "critical",
+            title: `⚠️ Critical: ${result.providerName} data source down (${consecutiveFailures} failures)`,
+            body: `The ${result.providerName} integration has failed ${consecutiveFailures} consecutive health checks. Last error: ${result.message}. Latency: ${result.latencyMs}ms. Visit the Integration Health Dashboard to investigate.`,
+            metadata: { source: "integrationHealth", providerName: result.providerName, consecutiveFailures },
           });
         } catch (e) {
           console.warn(`[ImprovementAgent] Failed to send critical alert for ${result.providerName}:`, e);

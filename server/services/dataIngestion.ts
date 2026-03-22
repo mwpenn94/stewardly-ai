@@ -9,7 +9,8 @@ import {
   dataSources, ingestionJobs, ingestedRecords,
   marketDataCache, webScrapeResults, documentExtractions,
 } from "../../drizzle/schema";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 export interface IngestionResult {
@@ -94,7 +95,7 @@ export class WebScraperService {
    */
   private async extractWithLLM(text: string, prompt: string) {
     try {
-      const response = await invokeLLM({
+      const response = await contextualLLM({ userId: null, contextType: "ingestion",
         messages: [
           {
             role: "system",
@@ -205,7 +206,7 @@ export class DocumentProcessorService {
 
     try {
       // Use LLM with document URL for extraction
-      const response = await invokeLLM({
+      const response = await contextualLLM({ userId: null, contextType: "ingestion",
         messages: [
           {
             role: "system",
@@ -421,7 +422,7 @@ export class EntityExtractorService {
    */
   async extractEntities(text: string, context?: string): Promise<Record<string, any>[]> {
     try {
-      const response = await invokeLLM({
+      const response = await contextualLLM({ userId: null, contextType: "ingestion",
         messages: [
           {
             role: "system",
@@ -567,7 +568,7 @@ export class ContinuousLearningService {
         .map((r: any) => `[${r.recordType}] ${r.title}: ${r.contentSummary || ""}`)
         .join("\n");
 
-      const response = await invokeLLM({
+      const response = await contextualLLM({ userId: null, contextType: "ingestion",
         messages: [
           {
             role: "system",

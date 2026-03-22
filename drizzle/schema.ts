@@ -508,6 +508,25 @@ export const documentVersions = mysqlTable("document_versions", {
 });
 export type DocumentVersion = typeof documentVersions.$inferSelect;
 
+// ─── DOCUMENT ANNOTATIONS (collaborative) ──────────────────────────────────
+export const documentAnnotations = mysqlTable("document_annotations", {
+  id: int("id").autoincrement().primaryKey(),
+  documentId: int("documentId").notNull(),
+  userId: int("userId").notNull(),
+  content: text("content").notNull(),
+  highlightText: text("highlightText"),
+  highlightStart: int("highlightStart"),
+  highlightEnd: int("highlightEnd"),
+  annotationType: mysqlEnum("annotationType", ["comment", "highlight", "question", "action_item", "ai_insight"]).default("comment").notNull(),
+  parentId: int("parentId"),
+  resolved: mysqlBoolean("resolved").default(false),
+  resolvedBy: int("resolvedBy"),
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type DocumentAnnotation = typeof documentAnnotations.$inferSelect;
+
 // ─── DOCUMENT TAGS (AI-generated + user-editable) ─────────────────────────
 export const documentTags = mysqlTable("document_tags", {
   id: int("id").autoincrement().primaryKey(),

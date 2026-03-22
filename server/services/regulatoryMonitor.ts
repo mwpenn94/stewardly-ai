@@ -9,7 +9,8 @@ import {
   regulatoryAlerts, regulatoryImpactAnalyses, complianceWeeklyBriefs,
 } from "../../drizzle/schema";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 // ─── Ingest Regulatory Update ────────────────────────────────────────────
 export async function ingestRegulatoryUpdate(params: {
@@ -48,7 +49,7 @@ export async function ingestRegulatoryUpdate(params: {
 // ─── Impact Analysis ─────────────────────────────────────────────────────
 async function generateImpactAnalysis(updateId: number, title: string, summary: string): Promise<void> {
   try {
-    const response = await invokeLLM({
+    const response = await contextualLLM({ userId: null, contextType: "compliance",
       messages: [
         {
           role: "system",

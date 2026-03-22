@@ -4,7 +4,8 @@
 import { getDb } from "../db";
 import { conversations, messages } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1B: Adaptive Suggested Prompts
@@ -54,7 +55,7 @@ export async function getAdaptivePrompts(userId: number, limit = 4): Promise<Sug
 }
 
 export async function generateContextualPrompts(userId: number, lastMessage: string): Promise<SuggestedPrompt[]> {
-  const response = await invokeLLM({
+  const response = await contextualLLM({ userId: userId, contextType: "analysis",
     messages: [
       { role: "system", content: "Generate 3 follow-up financial question suggestions based on the last message. Return JSON array of {text, category, icon}." },
       { role: "user", content: `Last message: "${lastMessage}". Suggest follow-up questions.` },

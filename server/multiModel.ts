@@ -5,7 +5,8 @@
  * and synthesizes their responses into a single cohesive answer.
  */
 
-import { invokeLLM } from "./_core/llm";
+import { invokeLLM } from "./_core/llm"
+import { contextualLLM } from "./services/contextualLLM";
 
 // ─── PERSPECTIVE DEFINITIONS ────────────────────────────────────────────────
 
@@ -128,7 +129,7 @@ export async function queryMultiPerspective(opts: MultiModelOptions): Promise<Pe
         { role: "user" as const, content: opts.userMessage },
       ];
 
-      const response = await invokeLLM({ messages });
+      const response = await contextualLLM({ userId: null, contextType: "chat", messages });
       const content = typeof response.choices[0]?.message?.content === "string"
         ? response.choices[0].message.content
         : "";
@@ -168,7 +169,7 @@ Original question: ${originalQuestion}
 Perspective analyses:
 ${perspectiveSummaries}`;
 
-  const response = await invokeLLM({
+  const response = await contextualLLM({ userId: null, contextType: "chat",
     messages: [
       { role: "system", content: synthesisPrompt },
       { role: "user", content: "Synthesize these perspectives into a single cohesive response." },
@@ -194,7 +195,7 @@ export async function crossModelVerify(
   question: string,
 ): Promise<VerificationResult> {
   try {
-    const response = await invokeLLM({
+    const response = await contextualLLM({ userId: null, contextType: "chat",
       messages: [
         {
           role: "system",

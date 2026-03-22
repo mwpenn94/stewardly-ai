@@ -4,7 +4,8 @@ import {
   InsertUser, users, conversations, messages, documents, documentChunks,
   products, auditTrail, reviewQueue, memories, feedback, qualityRatings,
   suitabilityAssessments, conversationFolders, documentVersions,
-  documentTags, documentTagMap, knowledgeGapFeedback
+  documentTags, documentTagMap, knowledgeGapFeedback,
+  documentAnnotations
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -740,4 +741,39 @@ export async function getUserSuitability(userId: number) {
   if (!db) return undefined;
   const result = await db.select().from(suitabilityAssessments).where(eq(suitabilityAssessments.userId, userId)).orderBy(desc(suitabilityAssessments.createdAt)).limit(1);
   return result[0];
+}
+
+// ─── DOCUMENT ANNOTATIONS (collaborative) ──────────────────────────────────
+export async function getDocumentAnnotations(documentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(documentAnnotations)
+    .where(eq(documentAnnotations.documentId, documentId))
+    .orderBy(asc(documentAnnotations.createdAt));
+}
+
+export async function createAnnotation(data: {
+  documentId: number; userId: number; content: string;
+  highlightText?: string; highlightStart?: number; highlightEnd?: number;
+  annotationType?: "comment" | "highlight" | "question" | "action_item" | "ai_insight";
+  parentId?: number;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(documentAnnotations).values(data).$returningId();
+  return result;
+}
+
+export async function resolveAnnotation(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(documentAnnotations)
+    .set({ resolved: true, resolvedBy: userId, resolvedAt: new Date() })
+    .where(eq(documentAnnotations.id, id));
+}
+
+export async function deleteAnnotation(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(documentAnnotations).where(eq(documentAnnotations.id, id));
 }

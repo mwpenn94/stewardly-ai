@@ -5,7 +5,8 @@
 import { getDb } from "../db";
 import { knowledgeArticles, knowledgeArticleVersions, knowledgeArticleFeedback, knowledgeGaps } from "../../drizzle/schema";
 import { eq, and, desc, like, or, sql } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 // ─── CRUD ────────────────────────────────────────────────────────────────
 export async function createArticle(data: {
@@ -171,7 +172,7 @@ export async function submitFeedback(articleId: number, userId: number | null, h
 export async function detectGaps(recentQueries: string[]) {
   if (recentQueries.length === 0) return { gaps: [] };
 
-  const resp = await invokeLLM({
+  const resp = await contextualLLM({ userId: userId, contextType: "gap_analysis",
     messages: [
       { role: "system", content: "You are a knowledge base gap analyzer. Given a list of user queries that returned no or poor results, identify topic clusters that need new articles. Return JSON array of {topicCluster, suggestedTitle, suggestedOutline}." },
       { role: "user", content: JSON.stringify(recentQueries) },

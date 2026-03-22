@@ -12,7 +12,7 @@ import {
 } from "../../drizzle/schema";
 import { dataIngestion } from "./dataIngestion";
 import { insightGenerator, dataQualityService } from "./dataIngestionEnhanced";
-import { notifyOwner } from "../_core/notification";
+import { broadcastToRole } from "./websocketNotifications";
 
 // ─── Cron Schedule Runner ────────────────────────────────────────────────
 export class ScheduleRunnerService {
@@ -60,9 +60,12 @@ export class ScheduleRunnerService {
         } catch (err: any) {
           console.error(`[ScheduleRunner] Failed schedule ${schedule.id}:`, err.message);
           if (schedule.notifyOnFailure) {
-            await notifyOwner({
+            broadcastToRole("admin", {
+              type: "alert",
+              priority: "high",
               title: `Ingestion Schedule Failed`,
-              content: `Schedule #${schedule.id} for data source #${schedule.dataSourceId} failed: ${err.message}`,
+              body: `Schedule #${schedule.id} for data source #${schedule.dataSourceId} failed: ${err.message}`,
+              metadata: { source: "scheduledIngestion", scheduleId: schedule.id },
             });
           }
         }
@@ -428,19 +431,25 @@ export class InsightActionService {
       case "critical":
         actionType = "alert_escalated";
         priority = "urgent";
-        // Send immediate notification
-        await notifyOwner({
+        // Send immediate in-app notification (no external email)
+        broadcastToRole("admin", {
+          type: "alert",
+          priority: "critical",
           title: `CRITICAL: ${insight.title}`,
-          content: `${insight.description}\n\nType: ${insight.insightType}\nSeverity: CRITICAL\nAction required immediately.`,
+          body: `${insight.description}\n\nType: ${insight.insightType}\nSeverity: CRITICAL\nAction required immediately.`,
+          metadata: { source: "insightAction", insightType: insight.insightType },
         });
         payload.notificationSent = true;
         break;
       case "high":
         actionType = "notification_sent";
         priority = "high";
-        await notifyOwner({
+        broadcastToRole("admin", {
+          type: "alert",
+          priority: "high",
           title: `High Priority Insight: ${insight.title}`,
-          content: `${insight.description}\n\nType: ${insight.insightType}`,
+          body: `${insight.description}\n\nType: ${insight.insightType}`,
+          metadata: { source: "insightAction", insightType: insight.insightType },
         });
         payload.notificationSent = true;
         break;

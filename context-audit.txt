@@ -1,0 +1,55 @@
+PLATFORM-WIDE LLM INVOCATION AUDIT
+====================================
+Total invokeLLM calls: 50+ across 25+ files
+
+HIGH-PRIORITY (user-facing intelligence, need full context):
+1. server/routers.ts:273 — Main chat send (ALREADY has partial RAG)
+2. server/routers/improvementEngine.ts:356 — Platform improvement analysis
+3. server/routers/insights.ts:119 — Financial insights generation
+4. server/routers/compliance.ts:43,162 — Compliance content review
+5. server/routers/fairness.ts:106,117 — Bias detection
+6. server/routers/agenticExecution.ts:43,270,377,464,537,608 — Agentic tool planning (6 calls)
+7. server/routers/meetings.ts:95,140,150,241 — Meeting prep/summary (4 calls)
+8. server/routers/anonymousChat.ts:93 — Pre-auth chat
+9. server/services/selfDiscovery.ts:196 — Continuous learning
+10. server/services/recommendation.ts:243 — Advisor matching
+11. server/services/compliancePrediction.ts:140 — Compliance prediction
+12. server/services/regulatoryImpact.ts:116 — Regulatory impact
+13. server/services/regulatoryMonitor.ts:51 — Regulatory monitoring
+14. server/services/regBIDocumentation.ts:34,110,183,344 — Reg BI docs (4 calls)
+15. server/services/adaptivePrompts.ts:57 — Adaptive prompting
+16. server/services/adaptiveRateManagement.ts:157 — Rate management
+17. server/services/meetingIntelligence.ts:55,92 — Meeting intelligence
+
+MEDIUM-PRIORITY (data processing, benefit from context):
+18. server/services/dataIngestion.ts:97,208,424,570 — Data ingestion (4 calls)
+19. server/services/dataIngestionEnhanced.ts:389,529 — Enhanced ingestion (2 calls)
+20. server/services/knowledgeBase.ts:174 — KB article generation
+21. server/services/knowledgeIngestion.ts:48,122 — Knowledge ingestion
+22. server/services/knowledgeGraphDynamic.ts:33 — Knowledge graph
+23. server/services/searchEnhanced.ts:177,219,244 — Enhanced search (3 calls)
+24. server/services/emailCampaign.ts:168 — Message campaigns
+25. server/services/documentTemplates.ts:314 — Document templates
+26. server/services/fairnessTesting.ts:61 — Fairness testing
+
+LOW-PRIORITY (utility/formatting, minimal context needed):
+27. server/routers.ts:396,451,534,642 — Title generation, suggestions, categorization
+28. server/routers.ts:918,956 — Auto-tag, gap analysis (already have doc context)
+29. server/services/multiModal.ts — Multi-modal processing (5 calls)
+30. server/services/orgSeedData.ts:144 — Org seed data
+31. server/webSearch.ts:148,223 — Web search synthesis
+
+CONTEXT SOURCES TO ASSEMBLE:
+- Document chunks (searchDocumentChunks) — currently keyword-only, needs TF-IDF
+- Pipeline data (getEconomicDataSummary) — FRED, BLS, SEC, BEA, Census, FINRA
+- User profile (userProfiles) — age, income, goals, insurance, investments
+- Suitability answers — risk tolerance, time horizon, objectives
+- Memories (assembleMemoryContext) — 3-tier memory engine
+- Knowledge graph (assembleGraphContext) — entity relationships
+- Integration data — Plaid, SnapTrade, CRM connections
+- Conversation history — recent interactions for continuity
+- Document tags — user-defined and AI-generated tags
+- Product catalog — financial products
+- KB articles (searchArticles) — knowledge base articles
+- Insight context (buildInsightContext) — platform usage metrics
+- Exponential context — user proficiency/discovery

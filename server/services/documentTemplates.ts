@@ -4,7 +4,8 @@
  * Provides 9 pre-built document templates for financial advisory workflows.
  * Each template defines structure, required fields, and LLM generation prompts.
  */
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../_core/llm"
+import { contextualLLM } from "./contextualLLM";
 
 // ─── Template Definitions ───────────────────────────────────────────────────
 
@@ -311,7 +312,7 @@ export async function generateDocument(
 
   for (const section of template.sections) {
     try {
-      const response = await invokeLLM({
+      const response = await contextualLLM({ userId: null, contextType: "analysis",
         messages: [
           {
             role: "system",
