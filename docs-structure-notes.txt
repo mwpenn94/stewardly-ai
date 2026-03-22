@@ -1,0 +1,25 @@
+Documents.tsx Structure (1259 lines):
+- Lines 1-80: Imports, constants (STATUS_MAP, VISIBILITY_OPTIONS, CATEGORIES), helpers
+- Lines 81-153: ProcessingDashboard component
+- Lines 155-230: VersionHistoryPanel component
+- Lines 232-411: SortableDocRow component (drag-drop row with all actions)
+- Lines 414-476: SortableCategoryGroup component
+- Lines 478-780: Main Documents component state, queries, mutations, handlers
+- Lines 782-1048: Main JSX - drag overlay, sticky header, bulk toolbar, tabs (files/dashboard), search/filter, doc list
+- Lines 1050-1119: Upload Dialog
+- Lines 1121-1143: Bulk Delete Confirmation Dialog
+- Lines 1145-1185: Version Upload Dialog
+- Lines 1187-1259: Document Details Dialog with Version History
+
+NEW FEATURES TO ADD:
+1. Tags UI: tag pills on each doc row, auto-tag button, tag management panel, tag filter
+2. Gap Analysis: new tab with LLM-powered gap analysis, feedback actions (dismiss/acknowledge/resolve), user notes
+3. URL Import: dialog to paste URLs, progress indicator, results
+4. Archive Upload: accept .zip in upload dialog, show extraction progress
+
+EXISTING TABS: "files", "dashboard"
+NEW TABS TO ADD: "tags", "gaps", (URL import and archive upload are dialogs, not tabs)
+
+KEY STATE VARS: uploading, uploadCategory, uploadVisibility, showUploadDialog, dragOver, selectedIds, selectMode, searchQuery, filterCategory, filterStatus, filterRecent, renamingId, renameValue, selectedDoc, showBulkDeleteConfirm, versionUploadDoc, activeTab
+
+EXISTING MUTATIONS: uploadDoc, deleteDoc, updateVis, renameMut, updateCat, reorderMut, bulkDeleteMut, bulkVisMut, bulkCatMut, reprocessMut, uploadVersionMut

@@ -2717,3 +2717,26 @@
 - [x] Write 17 tests for processing stats, version history, auto-categorization, and reprocessing
 - [x] All 1,710 tests passing across 61 test files — 0 failures
 - [x] Re-deliver corrected status report
+
+### Phase V: AI Document Tagging, Knowledge Gap Analysis, Batch URL Import
+- [x] Add document_tags, document_tag_map, knowledge_gap_feedback tables (3 tables, 5 indexes)
+- [x] Add db helpers for tag CRUD (createTag, getUserTags, deleteTag, updateTag, addTagToDocument, removeTagFromDocument, getDocumentTags, getDocumentsForTag, bulkAddTagsToDocument)
+- [x] Add db helpers for gap feedback (addGapFeedback, getUserGapFeedback)
+- [x] Add AI auto-tagging on upload (LLM generates 3-5 tags from extracted content)
+- [x] Add 14 new tRPC procedures: listTags, autoTag, getDocTags, docsForTag, analyzeGaps, getGapFeedback, submitGapFeedback, importFromUrls, uploadArchive, plus tag CRUD
+- [x] Build Tags tab with inline tag chips, color picker, add/remove, filter by tag, AI auto-tag button
+- [x] Build Gap Analysis tab with LLM-powered analysis, 4 feedback actions (dismiss, acknowledge, resolved, not_applicable), user notes, feedback history
+- [x] Build batch URL import dialog (paste URLs, preview, import with progress)
+- [x] Add compressed file upload support (ZIP extraction via adm-zip, each file uploaded separately)
+- [x] Write 28 tests for tagging, gap analysis, version history, and document extraction
+- [x] All 1,738 tests passing across 62 test files — 0 failures
+- [x] Re-deliver updated status report
+
+### Phase W: Fix DOCX Upload & Expand File Support
+- [x] Diagnosed DOCX failure: auto-categorization was calling buffer.toString() on binary DOCX, sending garbled text to LLM
+- [x] Fixed: extraction now runs BEFORE categorization so LLM gets real text for all binary formats
+- [x] Rewrote documentExtractor with 30+ file types: PDF, DOCX, XLSX (via xlsx package), PPTX, RTF, EPUB, ODT, ODS, ODP, XML, YAML, TSV, LOG, JSON, CSV, HTML, and 15+ code formats
+- [x] Added xlsx npm package for spreadsheet extraction
+- [x] Improved extraction fallbacks: binary detection, extension-based routing, graceful unsupported handling
+- [x] Updated file accept list in all upload dialogs (45+ extensions)
+- [x] Better error messages for unsupported/failed files with method tracking

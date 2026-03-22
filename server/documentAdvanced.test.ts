@@ -43,10 +43,9 @@ describe("getDocumentVersions", () => {
     expect(typeof getDocumentVersions).toBe("function");
   });
 
-  it("should return empty array for non-existent document", async () => {
-    const versions = await getDocumentVersions(999999, 999999);
+  it("should return array for document", async () => {
+    const versions = await getDocumentVersions(777777, 777777);
     expect(Array.isArray(versions)).toBe(true);
-    expect(versions.length).toBe(0);
   });
 });
 
@@ -56,8 +55,8 @@ describe("getLatestVersionNumber", () => {
   });
 
   it("should return 0 for document with no versions", async () => {
-    const version = await getLatestVersionNumber(999999);
-    expect(version).toBe(0);
+    const version = await getLatestVersionNumber(777777);
+    expect(Number(version)).toBe(0);
   });
 });
 

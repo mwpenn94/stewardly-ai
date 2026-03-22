@@ -3,7 +3,8 @@ import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
   products, auditTrail, reviewQueue, memories, feedback, qualityRatings,
-  suitabilityAssessments, conversationFolders, documentVersions
+  suitabilityAssessments, conversationFolders, documentVersions,
+  documentTags, documentTagMap, knowledgeGapFeedback
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -426,7 +427,93 @@ export async function getDocumentProcessingStats(userId: number) {
   };
 }
 
-// ─── PRODUCT HELPERS ──────────────────────────────────────────────
+// ─── DOCUMENT TAG HELPERS ──────────────────────────────────────────────
+export async function getUserTags(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(documentTags).where(eq(documentTags.userId, userId)).orderBy(documentTags.name);
+}
+
+export async function createTag(userId: number, name: string, color?: string, isAiGenerated = false) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(documentTags).values({ userId, name, color: color || "#6366f1", isAiGenerated }).$returningId();
+  return result;
+}
+
+export async function deleteTag(tagId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(documentTagMap).where(eq(documentTagMap.tagId, tagId));
+  await db.delete(documentTags).where(and(eq(documentTags.id, tagId), eq(documentTags.userId, userId)));
+}
+
+export async function updateTag(tagId: number, userId: number, data: { name?: string; color?: string }) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(documentTags).set(data).where(and(eq(documentTags.id, tagId), eq(documentTags.userId, userId)));
+}
+
+export async function addTagToDocument(documentId: number, tagId: number) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(documentTagMap).where(and(eq(documentTagMap.documentId, documentId), eq(documentTagMap.tagId, tagId)));
+  if (existing.length > 0) return;
+  await db.insert(documentTagMap).values({ documentId, tagId });
+}
+
+export async function removeTagFromDocument(documentId: number, tagId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(documentTagMap).where(and(eq(documentTagMap.documentId, documentId), eq(documentTagMap.tagId, tagId)));
+}
+
+export async function getDocumentTags(documentId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const maps = await db.select().from(documentTagMap).where(eq(documentTagMap.documentId, documentId));
+  if (maps.length === 0) return [];
+  const tagIds = maps.map(m => m.tagId);
+  return db.select().from(documentTags).where(inArray(documentTags.id, tagIds));
+}
+
+export async function getDocumentsForTag(tagId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const maps = await db.select().from(documentTagMap).where(eq(documentTagMap.tagId, tagId));
+  return maps.map(m => m.documentId);
+}
+
+export async function bulkAddTagsToDocument(documentId: number, tagIds: number[]) {
+  const db = await getDb();
+  if (!db) return;
+  for (const tagId of tagIds) {
+    await addTagToDocument(documentId, tagId);
+  }
+}
+
+// ─── KNOWLEDGE GAP FEEDBACK HELPERS ────────────────────────────────────
+export async function addGapFeedback(data: { userId: number; gapId: string; gapTitle: string; gapCategory?: string; action: "dismiss" | "acknowledge" | "resolved" | "not_applicable"; userNote?: string }) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(knowledgeGapFeedback).values(data).$returningId();
+  return result;
+}
+
+export async function getUserGapFeedback(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(knowledgeGapFeedback).where(eq(knowledgeGapFeedback.userId, userId)).orderBy(knowledgeGapFeedback.createdAt);
+}
+
+export async function getGapFeedbackByGapId(userId: number, gapId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(knowledgeGapFeedback).where(and(eq(knowledgeGapFeedback.userId, userId), eq(knowledgeGapFeedback.gapId, gapId)));
+  return rows[0] || null;
+}
+
+// ─── PRODUCT HELPERS ─────────────────────────────────────────────────
 export async function getAllProducts() {
   const db = await getDb();
   if (!db) return [];

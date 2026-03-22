@@ -508,6 +508,38 @@ export const documentVersions = mysqlTable("document_versions", {
 });
 export type DocumentVersion = typeof documentVersions.$inferSelect;
 
+// ─── DOCUMENT TAGS (AI-generated + user-editable) ─────────────────────────
+export const documentTags = mysqlTable("document_tags", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  color: varchar("color", { length: 32 }).default("#6366f1"),
+  isAiGenerated: mysqlBoolean("isAiGenerated").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DocumentTag = typeof documentTags.$inferSelect;
+
+export const documentTagMap = mysqlTable("document_tag_map", {
+  id: int("id").autoincrement().primaryKey(),
+  documentId: int("documentId").notNull(),
+  tagId: int("tagId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DocumentTagMap = typeof documentTagMap.$inferSelect;
+
+// ─── KNOWLEDGE GAP FEEDBACK ────────────────────────────────────────────────
+export const knowledgeGapFeedback = mysqlTable("knowledge_gap_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  gapId: varchar("gapId", { length: 128 }).notNull(),
+  gapTitle: varchar("gapTitle", { length: 512 }).notNull(),
+  gapCategory: varchar("gapCategory", { length: 128 }),
+  action: mysqlEnum("action", ["dismiss", "acknowledge", "resolved", "not_applicable"]).notNull(),
+  userNote: text("userNote"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type KnowledgeGapFeedback = typeof knowledgeGapFeedback.$inferSelect;
+
 // ─── PRODUCTS ──────────────────────────────────────────────────────────────
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),

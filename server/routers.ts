@@ -33,6 +33,9 @@ import {
   toggleConversationPin, moveConversationToFolder,
   getUserFolders, createFolder, updateFolder, deleteFolder,
   reorderConversations, exportConversation,
+  getUserTags, createTag, deleteTag, updateTag,
+  addTagToDocument, removeTagFromDocument, getDocumentTags, getDocumentsForTag, bulkAddTagsToDocument,
+  addGapFeedback, getUserGapFeedback, getGapFeedbackByGapId,
 } from "./db";
 import { buildInsightContext, invalidateInsightCache } from "./insightCollectors";
 import {
@@ -48,6 +51,7 @@ import { eq, and } from "drizzle-orm";
 import { integrationConnections, integrationProviders } from "../drizzle/schema";
 import { getDb } from "./db";
 import { aiLayersRouter } from "./routers/aiLayers";
+import AdmZip from "adm-zip";
 import { exportsRouter } from "./routers/exports";
 import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
 
@@ -620,11 +624,21 @@ const documentsRouter = router({
       const fileKey = `docs/${ctx.user.id}/${nanoid()}-${input.filename}`;
       const { url } = await storagePut(fileKey, buffer, input.mimeType || "application/octet-stream");
 
-      // AI auto-categorization: determine category from filename + content preview
+      // Extract text FIRST so we can use it for both categorization and chunking
+      let extraction: Awaited<ReturnType<typeof extractDocumentText>> | null = null;
+      try {
+        extraction = await extractDocumentText(buffer, input.filename, input.mimeType);
+      } catch (e) {
+        console.error("[DocumentUpload] Pre-extraction failed:", e);
+      }
+
+      // AI auto-categorization: use extracted text (not raw buffer) for binary files
       let resolvedCategory = input.category || "personal_docs";
       if (!input.category) {
         try {
-          const preview = buffer.toString("utf-8").substring(0, 2000);
+          const preview = extraction?.text
+            ? extraction.text.substring(0, 2000)
+            : buffer.toString("utf-8").substring(0, 2000);
           const catResult = await invokeLLM({
             messages: [
               { role: "system", content: `You classify documents into exactly one of these categories. Respond with ONLY the category key, nothing else.\nCategories:\n- personal_docs: Personal documents (tax returns, IDs, wills, trusts, bank statements, pay stubs, personal letters)\n- financial_products: Financial product guides, brochures, prospectuses, fund fact sheets, insurance illustrations\n- regulations: Regulatory documents, compliance guides, SEC filings, DOL rules, state regulations\n- training_materials: Training courses, certifications, CE credits, study guides, exam prep\n- artifacts: Reports, analyses, spreadsheets, presentations, meeting notes, proposals\n- skills: Domain knowledge files, playbooks, scripts, templates, checklists` },
@@ -653,8 +667,10 @@ const documentsRouter = router({
       // Process document for RAG (extract text and chunk)
       try {
         await updateDocumentStatus(doc.id, "processing");
-        // Proper text extraction using pdf-parse (PDFs) and mammoth (DOCXs)
-        const extraction = await extractDocumentText(buffer, input.filename, input.mimeType);
+        // Reuse pre-extracted text, or extract now if pre-extraction failed
+        if (!extraction) {
+          extraction = await extractDocumentText(buffer, input.filename, input.mimeType);
+        }
         const text = extraction.text;
         if (!text || text.length < 10 || extraction.method === "unsupported") {
           // File type not supported for text extraction — store metadata only
@@ -862,6 +878,195 @@ const documentsRouter = router({
         await updateDocumentStatus(input.id, "error");
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Reprocessing failed" });
       }
+    }),
+
+  // ─── DOCUMENT TAGS ────────────────────────────────────────────────────
+  listTags: protectedProcedure
+    .query(({ ctx }) => getUserTags(ctx.user.id)),
+  createTag: protectedProcedure
+    .input(z.object({ name: z.string().min(1).max(128), color: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await createTag(ctx.user.id, input.name, input.color);
+      return result;
+    }),
+  deleteTagById: protectedProcedure
+    .input(z.object({ tagId: z.number() }))
+    .mutation(({ ctx, input }) => deleteTag(input.tagId, ctx.user.id)),
+  updateTagById: protectedProcedure
+    .input(z.object({ tagId: z.number(), name: z.string().optional(), color: z.string().optional() }))
+    .mutation(({ ctx, input }) => updateTag(input.tagId, ctx.user.id, { name: input.name, color: input.color })),
+  addTagToDoc: protectedProcedure
+    .input(z.object({ documentId: z.number(), tagId: z.number() }))
+    .mutation(({ input }) => addTagToDocument(input.documentId, input.tagId)),
+  removeTagFromDoc: protectedProcedure
+    .input(z.object({ documentId: z.number(), tagId: z.number() }))
+    .mutation(({ input }) => removeTagFromDocument(input.documentId, input.tagId)),
+  getDocTags: protectedProcedure
+    .input(z.object({ documentId: z.number() }))
+    .query(({ input }) => getDocumentTags(input.documentId)),
+  docsForTag: protectedProcedure
+    .input(z.object({ tagId: z.number() }))
+    .query(({ input }) => getDocumentsForTag(input.tagId)),
+  autoTag: protectedProcedure
+    .input(z.object({ documentId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const userDocs = await getUserDocuments(ctx.user.id);
+      const doc = userDocs.find((d: any) => d.id === input.documentId);
+      if (!doc) throw new TRPCError({ code: "NOT_FOUND" });
+      const existingTags = await getUserTags(ctx.user.id);
+      const existingTagNames = existingTags.map(t => t.name);
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: `You are a document tagging assistant for a financial services knowledge base. Analyze the document and suggest 2-5 concise tags. Return JSON: { "tags": [{ "name": "tag name", "isNew": true/false }] }. Existing tags the user already has: [${existingTagNames.join(", ")}]. Prefer existing tags when relevant. Tags should be specific and useful for filtering (e.g., "retirement planning", "IUL illustration", "client onboarding", "compliance", "tax strategy").` },
+          { role: "user", content: `Document: "${doc.filename}" (category: ${doc.category})\nContent preview: ${(doc.extractedText || "").substring(0, 2000)}` },
+        ],
+        response_format: { type: "json_schema", json_schema: { name: "tags", strict: true, schema: { type: "object", properties: { tags: { type: "array", items: { type: "object", properties: { name: { type: "string" }, isNew: { type: "boolean" } }, required: ["name", "isNew"], additionalProperties: false } } }, required: ["tags"], additionalProperties: false } } },
+      });
+      const parsed = JSON.parse(response.choices[0].message.content || "{}");
+      const suggestedTags = parsed.tags || [];
+      const appliedTagIds: number[] = [];
+      for (const tag of suggestedTags) {
+        const existing = existingTags.find(t => t.name.toLowerCase() === tag.name.toLowerCase());
+        if (existing) {
+          await addTagToDocument(input.documentId, existing.id);
+          appliedTagIds.push(existing.id);
+        } else {
+          const created = await createTag(ctx.user.id, tag.name, undefined, true);
+          if (created) {
+            await addTagToDocument(input.documentId, created.id);
+            appliedTagIds.push(created.id);
+          }
+        }
+      }
+      return { suggestedTags, appliedTagIds };
+    }),
+
+  // ─── KNOWLEDGE GAP ANALYSIS ─────────────────────────────────────────
+  analyzeGaps: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const docs = await getUserDocuments(ctx.user.id);
+      const feedback = await getUserGapFeedback(ctx.user.id);
+      const dismissedGapIds = feedback.filter(f => f.action === "dismiss" || f.action === "not_applicable").map(f => f.gapId);
+      const resolvedGapIds = feedback.filter(f => f.action === "resolved").map(f => f.gapId);
+      const acknowledgedFeedback = feedback.filter(f => f.action === "acknowledge");
+      const docSummary = docs.map(d => `- ${d.filename} (category: ${d.category}, status: ${d.status})`).join("\n");
+      const feedbackContext = acknowledgedFeedback.length > 0
+        ? `\n\nUser feedback on previous analyses (incorporate this to improve accuracy):\n${acknowledgedFeedback.map(f => `- Gap "${f.gapTitle}": user note: "${f.userNote || 'acknowledged as important'}"`).join("\n")}`
+        : "";
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: `You are a knowledge base analyst for a financial services platform. Analyze the user's document collection and identify gaps — missing document types that would improve their AI assistant's ability to serve clients. Consider: compliance documents, product illustrations, client templates, training materials, market research, estate planning, tax strategies, insurance policies, investment guidelines, and regulatory filings. Return JSON with gaps array. Each gap has: id (unique slug), title, category, priority (high/medium/low), description, suggestedAction.${feedbackContext}` },
+          { role: "user", content: `My knowledge base has ${docs.length} documents:\n${docSummary || "(empty knowledge base)"}\n\nAlready dismissed/not-applicable gap IDs to exclude: [${dismissedGapIds.join(", ")}]\nAlready resolved gap IDs to exclude: [${resolvedGapIds.join(", ")}]` },
+        ],
+        response_format: { type: "json_schema", json_schema: { name: "gaps", strict: true, schema: { type: "object", properties: { gaps: { type: "array", items: { type: "object", properties: { id: { type: "string" }, title: { type: "string" }, category: { type: "string" }, priority: { type: "string" }, description: { type: "string" }, suggestedAction: { type: "string" } }, required: ["id", "title", "category", "priority", "description", "suggestedAction"], additionalProperties: false } }, summary: { type: "string" } }, required: ["gaps", "summary"], additionalProperties: false } } },
+      });
+      const parsed = JSON.parse(response.choices[0].message.content || "{}");
+      return { gaps: parsed.gaps || [], summary: parsed.summary || "", feedbackCount: feedback.length };
+    }),
+  submitGapFeedback: protectedProcedure
+    .input(z.object({
+      gapId: z.string(),
+      gapTitle: z.string(),
+      gapCategory: z.string().optional(),
+      action: z.enum(["dismiss", "acknowledge", "resolved", "not_applicable"]),
+      userNote: z.string().optional(),
+    }))
+    .mutation(({ ctx, input }) => addGapFeedback({ userId: ctx.user.id, ...input })),
+  getGapFeedback: protectedProcedure
+    .query(({ ctx }) => getUserGapFeedback(ctx.user.id)),
+
+  // ─── BATCH URL IMPORT ──────────────────────────────────────────────
+  importFromUrls: protectedProcedure
+    .input(z.object({ urls: z.array(z.string().url()).min(1).max(20) }))
+    .mutation(async ({ ctx, input }) => {
+      const results: { url: string; success: boolean; documentId?: number; filename?: string; error?: string }[] = [];
+      for (const url of input.urls) {
+        try {
+          const response = await fetch(url, { headers: { "User-Agent": "Stewardly-KnowledgeBot/1.0" }, signal: AbortSignal.timeout(30000) });
+          if (!response.ok) { results.push({ url, success: false, error: `HTTP ${response.status}` }); continue; }
+          const contentType = response.headers.get("content-type") || "text/html";
+          const buffer = Buffer.from(await response.arrayBuffer());
+          if (buffer.length > 31 * 1024 * 1024) { results.push({ url, success: false, error: "File exceeds 31MB" }); continue; }
+          let filename = url.split("/").pop()?.split("?")[0] || "imported-page";
+          if (!filename.includes(".")) filename += contentType.includes("pdf") ? ".pdf" : ".html";
+          const fileKey = `docs/${ctx.user.id}/${nanoid()}-${filename}`;
+          const { url: fileUrl } = await storagePut(fileKey, buffer, contentType);
+          const doc = await addDocument({ userId: ctx.user.id, filename, fileUrl, fileKey, mimeType: contentType, category: "personal_docs", visibility: "private" });
+          if (!doc) { results.push({ url, success: false, error: "DB insert failed" }); continue; }
+          // Extract text and chunk
+          try {
+            const extraction = await extractDocumentText(buffer, filename, contentType);
+            const text = extraction.text;
+            if (text && text.length >= 10 && extraction.method !== "unsupported") {
+              const chunkSize = 1000; const overlap = 200; const chunks: string[] = [];
+              for (let i = 0; i < text.length; i += chunkSize - overlap) chunks.push(text.substring(i, i + chunkSize));
+              await addDocumentChunks(chunks.map((content, index) => ({ documentId: doc.id, userId: ctx.user.id, content, chunkIndex: index, category: "personal_docs" as any })));
+              await updateDocumentStatus(doc.id, "ready", text.substring(0, 5000), chunks.length);
+            } else {
+              await updateDocumentStatus(doc.id, "ready", `[${filename}: ${contentType}]`, 0);
+            }
+          } catch { await updateDocumentStatus(doc.id, "error"); }
+          results.push({ url, success: true, documentId: doc.id, filename });
+        } catch (e: any) {
+          results.push({ url, success: false, error: e.message || "Fetch failed" });
+        }
+      }
+      return { results, imported: results.filter(r => r.success).length, failed: results.filter(r => !r.success).length };
+    }),
+
+  // ─── ARCHIVE UPLOAD (ZIP/TAR/GZIP) ────────────────────────────────
+  uploadArchive: protectedProcedure
+    .input(z.object({
+      filename: z.string(),
+      content: z.string(), // base64
+      mimeType: z.string().optional(),
+      category: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const buffer = Buffer.from(input.content, "base64");
+      if (buffer.length > 100 * 1024 * 1024) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Archive exceeds 100MB limit" });
+      const results: { filename: string; success: boolean; documentId?: number; error?: string }[] = [];
+      const SUPPORTED_EXTENSIONS = [".pdf", ".doc", ".docx", ".txt", ".md", ".csv", ".xls", ".xlsx", ".json", ".html", ".htm", ".rtf", ".pptx", ".ppt", ".png", ".jpg", ".jpeg", ".gif", ".webp"];
+      try {
+        const zip = new AdmZip(buffer);
+        const entries = zip.getEntries();
+        for (const entry of entries) {
+          if (entry.isDirectory) continue;
+          const entryName = entry.entryName.split("/").pop() || entry.entryName;
+          if (entryName.startsWith(".") || entryName.startsWith("__MACOSX")) continue;
+          const ext = "." + entryName.split(".").pop()?.toLowerCase();
+          if (!SUPPORTED_EXTENSIONS.includes(ext)) { results.push({ filename: entryName, success: false, error: `Unsupported file type: ${ext}` }); continue; }
+          const fileBuffer = entry.getData();
+          if (fileBuffer.length > 31 * 1024 * 1024) { results.push({ filename: entryName, success: false, error: "File exceeds 31MB" }); continue; }
+          const mimeMap: Record<string, string> = { ".pdf": "application/pdf", ".doc": "application/msword", ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", ".txt": "text/plain", ".md": "text/markdown", ".csv": "text/csv", ".xls": "application/vnd.ms-excel", ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".json": "application/json", ".html": "text/html", ".htm": "text/html", ".rtf": "application/rtf", ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation", ".ppt": "application/vnd.ms-powerpoint", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp" };
+          const mime = mimeMap[ext] || "application/octet-stream";
+          const fileKey = `docs/${ctx.user.id}/${nanoid()}-${entryName}`;
+          try {
+            const { url: fileUrl } = await storagePut(fileKey, fileBuffer, mime);
+            const category = (input.category || "personal_docs") as any;
+            const doc = await addDocument({ userId: ctx.user.id, filename: entryName, fileUrl, fileKey, mimeType: mime, category, visibility: "private" });
+            if (!doc) { results.push({ filename: entryName, success: false, error: "DB insert failed" }); continue; }
+            try {
+              const extraction = await extractDocumentText(fileBuffer, entryName, mime);
+              const text = extraction.text;
+              if (text && text.length >= 10 && extraction.method !== "unsupported") {
+                const chunkSize = 1000; const overlap = 200; const chunks: string[] = [];
+                for (let i = 0; i < text.length; i += chunkSize - overlap) chunks.push(text.substring(i, i + chunkSize));
+                await addDocumentChunks(chunks.map((content, index) => ({ documentId: doc.id, userId: ctx.user.id, content, chunkIndex: index, category })));
+                await updateDocumentStatus(doc.id, "ready", text.substring(0, 5000), chunks.length);
+              } else {
+                await updateDocumentStatus(doc.id, "ready", `[${entryName}: binary]`, 0);
+              }
+            } catch { await updateDocumentStatus(doc.id, "error"); }
+            results.push({ filename: entryName, success: true, documentId: doc.id });
+          } catch (e: any) {
+            results.push({ filename: entryName, success: false, error: e.message });
+          }
+        }
+      } catch (e: any) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Failed to extract archive: ${e.message}` });
+      }
+      return { results, extracted: results.length, imported: results.filter(r => r.success).length, failed: results.filter(r => !r.success).length };
     }),
 });
 
