@@ -267,8 +267,8 @@ export const integrationsRouter = router({
             testUrl = `https://api.stlouisfed.org/fred/series?series_id=GDP&api_key=${apiKey}&file_type=json`;
             break;
           case "bea":
-            // BEA uses ?UserID= query param
-            testUrl = `https://apps.bea.gov/api/data?&UserID=${apiKey}&method=GETDATASETLIST&ResultFormat=JSON`;
+            // BEA uses ?UserID= query param — MUST be lowercase
+            testUrl = `https://apps.bea.gov/api/data?UserID=${apiKey.toLowerCase()}&method=GETDATASETLIST&ResultFormat=JSON`;
             break;
           case "sec-edgar":
             // SEC EDGAR is free, no key needed — just test the endpoint

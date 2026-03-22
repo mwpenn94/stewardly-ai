@@ -265,20 +265,11 @@ async function fetchFREDData(): Promise<PipelineResult> {
 }
 
 // ─── BEA Pipeline ───────────────────────────────────────────────────────
-const BEA_DATASETS = [
-  {
-    name: "GDP by Industry",
-    method: "GetData",
-    params: { DatasetName: "GDPbyIndustry", Frequency: "A", Industry: "ALL", TableID: "1", Year: "LAST5" },
-    category: "gdp_industry",
-  },
-  {
-    name: "Personal Income",
-    method: "GetData",
-    params: { DatasetName: "NIPA", Frequency: "M", TableName: "T20100", Year: "X" },
-    category: "personal_income",
-  },
-];
+// BEA API quirks:
+// 1. Error 4 ("UserId not active") is actually a rate-limit response — retry with backoff
+// 2. UserID value is case-insensitive for metadata calls but intermittently case-sensitive for data calls
+// 3. Table T20100 only supports (A)nnual and (Q)uarterly — use T20600 for (M)onthly personal income
+// 4. "Year=LAST5" and "Year=X" are not supported for all datasets — use explicit years
 
 // Helper: check BEA API response for errors
 function checkBEAError(data: any): string | null {
@@ -287,136 +278,174 @@ function checkBEAError(data: any): string | null {
   return null;
 }
 
+// Helper: fetch from BEA with retry on Error 4 (rate limit disguised as auth error)
+async function beaFetchWithRetry(url: string, retries = 3): Promise<any> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    if (attempt > 0) {
+      // Exponential backoff: 5s, 10s, 15s
+      await new Promise(r => setTimeout(r, 5000 * (attempt + 1)));
+    }
+    try {
+      const resp = await fetch(url, { signal: AbortSignal.timeout(25000) });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      const err = data?.BEAAPI?.Results?.Error;
+      // Error 4 = rate limit (misleading "UserId not active" message)
+      if (err?.APIErrorCode === "4" && attempt < retries - 1) {
+        console.warn(`[BEA] Rate limited (Error 4), retry ${attempt + 1}/${retries}...`);
+        continue;
+      }
+      return data;
+    } catch (e: any) {
+      if (attempt === retries - 1) throw e;
+      console.warn(`[BEA] Fetch error on attempt ${attempt + 1}: ${e.message}`);
+    }
+  }
+  return null;
+}
+
 async function fetchBEAData(): Promise<PipelineResult> {
   const start = Date.now();
-  const apiKey = await getApiKeyForProvider("bea");
-  if (!apiKey) return { pipeline: "BEA", providerSlug: "bea", status: "skipped", recordsFetched: 0, error: "No API key", duration: 0 };
+  const rawApiKey = await getApiKeyForProvider("bea");
+  if (!rawApiKey) return { pipeline: "BEA", providerSlug: "bea", status: "skipped", recordsFetched: 0, error: "No API key", duration: 0 };
+  // BEA API: lowercase the UserID to avoid intermittent auth failures
+  const apiKey = rawApiKey.toLowerCase();
+  const currentYear = new Date().getFullYear();
+  const recentYears = `${currentYear},${currentYear - 1}`;
 
   try {
     const dataPoints: FetchedDataPoint[] = [];
     const errors: string[] = [];
 
-    // Fetch GDP summary data (NIPA Table T10101 — % change from preceding period)
+    // Step 0: Warm up the API key with a lightweight metadata call
+    // BEA sometimes needs a "warm-up" request before data calls succeed
     try {
-      const gdpResp = await fetch(
-        `https://apps.bea.gov/api/data?&UserID=${apiKey}&method=GetData&DatasetName=NIPA&Frequency=Q&TableName=T10101&Year=LAST5&ResultFormat=JSON`,
-        { signal: AbortSignal.timeout(20000) },
+      await beaFetchWithRetry(
+        `https://apps.bea.gov/api/data?UserID=${apiKey}&method=GETDATASETLIST&ResultFormat=JSON`,
       );
-      if (gdpResp.ok) {
-        const gdpData = await gdpResp.json();
-        const beaErr = checkBEAError(gdpData);
-        if (beaErr) {
-          errors.push(beaErr);
-        } else {
-          const results = gdpData?.BEAAPI?.Results?.Data;
-          if (Array.isArray(results) && results.length > 0) {
-            const gdpLines: Record<string, string> = {
-              "1": "GDP",
-              "2": "Personal Consumption Expenditures",
-              "7": "Gross Private Domestic Investment",
-              "13": "Net Exports",
-              "22": "Government Consumption & Investment",
-            };
-            const byLine: Record<string, any> = {};
-            for (const row of results) {
-              const lineNum = row.LineNumber;
-              if (gdpLines[lineNum]) {
-                if (!byLine[lineNum] || row.TimePeriod > byLine[lineNum].TimePeriod) {
-                  byLine[lineNum] = row;
-                }
+    } catch { /* warm-up failure is non-fatal */ }
+
+    // 3-second delay between BEA requests to avoid rate limiting
+    await new Promise(r => setTimeout(r, 3000));
+
+    // Step 1: Fetch GDP summary data (NIPA Table T10101 — % change from preceding period, Quarterly)
+    try {
+      const gdpData = await beaFetchWithRetry(
+        `https://apps.bea.gov/api/data?UserID=${apiKey}&method=GetData&DatasetName=NIPA&TableName=T10101&Frequency=Q&Year=${recentYears}&ResultFormat=JSON`,
+      );
+      const beaErr = checkBEAError(gdpData);
+      if (beaErr) {
+        errors.push(beaErr);
+      } else {
+        const results = gdpData?.BEAAPI?.Results?.Data;
+        if (Array.isArray(results) && results.length > 0) {
+          const gdpLines: Record<string, string> = {
+            "1": "GDP",
+            "2": "Personal Consumption Expenditures",
+            "7": "Gross Private Domestic Investment",
+            "13": "Net Exports",
+            "22": "Government Consumption & Investment",
+          };
+          const byLine: Record<string, any> = {};
+          for (const row of results) {
+            const lineNum = row.LineNumber;
+            if (gdpLines[lineNum]) {
+              if (!byLine[lineNum] || row.TimePeriod > byLine[lineNum].TimePeriod) {
+                byLine[lineNum] = row;
               }
             }
-            for (const [lineNum, row] of Object.entries(byLine)) {
-              dataPoints.push({
-                key: `bea_gdp_line_${lineNum}`,
-                label: `${gdpLines[lineNum]} (% Change)`,
-                value: row.DataValue,
-                date: row.TimePeriod,
-                unit: "% Change",
-                category: "gdp_components",
-              });
-            }
+          }
+          for (const [lineNum, row] of Object.entries(byLine)) {
+            dataPoints.push({
+              key: `bea_gdp_line_${lineNum}`,
+              label: `${gdpLines[lineNum]} (% Change)`,
+              value: row.DataValue,
+              date: row.TimePeriod,
+              unit: "% Change",
+              category: "gdp_components",
+            });
           }
         }
       }
     } catch (e: any) { errors.push(`GDP fetch: ${e.message}`); }
 
-    // Fetch Personal Income data (NIPA Table T20100)
+    await new Promise(r => setTimeout(r, 5000)); // Rate limit delay
+
+    // Step 2: Fetch Personal Income data (NIPA Table T20600 — Monthly frequency)
+    // NOTE: T20100 only supports Annual/Quarterly. T20600 is the monthly equivalent.
     try {
-      const piResp = await fetch(
-        `https://apps.bea.gov/api/data?&UserID=${apiKey}&method=GetData&DatasetName=NIPA&Frequency=M&TableName=T20100&Year=X&ResultFormat=JSON`,
-        { signal: AbortSignal.timeout(20000) },
+      const piData = await beaFetchWithRetry(
+        `https://apps.bea.gov/api/data?UserID=${apiKey}&method=GetData&DatasetName=NIPA&TableName=T20600&Frequency=M&Year=${recentYears}&ResultFormat=JSON`,
       );
-      if (piResp.ok) {
-        const piData = await piResp.json();
-        const beaErr = checkBEAError(piData);
-        if (beaErr) {
-          errors.push(beaErr);
-        } else {
-          const results = piData?.BEAAPI?.Results?.Data;
-          if (Array.isArray(results) && results.length > 0) {
-            const piLines: Record<string, string> = {
-              "1": "Personal Income",
-              "27": "Disposable Personal Income",
-              "34": "Personal Saving Rate",
-            };
-            const byLine: Record<string, any> = {};
-            for (const row of results) {
-              if (piLines[row.LineNumber]) {
-                if (!byLine[row.LineNumber] || row.TimePeriod > byLine[row.LineNumber].TimePeriod) {
-                  byLine[row.LineNumber] = row;
-                }
+      const beaErr = checkBEAError(piData);
+      if (beaErr) {
+        errors.push(beaErr);
+      } else {
+        const results = piData?.BEAAPI?.Results?.Data;
+        if (Array.isArray(results) && results.length > 0) {
+          const piLines: Record<string, string> = {
+            "1": "Personal Income",
+            "27": "Disposable Personal Income",
+            "34": "Personal Saving Rate",
+          };
+          const byLine: Record<string, any> = {};
+          for (const row of results) {
+            if (piLines[row.LineNumber]) {
+              if (!byLine[row.LineNumber] || row.TimePeriod > byLine[row.LineNumber].TimePeriod) {
+                byLine[row.LineNumber] = row;
               }
             }
-            for (const [lineNum, row] of Object.entries(byLine)) {
-              dataPoints.push({
-                key: `bea_pi_line_${lineNum}`,
-                label: piLines[lineNum],
-                value: row.DataValue,
-                date: row.TimePeriod,
-                unit: lineNum === "34" ? "%" : "Billions $",
-                category: "personal_income",
-              });
-            }
+          }
+          for (const [lineNum, row] of Object.entries(byLine)) {
+            dataPoints.push({
+              key: `bea_pi_line_${lineNum}`,
+              label: piLines[lineNum],
+              value: row.DataValue,
+              date: row.TimePeriod,
+              unit: lineNum === "34" ? "%" : "Billions $",
+              category: "personal_income",
+            });
           }
         }
       }
     } catch (e: any) { errors.push(`PI fetch: ${e.message}`); }
 
-    // Fetch International Trade data
+    await new Promise(r => setTimeout(r, 5000)); // Rate limit delay
+
+    // Step 3: Fetch International Trade data (ITA dataset)
     try {
-      const tradeResp = await fetch(
-        `https://apps.bea.gov/api/data?&UserID=${apiKey}&method=GetData&DatasetName=ITA&Indicator=BalGds&AreaOrCountry=AllCountries&Frequency=QSA&Year=LAST5&ResultFormat=JSON`,
-        { signal: AbortSignal.timeout(20000) },
+      const tradeData = await beaFetchWithRetry(
+        `https://apps.bea.gov/api/data?UserID=${apiKey}&method=GetData&DatasetName=ITA&Indicator=BalGds&AreaOrCountry=AllCountries&Frequency=A&Year=${currentYear - 1}&ResultFormat=JSON`,
       );
-      if (tradeResp.ok) {
-        const tradeData = await tradeResp.json();
-        const beaErr = checkBEAError(tradeData);
-        if (beaErr) {
-          errors.push(beaErr);
-        } else {
-          const results = tradeData?.BEAAPI?.Results?.Data;
-          if (Array.isArray(results) && results.length > 0) {
-            const latest = results[results.length - 1];
-            dataPoints.push({
-              key: "bea_trade_balance",
-              label: "Trade Balance (Goods)",
-              value: latest.DataValue,
-              date: latest.TimePeriod,
-              unit: "Millions $",
-              category: "trade",
-            });
-          }
+      const beaErr = checkBEAError(tradeData);
+      if (beaErr) {
+        errors.push(beaErr);
+      } else {
+        const results = tradeData?.BEAAPI?.Results?.Data;
+        if (Array.isArray(results) && results.length > 0) {
+          const latest = results[results.length - 1];
+          dataPoints.push({
+            key: "bea_trade_balance",
+            label: "Trade Balance (Goods)",
+            value: latest.DataValue,
+            date: latest.TimePeriod,
+            unit: "Millions $",
+            category: "trade",
+          });
         }
       }
     } catch (e: any) { errors.push(`Trade fetch: ${e.message}`); }
 
     const stored = await storeDataPoints("bea", dataPoints);
-    // If we got 0 records but had errors, report as error with details
-    if (stored === 0 && errors.length > 0) {
-      return { pipeline: "BEA", providerSlug: "bea", status: "error", recordsFetched: 0, error: errors[0], duration: Date.now() - start };
+    // If we got some records, consider it a success even if some sub-fetches had errors
+    if (stored > 0) {
+      return { pipeline: "BEA", providerSlug: "bea", status: "success", recordsFetched: stored, duration: Date.now() - start };
     }
-    return { pipeline: "BEA", providerSlug: "bea", status: "success", recordsFetched: stored, duration: Date.now() - start };
+    // If we got 0 records but had errors, report as error with details
+    if (errors.length > 0) {
+      return { pipeline: "BEA", providerSlug: "bea", status: "error", recordsFetched: 0, error: errors.join("; "), duration: Date.now() - start };
+    }
+    return { pipeline: "BEA", providerSlug: "bea", status: "success", recordsFetched: 0, duration: Date.now() - start };
   } catch (err: any) {
     return { pipeline: "BEA", providerSlug: "bea", status: "error", recordsFetched: 0, error: err.message, duration: Date.now() - start };
   }

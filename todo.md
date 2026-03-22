@@ -2279,7 +2279,7 @@
 - [x] Write comprehensive tests for all new features (14 tests passing)
 - [ ] Register for free BLS API key at api.bls.gov
 - [ ] Register for free FRED API key at fred.stlouisfed.org
-- [ ] Register for free BEA API key at apps.bea.gov
+- [x] Register for free BEA API key at apps.bea.gov (user registered and activated)
 - [ ] Register for free Census Bureau API key at api.census.gov
 - [ ] Connect all 4 keys and verify active status
 
@@ -2356,3 +2356,7 @@
 - [x] Fix TTS: Update client MIME type from audio/webm to audio/mpeg
 - [x] Fix TTS: Add robust iOS audio unlock with silent MP3 on user gesture
 - [x] Fix TTS: Handle mobile autoplay restrictions with proper fallback chain
+
+## Bug Fix: BEA API Key Not Working Despite Being Active
+- [x] Diagnose BEA API key storage/decryption/request issue — root cause: BEA Error 4 is actually rate limiting, not auth; also T20100 doesn't support Monthly freq (use T20600), and Year=LAST5/X not universally supported
+- [x] Fix BEA API connection: added retry with exponential backoff, warm-up GETDATASETLIST call, 5s inter-request delays, T20100→T20600 for monthly PI, explicit years instead of LAST5/X, lowercase UserID

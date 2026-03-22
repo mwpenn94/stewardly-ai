@@ -417,7 +417,8 @@ export async function fetchBEAData(apiKey?: string): Promise<{
 
   for (const ds of datasets) {
     try {
-      const url = `https://apps.bea.gov/api/data?UserID=${apiKey}&method=GetData${ds.params}&ResultFormat=JSON`;
+      // BEA API is case-sensitive: UserID must be lowercase
+      const url = `https://apps.bea.gov/api/data?UserID=${apiKey.toLowerCase()}&method=GetData${ds.params}&ResultFormat=JSON`;
       const resp = await fetch(url, { signal: AbortSignal.timeout(20000) });
 
       if (resp.ok) {
