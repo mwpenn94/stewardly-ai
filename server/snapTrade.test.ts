@@ -132,11 +132,11 @@ describe("SnapTrade Architecture", () => {
       vi.clearAllMocks();
     });
 
-    it("should return false when no SnapTrade connection exists", async () => {
-      mockDb.where.mockResolvedValueOnce([]);
+    it("should return true when ENV vars are configured", async () => {
+      // ENV vars SNAPTRADE_CLIENT_ID and SNAPTRADE_CONSUMER_KEY are set
       const st = await import("./services/snapTrade");
       const result = await st.isPlatformConfigured();
-      expect(result).toBe(false);
+      expect(result).toBe(true);
     });
   });
 

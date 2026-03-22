@@ -5,6 +5,7 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerGuestSessionRoutes } from "./guestSession";
+import { registerSocialAuthRoutes } from "../services/socialOAuth";
 import { registerWebhookRoutes } from "../routers/webhookIngestion";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -43,6 +44,8 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Guest session auto-provisioning
   registerGuestSessionRoutes(app);
+  // Social OAuth (Google + LinkedIn)
+  registerSocialAuthRoutes(app);
   // Public webhook ingestion endpoints
   registerWebhookRoutes(app);
   // tRPC API

@@ -19,6 +19,7 @@ import {
 } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { encrypt, decrypt } from "./encryption";
+import { ENV } from "../_core/env";
 import crypto from "crypto";
 
 const uuid = () => crypto.randomUUID();
@@ -27,17 +28,21 @@ const uuid = () => crypto.randomUUID();
 let _snaptradeClient: Snaptrade | null = null;
 
 /**
- * Get the platform-level SnapTrade clientId + consumerKey from the integration_connections table.
- * These are stored as an encrypted credentials blob on the "snaptrade" provider connection.
+ * Get the platform-level SnapTrade clientId + consumerKey.
+ * Priority: ENV vars > integration_connections table (DB fallback).
  */
 async function getPlatformCredentials(): Promise<{ clientId: string; consumerKey: string } | null> {
+  // 1. Check ENV vars first (set via webdev_request_secrets)
+  if (ENV.snapTradeClientId && ENV.snapTradeConsumerKey) {
+    return { clientId: ENV.snapTradeClientId, consumerKey: ENV.snapTradeConsumerKey };
+  }
+
+  // 2. Fallback: check DB integration_connections
   const db = (await getDb())!;
-  // Find the snaptrade provider
   const providers = await db.select().from(integrationProviders)
     .where(eq(integrationProviders.slug, "snaptrade"));
   if (!providers.length) return null;
 
-  // Find any connection for this provider that has credentials
   const connections = await db.select().from(integrationConnections)
     .where(eq(integrationConnections.providerId, providers[0].id));
 

@@ -2389,3 +2389,54 @@
 - [x] Generate OG image (1200x630) with Stewardly logo, name, and tagline
 - [x] Add og:title, og:description, og:image, og:url, og:type meta tags to index.html
 - [x] Add Twitter Card meta tags for Twitter/X sharing
+
+## Google & LinkedIn OAuth Integrations
+- [x] Store Google OAuth client ID and secret as env secrets
+- [x] Store LinkedIn OAuth client ID and secret as env secrets
+- [x] Implement Google OAuth login flow (backend callback + token exchange + People API enrichment)
+- [x] Implement LinkedIn OAuth login flow (backend callback + token exchange + user upsert)
+- [x] Link social logins to existing user accounts or create new accounts (openId = google_sub / linkedin_sub)
+- [x] Add social login buttons to the login/home page (Google + LinkedIn with SVG icons)
+- [x] Store SnapTrade credentials as env secrets (SNAPTRADE_CLIENT_ID + SNAPTRADE_CONSUMER_KEY)
+
+## Professional Verification & COI Network Integrations (v13→v15)
+### Phase 1: Verification Infrastructure
+- [ ] Create professional_verifications table
+- [ ] Create coi_verification_badges table
+- [ ] Create verification_schedules table
+- [ ] Create professionalVerification router with 5 tRPC procedures
+- [ ] Create verificationProviders service with abstract interface and rate limiter
+### Phase 2: Free Verification Providers
+- [ ] SEC IAPD / Form ADV verification provider
+- [ ] CFP Board verification provider
+- [ ] NASBA CPAverify provider
+- [ ] NMLS Consumer Access provider
+- [ ] State Bar directory aggregator (10 states)
+- [ ] SOFR rate pipeline via FRED + premium_finance_rates table
+### Phase 3: Subscription/Partnership Providers
+- [ ] NIPR PDB integration (with manual fallback)
+- [ ] Martindale-Hubbell / Avvo ratings provider
+- [ ] IBBA / BizBuySell business broker verification
+### Phase 4: CRM Bidirectional Sync
+- [ ] Wealthbox CRM integration with pull/push sync
+- [ ] Redtail CRM integration
+- [ ] Shared CRM adapter abstraction layer
+- [ ] CRM sync log table and field mapping table
+### Phase 5: Enrichment Waterfall
+- [ ] Clearbit / Breeze Intelligence fallback enrichment
+- [ ] FullContact identity resolution
+- [ ] Enrichment orchestrator with waterfall logic
+### Phase 6: n8n Workflow Templates
+- [ ] New Professional Auto-Verify workflow + webhook endpoints
+- [ ] COI Referral Verification workflow + webhook endpoints
+### Phase 7: UI Integration
+- [ ] Verification badges on Professional Directory and COI cards
+- [ ] Premium Finance rate dashboard with SOFR sparkline
+- [ ] CRM sync status panel on Integrations page
+### Phase 8: Tests
+- [ ] 99+ new tests across all verification, CRM, enrichment, and workflow modules
+
+## File Upload Fix
+- [ ] Diagnose why file uploads are failing
+- [ ] Increase upload size limit to at least 31MB
+- [ ] Fix file upload pipeline end-to-end
