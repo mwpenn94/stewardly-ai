@@ -16,9 +16,26 @@ import {
   GraduationCap, FileCode, ScrollText, FolderOpen,
   Eye, Shield, Users, Lock, Search, X, MoreHorizontal,
   Pencil, FolderInput, ShieldCheck, CheckSquare, XSquare,
-  CloudUpload, FileUp, Filter,
+  CloudUpload, FileUp, Filter, GripVertical, Zap,
 } from "lucide-react";
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // ─── Constants ───────────────────────────────────────────────────
 const STATUS_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
@@ -47,7 +64,239 @@ const CATEGORIES = [
 type CategoryValue = typeof CATEGORIES[number]["value"];
 type VisibilityValue = typeof VISIBILITY_OPTIONS[number]["value"];
 
-// ─── Component ───────────────────────────────────────────────────
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+function isRecentlyAdded(createdAt: string | Date): boolean {
+  const created = typeof createdAt === "string" ? new Date(createdAt) : createdAt;
+  return Date.now() - created.getTime() < SEVEN_DAYS_MS;
+}
+
+// ─── Sortable Document Row ──────────────────────────────────────
+function SortableDocRow({
+  doc, selectMode, isSelected, isRenaming, renameValue, renameInputRef,
+  onToggleSelect, onStartRename, onRenameChange, onSubmitRename, onCancelRename,
+  onViewDetails, onUpdateVis, onUpdateCat, onDelete, visIcon, visLabel, catMeta,
+}: any) {
+  const {
+    attributes, listeners, setNodeRef, transform, transition, isDragging,
+  } = useSortable({ id: doc.id, disabled: selectMode });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  const status = STATUS_MAP[doc.status] || STATUS_MAP.error;
+  const recent = isRecentlyAdded(doc.createdAt);
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`bg-card border transition-all ${
+        isSelected ? "border-accent/50 bg-accent/5" : recent ? "border-emerald-500/20 bg-emerald-500/[0.02]" : "border-border hover:border-border/80"
+      } ${isDragging ? "shadow-lg" : ""}`}
+    >
+      <CardContent className="flex items-center gap-2 py-2.5 px-3">
+        {/* Drag handle */}
+        {!selectMode && (
+          <button
+            className="shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground touch-none"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Checkbox (select mode) */}
+        {selectMode && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(doc.id)}
+            className="shrink-0"
+          />
+        )}
+
+        {/* File icon */}
+        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+          <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+        </div>
+
+        {/* Name + metadata */}
+        <div className="flex-1 min-w-0">
+          {isRenaming ? (
+            <div className="flex items-center gap-1.5">
+              <Input
+                ref={renameInputRef}
+                value={renameValue}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onRenameChange(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === "Enter") onSubmitRename();
+                  if (e.key === "Escape") onCancelRename();
+                }}
+                onBlur={onSubmitRename}
+                className="h-7 text-sm py-0"
+                autoFocus
+              />
+            </div>
+          ) : (
+            <p
+              className="text-sm font-medium truncate cursor-default"
+              onDoubleClick={() => onStartRename(doc)}
+              title="Double-click to rename"
+            >
+              {doc.filename}
+            </p>
+          )}
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className={`inline-flex items-center gap-1 text-[10px] ${status.color}`}>
+              {status.icon} {status.label}
+            </span>
+            {doc.chunkCount > 0 && (
+              <span className="text-[10px] text-muted-foreground">
+                {doc.chunkCount} chunks
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+              {visIcon(doc.visibility || "professional")} {visLabel(doc.visibility || "professional")}
+            </span>
+            {recent && (
+              <Badge variant="secondary" className="text-[9px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20 gap-0.5 py-0">
+                <Zap className="w-2.5 h-2.5" /> New
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={() => onStartRename(doc)}>
+                <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onViewDetails(doc)}>
+                <FileText className="w-3.5 h-3.5 mr-2" /> View Details
+              </DropdownMenuItem>
+              {doc.fileUrl && (
+                <DropdownMenuItem onClick={() => window.open(doc.fileUrl, "_blank")}>
+                  <FileUp className="w-3.5 h-3.5 mr-2" /> Download Original
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <ShieldCheck className="w-3.5 h-3.5 mr-2" /> Visibility
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {VISIBILITY_OPTIONS.map(v => (
+                    <DropdownMenuItem key={v.value} onClick={() => onUpdateVis(doc.id, v.value)}>
+                      <span className="flex items-center gap-2 text-xs">
+                        {v.icon} {v.label}
+                        {doc.visibility === v.value && <CheckCircle className="w-3 h-3 text-accent ml-auto" />}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <FolderInput className="w-3.5 h-3.5 mr-2" /> Move to
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {CATEGORIES.map(c => (
+                    <DropdownMenuItem key={c.value} onClick={() => onUpdateCat(doc.id, c.value)}>
+                      <span className="flex items-center gap-2 text-xs">
+                        {c.icon} {c.shortLabel}
+                        {doc.category === c.value && <CheckCircle className="w-3 h-3 text-accent ml-auto" />}
+                      </span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(doc.id)}>
+                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Sortable Category Group ────────────────────────────────────
+function SortableCategoryGroup({
+  cat, catDocs, catMeta: catMetaFn, selectMode, selectedIds, renamingId, renameValue, renameInputRef,
+  onToggleSelect, onStartRename, onRenameChange, onSubmitRename, onCancelRename,
+  onViewDetails, onUpdateVis, onUpdateCat, onDelete, onDragEnd,
+  visIcon: visIconFn, visLabel: visLabelFn,
+}: any) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const cm = catMetaFn(cat);
+  const sortedDocs = [...catDocs].sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  const ids = sortedDocs.map((d: any) => d.id);
+  const recentCount = sortedDocs.filter((d: any) => isRecentlyAdded(d.createdAt)).length;
+
+  return (
+    <div>
+      <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <span className="text-accent">{cm?.icon}</span>
+        {cm?.label || cat.replace(/_/g, " ")}
+        <Badge variant="secondary" className="text-[9px] ml-1">{catDocs.length}</Badge>
+        {recentCount > 0 && (
+          <Badge variant="secondary" className="text-[9px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20 gap-0.5">
+            <Zap className="w-2 h-2" /> {recentCount} new
+          </Badge>
+        )}
+      </h3>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => onDragEnd(e, cat, sortedDocs)}>
+        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+          <div className="space-y-1.5">
+            {sortedDocs.map((doc: any) => (
+              <SortableDocRow
+                key={doc.id}
+                doc={doc}
+                selectMode={selectMode}
+                isSelected={selectedIds.has(doc.id)}
+                isRenaming={renamingId === doc.id}
+                renameValue={renameValue}
+                renameInputRef={renameInputRef}
+                onToggleSelect={onToggleSelect}
+                onStartRename={onStartRename}
+                onRenameChange={onRenameChange}
+                onSubmitRename={onSubmitRename}
+                onCancelRename={onCancelRename}
+                onViewDetails={onViewDetails}
+                onUpdateVis={onUpdateVis}
+                onUpdateCat={onUpdateCat}
+                onDelete={onDelete}
+                visIcon={visIconFn}
+                visLabel={visLabelFn}
+                catMeta={catMetaFn}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+    </div>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────
 export default function Documents() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
@@ -69,6 +318,7 @@ export default function Documents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterRecent, setFilterRecent] = useState(false);
 
   // Inline rename state
   const [renamingId, setRenamingId] = useState<number | null>(null);
@@ -100,6 +350,10 @@ export default function Documents() {
   const updateCat = trpc.documents.updateCategory.useMutation({
     onSuccess: () => { utils.documents.list.invalidate(); toast.success("Category updated"); },
   });
+  const reorderMut = trpc.documents.reorder.useMutation({
+    onSuccess: () => { utils.documents.list.invalidate(); },
+    onError: () => toast.error("Failed to save order"),
+  });
   const bulkDeleteMut = trpc.documents.bulkDelete.useMutation({
     onSuccess: (r) => {
       utils.documents.list.invalidate();
@@ -127,6 +381,10 @@ export default function Documents() {
   });
 
   // ─── Filtered documents ──────────────────────────────────────
+  const recentCount = useMemo(() => {
+    return (docs.data || []).filter((d: any) => isRecentlyAdded(d.createdAt)).length;
+  }, [docs.data]);
+
   const filteredDocs = useMemo(() => {
     let result = docs.data || [];
     if (searchQuery.trim()) {
@@ -139,8 +397,11 @@ export default function Documents() {
     if (filterStatus !== "all") {
       result = result.filter((d: any) => d.status === filterStatus);
     }
+    if (filterRecent) {
+      result = result.filter((d: any) => isRecentlyAdded(d.createdAt));
+    }
     return result;
-  }, [docs.data, searchQuery, filterCategory, filterStatus]);
+  }, [docs.data, searchQuery, filterCategory, filterStatus, filterRecent]);
 
   const docsByCategory = useMemo(() => {
     return filteredDocs.reduce((acc: Record<string, any[]>, doc: any) => {
@@ -216,7 +477,6 @@ export default function Documents() {
     setDragOver(false);
     if (e.dataTransfer.files.length > 0) {
       setShowUploadDialog(true);
-      // Small delay to let dialog render
       setTimeout(() => processFiles(e.dataTransfer.files), 100);
     }
   }, [processFiles]);
@@ -252,22 +512,36 @@ export default function Documents() {
     }
   };
 
-  // Focus rename input when it appears
   useEffect(() => {
     if (renamingId) renameInputRef.current?.select();
   }, [renamingId]);
 
-  const visIcon = (v: string) => {
+  const handleDragEnd = useCallback((event: DragEndEvent, _cat: string, sortedDocs: any[]) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sortedDocs.findIndex((d: any) => d.id === active.id);
+    const newIndex = sortedDocs.findIndex((d: any) => d.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(sortedDocs, oldIndex, newIndex);
+    const updates = reordered.map((doc: any, idx: number) => ({ id: doc.id, sortOrder: idx }));
+    reorderMut.mutate({ updates });
+    toast.success("Order saved — AI will prioritize higher-ranked documents");
+  }, [reorderMut]);
+
+  const visIconFn = (v: string) => {
     if (v === "private") return <Lock className="w-3 h-3 text-muted-foreground" />;
     if (v === "professional") return <Users className="w-3 h-3 text-blue-400" />;
     if (v === "management") return <Shield className="w-3 h-3 text-amber-400" />;
     return <Eye className="w-3 h-3 text-emerald-400" />;
   };
 
-  const visLabel = (v: string) => VISIBILITY_OPTIONS.find(o => o.value === v)?.label || v;
-  const catMeta = (v: string) => CATEGORIES.find(c => c.value === v);
+  const visLabelFn = (v: string) => VISIBILITY_OPTIONS.find(o => o.value === v)?.label || v;
+  const catMetaFn = (v: string) => CATEGORIES.find(c => c.value === v);
 
   const isBulkLoading = bulkDeleteMut.isPending || bulkVisMut.isPending || bulkCatMut.isPending;
+  const hasActiveFilters = searchQuery || filterCategory !== "all" || filterStatus !== "all" || filterRecent;
 
   // ─── Render ──────────────────────────────────────────────────
   return (
@@ -325,68 +599,43 @@ export default function Documents() {
         </div>
       </div>
 
-      {/* Bulk actions toolbar — appears when items selected */}
+      {/* Bulk actions toolbar */}
       {selectMode && hasSelection && (
         <div className="sticky top-14 z-40 border-b border-accent/20 bg-accent/5 backdrop-blur-sm">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 h-12 flex items-center gap-3">
-            <Checkbox
-              checked={allFilteredSelected}
-              onCheckedChange={toggleSelectAll}
-              className="mr-1"
-            />
-            <span className="text-xs font-medium text-accent">
-              {selectedIds.size} selected
-            </span>
+            <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAll} className="mr-1" />
+            <span className="text-xs font-medium text-accent">{selectedIds.size} selected</span>
             <div className="flex items-center gap-1.5 ml-auto">
-              {/* Bulk visibility */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="text-xs h-8 gap-1" disabled={isBulkLoading}>
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Visibility
+                    <ShieldCheck className="w-3.5 h-3.5" /> Visibility
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {VISIBILITY_OPTIONS.map(v => (
-                    <DropdownMenuItem
-                      key={v.value}
-                      onClick={() => bulkVisMut.mutate({ ids: Array.from(selectedIds), visibility: v.value as any })}
-                    >
-                      <span className="flex items-center gap-2 text-xs">
-                        {v.icon} {v.label}
-                        <span className="text-muted-foreground">— {v.desc}</span>
-                      </span>
+                    <DropdownMenuItem key={v.value} onClick={() => bulkVisMut.mutate({ ids: Array.from(selectedIds), visibility: v.value as any })}>
+                      <span className="flex items-center gap-2 text-xs">{v.icon} {v.label} <span className="text-muted-foreground">— {v.desc}</span></span>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {/* Bulk move to category */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="text-xs h-8 gap-1" disabled={isBulkLoading}>
-                    <FolderInput className="w-3.5 h-3.5" />
-                    Move
+                    <FolderInput className="w-3.5 h-3.5" /> Move
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {CATEGORIES.map(c => (
-                    <DropdownMenuItem
-                      key={c.value}
-                      onClick={() => bulkCatMut.mutate({ ids: Array.from(selectedIds), category: c.value as any })}
-                    >
-                      <span className="flex items-center gap-2 text-xs">
-                        {c.icon} {c.shortLabel}
-                      </span>
+                    <DropdownMenuItem key={c.value} onClick={() => bulkCatMut.mutate({ ids: Array.from(selectedIds), category: c.value as any })}>
+                      <span className="flex items-center gap-2 text-xs">{c.icon} {c.shortLabel}</span>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {/* Bulk delete */}
               <Button
-                variant="outline"
-                size="sm"
+                variant="outline" size="sm"
                 className="text-xs h-8 gap-1 text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10"
                 disabled={isBulkLoading}
                 onClick={() => setShowBulkDeleteConfirm(true)}
@@ -394,14 +643,7 @@ export default function Documents() {
                 {bulkDeleteMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                 Delete
               </Button>
-
-              {/* Clear selection */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs h-8 gap-1"
-                onClick={() => { setSelectedIds(new Set()); }}
-              >
+              <Button variant="ghost" size="sm" className="text-xs h-8 gap-1" onClick={() => setSelectedIds(new Set())}>
                 <XSquare className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -452,12 +694,25 @@ export default function Documents() {
                 <SelectItem value="error">Error</SelectItem>
               </SelectContent>
             </Select>
-            {(searchQuery || filterCategory !== "all" || filterStatus !== "all") && (
+            {/* Recently Added toggle */}
+            <Button
+              variant={filterRecent ? "default" : "outline"}
+              size="sm"
+              className={`text-xs h-9 gap-1.5 ${filterRecent ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
+              onClick={() => setFilterRecent(!filterRecent)}
+            >
+              <Zap className="w-3 h-3" />
+              Recent
+              {recentCount > 0 && (
+                <Badge variant="secondary" className={`text-[9px] ml-0.5 ${filterRecent ? "bg-white/20 text-white" : "bg-emerald-500/10 text-emerald-400"}`}>
+                  {recentCount}
+                </Badge>
+              )}
+            </Button>
+            {hasActiveFilters && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs h-9"
-                onClick={() => { setSearchQuery(""); setFilterCategory("all"); setFilterStatus("all"); }}
+                variant="ghost" size="sm" className="text-xs h-9"
+                onClick={() => { setSearchQuery(""); setFilterCategory("all"); setFilterStatus("all"); setFilterRecent(false); }}
               >
                 Clear filters
               </Button>
@@ -466,6 +721,7 @@ export default function Documents() {
           {filteredDocs.length !== totalDocs && (
             <p className="text-[10px] text-muted-foreground mt-1.5">
               Showing {filteredDocs.length} of {totalDocs} files
+              {filterRecent && " (last 7 days)"}
             </p>
           )}
         </div>
@@ -474,175 +730,36 @@ export default function Documents() {
       {/* Document list */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-5">
         {filteredDocs.length > 0 ? (
-          Object.entries(docsByCategory).map(([cat, catDocs]) => {
-            const cm = catMeta(cat);
-            return (
-              <div key={cat}>
-                <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <span className="text-accent">{cm?.icon}</span>
-                  {cm?.label || cat.replace(/_/g, " ")}
-                  <Badge variant="secondary" className="text-[9px] ml-1">{catDocs.length}</Badge>
-                </h3>
-                <div className="space-y-1.5">
-                  {catDocs.map((doc: any) => {
-                    const status = STATUS_MAP[doc.status] || STATUS_MAP.error;
-                    const isSelected = selectedIds.has(doc.id);
-                    const isRenaming = renamingId === doc.id;
-                    return (
-                      <Card
-                        key={doc.id}
-                        className={`bg-card border transition-all ${
-                          isSelected ? "border-accent/50 bg-accent/5" : "border-border hover:border-border/80"
-                        }`}
-                      >
-                        <CardContent className="flex items-center gap-3 py-2.5 px-3">
-                          {/* Checkbox (select mode) */}
-                          {selectMode && (
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => toggleSelect(doc.id)}
-                              className="shrink-0"
-                            />
-                          )}
-
-                          {/* File icon */}
-                          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                            <FileText className="w-3.5 h-3.5 text-muted-foreground" />
-                          </div>
-
-                          {/* Name + metadata */}
-                          <div className="flex-1 min-w-0">
-                            {isRenaming ? (
-                              <div className="flex items-center gap-1.5">
-                                <Input
-                                  ref={renameInputRef}
-                                  value={renameValue}
-                                  onChange={(e) => setRenameValue(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter") submitRename();
-                                    if (e.key === "Escape") setRenamingId(null);
-                                  }}
-                                  onBlur={submitRename}
-                                  className="h-7 text-sm py-0"
-                                  autoFocus
-                                />
-                              </div>
-                            ) : (
-                              <p
-                                className="text-sm font-medium truncate cursor-default"
-                                onDoubleClick={() => startRename(doc)}
-                                title="Double-click to rename"
-                              >
-                                {doc.filename}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className={`inline-flex items-center gap-1 text-[10px] ${status.color}`}>
-                                {status.icon} {status.label}
-                              </span>
-                              {doc.chunkCount > 0 && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  {doc.chunkCount} chunks
-                                </span>
-                              )}
-                              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                                {visIcon(doc.visibility || "professional")} {visLabel(doc.visibility || "professional")}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex items-center gap-0.5 shrink-0">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-52">
-                                {/* Rename */}
-                                <DropdownMenuItem onClick={() => startRename(doc)}>
-                                  <Pencil className="w-3.5 h-3.5 mr-2" /> Rename
-                                </DropdownMenuItem>
-
-                                {/* View details */}
-                                <DropdownMenuItem onClick={() => setSelectedDoc(doc)}>
-                                  <FileText className="w-3.5 h-3.5 mr-2" /> View Details
-                                </DropdownMenuItem>
-
-                                {doc.fileUrl && (
-                                  <DropdownMenuItem onClick={() => window.open(doc.fileUrl, "_blank")}>
-                                    <FileUp className="w-3.5 h-3.5 mr-2" /> Download Original
-                                  </DropdownMenuItem>
-                                )}
-
-                                <DropdownMenuSeparator />
-
-                                {/* Change visibility */}
-                                <DropdownMenuSub>
-                                  <DropdownMenuSubTrigger>
-                                    <ShieldCheck className="w-3.5 h-3.5 mr-2" /> Visibility
-                                  </DropdownMenuSubTrigger>
-                                  <DropdownMenuSubContent>
-                                    {VISIBILITY_OPTIONS.map(v => (
-                                      <DropdownMenuItem
-                                        key={v.value}
-                                        onClick={() => updateVis.mutate({ id: doc.id, visibility: v.value as any })}
-                                      >
-                                        <span className="flex items-center gap-2 text-xs">
-                                          {v.icon} {v.label}
-                                          {doc.visibility === v.value && <CheckCircle className="w-3 h-3 text-accent ml-auto" />}
-                                        </span>
-                                      </DropdownMenuItem>
-                                    ))}
-                                  </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-
-                                {/* Change category */}
-                                <DropdownMenuSub>
-                                  <DropdownMenuSubTrigger>
-                                    <FolderInput className="w-3.5 h-3.5 mr-2" /> Move to
-                                  </DropdownMenuSubTrigger>
-                                  <DropdownMenuSubContent>
-                                    {CATEGORIES.map(c => (
-                                      <DropdownMenuItem
-                                        key={c.value}
-                                        onClick={() => updateCat.mutate({ id: doc.id, category: c.value as any })}
-                                      >
-                                        <span className="flex items-center gap-2 text-xs">
-                                          {c.icon} {c.shortLabel}
-                                          {doc.category === c.value && <CheckCircle className="w-3 h-3 text-accent ml-auto" />}
-                                        </span>
-                                      </DropdownMenuItem>
-                                    ))}
-                                  </DropdownMenuSubContent>
-                                </DropdownMenuSub>
-
-                                <DropdownMenuSeparator />
-
-                                {/* Delete */}
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => deleteDoc.mutate({ id: doc.id })}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })
+          Object.entries(docsByCategory).map(([cat, catDocs]) => (
+            <SortableCategoryGroup
+              key={cat}
+              cat={cat}
+              catDocs={catDocs}
+              catMeta={catMetaFn}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              renamingId={renamingId}
+              renameValue={renameValue}
+              renameInputRef={renameInputRef}
+              onToggleSelect={toggleSelect}
+              onStartRename={startRename}
+              onRenameChange={setRenameValue}
+              onSubmitRename={submitRename}
+              onCancelRename={() => setRenamingId(null)}
+              onViewDetails={setSelectedDoc}
+              onUpdateVis={(id: number, v: string) => updateVis.mutate({ id, visibility: v as any })}
+              onUpdateCat={(id: number, c: string) => updateCat.mutate({ id, category: c as any })}
+              onDelete={(id: number) => deleteDoc.mutate({ id })}
+              onDragEnd={handleDragEnd}
+              visIcon={visIconFn}
+              visLabel={visLabelFn}
+            />
+          ))
         ) : totalDocs > 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No files match your filters</p>
-            <Button variant="link" size="sm" className="text-xs mt-1" onClick={() => { setSearchQuery(""); setFilterCategory("all"); setFilterStatus("all"); }}>
+            <Button variant="link" size="sm" className="text-xs mt-1" onClick={() => { setSearchQuery(""); setFilterCategory("all"); setFilterStatus("all"); setFilterRecent(false); }}>
               Clear all filters
             </Button>
           </div>
@@ -676,7 +793,6 @@ export default function Documents() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {/* Category */}
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Category</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
@@ -685,9 +801,7 @@ export default function Documents() {
                     key={c.value}
                     onClick={() => setUploadCategory(c.value)}
                     className={`text-left p-2.5 rounded-lg border transition-all text-xs ${
-                      uploadCategory === c.value
-                        ? "border-accent/50 bg-accent/5"
-                        : "border-border hover:border-accent/20"
+                      uploadCategory === c.value ? "border-accent/50 bg-accent/5" : "border-border hover:border-accent/20"
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -697,12 +811,8 @@ export default function Documents() {
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Leave on any category — AI will auto-classify if unsure
-              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">Leave on any category — AI will auto-classify if unsure</p>
             </div>
-
-            {/* Visibility */}
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Visibility</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
@@ -711,9 +821,7 @@ export default function Documents() {
                     key={v.value}
                     onClick={() => setUploadVisibility(v.value as VisibilityValue)}
                     className={`text-left p-2 rounded-lg border transition-all text-xs ${
-                      uploadVisibility === v.value
-                        ? "border-accent/50 bg-accent/5"
-                        : "border-border hover:border-accent/20"
+                      uploadVisibility === v.value ? "border-accent/50 bg-accent/5" : "border-border hover:border-accent/20"
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -734,9 +842,7 @@ export default function Documents() {
               accept=".txt,.md,.pdf,.doc,.docx,.csv,.json,.xlsx,.pptx,.rtf,.html,.xml,.yaml,.yml"
               multiple
             />
-            <Button variant="outline" onClick={() => setShowUploadDialog(false)} disabled={uploading}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setShowUploadDialog(false)} disabled={uploading}>Cancel</Button>
             <Button
               className="bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
               onClick={() => fileInputRef.current?.click()}
@@ -759,9 +865,7 @@ export default function Documents() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowBulkDeleteConfirm(false)} disabled={bulkDeleteMut.isPending}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setShowBulkDeleteConfirm(false)} disabled={bulkDeleteMut.isPending}>Cancel</Button>
             <Button
               variant="destructive"
               onClick={() => bulkDeleteMut.mutate({ ids: Array.from(selectedIds) })}
@@ -794,12 +898,12 @@ export default function Documents() {
               </div>
               <div className="p-3 rounded-lg bg-secondary/50">
                 <p className="text-[10px] text-muted-foreground">Category</p>
-                <p className="text-xs font-medium">{catMeta(selectedDoc?.category)?.label || selectedDoc?.category}</p>
+                <p className="text-xs font-medium">{catMetaFn(selectedDoc?.category)?.label || selectedDoc?.category}</p>
               </div>
               <div className="p-3 rounded-lg bg-secondary/50">
                 <p className="text-[10px] text-muted-foreground">Visibility</p>
                 <p className="text-xs font-medium flex items-center gap-1">
-                  {visIcon(selectedDoc?.visibility || "professional")} {visLabel(selectedDoc?.visibility || "professional")}
+                  {visIconFn(selectedDoc?.visibility || "professional")} {visLabelFn(selectedDoc?.visibility || "professional")}
                 </p>
               </div>
             </div>
@@ -813,12 +917,7 @@ export default function Documents() {
               </div>
             )}
             {selectedDoc?.fileUrl && (
-              <a
-                href={selectedDoc.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
-              >
+              <a href={selectedDoc.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
                 <FileUp className="w-3 h-3" /> Download original file
               </a>
             )}

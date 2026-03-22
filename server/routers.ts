@@ -21,7 +21,7 @@ import {
   addDocument, getUserDocuments, getAccessibleDocuments, updateDocumentVisibility,
   updateDocumentStatus, addDocumentChunks,
   searchDocumentChunks, deleteDocument, bulkDeleteDocuments, bulkUpdateDocumentVisibility,
-  bulkUpdateDocumentCategory, renameDocument, getAllProducts, getProductsByCategory,
+  bulkUpdateDocumentCategory, renameDocument, reorderDocuments, getAllProducts, getProductsByCategory,
   getVisibleProducts, getOrgProducts, createProduct, updateProduct, deleteProduct,
   addAuditEntry, getAuditTrail, addToReviewQueue, getPendingReviews, updateUserAvatar,
   updateReviewStatus, addMemory, getUserMemories, deleteMemory,
@@ -714,6 +714,11 @@ const documentsRouter = router({
       category: z.enum(["personal_docs", "financial_products", "regulations", "training_materials", "artifacts", "skills"]),
     }))
     .mutation(async ({ ctx, input }) => bulkUpdateDocumentCategory(input.ids, ctx.user.id, input.category)),
+  reorder: protectedProcedure
+    .input(z.object({
+      updates: z.array(z.object({ id: z.number(), sortOrder: z.number() })).min(1).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => reorderDocuments(ctx.user.id, input.updates)),
 });
 
 // ─── PRODUCTS ROUTER ──────────────────────────────────────────────

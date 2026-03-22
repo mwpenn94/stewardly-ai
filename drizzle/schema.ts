@@ -472,6 +472,7 @@ export const documents = mysqlTable("documents", {
   extractedText: text("extractedText"),
   chunkCount: int("chunkCount").default(0),
   status: mysqlEnum("status", ["uploading", "processing", "ready", "error"]).default("uploading").notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

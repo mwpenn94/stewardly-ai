@@ -364,6 +364,19 @@ export async function renameDocument(id: number, userId: number, filename: strin
   await db.update(documents).set({ filename }).where(and(eq(documents.id, id), eq(documents.userId, userId)));
 }
 
+export async function reorderDocuments(userId: number, orderedIds: { id: number; sortOrder: number }[]) {
+  const db = await getDb();
+  if (!db || orderedIds.length === 0) return { updated: 0 };
+  let updated = 0;
+  for (const item of orderedIds) {
+    const result = await db.update(documents)
+      .set({ sortOrder: item.sortOrder })
+      .where(and(eq(documents.id, item.id), eq(documents.userId, userId)));
+    if (result[0]?.affectedRows) updated += result[0].affectedRows;
+  }
+  return { updated };
+}
+
 // ─── PRODUCT HELPERS ──────────────────────────────────────────────
 export async function getAllProducts() {
   const db = await getDb();

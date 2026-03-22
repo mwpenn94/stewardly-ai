@@ -2693,3 +2693,14 @@
 - [x] Write 16 tests for bulk operations (bulkDelete, bulkUpdateVisibility, bulkUpdateCategory, rename)
 - [x] All 1,677 tests passing across 59 test files — 0 failures
 - [x] Re-deliver corrected status report after completion
+
+### Phase T: File Management Enhancements — Reorder, Smart Filters, E2E Tests
+- [x] Add sortOrder column to documents schema and applied via SQL migration
+- [x] Add reorderDocuments db helper
+- [x] Add reorder tRPC procedure
+- [x] Install @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
+- [x] Implement drag-and-drop reordering UI within document categories with grip handles
+- [x] Add "Recently Added" smart filter (last 7 days) toggle button in filter bar
+- [x] Add green "New" badge on recently added documents + count per category
+- [x] Write 16 tests for reorder, recently-added filter logic, and sort order
+- [x] All 1,693 tests passing across 60 test files — 0 failures
