@@ -38,9 +38,11 @@ export default function Home() {
       <nav className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-              <Sparkles className="w-4.5 h-4.5 text-accent" />
-            </div>
+            <img
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663357378777/GaKEFERPH576tbv5NzvkMD/stewardly-logo-v3-naY7aeUkrMxcG3ificpKX6.webp"
+              alt="Stewardly"
+              className="w-8 h-8 rounded-lg"
+            />
             <span className="font-semibold text-sm tracking-tight">Stewardly</span>
           </div>
           <div className="flex items-center gap-2">
@@ -70,7 +72,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-accent/5 via-transparent to-transparent" />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center relative">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-medium mb-6">
-            <Sparkles className="w-3 h-3" /> Stewardly — General & Financial
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663357378777/GaKEFERPH576tbv5NzvkMD/stewardly-logo-v3-naY7aeUkrMxcG3ificpKX6.webp" alt="" className="w-4 h-4 rounded-sm" /> Stewardly — General & Financial
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4 leading-tight">
             Your AI Assistant That<br />

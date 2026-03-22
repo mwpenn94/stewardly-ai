@@ -2378,3 +2378,9 @@
 - [x] Update isPlatformConfigured to look for platform-tier SnapTrade connection
 - [x] Update Connection Portal dialog — admin configures clientId/consumerKey at platform level, users connect brokerage via SnapTradeBrokerageSection
 - [x] Ensure only admins can set/update the SnapTrade platform credentials (platform tier = admin-only)
+
+## Stewardly Logo Icon
+- [x] Research Parable of the Talents symbolism and stewardship iconography
+- [x] Design logo icon combining stewardship, growth, and trust themes
+- [x] Generate logo icon with AI image generation (Option 3: Steward's Hand shield selected)
+- [x] Upload and set as app favicon, sidebar logo, and home page branding
