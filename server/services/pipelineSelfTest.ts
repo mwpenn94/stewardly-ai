@@ -26,7 +26,7 @@ const API_HEALTH_ENDPOINTS: Record<string, { url: string; method?: string; heade
   "fred": { url: "https://api.stlouisfed.org/fred/series?series_id=GDP&api_key=DEMO_KEY&file_type=json" },
   "bea": { url: "https://apps.bea.gov/api/data?UserID=DEMO&method=GetParameterList&DatasetName=NIPA&ResultFormat=JSON" },
   "census-bureau": { url: "https://api.census.gov/data.json" },
-  "sec-edgar": { url: "https://data.sec.gov/submissions/CIK0000320193.json", headers: { "User-Agent": "WealthBridgeAI support@wealthbridge.ai" } },
+  "sec-edgar": { url: "https://data.sec.gov/submissions/CIK0000320193.json", headers: { "User-Agent": "Stewardly support@stewardly.com" } },
   "finra-brokercheck": { url: "https://api.brokercheck.finra.org/search/firm?query=test&nrows=1", headers: { "Accept": "application/json" } },
 };
 

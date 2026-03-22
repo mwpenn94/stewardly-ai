@@ -2807,3 +2807,11 @@
 - [x] Wire deep context into multiModel.ts (4 LLM calls)
 - [x] Wire deep context into webSearch.ts (3 LLM calls)
 - [x] Created contextualLLM.ts wrapper — drop-in replacement that auto-injects deep context into any invokeLLM call
+
+## Platform Audit — March 22, 2026
+- [x] UI/UX audit — crawled all major pages, fixed nested button in AIOnboardingWidget, fixed WealthBridge user-agent references
+- [x] Virtual user crawl — validated chat, operations, intelligence, settings, documents, calculators, knowledge admin flows
+- [x] Code efficiency audit — 128,728 lines, no dead code, no console.log leaks, no clone references
+- [x] Test suite validation — 63 files, 1,746 tests, 100% pass rate
+- [x] Update in-app Help guide — added 4 new FAQs, Document Management section, 7 missing calculators, Layer 5 architecture, Deep Context RAG + Self-Discovery entries
+- [x] Produce comprehensive status report with capability gaps and owner action items (stewardly-platform-report.md)

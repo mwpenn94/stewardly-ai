@@ -148,17 +148,18 @@ export default function AIOnboardingWidget() {
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-6 h-6"
+          <span
+            role="button"
+            tabIndex={0}
+            className="inline-flex items-center justify-center w-6 h-6 rounded-md hover:bg-secondary/50 transition-colors cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               handleDismiss();
             }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); handleDismiss(); } }}
           >
             <X className="w-3 h-3" />
-          </Button>
+          </span>
           {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />}
         </div>
       </button>

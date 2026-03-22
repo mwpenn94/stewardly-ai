@@ -584,7 +584,7 @@ async function updateConnectionSyncStatus(providerSlug: string, recordsFetched: 
 
 // ─── SEC EDGAR Pipeline ─────────────────────────────────────────────────
 // Free public API — no key required, just a User-Agent header
-const SEC_EDGAR_USER_AGENT = "WealthBridgeAI support@wealthbridge.ai";
+const SEC_EDGAR_USER_AGENT = "Stewardly support@stewardly.com";
 
 // Major market indices and popular tickers for general market data
 const SEC_TICKERS = [

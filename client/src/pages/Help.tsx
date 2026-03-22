@@ -172,6 +172,32 @@ const FAQ_DATA: FAQItem[] = [
     tags: ["connected", "linkedin", "google", "social"],
   },
 
+  // Documents & Knowledge
+  {
+    question: "How does the Deep Context RAG system work?",
+    answer: "Every AI response across the entire platform draws from your uploaded documents, knowledge base articles, suitability profile, conversation history, and connected data sources. This happens automatically — the system assembles relevant context for each request across 34+ service modules including compliance, meetings, recommendations, and more.",
+    category: "AI Features",
+    tags: ["rag", "context", "knowledge", "intelligence"],
+  },
+  {
+    question: "How do I annotate documents?",
+    answer: "Open any document from the Documents page and scroll to the Annotations section. You can add comments, questions, or action items. Each annotation can be resolved or deleted. All team members with access to the document can see and respond to annotations.",
+    category: "Financial Tools",
+    tags: ["annotations", "documents", "comments", "collaboration"],
+  },
+  {
+    question: "What is the Knowledge Base Health Score?",
+    answer: "The Health Score (0-100) on the Knowledge Admin analytics tab measures your platform's knowledge quality across four dimensions: coverage (breadth of topics), freshness (how recently articles were updated), gap analysis (missing topic areas), and tool health (integration status). A higher score means the AI has better context for responses.",
+    category: "AI Features",
+    tags: ["health", "knowledge", "score", "quality"],
+  },
+  {
+    question: "Are notifications sent via email?",
+    answer: "No. All notifications are delivered exclusively within the platform via the in-app notification system. No emails, SMS, or external notifications are sent. You can configure notification preferences in Settings > Notifications.",
+    category: "Account & Settings",
+    tags: ["notifications", "email", "in-app", "alerts"],
+  },
+
   // Keyboard Shortcuts
   {
     question: "What keyboard shortcuts are available?",
@@ -213,6 +239,8 @@ const GUIDE_SECTIONS: GuideSection[] = [
       { name: "Document & Image Analysis", desc: "Upload PDFs, images, charts, and financial documents for AI-powered analysis.", route: "/chat" },
       { name: "Conversation History", desc: "Full conversation history with search, pinning, and export capabilities.", route: "/chat" },
       { name: "AI Memory", desc: "The AI remembers key facts across conversations for increasingly personalized advice.", route: "/settings/profile" },
+      { name: "Deep Context RAG", desc: "Every AI response draws from your documents, knowledge base, suitability profile, and platform data for deeply contextual answers.", route: "/chat" },
+      { name: "Self-Discovery Mode", desc: "Enable continuous learning — the AI explores topics deeper after periods of inactivity.", route: "/settings/ai-tuning" },
     ],
   },
   {
@@ -225,6 +253,8 @@ const GUIDE_SECTIONS: GuideSection[] = [
       { name: "Agentic Execution", desc: "AI agents that autonomously execute multi-step tasks with human-in-the-loop review.", route: "/operations" },
       { name: "Licensed Review Queue", desc: "Review queue for AI-generated financial advice requiring licensed professional approval.", route: "/operations" },
       { name: "BCP (Business Continuity)", desc: "Business continuity planning dashboard with disaster recovery procedures.", route: "/admin/bcp" },
+      { name: "Email Campaigns", desc: "AI-generated email campaigns with audience segmentation, scheduling, and performance tracking.", route: "/email-campaigns" },
+      { name: "Carrier Connector", desc: "Connect to insurance carriers for application submission and status tracking.", route: "/carrier-connector" },
     ],
   },
   {
@@ -237,6 +267,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       { name: "Model Results", desc: "Statistical models, predictive insights, and AI model performance tracking.", route: "/intelligence-hub" },
       { name: "Government Data Pipelines", desc: "Automated data from BLS, FRED, BEA, Census, SEC EDGAR, and FINRA BrokerCheck.", route: "/intelligence-hub" },
       { name: "Fairness Testing", desc: "AI fairness and bias testing dashboard to ensure equitable outcomes.", route: "/admin/fairness" },
+      { name: "Admin Intelligence", desc: "Platform-wide AI intelligence monitoring, model performance, and context quality metrics.", route: "/admin/intelligence" },
     ],
   },
   {
@@ -286,6 +317,13 @@ const GUIDE_SECTIONS: GuideSection[] = [
       { name: "IUL Illustrations", desc: "Indexed Universal Life back-testing with S&P 500 historical data.", route: "/calculators" },
       { name: "Premium Finance ROI", desc: "Premium finance return-on-investment analysis with SOFR-based rates.", route: "/calculators" },
       { name: "What-If Scenarios", desc: "Scenario modeling for financial decisions with side-by-side comparison.", route: "/calculators" },
+      { name: "Tax Projector", desc: "Multi-year tax projection with Roth conversion analysis and bracket optimization.", route: "/calculators" },
+      { name: "Social Security Optimizer", desc: "Optimize Social Security claiming strategy with spousal benefit analysis.", route: "/calculators" },
+      { name: "Medicare Navigator", desc: "Navigate Medicare enrollment windows, Part D plans, and IRMAA surcharges.", route: "/calculators" },
+      { name: "HSA Optimizer", desc: "Health Savings Account contribution and investment strategy optimization.", route: "/calculators" },
+      { name: "Divorce Analysis", desc: "Asset division modeling, alimony projections, and equitable distribution analysis.", route: "/calculators" },
+      { name: "Education Planner", desc: "529 plan projections and education funding strategy with financial aid impact.", route: "/calculators" },
+      { name: "Charitable Giving", desc: "Donor-advised fund, QCD, and charitable remainder trust strategy optimization.", route: "/calculators" },
     ],
   },
   {
@@ -299,6 +337,18 @@ const GUIDE_SECTIONS: GuideSection[] = [
       { name: "Credit Bureau (Soft Pull)", desc: "FICO 8 and VantageScore 3.0 with DTI analysis and insurance impact assessment.", route: "/integrations" },
       { name: "Passive Actions", desc: "Enable automated background operations for any data source — auto-refresh, sync, monitoring, and alerts.", route: "/passive-actions" },
       { name: "Integration Health", desc: "Monitor status, uptime, and error rates for all connected services.", route: "/integration-health" },
+    ],
+  },
+  {
+    title: "Document Management",
+    icon: <FileText className="w-5 h-5" />,
+    description: "Upload, analyze, preview, and annotate financial documents with AI-powered extraction.",
+    features: [
+      { name: "Document Upload & Analysis", desc: "Upload PDFs, images, and documents for AI text extraction, tagging, and categorization.", route: "/documents" },
+      { name: "Inline Document Preview", desc: "Preview PDFs and images directly in the document details dialog without downloading.", route: "/documents" },
+      { name: "Collaborative Annotations", desc: "Add comments, questions, and action items on documents. Resolve and track annotation threads.", route: "/documents" },
+      { name: "Version History", desc: "Track document versions with diff comparison and rollback capability.", route: "/documents" },
+      { name: "AI Auto-Categorization", desc: "Documents are automatically tagged and categorized by the AI upon upload.", route: "/documents" },
     ],
   },
   {
@@ -331,6 +381,8 @@ const GUIDE_SECTIONS: GuideSection[] = [
       { name: "Admin Integrations", desc: "Configure platform-level API credentials and integration settings.", route: "/admin/integrations" },
       { name: "Improvement Engine", desc: "AI self-improvement tracking, prompt A/B testing, and capability expansion.", route: "/improvement" },
       { name: "Proficiency Dashboard", desc: "Track your progress and proficiency across platform features.", route: "/proficiency" },
+      { name: "Suitability Panel", desc: "Review and manage client suitability assessments with compliance documentation.", route: "/suitability-panel" },
+      { name: "Knowledge Base Health", desc: "Composite health score (0-100) tracking coverage, freshness, gaps, and tool health.", route: "/admin/knowledge" },
     ],
   },
 ];
@@ -379,6 +431,17 @@ const ARCHITECTURE_LAYERS = [
       "Compliance prescreening for financial advice",
       "Graduated autonomy with human-in-the-loop review",
       "Fairness testing and bias detection",
+    ],
+  },
+  {
+    name: "Layer 5 — Continuous Improvement",
+    icon: <Activity className="w-4 h-4" />,
+    items: [
+      "Deep context RAG assembler across 34+ service files",
+      "Exponential improvement engine with prompt A/B testing",
+      "Knowledge base health scoring and gap analysis",
+      "Collaborative annotations for document review",
+      "In-app notification system (zero external emails)",
     ],
   },
 ];
