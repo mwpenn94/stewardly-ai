@@ -2,8 +2,8 @@ import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 
 /**
  * Edge TTS service — server-side text-to-speech using Microsoft Edge's
- * Read Aloud API. Returns audio as a Buffer in webm/opus format that
- * browsers can play natively via <audio> or AudioContext.
+ * Read Aloud API. Returns audio as a Buffer in MP3 format that
+ * all browsers (including iOS Safari/WebKit) can play natively.
  *
  * No API key required. Free, high-quality neural voices.
  */
@@ -80,7 +80,7 @@ function cleanForSpeech(text: string): string {
  * @param voiceId - Voice preset ID (default: "aria")
  * @param rate - Speech rate string (e.g., "+0%", "-10%", "+20%"). Default "+0%"
  * @param pitch - Pitch adjustment (e.g., "+0Hz", "+50Hz"). Default "+0Hz"
- * @returns Buffer of webm/opus audio data
+ * @returns Buffer of MP3 audio data
  */
 export async function generateSpeech(
   text: string,
@@ -103,7 +103,7 @@ export async function generateSpeech(
 
   // Create a fresh TTS instance per request to avoid stale websocket issues
   const tts = new MsEdgeTTS();
-  await tts.setMetadata(voiceName, OUTPUT_FORMAT.WEBM_24KHZ_16BIT_MONO_OPUS);
+  await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
 
   try {
     const { audioStream } = tts.toStream(truncated, { rate, pitch });

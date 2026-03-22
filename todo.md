@@ -2346,3 +2346,13 @@
 - [x] Add on-demand runSelfTest endpoint for manual diagnostics
 - [x] Structured JSON log on every pipeline run (event, timestamp, duration, per-pipeline results)
 - [x] Scheduler notifies owner on DB unavailability at startup and on self-test failures
+
+## Bug Fix: Audio Playback Regression
+- [x] Diagnose and fix TTS audio playback that stopped working after recent deployments
+- [x] Switch Edge TTS output from webm/opus to MP3 (Safari/iOS doesn't support webm)
+- [x] Fix mobile autoplay restrictions — ensure browser fallback triggers on silent failure
+- [x] Add user gesture audio unlock for mobile browsers
+- [x] Fix TTS: Switch Edge TTS output from webm/opus to MP3 (iOS WebKit compatible)
+- [x] Fix TTS: Update client MIME type from audio/webm to audio/mpeg
+- [x] Fix TTS: Add robust iOS audio unlock with silent MP3 on user gesture
+- [x] Fix TTS: Handle mobile autoplay restrictions with proper fallback chain

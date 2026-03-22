@@ -983,7 +983,7 @@ const voiceRouter = router({
         );
         return {
           audio: audioBuffer.toString("base64"),
-          mimeType: "audio/webm",
+          mimeType: "audio/mpeg",
           voice: input.voice,
         };
       } catch (err: any) {

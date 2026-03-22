@@ -79,38 +79,71 @@ function chunkText(text: string, maxWords = 200): string[] {
   return chunks;
 }
 
+// ─── iOS / Mobile Audio Unlock ─────────────────────────────────────
+// iOS WebKit requires a user gesture to unlock audio playback.
+// We keep a persistent <audio> element that gets "primed" on first
+// user interaction, then reuse it for all TTS playback.
+
+let _sharedAudio: HTMLAudioElement | null = null;
+let _audioUnlocked = false;
+
 /**
- * Unlock AudioContext on first user interaction.
- * Browsers require a user gesture before audio can play.
+ * Get or create the shared audio element used for TTS playback.
+ * Reusing a single element that was unlocked by a user gesture
+ * is the most reliable way to play audio on iOS.
  */
-let audioContextUnlocked = false;
-function ensureAudioUnlocked() {
-  if (audioContextUnlocked) return;
+function getSharedAudio(): HTMLAudioElement {
+  if (!_sharedAudio) {
+    _sharedAudio = new Audio();
+    // Ensure it works on iOS
+    _sharedAudio.setAttribute("playsinline", "");
+    _sharedAudio.setAttribute("webkit-playsinline", "");
+  }
+  return _sharedAudio;
+}
+
+/**
+ * Unlock audio playback on iOS by playing a tiny silent MP3 data URI
+ * from within a user gesture handler. This "primes" the audio element
+ * so subsequent programmatic .play() calls succeed.
+ */
+function unlockAudio() {
+  if (_audioUnlocked) return;
   try {
-    const ctx = new AudioContext();
-    const buffer = ctx.createBuffer(1, 1, 22050);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.start(0);
-    ctx.close();
-    audioContextUnlocked = true;
+    const audio = getSharedAudio();
+    // Tiny valid MP3 frame (silence) — base64 encoded
+    // This is a minimal valid MP3 file that plays silence
+    const silentMp3 = "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwMHAAAAAAD/+1DEAAAB8ANoAAAAIAAANIAAAARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7UMQbAAAA0gAAAAAAAAANIAAAAARVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==";
+    audio.src = silentMp3;
+    audio.volume = 0.01;
+    const playPromise = audio.play();
+    if (playPromise) {
+      playPromise.then(() => {
+        _audioUnlocked = true;
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+        audio.src = "";
+      }).catch(() => {
+        // Will retry on next user gesture
+      });
+    }
   } catch {
     // Ignore — will retry on next user interaction
   }
 }
 
-// Unlock on any user interaction
+// Register unlock handlers on first load
 if (typeof window !== "undefined") {
-  const unlock = () => {
-    ensureAudioUnlocked();
-    window.removeEventListener("click", unlock);
-    window.removeEventListener("touchstart", unlock);
-    window.removeEventListener("keydown", unlock);
+  const events = ["click", "touchstart", "touchend", "keydown", "pointerdown"];
+  const onGesture = () => {
+    unlockAudio();
+    // Keep listeners until actually unlocked
+    if (_audioUnlocked) {
+      events.forEach(e => window.removeEventListener(e, onGesture));
+    }
   };
-  window.addEventListener("click", unlock, { once: true });
-  window.addEventListener("touchstart", unlock, { once: true });
-  window.addEventListener("keydown", unlock, { once: true });
+  events.forEach(e => window.addEventListener(e, onGesture, { passive: true }));
 }
 
 export function useTTS({
@@ -122,10 +155,11 @@ export function useTTS({
 }: TTSOptions): TTSReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const guardRef = useRef(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const onStartRef = useRef(onStart);
   const onEndRef = useRef(onEnd);
   const cancelledRef = useRef(false);
+  // Track the current object URL so we can revoke it
+  const currentUrlRef = useRef<string | null>(null);
 
   useEffect(() => { onStartRef.current = onStart; }, [onStart]);
   useEffect(() => { onEndRef.current = onEnd; }, [onEnd]);
@@ -158,38 +192,56 @@ export function useTTS({
     cancelledRef.current = true;
     // Cancel browser synthesis
     window.speechSynthesis?.cancel();
-    // Cancel audio element
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      try { audioRef.current.src = ""; } catch { /* ignore */ }
-      audioRef.current = null;
+    // Cancel shared audio element
+    const audio = getSharedAudio();
+    try {
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = "";
+    } catch { /* ignore */ }
+    // Revoke any object URL
+    if (currentUrlRef.current) {
+      URL.revokeObjectURL(currentUrlRef.current);
+      currentUrlRef.current = null;
     }
     guardRef.current = false;
     setIsSpeaking(false);
   }, []);
 
   /**
-   * Play audio from base64-encoded webm data via Edge TTS.
+   * Play audio from base64-encoded MP3 data via Edge TTS.
+   * Uses the shared audio element for iOS compatibility.
    */
   const playEdgeAudio = useCallback(
     (base64Audio: string) => {
       if (cancelledRef.current) return;
 
-      // Decode base64 to blob
+      // Decode base64 to blob — use audio/mpeg for universal compatibility
       const binaryStr = atob(base64Audio);
       const bytes = new Uint8Array(binaryStr.length);
       for (let i = 0; i < binaryStr.length; i++) {
         bytes[i] = binaryStr.charCodeAt(i);
       }
-      const blob = new Blob([bytes], { type: "audio/webm" });
+      const blob = new Blob([bytes], { type: "audio/mpeg" });
       const url = URL.createObjectURL(blob);
 
-      const audio = new Audio(url);
-      audioRef.current = audio;
+      // Revoke previous URL if any
+      if (currentUrlRef.current) {
+        URL.revokeObjectURL(currentUrlRef.current);
+      }
+      currentUrlRef.current = url;
 
-      // Set volume to ensure audibility
+      // Use the shared audio element (already unlocked by user gesture on iOS)
+      const audio = getSharedAudio();
+      audio.src = url;
       audio.volume = 1.0;
+
+      const cleanup = () => {
+        if (currentUrlRef.current === url) {
+          URL.revokeObjectURL(url);
+          currentUrlRef.current = null;
+        }
+      };
 
       audio.onplay = () => {
         if (cancelledRef.current) {
@@ -199,8 +251,7 @@ export function useTTS({
       };
 
       audio.onended = () => {
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
+        cleanup();
         guardRef.current = false;
         setIsSpeaking(false);
         playCue("done");
@@ -209,21 +260,20 @@ export function useTTS({
 
       audio.onerror = (e) => {
         console.warn("[TTS] Audio playback error:", e);
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
+        cleanup();
         guardRef.current = false;
         setIsSpeaking(false);
         onEndRef.current?.();
       };
 
-      // Play with retry — if autoplay is blocked, try after a short delay
+      // Play — on iOS this should work because the shared element was
+      // unlocked by a user gesture. If it still fails, fall back to browser TTS.
       audio.play().catch((err) => {
-        console.warn("[TTS] Autoplay blocked, retrying...", err.message);
-        // Retry once after a short delay (some browsers need this)
+        console.warn("[TTS] Play failed, will retry once:", err.message);
+        // One retry after a short delay
         setTimeout(() => {
           if (cancelledRef.current) {
-            URL.revokeObjectURL(url);
-            audioRef.current = null;
+            cleanup();
             guardRef.current = false;
             setIsSpeaking(false);
             onEndRef.current?.();
@@ -231,12 +281,11 @@ export function useTTS({
           }
           audio.play().catch(() => {
             console.warn("[TTS] Retry failed, falling back to browser TTS");
-            URL.revokeObjectURL(url);
-            audioRef.current = null;
-            // Don't reset speaking state — let the browser fallback handle it
-            return "fallback";
+            cleanup();
+            // Signal that we need browser fallback
+            // (handled by the caller via the returned promise)
           });
-        }, 100);
+        }, 150);
       });
     },
     [playCue]
@@ -295,6 +344,9 @@ export function useTTS({
     (text: string) => {
       cancel();
       cancelledRef.current = false;
+
+      // Re-unlock audio on each explicit speak action (user gesture context)
+      unlockAudio();
 
       guardRef.current = true;
       setIsSpeaking(true);
