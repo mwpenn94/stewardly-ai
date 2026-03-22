@@ -20,7 +20,8 @@ import {
   addMessage, getConversationMessages,
   addDocument, getUserDocuments, getAccessibleDocuments, updateDocumentVisibility,
   updateDocumentStatus, addDocumentChunks,
-  searchDocumentChunks, deleteDocument, getAllProducts, getProductsByCategory,
+  searchDocumentChunks, deleteDocument, bulkDeleteDocuments, bulkUpdateDocumentVisibility,
+  bulkUpdateDocumentCategory, renameDocument, getAllProducts, getProductsByCategory,
   getVisibleProducts, getOrgProducts, createProduct, updateProduct, deleteProduct,
   addAuditEntry, getAuditTrail, addToReviewQueue, getPendingReviews, updateUserAvatar,
   updateReviewStatus, addMemory, getUserMemories, deleteMemory,
@@ -683,6 +684,36 @@ const documentsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(({ ctx, input }) => deleteDocument(input.id, ctx.user.id)),
+  // ─── Rename ────────────────────────────────────────────────────
+  rename: protectedProcedure
+    .input(z.object({ id: z.number(), filename: z.string().min(1).max(512) }))
+    .mutation(async ({ ctx, input }) => {
+      await renameDocument(input.id, ctx.user.id, input.filename);
+      return { success: true };
+    }),
+  // ─── Update Category ───────────────────────────────────────────
+  updateCategory: protectedProcedure
+    .input(z.object({ id: z.number(), category: z.enum(["personal_docs", "financial_products", "regulations", "training_materials", "artifacts", "skills"]) }))
+    .mutation(async ({ ctx, input }) => {
+      await bulkUpdateDocumentCategory([input.id], ctx.user.id, input.category);
+      return { success: true };
+    }),
+  // ─── Bulk Operations ───────────────────────────────────────────
+  bulkDelete: protectedProcedure
+    .input(z.object({ ids: z.array(z.number()).min(1).max(500) }))
+    .mutation(async ({ ctx, input }) => bulkDeleteDocuments(input.ids, ctx.user.id)),
+  bulkUpdateVisibility: protectedProcedure
+    .input(z.object({
+      ids: z.array(z.number()).min(1).max(500),
+      visibility: z.enum(["private", "professional", "management", "admin"]),
+    }))
+    .mutation(async ({ ctx, input }) => bulkUpdateDocumentVisibility(input.ids, ctx.user.id, input.visibility)),
+  bulkUpdateCategory: protectedProcedure
+    .input(z.object({
+      ids: z.array(z.number()).min(1).max(500),
+      category: z.enum(["personal_docs", "financial_products", "regulations", "training_materials", "artifacts", "skills"]),
+    }))
+    .mutation(async ({ ctx, input }) => bulkUpdateDocumentCategory(input.ids, ctx.user.id, input.category)),
 });
 
 // ─── PRODUCTS ROUTER ──────────────────────────────────────────────

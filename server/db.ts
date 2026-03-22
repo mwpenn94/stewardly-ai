@@ -334,6 +334,36 @@ export async function deleteDocument(id: number, userId: number) {
   await db.delete(documents).where(and(eq(documents.id, id), eq(documents.userId, userId)));
 }
 
+// ─── BULK DOCUMENT OPERATIONS ─────────────────────────────────────────
+export async function bulkDeleteDocuments(ids: number[], userId: number) {
+  const db = await getDb();
+  if (!db || ids.length === 0) return { deleted: 0 };
+  await db.delete(documentChunks).where(inArray(documentChunks.documentId, ids));
+  await db.delete(documents).where(and(inArray(documents.id, ids), eq(documents.userId, userId)));
+  return { deleted: ids.length };
+}
+
+export async function bulkUpdateDocumentVisibility(ids: number[], userId: number, visibility: string) {
+  const db = await getDb();
+  if (!db || ids.length === 0) return { updated: 0 };
+  await db.update(documents).set({ visibility: visibility as any }).where(and(inArray(documents.id, ids), eq(documents.userId, userId)));
+  return { updated: ids.length };
+}
+
+export async function bulkUpdateDocumentCategory(ids: number[], userId: number, category: string) {
+  const db = await getDb();
+  if (!db || ids.length === 0) return { updated: 0 };
+  await db.update(documents).set({ category: category as any }).where(and(inArray(documents.id, ids), eq(documents.userId, userId)));
+  await db.update(documentChunks).set({ category: category as any }).where(inArray(documentChunks.documentId, ids));
+  return { updated: ids.length };
+}
+
+export async function renameDocument(id: number, userId: number, filename: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(documents).set({ filename }).where(and(eq(documents.id, id), eq(documents.userId, userId)));
+}
+
 // ─── PRODUCT HELPERS ──────────────────────────────────────────────
 export async function getAllProducts() {
   const db = await getDb();

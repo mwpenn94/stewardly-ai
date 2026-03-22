@@ -2675,3 +2675,21 @@
 ### Phase R: Final Testing
 - [x] Write 34 new tests for passive actions, notification conversion, workflow orchestrator, ambient finance, verification, and websocket notifications
 - [x] All 1,661 tests passing across 58 test files — 0 failures
+
+### Phase S: File Management & Knowledge Base Bulk Actions
+- [x] Audit current document management UI, schema, and tRPC procedures
+- [x] Add bulk delete tRPC procedure (accept array of document IDs)
+- [x] Add bulk categorize tRPC procedure (change category for multiple docs at once)
+- [x] Add bulk visibility tRPC procedure (change visibility for multiple docs at once)
+- [x] Add inline rename tRPC procedure (rename single document without modal)
+- [x] Add search/filter backend support (text search on filename + category filter)
+- [x] Rebuild document management UI with multi-select checkboxes
+- [x] Add bulk action toolbar (delete, categorize, change visibility) that appears on selection
+- [x] Add drag-and-drop file upload zone
+- [x] Add inline rename (click-to-edit filename)
+- [x] Add search bar and category/visibility filter dropdowns
+- [x] Add select-all / deselect-all toggle
+- [x] Add keyboard shortcuts — Escape to deselect implemented; select-all via toolbar checkbox
+- [x] Write 16 tests for bulk operations (bulkDelete, bulkUpdateVisibility, bulkUpdateCategory, rename)
+- [x] All 1,677 tests passing across 59 test files — 0 failures
+- [x] Re-deliver corrected status report after completion
