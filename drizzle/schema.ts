@@ -491,6 +491,23 @@ export const documentChunks = mysqlTable("document_chunks", {
 
 export type DocumentChunk = typeof documentChunks.$inferSelect;
 
+// ─── DOCUMENT VERSIONS (version history for re-uploads) ──────────────────────
+export const documentVersions = mysqlTable("document_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  documentId: int("documentId").notNull(),
+  userId: int("userId").notNull(),
+  versionNumber: int("versionNumber").notNull(),
+  filename: varchar("filename", { length: 512 }).notNull(),
+  fileUrl: text("fileUrl").notNull(),
+  fileKey: text("fileKey").notNull(),
+  mimeType: varchar("mimeType", { length: 128 }),
+  extractedText: text("extractedText"),
+  chunkCount: int("chunkCount").default(0),
+  sizeBytes: int("sizeBytes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DocumentVersion = typeof documentVersions.$inferSelect;
+
 // ─── PRODUCTS ──────────────────────────────────────────────────────────────
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),

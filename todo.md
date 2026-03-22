@@ -2704,3 +2704,16 @@
 - [x] Add green "New" badge on recently added documents + count per category
 - [x] Write 16 tests for reorder, recently-added filter logic, and sort order
 - [x] All 1,693 tests passing across 60 test files — 0 failures
+
+### Phase U: Document Processing Dashboard, Auto-Categorization, Version History
+- [x] Audit current document processing pipeline, schema, and upload flow
+- [x] Add document_versions table schema with migration (SQL applied)
+- [x] Add db helpers: addDocumentVersion, getDocumentVersions, getLatestVersionNumber, getDocumentProcessingStats
+- [x] Add tRPC procedures: versions, uploadNewVersion, reprocess, processingStats
+- [x] Auto-categorization already existed in upload flow — enhanced to return wasAutoClassified + suggestedCategory
+- [x] Integrated auto-categorization feedback toast showing AI-classified category name
+- [x] Built ProcessingDashboard tab with 4 stat cards, health progress bar, chunk count, and weekly upload count
+- [x] Built VersionHistoryPanel in document details dialog + standalone version upload dialog
+- [x] Write 17 tests for processing stats, version history, auto-categorization, and reprocessing
+- [x] All 1,710 tests passing across 61 test files — 0 failures
+- [x] Re-deliver corrected status report

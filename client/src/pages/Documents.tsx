@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import {
@@ -17,6 +18,8 @@ import {
   Eye, Shield, Users, Lock, Search, X, MoreHorizontal,
   Pencil, FolderInput, ShieldCheck, CheckSquare, XSquare,
   CloudUpload, FileUp, Filter, GripVertical, Zap,
+  BarChart3, RefreshCw, History, RotateCcw, ChevronDown,
+  Database, PieChart, Activity, TrendingUp,
 } from "lucide-react";
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import {
@@ -71,11 +74,167 @@ function isRecentlyAdded(createdAt: string | Date): boolean {
   return Date.now() - created.getTime() < SEVEN_DAYS_MS;
 }
 
+function formatDate(d: string | Date): string {
+  return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+// ─── Processing Dashboard Panel ────────────────────────────────
+function ProcessingDashboard() {
+  const stats = trpc.documents.processingStats.useQuery(undefined, { refetchInterval: 15000 });
+  const s = stats.data;
+
+  if (stats.isLoading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[1,2,3,4].map(i => (
+          <div key={i} className="h-20 rounded-xl bg-secondary/30 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!s) return null;
+
+  const statCards = [
+    { label: "Total Files", value: s.total, icon: <Database className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-500/10" },
+    { label: "Ready for AI", value: s.ready, icon: <CheckCircle className="w-4 h-4" />, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+    { label: "Processing", value: s.processing + s.uploading, icon: <Activity className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-500/10" },
+    { label: "Failed", value: s.error, icon: <AlertCircle className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-500/10" },
+  ];
+
+  const readyPercent = s.total > 0 ? Math.round((s.ready / s.total) * 100) : 0;
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {statCards.map(c => (
+          <Card key={c.label} className="bg-card border-border">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className={`p-1.5 rounded-lg ${c.bg}`}>
+                  <span className={c.color}>{c.icon}</span>
+                </span>
+                <span className="text-xl font-bold">{c.value}</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">{c.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Progress bar + summary */}
+      <Card className="bg-card border-border">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <PieChart className="w-3.5 h-3.5 text-accent" />
+              <span className="text-xs font-medium">Knowledge Base Health</span>
+            </div>
+            <span className="text-xs text-muted-foreground">{readyPercent}% ready</span>
+          </div>
+          <div className="h-2 bg-secondary rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+              style={{ width: `${readyPercent}%` }}
+            />
+          </div>
+          <div className="flex items-center gap-4 mt-2">
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <TrendingUp className="w-2.5 h-2.5 text-emerald-400" /> {s.totalChunks} total chunks
+            </span>
+            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <Zap className="w-2.5 h-2.5 text-amber-400" /> {s.recentUploads} uploaded this week
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Version History Panel ─────────────────────────────────────
+function VersionHistoryPanel({ doc, onUploadNewVersion }: { doc: any; onUploadNewVersion: (doc: any) => void }) {
+  const versions = trpc.documents.versions.useQuery({ documentId: doc.id }, { enabled: !!doc.id });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-semibold flex items-center gap-1.5">
+          <History className="w-3.5 h-3.5 text-accent" /> Version History
+        </h4>
+        <Button
+          variant="outline" size="sm" className="text-xs h-7 gap-1"
+          onClick={() => onUploadNewVersion(doc)}
+        >
+          <Upload className="w-3 h-3" /> Upload New Version
+        </Button>
+      </div>
+
+      {/* Current version */}
+      <Card className="bg-accent/5 border-accent/20">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium flex items-center gap-1.5">
+                <Badge variant="secondary" className="text-[9px] bg-accent/20 text-accent">Current</Badge>
+                {doc.filename}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {doc.chunkCount || 0} chunks · {formatDate(doc.createdAt)}
+              </p>
+            </div>
+            {doc.fileUrl && (
+              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => window.open(doc.fileUrl, "_blank")}>
+                <FileUp className="w-3 h-3" /> Download
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Previous versions */}
+      {versions.isLoading ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground py-4 justify-center">
+          <Loader2 className="w-3 h-3 animate-spin" /> Loading versions...
+        </div>
+      ) : versions.data && versions.data.length > 0 ? (
+        <div className="space-y-1.5">
+          {versions.data.map((v: any) => (
+            <Card key={v.id} className="bg-card border-border">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium flex items-center gap-1.5">
+                      <Badge variant="secondary" className="text-[9px]">v{v.versionNumber}</Badge>
+                      {v.filename}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {v.chunkCount || 0} chunks · {formatDate(v.createdAt)}
+                    </p>
+                  </div>
+                  {v.fileUrl && (
+                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => window.open(v.fileUrl, "_blank")}>
+                      <FileUp className="w-3 h-3" /> Download
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <p className="text-[10px] text-muted-foreground text-center py-3">No previous versions. Upload a new version to start tracking history.</p>
+      )}
+    </div>
+  );
+}
+
 // ─── Sortable Document Row ──────────────────────────────────────
 function SortableDocRow({
   doc, selectMode, isSelected, isRenaming, renameValue, renameInputRef,
   onToggleSelect, onStartRename, onRenameChange, onSubmitRename, onCancelRename,
-  onViewDetails, onUpdateVis, onUpdateCat, onDelete, visIcon, visLabel, catMeta,
+  onViewDetails, onUpdateVis, onUpdateCat, onDelete, onReprocess, onUploadNewVersion,
+  visIcon, visLabel, catMeta,
 }: any) {
   const {
     attributes, listeners, setNodeRef, transform, transition, isDragging,
@@ -173,6 +332,16 @@ function SortableDocRow({
 
         {/* Actions */}
         <div className="flex items-center gap-0.5 shrink-0">
+          {doc.status === "error" && (
+            <Button
+              variant="ghost" size="sm"
+              className="h-8 w-8 p-0 text-amber-400 hover:text-amber-300"
+              title="Retry processing"
+              onClick={() => onReprocess(doc.id)}
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
@@ -186,9 +355,17 @@ function SortableDocRow({
               <DropdownMenuItem onClick={() => onViewDetails(doc)}>
                 <FileText className="w-3.5 h-3.5 mr-2" /> View Details
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onUploadNewVersion(doc)}>
+                <History className="w-3.5 h-3.5 mr-2" /> Upload New Version
+              </DropdownMenuItem>
               {doc.fileUrl && (
                 <DropdownMenuItem onClick={() => window.open(doc.fileUrl, "_blank")}>
                   <FileUp className="w-3.5 h-3.5 mr-2" /> Download Original
+                </DropdownMenuItem>
+              )}
+              {doc.status === "error" && (
+                <DropdownMenuItem onClick={() => onReprocess(doc.id)}>
+                  <RefreshCw className="w-3.5 h-3.5 mr-2" /> Retry Processing
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
@@ -234,11 +411,11 @@ function SortableDocRow({
   );
 }
 
-// ─── Sortable Category Group ────────────────────────────────────
+// ─── Sortable Category Group ───────────────────────────────────
 function SortableCategoryGroup({
   cat, catDocs, catMeta: catMetaFn, selectMode, selectedIds, renamingId, renameValue, renameInputRef,
   onToggleSelect, onStartRename, onRenameChange, onSubmitRename, onCancelRename,
-  onViewDetails, onUpdateVis, onUpdateCat, onDelete, onDragEnd,
+  onViewDetails, onUpdateVis, onUpdateCat, onDelete, onReprocess, onUploadNewVersion, onDragEnd,
   visIcon: visIconFn, visLabel: visLabelFn,
 }: any) {
   const sensors = useSensors(
@@ -284,6 +461,8 @@ function SortableCategoryGroup({
                 onUpdateVis={onUpdateVis}
                 onUpdateCat={onUpdateCat}
                 onDelete={onDelete}
+                onReprocess={onReprocess}
+                onUploadNewVersion={onUploadNewVersion}
                 visIcon={visIconFn}
                 visLabel={visLabelFn}
                 catMeta={catMetaFn}
@@ -331,14 +510,30 @@ export default function Documents() {
   // Confirm bulk delete dialog
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
+  // Version upload dialog
+  const [versionUploadDoc, setVersionUploadDoc] = useState<any>(null);
+  const versionFileRef = useRef<HTMLInputElement>(null);
+
+  // Active tab
+  const [activeTab, setActiveTab] = useState("files");
+
   // ─── Queries & Mutations ─────────────────────────────────────
   const docs = trpc.documents.list.useQuery();
   const uploadDoc = trpc.documents.upload.useMutation({
-    onSuccess: () => { utils.documents.list.invalidate(); toast.success("Document uploaded — AI is learning from it"); },
+    onSuccess: (result) => {
+      utils.documents.list.invalidate();
+      utils.documents.processingStats.invalidate();
+      if (result.wasAutoClassified) {
+        const catLabel = CATEGORIES.find(c => c.value === result.suggestedCategory)?.shortLabel || result.suggestedCategory;
+        toast.success(`Uploaded — AI classified as "${catLabel}"`, { description: "You can change the category anytime" });
+      } else {
+        toast.success("Document uploaded — AI is learning from it");
+      }
+    },
     onError: (e) => toast.error(e.message),
   });
   const deleteDoc = trpc.documents.delete.useMutation({
-    onSuccess: () => { utils.documents.list.invalidate(); toast.success("Document removed"); },
+    onSuccess: () => { utils.documents.list.invalidate(); utils.documents.processingStats.invalidate(); toast.success("Document removed"); },
   });
   const updateVis = trpc.documents.updateVisibility.useMutation({
     onSuccess: () => { utils.documents.list.invalidate(); toast.success("Visibility updated"); },
@@ -357,6 +552,7 @@ export default function Documents() {
   const bulkDeleteMut = trpc.documents.bulkDelete.useMutation({
     onSuccess: (r) => {
       utils.documents.list.invalidate();
+      utils.documents.processingStats.invalidate();
       toast.success(`${r.deleted} document(s) deleted`);
       setSelectedIds(new Set());
       setSelectMode(false);
@@ -378,6 +574,23 @@ export default function Documents() {
       setSelectedIds(new Set());
       setSelectMode(false);
     },
+  });
+  const reprocessMut = trpc.documents.reprocess.useMutation({
+    onSuccess: () => {
+      utils.documents.list.invalidate();
+      utils.documents.processingStats.invalidate();
+      toast.success("Document reprocessing started");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const uploadVersionMut = trpc.documents.uploadNewVersion.useMutation({
+    onSuccess: (r) => {
+      utils.documents.list.invalidate();
+      utils.documents.processingStats.invalidate();
+      toast.success(`New version (v${r.version}) uploaded — AI is re-learning`);
+      setVersionUploadDoc(null);
+    },
+    onError: (e) => toast.error(e.message),
   });
 
   // ─── Filtered documents ──────────────────────────────────────
@@ -414,6 +627,7 @@ export default function Documents() {
 
   const totalDocs = docs.data?.length || 0;
   const readyDocs = docs.data?.filter((d: any) => d.status === "ready").length || 0;
+  const errorDocs = docs.data?.filter((d: any) => d.status === "error").length || 0;
   const hasSelection = selectedIds.size > 0;
   const allFilteredSelected = filteredDocs.length > 0 && filteredDocs.every((d: any) => selectedIds.has(d.id));
 
@@ -453,6 +667,28 @@ export default function Documents() {
     }
     setShowUploadDialog(false);
   }, [uploadDoc, uploadCategory, uploadVisibility]);
+
+  const handleVersionUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !versionUploadDoc) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File exceeds 10MB limit");
+      return;
+    }
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    uploadVersionMut.mutate({
+      documentId: versionUploadDoc.id,
+      filename: file.name,
+      content: base64,
+      mimeType: file.type,
+    });
+    if (versionFileRef.current) versionFileRef.current.value = "";
+  }, [versionUploadDoc, uploadVersionMut]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) processFiles(e.target.files);
@@ -575,6 +811,11 @@ export default function Documents() {
               {readyDocs}/{totalDocs} ready
             </Badge>
           )}
+          {errorDocs > 0 && (
+            <Badge variant="secondary" className="text-[10px] bg-red-500/10 text-red-400 border-red-500/20">
+              {errorDocs} failed
+            </Badge>
+          )}
           <div className="ml-auto flex items-center gap-2">
             {totalDocs > 0 && (
               <Button
@@ -651,136 +892,159 @@ export default function Documents() {
         </div>
       )}
 
-      {/* Search & filter bar */}
-      {totalDocs > 0 && (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search files..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-xs bg-card"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <X className="w-3 h-3 text-muted-foreground hover:text-foreground" />
-                </button>
+      {/* Tabs: Files / Dashboard */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="h-9">
+            <TabsTrigger value="files" className="text-xs gap-1.5">
+              <FileText className="w-3.5 h-3.5" /> Files
+              {totalDocs > 0 && <Badge variant="secondary" className="text-[9px] ml-0.5">{totalDocs}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="dashboard" className="text-xs gap-1.5">
+              <BarChart3 className="w-3.5 h-3.5" /> Processing Dashboard
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dashboard" className="mt-4">
+            <ProcessingDashboard />
+          </TabsContent>
+
+          <TabsContent value="files" className="mt-0">
+            {/* Search & filter bar */}
+            {totalDocs > 0 && (
+              <div className="pt-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search files..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 h-9 text-xs bg-card"
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <X className="w-3 h-3 text-muted-foreground hover:text-foreground" />
+                      </button>
+                    )}
+                  </div>
+                  <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger className="w-[140px] h-9 text-xs bg-card">
+                      <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {CATEGORIES.map(c => (
+                        <SelectItem key={c.value} value={c.value}>
+                          <span className="flex items-center gap-1.5">{c.icon} {c.shortLabel}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-[120px] h-9 text-xs bg-card">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="ready">Ready</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="error">Error</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {/* Recently Added toggle */}
+                  <Button
+                    variant={filterRecent ? "default" : "outline"}
+                    size="sm"
+                    className={`text-xs h-9 gap-1.5 ${filterRecent ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
+                    onClick={() => setFilterRecent(!filterRecent)}
+                  >
+                    <Zap className="w-3 h-3" />
+                    Recent
+                    {recentCount > 0 && (
+                      <Badge variant="secondary" className={`text-[9px] ml-0.5 ${filterRecent ? "bg-white/20 text-white" : "bg-emerald-500/10 text-emerald-400"}`}>
+                        {recentCount}
+                      </Badge>
+                    )}
+                  </Button>
+                  {hasActiveFilters && (
+                    <Button
+                      variant="ghost" size="sm" className="text-xs h-9"
+                      onClick={() => { setSearchQuery(""); setFilterCategory("all"); setFilterStatus("all"); setFilterRecent(false); }}
+                    >
+                      Clear filters
+                    </Button>
+                  )}
+                </div>
+                {filteredDocs.length !== totalDocs && (
+                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                    Showing {filteredDocs.length} of {totalDocs} files
+                    {filterRecent && " (last 7 days)"}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Document list */}
+            <div className="py-4 space-y-5">
+              {filteredDocs.length > 0 ? (
+                Object.entries(docsByCategory).map(([cat, catDocs]) => (
+                  <SortableCategoryGroup
+                    key={cat}
+                    cat={cat}
+                    catDocs={catDocs}
+                    catMeta={catMetaFn}
+                    selectMode={selectMode}
+                    selectedIds={selectedIds}
+                    renamingId={renamingId}
+                    renameValue={renameValue}
+                    renameInputRef={renameInputRef}
+                    onToggleSelect={toggleSelect}
+                    onStartRename={startRename}
+                    onRenameChange={setRenameValue}
+                    onSubmitRename={submitRename}
+                    onCancelRename={() => setRenamingId(null)}
+                    onViewDetails={setSelectedDoc}
+                    onUpdateVis={(id: number, v: string) => updateVis.mutate({ id, visibility: v as any })}
+                    onUpdateCat={(id: number, c: string) => updateCat.mutate({ id, category: c as any })}
+                    onDelete={(id: number) => deleteDoc.mutate({ id })}
+                    onReprocess={(id: number) => reprocessMut.mutate({ id })}
+                    onUploadNewVersion={(doc: any) => setVersionUploadDoc(doc)}
+                    onDragEnd={handleDragEnd}
+                    visIcon={visIconFn}
+                    visLabel={visLabelFn}
+                  />
+                ))
+              ) : totalDocs > 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No files match your filters</p>
+                  <Button variant="link" size="sm" className="text-xs mt-1" onClick={() => { setSearchQuery(""); setFilterCategory("all"); setFilterStatus("all"); setFilterRecent(false); }}>
+                    Clear all filters
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  className="text-center py-20 text-muted-foreground border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-accent/30 transition-colors"
+                  onClick={() => setShowUploadDialog(true)}
+                >
+                  <CloudUpload className="w-14 h-14 mx-auto mb-4 opacity-30" />
+                  <p className="text-base font-medium">Drop files here or click to upload</p>
+                  <p className="text-xs mt-1.5 max-w-md mx-auto">
+                    Upload documents, artifacts, and skills to train your AI. Supports PDF, DOC, DOCX, TXT, CSV, JSON, XLSX, PPTX, and more.
+                  </p>
+                  <Button
+                    className="mt-4 bg-accent text-accent-foreground hover:bg-accent/90 text-sm gap-1.5"
+                    onClick={(e) => { e.stopPropagation(); setShowUploadDialog(true); }}
+                  >
+                    <Upload className="w-4 h-4" /> Upload Files
+                  </Button>
+                </div>
               )}
             </div>
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-[140px] h-9 text-xs bg-card">
-                <Filter className="w-3 h-3 mr-1 text-muted-foreground" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {CATEGORIES.map(c => (
-                  <SelectItem key={c.value} value={c.value}>
-                    <span className="flex items-center gap-1.5">{c.icon} {c.shortLabel}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[120px] h-9 text-xs bg-card">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="ready">Ready</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="error">Error</SelectItem>
-              </SelectContent>
-            </Select>
-            {/* Recently Added toggle */}
-            <Button
-              variant={filterRecent ? "default" : "outline"}
-              size="sm"
-              className={`text-xs h-9 gap-1.5 ${filterRecent ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
-              onClick={() => setFilterRecent(!filterRecent)}
-            >
-              <Zap className="w-3 h-3" />
-              Recent
-              {recentCount > 0 && (
-                <Badge variant="secondary" className={`text-[9px] ml-0.5 ${filterRecent ? "bg-white/20 text-white" : "bg-emerald-500/10 text-emerald-400"}`}>
-                  {recentCount}
-                </Badge>
-              )}
-            </Button>
-            {hasActiveFilters && (
-              <Button
-                variant="ghost" size="sm" className="text-xs h-9"
-                onClick={() => { setSearchQuery(""); setFilterCategory("all"); setFilterStatus("all"); setFilterRecent(false); }}
-              >
-                Clear filters
-              </Button>
-            )}
-          </div>
-          {filteredDocs.length !== totalDocs && (
-            <p className="text-[10px] text-muted-foreground mt-1.5">
-              Showing {filteredDocs.length} of {totalDocs} files
-              {filterRecent && " (last 7 days)"}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Document list */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-5">
-        {filteredDocs.length > 0 ? (
-          Object.entries(docsByCategory).map(([cat, catDocs]) => (
-            <SortableCategoryGroup
-              key={cat}
-              cat={cat}
-              catDocs={catDocs}
-              catMeta={catMetaFn}
-              selectMode={selectMode}
-              selectedIds={selectedIds}
-              renamingId={renamingId}
-              renameValue={renameValue}
-              renameInputRef={renameInputRef}
-              onToggleSelect={toggleSelect}
-              onStartRename={startRename}
-              onRenameChange={setRenameValue}
-              onSubmitRename={submitRename}
-              onCancelRename={() => setRenamingId(null)}
-              onViewDetails={setSelectedDoc}
-              onUpdateVis={(id: number, v: string) => updateVis.mutate({ id, visibility: v as any })}
-              onUpdateCat={(id: number, c: string) => updateCat.mutate({ id, category: c as any })}
-              onDelete={(id: number) => deleteDoc.mutate({ id })}
-              onDragEnd={handleDragEnd}
-              visIcon={visIconFn}
-              visLabel={visLabelFn}
-            />
-          ))
-        ) : totalDocs > 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No files match your filters</p>
-            <Button variant="link" size="sm" className="text-xs mt-1" onClick={() => { setSearchQuery(""); setFilterCategory("all"); setFilterStatus("all"); setFilterRecent(false); }}>
-              Clear all filters
-            </Button>
-          </div>
-        ) : (
-          <div
-            className="text-center py-20 text-muted-foreground border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-accent/30 transition-colors"
-            onClick={() => setShowUploadDialog(true)}
-          >
-            <CloudUpload className="w-14 h-14 mx-auto mb-4 opacity-30" />
-            <p className="text-base font-medium">Drop files here or click to upload</p>
-            <p className="text-xs mt-1.5 max-w-md mx-auto">
-              Upload documents, artifacts, and skills to train your AI. Supports PDF, DOC, DOCX, TXT, CSV, JSON, XLSX, PPTX, and more.
-            </p>
-            <Button
-              className="mt-4 bg-accent text-accent-foreground hover:bg-accent/90 text-sm gap-1.5"
-              onClick={(e) => { e.stopPropagation(); setShowUploadDialog(true); }}
-            >
-              <Upload className="w-4 h-4" /> Upload Files
-            </Button>
-          </div>
-        )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Upload Dialog */}
@@ -789,12 +1053,12 @@ export default function Documents() {
           <DialogHeader>
             <DialogTitle className="text-base">Upload to Knowledge Base</DialogTitle>
             <DialogDescription className="text-xs">
-              Choose category and visibility, then select files. Max 10MB each.
+              Choose category and visibility, then select files. Max 10MB each. Leave category as-is and AI will auto-classify.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">Category</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Category <span className="text-accent">(AI auto-classifies if unsure)</span></p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {CATEGORIES.map(c => (
                   <button
@@ -811,7 +1075,6 @@ export default function Documents() {
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">Leave on any category — AI will auto-classify if unsure</p>
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Visibility</p>
@@ -879,18 +1142,63 @@ export default function Documents() {
         </DialogContent>
       </Dialog>
 
-      {/* Document Details Dialog */}
+      {/* Version Upload Dialog */}
+      <Dialog open={!!versionUploadDoc} onOpenChange={() => setVersionUploadDoc(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base flex items-center gap-2">
+              <History className="w-4 h-4 text-accent" /> Upload New Version
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Replace "{versionUploadDoc?.filename}" with an updated file. The current version will be saved in history.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Card className="bg-secondary/30 border-border">
+              <CardContent className="p-3">
+                <p className="text-xs font-medium">{versionUploadDoc?.filename}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Current: {versionUploadDoc?.chunkCount || 0} chunks · {versionUploadDoc?.status}
+                </p>
+              </CardContent>
+            </Card>
+            <input
+              ref={versionFileRef}
+              type="file"
+              className="hidden"
+              onChange={handleVersionUpload}
+              accept=".txt,.md,.pdf,.doc,.docx,.csv,.json,.xlsx,.pptx,.rtf,.html,.xml,.yaml,.yml"
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setVersionUploadDoc(null)} disabled={uploadVersionMut.isPending}>Cancel</Button>
+            <Button
+              className="bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
+              onClick={() => versionFileRef.current?.click()}
+              disabled={uploadVersionMut.isPending}
+            >
+              {uploadVersionMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {uploadVersionMut.isPending ? "Uploading..." : "Choose New File"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Details Dialog with Version History */}
       <Dialog open={!!selectedDoc} onOpenChange={() => setSelectedDoc(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-sm">{selectedDoc?.filename}</DialogTitle>
-            <DialogDescription className="text-xs">Document insights and extracted content</DialogDescription>
+            <DialogDescription className="text-xs">Document insights, content preview, and version history</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-lg bg-secondary/50">
                 <p className="text-[10px] text-muted-foreground">Status</p>
-                <p className="text-xs font-medium">{STATUS_MAP[selectedDoc?.status]?.label || "Unknown"}</p>
+                <p className="text-xs font-medium flex items-center gap-1">
+                  {STATUS_MAP[selectedDoc?.status]?.icon}
+                  {STATUS_MAP[selectedDoc?.status]?.label || "Unknown"}
+                </p>
               </div>
               <div className="p-3 rounded-lg bg-secondary/50">
                 <p className="text-[10px] text-muted-foreground">Chunks</p>
@@ -907,6 +1215,17 @@ export default function Documents() {
                 </p>
               </div>
             </div>
+
+            {selectedDoc?.status === "error" && (
+              <Button
+                variant="outline" size="sm" className="w-full text-xs gap-1.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                onClick={() => { reprocessMut.mutate({ id: selectedDoc.id }); setSelectedDoc(null); }}
+                disabled={reprocessMut.isPending}
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Retry Processing
+              </Button>
+            )}
+
             {selectedDoc?.extractedText && (
               <div>
                 <p className="text-xs font-medium mb-1">Extracted Content Preview</p>
@@ -916,10 +1235,21 @@ export default function Documents() {
                 </div>
               </div>
             )}
+
             {selectedDoc?.fileUrl && (
               <a href={selectedDoc.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline">
                 <FileUp className="w-3 h-3" /> Download original file
               </a>
+            )}
+
+            {/* Version History */}
+            {selectedDoc && (
+              <div className="border-t border-border pt-4">
+                <VersionHistoryPanel
+                  doc={selectedDoc}
+                  onUploadNewVersion={(doc: any) => { setSelectedDoc(null); setVersionUploadDoc(doc); }}
+                />
+              </div>
             )}
           </div>
         </DialogContent>

@@ -21,7 +21,9 @@ import {
   addDocument, getUserDocuments, getAccessibleDocuments, updateDocumentVisibility,
   updateDocumentStatus, addDocumentChunks,
   searchDocumentChunks, deleteDocument, bulkDeleteDocuments, bulkUpdateDocumentVisibility,
-  bulkUpdateDocumentCategory, renameDocument, reorderDocuments, getAllProducts, getProductsByCategory,
+  bulkUpdateDocumentCategory, renameDocument, reorderDocuments,
+  addDocumentVersion, getDocumentVersions, getLatestVersionNumber, getDocumentProcessingStats,
+  getAllProducts, getProductsByCategory,
   getVisibleProducts, getOrgProducts, createProduct, updateProduct, deleteProduct,
   addAuditEntry, getAuditTrail, addToReviewQueue, getPendingReviews, updateUserAvatar,
   updateReviewStatus, addMemory, getUserMemories, deleteMemory,
@@ -679,7 +681,7 @@ const documentsRouter = router({
         await updateDocumentStatus(doc.id, "error");
       }
 
-      return { id: doc.id, url, category: resolvedCategory };
+      return { id: doc.id, url, category: resolvedCategory, wasAutoClassified: !input.category, suggestedCategory: resolvedCategory };
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
@@ -719,6 +721,148 @@ const documentsRouter = router({
       updates: z.array(z.object({ id: z.number(), sortOrder: z.number() })).min(1).max(500),
     }))
     .mutation(async ({ ctx, input }) => reorderDocuments(ctx.user.id, input.updates)),
+
+  // ─── Processing Stats ─────────────────────────────────────────
+  processingStats: protectedProcedure
+    .query(({ ctx }) => getDocumentProcessingStats(ctx.user.id)),
+
+  // ─── Version History ──────────────────────────────────────────
+  versions: protectedProcedure
+    .input(z.object({ documentId: z.number() }))
+    .query(({ ctx, input }) => getDocumentVersions(input.documentId, ctx.user.id)),
+
+  uploadNewVersion: protectedProcedure
+    .input(z.object({
+      documentId: z.number(),
+      filename: z.string(),
+      content: z.string(), // base64
+      mimeType: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const buffer = Buffer.from(input.content, "base64");
+      if (buffer.length > 31 * 1024 * 1024) {
+        throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "File exceeds 31MB limit" });
+      }
+      // Get current document to snapshot as a version
+      const userDocs = await getUserDocuments(ctx.user.id);
+      const currentDoc = userDocs.find((d: any) => d.id === input.documentId);
+      if (!currentDoc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
+
+      const nextVersion = (await getLatestVersionNumber(input.documentId)) + 1;
+
+      // Save current state as a version before overwriting
+      await addDocumentVersion({
+        documentId: input.documentId,
+        userId: ctx.user.id,
+        versionNumber: nextVersion - 1 || 1,
+        filename: currentDoc.filename,
+        fileUrl: currentDoc.fileUrl,
+        fileKey: currentDoc.fileKey || "",
+        mimeType: currentDoc.mimeType || undefined,
+        extractedText: currentDoc.extractedText || undefined,
+        chunkCount: currentDoc.chunkCount || 0,
+        sizeBytes: undefined,
+      });
+
+      // Upload new file to S3
+      const fileKey = `docs/${ctx.user.id}/${nanoid()}-${input.filename}`;
+      const { url } = await storagePut(fileKey, buffer, input.mimeType || "application/octet-stream");
+
+      // Update the main document record
+      const db = await getDb();
+      if (db) {
+        const { documents: docsTable } = await import("../drizzle/schema");
+        await db.update(docsTable).set({
+          filename: input.filename,
+          fileUrl: url,
+          fileKey,
+          mimeType: input.mimeType || null,
+          status: "processing" as const,
+        }).where(eq(docsTable.id, input.documentId));
+      }
+
+      // Re-process for RAG
+      try {
+        const extraction = await extractDocumentText(buffer, input.filename, input.mimeType);
+        const text = extraction.text;
+        if (!text || text.length < 10 || extraction.method === "unsupported") {
+          await updateDocumentStatus(input.documentId, "ready", `[${input.filename}: ${input.mimeType || "unknown"} \u2014 binary file]`, 0);
+        } else {
+          // Delete old chunks and re-chunk
+          if (db) {
+            const { documentChunks: chunksTable } = await import("../drizzle/schema");
+            await db.delete(chunksTable).where(eq(chunksTable.documentId, input.documentId));
+          }
+          const chunkSize = 1000;
+          const overlap = 200;
+          const chunks: string[] = [];
+          for (let i = 0; i < text.length; i += chunkSize - overlap) {
+            chunks.push(text.substring(i, i + chunkSize));
+          }
+          await addDocumentChunks(chunks.map((content, index) => ({
+            documentId: input.documentId,
+            userId: ctx.user.id,
+            content,
+            chunkIndex: index,
+            category: currentDoc.category as any,
+          })));
+          await updateDocumentStatus(input.documentId, "ready", text.substring(0, 5000), chunks.length);
+        }
+      } catch (e) {
+        console.error("[VersionUpload] Text extraction failed:", e);
+        await updateDocumentStatus(input.documentId, "error");
+      }
+
+      return { success: true, version: nextVersion, url };
+    }),
+
+  // ─── Re-process failed document ──────────────────────────────
+  reprocess: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const userDocs = await getUserDocuments(ctx.user.id);
+      const doc = userDocs.find((d: any) => d.id === input.id);
+      if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
+      if (doc.status !== "error") throw new TRPCError({ code: "BAD_REQUEST", message: "Only failed documents can be reprocessed" });
+
+      await updateDocumentStatus(input.id, "processing");
+      try {
+        // Re-fetch file from S3 and re-process
+        const response = await fetch(doc.fileUrl);
+        if (!response.ok) throw new Error("Failed to fetch file from storage");
+        const buffer = Buffer.from(await response.arrayBuffer());
+        const extraction = await extractDocumentText(buffer, doc.filename, doc.mimeType || undefined);
+        const text = extraction.text;
+        if (!text || text.length < 10 || extraction.method === "unsupported") {
+          await updateDocumentStatus(input.id, "ready", `[${doc.filename}: binary file]`, 0);
+        } else {
+          const db = await getDb();
+          if (db) {
+            const { documentChunks: chunksTable } = await import("../drizzle/schema");
+            await db.delete(chunksTable).where(eq(chunksTable.documentId, input.id));
+          }
+          const chunkSize = 1000;
+          const overlap = 200;
+          const chunks: string[] = [];
+          for (let i = 0; i < text.length; i += chunkSize - overlap) {
+            chunks.push(text.substring(i, i + chunkSize));
+          }
+          await addDocumentChunks(chunks.map((content, index) => ({
+            documentId: input.id,
+            userId: ctx.user.id,
+            content,
+            chunkIndex: index,
+            category: doc.category as any,
+          })));
+          await updateDocumentStatus(input.id, "ready", text.substring(0, 5000), chunks.length);
+        }
+        return { success: true };
+      } catch (e) {
+        console.error("[Reprocess] Failed:", e);
+        await updateDocumentStatus(input.id, "error");
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Reprocessing failed" });
+      }
+    }),
 });
 
 // ─── PRODUCTS ROUTER ──────────────────────────────────────────────

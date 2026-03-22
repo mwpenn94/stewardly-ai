@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
   products, auditTrail, reviewQueue, memories, feedback, qualityRatings,
-  suitabilityAssessments, conversationFolders
+  suitabilityAssessments, conversationFolders, documentVersions
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -375,6 +375,55 @@ export async function reorderDocuments(userId: number, orderedIds: { id: number;
     if (result[0]?.affectedRows) updated += result[0].affectedRows;
   }
   return { updated };
+}
+
+// ─── DOCUMENT VERSION HELPERS ────────────────────────────────────
+export async function addDocumentVersion(data: {
+  documentId: number; userId: number; versionNumber: number;
+  filename: string; fileUrl: string; fileKey: string;
+  mimeType?: string; extractedText?: string; chunkCount?: number; sizeBytes?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { id: 0 };
+  const [result] = await db.insert(documentVersions).values(data as any);
+  return { id: result.insertId };
+}
+
+export async function getDocumentVersions(documentId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(documentVersions)
+    .where(and(eq(documentVersions.documentId, documentId), eq(documentVersions.userId, userId)))
+    .orderBy(desc(documentVersions.versionNumber));
+}
+
+export async function getLatestVersionNumber(documentId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db.select({ maxVer: sql<number>`COALESCE(MAX(${documentVersions.versionNumber}), 0)` })
+    .from(documentVersions)
+    .where(eq(documentVersions.documentId, documentId));
+  return rows[0]?.maxVer || 0;
+}
+
+export async function getDocumentProcessingStats(userId: number) {
+  const db = await getDb();
+  if (!db) return { total: 0, ready: 0, processing: 0, error: 0, uploading: 0, totalChunks: 0, recentUploads: 0 };
+  const allDocs = await db.select({
+    status: documents.status,
+    chunkCount: documents.chunkCount,
+    createdAt: documents.createdAt,
+  }).from(documents).where(eq(documents.userId, userId));
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  return {
+    total: allDocs.length,
+    ready: allDocs.filter(d => d.status === "ready").length,
+    processing: allDocs.filter(d => d.status === "processing").length,
+    error: allDocs.filter(d => d.status === "error").length,
+    uploading: allDocs.filter(d => d.status === "uploading").length,
+    totalChunks: allDocs.reduce((sum, d) => sum + (d.chunkCount || 0), 0),
+    recentUploads: allDocs.filter(d => new Date(d.createdAt).getTime() > sevenDaysAgo).length,
+  };
 }
 
 // ─── PRODUCT HELPERS ──────────────────────────────────────────────
