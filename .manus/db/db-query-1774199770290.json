@@ -1,0 +1,16 @@
+{
+  "query": "SELECT c.id, c.status, c.credentials_encrypted IS NOT NULL as has_creds, LENGTH(c.credentials_encrypted) as cred_len FROM integration_connections c JOIN integration_providers p ON c.provider_id = p.id WHERE p.slug = 'fred';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT c.id, c.status, c.credentials_encrypted IS NOT NULL as has_creds, LENGTH(c.credentials_encrypted) as cred_len FROM integration_connections c JOIN integration_providers p ON c.provider_id = p.id WHERE p.slug = 'fred';",
+  "rows": [
+    {
+      "id": "c4fd4090-c26c-467a-be5b-1e1e6dda0bd9",
+      "status": "connected",
+      "has_creds": "1",
+      "cred_len": "104"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus\thas_creds\tcred_len\nc4fd4090-c26c-467a-be5b-1e1e6dda0bd9\tconnected\t1\t104\n",
+  "stderr": "",
+  "execution_time_ms": 373
+}

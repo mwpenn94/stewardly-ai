@@ -1,0 +1,190 @@
+{
+  "query": "SELECT p.slug, p.name, c.status, c.id as conn_id FROM integration_providers p LEFT JOIN integration_connections c ON p.id = c.provider_id ORDER BY p.slug;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT p.slug, p.name, c.status, c.id as conn_id FROM integration_providers p LEFT JOIN integration_connections c ON p.id = c.provider_id ORDER BY p.slug;",
+  "rows": [
+    {
+      "slug": "apollo",
+      "name": "Apollo.io",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "applied-epic",
+      "name": "Applied Epic",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "attom",
+      "name": "ATTOM Data",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "bea",
+      "name": "Bureau of Economic Analysis",
+      "status": "connected",
+      "conn_id": "41fb4d95-5235-4b78-978b-bb01bb858025"
+    },
+    {
+      "slug": "bls",
+      "name": "Bureau of Labor Statistics",
+      "status": "connected",
+      "conn_id": "ba390f0d-8ef2-4e05-90ce-0f400b3183a5"
+    },
+    {
+      "slug": "bridgeft",
+      "name": "BridgeFT WealthTech API",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "canopy-connect",
+      "name": "Canopy Connect",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "census-bureau",
+      "name": "U.S. Census Bureau",
+      "status": "connected",
+      "conn_id": "529ee93c-882f-404d-8abe-27e29c46f9b8"
+    },
+    {
+      "slug": "compulife",
+      "name": "COMPULIFE",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "esi-fidelity",
+      "name": "ESI / Fidelity Wealthscape",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "finra-brokercheck",
+      "name": "FINRA BrokerCheck",
+      "status": "connected",
+      "conn_id": "a011af35-256e-11f1-bd22-9e0227203397"
+    },
+    {
+      "slug": "fred",
+      "name": "FRED (Federal Reserve Economic Data)",
+      "status": "connected",
+      "conn_id": "c4fd4090-c26c-467a-be5b-1e1e6dda0bd9"
+    },
+    {
+      "slug": "gohighlevel",
+      "name": "GoHighLevel",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "hubspot-crm",
+      "name": "HubSpot CRM",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "ipipeline-insurance",
+      "name": "iPipeline",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "massmutual",
+      "name": "MassMutual",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "n8n",
+      "name": "n8n (Self-Hosted)",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "national-life",
+      "name": "National Life Group",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "peopledatalabs",
+      "name": "People Data Labs",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "plaid",
+      "name": "Plaid",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "redtail-crm",
+      "name": "Redtail CRM",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "salesforce-crm",
+      "name": "Salesforce CRM",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "sec-edgar",
+      "name": "SEC EDGAR",
+      "status": "connected",
+      "conn_id": "a01197fe-256e-11f1-bd22-9e0227203397"
+    },
+    {
+      "slug": "sendgrid-email",
+      "name": "SendGrid",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "smsit",
+      "name": "SMS-iT",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "snaptrade",
+      "name": "SnapTrade",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "twilio-messaging",
+      "name": "Twilio",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "vertafore-ams360",
+      "name": "Vertafore AMS360",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "wealthbox-crm",
+      "name": "Wealthbox CRM",
+      "status": "NULL",
+      "conn_id": "NULL"
+    },
+    {
+      "slug": "zapier-middleware",
+      "name": "Zapier",
+      "status": "NULL",
+      "conn_id": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "slug\tname\tstatus\tconn_id\napollo\tApollo.io\tNULL\tNULL\napplied-epic\tApplied Epic\tNULL\tNULL\nattom\tATTOM Data\tNULL\tNULL\nbea\tBureau of Economic Analysis\tconnected\t41fb4d95-5235-4b78-978b-bb01bb858025\nbls\tBureau of Labor Statistics\tconnected\tba390f0d-8ef2-4e05-90ce-0f400b3183a5\nbridgeft\tBridgeFT WealthTech API\tNULL\tNULL\ncanopy-connect\tCanopy Connect\tNULL\tNULL\ncensus-bureau\tU.S. Census Bureau\tconnected\t529ee93c-882f-404d-8abe-27e29c46f9b8\ncompulife\tCOMPULIFE\tNULL\tNULL\nesi-fidelity\tESI / Fidelity Wealthscape\tNULL\tNULL\nfinra-brokercheck\tFINRA BrokerCheck\tconnected\ta011af35-256e-11f1-bd22-9e0227203397\nfred\tFRED (Federal Reserve Economic Data)\tconnected\tc4fd4090-c26c-467a-be5b-1e1e6dda0bd9\ngohighlevel\tGoHighLevel\tNULL\tNULL\nhubspot-crm\tHubSpot CRM\tNULL\tNULL\nipipeline-insurance\tiPipeline\tNULL\tNULL\nmassmutual\tMassMutual\tNULL\tNULL\nn8n\tn8n (Self-Hosted)\tNULL\tNULL\nnational-life\tNational Life Group\tNULL\tNULL\npeopledatalabs\tPeople Data Labs\tNULL\tNULL\nplaid\tPlaid\tNULL\tNULL\nredtail-crm\tRedtail CRM\tNULL\tNULL\nsalesforce-crm\tSalesforce CRM\tNULL\tNULL\nsec-edgar\tSEC EDGAR\tconnected\ta01197fe-256e-11f1-bd22-9e0227203397\nsendgrid-email\tSendGrid\tNULL\tNULL\nsmsit\tSMS-iT\tNULL\tNULL\nsnaptrade\tSnapTrade\tNULL\tNULL\ntwilio-messaging\tTwilio\tNULL\tNULL\nvertafore-ams360\tVertafore AMS360\tNULL\tNULL\nwealthbox-crm\tWealthbox CRM\tNULL\tNULL\nzapier-middleware\tZapier\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 409
+}

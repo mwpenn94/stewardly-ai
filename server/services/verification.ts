@@ -184,7 +184,32 @@ export async function fetchPremiumFinanceRates(): Promise<{
   sofr?: number; sofr30?: number; sofr90?: number;
   treasury10y?: number; treasury30y?: number; primeRate?: number;
 }> {
-  const fredApiKey = process.env.FRED_API_KEY;
+  let fredApiKey = process.env.FRED_API_KEY;
+  if (!fredApiKey) {
+    // Fallback: try to read from DB-stored integration credentials
+    try {
+      const { getDb } = await import("../db");
+      const { integrationProviders, integrationConnections } = await import("../../drizzle/schema");
+      const { eq, and } = await import("drizzle-orm");
+      const { decryptCredentials } = await import("../services/encryption");
+      const db = await getDb();
+      if (db) {
+        const providers = await db.select().from(integrationProviders).where(eq(integrationProviders.slug, "fred"));
+        if (providers[0]) {
+          const conns = await db.select().from(integrationConnections).where(
+            and(eq(integrationConnections.providerId, providers[0].id), eq(integrationConnections.status, "connected"))
+          );
+          for (const conn of conns) {
+            if (conn.credentialsEncrypted) {
+              const creds = decryptCredentials(conn.credentialsEncrypted);
+              const key = (creds.api_key || creds.apiKey || creds.access_token || "") as string;
+              if (key) { fredApiKey = key; break; }
+            }
+          }
+        }
+      }
+    } catch { /* fallback failed silently */ }
+  }
   if (!fredApiKey) {
     console.warn("[Verification] No FRED API key for rate fetching");
     return {};
