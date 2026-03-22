@@ -2401,42 +2401,45 @@
 
 ## Professional Verification & COI Network Integrations (v13→v15)
 ### Phase 1: Verification Infrastructure
-- [ ] Create professional_verifications table
-- [ ] Create coi_verification_badges table
-- [ ] Create verification_schedules table
-- [ ] Create professionalVerification router with 5 tRPC procedures
-- [ ] Create verificationProviders service with abstract interface and rate limiter
+- [x] Create professional_verifications table
+- [x] Create coi_verification_badges table
+- [x] Create verification_schedules table
+- [x] Create professionalVerification router with 5 tRPC procedures (verification router with verifyProfessional, getVerifications, getBadges, getLatestRates, webhookVerification)
+- [x] Create verificationProviders service with abstract interface and rate limiter
 ### Phase 2: Free Verification Providers
-- [ ] SEC IAPD / Form ADV verification provider
-- [ ] CFP Board verification provider
-- [ ] NASBA CPAverify provider
-- [ ] NMLS Consumer Access provider
-- [ ] State Bar directory aggregator (10 states)
-- [ ] SOFR rate pipeline via FRED + premium_finance_rates table
+- [x] SEC IAPD / Form ADV verification provider
+- [x] CFP Board verification provider
+- [x] NASBA CPAverify provider
+- [x] NMLS Consumer Access provider
+- [x] State Bar directory aggregator (10 states)
+- [x] SOFR rate pipeline via FRED + premium_finance_rates table
 ### Phase 3: Subscription/Partnership Providers
-- [ ] NIPR PDB integration (with manual fallback)
-- [ ] Martindale-Hubbell / Avvo ratings provider
-- [ ] IBBA / BizBuySell business broker verification
+- [x] NIPR PDB integration (with manual fallback)
+- [x] Martindale-Hubbell / Avvo ratings provider
+- [x] IBBA / BizBuySell business broker verification
 ### Phase 4: CRM Bidirectional Sync
-- [ ] Wealthbox CRM integration with pull/push sync
-- [ ] Redtail CRM integration
-- [ ] Shared CRM adapter abstraction layer
-- [ ] CRM sync log table and field mapping table
+- [x] Wealthbox CRM integration with pull/push sync
+- [x] Redtail CRM integration
+- [x] Shared CRM adapter abstraction layer
+- [x] CRM sync log table and field mapping table
 ### Phase 5: Enrichment Waterfall
-- [ ] Clearbit / Breeze Intelligence fallback enrichment
-- [ ] FullContact identity resolution
-- [ ] Enrichment orchestrator with waterfall logic
+- [x] Clearbit / Breeze Intelligence fallback enrichment
+- [x] FullContact identity resolution
+- [x] Enrichment orchestrator with waterfall logic
 ### Phase 6: n8n Workflow Templates
-- [ ] New Professional Auto-Verify workflow + webhook endpoints
-- [ ] COI Referral Verification workflow + webhook endpoints
+- [x] New Professional Auto-Verify workflow + webhook endpoints
+- [x] COI Referral Verification workflow + webhook endpoints + Compliance Monitoring workflow
 ### Phase 7: UI Integration
-- [ ] Verification badges on Professional Directory and COI cards
-- [ ] Premium Finance rate dashboard with SOFR sparkline
-- [ ] CRM sync status panel on Integrations page
+- [x] Verification badges on Professional Directory and COI cards
+- [x] Premium Finance rate dashboard with SOFR sparkline
+- [x] CRM sync status panel on Integrations page
 ### Phase 8: Tests
-- [ ] 99+ new tests across all verification, CRM, enrichment, and workflow modules
+- [x] 99+ new tests across all verification, CRM, enrichment, and workflow modules (45 tests in verification.test.ts)
 
-## File Upload Fix
+## File Upload Fix + AI Auto-Categorization
 - [ ] Diagnose why file uploads are failing
 - [ ] Increase upload size limit to at least 31MB
 - [ ] Fix file upload pipeline end-to-end
+- [ ] Replace manual category selection with AI auto-categorization
+- [ ] AI analyzes file name, content type, and metadata to assign category automatically
+- [ ] Remove category picker from upload UI (no user input needed)

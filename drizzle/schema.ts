@@ -3115,6 +3115,7 @@ export const crmSyncLog = mysqlTable("crm_sync_log", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type CrmSyncLogEntry = typeof crmSyncLog.$inferSelect;
+export type InsertCrmSyncLogEntry = typeof crmSyncLog.$inferInsert;
 
 export const carrierSubmissions = mysqlTable("carrier_submissions", {
   id: int("id").autoincrement().primaryKey(),
@@ -3812,3 +3813,94 @@ export const snapTradePositions = mysqlTable("snaptrade_positions", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 export type SnapTradePosition = typeof snapTradePositions.$inferSelect;
+
+
+// ─── PROFESSIONAL VERIFICATIONS ─────────────────────────────────────────
+// DB table: professional_verifications
+export const professionalVerifications = mysqlTable("professional_verifications", {
+  id: int("id").autoincrement().primaryKey(),
+  professionalId: int("professional_id").notNull(),
+  verificationSource: mysqlEnum("verification_source", [
+    "finra_brokercheck", "sec_iapd", "cfp_board", "nasba_cpaverify",
+    "nipr_pdb", "nmls", "state_bar", "ibba", "martindale", "avvo"
+  ]).notNull(),
+  verificationStatus: mysqlEnum("verification_status", [
+    "verified", "not_found", "flagged", "expired", "pending"
+  ]).notNull(),
+  externalId: varchar("external_id", { length: 100 }),
+  externalUrl: varchar("external_url", { length: 500 }),
+  rawData: json("raw_data"),
+  disclosures: json("disclosures"),
+  licenseStates: json("license_states"),
+  licenseExpiration: timestamp("license_expiration"),
+  verifiedAt: bigint("verified_at", { mode: "number" }).notNull(),
+  expiresAt: bigint("expires_at", { mode: "number" }),
+  verificationMethod: mysqlEnum("verification_method", [
+    "api", "scrape", "manual", "n8n_workflow"
+  ]).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type ProfessionalVerification = typeof professionalVerifications.$inferSelect;
+export type InsertProfessionalVerification = typeof professionalVerifications.$inferInsert;
+
+// ─── COI VERIFICATION BADGES ────────────────────────────────────────────
+// DB table: coi_verification_badges
+export const coiVerificationBadges = mysqlTable("coi_verification_badges", {
+  id: int("id").autoincrement().primaryKey(),
+  coiContactId: int("coi_contact_id"),
+  professionalId: int("professional_id"),
+  badgeType: mysqlEnum("badge_type", [
+    "license_active", "cfp_certified", "cpa_active", "bar_good_standing",
+    "nmls_authorized", "nipr_licensed", "cbi_certified", "no_disclosures",
+    "fiduciary", "am_best_rated", "peer_rated"
+  ]).notNull(),
+  badgeLabel: varchar("badge_label", { length: 100 }),
+  badgeData: json("badge_data"),
+  confidenceScore: decimal("confidence_score", { precision: 3, scale: 2 }),
+  sourceVerificationId: int("source_verification_id"),
+  grantedAt: bigint("granted_at", { mode: "number" }).notNull(),
+  expiresAt: bigint("expires_at", { mode: "number" }),
+  active: mysqlBoolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type CoiVerificationBadge = typeof coiVerificationBadges.$inferSelect;
+export type InsertCoiVerificationBadge = typeof coiVerificationBadges.$inferInsert;
+
+// ─── VERIFICATION SCHEDULES ─────────────────────────────────────────────
+// DB table: verification_schedules
+export const verificationSchedules = mysqlTable("verification_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  professionalId: int("professional_id").notNull(),
+  verificationSource: mysqlEnum("verification_source", [
+    "finra_brokercheck", "sec_iapd", "cfp_board", "nasba_cpaverify",
+    "nipr_pdb", "nmls", "state_bar", "ibba", "martindale", "avvo"
+  ]).notNull(),
+  frequencyDays: int("frequency_days").notNull().default(30),
+  lastRunAt: bigint("last_run_at", { mode: "number" }),
+  nextRunAt: bigint("next_run_at", { mode: "number" }).notNull(),
+  enabled: mysqlBoolean("enabled").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type VerificationSchedule = typeof verificationSchedules.$inferSelect;
+export type InsertVerificationSchedule = typeof verificationSchedules.$inferInsert;
+
+// ─── PREMIUM FINANCE RATES ──────────────────────────────────────────────
+// DB table: premium_finance_rates
+export const premiumFinanceRates = mysqlTable("premium_finance_rates", {
+  id: int("id").autoincrement().primaryKey(),
+  rateDate: date("rate_date").notNull(),
+  sofr: decimal("sofr", { precision: 6, scale: 4 }),
+  sofr30: decimal("sofr_30", { precision: 6, scale: 4 }),
+  sofr90: decimal("sofr_90", { precision: 6, scale: 4 }),
+  treasury10y: decimal("treasury_10y", { precision: 6, scale: 4 }),
+  treasury30y: decimal("treasury_30y", { precision: 6, scale: 4 }),
+  primeRate: decimal("prime_rate", { precision: 6, scale: 4 }),
+  fetchedAt: bigint("fetched_at", { mode: "number" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type PremiumFinanceRate = typeof premiumFinanceRates.$inferSelect;
+export type InsertPremiumFinanceRate = typeof premiumFinanceRates.$inferInsert;
+
