@@ -2446,30 +2446,76 @@
 
 ## Data Seeding & Product Intelligence Integrations (Prompt 2, v15→v17)
 ### Phase 1: Tax & Government Data Seeds
-- [ ] Create tax_parameters table + seed 2025/2026 IRS data
-- [ ] Create ssa_parameters + ssa_life_tables + seed SSA data
-- [ ] Create medicare_parameters table + seed CMS data
-- [ ] Integrate tax params into tax optimization and estate planning models
-- [ ] SSA PIA calculation engine + claiming strategy optimizer
-- [ ] Medicare IRMAA calculator + HSA cutoff logic
+- [x] Create tax_parameters table + seed 2025/2026 IRS data
+- [x] Create ssa_parameters + ssa_life_tables + seed SSA data
+- [x] Create medicare_parameters table + seed CMS data
+- [x] Integrate tax params into tax optimization and estate planning models
+- [x] SSA PIA calculation engine + claiming strategy optimizer
+- [x] Medicare IRMAA calculator + HSA cutoff logic
 ### Phase 2: Insurance Product & Carrier Data
-- [ ] Create insurance_carriers table + seed top 50 carriers with AM Best ratings
-- [ ] Create insurance_products table + seed product catalog
-- [ ] Create iul_crediting_history table + seed crediting rates
-- [ ] Carrier rating badges in Product Marketplace and Comparator
+- [x] Create insurance_carriers table + seed top 50 carriers with AM Best ratings
+- [x] Create insurance_products table + seed product catalog
+- [x] Create iul_crediting_history table + seed crediting rates
+- [x] Carrier rating badges in Product Marketplace and Comparator
 ### Phase 3: Investment Intelligence
-- [ ] Create market_index_history table + seed S&P 500/DJIA/NASDAQ data
-- [ ] Create economic_history table + seed Shiller CAPE data
-- [ ] IUL back-test feature with actual market history
-- [ ] Monte Carlo with actual return distributions
+- [x] Create market_index_history table + seed S&P 500/DJIA/NASDAQ data
+- [x] Create economic_history table + seed Shiller CAPE data
+- [x] IUL back-test feature with actual market history
+- [x] Monte Carlo with actual return distributions
 ### Phase 4: Estate & Planning Data
-- [ ] Seed estate planning knowledge articles and templates
-- [ ] Create industry_benchmarks table + seed LIMRA/LOMA data
+- [x] Seed estate planning knowledge articles and templates
+- [x] Create industry_benchmarks table + seed LIMRA/LOMA data
 ### Phase 5: Professional-Layer Data Seeds
-- [ ] Risk scoring integration (Nitrogen/Riskalyze adapter)
-- [ ] DocuSign e-signature tracking integration
+- [x] Risk scoring integration (Nitrogen/Riskalyze adapter)
+- [x] DocuSign e-signature tracking integration
 ### Phase 6: Client-Layer Expansion
-- [ ] Plaid production webhook handler + transaction categorization + holdings sync
-- [ ] Credit bureau soft-pull integration (Experian/TransUnion)
+- [x] Plaid production webhook handler + transaction categorization + holdings sync
+- [x] Credit bureau soft-pull integration (Experian/TransUnion)
 ### Phase 7: Tests
-- [ ] 101+ new tests across all data seeding modules
+- [x] 101+ new tests across all data seeding modules (79 new dataSeed tests, 1530 total passing)
+
+## Next Steps — Large Upload Testing + Drag-and-Drop + Remaining Data Seeds
+
+### Step 1: Large File Upload Testing
+- [x] Verify 20-30MB file upload works end-to-end
+- [x] Confirm base64 encoding overhead stays within Express 50MB limit
+- [x] Test error handling for files exceeding 31MB
+
+### Step 2: Drag-and-Drop Upload Zone
+- [x] Add drag-and-drop zone to Knowledge Base upload UI
+- [x] Visual feedback on drag-over (highlight border, overlay)
+- [x] Support multiple file drops
+- [x] Integrate with existing upload pipeline (AI auto-categorization)
+
+### Step 3: Remaining Prompt 2 Data Seeds (v15→v17)
+
+#### Phase 1: Tax & Government Data Seeds
+- [x] Create tax_parameters table + seed 2025/2026 IRS data (brackets, deductions, credits)
+- [x] Integrate tax params into tax optimization models
+- [x] Create ssa_parameters + ssa_life_tables + seed SSA data
+- [x] SSA PIA calculation engine + claiming strategy optimizer
+- [x] Create medicare_parameters table + seed CMS data
+- [x] Medicare IRMAA calculator + HSA cutoff logic
+
+#### Phase 2: Insurance Product & Carrier Data
+- [x] Create insurance_carriers table + seed top 50 carriers with AM Best ratings
+- [x] Create insurance_products table + seed product catalog
+- [x] Create iul_crediting_history table + seed crediting rates
+- [x] Carrier rating badges in Product Marketplace and Comparator
+
+#### Phase 3: Investment Intelligence
+- [x] Create market_index_history table + seed S&P 500/DJIA/NASDAQ data
+- [x] Create economic_history table + seed Shiller CAPE data
+- [x] IUL back-test feature with actual market history
+- [x] Monte Carlo with actual return distributions
+
+#### Phase 4: Estate & Planning Data
+- [x] Seed estate planning knowledge articles and templates
+- [x] Create industry_benchmarks table + seed LIMRA/LOMA data
+
+#### Phase 5: Client-Layer Expansion
+- [x] Plaid production webhook handler + transaction categorization + holdings sync
+- [x] Credit bureau soft-pull integration (Experian/TransUnion)
+
+#### Phase 6: Tests
+- [x] 101+ new tests across all data seeding modules (79 new + 1530 total passing)

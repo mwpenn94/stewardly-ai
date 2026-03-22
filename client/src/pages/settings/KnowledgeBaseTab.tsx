@@ -12,7 +12,7 @@ import {
   GraduationCap, FileCode, ScrollText, FolderOpen,
   Eye, EyeOff, Shield, Users, Lock, Sparkles,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 
 const STATUS_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   uploading: { icon: <Clock className="w-3 h-3" />, color: "text-amber-400", label: "Uploading" },
@@ -37,13 +37,36 @@ const CATEGORIES = [
   { value: "skills", label: "Skills", icon: <BookOpen className="w-3.5 h-3.5" /> },
 ];
 
+const ACCEPTED_TYPES = [
+  "text/plain", "text/markdown", "application/pdf", "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/csv", "application/json",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/rtf", "text/html", "application/xml", "text/xml",
+  "application/x-yaml", "text/yaml",
+];
+
+const ACCEPTED_EXTENSIONS = [
+  ".txt", ".md", ".pdf", ".doc", ".docx", ".csv", ".json",
+  ".xlsx", ".pptx", ".rtf", ".html", ".xml", ".yaml", ".yml",
+];
+
+function isAcceptedFile(file: File): boolean {
+  if (ACCEPTED_TYPES.includes(file.type)) return true;
+  const ext = "." + file.name.split(".").pop()?.toLowerCase();
+  return ACCEPTED_EXTENSIONS.includes(ext);
+}
+
 export default function KnowledgeBaseTab() {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [uploadCount, setUploadCount] = useState(0);
   const [visibility, setVisibility] = useState("professional");
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounterRef = useRef(0);
   const utils = trpc.useUtils();
 
   const docs = trpc.documents.list.useQuery();
@@ -76,33 +99,29 @@ export default function KnowledgeBaseTab() {
 
   const MAX_FILE_SIZE = 31 * 1024 * 1024; // 31MB
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
+  const processFiles = useCallback((files: File[]) => {
     const validFiles: File[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    for (const file of files) {
       if (file.size > MAX_FILE_SIZE) {
         toast.error(`${file.name} is too large (max 31MB)`);
+        continue;
+      }
+      if (!isAcceptedFile(file)) {
+        toast.error(`${file.name} is not a supported file type`);
         continue;
       }
       validFiles.push(file);
     }
 
-    if (validFiles.length === 0) {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
+    if (validFiles.length === 0) return;
 
     setUploading(true);
-    setUploadCount(validFiles.length);
+    setUploadCount(prev => prev + validFiles.length);
 
     for (const file of validFiles) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = (reader.result as string).split(",")[1];
-        // No category passed — AI will auto-categorize on the server
         uploadDoc.mutate({
           filename: file.name,
           content: base64,
@@ -120,8 +139,49 @@ export default function KnowledgeBaseTab() {
       };
       reader.readAsDataURL(file);
     }
+  }, [visibility, uploadDoc]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    processFiles(files);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  // ─── Drag & Drop Handlers ──────────────────────────────────────
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    dragCounterRef.current = 0;
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      processFiles(files);
+    }
+  }, [processFiles]);
 
   const docsByCategory = (docs.data || []).reduce((acc: Record<string, any[]>, doc: any) => {
     const cat = doc.category || "personal_docs";
@@ -156,7 +216,7 @@ export default function KnowledgeBaseTab() {
         )}
       </div>
 
-      {/* Upload section */}
+      {/* Upload section with Drag & Drop */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-1.5">
@@ -168,6 +228,65 @@ export default function KnowledgeBaseTab() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Drag & Drop Zone */}
+          <div
+            onDragEnter={handleDragEnter}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onClick={() => !uploading && fileInputRef.current?.click()}
+            className={`relative cursor-pointer rounded-xl border-2 border-dashed transition-all duration-200 p-6 text-center ${
+              isDragOver
+                ? "border-accent bg-accent/10 scale-[1.01] shadow-lg shadow-accent/10"
+                : "border-border/60 hover:border-accent/40 hover:bg-accent/5"
+            } ${uploading ? "opacity-60 pointer-events-none" : ""}`}
+          >
+            {isDragOver && (
+              <div className="absolute inset-0 rounded-xl bg-accent/5 backdrop-blur-[1px] flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center animate-pulse">
+                    <Upload className="w-6 h-6 text-accent" />
+                  </div>
+                  <p className="text-sm font-medium text-accent">Drop files here</p>
+                </div>
+              </div>
+            )}
+            <div className="flex flex-col items-center gap-2">
+              {uploading ? (
+                <>
+                  <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                  <p className="text-sm font-medium">Uploading {uploadCount} file{uploadCount !== 1 ? "s" : ""}...</p>
+                  <p className="text-[10px] text-muted-foreground">AI is categorizing your documents</p>
+                </>
+              ) : (
+                <>
+                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+                    <Upload className="w-5 h-5 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Drag & drop files here</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">or click to browse — max 31MB each</p>
+                  </div>
+                  <div className="flex flex-wrap justify-center gap-1 mt-1">
+                    {["PDF", "DOC", "XLSX", "CSV", "TXT", "JSON", "PPTX", "MD"].map(ext => (
+                      <span key={ext} className="px-1.5 py-0.5 rounded bg-secondary/60 text-[8px] font-mono text-muted-foreground">
+                        {ext}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={handleFileSelect}
+              accept=".txt,.md,.pdf,.doc,.docx,.csv,.json,.xlsx,.pptx,.rtf,.html,.xml,.yaml,.yml"
+              multiple
+            />
+          </div>
+
           {/* Visibility selector */}
           <div>
             <p className="text-[10px] font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">Visibility</p>
@@ -190,29 +309,6 @@ export default function KnowledgeBaseTab() {
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              onChange={handleFileSelect}
-              accept=".txt,.md,.pdf,.doc,.docx,.csv,.json,.xlsx,.pptx,.rtf,.html,.xml,.yaml,.yml"
-              multiple
-            />
-            <Button
-              size="sm"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs gap-1.5"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-              {uploading ? `Uploading (${uploadCount} remaining)...` : "Upload Files"}
-            </Button>
-            <p className="text-[9px] text-muted-foreground">
-              Max 31MB each. TXT, MD, PDF, DOC, DOCX, CSV, JSON, XLSX, PPTX, and more.
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -291,7 +387,7 @@ export default function KnowledgeBaseTab() {
         <div className="text-center py-12 text-muted-foreground">
           <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
           <p className="text-sm">No files uploaded yet</p>
-          <p className="text-xs mt-1">Upload documents to enhance your AI experience</p>
+          <p className="text-xs mt-1">Drag and drop documents here to enhance your AI experience</p>
         </div>
       )}
 
