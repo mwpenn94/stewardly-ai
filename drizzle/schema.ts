@@ -4150,3 +4150,225 @@ export const creditProfiles = mysqlTable("credit_profiles", {
 });
 export type CreditProfile = typeof creditProfiles.$inferSelect;
 export type InsertCreditProfile = typeof creditProfiles.$inferInsert;
+
+// ─── FOUNDATION LAYER: SCRAPING ETHICS & RATE MANAGEMENT ────────────────
+
+// Scraping audit log — every external request logged for accountability
+export const scrapingAudit = mysqlTable("scraping_audit", {
+  id: int("id").autoincrement().primaryKey(),
+  provider: varchar("provider", { length: 100 }).notNull(),
+  domain: varchar("domain", { length: 200 }).notNull(),
+  endpoint: varchar("endpoint", { length: 500 }),
+  method: mysqlEnum("method", ["GET", "POST", "PUT", "DELETE", "PATCH"]).default("GET"),
+  statusCode: int("status_code"),
+  responseTimeMs: int("response_time_ms"),
+  rateLimitRemaining: int("rate_limit_remaining"),
+  rateLimitReset: timestamp("rate_limit_reset"),
+  userAgent: varchar("user_agent", { length: 500 }),
+  robotsTxtChecked: mysqlBoolean("robots_txt_checked").default(false),
+  robotsTxtAllowed: mysqlBoolean("robots_txt_allowed").default(true),
+  cacheHit: mysqlBoolean("cache_hit").default(false),
+  errorMessage: text("error_message"),
+  requestHash: varchar("request_hash", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ScrapingAudit = typeof scrapingAudit.$inferSelect;
+export type InsertScrapingAudit = typeof scrapingAudit.$inferInsert;
+
+// Scraping cache — aggressive caching to minimize external requests
+export const scrapingCache = mysqlTable("scraping_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  cacheKey: varchar("cache_key", { length: 256 }).notNull().unique(),
+  provider: varchar("provider", { length: 100 }).notNull(),
+  endpoint: varchar("endpoint", { length: 500 }),
+  responseBody: text("response_body"),
+  responseHeaders: json("response_headers"),
+  statusCode: int("status_code"),
+  ttlSeconds: int("ttl_seconds").default(86400),
+  hitCount: int("hit_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export type ScrapingCache = typeof scrapingCache.$inferSelect;
+export type InsertScrapingCache = typeof scrapingCache.$inferInsert;
+
+// Data freshness registry — tracks staleness of every data category
+export const dataFreshnessRegistry = mysqlTable("data_freshness_registry", {
+  id: int("id").autoincrement().primaryKey(),
+  provider: varchar("provider", { length: 100 }).notNull(),
+  dataCategory: varchar("data_category", { length: 100 }).notNull(),
+  lastRefreshedAt: timestamp("last_refreshed_at"),
+  nextRefreshAt: timestamp("next_refresh_at"),
+  refreshIntervalHours: int("refresh_interval_hours").default(24),
+  recordCount: int("record_count").default(0),
+  status: mysqlEnum("status", ["fresh", "stale", "refreshing", "error", "paused"]).default("fresh"),
+  consecutiveFailures: int("consecutive_failures").default(0),
+  maxConsecutiveFailures: int("max_consecutive_failures").default(3),
+  lastErrorMessage: text("last_error_message"),
+  autoPaused: mysqlBoolean("auto_paused").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DataFreshnessRegistry = typeof dataFreshnessRegistry.$inferSelect;
+export type InsertDataFreshnessRegistry = typeof dataFreshnessRegistry.$inferInsert;
+
+// Rate profiles — per-provider rate limiting configuration
+export const rateProfiles = mysqlTable("rate_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  provider: varchar("provider", { length: 100 }).notNull().unique(),
+  domain: varchar("domain", { length: 200 }).notNull(),
+  currentRpm: int("current_rpm").notNull().default(10),
+  discoveredLimit: int("discovered_limit"),
+  staticMaximum: int("static_maximum").notNull().default(60),
+  safetyFactor: decimal("safety_factor", { precision: 3, scale: 2 }).default("0.70"),
+  dailyBudget: int("daily_budget").default(1000),
+  dailyUsed: int("daily_used").default(0),
+  dailyResetAt: timestamp("daily_reset_at"),
+  successRate: decimal("success_rate", { precision: 5, scale: 2 }).default("100.00"),
+  avgLatencyMs: int("avg_latency_ms"),
+  lastThrottledAt: timestamp("last_throttled_at"),
+  lastBlockedAt: timestamp("last_blocked_at"),
+  isGovernment: mysqlBoolean("is_government").default(false),
+  probeEnabled: mysqlBoolean("probe_enabled").default(false),
+  enabled: mysqlBoolean("enabled").default(true),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RateProfile = typeof rateProfiles.$inferSelect;
+export type InsertRateProfile = typeof rateProfiles.$inferInsert;
+
+// Rate signal log — tracks HTTP response signals for rate limit detection
+export const rateSignalLog = mysqlTable("rate_signal_log", {
+  id: int("id").autoincrement().primaryKey(),
+  provider: varchar("provider", { length: 100 }).notNull(),
+  signalType: mysqlEnum("signal_type", [
+    "rate_limit_header", "retry_after", "http_429", "http_403",
+    "latency_spike", "connection_reset", "timeout", "captcha_detected",
+    "soft_block", "rate_reduction"
+  ]).notNull(),
+  signalData: json("signal_data"),
+  httpStatus: int("http_status"),
+  retryAfterSeconds: int("retry_after_seconds"),
+  rateHeaders: json("rate_headers"),
+  previousRpm: int("previous_rpm"),
+  adjustedRpm: int("adjusted_rpm"),
+  autoApplied: mysqlBoolean("auto_applied").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type RateSignalLog = typeof rateSignalLog.$inferSelect;
+export type InsertRateSignalLog = typeof rateSignalLog.$inferInsert;
+
+// ─── PHASE J: ADAPTIVE RATE MANAGEMENT ──────────────────────────────────
+
+// Probe results — rate probing for undocumented limits
+export const probeResults = mysqlTable("probe_results", {
+  id: int("id").autoincrement().primaryKey(),
+  domain: varchar("domain", { length: 200 }).notNull(),
+  probeTimestamp: timestamp("probe_timestamp").defaultNow().notNull(),
+  batchesCompleted: int("batches_completed").default(0),
+  firstThrottleBatch: int("first_throttle_batch"),
+  discoveredRpm: int("discovered_rpm"),
+  confidence: decimal("confidence", { precision: 3, scale: 2 }),
+  rawLog: json("raw_log"),
+  approvedBy: int("approved_by"),
+  applied: mysqlBoolean("applied").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ProbeResult = typeof probeResults.$inferSelect;
+export type InsertProbeResult = typeof probeResults.$inferInsert;
+
+// Integration analysis log — AI auto-configuration for new sources
+export const integrationAnalysisLog = mysqlTable("integration_analysis_log", {
+  id: int("id").autoincrement().primaryKey(),
+  sourceUrl: varchar("source_url", { length: 500 }).notNull(),
+  domain: varchar("domain", { length: 200 }).notNull(),
+  robotsTxt: text("robots_txt"),
+  rateHeadersFound: json("rate_headers_found"),
+  sourceClassification: varchar("source_classification", { length: 50 }),
+  aiRecommendation: json("ai_recommendation"),
+  adminAdjusted: mysqlBoolean("admin_adjusted").default(false),
+  adminFinalConfig: json("admin_final_config"),
+  approvedBy: int("approved_by"),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type IntegrationAnalysisLog = typeof integrationAnalysisLog.$inferSelect;
+export type InsertIntegrationAnalysisLog = typeof integrationAnalysisLog.$inferInsert;
+
+// Extraction plans — multi-day data extraction scheduling
+export const extractionPlans = mysqlTable("extraction_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  planName: varchar("plan_name", { length: 200 }).notNull(),
+  planType: mysqlEnum("plan_type", ["initial_seed", "scheduled_refresh", "on_demand", "ai_suggested"]).notNull(),
+  totalRecords: int("total_records").default(0),
+  estimatedDurationHours: decimal("estimated_duration_hours", { precision: 8, scale: 2 }),
+  planJson: json("plan_json"),
+  optimizationNotes: json("optimization_notes"),
+  status: mysqlEnum("status", ["draft", "approved", "running", "completed", "paused", "failed"]).default("draft"),
+  approvedBy: int("approved_by"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  recordsCompleted: int("records_completed").default(0),
+  recordsFailed: int("records_failed").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ExtractionPlan = typeof extractionPlans.$inferSelect;
+export type InsertExtractionPlan = typeof extractionPlans.$inferInsert;
+
+// Extraction plan jobs — individual jobs within a plan
+export const extractionPlanJobs = mysqlTable("extraction_plan_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  planId: int("plan_id").notNull(),
+  provider: varchar("provider", { length: 50 }).notNull(),
+  jobType: varchar("job_type", { length: 50 }),
+  scheduledDay: int("scheduled_day"),
+  requestsAllocated: int("requests_allocated"),
+  recordsTarget: int("records_target"),
+  recordsCompleted: int("records_completed").default(0),
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed", "skipped"]).default("pending"),
+  errorLog: json("error_log"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ExtractionPlanJob = typeof extractionPlanJobs.$inferSelect;
+export type InsertExtractionPlanJob = typeof extractionPlanJobs.$inferInsert;
+
+// Rate recommendations — AI-generated rate adjustment suggestions
+export const rateRecommendations = mysqlTable("rate_recommendations", {
+  id: int("id").autoincrement().primaryKey(),
+  provider: varchar("provider", { length: 50 }).notNull(),
+  recommendationType: varchar("recommendation_type", { length: 50 }).notNull(),
+  recommendationJson: json("recommendation_json").notNull(),
+  confidence: decimal("confidence", { precision: 3, scale: 2 }),
+  status: mysqlEnum("status", ["pending_review", "auto_applicable", "approved", "rejected", "applied"]).default("pending_review"),
+  reviewedBy: int("reviewed_by"),
+  appliedAt: timestamp("applied_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type RateRecommendation = typeof rateRecommendations.$inferSelect;
+export type InsertRateRecommendation = typeof rateRecommendations.$inferInsert;
+
+// Data value scores — prioritize high-value data refreshes
+export const dataValueScores = mysqlTable("data_value_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  provider: varchar("provider", { length: 50 }).notNull(),
+  recordId: varchar("record_id", { length: 100 }).notNull(),
+  currentScore: decimal("current_score", { precision: 8, scale: 2 }).default("0.00"),
+  lastScoredAt: timestamp("last_scored_at"),
+  refreshPriority: mysqlEnum("refresh_priority", ["critical", "high", "normal", "low", "dormant"]).default("normal"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DataValueScore = typeof dataValueScores.$inferSelect;
+export type InsertDataValueScore = typeof dataValueScores.$inferInsert;

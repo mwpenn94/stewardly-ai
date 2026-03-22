@@ -339,9 +339,10 @@ export function runMonteCarlo(params: MonteCarloParams): MonteCarloResult {
 
   // Calculate percentiles
   const getPercentile = (yearIdx: number, pct: number): number => {
-    const values = allPaths.map(p => p[yearIdx]).sort((a, b) => a - b);
+    const values = allPaths.map(p => p[yearIdx] ?? 0).filter(v => v !== undefined).sort((a, b) => a - b);
+    if (values.length === 0) return 0;
     const idx = Math.floor(values.length * pct / 100);
-    return values[Math.min(idx, values.length - 1)];
+    return values[Math.min(idx, values.length - 1)] ?? 0;
   };
 
   const percentile10: number[] = [];

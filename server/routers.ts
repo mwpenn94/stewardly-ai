@@ -9,6 +9,7 @@ import { transcribeAudio } from "./_core/voiceTranscription";
 import { storagePut } from "./storage";
 import { generateImage } from "./_core/imageGeneration";
 import { nanoid } from "nanoid";
+import { extractDocumentText } from "./services/documentExtractor";
 import { generateSpeech, getVoiceCatalog } from "./edgeTTS";
 import { callDataApi } from "./_core/dataApi";
 import { SEARCH_TOOLS, executeSearchTool } from "./webSearch";
@@ -649,24 +650,31 @@ const documentsRouter = router({
       // Process document for RAG (extract text and chunk)
       try {
         await updateDocumentStatus(doc.id, "processing");
-        // Simple text extraction (for text-based files)
-        const text = buffer.toString("utf-8").substring(0, 100000);
-        // Chunk the text
-        const chunkSize = 1000;
-        const overlap = 200;
-        const chunks: string[] = [];
-        for (let i = 0; i < text.length; i += chunkSize - overlap) {
-          chunks.push(text.substring(i, i + chunkSize));
+        // Proper text extraction using pdf-parse (PDFs) and mammoth (DOCXs)
+        const extraction = await extractDocumentText(buffer, input.filename, input.mimeType);
+        const text = extraction.text;
+        if (!text || text.length < 10 || extraction.method === "unsupported") {
+          // File type not supported for text extraction — store metadata only
+          await updateDocumentStatus(doc.id, "ready", `[${input.filename}: ${input.mimeType || "unknown"} — binary file, no text extracted]`, 0);
+        } else {
+          // Chunk the extracted text
+          const chunkSize = 1000;
+          const overlap = 200;
+          const chunks: string[] = [];
+          for (let i = 0; i < text.length; i += chunkSize - overlap) {
+            chunks.push(text.substring(i, i + chunkSize));
+          }
+          await addDocumentChunks(chunks.map((content, index) => ({
+            documentId: doc.id,
+            userId: ctx.user.id,
+            content,
+            chunkIndex: index,
+            category: resolvedCategory as any,
+          })));
+          await updateDocumentStatus(doc.id, "ready", text.substring(0, 5000), chunks.length);
         }
-        await addDocumentChunks(chunks.map((content, index) => ({
-          documentId: doc.id,
-          userId: ctx.user.id,
-          content,
-          chunkIndex: index,
-          category: resolvedCategory as any,
-        })));
-        await updateDocumentStatus(doc.id, "ready", text.substring(0, 5000), chunks.length);
       } catch (e) {
+        console.error("[DocumentUpload] Text extraction failed:", e);
         await updateDocumentStatus(doc.id, "error");
       }
 
@@ -1288,6 +1296,7 @@ import { selfDiscoveryRouter } from "./routers/selfDiscovery";
 import { verificationRouter } from "./routers/verification";
 import { dataSeedRouter } from "./routers/dataSeed";
 import { productIntelligenceRouter } from "./routers/productIntelligence";
+import { adminIntelligenceRouter } from "./routers/adminIntelligence";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1389,6 +1398,7 @@ export const appRouter = router({
   verification: verificationRouter,
   dataSeed: dataSeedRouter,
   productIntelligence: productIntelligenceRouter,
+  adminIntelligence: adminIntelligenceRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -2519,3 +2519,132 @@
 
 #### Phase 6: Tests
 - [x] 101+ new tests across all data seeding modules (79 new + 1530 total passing)
+
+## Bug Fix — Knowledge Base Documents Appear as Binary/Corrupted in AI Chat
+- [x] Investigate document upload → S3 storage → RAG retrieval pipeline
+- [x] Fix documents appearing as binary data instead of readable text in AI context (pdf-parse + mammoth)
+- [x] Ensure uploaded PDFs, DOCXs, and text files are properly extracted and stored as text
+- [x] Write tests to verify document text extraction and RAG injection (1530 tests passing)
+
+## Consolidated Integration, Data Pipeline & Intelligence Prompt (v9→v17)
+
+### Foundation Layer (Phase 3)
+- [ ] scraping_audit table + scraping_cache table + data_freshness_registry table + rate_profiles table + rate_signal_log table
+- [ ] robotsChecker.ts — robots.txt compliance with 24hr cache
+- [ ] rateLimiter.ts — centralized rate limiting with per-provider budgets
+- [ ] rateSignalDetector.ts — analyze HTTP responses for rate limit signals
+- [ ] rateCalibrator.ts — dynamic rate profile adjustment
+- [ ] dataMaintenanceEngine.ts — freshness orchestrator
+- [ ] Seed initial rate profiles (30+ providers) + freshness registry entries
+- [ ] Foundation cron jobs (data-freshness-check, daily-api-refresh, weekly-scrape-batch, monthly-bulk-refresh, annual-parameter-check)
+
+### Phase A: Professional Verification
+- [ ] professional_verifications + coi_verification_badges + verification_schedules tables
+- [ ] VerificationProvider interface + 6 free providers (SEC IAPD, CFP Board, NASBA, NMLS, State Bar x10, SOFR/FRED)
+- [ ] 3 subscription providers (NIPR, Martindale/Avvo, IBBA)
+- [ ] professionalVerification router (verify, status, badges, schedule, bulkVerify)
+- [ ] premium_finance_rates table + SOFR pipeline
+- [ ] reverify-expiring-credentials cron
+
+### Phase B-E: Data Seeds
+- [ ] Tax parameter auto-updater with DB lookups replacing hardcoded values
+- [ ] SSA benefit calculation engine with PIA/FRA/claiming strategy
+- [ ] Medicare plan data with IRMAA calculator
+- [ ] AM Best carrier ratings database (50 carriers)
+- [ ] Insurance product catalog with IUL crediting + COMPULIFE quotes
+- [ ] Market index history + Shiller CAPE + IUL back-test + Monte Carlo
+- [ ] Estate planning knowledge articles + industry benchmarks (LIMRA/LOMA)
+
+### Phase F: CRM Bidirectional Sync
+- [ ] CRM adapter abstraction (Wealthbox + Redtail)
+- [ ] crm_sync_log table
+- [ ] Pull contacts/tasks/opportunities, push summaries/suitability/COI referrals
+
+### Phase G: Enrichment Waterfall
+- [ ] Enrichment orchestrator (PDL → Clearbit → Apollo waterfall)
+- [ ] FullContact identity resolution for cross-referral deduplication
+
+### Phase H-I: Professional + Client Layer
+- [ ] Nitrogen risk scoring integration
+- [ ] DocuSign e-signature tracking
+- [ ] Plaid production webhook handler + transaction categorization + holdings sync
+- [ ] Credit bureau soft-pull integration
+
+### Phase J: AI-Driven Adaptive Rate Management
+- [ ] Rate probing system (off-peak, admin-approved)
+- [ ] AI-powered integration onboarding (auto-config new sources)
+- [ ] Intelligent extraction planner + executor
+- [ ] AI rate recommendation system
+- [ ] Data value scoring
+- [ ] probe_results + integration_analysis_log + extraction_plans + extraction_plan_jobs + rate_recommendations + data_value_scores tables
+
+### Phase K: Admin Intelligence Dashboard
+- [ ] 5-tab admin dashboard (Data Freshness, Rate Profiles, Extraction Plans, AI Recommendations, Data Value)
+- [ ] WebSocket events for real-time progress
+
+### Phase L: n8n Workflow Templates
+- [ ] New Professional Auto-Verify workflow
+- [ ] COI Referral Verification workflow
+- [ ] HMAC-SHA256 webhook signature verification
+
+### Phase M: UI Integration
+- [ ] Verification badges on professional cards (green/blue/amber/red)
+- [ ] Premium finance rate dashboard with SOFR sparkline
+- [ ] CRM sync status panel on /integrations
+
+### Phase N: Tests (~397 new)
+- [ ] Foundation layer tests (52)
+- [ ] Verification tests (99)
+- [ ] Data seeding tests (101)
+- [ ] Adaptive rate management tests (80)
+- [ ] Integration UI tests (65)
+
+## Command 2: Data Pipeline Resource Allocation (v1.0)
+### Foundation Layer
+- [x] Apply Foundation Layer DB migration (scraping_audit, scraping_cache, data_freshness_registry, rate_profiles, rate_signal_log, probe_results, integration_analysis_log, extraction_plans, extraction_plan_jobs, rate_recommendations, data_value_scores)
+- [x] Build scraping ethics service (robots.txt checker, user-agent rotation, request auditing)
+- [x] Build rate management service (rate profiles, signal detector, calibrator)
+- [x] Build freshness registry service (staleness tracking, auto-pause on failures)
+- [x] Build data maintenance engine (cache cleanup, expiry management)
+### Phase A: Verification + SOFR + Integration Providers Seed
+- [x] Seed 20 integration providers (Census, BLS, FRED, BEA, EDGAR, FINRA, GHL, SMS-iT, BridgeFT, Plaid, COMPULIFE, Canopy, ATTOM, NLG, MassMutual, ESI, PDL, SnapTrade, ACORD/DTCC, WealthBridge)
+- [x] Seed 7 carrier import templates (NLG commission/production/inforce, MassMutual commission/production, generic commission/policy)
+- [x] Professional verification infrastructure (10 verification providers)
+- [x] SOFR pipeline integration
+### Phases 5-6: Org + Professional Provider Services
+- [x] GoHighLevel OAuth service (contacts, pipelines, conversations, webhooks)
+- [x] SMS-iT service (contacts, campaigns, webhook events)
+- [x] BridgeFT WealthTech service (accounts, positions, performance, transactions)
+- [x] COMPULIFE quoting service
+- [x] Plaid org-level credential management + client-level link creation
+- [x] People Data Labs enrichment service (advisor-level, 100/mo free tier)
+- [x] Carrier import service (CSV/PDF parsing with templates)
+### Phase F-G: CRM Sync + Enrichment + Context Assembly
+- [x] CRM bidirectional sync (Wealthbox/Redtail + GHL)
+- [x] Enrichment waterfall (PDL/Clearbit/FullContact)
+- [x] Context assembly integration (5-layer prompt builder enhancement with live FRED/BLS/Census data)
+### Phase H-J: Professional + Client + Adaptive Rate
+- [x] Professional-layer integrations (Nitrogen, DocuSign)
+- [x] Client-layer expansion (Plaid production, credit bureau)
+- [x] AI-driven adaptive rate management (probing, AI onboarding, extraction planner/executor, rate recommender, data value scoring)
+### Phase K+M: Admin Dashboard + Integration UI
+- [ ] Admin intelligence dashboard (5 tabs)
+- [ ] Platform admin integrations dashboard (Tier A pipeline status cards)
+- [ ] Org admin integration settings page (Tier B provider cards with OAuth/API key flows)
+- [ ] Advisor personal integrations page (carrier import, contact enrichment, additional connections)
+- [ ] Client account connections component (Plaid Link, Canopy Connect)
+### Phase L: n8n + Cron Manager
+- [ ] n8n workflow templates (new-professional-auto-verify, COI-referral-verification)
+- [ ] Cron manager service (register all Tier A jobs, monthly usage reset, OAuth refresh, cache expiry check)
+### Testing
+- [x] 1627 comprehensive tests across 57 test files — all passing
+### UI/UX Refinement
+- [ ] Check and refine UI/UX across all pages
+- [ ] Code efficiency review and optimization
+- [ ] Crawl testing (verify all routes, links, navigation)
+- [ ] Virtual user testing (simulate user flows)
+- [ ] Validation and refinement
+### Comprehensive App Guide
+- [ ] Build exhaustive in-app guide (design, build, and use)
+- [ ] Integrate guide with AI awareness
+- [ ] Create standalone document version of the guide
