@@ -266,6 +266,11 @@ function ConnectDialog({
     }
   })();
 
+  // SnapTrade uses Connection Portal flow, not credential entry
+  if (provider.slug === "snaptrade") {
+    return <SnapTradeConnectDialog provider={provider} open={open} onOpenChange={onOpenChange} />;
+  }
+
   // Add Plaid-specific fields
   if (provider.slug === "plaid") {
     return (
@@ -404,6 +409,206 @@ function SyncHistory({ connectionId }: { connectionId: string }) {
         </div>
       ))}
     </div>
+  );
+}
+
+// ─── SnapTrade Connect Dialog ─────────────────────────────────────────
+function SnapTradeConnectDialog({
+  provider,
+  open,
+  onOpenChange,
+}: {
+  provider: Provider;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const getPortalUrl = trpc.integrations.snapTradeGetPortalUrl.useMutation({
+    onSuccess: (data) => {
+      // Open Connection Portal in new window
+      window.open(data.redirectUrl, "_blank", "width=500,height=700");
+      onOpenChange(false);
+      toast.success("Connection Portal opened — complete the brokerage connection in the new window.");
+    },
+    onError: (e) => {
+      toast.error(e.message);
+      setLoading(false);
+    },
+  });
+
+  const stStatus = trpc.integrations.snapTradeStatus.useQuery(undefined, { enabled: !!user });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Briefcase className="h-5 w-5" />
+            Connect Brokerage via SnapTrade
+          </DialogTitle>
+          <DialogDescription>
+            Link your brokerage account to sync portfolio data, positions, and balances automatically.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          {!stStatus.data?.platformConfigured && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+              <div className="flex items-center gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                <span>SnapTrade platform credentials not yet configured. An admin must first connect SnapTrade with a clientId + consumerKey.</span>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-lg bg-muted/50 p-4 space-y-3">
+            <h4 className="text-sm font-medium">How it works</h4>
+            <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+              <li>Click "Open Connection Portal" below</li>
+              <li>Select your brokerage (Fidelity, Schwab, Alpaca, etc.)</li>
+              <li>Log in securely through SnapTrade's portal</li>
+              <li>Your accounts and positions will sync automatically</li>
+            </ol>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
+              <Shield className="h-3.5 w-3.5" />
+              <span>Your brokerage credentials are never stored by Stewardly — SnapTrade handles authentication securely.</span>
+            </div>
+          </div>
+
+          {stStatus.data?.registered && stStatus.data.connectionsCount > 0 && (
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+              <div className="flex items-center gap-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                <span>You have {stStatus.data.connectionsCount} active connection(s) and {stStatus.data.accountsCount} account(s).</span>
+              </div>
+            </div>
+          )}
+
+          <Button
+            className="w-full"
+            disabled={loading || !stStatus.data?.platformConfigured}
+            onClick={() => {
+              setLoading(true);
+              getPortalUrl.mutate({ redirectUrl: window.location.origin + "/integrations?snaptrade_callback=true" });
+            }}
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
+            Open Connection Portal
+          </Button>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Free tier: 5 brokerage connections per platform.
+            <br />
+            Powered by{" "}
+            <a href="https://snaptrade.com" target="_blank" rel="noopener" className="text-primary underline">
+              SnapTrade
+            </a>
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── SnapTrade Brokerage Section (shown in Client tier) ───────────────
+function SnapTradeBrokerageSection() {
+  const { user } = useAuth();
+  const stStatus = trpc.integrations.snapTradeStatus.useQuery(undefined, { enabled: !!user });
+  const stConnections = trpc.integrations.snapTradeConnections.useQuery(undefined, { enabled: !!user && !!stStatus.data?.registered });
+  const stAccounts = trpc.integrations.snapTradeAccounts.useQuery(undefined, { enabled: !!user && !!stStatus.data?.registered });
+  const syncData = trpc.integrations.snapTradeSyncData.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Synced ${data.accounts} accounts and ${data.positions} positions`);
+      stConnections.refetch();
+      stAccounts.refetch();
+      stStatus.refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeConn = trpc.integrations.snapTradeRemoveConnection.useMutation({
+    onSuccess: () => {
+      toast.success("Brokerage connection removed");
+      stConnections.refetch();
+      stAccounts.refetch();
+      stStatus.refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  if (!user || !stStatus.data?.registered || !stStatus.data.connectionsCount) return null;
+
+  const activeConns = (stConnections.data || []).filter((c: any) => c.status !== "deleted");
+  const accounts = stAccounts.data || [];
+
+  if (!activeConns.length) return null;
+
+  return (
+    <Card className="border-emerald-500/20">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Briefcase className="h-5 w-5 text-emerald-500" />
+          Your Brokerage Connections
+        </CardTitle>
+        <CardDescription>Connected via SnapTrade — portfolio data syncs automatically.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {activeConns.map((conn: any) => (
+          <div key={conn.id} className="rounded-lg border p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Database className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">{conn.brokerageName || "Brokerage"}</span>
+                <Badge variant={conn.status === "active" ? "default" : "secondary"} className="text-xs">
+                  {conn.status}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => syncData.mutate()}
+                  disabled={syncData.isPending}
+                >
+                  {syncData.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (confirm("Remove this brokerage connection?")) {
+                      removeConn.mutate({ connectionId: conn.id });
+                    }
+                  }}
+                >
+                  <Unlink className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            {conn.lastSyncAt && (
+              <div className="text-xs text-muted-foreground">
+                Last synced: {new Date(conn.lastSyncAt).toLocaleString()}
+              </div>
+            )}
+            {/* Show accounts under this connection */}
+            {accounts.filter((a: any) => a.connectionId === conn.id).map((acct: any) => (
+              <div key={acct.id} className="ml-6 rounded-md bg-muted/50 p-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{acct.accountName || acct.accountNumber || "Account"}</span>
+                  <span className="text-xs text-muted-foreground">{acct.accountType || ""}</span>
+                </div>
+                {(acct.totalValue || acct.marketValue || acct.cashBalance) && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {acct.totalValue ? `Total: $${Number(acct.totalValue).toLocaleString()}` :
+                     acct.marketValue ? `Market Value: $${Number(acct.marketValue).toLocaleString()}` :
+                     `Cash: $${Number(acct.cashBalance).toLocaleString()}`}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -654,6 +859,9 @@ export default function Integrations() {
           })}
         </div>
       )}
+
+      {/* SnapTrade Brokerage Connections */}
+      <SnapTradeBrokerageSection />
 
       {/* My Connections — Sync History */}
       {connectedCount > 0 && (

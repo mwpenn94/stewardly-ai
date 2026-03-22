@@ -1,0 +1,9 @@
+{
+  "query": "SELECT ic.id, ic.ownership_tier, ic.owner_id, ic.user_id, ic.status, ic.records_synced, ic.last_sync_status, ip.slug FROM integration_connections ic JOIN integration_providers ip ON ic.provider_id = ip.id WHERE ip.slug = 'snaptrade';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT ic.id, ic.ownership_tier, ic.owner_id, ic.user_id, ic.status, ic.records_synced, ic.last_sync_status, ip.slug FROM integration_connections ic JOIN integration_providers ip ON ic.provider_id = ip.id WHERE ip.slug = 'snaptrade';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 361
+}

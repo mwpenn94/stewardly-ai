@@ -25,7 +25,7 @@ function canManageTier(userRole: string, tier: string): boolean {
   if (userRole === "admin") return true;
   if (tier === "organization" && (userRole === "admin" || userRole === "manager")) return true;
   if (tier === "professional") return true; // any authenticated user can manage their own
-  if (tier === "client" && (userRole === "admin" || userRole === "manager" || userRole === "professional")) return true;
+  if (tier === "client") return true; // any authenticated user can manage their own client-tier connections
   if (tier === "platform" && userRole === "admin") return true;
   return false;
 }
@@ -815,5 +815,99 @@ export const integrationsRouter = router({
     .mutation(async () => {
       const { runPipelineSelfTest } = await import("../services/pipelineSelfTest");
       return runPipelineSelfTest();
+    }),
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // SNAPTRADE — Per-User Brokerage Connections (Client Tier)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /** Check if SnapTrade platform credentials are configured */
+  snapTradeStatus: protectedProcedure
+    .query(async ({ ctx }) => {
+      const st = await import("../services/snapTrade");
+      const configured = await st.isPlatformConfigured();
+      const userStatus = await st.getSnapTradeStatus(ctx.user.id);
+      return { platformConfigured: configured, ...userStatus };
+    }),
+
+  /** Get Connection Portal URL for the current user to connect a brokerage */
+  snapTradeGetPortalUrl: protectedProcedure
+    .input(z.object({ redirectUrl: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const st = await import("../services/snapTrade");
+      return st.getConnectionPortalUrl(ctx.user.id, input.redirectUrl);
+    }),
+
+  /** Sync brokerage connections from SnapTrade for the current user */
+  snapTradeSyncConnections: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const st = await import("../services/snapTrade");
+      return st.syncBrokerageConnections(ctx.user.id);
+    }),
+
+  /** Sync accounts and positions from SnapTrade for the current user */
+  snapTradeSyncData: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const st = await import("../services/snapTrade");
+      // First sync connections, then accounts/positions
+      await st.syncBrokerageConnections(ctx.user.id);
+      return st.syncAccountsAndPositions(ctx.user.id);
+    }),
+
+  /** Get the current user's brokerage connections (local DB) */
+  snapTradeConnections: protectedProcedure
+    .query(async ({ ctx }) => {
+      const st = await import("../services/snapTrade");
+      return st.getUserBrokerageConnections(ctx.user.id);
+    }),
+
+  /** Get the current user's brokerage accounts (local DB) */
+  snapTradeAccounts: protectedProcedure
+    .query(async ({ ctx }) => {
+      const st = await import("../services/snapTrade");
+      return st.getUserAccounts(ctx.user.id);
+    }),
+
+  /** Get the current user's positions (local DB) */
+  snapTradePositions: protectedProcedure
+    .query(async ({ ctx }) => {
+      const st = await import("../services/snapTrade");
+      return st.getUserPositions(ctx.user.id);
+    }),
+
+  /** Remove a brokerage connection */
+  snapTradeRemoveConnection: protectedProcedure
+    .input(z.object({ connectionId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const st = await import("../services/snapTrade");
+      return st.removeBrokerageConnection(ctx.user.id, input.connectionId);
+    }),
+
+  /** Advisor: view an associated client's SnapTrade status */
+  snapTradeClientStatus: protectedProcedure
+    .input(z.object({ clientUserId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      // Only advisors/managers/admins can view client data
+      if (ctx.user.role !== "admin" && ctx.user.role !== "manager" && ctx.user.role !== "advisor") {
+        throw new Error("Only advisors, managers, and admins can view client brokerage status");
+      }
+      // Verify association exists (for non-admins)
+      if (ctx.user.role !== "admin") {
+        const db = (await getDb())!;
+        const { clientAssociations } = await import("../../drizzle/schema");
+        const assoc = await db.select().from(clientAssociations)
+          .where(and(
+            eq(clientAssociations.professionalId, ctx.user.id),
+            eq(clientAssociations.clientId, input.clientUserId)
+          ));
+        if (!assoc.length) {
+          throw new Error("No association with this client");
+        }
+      }
+      const st = await import("../services/snapTrade");
+      const status = await st.getSnapTradeStatus(input.clientUserId);
+      const connections = await st.getUserBrokerageConnections(input.clientUserId);
+      const accounts = await st.getUserAccounts(input.clientUserId);
+      return { ...status, connections, accounts };
     }),
 });

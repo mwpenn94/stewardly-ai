@@ -3738,3 +3738,77 @@ export const integrationImprovementLog = mysqlTable("integration_improvement_log
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 export type IntegrationImprovementLogEntry = typeof integrationImprovementLog.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SNAPTRADE — Per-User Brokerage Connections
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── SNAPTRADE USER REGISTRATIONS (Per-user SnapTrade identity) ──────────
+export const snapTradeUsers = mysqlTable("snaptrade_users", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  snapTradeUserId: varchar("snaptrade_user_id", { length: 200 }).notNull(),
+  snapTradeUserSecretEncrypted: text("snaptrade_user_secret_encrypted").notNull(),
+  status: mysqlEnum("status", ["active", "disabled", "deleted"]).default("active").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type SnapTradeUser = typeof snapTradeUsers.$inferSelect;
+
+// ─── SNAPTRADE BROKERAGE CONNECTIONS (Per-user brokerage links) ──────────
+export const snapTradeBrokerageConnections = mysqlTable("snaptrade_brokerage_connections", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  snapTradeUserId: varchar("snaptrade_user_id", { length: 36 }).notNull(),
+  brokerageAuthorizationId: varchar("brokerage_authorization_id", { length: 200 }).notNull(),
+  brokerageName: varchar("brokerage_name", { length: 200 }),
+  brokerageType: varchar("brokerage_type", { length: 100 }),
+  status: mysqlEnum("status", ["active", "disabled", "error", "deleted"]).default("active").notNull(),
+  disabledReason: text("disabled_reason"),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncStatus: mysqlEnum("last_sync_status", ["success", "partial", "failed"]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type SnapTradeBrokerageConnection = typeof snapTradeBrokerageConnections.$inferSelect;
+
+// ─── SNAPTRADE ACCOUNTS (Brokerage accounts discovered per connection) ───
+export const snapTradeAccounts = mysqlTable("snaptrade_accounts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  connectionId: varchar("connection_id", { length: 36 }).notNull(),
+  snapTradeAccountId: varchar("snaptrade_account_id", { length: 200 }).notNull(),
+  accountName: varchar("account_name", { length: 200 }),
+  accountNumber: varchar("account_number", { length: 100 }),
+  accountType: varchar("account_type", { length: 100 }),
+  institutionName: varchar("institution_name", { length: 200 }),
+  cashBalance: decimal("cash_balance", { precision: 18, scale: 4 }),
+  marketValue: decimal("market_value", { precision: 18, scale: 4 }),
+  totalValue: decimal("total_value", { precision: 18, scale: 4 }),
+  currency: varchar("currency", { length: 10 }).default("USD"),
+  lastSyncAt: timestamp("last_sync_at"),
+  syncDataJson: json("sync_data_json"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type SnapTradeAccount = typeof snapTradeAccounts.$inferSelect;
+
+// ─── SNAPTRADE POSITIONS (Holdings per account) ──────────────────────────
+export const snapTradePositions = mysqlTable("snaptrade_positions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  accountId: varchar("account_id", { length: 36 }).notNull(),
+  symbolTicker: varchar("symbol_ticker", { length: 20 }),
+  symbolName: varchar("symbol_name", { length: 300 }),
+  symbolType: varchar("symbol_type", { length: 50 }),
+  units: decimal("units", { precision: 18, scale: 8 }),
+  averagePrice: decimal("average_price", { precision: 18, scale: 4 }),
+  currentPrice: decimal("current_price", { precision: 18, scale: 4 }),
+  marketValue: decimal("market_value", { precision: 18, scale: 4 }),
+  currency: varchar("currency", { length: 10 }).default("USD"),
+  rawJson: json("raw_json"),
+  lastSyncAt: timestamp("last_sync_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+export type SnapTradePosition = typeof snapTradePositions.$inferSelect;

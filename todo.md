@@ -2360,3 +2360,15 @@
 ## Bug Fix: BEA API Key Not Working Despite Being Active
 - [x] Diagnose BEA API key storage/decryption/request issue — root cause: BEA Error 4 is actually rate limiting, not auth; also T20100 doesn't support Monthly freq (use T20600), and Year=LAST5/X not universally supported
 - [x] Fix BEA API connection: added retry with exponential backoff, warm-up GETDATASETLIST call, 5s inter-request delays, T20100→T20600 for monthly PI, explicit years instead of LAST5/X, lowercase UserID
+
+## SnapTrade: Move to Client/Guest Level for Free-Tier Scale
+- [x] Audit current SnapTrade integration (schema, routers, UI, access control)
+- [x] Move SnapTrade brokerage connections from professional-level to client/user-level
+- [x] Each end-user connects their own brokerage account (maximizes free-tier API calls)
+- [x] Higher roles (advisor/manager/admin) with associated user can assist with connection setup
+- [x] Update schema: SnapTrade userId/secret stored per user, not per integration provider
+- [x] Update routers: client-facing SnapTrade connection endpoints
+- [x] Update UI: add brokerage connection flow to Integrations page with SnapTrade Connection Portal
+- [x] Advisor assist flow: snapTradeClientStatus endpoint lets advisors view client brokerage status
+- [x] Data pipeline reads from per-user SnapTrade connections instead of single platform key
+- [x] Update access control: users own their brokerage data, advisors see via clientAssociations check
