@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, name, slug, ownership_tier, auth_method, category FROM integration_providers WHERE slug = 'snaptrade';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute SELECT id, name, slug, ownership_tier, auth_method, category FROM integration_providers WHERE slug = 'snaptrade';",
+  "rows": [
+    {
+      "id": "7229c47e-3f4a-49da-9aee-3c3ae4d8ba7d",
+      "name": "SnapTrade",
+      "slug": "snaptrade",
+      "ownership_tier": "platform",
+      "auth_method": "api_key",
+      "category": "investments"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tslug\townership_tier\tauth_method\tcategory\n7229c47e-3f4a-49da-9aee-3c3ae4d8ba7d\tSnapTrade\tsnaptrade\tplatform\tapi_key\tinvestments\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}

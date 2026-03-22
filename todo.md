@@ -2372,3 +2372,9 @@
 - [x] Advisor assist flow: snapTradeClientStatus endpoint lets advisors view client brokerage status
 - [x] Data pipeline reads from per-user SnapTrade connections instead of single platform key
 - [x] Update access control: users own their brokerage data, advisors see via clientAssociations check
+
+## SnapTrade: Move Provider to Platform Tier
+- [x] Update SnapTrade provider ownership_tier from 'client' to 'platform' in DB
+- [x] Update isPlatformConfigured to look for platform-tier SnapTrade connection
+- [x] Update Connection Portal dialog — admin configures clientId/consumerKey at platform level, users connect brokerage via SnapTradeBrokerageSection
+- [x] Ensure only admins can set/update the SnapTrade platform credentials (platform tier = admin-only)

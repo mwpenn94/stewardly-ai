@@ -266,9 +266,60 @@ function ConnectDialog({
     }
   })();
 
-  // SnapTrade uses Connection Portal flow, not credential entry
+  // SnapTrade platform credentials: admin enters clientId + consumerKey
+  // The SnapTrade Connection Portal (for end-users) is in SnapTradeBrokerageSection
   if (provider.slug === "snaptrade") {
-    return <SnapTradeConnectDialog provider={provider} open={open} onOpenChange={onOpenChange} />;
+    const snapFields = [
+      { key: "clientId", label: "Client ID", type: "text", placeholder: "Your SnapTrade Client ID" },
+      { key: "consumerKey", label: "Consumer Key", type: "password", placeholder: "Your SnapTrade Consumer Key" },
+    ];
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              Configure SnapTrade Platform Credentials
+            </DialogTitle>
+            <DialogDescription>
+              Enter your SnapTrade developer API credentials. These power the brokerage Connection Portal for all users.
+              Get your credentials at{" "}
+              <a href="https://snaptrade.com" target="_blank" rel="noopener" className="text-primary underline">snaptrade.com</a>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {snapFields.map((field) => (
+              <div key={field.key} className="space-y-2">
+                <label className="text-sm font-medium">{field.label}</label>
+                <Input
+                  type={field.type}
+                  placeholder={field.placeholder}
+                  value={credentials[field.key] || ""}
+                  onChange={(e) => setCredentials((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                />
+              </div>
+            ))}
+            <div className="rounded-lg bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground">
+                Once configured, users can connect their brokerages (Fidelity, Schwab, Alpaca, etc.) via the SnapTrade Connection Portal in the Client Connections section below. Free tier supports 5 brokerage connections per platform.
+              </p>
+            </div>
+            <Button
+              className="w-full"
+              disabled={submitting || !credentials.clientId || !credentials.consumerKey}
+              onClick={() => {
+                setSubmitting(true);
+                onSubmit(provider.slug, credentials);
+                setTimeout(() => setSubmitting(false), 3000);
+              }}
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
+              Save Platform Credentials
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   // Add Plaid-specific fields
@@ -510,9 +561,10 @@ function SnapTradeConnectDialog({
   );
 }
 
-// ─── SnapTrade Brokerage Section (shown in Client tier) ───────────────
+// ─── SnapTrade Brokerage Section (user-facing Connection Portal + connected accounts) ───
 function SnapTradeBrokerageSection() {
   const { user } = useAuth();
+  const [portalLoading, setPortalLoading] = useState(false);
   const stStatus = trpc.integrations.snapTradeStatus.useQuery(undefined, { enabled: !!user });
   const stConnections = trpc.integrations.snapTradeConnections.useQuery(undefined, { enabled: !!user && !!stStatus.data?.registered });
   const stAccounts = trpc.integrations.snapTradeAccounts.useQuery(undefined, { enabled: !!user && !!stStatus.data?.registered });
@@ -534,24 +586,58 @@ function SnapTradeBrokerageSection() {
     },
     onError: (e) => toast.error(e.message),
   });
+  const getPortalUrl = trpc.integrations.snapTradeGetPortalUrl.useMutation({
+    onSuccess: (data) => {
+      window.open(data.redirectUrl, "_blank", "width=500,height=700");
+      toast.success("Connection Portal opened — complete the brokerage connection in the new window.");
+      setPortalLoading(false);
+    },
+    onError: (e) => {
+      toast.error(e.message);
+      setPortalLoading(false);
+    },
+  });
 
-  if (!user || !stStatus.data?.registered || !stStatus.data.connectionsCount) return null;
+  // Don't show if platform credentials aren't configured or user isn't logged in
+  if (!user || !stStatus.data?.platformConfigured) return null;
 
-  const activeConns = (stConnections.data || []).filter((c: any) => c.status !== "deleted");
-  const accounts = stAccounts.data || [];
-
-  if (!activeConns.length) return null;
+  const activeConns = stStatus.data?.registered
+    ? (stConnections.data || []).filter((c: any) => c.status !== "deleted")
+    : [];
+  const accounts = stStatus.data?.registered ? (stAccounts.data || []) : [];
 
   return (
     <Card className="border-emerald-500/20">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Briefcase className="h-5 w-5 text-emerald-500" />
-          Your Brokerage Connections
-        </CardTitle>
-        <CardDescription>Connected via SnapTrade — portfolio data syncs automatically.</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Briefcase className="h-5 w-5 text-emerald-500" />
+              Brokerage Connections
+            </CardTitle>
+            <CardDescription>Connect your brokerage via SnapTrade to sync portfolio data automatically.</CardDescription>
+          </div>
+          <Button
+            size="sm"
+            disabled={portalLoading}
+            onClick={() => {
+              setPortalLoading(true);
+              getPortalUrl.mutate({ redirectUrl: window.location.origin + "/integrations?snaptrade_callback=true" });
+            }}
+          >
+            {portalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Link2 className="h-3.5 w-3.5 mr-1" />}
+            Connect Brokerage
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {activeConns.length === 0 && (
+          <div className="rounded-lg border border-dashed p-6 text-center">
+            <Briefcase className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+            <p className="text-sm text-muted-foreground">No brokerage accounts connected yet.</p>
+            <p className="text-xs text-muted-foreground mt-1">Click "Connect Brokerage" above to link your Fidelity, Schwab, Alpaca, or other brokerage account.</p>
+          </div>
+        )}
         {activeConns.map((conn: any) => (
           <div key={conn.id} className="rounded-lg border p-3 space-y-2">
             <div className="flex items-center justify-between">
@@ -815,7 +901,7 @@ export default function Integrations() {
             if (!tierProviders?.length) return null;
 
             const tierLabels: Record<string, { label: string; desc: string }> = {
-              platform: { label: "Platform Data Sources", desc: "Government and public economic data — available to all users" },
+              platform: { label: "Platform Data Sources", desc: "Government economic data and brokerage infrastructure — configured by admins" },
               organization: { label: "Organization Integrations", desc: "CRM, compliance, and team management tools" },
               professional: { label: "Professional Tools", desc: "Financial planning, research, and portfolio analytics" },
               client: { label: "Client Connections", desc: "Bank accounts, investments, and personal financial data" },
