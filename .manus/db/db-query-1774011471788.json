@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `insight_actions` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `insight_id` int NOT NULL,\n  `action_type` enum('task_created','notification_sent','alert_escalated','review_scheduled','auto_dismissed') NOT NULL,\n  `action_payload` json,\n  `assigned_to` int,\n  `status` enum('pending','in_progress','completed','dismissed') DEFAULT 'pending',\n  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',\n  `due_at` bigint,\n  `completed_at` bigint,\n  `created_at` bigint NOT NULL\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute CREATE TABLE IF NOT EXISTS `insight_actions` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `insight_id` int NOT NULL,\n  `action_type` enum('task_created','notification_sent','alert_escalated','review_scheduled','auto_dismissed') NOT NULL,\n  `action_payload` json,\n  `assigned_to` int,\n  `status` enum('pending','in_progress','completed','dismissed') DEFAULT 'pending',\n  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',\n  `due_at` bigint,\n  `completed_at` bigint,\n  `created_at` bigint NOT NULL\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 223
-}

@@ -135,3 +135,63 @@ server/services/websocketNotifications.ts  |   6 ++-
 shared/const.ts                            |   1 +
 .env.example                               |  64 +++++++++++++++++++++++ (new)
 ```
+
+---
+
+## Round 2: Environment & Database Audit (March 26, 2026)
+
+### 10. Credential Exposure Discovery
+- Examined `.manus/db/` directory — found 175 JSON query log files
+- Each file contains `"command"` field with full MySQL CLI including host, port, username, database name
+- Confirmed credentials are for TiDB Cloud production instance (`gateway04.us-east-1.prod.aws.tidbcloud.com:4000`)
+- Ran `git ls-files .manus/` — confirmed all 175 files are tracked in git
+- Confirmed `.manus/db/` is NOT in `.gitignore`
+
+### 11. .gitignore Fix
+- Added `.manus/db/` to `.gitignore` with comment explaining sensitivity
+- Ran `git rm --cached -r .manus/db/` to remove 175 files from git index (kept on disk)
+- Files will no longer be included in future commits
+
+### 12. Environment Variable Audit
+- Checked `printenv` for all critical vars: `DATABASE_URL`, `JWT_SECRET`, `VITE_APP_ID`, `NODE_ENV` — all NOT SET in current shell
+- No `.env` file exists on disk (only `.env.example`)
+- App relies on Manus runtime to inject env vars at boot
+- `server/_core/env.ts` defaults to empty strings — safe
+- `drizzle.config.ts` properly requires `DATABASE_URL`
+- `server/db.ts` uses lazy init with `DATABASE_URL` env var — secure
+
+### 13. Database Schema Drift Analysis
+- Extracted CREATE TABLE statements from all 175 query log files
+- Found 131 tables created in live DB
+- Compared against 262 tables in `drizzle/schema.ts`
+- Result: exactly 131 tables (50%) not deployed
+- 0 orphaned tables (live DB has nothing not in schema)
+- Created `db-schema-drift.md` documenting all 131 missing tables by category
+
+### 14. Impact Assessment
+- Audit v4 features affected: role elevation auto-revoke, DSAR consent tracking, audit hash chain columns
+- Integration framework non-functional (provider/connection tables missing)
+- Knowledge base, agent workflows, compliance pre-screening all need `db:push`
+
+### 15. Documentation Updates
+- Updated `task_plan.md` with Round 2 phases and findings
+- Updated `findings.md` with Part C (environment & database audit)
+- Updated `progress.md` with Round 2 action log
+- Updated `AUDIT_PROGRESS.md` with Round 2 status
+- Created `db-schema-drift.md` with full drift analysis
+
+---
+
+## Round 2 Verification
+
+### .gitignore
+```
+git ls-files .manus/db/ → (empty, files removed from index)
+grep ".manus/db" .gitignore → ".manus/db/"
+```
+
+### Credential exposure
+- Source code: CLEAN (no hardcoded credentials)
+- .manus/db/: 175 files REMOVED from git index
+- .gitignore: UPDATED to prevent future commits
+- Git history: Still contains credentials (requires rotation or history rewrite)

@@ -41,6 +41,29 @@
 
 ---
 
+## Environment & Database Audit (March 26, 2026) — Round 2
+
+### CRITICAL: Credential Exposure
+- [x] Discovered 175 `.manus/db/` files with TiDB Cloud credentials tracked in git
+- [x] Added `.manus/db/` to `.gitignore`
+- [x] Removed files from git index (`git rm --cached`)
+- [ ] **ACTION REQUIRED:** Rotate TiDB Cloud credentials (username: `3S2TaCfAdzc6QNm.b8cc9e16633a`)
+- [ ] **ACTION REQUIRED:** Audit TiDB Cloud access logs for unauthorized access
+- [ ] **OPTIONAL:** Rewrite git history to purge credentials (`git filter-repo`)
+
+### HIGH: Schema Drift (131 of 262 tables not deployed)
+- [x] Documented full drift analysis in `db-schema-drift.md`
+- [ ] **ACTION REQUIRED:** Run `pnpm run db:push` to deploy 131 missing tables
+- [ ] **ACTION REQUIRED:** Verify audit v4 features work after deployment (hash chain, DSAR, role elevation)
+
+### Positive: Source Code Clean
+- [x] No hardcoded credentials in `.ts` files
+- [x] Database connection uses env vars exclusively
+- [x] Drizzle config requires `DATABASE_URL`
+- [x] Env var defaults are safe (empty strings, no dangerous values)
+
+---
+
 ## Previous Audit State (March 20, 2026)
 - sortOrder column already exists in schema for conversations and conversation_folders
 - Drag-and-drop backend endpoints ready, dnd-kit installed

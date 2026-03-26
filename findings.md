@@ -118,3 +118,69 @@
 | `package.json` | Added `dompurify`, `@types/dompurify` |
 | `PLATFORM_GUIDE_v15.md` | Updated "remaining work" accuracy |
 | `.env.example` | New: documented env vars |
+
+---
+
+## Part C: Round 2 — Environment & Database Audit (March 26, 2026)
+
+### CRITICAL: Database Credentials Committed to Git
+
+**Location:** `.manus/db/` directory — 175 JSON query log files tracked in git
+
+Every file contains the full database connection command with:
+- **Host:** `gateway04.us-east-1.prod.aws.tidbcloud.com`
+- **Port:** `4000` (TiDB Cloud)
+- **Username:** `3S2TaCfAdzc6QNm.b8cc9e16633a`
+- **Database:** `GaKEFERPH576tbv5NzvkMD`
+
+These credentials provide **full read/write access** to the production database containing:
+- All user financial data, conversations, and documents
+- Brokerage account information (SnapTrade)
+- Insurance applications and quotes
+- Compliance and audit logs
+- Professional relationships and client associations
+
+**Root cause:** `.manus/db/` was NOT listed in `.gitignore`. Manus runtime auto-generates query logs with embedded CLI credentials.
+
+**Fix applied:** Added `.manus/db/` to `.gitignore` and removed files from git index (`git rm --cached`).
+
+**Remaining risk:** Credentials persist in git history. Requires:
+1. Credential rotation on TiDB Cloud
+2. Git history rewrite (`git filter-repo`) or accept that private repo history contains old credentials
+3. Access log audit on TiDB Cloud
+
+---
+
+### HIGH: Database Schema Drift — 50% Not Deployed
+
+| Metric | Count |
+|--------|-------|
+| Drizzle schema tables | 262 |
+| Live DB tables | 131 |
+| Deployed | 131 (50%) |
+| Not deployed | 131 (50%) |
+| Orphaned (live-only) | 0 |
+
+**Impact on audit v4 features:**
+- `role_elevations` — auto-revoke scheduler has no target table
+- `consent_tracking` — DSAR pipeline cannot query consent records
+- `audit_trail.entryHash`/`previousHash` — hash chain columns not in live DB
+- `compliance_prescreening` — pre-screening results cannot be stored
+- `integration_providers`/`integration_connections` — integration framework non-functional
+
+**Fix required:** Run `pnpm run db:push` to deploy full schema.
+
+Full drift analysis documented in `db-schema-drift.md`.
+
+---
+
+### Positive Findings
+
+| Check | Status |
+|-------|--------|
+| Source code hardcoded credentials | CLEAN — no credentials in `.ts` files |
+| `drizzle.config.ts` | SECURE — uses `DATABASE_URL` env var only |
+| `server/db.ts` connection | SECURE — env var with lazy init |
+| `server/_core/env.ts` defaults | SAFE — empty strings, no dangerous defaults |
+| `pnpm-lock.yaml` | CLEAN — only package names |
+| TLS/SSL for DB | Enforced by TiDB Cloud (server-side) |

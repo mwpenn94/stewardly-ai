@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `document_versions` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `documentId` int NOT NULL,\n  `userId` int NOT NULL,\n  `versionNumber` int NOT NULL,\n  `filename` varchar(512) NOT NULL,\n  `fileUrl` text NOT NULL,\n  `fileKey` text NOT NULL,\n  `mimeType` varchar(128),\n  `extractedText` text,\n  `chunkCount` int DEFAULT 0,\n  `sizeBytes` int,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  INDEX `idx_docver_docid` (`documentId`),\n  INDEX `idx_docver_userid` (`userId`)\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute CREATE TABLE IF NOT EXISTS `document_versions` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `documentId` int NOT NULL,\n  `userId` int NOT NULL,\n  `versionNumber` int NOT NULL,\n  `filename` varchar(512) NOT NULL,\n  `fileUrl` text NOT NULL,\n  `fileKey` text NOT NULL,\n  `mimeType` varchar(128),\n  `extractedText` text,\n  `chunkCount` int DEFAULT 0,\n  `sizeBytes` int,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  INDEX `idx_docver_docid` (`documentId`),\n  INDEX `idx_docver_userid` (`userId`)\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 579
-}

@@ -63,3 +63,48 @@ Comprehensive codebase audit covering two dimensions:
 | `Property 'conversationMessages' does not exist` | Used wrong table name in DSAR export | Changed to `messages` |
 | `Argument of type 'number' is not assignable to 'string[]'` | `getAccessibleDocuments` takes visibility levels, not user ID | Passed `["private", "professional", "management"]` arrays |
 | `import crypto` placed mid-file in db.ts | Added inline import inside function section | Moved to top-level imports |
+
+---
+
+## Round 2: Environment & Database Audit (March 26, 2026)
+
+### Goal
+Audit the live environment variables, database configuration, and Manus runtime artifacts for security issues and schema drift.
+
+### Phases
+
+#### Phase R2-1: Credential Exposure Audit
+- Audit `.manus/db/` directory (175 JSON query log files)
+- Check for credentials, connection strings, passwords in committed files
+- Verify `.gitignore` coverage
+
+#### Phase R2-2: Database Schema Drift
+- Compare 262 Drizzle schema tables vs live TiDB Cloud instance
+- Identify undeployed tables and missing columns
+- Assess impact on audit v4 features (hash chain, DSAR, role elevation)
+
+#### Phase R2-3: Environment Variable Audit
+- Verify env var loading pattern (dotenv, env.ts)
+- Check for hardcoded connection strings
+- Assess database connection security (TLS, pooling)
+
+### Key Questions Answered
+
+| Question | Answer |
+|----------|--------|
+| Are DB credentials committed to git? | YES — 175 files in `.manus/db/` contain TiDB Cloud host, port, username, database name in plaintext |
+| Is `.manus/db/` in `.gitignore`? | NO — it was NOT gitignored; all 175 files are tracked in git history |
+| How many Drizzle tables are deployed? | 131 of 262 (exactly 50%) |
+| Do the audit v4 features work in prod? | NO — `role_elevations`, `consent_tracking`, audit `entryHash`/`previousHash` columns are not deployed |
+| Are credentials hardcoded in source? | NO — only in `.manus/db/` query logs; source code uses env vars correctly |
+| Is TLS used for DB connection? | Likely enforced by TiDB Cloud, but not explicit in connection commands |
+
+### Errors / Issues Found
+
+| Issue | Severity | Resolution |
+|-------|----------|------------|
+| 175 DB query log files with credentials tracked in git | CRITICAL | Added `.manus/db/` to `.gitignore`, removed from git index |
+| 131 Drizzle tables not deployed to live DB | HIGH | Documented in `db-schema-drift.md`; needs `pnpm run db:push` |
+| Audit v4 hash chain columns not in live DB | MEDIUM | Will be deployed with `db:push` |
+| `role_elevations` table not deployed (auto-revoke target) | MEDIUM | Will be deployed with `db:push` |
+| `consent_tracking` table not deployed (DSAR target) | MEDIUM | Will be deployed with `db:push` |

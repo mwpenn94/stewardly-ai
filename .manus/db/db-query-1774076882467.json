@@ -1,9 +1,0 @@
-{
-  "query": "UPDATE products SET name = REPLACE(name, 'WealthBridge', 'Stewardly'), company = REPLACE(company, 'WealthBridge Financial Group', 'Stewardly Financial Group') WHERE company LIKE '%WealthBridge%' OR name LIKE '%WealthBridge%';",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute UPDATE products SET name = REPLACE(name, 'WealthBridge', 'Stewardly'), company = REPLACE(company, 'WealthBridge Financial Group', 'Stewardly Financial Group') WHERE company LIKE '%WealthBridge%' OR name LIKE '%WealthBridge%';",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 395
-}

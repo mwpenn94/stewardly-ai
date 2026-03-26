@@ -1,9 +1,0 @@
-{
-  "query": "INSERT INTO user_organization_roles (userId, organizationId, globalRole, organizationRole, status) VALUES \n(1, 1, 'global_admin', 'org_admin', 'active'),\n(1, 2, 'global_admin', 'org_admin', 'active');",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute INSERT INTO user_organization_roles (userId, organizationId, globalRole, organizationRole, status) VALUES \n(1, 1, 'global_admin', 'org_admin', 'active'),\n(1, 2, 'global_admin', 'org_admin', 'active');",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 90
-}
