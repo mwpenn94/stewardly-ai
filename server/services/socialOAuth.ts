@@ -14,7 +14,7 @@
  */
 
 import type { Express, Request, Response } from "express";
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, AUTHENTICATED_SESSION_MS } from "@shared/const";
 import { randomUUID } from "crypto";
 import * as db from "../db";
 import { getSessionCookieOptions } from "../_core/cookies";
@@ -94,12 +94,12 @@ async function issueSessionAndRedirect(
   // Create session token
   const sessionToken = await sdk.createSessionToken(openId, {
     name,
-    expiresInMs: ONE_YEAR_MS,
+    expiresInMs: AUTHENTICATED_SESSION_MS,
   });
 
   // Set session cookie
   const cookieOptions = getSessionCookieOptions(req);
-  res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+  res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: AUTHENTICATED_SESSION_MS });
 
   // Migrate guest data if applicable
   if (guestOpenId && guestOpenId !== openId) {

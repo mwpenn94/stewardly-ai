@@ -113,6 +113,35 @@ async function runScheduledDataPipelines(): Promise<void> {
 }
 
 // ─── Stale Data Cleanup (daily) ────────────────────────────────────────
+async function revokeExpiredRoleElevations(): Promise<void> {
+  try {
+    const { getDb } = await import("../db");
+    const { roleElevations } = await import("../../drizzle/schema");
+    const { lt, isNull, and } = await import("drizzle-orm");
+
+    const db = await getDb();
+    if (!db) {
+      console.warn("[Scheduler] Role elevation revoke skipped: DB unavailable");
+      return;
+    }
+
+    const now = new Date();
+    const result = await db
+      .update(roleElevations)
+      .set({ revokedAt: now })
+      .where(
+        and(
+          lt(roleElevations.expiresAt, now),
+          isNull(roleElevations.revokedAt)
+        )
+      );
+
+    console.log(`[Scheduler] Role elevation auto-revoke completed`);
+  } catch (err) {
+    console.error("[Scheduler] Role elevation revoke error:", err);
+  }
+}
+
 async function runStaleDataCleanup(): Promise<void> {
   try {
     const { getDb } = await import("../db");
@@ -186,6 +215,7 @@ export function initScheduler(): void {
   registerJob("health_checks", 15 * 60 * 1000, runScheduledHealthChecks);      // 15 min
   registerJob("data_pipelines", 6 * 60 * 60 * 1000, runScheduledDataPipelines); // 6 hours
   registerJob("stale_cleanup", 24 * 60 * 60 * 1000, runStaleDataCleanup);       // 24 hours
+  registerJob("role_elevation_revoke", 5 * 60 * 1000, revokeExpiredRoleElevations); // 5 min
   
   // Run self-test first, then start jobs with staggered delays
   const INITIAL_DELAY = 90_000; // 90s after boot

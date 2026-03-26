@@ -594,6 +594,9 @@ export const auditTrail = mysqlTable("audit_trail", {
   reviewStatus: mysqlEnum("reviewStatus", ["auto_approved", "pending_review", "approved", "rejected", "modified"]).default("auto_approved"),
   reviewedBy: int("reviewedBy"),
   reviewNotes: text("reviewNotes"),
+  // Tamper-evident hash chain: each entry includes hash of previous entry
+  entryHash: varchar("entryHash", { length: 64 }),
+  previousHash: varchar("previousHash", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

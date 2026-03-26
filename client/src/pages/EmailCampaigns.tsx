@@ -5,6 +5,7 @@
  * Includes AI content generation, recipient management, and campaign analytics.
  */
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -195,7 +196,7 @@ export default function EmailCampaigns() {
                     <CardTitle className="text-xs">Preview</CardTitle>
                   </CardHeader>
                   <CardContent className="p-3">
-                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: newCampaign.bodyHtml }} />
+                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(newCampaign.bodyHtml) }} />
                   </CardContent>
                 </Card>
               )}
@@ -379,7 +380,7 @@ export default function EmailCampaigns() {
                     <div className="border-b pb-2 mb-3">
                       <p className="text-sm font-medium">Subject: {selectedDetail.data.subject}</p>
                     </div>
-                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: selectedDetail.data.bodyHtml }} />
+                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedDetail.data.bodyHtml) }} />
                   </div>
                 </CardContent>
               </Card>

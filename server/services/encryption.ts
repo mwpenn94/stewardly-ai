@@ -10,7 +10,12 @@ const TAG_LENGTH = 16;
 function getEncryptionKey(): Buffer {
   const key = process.env.INTEGRATION_ENCRYPTION_KEY;
   if (!key) {
-    // Fallback: derive from JWT_SECRET for development
+    if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+      throw new Error(
+        "CRITICAL: INTEGRATION_ENCRYPTION_KEY or JWT_SECRET must be set in production. " +
+        "Cannot use hardcoded fallback key."
+      );
+    }
     const fallback = process.env.JWT_SECRET || "stewardly-dev-key-do-not-use-in-prod";
     return crypto.scryptSync(fallback, "stewardly-integration-salt", 32);
   }
@@ -106,7 +111,19 @@ export function encryptCredentials(credentials: Record<string, unknown>): string
  * Supports migration: tries primary key, then legacy JWT_SECRET key.
  */
 export function decryptCredentials(encrypted: string): Record<string, unknown> {
-  return JSON.parse(decrypt(encrypted));
+  const decrypted = decrypt(encrypted);
+  try {
+    const parsed = JSON.parse(decrypted);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new Error("Decrypted credentials must be a JSON object");
+    }
+    return parsed as Record<string, unknown>;
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      throw new Error("Failed to parse decrypted credentials: malformed JSON");
+    }
+    throw e;
+  }
 }
 
 /**

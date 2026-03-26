@@ -50,9 +50,13 @@ const connectedUsers = new Map<string, UserSocket>();
 // ─── Initialize WebSocket Server ───────────────────────────────────────────
 
 export function initWebSocket(httpServer: HttpServer): Server {
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim())
+    : undefined;
+
   io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: allowedOrigins || (process.env.NODE_ENV === "development" ? true : false),
       methods: ["GET", "POST"],
     },
     path: "/ws",

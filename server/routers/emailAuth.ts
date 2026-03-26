@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { users, organizations, userOrganizationRoles } from "../../drizzle/schema";
 import { hashPassword, verifyPassword, validatePasswordStrength, validateEmail } from "../_core/password";
 import { sdk } from "../_core/sdk";
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, AUTHENTICATED_SESSION_MS } from "@shared/const";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { nanoid } from "nanoid";
 
@@ -95,12 +95,12 @@ export const emailAuthRouter = router({
       // Create session token
       const sessionToken = await sdk.signSession(
         { openId, appId: process.env.VITE_APP_ID || "", name: input.name },
-        { expiresInMs: ONE_YEAR_MS }
+        { expiresInMs: AUTHENTICATED_SESSION_MS }
       );
 
       // Set session cookie
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: AUTHENTICATED_SESSION_MS });
 
       return { success: true, message: "Account created successfully" };
     }),
@@ -156,12 +156,12 @@ export const emailAuthRouter = router({
       // Create session token
       const sessionToken = await sdk.signSession(
         { openId: user.openId, appId: process.env.VITE_APP_ID || "", name: user.name || "" },
-        { expiresInMs: ONE_YEAR_MS }
+        { expiresInMs: AUTHENTICATED_SESSION_MS }
       );
 
       // Set session cookie
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: AUTHENTICATED_SESSION_MS });
 
       return { success: true, message: "Signed in successfully" };
     }),
