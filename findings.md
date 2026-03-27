@@ -168,7 +168,10 @@ These credentials provide **full read/write access** to the production database 
 - `compliance_prescreening` — pre-screening results cannot be stored
 - `integration_providers`/`integration_connections` — integration framework non-functional
 
-**Fix required:** Run `pnpm run db:push` to deploy full schema.
+**Fix prepared:**
+- Generated `drizzle/0007_deploy_missing_tables.sql` (1,754 lines, 131 idempotent statements)
+- Created `scripts/deploy-missing-tables.mjs` deploy script
+- Run `pnpm run db:deploy-missing` when DB is accessible
 
 Full drift analysis documented in `db-schema-drift.md`.
 

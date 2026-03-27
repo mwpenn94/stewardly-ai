@@ -53,7 +53,10 @@
 
 ### HIGH: Schema Drift (131 of 262 tables not deployed)
 - [x] Documented full drift analysis in `db-schema-drift.md`
-- [ ] **ACTION REQUIRED:** Run `pnpm run db:push` to deploy 131 missing tables
+- [x] Generated migration SQL: `drizzle/0007_deploy_missing_tables.sql` (1,754 lines, 131 statements)
+- [x] Created deploy script: `scripts/deploy-missing-tables.mjs`
+- [x] Added `db:deploy-missing` npm script
+- [ ] **ACTION REQUIRED:** Run `pnpm run db:deploy-missing` when DB is accessible
 - [ ] **ACTION REQUIRED:** Verify audit v4 features work after deployment (hash chain, DSAR, role elevation)
 
 ### Positive: Source Code Clean

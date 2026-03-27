@@ -128,5 +128,19 @@ These tables are defined in `drizzle/schema.ts` but do NOT exist in the TiDB Clo
 
 ## Recommended Action
 
-Run `pnpm run db:push` to deploy the full Drizzle schema to the live database.
-This will create the 131 missing tables and add new columns (like `entryHash`/`previousHash` on `audit_trail`).
+A migration file and deploy script have been prepared:
+
+1. **Migration SQL:** `drizzle/0007_deploy_missing_tables.sql` (1,754 lines, 131 statements)
+   - All `CREATE TABLE IF NOT EXISTS` (idempotent — safe to run multiple times)
+   - Includes `ALTER TABLE audit_trail ADD COLUMN IF NOT EXISTS` for hash chain columns
+
+2. **Deploy script:** `scripts/deploy-missing-tables.mjs`
+   - Executes migration against `DATABASE_URL`
+   - Reports progress, success/skipped/failed counts
+
+3. **Run deployment:**
+   ```bash
+   DATABASE_URL="mysql://..." pnpm run db:deploy-missing
+   ```
+
+**Note:** TiDB Cloud is IP-whitelisted to Manus infrastructure. Deploy from a whitelisted environment.
