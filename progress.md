@@ -230,3 +230,31 @@ grep ".manus/db" .gitignore → ".manus/db/"
 # When DB is accessible (from Manus runtime or whitelisted IP):
 DATABASE_URL="mysql://..." pnpm run db:deploy-missing
 ```
+
+---
+
+## Round 4: Audit v2 Item Verification (March 27, 2026)
+
+### 20. Verified all 16 audit v2 items as already implemented
+Checked each item against the actual codebase:
+
+| Item | File(s) | Status |
+|------|---------|--------|
+| 1A: /privacy page | `client/src/pages/Privacy.tsx` (10KB) | Implemented |
+| 1B: Footer links | `client/src/components/GlobalFooter.tsx` (2KB) | Implemented |
+| 1C: Financial disclaimer | GlobalFooter amber disclaimer box | Implemented |
+| 1D: PII masking | `server/prompts.ts` (detectPII, stripPII, maskPIIForLLM) | Implemented |
+| 1E: Privacy settings tab | `client/src/pages/settings/PrivacyDataTab.tsx` (10KB) | Implemented |
+| 1F: Consent tracking | `server/routers/consent.ts` (6 types, audit logged) | Implemented |
+| 2A: AI disclosure | AI badge on every assistant message | Implemented |
+| 2B: AI badge | `MessageList.tsx:73-77` (Sparkles + "AI") | Implemented |
+| 2C: Reasoning | `ReasoningChain.tsx` (7KB, 5-step chain) | Implemented |
+| 2D: Fairness testing | `fairnessTesting.ts` + `FairnessTestDashboard.tsx` | Implemented |
+| 3A: Professional escalation | `proactiveEscalation.ts` (Daily.co video) | Implemented |
+| 3B: Topic disclaimers | `dynamicDisclaimers.ts` (7 topics) | Implemented |
+| 3C: COI disclosure | `CoiNetwork.tsx` (11KB) | Implemented |
+| 4A: BCP docs | `BCP.tsx` (19KB, 7 dependencies) | Implemented |
+| 4B: LLM failover | `llmFailover.ts` (circuit breaker) | Implemented |
+| 4C: Error tracking | `errorHandling.ts` (DB logging, retry) | Implemented |
+
+Updated `audit-action-items.md` and `AUDIT_PROGRESS.md` to reflect all items complete.

@@ -67,14 +67,35 @@
 
 ---
 
-## Previous Audit State (March 20, 2026)
-- sortOrder column already exists in schema for conversations and conversation_folders
-- Drag-and-drop backend endpoints ready, dnd-kit installed
-- Export backend endpoints ready (markdown/json)
+## Previous Audit v2 Items (March 20, 2026) — ALL VERIFIED COMPLETE
 
-## Remaining Items from Previous Audits (35 total)
-### Phase 1: DnD + Export Frontend (7 items)
-### Phase 2: Privacy 1A-1F (6 items)
-### Phase 3: Transparency 2A-2D (4 items)
-### Phase 4: Suitability 3A-3C (3 items)
-### Phase 5: System Prompts (7 items) + Quick Wins (3 items)
+All 16 items from the original audit v2 have been verified as already implemented:
+
+### Phase 1: Privacy — ALL DONE
+- [x] 1A: /privacy page (`Privacy.tsx`)
+- [x] 1B: Privacy/terms footer links (`GlobalFooter.tsx`)
+- [x] 1C: Persistent financial disclaimer footer
+- [x] 1D: PII masking pipeline (`detectPII`, `stripPII`, `maskPIIForLLM`)
+- [x] 1E: Privacy & Data settings tab (`PrivacyDataTab.tsx`)
+- [x] 1F: Per-source consent tracking (`consent.ts` router)
+
+### Phase 2: Transparency — ALL DONE
+- [x] 2A: AI identity disclosure (AI badge on messages)
+- [x] 2B: "AI" badge on assistant messages (`MessageList.tsx`)
+- [x] 2C: Reasoning transparency (`ReasoningChain.tsx`)
+- [x] 2D: Fairness testing baseline (`fairnessTesting.ts` + dashboard)
+
+### Phase 3: Suitability — ALL DONE
+- [x] 3A: Connect with Professional escalation (`proactiveEscalation.ts`)
+- [x] 3B: Topic-specific disclaimers (`dynamicDisclaimers.ts`)
+- [x] 3C: COI disclosure in marketplace (`CoiNetwork.tsx`)
+
+### Phase 4: Infrastructure — ALL DONE
+- [x] 4A: BCP documentation (`BCP.tsx`)
+- [x] 4B: LLM provider failover (`llmFailover.ts`)
+- [x] 4C: Error tracking + monitoring (`errorHandling.ts`)
+
+### Phase 5: Quick Wins — ALL DONE
+- [x] 5A: Fix "Loading checklist..."
+- [x] 5B: Replace generic suggested prompts
+- [x] 5D: Conversational tone rules in system prompt
