@@ -145,7 +145,7 @@ const chatRouter = router({
       try {
         resolvedConfig = await resolveAIConfig({
           userId: ctx.user.id,
-          organizationId: undefined, // TODO: pass user's active org when org context is available
+          organizationId: ctx.user.affiliateOrgId ?? undefined,
         });
       } catch (e) {
         resolvedConfig = null;
@@ -549,12 +549,22 @@ const conversationsRouter = router({
 const documentsRouter = router({
   list: protectedProcedure.query(({ ctx }) => getUserDocuments(ctx.user.id)),
   listAccessible: protectedProcedure.query(async ({ ctx }) => {
-    // Professionals see docs with visibility >= professional; managers >= management; admins see all
-    // TODO: Check org-specific roles from user_organization_roles table
-    // For now, global_admin sees all; others see only their own
-    // TODO: Implement role-based access control
-    // TODO: Check user_organization_roles for role-based document access
-    // TODO: Add org role checks for manager/professional visibility
+    // Admins see all documents; others see only their own
+    if (ctx.user.role === "admin") {
+      return getAccessibleDocuments(["private", "professional", "management", "admin"]);
+    }
+    // If user has an org, check org role for expanded visibility
+    const orgId = ctx.user.affiliateOrgId;
+    if (orgId) {
+      const { getUserOrgRole, hasMinimumOrgRole } = await import("./services/orgRoleHelper");
+      const orgRole = await getUserOrgRole(ctx.user.id, orgId);
+      if (hasMinimumOrgRole(orgRole, "manager")) {
+        return getAccessibleDocuments(["private", "professional", "management"]);
+      }
+      if (hasMinimumOrgRole(orgRole, "professional")) {
+        return getAccessibleDocuments(["private", "professional"]);
+      }
+    }
     return getUserDocuments(ctx.user.id);
   }),
   updateVisibility: protectedProcedure
@@ -1270,21 +1280,33 @@ The user's name is ${ctx.user.name || "there"}.`;
   getClientSuitability: protectedProcedure
     .input(z.object({ userId: z.number() }))
     .query(async ({ ctx, input }) => {
-      // TODO: Check org-specific roles from user_organization_roles table
-      // For now, only global_admin can view client suitability
-      // TODO: Implement role-based access control
-      if (true) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can view client suitability" });
+      // Admins always have access; professionals/managers need org role check
+      if (ctx.user.role !== "admin") {
+        let hasAccess = false;
+        if (ctx.user.affiliateOrgId) {
+          const { getUserOrgRole, hasMinimumOrgRole } = await import("./services/orgRoleHelper");
+          const orgRole = await getUserOrgRole(ctx.user.id, ctx.user.affiliateOrgId);
+          hasAccess = hasMinimumOrgRole(orgRole, "professional");
+        }
+        if (!hasAccess) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Insufficient permissions to view client suitability" });
+        }
       }
       return getUserSuitability(input.userId);
     }),
   // Access chain: managers/admins can list all suitability assessments
   listAll: protectedProcedure.query(async ({ ctx }) => {
-    // TODO: Check org-specific roles from user_organization_roles table
-    // For now, only global_admin can list all assessments
-    // TODO: Implement role-based access control
-    if (true) {
-      throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can list all assessments" });
+    // Admins and org managers can list all assessments
+    if (ctx.user.role !== "admin") {
+      let hasAccess = false;
+      if (ctx.user.affiliateOrgId) {
+        const { getUserOrgRole, hasMinimumOrgRole } = await import("./services/orgRoleHelper");
+        const orgRole = await getUserOrgRole(ctx.user.id, ctx.user.affiliateOrgId);
+        hasAccess = hasMinimumOrgRole(orgRole, "manager");
+      }
+      if (!hasAccess) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Insufficient permissions to list assessments" });
+      }
     }
     const db = await (await import("./db")).getDb();
     if (!db) return [];

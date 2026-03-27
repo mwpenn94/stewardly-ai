@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `user_insights_cache` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `user_id` int NOT NULL,\n  `insight_type` enum('people_performance','system_infrastructure','usage_optimization') NOT NULL,\n  `layer` enum('platform','organization','manager','professional','user') NOT NULL,\n  `data` json NOT NULL,\n  `summary` text NOT NULL,\n  `computed_at` bigint NOT NULL,\n  `expires_at` bigint NOT NULL,\n  INDEX `idx_user_insights_user` (`user_id`),\n  INDEX `idx_user_insights_type_layer` (`user_id`, `insight_type`, `layer`),\n  INDEX `idx_user_insights_expires` (`expires_at`)\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute CREATE TABLE IF NOT EXISTS `user_insights_cache` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `user_id` int NOT NULL,\n  `insight_type` enum('people_performance','system_infrastructure','usage_optimization') NOT NULL,\n  `layer` enum('platform','organization','manager','professional','user') NOT NULL,\n  `data` json NOT NULL,\n  `summary` text NOT NULL,\n  `computed_at` bigint NOT NULL,\n  `expires_at` bigint NOT NULL,\n  INDEX `idx_user_insights_user` (`user_id`),\n  INDEX `idx_user_insights_type_layer` (`user_id`, `insight_type`, `layer`),\n  INDEX `idx_user_insights_expires` (`expires_at`)\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 237
-}

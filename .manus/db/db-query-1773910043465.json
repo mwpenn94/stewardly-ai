@@ -1,9 +1,0 @@
-{
-  "query": "ALTER TABLE documents ADD COLUMN visibility ENUM('private', 'professional', 'management', 'admin') NOT NULL DEFAULT 'professional' AFTER category;\nALTER TABLE documents MODIFY COLUMN category ENUM('personal_docs', 'financial_products', 'regulations', 'training_materials', 'artifacts', 'skills') NOT NULL DEFAULT 'personal_docs';",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute ALTER TABLE documents ADD COLUMN visibility ENUM('private', 'professional', 'management', 'admin') NOT NULL DEFAULT 'professional' AFTER category;\nALTER TABLE documents MODIFY COLUMN category ENUM('personal_docs', 'financial_products', 'regulations', 'training_materials', 'artifacts', 'skills') NOT NULL DEFAULT 'personal_docs';",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 2152
-}

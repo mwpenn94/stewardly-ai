@@ -345,13 +345,15 @@ The database uses TiDB (MySQL-compatible) with Drizzle ORM. Key table groups:
 
 The following items are tracked but not yet implemented:
 
-1. **MFA** (TOTP, backup codes) — Security enhancement
-2. **CSP headers** and security hardening — Infrastructure
-3. **Browser automation** foundation — Agentic capability
-4. **Live carrier integration** — Insurance workflow
-5. **Paper trading simulation** — Investment feature
-6. **Multi-tenant white-label** — Enterprise feature
-7. **Data ingestion activation** — Pipeline feature
+1. **Browser automation** foundation — Agentic capability
+2. **Live carrier integration** — Insurance workflow
+3. **Paper trading simulation** — Investment feature
+4. **Multi-tenant white-label** — Enterprise feature
+5. **Data ingestion activation** — Pipeline feature
+
+**Previously listed but now implemented:**
+- ~~MFA (TOTP, backup codes)~~ — Implemented in `mfaService.ts`
+- ~~CSP headers and security hardening~~ — Implemented: CSP, HSTS, X-Frame-Options, X-Content-Type-Options applied as Express middleware; rate limiting; CORS
 
 These items represent future enhancement opportunities and do not affect the current platform's functionality or stability.
 

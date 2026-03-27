@@ -103,8 +103,8 @@ export function getCSPHeaders(): Record<string, string> {
   return {
     "Content-Security-Policy": [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "script-src 'self' https://cdn.jsdelivr.net",
+      "style-src 'self' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https: blob:",
       "connect-src 'self' https: wss:",
@@ -204,14 +204,57 @@ export async function getConsents(userId: number) {
   return db.select().from(consentTracking).where(eq(consentTracking.userId, userId));
 }
 
-export async function generateDSAR(userId: number): Promise<{ categories: string[]; dataPoints: number; estimatedSize: string; status: string }> {
-  // Data Subject Access Request — enumerate all user data
-  const categories = ["Profile", "Conversations", "Documents", "Financial Data", "Preferences", "Audit Logs", "Consent Records", "AI Interactions"];
+export async function generateDSAR(userId: number): Promise<{
+  categories: string[];
+  dataPoints: number;
+  estimatedSize: string;
+  status: string;
+  data: Record<string, unknown>;
+}> {
+  // Data Subject Access Request — compile all user data for export
+  const db = (await getDb())!;
+  const { users, conversations, messages, documents, auditTrail, consentTracking } = await import("../../drizzle/schema");
+  const { eq } = await import("drizzle-orm");
+
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
+  const userConversations = await db.select().from(conversations).where(eq(conversations.userId, userId));
+  const conversationIds = userConversations.map(c => c.id);
+
+  let allMessages: unknown[] = [];
+  for (const convId of conversationIds) {
+    const msgs = await db.select().from(messages).where(eq(messages.conversationId, convId));
+    allMessages = allMessages.concat(msgs);
+  }
+
+  const userDocuments = await db.select({
+    id: documents.id,
+    filename: documents.filename,
+    mimeType: documents.mimeType,
+    category: documents.category,
+    createdAt: documents.createdAt,
+  }).from(documents).where(eq(documents.userId, userId));
+
+  const userAuditLogs = await db.select().from(auditTrail).where(eq(auditTrail.userId, userId));
+  const userConsent = await db.select().from(consentTracking).where(eq(consentTracking.userId, userId));
+
+  const categories = ["Profile", "Conversations", "Messages", "Documents", "Audit Logs", "Consent Records"];
+  const dataPoints =
+    1 + userConversations.length + allMessages.length +
+    userDocuments.length + userAuditLogs.length + userConsent.length;
+
   return {
     categories,
-    dataPoints: categories.length * 50, // Estimated
-    estimatedSize: "~2.5 MB",
-    status: "ready",
+    dataPoints,
+    estimatedSize: `~${Math.ceil(JSON.stringify({ user, userConversations, allMessages, userDocuments, userAuditLogs, userConsent }).length / 1024)} KB`,
+    status: "complete",
+    data: {
+      profile: user ? { id: user.id, name: user.name, email: user.email, role: user.role, authTier: user.authTier, createdAt: user.createdAt } : null,
+      conversations: userConversations,
+      messages: allMessages,
+      documents: userDocuments,
+      auditLogs: userAuditLogs,
+      consentRecords: userConsent,
+    },
   };
 }
 

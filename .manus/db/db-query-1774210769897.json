@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `document_annotations` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `documentId` int NOT NULL,\n  `userId` int NOT NULL,\n  `content` text NOT NULL,\n  `highlightText` text,\n  `highlightStart` int,\n  `highlightEnd` int,\n  `annotationType` enum('comment','highlight','question','action_item','ai_insight') NOT NULL DEFAULT 'comment',\n  `parentId` int,\n  `resolved` tinyint NOT NULL DEFAULT 0,\n  `resolvedBy` int,\n  `resolvedAt` timestamp NULL,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  INDEX `idx_annotations_doc` (`documentId`),\n  INDEX `idx_annotations_user` (`userId`)\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute CREATE TABLE IF NOT EXISTS `document_annotations` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `documentId` int NOT NULL,\n  `userId` int NOT NULL,\n  `content` text NOT NULL,\n  `highlightText` text,\n  `highlightStart` int,\n  `highlightEnd` int,\n  `annotationType` enum('comment','highlight','question','action_item','ai_insight') NOT NULL DEFAULT 'comment',\n  `parentId` int,\n  `resolved` tinyint NOT NULL DEFAULT 0,\n  `resolvedBy` int,\n  `resolvedAt` timestamp NULL,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  INDEX `idx_annotations_doc` (`documentId`),\n  INDEX `idx_annotations_user` (`userId`)\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 506
-}

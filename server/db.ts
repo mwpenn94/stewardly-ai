@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { eq, desc, and, or, sql, asc, inArray, like, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
@@ -607,6 +608,12 @@ export async function deleteProduct(id: number) {
 }
 
 // ─── AUDIT TRAIL HELPERS ──────────────────────────────────────────
+
+function computeAuditHash(data: Record<string, unknown>, previousHash: string | null): string {
+  const payload = JSON.stringify({ ...data, previousHash: previousHash || "GENESIS" });
+  return crypto.createHash("sha256").update(payload).digest("hex");
+}
+
 export async function addAuditEntry(data: {
   userId: number; conversationId?: number; messageId?: number; action: string;
   details?: string; complianceFlags?: unknown; piiDetected?: boolean; disclaimerAppended?: boolean;
@@ -614,9 +621,25 @@ export async function addAuditEntry(data: {
 }) {
   const db = await getDb();
   if (!db) return;
+
+  // Get the hash of the most recent audit entry for chain continuity
+  const [lastEntry] = await db
+    .select({ entryHash: auditTrail.entryHash })
+    .from(auditTrail)
+    .orderBy(desc(auditTrail.id))
+    .limit(1);
+
+  const previousHash = lastEntry?.entryHash ?? null;
+  const entryHash = computeAuditHash(
+    { ...data, complianceFlags: data.complianceFlags ? JSON.stringify(data.complianceFlags) : undefined },
+    previousHash
+  );
+
   await db.insert(auditTrail).values({
     ...data,
     complianceFlags: data.complianceFlags ? JSON.stringify(data.complianceFlags) : undefined,
+    entryHash,
+    previousHash,
   });
 }
 

@@ -87,9 +87,19 @@ export function registerGuestSessionRoutes(app: Express) {
   // POST /api/auth/migrate-guest — migrate guest data to authenticated user
   app.post("/api/auth/migrate-guest", async (req: Request, res: Response) => {
     try {
-      const { guestOpenId, targetOpenId } = req.body;
-      if (!guestOpenId || !targetOpenId) {
-        res.status(400).json({ error: "guestOpenId and targetOpenId are required" });
+      // Require authenticated session — caller must be the target user
+      const existingCookie = req.cookies?.app_session_id || parseCookieManual(req.headers.cookie, COOKIE_NAME);
+      const session = existingCookie ? await sdk.verifySession(existingCookie) : null;
+      if (!session) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const { guestOpenId } = req.body;
+      // The target is always the authenticated caller — never accept targetOpenId from body
+      const targetOpenId = session.openId;
+      if (!guestOpenId) {
+        res.status(400).json({ error: "guestOpenId is required" });
         return;
       }
 
@@ -103,6 +113,12 @@ export function registerGuestSessionRoutes(app: Express) {
 
       if (guestUser.authTier !== "anonymous") {
         res.status(400).json({ error: "Source user is not a guest" });
+        return;
+      }
+
+      // Prevent migrating to self
+      if (guestUser.id === targetUser.id) {
+        res.status(400).json({ error: "Cannot migrate to the same user" });
         return;
       }
 

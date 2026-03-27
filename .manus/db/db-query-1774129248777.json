@@ -1,9 +1,0 @@
-{
-  "query": "INSERT INTO integration_connections (id, provider_id, ownership_tier, owner_id, status, credentials_encrypted, config_json, last_sync_at, last_sync_status)\nVALUES \n  (UUID(), 'c5d6e7f8-a9b0-1234-5678-234567890123', 'platform', 'platform-global', 'connected', NULL, '{\"note\": \"No credentials required - free public API\"}', NOW(), 'success'),\n  (UUID(), 'd6e7f8a9-b0c1-2345-6789-345678901234', 'platform', 'platform-global', 'connected', NULL, '{\"note\": \"No credentials required - free public API\"}', NOW(), 'success');",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3S2TaCfAdzc6QNm.b8cc9e16633a --database GaKEFERPH576tbv5NzvkMD --execute INSERT INTO integration_connections (id, provider_id, ownership_tier, owner_id, status, credentials_encrypted, config_json, last_sync_at, last_sync_status)\nVALUES \n  (UUID(), 'c5d6e7f8-a9b0-1234-5678-234567890123', 'platform', 'platform-global', 'connected', NULL, '{\"note\": \"No credentials required - free public API\"}', NOW(), 'success'),\n  (UUID(), 'd6e7f8a9-b0c1-2345-6789-345678901234', 'platform', 'platform-global', 'connected', NULL, '{\"note\": \"No credentials required - free public API\"}', NOW(), 'success');",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 361
-}
