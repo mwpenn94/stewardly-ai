@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -821,6 +822,7 @@ export default function Chat() {
   };
 
   // ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────
+  const { shortcutMap } = useCustomShortcuts();
   const gPressedRef = useRef(false);
   const gTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -830,7 +832,7 @@ export default function Chat() {
       const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
       const isMod = e.metaKey || e.ctrlKey;
 
-      // G-then-X navigation (only when not in input)
+      // G-then-X navigation — uses custom shortcuts from Settings
       if (!isInput && !isMod && !e.shiftKey) {
         if (e.key.toLowerCase() === "g") {
           gPressedRef.current = true;
@@ -841,17 +843,12 @@ export default function Chat() {
         if (gPressedRef.current) {
           gPressedRef.current = false;
           if (gTimerRef.current) clearTimeout(gTimerRef.current);
-          const k = e.key.toLowerCase();
-          if (k === "c") { e.preventDefault(); navigate("/"); return; }
-          if (k === "o") { e.preventDefault(); navigate("/operations"); return; }
-          if (k === "i") { e.preventDefault(); navigate("/intelligence-hub"); return; }
-          if (k === "a") { e.preventDefault(); navigate("/advisory"); return; }
-          if (k === "r") { e.preventDefault(); navigate("/relationships"); return; }
-          if (k === "m") { e.preventDefault(); navigate("/market-data"); return; }
-          if (k === "d") { e.preventDefault(); navigate("/documents"); return; }
-          if (k === "n") { e.preventDefault(); navigate("/integrations"); return; }
-          if (k === "s") { e.preventDefault(); navigate("/settings/profile"); return; }
-          if (k === "h") { e.preventDefault(); navigate("/help"); return; }
+          const route = shortcutMap.get(e.key.toLowerCase());
+          if (route) {
+            e.preventDefault();
+            navigate(route);
+            return;
+          }
         }
       }
 
@@ -911,7 +908,7 @@ export default function Chat() {
       window.removeEventListener("keydown", handler);
       if (gTimerRef.current) clearTimeout(gTimerRef.current);
     };
-  }, [showAddMenu, showModeMenu, showFocusPicker, searchOpen]);
+  }, [showAddMenu, showModeMenu, showFocusPicker, searchOpen, shortcutMap]);
 
   const handleFeedback = async (messageId: number, rating: "up" | "down") => {
     if (!conversationId) return;

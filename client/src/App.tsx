@@ -10,6 +10,7 @@ import WhatsNewModal from "./components/WhatsNewModal";
 import { GuestBanner } from "./components/GuestBanner";
 import { ContextualHelp } from "./components/ContextualHelp";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
+import { CommandPalette } from "./components/CommandPalette";
 import { useGuestSession } from "./hooks/useGuestSession";
 import GlobalFooter from "./components/GlobalFooter";
 import { GuidedTour } from "./components/GuidedTour";
@@ -78,6 +79,7 @@ const CoiNetwork = lazy(() => import("./pages/CoiNetwork"));
 const DataIntelligence = lazy(() => import("./pages/DataIntelligence"));
 const AgenticHub = lazy(() => import("./pages/AgenticHub"));
 const EmailCampaigns = lazy(() => import("./pages/EmailCampaigns"));
+const Changelog = lazy(() => import("./pages/Changelog"));
 
 function Router() {
   return (
@@ -144,6 +146,7 @@ function Router() {
           <Redirect to="/settings/ai-tuning" />
         </Route>
         <Route path={"/help"} component={Help} />
+        <Route path={"/changelog"} component={Changelog} />
 
         {/* C27: Redirects from absorbed Tier 1 pages to hubs */}
         <Route path={"/study"}><Redirect to="/chat" /></Route>
@@ -206,6 +209,7 @@ function App() {
           <NotificationProvider>
             <Toaster />
             <KeyboardShortcuts />
+            <CommandPalette />
             <AppContent />
           </NotificationProvider>
         </TooltipProvider>

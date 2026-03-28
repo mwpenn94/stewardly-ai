@@ -2922,3 +2922,15 @@
 - [x] Expand WhatsNewModal CHANGELOG to 3 releases with 15 entries — added 2026.03.28b (shortcuts/prefetch/recovery) and 2026.03.20 (intelligence/market/docs/relationships/RBAC)
 - [x] Bump CURRENT_VERSION to 2026.03.28b to re-trigger modal for returning users
 - [x] Write tests for keyboard shortcuts overlay and expanded changelog — 32 new tests in keyboardShortcutsChangelog.test.ts
+
+## Command Palette, Custom Shortcuts & Changelog Page — March 28, 2026
+- [x] Build global command palette component with Ctrl+K / Cmd+K trigger — 25+ pages, 5 actions, conversation search with debounce
+- [x] Search across pages, actions, and recent conversations — uses trpc.conversations.search with 2-char minimum
+- [x] Wire CommandPalette into App.tsx — renders globally alongside KeyboardShortcuts and WhatsNewModal
+- [x] Add user-customizable G-then-X shortcuts hook with localStorage persistence — useCustomShortcuts with 10 defaults, 20+ available routes
+- [x] Add shortcut customization UI in Settings page — ShortcutsTab with add/remove/reset, route picker, customized/default badges
+- [x] Update G-then-X handlers to read from custom shortcut map — both AppShell and Chat.tsx refactored to use shortcutMap
+- [x] Create dedicated /changelog page showing full release history — timeline layout with expand/collapse, category badges, Latest badge
+- [x] Add "View all releases" link in WhatsNewModal footer — dismisses modal and navigates to /changelog
+- [x] Register /changelog route in App.tsx — lazy-loaded Changelog component
+- [x] Write tests for command palette, custom shortcuts, and changelog page — 55 new tests in commandPaletteShortcutsChangelog.test.ts, all 1937 tests pass

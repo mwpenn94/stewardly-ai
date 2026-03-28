@@ -15,7 +15,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLocation } from "wouter";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { prefetchRoute } from "@/lib/routePrefetch";
 import {
   MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
@@ -75,7 +76,8 @@ export default function AppShell({ children, title }: AppShellProps) {
   // Close mobile sidebar on navigation
   useEffect(() => { setMobileOpen(false); }, [location]);
 
-  // G-then-X keyboard navigation (mirrors Chat.tsx shortcuts)
+  // G-then-X keyboard navigation — uses custom shortcuts from Settings
+  const { shortcutMap } = useCustomShortcuts();
   const gPressedRef = useRef(false);
   const gTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -93,17 +95,11 @@ export default function AppShell({ children, title }: AppShellProps) {
         if (gPressedRef.current) {
           gPressedRef.current = false;
           if (gTimerRef.current) clearTimeout(gTimerRef.current);
-          const k = e.key.toLowerCase();
-          if (k === "c") { e.preventDefault(); navigate("/chat"); return; }
-          if (k === "o") { e.preventDefault(); navigate("/operations"); return; }
-          if (k === "i") { e.preventDefault(); navigate("/intelligence-hub"); return; }
-          if (k === "a") { e.preventDefault(); navigate("/advisory"); return; }
-          if (k === "r") { e.preventDefault(); navigate("/relationships"); return; }
-          if (k === "m") { e.preventDefault(); navigate("/market-data"); return; }
-          if (k === "d") { e.preventDefault(); navigate("/documents"); return; }
-          if (k === "n") { e.preventDefault(); navigate("/integrations"); return; }
-          if (k === "s") { e.preventDefault(); navigate("/settings/profile"); return; }
-          if (k === "h") { e.preventDefault(); navigate("/help"); return; }
+          const route = shortcutMap.get(e.key.toLowerCase());
+          if (route) {
+            e.preventDefault();
+            navigate(route);
+          }
         }
       }
     };
@@ -112,7 +108,7 @@ export default function AppShell({ children, title }: AppShellProps) {
       window.removeEventListener("keydown", handler);
       if (gTimerRef.current) clearTimeout(gTimerRef.current);
     };
-  }, [navigate]);
+  }, [navigate, shortcutMap]);
 
   const userRole = (user as any)?.role || "user";
 

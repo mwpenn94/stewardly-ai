@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, Camera, Brain, Shield, FileText, Sparkles, User,
-  Loader2, Settings2, ChevronRight, Bell, Palette, Mic, Link2,
+  Loader2, Settings2, ChevronRight, Bell, Palette, Mic, Link2, Keyboard,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { getLoginUrl } from "@/const";
@@ -23,9 +23,10 @@ import PrivacyDataTab from "./settings/PrivacyDataTab";
 import DataSharingTab from "./settings/DataSharingTab";
 import VoiceTab from "./settings/VoiceTab";
 import ConnectedAccountsTab from "./settings/ConnectedAccountsTab";
+import ShortcutsTab from "./settings/ShortcutsTab";
 
 // ─── TAB DEFINITIONS ─────────────────────────────────────────────
-type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "voice" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing" | "connected-accounts";
+type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "voice" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing" | "connected-accounts" | "shortcuts";
 
 const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: string; slug: string }[] = [
   { id: "profile", label: "Profile & Style", icon: <User className="w-4 h-4" />, desc: "Avatar, memories, communication style", slug: "profile" },
@@ -39,10 +40,11 @@ const TABS: { id: SettingsTab; label: string; icon: React.ReactNode; desc: strin
   { id: "guest-prefs", label: "Guest Preferences", icon: <Sparkles className="w-4 h-4" />, desc: "Customize AI responses without an account", slug: "guest-prefs" },
   { id: "privacy", label: "Privacy & Data", icon: <Shield className="w-4 h-4" />, desc: "Data rights, consent, export, and deletion", slug: "privacy" },
   { id: "data-sharing", label: "Data Sharing", icon: <Shield className="w-4 h-4" />, desc: "Control who sees what financial data", slug: "data-sharing" },
+  { id: "shortcuts", label: "Keyboard Shortcuts", icon: <Keyboard className="w-4 h-4" />, desc: "Customize G-then-X navigation shortcuts", slug: "shortcuts" },
 ];
 
 // Tabs accessible without authentication
-const ANONYMOUS_TABS: SettingsTab[] = ["appearance", "guest-prefs", "voice"];
+const ANONYMOUS_TABS: SettingsTab[] = ["appearance", "guest-prefs", "voice", "shortcuts"];
 
 export default function SettingsHub() {
   const { user, loading } = useAuth();
@@ -199,6 +201,7 @@ export default function SettingsHub() {
               {activeTab === "guest-prefs" && <GuestPreferencesTab />}
               {activeTab === "privacy" && <PrivacyDataTab />}
               {activeTab === "data-sharing" && <DataSharingTab />}
+              {activeTab === "shortcuts" && <ShortcutsTab />}
             </>
           )}
         </main>

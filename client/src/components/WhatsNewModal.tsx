@@ -4,6 +4,7 @@
  * seen version and only shows when there are new entries.
  */
 import { useState, useEffect, useCallback } from "react";
+import { useLocation } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -181,6 +182,7 @@ export const CHANGELOG: ChangelogRelease[] = [
 
 export default function WhatsNewModal() {
   const [open, setOpen] = useState(false);
+  const [, navigate] = useLocation();
 
   useEffect(() => {
     try {
@@ -251,10 +253,13 @@ export default function WhatsNewModal() {
 
         {/* Footer */}
         <div className="px-6 py-4 flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            <CheckCircle2 className="w-3.5 h-3.5 inline mr-1 text-emerald-400" />
-            All systems operational
-          </p>
+          <button
+            className="text-xs text-muted-foreground hover:text-accent transition-colors flex items-center gap-1"
+            onClick={() => { handleDismiss(); navigate("/changelog"); }}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            View all releases
+          </button>
           <Button size="sm" onClick={handleDismiss} className="gap-1.5">
             Got it <ArrowRight className="w-3.5 h-3.5" />
           </Button>

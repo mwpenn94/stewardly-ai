@@ -102,23 +102,10 @@ describe("G-then-X Navigation in Chat.tsx", () => {
     expect(source).toContain("gTimerRef");
   });
 
-  it("should support all 10 navigation targets", () => {
-    const targets = [
-      ['"c"', "/"],
-      ['"o"', "/operations"],
-      ['"i"', "/intelligence-hub"],
-      ['"a"', "/advisory"],
-      ['"r"', "/relationships"],
-      ['"m"', "/market-data"],
-      ['"d"', "/documents"],
-      ['"n"', "/integrations"],
-      ['"s"', "/settings/profile"],
-      ['"h"', "/help"],
-    ];
-    for (const [key, route] of targets) {
-      expect(source).toContain(key);
-      expect(source).toContain(route);
-    }
+  it("should use shortcutMap from useCustomShortcuts for navigation", () => {
+    expect(source).toContain("shortcutMap.get(e.key.toLowerCase())");
+    expect(source).toContain("useCustomShortcuts");
+    expect(source).toContain("navigate(route)");
   });
 
   it("should use 800ms timeout for G key sequence", () => {

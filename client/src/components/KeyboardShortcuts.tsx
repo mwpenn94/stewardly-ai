@@ -36,7 +36,7 @@ const SHORTCUTS: Shortcut[] = [
   // ── Chat ──
   { keys: ["Ctrl", "Shift", "N"], description: "New conversation", category: "Chat" },
   { keys: ["Ctrl", "Shift", "S"], description: "Toggle sidebar", category: "Chat" },
-  { keys: ["Ctrl", "K"], description: "Search conversations", category: "Chat" },
+  { keys: ["Ctrl", "K"], description: "Open command palette", category: "General" },
   { keys: ["/"], description: "Focus chat input", category: "Chat" },
   { keys: ["Ctrl", "Enter"], description: "Send message", category: "Chat" },
   { keys: ["Shift", "Enter"], description: "New line in message", category: "Chat" },
