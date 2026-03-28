@@ -2820,3 +2820,4 @@
 - [x] BUG: auth.logout test failing after audit branch cookie changes — updated test to expect sameSite:"lax" and added hostname to mock req
 - [x] Installed missing DOMPurify dependency added by audit branch
 - [x] Applied audit_trail schema migration (added ip_address, user_agent, risk_level columns)
+- [x] BUG: Phantom conversations auto-generating without user input — fixed with client-side mutex ref guard on createConversation + server-side 3s dedup check on empty conversations + cleaned all phantom entries from DB

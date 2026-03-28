@@ -398,6 +398,8 @@ export default function Chat() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const handleSendRef = useRef<(text: string) => void>(() => {});
+  // Mutex guard: prevents concurrent conversation creation (race condition)
+  const creatingConversationRef = useRef(false);
 
   // ─── GUARD REF ─────────────────────────────────────────────────
   // Blocks voice recognition during TTS playback AND AI processing.
@@ -720,11 +722,24 @@ export default function Chat() {
       // ─── AUTHENTICATED PATH ───
       let activeConvId = conversationId;
       if (!activeConvId) {
-        const newConv = await createConversation.mutateAsync({ mode, title: trimmed.slice(0, 80) });
-        activeConvId = newConv.id;
-        setConversationId(activeConvId);
-        navigate(`/chat/${activeConvId}`, { replace: true });
-        utils.conversations.list.invalidate();
+        // Mutex: prevent concurrent conversation creation (double-click, HMR, voice race)
+        if (creatingConversationRef.current) {
+          setIsStreaming(false);
+          setMessages(prev => prev.slice(0, -1)); // remove optimistic user msg
+          return;
+        }
+        creatingConversationRef.current = true;
+        try {
+          const newConv = await createConversation.mutateAsync({ mode, title: trimmed.slice(0, 80) });
+          activeConvId = newConv.id;
+          setConversationId(activeConvId);
+          navigate(`/chat/${activeConvId}`, { replace: true });
+          utils.conversations.list.invalidate();
+        } catch (err) {
+          creatingConversationRef.current = false;
+          throw err;
+        }
+        creatingConversationRef.current = false;
       }
 
       const result = await sendMutation.mutateAsync({

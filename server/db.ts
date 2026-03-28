@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { eq, desc, and, or, sql, asc, inArray, like, gte } from "drizzle-orm";
+import { eq, desc, and, or, sql, asc, inArray, like, gte, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
@@ -87,6 +87,24 @@ export async function updateSuitabilityStatus(userId: number, completed: boolean
 export async function createConversation(userId: number, mode: "client" | "coach" | "manager" = "client", title?: string) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  // Server-side dedup: if user has a conversation created in the last 3 seconds with no messages, reuse it
+  const recentEmpty = await db.select({ id: conversations.id })
+    .from(conversations)
+    .where(and(
+      eq(conversations.userId, userId),
+      gt(conversations.createdAt, new Date(Date.now() - 3000))
+    ))
+    .orderBy(desc(conversations.createdAt))
+    .limit(1);
+  if (recentEmpty.length > 0) {
+    // Check if it has zero messages
+    const msgCount = await db.select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(eq(messages.conversationId, recentEmpty[0].id));
+    if (msgCount[0]?.count === 0) {
+      return { id: recentEmpty[0].id };
+    }
+  }
   const result = await db.insert(conversations).values({ userId, mode, title: title || "New Conversation" });
   return { id: result[0].insertId };
 }
