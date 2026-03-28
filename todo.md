@@ -2898,3 +2898,9 @@
 - [x] Add global retry-with-backoff to QueryClient defaults (3 retries, 15s cap)
 - [x] Evaluate sidebar connection health indicator against UX best practices — SKIPPED (violates progressive disclosure, creates unnecessary anxiety, redundant with existing Integrations + Integration Health pages)
 - [x] Write tests for retry logic and error boundary additions (9 new tests)
+
+## UX Resilience Improvements — March 28, 2026
+- [x] Toast notifications on retry exhaustion — global QueryClient onError with user-friendly message and retry button
+- [x] Offline/reconnection banner — detect network loss, show non-intrusive banner, auto-dismiss on reconnect
+- [x] Suspense boundaries — React.lazy for 50+ pages with PageSuspenseFallback, critical pages (Landing, Chat, SignIn) eagerly loaded
+- [x] Write tests for all three features (30 new tests in uxResilience.test.ts)
