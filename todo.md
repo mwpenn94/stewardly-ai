@@ -2904,3 +2904,10 @@
 - [x] Offline/reconnection banner — detect network loss, show non-intrusive banner, auto-dismiss on reconnect
 - [x] Suspense boundaries — React.lazy for 50+ pages with PageSuspenseFallback, critical pages (Landing, Chat, SignIn) eagerly loaded
 - [x] Write tests for all three features (30 new tests in uxResilience.test.ts)
+
+## UX Polish — Changelog, Prefetch, Error Recovery — March 28, 2026
+- [x] Create What's New changelog modal with localStorage version tracking
+- [x] Show modal on first visit after deploy with recent feature highlights
+- [x] Add prefetch on hover to sidebar nav links in AppShell for instant navigation
+- [x] Enhance SectionErrorBoundary with queryClient.invalidateQueries on retry — wired in Integrations (4 sections), MarketData, OperationsHub, AnalyticsHub
+- [x] Write tests for all three features (19 new tests in uxPolish.test.ts)

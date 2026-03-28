@@ -22,6 +22,7 @@ import {
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 
 export default function OperationsHub() {
+  const utils = trpc.useUtils();
   const [activeTab, setActiveTab] = useState("active");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -84,13 +85,13 @@ export default function OperationsHub() {
           </TabsList>
 
           <TabsContent value="active" className="space-y-4 mt-4">
-            <SectionErrorBoundary sectionName="Active Work">
+            <SectionErrorBoundary sectionName="Active Work" onRetry={() => utils.agentic.gate.list.invalidate()}>
               <ActiveWorkSection />
             </SectionErrorBoundary>
           </TabsContent>
 
           <TabsContent value="agents" className="space-y-4 mt-4">
-            <SectionErrorBoundary sectionName="Agents">
+            <SectionErrorBoundary sectionName="Agents" onRetry={() => { try { utils.agentic.agent.list.invalidate(); } catch {} }}>
               <AgentsSection />
             </SectionErrorBoundary>
           </TabsContent>

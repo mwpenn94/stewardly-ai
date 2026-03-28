@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ConsentBanner from "./components/ConsentBanner";
 import OfflineBanner from "./components/OfflineBanner";
+import WhatsNewModal from "./components/WhatsNewModal";
 import { GuestBanner } from "./components/GuestBanner";
 import { ContextualHelp } from "./components/ContextualHelp";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
@@ -192,6 +193,7 @@ function AppContent() {
       <GlobalFooter />
       <ContextualHelp />
       <GuidedTour />
+      <WhatsNewModal />
     </>
   );
 }

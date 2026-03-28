@@ -101,6 +101,7 @@ function RunHistoryCard({ run }: { run: any }) {
 
 export default function AnalyticsHub() {
   const { isAuthenticated } = useAuth();
+  const utils = trpc.useUtils();
   const [activeTab, setActiveTab] = useState("models");
 
   const modelsQuery = trpc.modelEngine.list.useQuery(
@@ -170,7 +171,7 @@ export default function AnalyticsHub() {
         </TabsList>
 
         <TabsContent value="models">
-          <SectionErrorBoundary sectionName="Models">
+          <SectionErrorBoundary sectionName="Models" onRetry={() => utils.modelEngine.list.invalidate()}>
           {modelsQuery.isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -203,7 +204,7 @@ export default function AnalyticsHub() {
         </TabsContent>
 
         <TabsContent value="history">
-          <SectionErrorBoundary sectionName="Run History">
+          <SectionErrorBoundary sectionName="Run History" onRetry={() => utils.modelEngine.getRunHistory.invalidate()}>
           {historyQuery.isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />

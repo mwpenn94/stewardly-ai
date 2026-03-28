@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
+import { prefetchRoute } from "@/lib/routePrefetch";
 import {
   MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
   Link2, HeartPulse, RefreshCw, Activity, Briefcase, Building2,
@@ -120,6 +121,8 @@ export default function AppShell({ children, title }: AppShellProps) {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => navigate(item.href)}
+                    onMouseEnter={() => prefetchRoute(item.href)}
+                    onFocus={() => prefetchRoute(item.href)}
                     className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
                       active
                         ? "bg-accent/15 text-accent"
@@ -135,6 +138,8 @@ export default function AppShell({ children, title }: AppShellProps) {
               <button
                 key={item.href}
                 onClick={() => navigate(item.href)}
+                onMouseEnter={() => prefetchRoute(item.href)}
+                onFocus={() => prefetchRoute(item.href)}
                 className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
                   active
                     ? "bg-accent/15 text-accent font-medium"
@@ -163,6 +168,8 @@ export default function AppShell({ children, title }: AppShellProps) {
                     <TooltipTrigger asChild>
                       <button
                         onClick={() => navigate(item.href)}
+                        onMouseEnter={() => prefetchRoute(item.href)}
+                        onFocus={() => prefetchRoute(item.href)}
                         className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
                           active
                             ? "bg-accent/15 text-accent"
@@ -178,6 +185,8 @@ export default function AppShell({ children, title }: AppShellProps) {
                   <button
                     key={item.href}
                     onClick={() => navigate(item.href)}
+                    onMouseEnter={() => prefetchRoute(item.href)}
+                    onFocus={() => prefetchRoute(item.href)}
                     className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
                       active
                         ? "bg-accent/15 text-accent font-medium"
@@ -198,7 +207,7 @@ export default function AppShell({ children, title }: AppShellProps) {
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={() => navigate("/help")} className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+                  <button onClick={() => navigate("/help")} onMouseEnter={() => prefetchRoute("/help")} onFocus={() => prefetchRoute("/help")} className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
                     <HelpCircle className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
@@ -206,7 +215,7 @@ export default function AppShell({ children, title }: AppShellProps) {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={() => navigate("/settings/profile")} className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+                  <button onClick={() => navigate("/settings/profile")} onMouseEnter={() => prefetchRoute("/settings/profile")} onFocus={() => prefetchRoute("/settings/profile")} className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
                     <Settings className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
@@ -215,10 +224,10 @@ export default function AppShell({ children, title }: AppShellProps) {
             </>
           ) : (
             <>
-              <button onClick={() => navigate("/help")} className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+              <button onClick={() => navigate("/help")} onMouseEnter={() => prefetchRoute("/help")} onFocus={() => prefetchRoute("/help")} className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
                 <HelpCircle className="w-4 h-4" /> Help & Support
               </button>
-              <button onClick={() => navigate("/settings/profile")} className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+              <button onClick={() => navigate("/settings/profile")} onMouseEnter={() => prefetchRoute("/settings/profile")} onFocus={() => prefetchRoute("/settings/profile")} className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
                 <Settings className="w-4 h-4" /> Settings
               </button>
             </>

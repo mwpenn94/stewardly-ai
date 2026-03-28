@@ -31,6 +31,7 @@ export default function MarketData() {
   const [searchSymbol, setSearchSymbol] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
+  const utils = trpc.useUtils();
   const stableSymbols = useMemo(() => watchlistSymbols, []);
   const quotesQuery = trpc.market.getQuotes.useQuery(
     { symbols: stableSymbols },
@@ -78,7 +79,7 @@ export default function MarketData() {
         </div>
       </header>
 
-      <SectionErrorBoundary sectionName="Market Data">
+      <SectionErrorBoundary sectionName="Market Data" onRetry={() => { utils.market.getQuotes.invalidate(); utils.market.getQuote.invalidate(); }}>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Search */}
         <div className="flex gap-2">

@@ -1149,6 +1149,7 @@ function ClientAccountConnections() {
 // ─── Main Integrations Page ────────────────────────────────────────────
 export default function Integrations() {
   const { user } = useAuth();
+  const utils = trpc.useUtils();
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<string>("all");
   const [connectProvider, setConnectProvider] = useState<Provider | null>(null);
@@ -1395,22 +1396,47 @@ export default function Integrations() {
       )}
 
       {/* Client Account Connections (Plaid Link + Canopy Connect) */}
-      <SectionErrorBoundary sectionName="Client Account Connections">
+      <SectionErrorBoundary
+        sectionName="Client Account Connections"
+        onRetry={() => {
+          utils.integrations.listProviders.invalidate();
+          utils.integrations.listConnections.invalidate();
+        }}
+      >
         <ClientAccountConnections />
       </SectionErrorBoundary>
 
       {/* SnapTrade Brokerage Connections */}
-      <SectionErrorBoundary sectionName="SnapTrade Brokerage">
+      <SectionErrorBoundary
+        sectionName="SnapTrade Brokerage"
+        onRetry={() => {
+          utils.integrations.snapTradeStatus.invalidate();
+          utils.integrations.snapTradeConnections.invalidate();
+          utils.integrations.snapTradeAccounts.invalidate();
+        }}
+      >
         <SnapTradeBrokerageSection />
       </SectionErrorBoundary>
 
       {/* Premium Finance Rates / SOFR Dashboard */}
-      <SectionErrorBoundary sectionName="Premium Finance Rates">
+      <SectionErrorBoundary
+        sectionName="Premium Finance Rates"
+        onRetry={() => {
+          utils.verification.getLatestRates.invalidate();
+          utils.verification.getRateHistory.invalidate();
+        }}
+      >
         <SOFRDashboard />
       </SectionErrorBoundary>
 
       {/* CRM Sync Status Panel */}
-      <SectionErrorBoundary sectionName="CRM Sync">
+      <SectionErrorBoundary
+        sectionName="CRM Sync"
+        onRetry={() => {
+          utils.operations.crm.stats.invalidate();
+          utils.operations.crm.connections.invalidate();
+        }}
+      >
         <CRMSyncPanel />
       </SectionErrorBoundary>
 
