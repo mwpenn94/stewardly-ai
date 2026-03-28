@@ -18,6 +18,7 @@ import { useLocation } from "wouter";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { prefetchRoute } from "@/lib/routePrefetch";
+import { recordPageVisit } from "@/hooks/useRecentPages";
 import {
   MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
   Link2, HeartPulse, RefreshCw, Activity, Briefcase, Building2,
@@ -73,8 +74,11 @@ export default function AppShell({ children, title }: AppShellProps) {
     try { localStorage.setItem("appshell-collapsed", String(collapsed)); } catch {}
   }, [collapsed]);
 
-  // Close mobile sidebar on navigation
-  useEffect(() => { setMobileOpen(false); }, [location]);
+  // Close mobile sidebar on navigation + record page visit for command palette
+  useEffect(() => {
+    setMobileOpen(false);
+    recordPageVisit(location);
+  }, [location]);
 
   // G-then-X keyboard navigation — uses custom shortcuts from Settings
   const { shortcutMap } = useCustomShortcuts();

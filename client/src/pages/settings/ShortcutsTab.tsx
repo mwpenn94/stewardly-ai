@@ -30,6 +30,7 @@ export default function ShortcutsTab() {
     resetToDefaults,
     addShortcut,
     removeShortcut,
+    isSyncing,
   } = useCustomShortcuts();
 
   const [newKey, setNewKey] = useState("");
@@ -74,6 +75,11 @@ export default function ShortcutsTab() {
         <Badge variant={isCustomized ? "default" : "outline"} className="text-xs">
           {isCustomized ? "Customized" : "Default"}
         </Badge>
+        {isSyncing && (
+          <Badge variant="outline" className="text-xs text-muted-foreground animate-pulse">
+            Syncing...
+          </Badge>
+        )}
         <span className="text-xs text-muted-foreground">
           {shortcuts.length} shortcut{shortcuts.length !== 1 ? "s" : ""} configured
         </span>
@@ -221,7 +227,7 @@ export default function ShortcutsTab() {
             Press <kbd className="px-1 py-0.5 rounded bg-secondary text-[9px] font-mono">⌘K</kbd> to open the command palette.
           </p>
           <p>
-            Custom shortcuts are saved locally in your browser. They will persist across sessions but not across devices.
+            Custom shortcuts sync to your account when signed in, so they carry across devices. For guests, shortcuts are saved locally in the browser.
           </p>
         </div>
       </div>

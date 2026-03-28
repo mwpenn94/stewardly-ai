@@ -25,11 +25,12 @@ import {
   MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
   Link2, HeartPulse, RefreshCw, Activity, Briefcase, Building2,
   BarChart3, Globe, Wrench, HelpCircle, Settings, Plus, Search,
-  Keyboard, History, Sparkles, ArrowRight, Calculator, Shield,
+  Keyboard, History, Sparkles, ArrowRight, Calculator, Shield, Clock,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useRecentPages } from "@/hooks/useRecentPages";
 
 // ── Static page entries ─────────────────────────────────────────────
 
@@ -110,6 +111,19 @@ const ACTIONS: ActionEntry[] = [
   },
 ];
 
+// ── Helpers ─────────────────────────────────────────────────────────
+
+function formatTimeAgo(ts: number): string {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 // ── Component ───────────────────────────────────────────────────────
 
 export function CommandPalette() {
@@ -175,6 +189,10 @@ export function CommandPalette() {
 
   const conversations = conversationSearch.data ?? [];
 
+  // Recent pages — shown when no query is entered
+  const { recentPages } = useRecentPages();
+  const showRecent = query.length === 0 && recentPages.length > 0;
+
   return (
     <CommandDialog
       open={open}
@@ -195,6 +213,34 @@ export function CommandPalette() {
             <span className="text-xs text-muted-foreground/60">Try a different search term</span>
           </div>
         </CommandEmpty>
+
+        {/* Recent Pages — shown when command palette first opens with no query */}
+        {showRecent && (
+          <>
+            <CommandGroup heading="Recent">
+              {recentPages.map((rp) => {
+                const pageEntry = PAGES.find((p) => p.href === rp.route);
+                return (
+                  <CommandItem
+                    key={`recent:${rp.route}`}
+                    value={`page:${rp.route}`}
+                    keywords={[rp.label, "recent"]}
+                    onSelect={handleSelect}
+                  >
+                    {pageEntry?.icon || <Clock className="w-4 h-4 text-muted-foreground" />}
+                    <span>{rp.label}</span>
+                    <CommandShortcut>
+                      <span className="text-[10px] text-muted-foreground/50">
+                        {formatTimeAgo(rp.visitedAt)}
+                      </span>
+                    </CommandShortcut>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
 
         {/* Quick Actions */}
         <CommandGroup heading="Actions">

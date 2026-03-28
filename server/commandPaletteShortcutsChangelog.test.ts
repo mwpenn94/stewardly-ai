@@ -203,7 +203,7 @@ describe("ShortcutsTab settings component", () => {
   });
 
   it("includes info section about keyboard shortcuts", () => {
-    expect(src).toContain("Custom shortcuts are saved locally");
+    expect(src).toContain("Custom shortcuts sync to your account when signed in");
   });
 });
 

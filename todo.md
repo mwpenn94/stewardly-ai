@@ -2934,3 +2934,15 @@
 - [x] Add "View all releases" link in WhatsNewModal footer — dismisses modal and navigates to /changelog
 - [x] Register /changelog route in App.tsx — lazy-loaded Changelog component
 - [x] Write tests for command palette, custom shortcuts, and changelog page — 55 new tests in commandPaletteShortcutsChangelog.test.ts, all 1937 tests pass
+## Server-Side Shortcuts, Recent Pages & Toast — March 28, 2026
+- [x] Add customShortcuts JSON column to user_preferences table via ALTER TABLE
+- [x] Create tRPC procedures settings.getShortcuts / settings.saveShortcuts (protectedProcedure, zod-validated, upsert pattern)
+- [x] Update useCustomShortcuts hook to sync with server when authenticated — hydrates from server on first load, persists to both localStorage and server, 5-min stale cache, exposes isSyncing state
+- [x] Add recently visited pages tracking hook (useRecentPages) — useSyncExternalStore for cross-component reactivity, 22-route label mapping, skips auth routes
+- [x] Show "Recent" group in CommandPalette when no search query is entered — with page icons, formatTimeAgo timestamps
+- [x] Cap recent pages at 5 entries, deduplicate by route, most-recent-first
+- [x] Wire recordPageVisit into AppShell on every location change
+- [x] Add toast notifications in ShortcutsTab — on add, update, remove, reset, and validation error
+- [x] Add syncing badge in ShortcutsTab when saving to server
+- [x] Update info text to reflect cross-device sync when signed in
+- [x] Write tests — 48 new tests in serverShortcutsRecentToast.test.ts, all 1987 tests pass across 70 files

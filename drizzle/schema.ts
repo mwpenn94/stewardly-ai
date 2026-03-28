@@ -301,6 +301,7 @@ export const userPreferences = mysqlTable("user_preferences", {
   crossModelVerify: mysqlBoolean("crossModelVerify").default(false),
   citationStyle: mysqlEnum("citationStyle", ["none", "inline", "footnotes"]).default("none"),
   reasoningTransparency: mysqlBoolean("reasoningTransparency").default(false),
+  customShortcuts: json("customShortcuts"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

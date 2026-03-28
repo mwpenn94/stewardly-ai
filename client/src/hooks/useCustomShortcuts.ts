@@ -1,15 +1,17 @@
 /**
  * useCustomShortcuts — Manages user-customizable G-then-X keyboard shortcuts.
  *
- * Persists custom key mappings to localStorage so they survive page reloads.
- * Falls back to the default mapping when no customization exists.
+ * When authenticated, syncs shortcuts to the server via tRPC.
+ * Falls back to localStorage for guests or when server is unavailable.
  *
  * Default mapping:
  *   C → /chat, O → /operations, I → /intelligence-hub, A → /advisory,
  *   R → /relationships, M → /market-data, D → /documents, N → /integrations,
  *   S → /settings/profile, H → /help
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const LS_KEY = "stewardly-custom-shortcuts";
 
@@ -57,13 +59,12 @@ export const AVAILABLE_ROUTES: { route: string; label: string }[] = [
   { route: "/changelog", label: "Changelog" },
 ];
 
-function loadCustomShortcuts(): ShortcutMapping[] | null {
+function loadLocalShortcuts(): ShortcutMapping[] | null {
   try {
     const stored = localStorage.getItem(LS_KEY);
     if (!stored) return null;
     const parsed = JSON.parse(stored);
     if (!Array.isArray(parsed)) return null;
-    // Validate structure
     for (const item of parsed) {
       if (typeof item.key !== "string" || typeof item.route !== "string" || typeof item.label !== "string") {
         return null;
@@ -75,20 +76,48 @@ function loadCustomShortcuts(): ShortcutMapping[] | null {
   }
 }
 
-function saveCustomShortcuts(shortcuts: ShortcutMapping[]) {
+function saveLocalShortcuts(shortcuts: ShortcutMapping[]) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(shortcuts));
   } catch {}
 }
 
 export function useCustomShortcuts() {
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
+
+  // Server-side query — only runs when authenticated
+  const serverQuery = trpc.settings.getShortcuts.useQuery(undefined, {
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000, // 5 min cache
+    retry: 1,
+  });
+
+  const saveMutation = trpc.settings.saveShortcuts.useMutation();
+
+  // Track whether we've already hydrated from server
+  const hydratedFromServer = useRef(false);
+
   const [shortcuts, setShortcuts] = useState<ShortcutMapping[]>(() => {
-    return loadCustomShortcuts() ?? DEFAULT_SHORTCUTS;
+    return loadLocalShortcuts() ?? DEFAULT_SHORTCUTS;
   });
 
   const [isCustomized, setIsCustomized] = useState(() => {
-    return loadCustomShortcuts() !== null;
+    return loadLocalShortcuts() !== null;
   });
+
+  // Hydrate from server when data arrives (once)
+  useEffect(() => {
+    if (serverQuery.data && !hydratedFromServer.current) {
+      hydratedFromServer.current = true;
+      const serverShortcuts = serverQuery.data.shortcuts as ShortcutMapping[] | null;
+      if (serverShortcuts && Array.isArray(serverShortcuts) && serverShortcuts.length > 0) {
+        setShortcuts(serverShortcuts);
+        setIsCustomized(true);
+        saveLocalShortcuts(serverShortcuts); // Keep localStorage in sync
+      }
+    }
+  }, [serverQuery.data]);
 
   // Build a key→route lookup for fast navigation
   const shortcutMap = useMemo(() => {
@@ -99,15 +128,23 @@ export function useCustomShortcuts() {
     return map;
   }, [shortcuts]);
 
+  // Persist to both localStorage and server
+  const persistShortcuts = useCallback((next: ShortcutMapping[]) => {
+    saveLocalShortcuts(next);
+    if (isAuthenticated) {
+      saveMutation.mutate({ shortcuts: next });
+    }
+  }, [isAuthenticated, saveMutation]);
+
   const updateShortcut = useCallback((index: number, update: Partial<ShortcutMapping>) => {
     setShortcuts(prev => {
       const next = [...prev];
       next[index] = { ...next[index], ...update };
-      saveCustomShortcuts(next);
+      persistShortcuts(next);
       setIsCustomized(true);
       return next;
     });
-  }, []);
+  }, [persistShortcuts]);
 
   const resetToDefaults = useCallback(() => {
     setShortcuts(DEFAULT_SHORTCUTS);
@@ -115,27 +152,30 @@ export function useCustomShortcuts() {
     try {
       localStorage.removeItem(LS_KEY);
     } catch {}
-  }, []);
+    if (isAuthenticated) {
+      // Save defaults to server to clear custom shortcuts
+      saveMutation.mutate({ shortcuts: DEFAULT_SHORTCUTS });
+    }
+  }, [isAuthenticated, saveMutation]);
 
   const addShortcut = useCallback((mapping: ShortcutMapping) => {
     setShortcuts(prev => {
-      // Don't allow duplicate keys
       const filtered = prev.filter(s => s.key.toLowerCase() !== mapping.key.toLowerCase());
       const next = [...filtered, mapping];
-      saveCustomShortcuts(next);
+      persistShortcuts(next);
       setIsCustomized(true);
       return next;
     });
-  }, []);
+  }, [persistShortcuts]);
 
   const removeShortcut = useCallback((key: string) => {
     setShortcuts(prev => {
       const next = prev.filter(s => s.key.toLowerCase() !== key.toLowerCase());
-      saveCustomShortcuts(next);
+      persistShortcuts(next);
       setIsCustomized(true);
       return next;
     });
-  }, []);
+  }, [persistShortcuts]);
 
   return {
     shortcuts,
@@ -145,5 +185,6 @@ export function useCustomShortcuts() {
     resetToDefaults,
     addShortcut,
     removeShortcut,
+    isSyncing: saveMutation.isPending,
   };
 }

@@ -1542,6 +1542,47 @@ const settingsRouter = router({
   getTosStatus: protectedProcedure.query(async ({ ctx }) => {
     return { accepted: !!(ctx.user as any).tosAcceptedAt, acceptedAt: (ctx.user as any).tosAcceptedAt };
   }),
+
+  // ─── KEYBOARD SHORTCUTS (server-side persistence) ─────────────────
+  getShortcuts: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const { userPreferences } = await import("../drizzle/schema");
+    const [row] = await db
+      .select({ customShortcuts: userPreferences.customShortcuts })
+      .from(userPreferences)
+      .where(eq(userPreferences.userId, ctx.user.id))
+      .limit(1);
+    return { shortcuts: (row?.customShortcuts as any[] | null) ?? null };
+  }),
+
+  saveShortcuts: protectedProcedure
+    .input(z.object({
+      shortcuts: z.array(z.object({
+        key: z.string().min(1).max(1),
+        route: z.string().min(1),
+        label: z.string().min(1),
+      })).max(26),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const { userPreferences } = await import("../drizzle/schema");
+      const [existing] = await db
+        .select({ id: userPreferences.id })
+        .from(userPreferences)
+        .where(eq(userPreferences.userId, ctx.user.id))
+        .limit(1);
+      if (existing) {
+        await db.update(userPreferences)
+          .set({ customShortcuts: input.shortcuts })
+          .where(eq(userPreferences.userId, ctx.user.id));
+      } else {
+        await db.insert(userPreferences).values({
+          userId: ctx.user.id,
+          customShortcuts: input.shortcuts,
+        });
+      }
+      return { success: true };
+    }),
 });
 
 // ─── CALCULATORS ROUTER ──────────────────────────────────────────
