@@ -2911,3 +2911,14 @@
 - [x] Add prefetch on hover to sidebar nav links in AppShell for instant navigation
 - [x] Enhance SectionErrorBoundary with queryClient.invalidateQueries on retry — wired in Integrations (4 sections), MarketData, OperationsHub, AnalyticsHub
 - [x] Write tests for all three features (19 new tests in uxPolish.test.ts)
+
+## Keyboard Shortcuts Overlay & Changelog Expansion — March 28, 2026
+- [x] Wire existing KeyboardShortcuts component into a discoverable "?" shortcut overlay modal — expanded with 18 shortcuts across 3 categories (Navigation, Chat, General)
+- [x] Add "?" key listener to toggle the shortcuts modal from anywhere in the app — already present, verified working
+- [x] Display all available keyboard shortcuts in a clean, categorized layout — with category descriptions, badges, scroll area, ARIA attributes
+- [x] Add visual hint in sidebar footer pointing to "?" shortcut — shows in expanded sidebar
+- [x] Add G-then-X navigation to AppShell (10 routes: C/O/I/A/R/M/D/N/S/H) — works on all pages, not just Chat
+- [x] Expand Chat.tsx G-then-X from 3 routes to 10 routes (Operations, Intelligence, Advisory, Relationships, Market Data, Documents, Integrations)
+- [x] Expand WhatsNewModal CHANGELOG to 3 releases with 15 entries — added 2026.03.28b (shortcuts/prefetch/recovery) and 2026.03.20 (intelligence/market/docs/relationships/RBAC)
+- [x] Bump CURRENT_VERSION to 2026.03.28b to re-trigger modal for returning users
+- [x] Write tests for keyboard shortcuts overlay and expanded changelog — 32 new tests in keyboardShortcutsChangelog.test.ts

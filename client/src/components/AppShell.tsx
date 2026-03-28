@@ -15,13 +15,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { prefetchRoute } from "@/lib/routePrefetch";
 import {
   MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
   Link2, HeartPulse, RefreshCw, Activity, Briefcase, Building2,
   BarChart3, Globe, Wrench, HelpCircle, Settings, LogIn, LogOut,
-  Menu, X, ChevronLeft, ChevronRight, PanelLeftClose,
+  Menu, X, ChevronLeft, ChevronRight, PanelLeftClose, Keyboard,
 } from "lucide-react";
 
 type UserRole = "user" | "advisor" | "manager" | "admin";
@@ -74,6 +74,45 @@ export default function AppShell({ children, title }: AppShellProps) {
 
   // Close mobile sidebar on navigation
   useEffect(() => { setMobileOpen(false); }, [location]);
+
+  // G-then-X keyboard navigation (mirrors Chat.tsx shortcuts)
+  const gPressedRef = useRef(false);
+  const gTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+      const isMod = e.metaKey || e.ctrlKey;
+      if (!isInput && !isMod && !e.shiftKey) {
+        if (e.key.toLowerCase() === "g") {
+          gPressedRef.current = true;
+          if (gTimerRef.current) clearTimeout(gTimerRef.current);
+          gTimerRef.current = setTimeout(() => { gPressedRef.current = false; }, 800);
+          return;
+        }
+        if (gPressedRef.current) {
+          gPressedRef.current = false;
+          if (gTimerRef.current) clearTimeout(gTimerRef.current);
+          const k = e.key.toLowerCase();
+          if (k === "c") { e.preventDefault(); navigate("/chat"); return; }
+          if (k === "o") { e.preventDefault(); navigate("/operations"); return; }
+          if (k === "i") { e.preventDefault(); navigate("/intelligence-hub"); return; }
+          if (k === "a") { e.preventDefault(); navigate("/advisory"); return; }
+          if (k === "r") { e.preventDefault(); navigate("/relationships"); return; }
+          if (k === "m") { e.preventDefault(); navigate("/market-data"); return; }
+          if (k === "d") { e.preventDefault(); navigate("/documents"); return; }
+          if (k === "n") { e.preventDefault(); navigate("/integrations"); return; }
+          if (k === "s") { e.preventDefault(); navigate("/settings/profile"); return; }
+          if (k === "h") { e.preventDefault(); navigate("/help"); return; }
+        }
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      if (gTimerRef.current) clearTimeout(gTimerRef.current);
+    };
+  }, [navigate]);
 
   const userRole = (user as any)?.role || "user";
 
@@ -230,6 +269,12 @@ export default function AppShell({ children, title }: AppShellProps) {
               <button onClick={() => navigate("/settings/profile")} onMouseEnter={() => prefetchRoute("/settings/profile")} onFocus={() => prefetchRoute("/settings/profile")} className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
                 <Settings className="w-4 h-4" /> Settings
               </button>
+              <div className="mt-1 px-2.5 py-1.5">
+                <p className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                  <Keyboard className="w-3 h-3" />
+                  Press <kbd className="px-1 py-0.5 rounded bg-secondary/60 text-[9px] font-mono">?</kbd> for shortcuts
+                </p>
+              </div>
             </>
           )}
         </div>

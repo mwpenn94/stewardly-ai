@@ -17,13 +17,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   Sparkles, Shield, Zap, RefreshCw, Wifi, Layout,
-  ArrowRight, CheckCircle2,
+  ArrowRight, CheckCircle2, Keyboard, Globe, Brain,
+  FileText, Users, TrendingUp, Lock, Gauge,
 } from "lucide-react";
 
 // ── Changelog entries — newest first ──────────────────────────────────
 // Bump CURRENT_VERSION when adding new entries so the modal re-appears.
 
-export const CURRENT_VERSION = "2026.03.28";
+export const CURRENT_VERSION = "2026.03.28b";
 const LS_KEY = "stewardly-whats-new-seen";
 
 type ChangeCategory = "feature" | "fix" | "improvement" | "security";
@@ -50,6 +51,41 @@ const CATEGORY_STYLES: Record<ChangeCategory, { label: string; className: string
 };
 
 export const CHANGELOG: ChangelogRelease[] = [
+  {
+    version: "2026.03.28b",
+    date: "March 28, 2026",
+    headline: "Keyboard shortcuts, expanded navigation, and more polish",
+    entries: [
+      {
+        category: "feature",
+        title: "Keyboard shortcuts overlay",
+        description:
+          "Press ? from anywhere to see all available keyboard shortcuts. Navigate the entire platform without touching the mouse — press G then a letter to jump to any page.",
+        icon: <Keyboard className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "feature",
+        title: "Full keyboard navigation",
+        description:
+          "10 new G-then-X shortcuts let you jump to Operations (G O), Intelligence (G I), Advisory (G A), Relationships (G R), Market Data (G M), Documents (G D), and more — from any page.",
+        icon: <Globe className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "improvement",
+        title: "Instant page transitions with prefetch",
+        description:
+          "Hovering over sidebar links now preloads the page in the background, making navigation feel nearly instant.",
+        icon: <Gauge className="w-5 h-5 text-blue-400" />,
+      },
+      {
+        category: "improvement",
+        title: "Smarter error recovery",
+        description:
+          "Retry buttons in error boundaries now invalidate stale queries and fetch fresh data. After 3 failed retries, a page-refresh fallback appears.",
+        icon: <RefreshCw className="w-5 h-5 text-blue-400" />,
+      },
+    ],
+  },
   {
     version: "2026.03.28",
     date: "March 28, 2026",
@@ -96,6 +132,48 @@ export const CHANGELOG: ChangelogRelease[] = [
         description:
           "50+ pages are now lazy-loaded on demand, reducing the initial bundle size and speeding up first paint.",
         icon: <Zap className="w-5 h-5 text-blue-400" />,
+      },
+    ],
+  },
+  {
+    version: "2026.03.20",
+    date: "March 20, 2026",
+    headline: "Deep intelligence, real-time data, and compliance tools",
+    entries: [
+      {
+        category: "feature",
+        title: "Intelligence Hub",
+        description:
+          "A new centralized hub for AI models, data insights, and analytics. View model status, run history, and data source health in one place.",
+        icon: <Brain className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "feature",
+        title: "Real-time market data",
+        description:
+          "Live quotes, economic indicators from FRED, BLS, BEA, and Census data — all piped through the Market Data page with auto-refresh.",
+        icon: <TrendingUp className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "feature",
+        title: "Document management",
+        description:
+          "Upload, organize, and search documents with AI-powered tagging. Supports bulk operations, version history, and client-linked filing.",
+        icon: <FileText className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "feature",
+        title: "Relationship management",
+        description:
+          "Track client relationships, household structures, and service tiers. Integrated with the AI advisor for context-aware recommendations.",
+        icon: <Users className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "security",
+        title: "Role-based access control",
+        description:
+          "Four-tier role hierarchy (user, advisor, manager, admin) with automatic role elevation for sensitive operations and 30-minute auto-revoke.",
+        icon: <Lock className="w-5 h-5 text-purple-400" />,
       },
     ],
   },

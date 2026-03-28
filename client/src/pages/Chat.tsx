@@ -843,6 +843,13 @@ export default function Chat() {
           if (gTimerRef.current) clearTimeout(gTimerRef.current);
           const k = e.key.toLowerCase();
           if (k === "c") { e.preventDefault(); navigate("/"); return; }
+          if (k === "o") { e.preventDefault(); navigate("/operations"); return; }
+          if (k === "i") { e.preventDefault(); navigate("/intelligence-hub"); return; }
+          if (k === "a") { e.preventDefault(); navigate("/advisory"); return; }
+          if (k === "r") { e.preventDefault(); navigate("/relationships"); return; }
+          if (k === "m") { e.preventDefault(); navigate("/market-data"); return; }
+          if (k === "d") { e.preventDefault(); navigate("/documents"); return; }
+          if (k === "n") { e.preventDefault(); navigate("/integrations"); return; }
           if (k === "s") { e.preventDefault(); navigate("/settings/profile"); return; }
           if (k === "h") { e.preventDefault(); navigate("/help"); return; }
         }
