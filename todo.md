@@ -2889,3 +2889,12 @@
 - [x] Add loading skeletons to other integration sections (SnapTrade, CRM, SOFR)
 - [x] Validate fix on published site (validated on dev server — needs re-publish)
 - [x] Write tests for ErrorBoundary component
+
+## Error Boundaries, Retry Logic, and Health Indicator — March 28, 2026
+- [x] Add SectionErrorBoundary to MarketData page sub-components
+- [x] Add SectionErrorBoundary to OperationsHub page sub-components
+- [x] Add SectionErrorBoundary to AnalyticsHub + IntelligenceHub page sub-components
+- [x] Add retry-with-backoff to tRPC queries on integrations page (exponential backoff, 2 retries, 8s cap)
+- [x] Add global retry-with-backoff to QueryClient defaults (3 retries, 15s cap)
+- [x] Evaluate sidebar connection health indicator against UX best practices — SKIPPED (violates progressive disclosure, creates unnecessary anxiety, redundant with existing Integrations + Integration Health pages)
+- [x] Write tests for retry logic and error boundary additions (9 new tests)

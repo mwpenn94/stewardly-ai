@@ -11,6 +11,7 @@ import {
   RefreshCw, Loader2, DollarSign, Activity,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { useLocation } from "wouter";
 
 const WATCHLIST = [
@@ -77,6 +78,7 @@ export default function MarketData() {
         </div>
       </header>
 
+      <SectionErrorBoundary sectionName="Market Data">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Search */}
         <div className="flex gap-2">
@@ -183,6 +185,7 @@ export default function MarketData() {
           Data via Yahoo Finance. Prices may be delayed. Not investment advice.
         </p>
       </div>
+      </SectionErrorBoundary>
     </div>
     </AppShell>
   );

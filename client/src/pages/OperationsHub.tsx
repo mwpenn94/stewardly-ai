@@ -19,6 +19,7 @@ import {
   CheckCircle2, XCircle, Clock, AlertTriangle, Loader2, Eye,
   Search, Filter, RefreshCw, MoreHorizontal, FileText, Zap,
 } from "lucide-react";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 
 export default function OperationsHub() {
   const [activeTab, setActiveTab] = useState("active");
@@ -83,19 +84,27 @@ export default function OperationsHub() {
           </TabsList>
 
           <TabsContent value="active" className="space-y-4 mt-4">
-            <ActiveWorkSection />
+            <SectionErrorBoundary sectionName="Active Work">
+              <ActiveWorkSection />
+            </SectionErrorBoundary>
           </TabsContent>
 
           <TabsContent value="agents" className="space-y-4 mt-4">
-            <AgentsSection />
+            <SectionErrorBoundary sectionName="Agents">
+              <AgentsSection />
+            </SectionErrorBoundary>
           </TabsContent>
 
           <TabsContent value="compliance" className="space-y-4 mt-4">
-            <ComplianceSection />
+            <SectionErrorBoundary sectionName="Compliance">
+              <ComplianceSection />
+            </SectionErrorBoundary>
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 mt-4">
-            <HistorySection />
+            <SectionErrorBoundary sectionName="History">
+              <HistorySection />
+            </SectionErrorBoundary>
           </TabsContent>
         </Tabs>
       </div>

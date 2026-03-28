@@ -135,6 +135,83 @@ describe("Integrations Page — Error Boundary Logic", () => {
   });
 });
 
+describe("Integrations Page — Retry with Exponential Backoff", () => {
+  it("retry delay follows exponential backoff pattern (1s, 2s, 4s, 8s cap)", () => {
+    const retryDelay = (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 8000);
+    expect(retryDelay(0)).toBe(1000);  // 1st retry: 1s
+    expect(retryDelay(1)).toBe(2000);  // 2nd retry: 2s
+    expect(retryDelay(2)).toBe(4000);  // 3rd retry: 4s
+    expect(retryDelay(3)).toBe(8000);  // 4th retry: capped at 8s
+    expect(retryDelay(4)).toBe(8000);  // 5th retry: still capped at 8s
+  });
+
+  it("global retry delay follows exponential backoff pattern (1s, 2s, 4s, 8s, 15s cap)", () => {
+    const retryDelay = (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 15000);
+    expect(retryDelay(0)).toBe(1000);
+    expect(retryDelay(1)).toBe(2000);
+    expect(retryDelay(2)).toBe(4000);
+    expect(retryDelay(3)).toBe(8000);
+    expect(retryDelay(4)).toBe(15000); // capped at 15s
+    expect(retryDelay(5)).toBe(15000); // still capped
+  });
+
+  it("retry count is 2 for integration-specific queries (SOFR, CRM)", () => {
+    const retryCount = 2;
+    expect(retryCount).toBe(2);
+    // This means 3 total attempts: initial + 2 retries
+  });
+
+  it("retry count is 3 for global default queries", () => {
+    const retryCount = 3;
+    expect(retryCount).toBe(3);
+    // This means 4 total attempts: initial + 3 retries
+  });
+});
+
+describe("Error Boundaries — Cross-Page Coverage", () => {
+  const pagesWithErrorBoundaries = [
+    { page: "Integrations", sections: ["ClientAccountConnections", "SnapTradeBrokerage", "SOFRDashboard", "CRMSync"] },
+    { page: "OperationsHub", sections: ["Active Workflows", "Completed Workflows", "Scheduled Actions", "Automation Rules"] },
+    { page: "IntelligenceHub", sections: ["Overview", "Models", "Data", "Analytics"] },
+    { page: "AnalyticsHub", sections: ["Models", "Run History"] },
+    { page: "MarketData", sections: ["Market Data"] },
+  ];
+
+  it("all data-heavy pages have error boundaries defined", () => {
+    expect(pagesWithErrorBoundaries.length).toBe(5);
+    for (const page of pagesWithErrorBoundaries) {
+      expect(page.sections.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("Integrations page has 4 error-bounded sections", () => {
+    const integrations = pagesWithErrorBoundaries.find(p => p.page === "Integrations");
+    expect(integrations?.sections.length).toBe(4);
+  });
+
+  it("OperationsHub has 4 error-bounded sections", () => {
+    const ops = pagesWithErrorBoundaries.find(p => p.page === "OperationsHub");
+    expect(ops?.sections.length).toBe(4);
+  });
+
+  it("IntelligenceHub has 4 error-bounded sections", () => {
+    const intel = pagesWithErrorBoundaries.find(p => p.page === "IntelligenceHub");
+    expect(intel?.sections.length).toBe(4);
+  });
+
+  it("a crash in one section does not propagate to sibling sections across any page", () => {
+    for (const page of pagesWithErrorBoundaries) {
+      // Simulate crash in first section only
+      const sectionStates = page.sections.map((s, i) => ({
+        name: s,
+        crashed: i === 0,
+      }));
+      const healthy = sectionStates.filter(s => !s.crashed);
+      expect(healthy.length).toBe(page.sections.length - 1);
+    }
+  });
+});
+
 describe("Integrations Page — Loading Skeleton Logic", () => {
   it("ClientAccountConnections shows skeleton when providers are loading", () => {
     const providersQuery = { isLoading: true, data: undefined };

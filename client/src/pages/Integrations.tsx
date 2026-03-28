@@ -738,8 +738,8 @@ function SnapTradeBrokerageSection() {
 
 // ─── SOFR / Premium Finance Rate Dashboard ─────────────────────────────
 function SOFRDashboard() {
-  const latestRates = trpc.verification.getLatestRates.useQuery(undefined, { retry: false });
-  const rateHistory = trpc.verification.getRateHistory.useQuery({ days: 30 }, { retry: false });
+  const latestRates = trpc.verification.getLatestRates.useQuery(undefined, { retry: 2, retryDelay: (i: number) => Math.min(1000 * 2 ** i, 8000) });
+  const rateHistory = trpc.verification.getRateHistory.useQuery({ days: 30 }, { retry: 2, retryDelay: (i: number) => Math.min(1000 * 2 ** i, 8000) });
   const refreshRates = trpc.verification.refreshRates.useMutation({
     onSuccess: () => { toast.success("Rates refreshed"); latestRates.refetch(); rateHistory.refetch(); },
     onError: (e: any) => toast.error(e.message),
@@ -837,8 +837,8 @@ function SOFRDashboard() {
 
 // ─── CRM Sync Status Panel ──────────────────────────────────────────────
 function CRMSyncPanel() {
-  const syncStats = trpc.operations.crm.stats.useQuery(undefined, { retry: false });
-  const crmConns = trpc.operations.crm.connections.useQuery(undefined, { retry: false });
+  const syncStats = trpc.operations.crm.stats.useQuery(undefined, { retry: 2, retryDelay: (i: number) => Math.min(1000 * 2 ** i, 8000) });
+  const crmConns = trpc.operations.crm.connections.useQuery(undefined, { retry: 2, retryDelay: (i: number) => Math.min(1000 * 2 ** i, 8000) });
   // Loading skeleton while CRM data resolves
   if (syncStats.isLoading) {
     return (

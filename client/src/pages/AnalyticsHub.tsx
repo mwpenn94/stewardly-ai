@@ -11,6 +11,7 @@ import {
   Loader2, TrendingUp, Database, FileText, Sparkles,
   Activity, Cpu,
 } from "lucide-react";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 
 function ModelCard({ model, onRun }: { model: any; onRun: (slug: string) => void }) {
   const statusColors: Record<string, string> = {
@@ -169,6 +170,7 @@ export default function AnalyticsHub() {
         </TabsList>
 
         <TabsContent value="models">
+          <SectionErrorBoundary sectionName="Models">
           {modelsQuery.isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -197,9 +199,11 @@ export default function AnalyticsHub() {
               ))}
             </div>
           )}
+          </SectionErrorBoundary>
         </TabsContent>
 
         <TabsContent value="history">
+          <SectionErrorBoundary sectionName="Run History">
           {historyQuery.isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -221,6 +225,7 @@ export default function AnalyticsHub() {
               ))}
             </div>
           )}
+          </SectionErrorBoundary>
         </TabsContent>
       </Tabs>
     </div>
