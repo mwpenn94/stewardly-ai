@@ -2868,3 +2868,13 @@
 - [x] Fix Profile & Style settings page — user facts list extends without limit, causes footer overlap
 - [x] Fix Knowledge Base settings page — items extend without limit, causes footer overlap
 - [x] Audit and fix any other views with unbounded list rendering (scrollable containers, max-heights)
+
+## Integrations Page Bug Fix — March 28, 2026
+- [ ] BUG: Integrations page keeps breaking — likely .find TypeError on non-array data
+- [x] Comprehensive sweep of all .data?.find/.filter/.map calls on integrations-related pages
+- [x] Validate fix in browser
+
+## Integrations Page Bug Fix — March 28, 2026
+- [x] BUG: Integrations page keeps breaking — TypeError: s.data?.find is not a function
+- [x] Comprehensive sweep of all .data?.find/.filter/.map calls on integrations-related pages
+- [x] Validate fix in browser

@@ -848,10 +848,12 @@ function ClientAccountConnections() {
   const providers = trpc.integrations.listProviders.useQuery();
 
   // Find Plaid and Canopy providers
-  const plaidProvider = (providers.data as unknown as Provider[] | undefined)?.find(p => p.slug === "plaid");
-  const canopyProvider = (providers.data as unknown as Provider[] | undefined)?.find(p => p.slug === "canopy-connect");
-  const plaidConn = (connections.data as unknown as Connection[] | undefined)?.find((c: any) => c.providerId === plaidProvider?.id);
-  const canopyConn = (connections.data as unknown as Connection[] | undefined)?.find((c: any) => c.providerId === canopyProvider?.id);
+  const providersList = Array.isArray(providers.data) ? providers.data : (providers.data as any)?.providers;
+  const connectionsList = Array.isArray(connections.data) ? connections.data : [];
+  const plaidProvider = (providersList as Provider[] | undefined)?.find(p => p.slug === "plaid");
+  const canopyProvider = (providersList as Provider[] | undefined)?.find(p => p.slug === "canopy-connect");
+  const plaidConn = (connectionsList as Connection[] | undefined)?.find((c: any) => c.providerId === plaidProvider?.id);
+  const canopyConn = (connectionsList as Connection[] | undefined)?.find((c: any) => c.providerId === canopyProvider?.id);
 
   if (!user) return null;
 
