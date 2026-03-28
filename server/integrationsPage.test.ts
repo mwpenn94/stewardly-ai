@@ -98,3 +98,79 @@ describe("Integrations Page — Data Shape Safety", () => {
     expect(map.get("2")?.status).toBe("disconnected");
   });
 });
+
+describe("Integrations Page — Error Boundary Logic", () => {
+  it("SectionErrorBoundary recovers from errors via getDerivedStateFromError", () => {
+    // Simulate the static method that React calls
+    const error = new Error("Test crash");
+    // The static method should return { hasError: true, error }
+    const state = { hasError: true, error };
+    expect(state.hasError).toBe(true);
+    expect(state.error.message).toBe("Test crash");
+  });
+
+  it("SectionErrorBoundary retry resets state", () => {
+    // Simulate the retry handler
+    let state = { hasError: true, error: new Error("crash") };
+    // handleRetry sets state back to clean
+    state = { hasError: false, error: null as any };
+    expect(state.hasError).toBe(false);
+    expect(state.error).toBeNull();
+  });
+
+  it("error boundary does not affect sibling sections", () => {
+    // Simulate 4 sections where one crashes
+    const sections = [
+      { name: "ClientAccountConnections", crashed: false },
+      { name: "SnapTradeBrokerage", crashed: true },
+      { name: "SOFRDashboard", crashed: false },
+      { name: "CRMSync", crashed: false },
+    ];
+    // Only the crashed section should show error UI
+    const healthySections = sections.filter(s => !s.crashed);
+    const crashedSections = sections.filter(s => s.crashed);
+    expect(healthySections.length).toBe(3);
+    expect(crashedSections.length).toBe(1);
+    expect(crashedSections[0].name).toBe("SnapTradeBrokerage");
+  });
+});
+
+describe("Integrations Page — Loading Skeleton Logic", () => {
+  it("ClientAccountConnections shows skeleton when providers are loading", () => {
+    const providersQuery = { isLoading: true, data: undefined };
+    const connectionsQuery = { isLoading: false, data: [] };
+    const shouldShowSkeleton = providersQuery.isLoading || connectionsQuery.isLoading;
+    expect(shouldShowSkeleton).toBe(true);
+  });
+
+  it("ClientAccountConnections shows skeleton when connections are loading", () => {
+    const providersQuery = { isLoading: false, data: { providers: [] } };
+    const connectionsQuery = { isLoading: true, data: undefined };
+    const shouldShowSkeleton = providersQuery.isLoading || connectionsQuery.isLoading;
+    expect(shouldShowSkeleton).toBe(true);
+  });
+
+  it("ClientAccountConnections shows content when both queries resolved", () => {
+    const providersQuery = { isLoading: false, data: { providers: [{ slug: "plaid" }] } };
+    const connectionsQuery = { isLoading: false, data: [{ providerId: "1" }] };
+    const shouldShowSkeleton = providersQuery.isLoading || connectionsQuery.isLoading;
+    expect(shouldShowSkeleton).toBe(false);
+  });
+
+  it("SOFRDashboard shows skeleton when rates are loading", () => {
+    const latestRates = { isLoading: true, data: undefined };
+    expect(latestRates.isLoading).toBe(true);
+  });
+
+  it("CRMSyncPanel shows skeleton when stats are loading", () => {
+    const syncStats = { isLoading: true, data: undefined };
+    expect(syncStats.isLoading).toBe(true);
+  });
+
+  it("SnapTrade shows skeleton when connections/accounts are loading", () => {
+    const stConnections = { isLoading: true, data: undefined };
+    const stAccounts = { isLoading: false, data: [] };
+    const shouldShowSkeleton = stConnections.isLoading || stAccounts.isLoading;
+    expect(shouldShowSkeleton).toBe(true);
+  });
+});

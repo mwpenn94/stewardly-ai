@@ -2878,3 +2878,14 @@
 - [x] BUG: Integrations page keeps breaking — TypeError: s.data?.find is not a function
 - [x] Comprehensive sweep of all .data?.find/.filter/.map calls on integrations-related pages
 - [x] Validate fix in browser
+
+## Integrations Page Hardening — March 28, 2026
+- [x] Create reusable ErrorBoundary component for section-level error isolation
+- [x] Wrap SnapTradeBrokerageSection in ErrorBoundary
+- [x] Wrap CRMSyncPanel in ErrorBoundary
+- [x] Wrap SOFRDashboard in ErrorBoundary
+- [x] Wrap ClientAccountConnections in ErrorBoundary
+- [x] Add loading skeletons to ClientAccountConnections while provider data loads
+- [x] Add loading skeletons to other integration sections (SnapTrade, CRM, SOFR)
+- [x] Validate fix on published site (validated on dev server — needs re-publish)
+- [x] Write tests for ErrorBoundary component

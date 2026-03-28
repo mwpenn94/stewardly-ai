@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { getLoginUrl } from "@/const";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 type Provider = {
@@ -602,6 +604,41 @@ function SnapTradeBrokerageSection() {
   // Don't show if platform credentials aren't configured or user isn't logged in
   if (!user || !stStatus.data?.platformConfigured) return null;
 
+  // Loading skeleton while SnapTrade data resolves
+  if (stConnections.isLoading || stAccounts.isLoading) {
+    return (
+      <Card className="border-emerald-500/20">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-5 w-44" />
+              </div>
+              <Skeleton className="h-4 w-72" />
+            </div>
+            <Skeleton className="h-8 w-36 rounded-md" />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {[1, 2].map(i => (
+            <div key={i} className="rounded-lg border p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+                <Skeleton className="h-7 w-14 rounded-md" />
+              </div>
+              <Skeleton className="h-3 w-48" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
   const activeConns = stStatus.data?.registered
     ? (stConnections.data || []).filter((c: any) => c.status !== "deleted")
     : [];
@@ -707,6 +744,35 @@ function SOFRDashboard() {
     onSuccess: () => { toast.success("Rates refreshed"); latestRates.refetch(); rateHistory.refetch(); },
     onError: (e: any) => toast.error(e.message),
   });
+  // Loading skeleton while rate data resolves
+  if (latestRates.isLoading) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-5 rounded" />
+              <Skeleton className="h-5 w-44" />
+            </div>
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-8 w-24 rounded-md" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="rounded-lg border p-3 text-center space-y-2">
+                <Skeleton className="h-3 w-16 mx-auto" />
+                <Skeleton className="h-6 w-14 mx-auto" />
+              </div>
+            ))}
+          </div>
+          <Skeleton className="h-16 w-full rounded-md" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   const rates = latestRates.data;
   const history = rateHistory.data || [];
   const sofrHistory = history.map((r: any) => parseFloat(r.sofr || "0")).filter((v: number) => v > 0);
@@ -773,6 +839,45 @@ function SOFRDashboard() {
 function CRMSyncPanel() {
   const syncStats = trpc.operations.crm.stats.useQuery(undefined, { retry: false });
   const crmConns = trpc.operations.crm.connections.useQuery(undefined, { retry: false });
+  // Loading skeleton while CRM data resolves
+  if (syncStats.isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-5 w-36" />
+          </div>
+          <Skeleton className="h-4 w-56 mt-1" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="rounded-lg border p-3 text-center space-y-2">
+                <Skeleton className="h-3 w-14 mx-auto" />
+                <Skeleton className="h-7 w-10 mx-auto" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {[1, 2].map(i => (
+              <div key={i} className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-2 w-2 rounded-full" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                </div>
+                <Skeleton className="h-4 w-4 rounded" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const stats = syncStats.data;
   const conns = crmConns.data || [];
   const providerColors: Record<string, string> = {
@@ -854,6 +959,46 @@ function ClientAccountConnections() {
   const canopyProvider = (providersList as Provider[] | undefined)?.find(p => p.slug === "canopy-connect");
   const plaidConn = (connectionsList as Connection[] | undefined)?.find((c: any) => c.providerId === plaidProvider?.id);
   const canopyConn = (connectionsList as Connection[] | undefined)?.find((c: any) => c.providerId === canopyProvider?.id);
+
+  // Loading skeleton while queries resolve
+  if (providers.isLoading || connections.isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <Skeleton className="h-4 w-80 mt-1" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[1, 2].map(i => (
+            <div key={i} className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-5 w-5 rounded" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-64" />
+                  </div>
+                </div>
+                <Skeleton className="h-5 w-24 rounded-full" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[1, 2, 3, 4].map(j => (
+                  <div key={j} className="flex items-center gap-1.5">
+                    <Skeleton className="h-3 w-3 rounded-full" />
+                    <Skeleton className="h-3 w-28" />
+                  </div>
+                ))}
+              </div>
+              <Skeleton className="h-8 w-full rounded-md" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!user) return null;
 
@@ -1250,16 +1395,24 @@ export default function Integrations() {
       )}
 
       {/* Client Account Connections (Plaid Link + Canopy Connect) */}
-      <ClientAccountConnections />
+      <SectionErrorBoundary sectionName="Client Account Connections">
+        <ClientAccountConnections />
+      </SectionErrorBoundary>
 
       {/* SnapTrade Brokerage Connections */}
-      <SnapTradeBrokerageSection />
+      <SectionErrorBoundary sectionName="SnapTrade Brokerage">
+        <SnapTradeBrokerageSection />
+      </SectionErrorBoundary>
 
       {/* Premium Finance Rates / SOFR Dashboard */}
-      <SOFRDashboard />
+      <SectionErrorBoundary sectionName="Premium Finance Rates">
+        <SOFRDashboard />
+      </SectionErrorBoundary>
 
       {/* CRM Sync Status Panel */}
-      <CRMSyncPanel />
+      <SectionErrorBoundary sectionName="CRM Sync">
+        <CRMSyncPanel />
+      </SectionErrorBoundary>
 
       {/* My Connections — Sync History */}
       {connectedCount > 0 && (
