@@ -260,7 +260,7 @@ export default function DataSharingTab() {
       </Card>
 
       {/* Access Transition History */}
-      {transitionsQuery.data && transitionsQuery.data.length > 0 && (
+      {Array.isArray(transitionsQuery.data) && transitionsQuery.data.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">

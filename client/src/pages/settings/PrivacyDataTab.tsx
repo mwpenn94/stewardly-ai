@@ -35,7 +35,7 @@ export default function PrivacyDataTab() {
     onSuccess: () => { consentsQuery.refetch(); toast.success("All consents revoked"); },
   });
 
-  const consents = consentsQuery.data || [];
+  const consents = Array.isArray(consentsQuery.data) ? consentsQuery.data : [];
   const isConsentGranted = (type: string) => {
     const c = consents.find((c: any) => c.consentType === type);
     return c?.granted ?? false;

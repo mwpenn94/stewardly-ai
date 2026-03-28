@@ -593,7 +593,7 @@ function AITuningSettings() {
   }, [prefsQuery.data]);
 
   useEffect(() => {
-    if (presetsQuery.data && activePreset) {
+    if (presetsQuery.data && Array.isArray(presetsQuery.data) && activePreset) {
       const preset = presetsQuery.data.find(p => p.id === activePreset);
       if (preset && Object.keys(weights).length === 0) {
         setWeights(preset.weights);

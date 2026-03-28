@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Bell, BellRing, Check, CheckCheck, X, Zap, Brain, Shield, TrendingUp, Radio, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -60,7 +60,24 @@ export function NotificationBell({
 }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
+  const [openDirection, setOpenDirection] = useState<"down" | "up">("down");
   const panelRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
+
+  // Determine whether to open upward or downward based on available space
+  const calculateDirection = useCallback(() => {
+    if (!bellRef.current) return;
+    const rect = bellRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const panelHeight = 480; // approximate max panel height
+    // Open upward if not enough space below but enough above
+    if (spaceBelow < panelHeight && spaceAbove > spaceBelow) {
+      setOpenDirection("up");
+    } else {
+      setOpenDirection("down");
+    }
+  }, []);
 
   // Close on outside click
   useEffect(() => {
@@ -86,6 +103,13 @@ export function NotificationBell({
     }
   }, [open]);
 
+  const handleToggle = () => {
+    if (!open) {
+      calculateDirection();
+    }
+    setOpen(!open);
+  };
+
   const filteredNotifications = filter
     ? notifications.filter((n) => n.type === filter)
     : notifications;
@@ -95,16 +119,26 @@ export function NotificationBell({
     return acc;
   }, {} as Record<string, number>);
 
+  // Position classes based on direction
+  const panelPositionClasses = openDirection === "up"
+    ? "bottom-full mb-2 right-0"
+    : "top-full mt-2 right-0";
+
+  const animationClass = openDirection === "up"
+    ? "animate-in fade-in slide-in-from-bottom-2 duration-200"
+    : "animate-in fade-in slide-in-from-top-2 duration-200";
+
   return (
     <div className="relative" ref={panelRef}>
       {/* Bell Button */}
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            ref={bellRef}
             variant="ghost"
             size="icon"
             className="relative"
-            onClick={() => setOpen(!open)}
+            onClick={handleToggle}
             aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
           >
             {unreadCount > 0 ? (
@@ -133,7 +167,7 @@ export function NotificationBell({
 
       {/* Dropdown Panel */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[360px] max-w-[calc(100vw-2rem)] bg-popover border border-border rounded-xl shadow-2xl shadow-black/30 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className={`absolute ${panelPositionClasses} w-[360px] max-w-[calc(100vw-2rem)] bg-popover border border-border rounded-xl shadow-2xl shadow-black/30 z-50 overflow-hidden ${animationClass}`}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">

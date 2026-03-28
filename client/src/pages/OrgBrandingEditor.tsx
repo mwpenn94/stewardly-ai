@@ -19,7 +19,7 @@ export default function OrgBrandingEditor() {
   // Get user's org membership (first org where they're org_admin)
   const orgsQuery = trpc.organizations.list.useQuery();
   const userOrg = useMemo(() => {
-    if (!orgsQuery.data || !user) return null;
+    if (!orgsQuery.data || !Array.isArray(orgsQuery.data) || !user) return null;
     return orgsQuery.data.find((o: any) => o.role === "org_admin") || orgsQuery.data[0];
   }, [orgsQuery.data, user]);
 

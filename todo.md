@@ -2815,3 +2815,8 @@
 - [x] Test suite validation — 63 files, 1,746 tests, 100% pass rate
 - [x] Update in-app Help guide — added 4 new FAQs, Document Management section, 7 missing calculators, Layer 5 architecture, Deep Context RAG + Self-Discovery entries
 - [x] Produce comprehensive status report with capability gaps and owner action items (stewardly-platform-report.md)
+- [x] BUG: TypeError s.data?.find is not a function — added Array.isArray guards to Settings.tsx, OrgBrandingEditor.tsx, PrivacyDataTab.tsx, DataSharingTab.tsx
+- [x] BUG: Notifications popover renders offscreen — rewrote NotificationBell with viewport-aware positioning (opens upward when near bottom)
+- [x] BUG: auth.logout test failing after audit branch cookie changes — updated test to expect sameSite:"lax" and added hostname to mock req
+- [x] Installed missing DOMPurify dependency added by audit branch
+- [x] Applied audit_trail schema migration (added ip_address, user_agent, risk_level columns)
