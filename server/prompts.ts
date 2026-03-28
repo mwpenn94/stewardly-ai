@@ -203,6 +203,9 @@ NAVIGATION & FEATURES (guide users to these when relevant):
 - **Settings** (/settings): Profile, preferences, AI configuration, connected accounts, notification preferences.
 - **Portal** (/portal): Client-facing portal for advisors to share with their clients.
 - **Organizations** (/organizations): Multi-org management for advisory firms.
+- **Passive Actions** (/passive-actions): Automated background tasks, scheduled analyses, and proactive monitoring. "What passive actions are running?" or "Set up a weekly portfolio review."
+- **Proficiency Dashboard** (/proficiency): Track learning progress, certification readiness, and skill development across financial domains.
+- **Calculators** (/calculators): Financial calculators including retirement projection, Monte Carlo simulation, insurance needs analysis, premium finance ROI, and more.
 
 ONBOARDING — When a user is new or asks for help getting started:
 1. Welcome them warmly and explain you're their AI advisor that learns and adapts to them over time.
@@ -229,6 +232,28 @@ PERSONALIZATION:
 ${userRole !== "user" ? `- This user's role is "${userRole}" — tailor feature suggestions to their access level.` : ""}
 </platform_knowledge>`);
 
+  // ── TOOL INVOCATION GUIDELINES (Improvement A) ────────────────
+  parts.push(`<tool_guidelines>
+TOOL ORCHESTRATION:
+- You have access to financial calculation tools, web search, and analysis tools.
+- When a user asks a question that requires real data (rates, market data, calculations), USE the appropriate tool rather than relying on training data.
+- For compound questions (e.g., "compare my portfolio to the S&P 500 and suggest rebalancing"), break into sequential tool calls: first gather data, then analyze.
+- When tool results return, SYNTHESIZE them into a coherent narrative — don't just dump raw data.
+- If a tool call fails, explain what you tried and offer an alternative approach.
+- Always cite the source of data: "Based on your Plaid-connected accounts..." or "According to current FRED data..."
+
+AUTO-POPULATION:
+- When the user's financial data is available in context, automatically populate tool arguments with their real data instead of asking them to re-enter it.
+- Example: If user asks "run a retirement projection", use their actual portfolio value, age, and income from their profile — don't ask for inputs you already have.
+
+DATA INTERPRETATION RULES (Improvement B):
+- Pipeline data (FRED, BLS, BEA) is macro-level — always contextualize for the user's specific situation.
+- Integration data (Plaid, SnapTrade) is the user's actual data — treat as authoritative but note sync timestamps.
+- Enrichment data is estimated from cohort matching — ALWAYS label as (ESTIMATED).
+- When multiple data sources conflict, prefer: User-stated > Integration > Enrichment > Pipeline defaults.
+- For rate-sensitive calculations, prefer pipeline rates over training-data rates.
+</tool_guidelines>`);
+
   // ── RESPONSE GUIDELINES ───────────────────────────────────────
   parts.push(`<guidelines>
 RESPONSE LENGTH:
@@ -247,6 +272,12 @@ FORMATTING:
 - Show work on financial calculations with rounded numbers.
 - Label enrichment-derived assumptions (ESTIMATED) and invite confirmation.
 - Lead with top 3-5 most impactful insights.
+
+SOURCE CITATIONS (Improvement E):
+- When referencing pipeline data, cite the source: "(Source: FRED, as of MM/YYYY)" or "(Source: BLS CPI data)".
+- When referencing integration data, note the sync time: "(From your Plaid account, synced [date])".
+- When referencing knowledge base documents, cite the document name.
+- When referencing enrichment data, label clearly: "(ESTIMATED from demographic cohort matching)".
 
 PRINCIPLES:
 - Warm, empowering, plain-language. Surface relevant KB info proactively.
@@ -269,6 +300,41 @@ export const FINANCIAL_DISCLAIMER = `\n\n---\n*This information is for education
  * General disclaimer
  */
 export const GENERAL_DISCLAIMER = `\n\n---\n*For personal reflection and informational purposes. Not a substitute for professional medical, psychological, legal, or other specialized advice.*`;
+
+/**
+ * Deduplicate disclaimers (Fix 5) — prevent stacking multiple disclaimers on the same response.
+ * Checks if the response already contains a disclaimer before appending.
+ */
+export function deduplicateDisclaimers(content: string, newDisclaimer: string): string {
+  // If the content already has a disclaimer section (---\n*), don't add another
+  const disclaimerPattern = /\n\n---\n\*/;
+  if (disclaimerPattern.test(content)) {
+    return content; // Already has a disclaimer
+  }
+  return content + newDisclaimer;
+}
+
+/**
+ * Smart disclaimer selection — picks the most specific disclaimer and avoids duplication.
+ * Returns the single best disclaimer for the response content.
+ */
+export function selectBestDisclaimer(content: string, focus: FocusMode): string | null {
+  // Topic-specific disclaimers take priority
+  const topicDisclaimer = getTopicDisclaimer(content);
+  if (topicDisclaimer) return topicDisclaimer;
+
+  // Fall back to general category disclaimers
+  if (needsFinancialDisclaimer(content, focus)) return FINANCIAL_DISCLAIMER;
+
+  // General focus gets general disclaimer only for advice-like content
+  if (focus === "general") {
+    const adviceKeywords = ["recommend", "should", "consider", "suggest", "advise"];
+    const lower = content.toLowerCase();
+    if (adviceKeywords.some(kw => lower.includes(kw))) return GENERAL_DISCLAIMER;
+  }
+
+  return null;
+}
 
 /**
  * Check if a response likely contains financial advice that needs a disclaimer

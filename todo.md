@@ -2821,3 +2821,50 @@
 - [x] Installed missing DOMPurify dependency added by audit branch
 - [x] Applied audit_trail schema migration (added ip_address, user_agent, risk_level columns)
 - [x] BUG: Phantom conversations auto-generating without user input — fixed with client-side mutex ref guard on createConversation + server-side 3s dedup check on empty conversations + cleaned all phantom entries from DB
+
+## March 28 Live Testing Audit — Critical Fixes & Improvements
+- [x] Fix 7: Empty response guard — prevent empty AI responses, retry once, log to ai_response_quality
+- [x] Fix 2: Compound tool calls — sequential multi-tool execution loop, max 5 per turn, 30s timeout
+- [x] Fix 1: Integration data must flow into AI tool calls — getStructuredIntegrationData(), auto-populate tool args
+- [x] Fix 6: model_portfolio_risk must accept individual stock holdings — improved asset classification
+- [x] Fix 5: Deduplicate disclaimers — cap at 2, strip AI-generated duplicates
+- [x] Fix 3: calc_premium_finance auto-execute with contextual defaults from integrations/FRED
+- [x] Fix 4: calc_estate_projection trust type differentiation (ILIT, GRAT, QPRT, CRT, SLAT, IDGT)
+- [x] Improvement A: Smarter data-aware responses — never say "entire portfolio" for linked accounts only
+- [x] Improvement B: Platform feature walkthroughs referencing real UI routes and elements
+- [x] Improvement C: Pipeline data (FRED, BLS, BEA) injected into calculator tool context
+- [x] Improvement D: Wire 4 new model tools (retirement_readiness, tax_efficiency, estate_completeness, financial_health)
+- [x] Improvement E: Conversation-aware tool orchestration prompt section
+- [x] Improvement F: Source citations in AI responses with document/provider attribution
+- [x] DB: Create ai_tool_executions and ai_response_quality tables
+- [x] Tests: 8 new tests for tool integration, multi-tool, empty response, disclaimer dedup, asset classification, trust types, pipeline rates, data staleness
+- [ ] BUG: Persistent .find TypeError still in production — comprehensive sweep of ALL .data?.find/.filter/.map calls needed
+
+## March 28, 2026 — 7 Critical Fixes + 6 Improvements (from Live AI Testing)
+
+### Critical Fixes
+- [x] Fix 7: Empty response guard — retry on empty AI responses, never emit blank messages
+- [x] Fix 2: Compound tool call loop — sequential multi-tool execution with 5-call max and 30s timeout
+- [x] Fix 1: Integration data flow into AI tool calls — auto-populate tool args from Plaid/SnapTrade data
+- [x] Fix 6: Asset classification — individual stock tickers (AAPL, MSFT) classified as equity, concentration risk flag
+- [x] Fix 5: Disclaimer deduplication — max 2 disclaimers, strip AI-generated disclaimers, no duplicates
+- [x] Fix 3: Auto-execute calculator defaults — never ask for parameter confirmation, use context defaults
+- [x] Fix 4: Trust type expansion — calc_estate_projection supports ilit, grat, crt, slat, idgt, qprt trust types
+
+### Improvements
+- [x] Improvement A: Smarter data-aware responses — "linked accounts" language, not "entire portfolio"
+- [x] Improvement B: Platform feature walkthroughs — detailed User Management walkthrough with actual routes
+- [x] Improvement C: Pipeline data injection into calculator context (FRED rates as smart defaults)
+- [x] Improvement D: 4 new model tools (retirement_readiness, tax_efficiency, estate_completeness, financial_health)
+- [x] Improvement E: Conversation-aware tool orchestration prompt section
+- [x] Improvement F: Source citations in AI responses
+
+### Infrastructure
+- [x] DB migration: ai_tool_executions and ai_response_quality tables
+- [x] 8 new tests: tool auto-population, multi-tool execution, empty response guard, disclaimer dedup, asset classification, trust types, pipeline rate injection, data staleness
+
+## UI/UX Fixes — Sidebar Navigation & Settings Overflow (March 28, 2026)
+- [x] Persist sidebar navigation on all pages (Passive Actions, and any other pages missing it)
+- [x] Fix Profile & Style settings page — user facts list extends without limit, causes footer overlap
+- [x] Fix Knowledge Base settings page — items extend without limit, causes footer overlap
+- [x] Audit and fix any other views with unbounded list rendering (scrollable containers, max-heights)

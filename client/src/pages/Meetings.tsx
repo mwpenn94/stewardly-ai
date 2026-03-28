@@ -200,7 +200,7 @@ export default function Meetings() {
               <ClipboardList className="w-3.5 h-3.5" /> Action Items
               {actionItems.data?.filter(a => a.status === "pending").length ? (
                 <Badge variant="secondary" className="ml-1 h-5 min-w-5 text-[10px]">
-                  {actionItems.data.filter(a => a.status === "pending").length}
+                  {(Array.isArray(actionItems.data) ? actionItems.data : []).filter(a => a.status === "pending").length}
                 </Badge>
               ) : null}
             </TabsTrigger>

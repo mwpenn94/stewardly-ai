@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -80,9 +81,11 @@ export default function SettingsHub() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-accent" />
-      </div>
+      <AppShell title="Settings">
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-accent" />
+        </div>
+      </AppShell>
     );
   }
 
@@ -90,7 +93,8 @@ export default function SettingsHub() {
   const needsAuth = !isAuthenticated && !ANONYMOUS_TABS.includes(activeTab);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <AppShell title="Settings">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
@@ -200,5 +204,6 @@ export default function SettingsHub() {
         </main>
       </div>
     </div>
+    </AppShell>
   );
 }

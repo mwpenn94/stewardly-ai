@@ -231,7 +231,7 @@ export default function EquityComp() {
           </div>
           {modelQuery.data && (
             <div className="space-y-3">
-              {modelQuery.data.map((s: any, i: number) => (
+              {(Array.isArray(modelQuery.data) ? modelQuery.data : []).map((s: any, i: number) => (
                 <Card key={i} className={i === 2 ? "border-emerald-500/50 bg-emerald-500/5" : ""}>
                   <CardContent className="pt-4">
                     <div className="flex items-center justify-between mb-2">

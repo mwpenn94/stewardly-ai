@@ -183,7 +183,7 @@ function MarketIndicesSection() {
                   </tr>
                 </thead>
                 <tbody>
-                  {historyQuery.data.slice(0, 24).map((row: any, i: number) => (
+                  {(Array.isArray(historyQuery.data) ? historyQuery.data : []).slice(0, 24).map((row: any, i: number) => (
                     <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-2">{row.date}</td>
                       <td className="text-right py-2 px-2">{parseFloat(row.openPrice).toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
@@ -326,7 +326,7 @@ function IulCreditingSection() {
                   </tr>
                 </thead>
                 <tbody>
-                  {historyQuery.data.slice(0, 30).map((row: any, i: number) => (
+                  {(Array.isArray(historyQuery.data) ? historyQuery.data : []).slice(0, 30).map((row: any, i: number) => (
                     <tr key={i} className="border-b border-border/50 hover:bg-muted/30">
                       <td className="py-2 px-2">{row.effectiveDate}</td>
                       <td className="py-2 px-2 truncate max-w-[120px]">{row.indexStrategy}</td>

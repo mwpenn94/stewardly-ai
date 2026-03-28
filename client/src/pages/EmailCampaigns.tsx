@@ -232,7 +232,7 @@ export default function EmailCampaigns() {
             </Card>
           ) : (
             <div className="grid gap-3">
-              {campaigns.data.map(c => (
+              {(Array.isArray(campaigns.data) ? campaigns.data : []).map(c => (
                 <Card key={c.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setSelectedCampaign(c.id); setActiveTab("detail"); }}>
                   <CardContent className="py-4">
                     <div className="flex items-center justify-between">
@@ -349,7 +349,7 @@ export default function EmailCampaigns() {
                     <p className="text-sm text-muted-foreground text-center py-4">No recipients added yet</p>
                   ) : (
                     <div className="space-y-1 max-h-60 overflow-y-auto">
-                      {recipients.data.map(r => (
+                      {(Array.isArray(recipients.data) ? recipients.data : []).map(r => (
                         <div key={r.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-sm truncate">{r.recipientName || r.recipientEmail}</span>

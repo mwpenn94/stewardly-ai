@@ -4,6 +4,7 @@
  * Tabs: Overview | Models | Data | Analytics
  */
 import { useState } from "react";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,8 @@ export default function IntelligenceHub() {
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="Intelligence">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
@@ -85,6 +87,7 @@ export default function IntelligenceHub() {
         </Tabs>
       </div>
     </div>
+    </AppShell>
   );
 }
 

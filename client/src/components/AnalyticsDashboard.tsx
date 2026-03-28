@@ -140,10 +140,10 @@ export default function AnalyticsDashboard() {
   const volumeChartData = useMemo(() => {
     if (!volume.data?.length) return null;
     return {
-      labels: volume.data.map(r => r.date),
+      labels: v(Array.isArray(olume.data) ? olume.data : []).map(r => r.date),
       datasets: [{
         label: "Records Ingested",
-        data: volume.data.map(r => Number(r.count)),
+        data: v(Array.isArray(olume.data) ? olume.data : []).map(r => Number(r.count)),
         backgroundColor: CHART_COLORS.primaryBg,
         borderColor: CHART_COLORS.primary,
         borderWidth: 2,
@@ -156,10 +156,10 @@ export default function AnalyticsDashboard() {
   const qualityChartData = useMemo(() => {
     if (!quality.data?.length) return null;
     return {
-      labels: quality.data.map(r => r.date),
+      labels: q(Array.isArray(uality.data) ? uality.data : []).map(r => r.date),
       datasets: [{
         label: "Avg Quality Score",
-        data: quality.data.map(r => Number(r.avgScore || 0)),
+        data: q(Array.isArray(uality.data) ? uality.data : []).map(r => Number(r.avgScore || 0)),
         backgroundColor: CHART_COLORS.successBg,
         borderColor: CHART_COLORS.success,
         borderWidth: 2,
@@ -171,12 +171,12 @@ export default function AnalyticsDashboard() {
 
   const severityChartData = useMemo(() => {
     if (!severity.data?.length) return null;
-    const labels = severity.data.map(r => (r.severity || "unknown").charAt(0).toUpperCase() + (r.severity || "unknown").slice(1));
+    const labels = (Array.isArray(severity.data) ? severity.data : []).map(r => (r.severity || "unknown").charAt(0).toUpperCase() + (r.severity || "unknown").slice(1));
     return {
       labels,
       datasets: [{
-        data: severity.data.map(r => Number(r.count)),
-        backgroundColor: severity.data.map(r => SEVERITY_COLORS[r.severity || "low"] || CHART_COLORS.primary),
+        data: s(Array.isArray(everity.data) ? everity.data : []).map(r => Number(r.count)),
+        backgroundColor: s(Array.isArray(everity.data) ? everity.data : []).map(r => SEVERITY_COLORS[r.severity || "low"] || CHART_COLORS.primary),
         borderWidth: 0,
       }],
     };
@@ -186,10 +186,10 @@ export default function AnalyticsDashboard() {
     if (!categories.data?.length) return null;
     const colorPool = [CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.warning, CHART_COLORS.danger, CHART_COLORS.purple, CHART_COLORS.orange, CHART_COLORS.teal, CHART_COLORS.pink];
     return {
-      labels: categories.data.map(r => (r.category || "unknown").replace(/_/g, " ")),
+      labels: c(Array.isArray(ategories.data) ? ategories.data : []).map(r => (r.category || "unknown").replace(/_/g, " ")),
       datasets: [{
-        data: categories.data.map(r => Number(r.count)),
-        backgroundColor: categories.data.map((_, i) => colorPool[i % colorPool.length]),
+        data: c(Array.isArray(ategories.data) ? ategories.data : []).map(r => Number(r.count)),
+        backgroundColor: c(Array.isArray(ategories.data) ? ategories.data : []).map((_, i) => colorPool[i % colorPool.length]),
         borderWidth: 0,
       }],
     };
@@ -219,10 +219,10 @@ export default function AnalyticsDashboard() {
       cancelled: "rgba(148, 163, 184, 0.5)",
     };
     return {
-      labels: jobs.data.map(r => (r.status || "unknown").charAt(0).toUpperCase() + (r.status || "unknown").slice(1)),
+      labels: j(Array.isArray(obs.data) ? obs.data : []).map(r => (r.status || "unknown").charAt(0).toUpperCase() + (r.status || "unknown").slice(1)),
       datasets: [{
-        data: jobs.data.map(r => Number(r.count)),
-        backgroundColor: jobs.data.map(r => statusColors[r.status || "pending"] || CHART_COLORS.primary),
+        data: j(Array.isArray(obs.data) ? obs.data : []).map(r => Number(r.count)),
+        backgroundColor: j(Array.isArray(obs.data) ? obs.data : []).map(r => statusColors[r.status || "pending"] || CHART_COLORS.primary),
         borderWidth: 0,
       }],
     };
@@ -237,10 +237,10 @@ export default function AnalyticsDashboard() {
       dismissed: "rgba(148, 163, 184, 0.5)",
     };
     return {
-      labels: actions.data.map(r => (r.status || "unknown").replace(/_/g, " ")),
+      labels: a(Array.isArray(ctions.data) ? ctions.data : []).map(r => (r.status || "unknown").replace(/_/g, " ")),
       datasets: [{
-        data: actions.data.map(r => Number(r.count)),
-        backgroundColor: actions.data.map(r => statusColors[r.status || "pending"] || CHART_COLORS.primary),
+        data: a(Array.isArray(ctions.data) ? ctions.data : []).map(r => Number(r.count)),
+        backgroundColor: a(Array.isArray(ctions.data) ? ctions.data : []).map(r => statusColors[r.status || "pending"] || CHART_COLORS.primary),
         borderWidth: 0,
       }],
     };

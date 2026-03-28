@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -125,6 +126,7 @@ export default function Organizations() {
           </div>
         </div>
       </div>
+
     );
   }
 
@@ -352,7 +354,8 @@ export default function Organizations() {
 
   // ─── ORGANIZATION LIST VIEW ───────────────────────────────────
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="Organizations">
+    <div className="min-h-screen">
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -388,7 +391,7 @@ export default function Organizations() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {orgList.data.map((org: any) => (
+            {(Array.isArray(orgList.data) ? orgList.data : []).map((org: any) => (
               <Card
                 key={org.id}
                 className="bg-card/50 border-border/50 hover:border-sky-500/30 transition-colors cursor-pointer group"
@@ -449,10 +452,11 @@ export default function Organizations() {
         </DialogContent>
       </Dialog>
     </div>
+    </AppShell>
   );
 }
 
-// ─── SHARED FORM COMPONENT ──────────────────────────────────────
+// ─── SHARED FORM COMPONENT ──────────────────────────────────────────
 
 function OrgForm({ form, setForm, onNameChange }: {
   form: any;

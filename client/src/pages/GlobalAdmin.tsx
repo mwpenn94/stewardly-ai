@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -107,7 +108,8 @@ export default function GlobalAdmin() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="Global Admin">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
@@ -447,5 +449,6 @@ export default function GlobalAdmin() {
         </Tabs>
       </div>
     </div>
+    </AppShell>
   );
 }

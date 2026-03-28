@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import AppShell from "@/components/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -519,7 +520,8 @@ export default function Help() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <AppShell title="Help & Support">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
@@ -911,5 +913,6 @@ export default function Help() {
         </Tabs>
       </div>
     </div>
+    </AppShell>
   );
 }

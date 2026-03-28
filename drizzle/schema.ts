@@ -4486,3 +4486,41 @@ export const passiveActionLog = mysqlTable("passive_action_log", {
 });
 export type PassiveActionLogEntry = typeof passiveActionLog.$inferSelect;
 export type InsertPassiveActionLogEntry = typeof passiveActionLog.$inferInsert;
+
+
+// ─── AI TOOL EXECUTIONS (Track every tool call with auto-populated fields) ──
+// DB table: ai_tool_executions
+export const aiToolExecutions = mysqlTable("ai_tool_executions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  conversationId: int("conversation_id"),
+  messageId: int("message_id"),
+  toolName: varchar("tool_name", { length: 100 }).notNull(),
+  toolArgs: json("tool_args").notNull(),
+  toolResult: json("tool_result"),
+  autoPopulatedFields: json("auto_populated_fields"),
+  executionMs: int("execution_ms"),
+  success: mysqlBoolean("success").default(true),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type AiToolExecution = typeof aiToolExecutions.$inferSelect;
+export type InsertAiToolExecution = typeof aiToolExecutions.$inferInsert;
+
+// ─── AI RESPONSE QUALITY (Monitor empty responses, retries, disclaimer counts) ──
+// DB table: ai_response_quality
+export const aiResponseQuality = mysqlTable("ai_response_quality", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  conversationId: int("conversation_id"),
+  messageId: int("message_id"),
+  responseEmpty: mysqlBoolean("response_empty").default(false),
+  disclaimerCount: int("disclaimer_count").default(0),
+  toolCallsAttempted: int("tool_calls_attempted").default(0),
+  toolCallsCompleted: int("tool_calls_completed").default(0),
+  retryCount: int("retry_count").default(0),
+  latencyMs: int("latency_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+export type AiResponseQualityEntry = typeof aiResponseQuality.$inferSelect;
+export type InsertAiResponseQualityEntry = typeof aiResponseQuality.$inferInsert;

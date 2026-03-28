@@ -6,7 +6,9 @@ import {
   products, auditTrail, reviewQueue, memories, feedback, qualityRatings,
   suitabilityAssessments, conversationFolders, documentVersions,
   documentTags, documentTagMap, knowledgeGapFeedback,
-  documentAnnotations
+  documentAnnotations,
+  aiToolExecutions, aiResponseQuality,
+  type InsertAiToolExecution, type InsertAiResponseQualityEntry,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -817,4 +819,57 @@ export async function deleteAnnotation(id: number) {
   const db = await getDb();
   if (!db) return;
   await db.delete(documentAnnotations).where(eq(documentAnnotations.id, id));
+}
+
+
+// ─── AI TOOL EXECUTION LOGGING ─────────────────────────────────────
+export async function logAiToolExecution(data: InsertAiToolExecution) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(aiToolExecutions).values(data).$returningId();
+  return result;
+}
+
+export async function getAiToolExecutions(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(aiToolExecutions)
+    .where(eq(aiToolExecutions.userId, userId))
+    .orderBy(desc(aiToolExecutions.createdAt))
+    .limit(limit);
+}
+
+// ─── AI RESPONSE QUALITY LOGGING ───────────────────────────────────
+export async function logAiResponseQuality(data: InsertAiResponseQualityEntry) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(aiResponseQuality).values(data).$returningId();
+  return result;
+}
+
+export async function getAiResponseQualityStats(userId: number, days = 30) {
+  const db = await getDb();
+  if (!db) return null;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const rows = await db.select().from(aiResponseQuality)
+    .where(and(
+      eq(aiResponseQuality.userId, userId),
+      gte(aiResponseQuality.createdAt, since),
+    ))
+    .orderBy(desc(aiResponseQuality.createdAt));
+  
+  const total = rows.length;
+  const emptyResponses = rows.filter(r => r.responseEmpty).length;
+  const avgRetries = total > 0 ? rows.reduce((sum, r) => sum + (r.retryCount || 0), 0) / total : 0;
+  const avgLatency = total > 0 ? rows.reduce((sum, r) => sum + (r.latencyMs || 0), 0) / total : 0;
+  const avgDisclaimers = total > 0 ? rows.reduce((sum, r) => sum + (r.disclaimerCount || 0), 0) / total : 0;
+
+  return {
+    total,
+    emptyResponses,
+    emptyRate: total > 0 ? emptyResponses / total : 0,
+    avgRetries: Math.round(avgRetries * 100) / 100,
+    avgLatencyMs: Math.round(avgLatency),
+    avgDisclaimers: Math.round(avgDisclaimers * 100) / 100,
+  };
 }
