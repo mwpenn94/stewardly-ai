@@ -114,3 +114,6 @@ client/public/__manus__/version.json
 
 # Manus database query logs (contain credentials — NEVER commit)
 .manus/db/
+
+# Workflow orchestrator state (session-local, not source)
+.workflow/
