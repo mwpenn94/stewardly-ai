@@ -126,6 +126,10 @@ The `tsc --noEmit` command was crashing with SIGABRT (exit code 134) due to OOM 
 
 **Result:** 101 errors → 0 errors. `tsc --noEmit` completes cleanly with exit code 0. All 1,987 tests pass.
 
+### Production Security Hardening (GitHub commit ecec117, 2026-03-29)
+
+Pulled from GitHub `user_github` remote. Added helmet (CSP, HSTS, X-Frame-Options), express-rate-limit (3-tier: general 100/15min, sensitive 20/15min, auth 5/15min), pino structured logging, request ID middleware (UUID v4), and environment validation. 47 files changed, 1,755 insertions. New test file: `productionSecurity.test.ts` (14 tests). Total tests now 2,001 across 71 files.
+
 ---
 
 ## In-Project Context Files
@@ -136,4 +140,6 @@ The `tsc --noEmit` command was crashing with SIGABRT (exit code 134) due to OOM 
 | `RECURSIVE_OPTIMIZATION_PROMPT.md` | The recursive optimization prompt with pass types and rules |
 | `SETUP_GUIDE.md` | Quick reference for deployment and self-hosting |
 | `PROJECT_KNOWLEDGE_BASE.md` | This file — all project-level context and preferences |
+| `APP_REFERENCE.md` | Full application reference — prod URLs, all routes, tRPC endpoints, DB tables, services, scheduled jobs, data pipelines, test infrastructure |
+| `PRODUCTION_SECURITY_CHANGELOG.md` | Security hardening changelog (helmet, rate limiting, pino, request IDs) |
 | `todo.md` | Feature tracking with checkbox status |
