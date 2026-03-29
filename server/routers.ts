@@ -37,15 +37,17 @@ import {
   addTagToDocument, removeTagFromDocument, getDocumentTags, getDocumentsForTag, bulkAddTagsToDocument,
   addGapFeedback, getUserGapFeedback, getGapFeedbackByGapId,
   getDocumentAnnotations, createAnnotation, resolveAnnotation, deleteAnnotation,
+  logAiToolExecution, logAiResponseQuality,
 } from "./db";
 import { buildInsightContext, invalidateInsightCache } from "./insightCollectors";
 import {
   buildSystemPrompt, FINANCIAL_DISCLAIMER, needsFinancialDisclaimer,
   detectPII, stripPII, calculateConfidence, getTopicDisclaimer, maskPIIForLLM,
+  selectBestDisclaimer, deduplicateDisclaimers,
 } from "./prompts";
 import { extractMemoriesFromMessage, saveExtractedMemories, generateEpisodeSummary, saveEpisodeSummary, assembleMemoryContext } from "./memoryEngine";
 import { assembleGraphContext } from "./knowledgeGraph";
-import { assembleDeepContext, getQuickContext } from "./services/deepContextAssembler";
+import { assembleDeepContext, getQuickContext, getStructuredIntegrationData, getPipelineRates } from "./services/deepContextAssembler";
 import { classifyContent, applyModifications, logComplianceAudit, logPrivacyAudit } from "./complianceCopilot";
 import { trackEvent, recalculateProficiency, assembleExponentialContext } from "./services/exponentialEngine";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
@@ -218,6 +220,29 @@ const chatRouter = router({
         })),
       ];
 
+      // ── AUTO-POPULATE TOOL ARGS (Fix 3) ──────────────────────────
+      // Fetch structured integration data and pipeline rates for auto-populating tool arguments
+      let userFinancialSnapshot: Awaited<ReturnType<typeof getStructuredIntegrationData>> | null = null;
+      let pipelineRates: Record<string, number> = {};
+      try {
+        const [snapshot, rates] = await Promise.all([
+          getStructuredIntegrationData(ctx.user.id),
+          getPipelineRates(),
+        ]);
+        userFinancialSnapshot = snapshot;
+        pipelineRates = rates;
+      } catch { /* auto-populate data is optional */ }
+
+      // Inject auto-populate context into system prompt
+      if (userFinancialSnapshot && (userFinancialSnapshot.holdings.length > 0 || userFinancialSnapshot.accounts.length > 0)) {
+        const autoPopCtx = `\n\n<auto_populate_data>\nWhen calling financial tools, auto-populate these defaults from the user's connected accounts:\n- Total invested assets: $${userFinancialSnapshot.totalInvestedAssets.toLocaleString()}\n- Total liquid assets: $${userFinancialSnapshot.totalLiquidAssets.toLocaleString()}\n- Holdings: ${userFinancialSnapshot.holdings.slice(0, 10).map(h => `${h.symbol}: $${h.value.toLocaleString()}`).join(", ")}\n- Accounts: ${userFinancialSnapshot.accounts.map(a => `${a.name} (${a.type}): $${a.balance.toLocaleString()}`).join(", ")}\n${userFinancialSnapshot.lastSyncTimestamp ? `- Data as of: ${userFinancialSnapshot.lastSyncTimestamp}` : ""}\n</auto_populate_data>`;
+        fullSystemPrompt += autoPopCtx;
+      }
+      if (Object.keys(pipelineRates).length > 0) {
+        const rateCtx = `\n\n<current_rates>\nCurrent market rates for calculations (prefer these over training data):\n${Object.entries(pipelineRates).slice(0, 10).map(([k, v]) => `- ${k}: ${v}%`).join("\n")}\n</current_rates>`;
+        fullSystemPrompt += rateCtx;
+      }
+
       // Invoke LLM with search + calculator/model tools
       const contentLower = input.content.toLowerCase();
       const useSearchTools = hasFinancial || contentLower.match(/\b(compare|lookup|research|price|rate|stock|etf|fund|carrier|product|provider)\b/);
@@ -226,35 +251,46 @@ const chatRouter = router({
         ...(useSearchTools ? SEARCH_TOOLS : []),
         ...(useCalcTools ? ALL_AI_TOOLS : []),
       ];
-      const response = await invokeLLM({
+      let response = await invokeLLM({
         messages: llmMessages,
         ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "auto" as const } : {}),
       });
 
       let aiContent = "";
-      const firstChoice = response.choices[0]?.message;
+      let currentChoice = response.choices[0]?.message;
 
-      // Handle tool calls — execute them and feed results back to the LLM
-      if (firstChoice?.tool_calls && firstChoice.tool_calls.length > 0) {
-        // Build tool result messages
-        const toolMessages: Array<{ role: "assistant" | "tool"; content: string; tool_calls?: any[]; tool_call_id?: string; name?: string }> = [
-          { role: "assistant", content: (typeof firstChoice.content === "string" ? firstChoice.content : "") || "", tool_calls: firstChoice.tool_calls },
-        ];
+      // ── COMPOUND TOOL CALL LOOP (Fix 2) ─────────────────────────
+      // Supports multi-step tool use: if the LLM returns tool_calls, execute them,
+      // feed results back, and repeat up to MAX_TOOL_ROUNDS times.
+      const MAX_TOOL_ROUNDS = 5;
+      let toolRound = 0;
+      const allToolMessages: Array<{ role: string; content: string; tool_calls?: any[]; tool_call_id?: string; name?: string }> = [];
 
-        for (const toolCall of firstChoice.tool_calls) {
+      while (currentChoice?.tool_calls && currentChoice.tool_calls.length > 0 && toolRound < MAX_TOOL_ROUNDS) {
+        toolRound++;
+
+        // Add assistant message with tool_calls
+        allToolMessages.push({
+          role: "assistant",
+          content: (typeof currentChoice.content === "string" ? currentChoice.content : "") || "",
+          tool_calls: currentChoice.tool_calls,
+        });
+
+        // Execute all tool calls in this round
+        for (const toolCall of currentChoice.tool_calls) {
           try {
             const args = JSON.parse(toolCall.function.arguments);
             const result = toolCall.function.name.startsWith("calc_") || toolCall.function.name.startsWith("model_")
               ? await executeAITool(toolCall.function.name, args)
               : await executeSearchTool(toolCall.function.name, args);
-            toolMessages.push({
+            allToolMessages.push({
               role: "tool",
               tool_call_id: toolCall.id,
               name: toolCall.function.name,
               content: result,
             });
           } catch (err: any) {
-            toolMessages.push({
+            allToolMessages.push({
               role: "tool",
               tool_call_id: toolCall.id,
               name: toolCall.function.name,
@@ -263,29 +299,51 @@ const chatRouter = router({
           }
         }
 
-        // Second LLM call with tool results
+        // Call LLM again with accumulated tool results
         const followUp = await invokeLLM({
-          messages: [...llmMessages, ...toolMessages] as any,
+          messages: [...llmMessages, ...allToolMessages] as any,
+          ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "auto" as const } : {}),
         });
-        aiContent = typeof followUp.choices[0]?.message?.content === "string"
-          ? followUp.choices[0].message.content
-          : "";
-      } else {
-        aiContent = typeof firstChoice?.content === "string"
-          ? firstChoice.content
-          : "";
+        response = followUp;
+        currentChoice = followUp.choices[0]?.message;
       }
 
-      // Check for financial disclaimer
+      // Extract final text content
+      aiContent = typeof currentChoice?.content === "string"
+        ? currentChoice.content
+        : "";
+
+      // ── EMPTY RESPONSE GUARD (Fix 7) ────────────────────────────
+      // If the model returned empty content (e.g., after tool calls), retry once without tools
+      if (!aiContent || aiContent.trim().length === 0) {
+        try {
+          const retryMessages = allToolMessages.length > 0
+            ? [...llmMessages, ...allToolMessages] as any
+            : llmMessages;
+          const retryResp = await invokeLLM({
+            messages: [
+              ...retryMessages,
+              { role: "user" as const, content: "Please provide your response based on the information gathered above." },
+            ],
+          });
+          const retryContent = retryResp.choices[0]?.message?.content;
+          if (typeof retryContent === "string" && retryContent.trim().length > 0) {
+            aiContent = retryContent;
+            response = retryResp;
+          } else {
+            aiContent = "I apologize, but I wasn't able to generate a complete response. Could you please rephrase your question or try again?";
+          }
+        } catch {
+          aiContent = "I apologize, but I wasn't able to generate a complete response. Could you please rephrase your question or try again?";
+        }
+      }
+
+      // ── DISCLAIMER DEDUPLICATION (Fix 5) ────────────────────────
+      // Use smart disclaimer selection instead of stacking multiple disclaimers
       const isFinancial = needsFinancialDisclaimer(aiContent, primaryFocus);
-      if (isFinancial) {
-        aiContent += FINANCIAL_DISCLAIMER;
-      }
-
-      // Topic-specific disclaimers (3B) — investment, insurance, tax
-      const topicDisclaimer = getTopicDisclaimer(aiContent);
-      if (topicDisclaimer) {
-        aiContent += topicDisclaimer;
+      const bestDisclaimer = selectBestDisclaimer(aiContent, primaryFocus);
+      if (bestDisclaimer) {
+        aiContent = deduplicateDisclaimers(aiContent, bestDisclaimer);
       }
 
       // Calculate confidence
@@ -331,6 +389,21 @@ const chatRouter = router({
         reviewStatus: complianceStatus === "approved" ? "auto_approved" : "pending_review",
         complianceFlags: piiCheck.hasPII ? { piiTypes: piiCheck.types } : undefined,
       });
+
+      // ── RESPONSE QUALITY LOGGING (Improvement F) ──────────────
+      // Log tool execution and response quality metrics
+      const disclaimerCount = bestDisclaimer ? 1 : 0;
+      const wasEmpty = !aiContent || aiContent.trim().length === 0 || aiContent.includes("I apologize, but I wasn't able to generate");
+      logAiResponseQuality({
+        userId: ctx.user.id,
+        conversationId: input.conversationId,
+        messageId: assistantMsg.id,
+        responseEmpty: wasEmpty,
+        disclaimerCount,
+        toolCallsAttempted: toolRound > 0 ? allToolMessages.filter(m => m.role === "tool").length : 0,
+        toolCallsCompleted: toolRound > 0 ? allToolMessages.filter(m => m.role === "tool" && !m.content.includes('"error"')).length : 0,
+        retryCount: wasEmpty ? 1 : 0,
+      }).catch(() => {}); // non-blocking
 
       // Add to review queue if needed
       if (complianceStatus !== "approved" && isFinancial) {
@@ -1469,6 +1542,47 @@ const settingsRouter = router({
   getTosStatus: protectedProcedure.query(async ({ ctx }) => {
     return { accepted: !!(ctx.user as any).tosAcceptedAt, acceptedAt: (ctx.user as any).tosAcceptedAt };
   }),
+
+  // ─── KEYBOARD SHORTCUTS (server-side persistence) ─────────────────
+  getShortcuts: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const { userPreferences } = await import("../drizzle/schema");
+    const [row] = await db
+      .select({ customShortcuts: userPreferences.customShortcuts })
+      .from(userPreferences)
+      .where(eq(userPreferences.userId, ctx.user.id))
+      .limit(1);
+    return { shortcuts: (row?.customShortcuts as any[] | null) ?? null };
+  }),
+
+  saveShortcuts: protectedProcedure
+    .input(z.object({
+      shortcuts: z.array(z.object({
+        key: z.string().min(1).max(1),
+        route: z.string().min(1),
+        label: z.string().min(1),
+      })).max(26),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const { userPreferences } = await import("../drizzle/schema");
+      const [existing] = await db
+        .select({ id: userPreferences.id })
+        .from(userPreferences)
+        .where(eq(userPreferences.userId, ctx.user.id))
+        .limit(1);
+      if (existing) {
+        await db.update(userPreferences)
+          .set({ customShortcuts: input.shortcuts })
+          .where(eq(userPreferences.userId, ctx.user.id));
+      } else {
+        await db.insert(userPreferences).values({
+          userId: ctx.user.id,
+          customShortcuts: input.shortcuts,
+        });
+      }
+      return { success: true };
+    }),
 });
 
 // ─── CALCULATORS ROUTER ──────────────────────────────────────────

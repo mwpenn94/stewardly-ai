@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -100,7 +101,8 @@ export default function ImprovementEngine() {
   const currentLayerData = (overviewQuery.data || []).find((l: any) => l.layer === selectedLayer);
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="Improvement Engine">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         {/* Header */}
@@ -316,6 +318,7 @@ export default function ImprovementEngine() {
         </div>
       </div>
     </div>
+    </AppShell>
   );
 }
 

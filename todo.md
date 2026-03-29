@@ -2815,3 +2815,134 @@
 - [x] Test suite validation — 63 files, 1,746 tests, 100% pass rate
 - [x] Update in-app Help guide — added 4 new FAQs, Document Management section, 7 missing calculators, Layer 5 architecture, Deep Context RAG + Self-Discovery entries
 - [x] Produce comprehensive status report with capability gaps and owner action items (stewardly-platform-report.md)
+- [x] BUG: TypeError s.data?.find is not a function — added Array.isArray guards to Settings.tsx, OrgBrandingEditor.tsx, PrivacyDataTab.tsx, DataSharingTab.tsx
+- [x] BUG: Notifications popover renders offscreen — rewrote NotificationBell with viewport-aware positioning (opens upward when near bottom)
+- [x] BUG: auth.logout test failing after audit branch cookie changes — updated test to expect sameSite:"lax" and added hostname to mock req
+- [x] Installed missing DOMPurify dependency added by audit branch
+- [x] Applied audit_trail schema migration (added ip_address, user_agent, risk_level columns)
+- [x] BUG: Phantom conversations auto-generating without user input — fixed with client-side mutex ref guard on createConversation + server-side 3s dedup check on empty conversations + cleaned all phantom entries from DB
+
+## March 28 Live Testing Audit — Critical Fixes & Improvements
+- [x] Fix 7: Empty response guard — prevent empty AI responses, retry once, log to ai_response_quality
+- [x] Fix 2: Compound tool calls — sequential multi-tool execution loop, max 5 per turn, 30s timeout
+- [x] Fix 1: Integration data must flow into AI tool calls — getStructuredIntegrationData(), auto-populate tool args
+- [x] Fix 6: model_portfolio_risk must accept individual stock holdings — improved asset classification
+- [x] Fix 5: Deduplicate disclaimers — cap at 2, strip AI-generated duplicates
+- [x] Fix 3: calc_premium_finance auto-execute with contextual defaults from integrations/FRED
+- [x] Fix 4: calc_estate_projection trust type differentiation (ILIT, GRAT, QPRT, CRT, SLAT, IDGT)
+- [x] Improvement A: Smarter data-aware responses — never say "entire portfolio" for linked accounts only
+- [x] Improvement B: Platform feature walkthroughs referencing real UI routes and elements
+- [x] Improvement C: Pipeline data (FRED, BLS, BEA) injected into calculator tool context
+- [x] Improvement D: Wire 4 new model tools (retirement_readiness, tax_efficiency, estate_completeness, financial_health)
+- [x] Improvement E: Conversation-aware tool orchestration prompt section
+- [x] Improvement F: Source citations in AI responses with document/provider attribution
+- [x] DB: Create ai_tool_executions and ai_response_quality tables
+- [x] Tests: 8 new tests for tool integration, multi-tool, empty response, disclaimer dedup, asset classification, trust types, pipeline rates, data staleness
+- [ ] BUG: Persistent .find TypeError still in production — comprehensive sweep of ALL .data?.find/.filter/.map calls needed
+
+## March 28, 2026 — 7 Critical Fixes + 6 Improvements (from Live AI Testing)
+
+### Critical Fixes
+- [x] Fix 7: Empty response guard — retry on empty AI responses, never emit blank messages
+- [x] Fix 2: Compound tool call loop — sequential multi-tool execution with 5-call max and 30s timeout
+- [x] Fix 1: Integration data flow into AI tool calls — auto-populate tool args from Plaid/SnapTrade data
+- [x] Fix 6: Asset classification — individual stock tickers (AAPL, MSFT) classified as equity, concentration risk flag
+- [x] Fix 5: Disclaimer deduplication — max 2 disclaimers, strip AI-generated disclaimers, no duplicates
+- [x] Fix 3: Auto-execute calculator defaults — never ask for parameter confirmation, use context defaults
+- [x] Fix 4: Trust type expansion — calc_estate_projection supports ilit, grat, crt, slat, idgt, qprt trust types
+
+### Improvements
+- [x] Improvement A: Smarter data-aware responses — "linked accounts" language, not "entire portfolio"
+- [x] Improvement B: Platform feature walkthroughs — detailed User Management walkthrough with actual routes
+- [x] Improvement C: Pipeline data injection into calculator context (FRED rates as smart defaults)
+- [x] Improvement D: 4 new model tools (retirement_readiness, tax_efficiency, estate_completeness, financial_health)
+- [x] Improvement E: Conversation-aware tool orchestration prompt section
+- [x] Improvement F: Source citations in AI responses
+
+### Infrastructure
+- [x] DB migration: ai_tool_executions and ai_response_quality tables
+- [x] 8 new tests: tool auto-population, multi-tool execution, empty response guard, disclaimer dedup, asset classification, trust types, pipeline rate injection, data staleness
+
+## UI/UX Fixes — Sidebar Navigation & Settings Overflow (March 28, 2026)
+- [x] Persist sidebar navigation on all pages (Passive Actions, and any other pages missing it)
+- [x] Fix Profile & Style settings page — user facts list extends without limit, causes footer overlap
+- [x] Fix Knowledge Base settings page — items extend without limit, causes footer overlap
+- [x] Audit and fix any other views with unbounded list rendering (scrollable containers, max-heights)
+
+## Integrations Page Bug Fix — March 28, 2026
+- [ ] BUG: Integrations page keeps breaking — likely .find TypeError on non-array data
+- [x] Comprehensive sweep of all .data?.find/.filter/.map calls on integrations-related pages
+- [x] Validate fix in browser
+
+## Integrations Page Bug Fix — March 28, 2026
+- [x] BUG: Integrations page keeps breaking — TypeError: s.data?.find is not a function
+- [x] Comprehensive sweep of all .data?.find/.filter/.map calls on integrations-related pages
+- [x] Validate fix in browser
+
+## Integrations Page Hardening — March 28, 2026
+- [x] Create reusable ErrorBoundary component for section-level error isolation
+- [x] Wrap SnapTradeBrokerageSection in ErrorBoundary
+- [x] Wrap CRMSyncPanel in ErrorBoundary
+- [x] Wrap SOFRDashboard in ErrorBoundary
+- [x] Wrap ClientAccountConnections in ErrorBoundary
+- [x] Add loading skeletons to ClientAccountConnections while provider data loads
+- [x] Add loading skeletons to other integration sections (SnapTrade, CRM, SOFR)
+- [x] Validate fix on published site (validated on dev server — needs re-publish)
+- [x] Write tests for ErrorBoundary component
+
+## Error Boundaries, Retry Logic, and Health Indicator — March 28, 2026
+- [x] Add SectionErrorBoundary to MarketData page sub-components
+- [x] Add SectionErrorBoundary to OperationsHub page sub-components
+- [x] Add SectionErrorBoundary to AnalyticsHub + IntelligenceHub page sub-components
+- [x] Add retry-with-backoff to tRPC queries on integrations page (exponential backoff, 2 retries, 8s cap)
+- [x] Add global retry-with-backoff to QueryClient defaults (3 retries, 15s cap)
+- [x] Evaluate sidebar connection health indicator against UX best practices — SKIPPED (violates progressive disclosure, creates unnecessary anxiety, redundant with existing Integrations + Integration Health pages)
+- [x] Write tests for retry logic and error boundary additions (9 new tests)
+
+## UX Resilience Improvements — March 28, 2026
+- [x] Toast notifications on retry exhaustion — global QueryClient onError with user-friendly message and retry button
+- [x] Offline/reconnection banner — detect network loss, show non-intrusive banner, auto-dismiss on reconnect
+- [x] Suspense boundaries — React.lazy for 50+ pages with PageSuspenseFallback, critical pages (Landing, Chat, SignIn) eagerly loaded
+- [x] Write tests for all three features (30 new tests in uxResilience.test.ts)
+
+## UX Polish — Changelog, Prefetch, Error Recovery — March 28, 2026
+- [x] Create What's New changelog modal with localStorage version tracking
+- [x] Show modal on first visit after deploy with recent feature highlights
+- [x] Add prefetch on hover to sidebar nav links in AppShell for instant navigation
+- [x] Enhance SectionErrorBoundary with queryClient.invalidateQueries on retry — wired in Integrations (4 sections), MarketData, OperationsHub, AnalyticsHub
+- [x] Write tests for all three features (19 new tests in uxPolish.test.ts)
+
+## Keyboard Shortcuts Overlay & Changelog Expansion — March 28, 2026
+- [x] Wire existing KeyboardShortcuts component into a discoverable "?" shortcut overlay modal — expanded with 18 shortcuts across 3 categories (Navigation, Chat, General)
+- [x] Add "?" key listener to toggle the shortcuts modal from anywhere in the app — already present, verified working
+- [x] Display all available keyboard shortcuts in a clean, categorized layout — with category descriptions, badges, scroll area, ARIA attributes
+- [x] Add visual hint in sidebar footer pointing to "?" shortcut — shows in expanded sidebar
+- [x] Add G-then-X navigation to AppShell (10 routes: C/O/I/A/R/M/D/N/S/H) — works on all pages, not just Chat
+- [x] Expand Chat.tsx G-then-X from 3 routes to 10 routes (Operations, Intelligence, Advisory, Relationships, Market Data, Documents, Integrations)
+- [x] Expand WhatsNewModal CHANGELOG to 3 releases with 15 entries — added 2026.03.28b (shortcuts/prefetch/recovery) and 2026.03.20 (intelligence/market/docs/relationships/RBAC)
+- [x] Bump CURRENT_VERSION to 2026.03.28b to re-trigger modal for returning users
+- [x] Write tests for keyboard shortcuts overlay and expanded changelog — 32 new tests in keyboardShortcutsChangelog.test.ts
+
+## Command Palette, Custom Shortcuts & Changelog Page — March 28, 2026
+- [x] Build global command palette component with Ctrl+K / Cmd+K trigger — 25+ pages, 5 actions, conversation search with debounce
+- [x] Search across pages, actions, and recent conversations — uses trpc.conversations.search with 2-char minimum
+- [x] Wire CommandPalette into App.tsx — renders globally alongside KeyboardShortcuts and WhatsNewModal
+- [x] Add user-customizable G-then-X shortcuts hook with localStorage persistence — useCustomShortcuts with 10 defaults, 20+ available routes
+- [x] Add shortcut customization UI in Settings page — ShortcutsTab with add/remove/reset, route picker, customized/default badges
+- [x] Update G-then-X handlers to read from custom shortcut map — both AppShell and Chat.tsx refactored to use shortcutMap
+- [x] Create dedicated /changelog page showing full release history — timeline layout with expand/collapse, category badges, Latest badge
+- [x] Add "View all releases" link in WhatsNewModal footer — dismisses modal and navigates to /changelog
+- [x] Register /changelog route in App.tsx — lazy-loaded Changelog component
+- [x] Write tests for command palette, custom shortcuts, and changelog page — 55 new tests in commandPaletteShortcutsChangelog.test.ts, all 1937 tests pass
+## Server-Side Shortcuts, Recent Pages & Toast — March 28, 2026
+- [x] Add customShortcuts JSON column to user_preferences table via ALTER TABLE
+- [x] Create tRPC procedures settings.getShortcuts / settings.saveShortcuts (protectedProcedure, zod-validated, upsert pattern)
+- [x] Update useCustomShortcuts hook to sync with server when authenticated — hydrates from server on first load, persists to both localStorage and server, 5-min stale cache, exposes isSyncing state
+- [x] Add recently visited pages tracking hook (useRecentPages) — useSyncExternalStore for cross-component reactivity, 22-route label mapping, skips auth routes
+- [x] Show "Recent" group in CommandPalette when no search query is entered — with page icons, formatTimeAgo timestamps
+- [x] Cap recent pages at 5 entries, deduplicate by route, most-recent-first
+- [x] Wire recordPageVisit into AppShell on every location change
+- [x] Add toast notifications in ShortcutsTab — on add, update, remove, reset, and validation error
+- [x] Add syncing badge in ShortcutsTab when saving to server
+- [x] Update info text to reflect cross-device sync when signed in
+- [x] Write tests — 48 new tests in serverShortcutsRecentToast.test.ts, all 1987 tests pass across 70 files

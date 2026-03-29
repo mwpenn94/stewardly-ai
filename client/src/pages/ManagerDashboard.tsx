@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -45,7 +46,8 @@ export default function ManagerDashboard() {
   const satisfactionRate = stats.total > 0 ? Math.round((stats.up / stats.total) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="Manager Dashboard">
+    <div className="min-h-screen">
       <div className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
           <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")}>
@@ -211,5 +213,6 @@ export default function ManagerDashboard() {
         </Tabs>
       </div>
     </div>
+    </AppShell>
   );
 }

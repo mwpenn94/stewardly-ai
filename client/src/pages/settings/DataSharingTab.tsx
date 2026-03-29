@@ -260,7 +260,7 @@ export default function DataSharingTab() {
       </Card>
 
       {/* Access Transition History */}
-      {transitionsQuery.data && transitionsQuery.data.length > 0 && (
+      {Array.isArray(transitionsQuery.data) && transitionsQuery.data.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -273,7 +273,7 @@ export default function DataSharingTab() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {transitionsQuery.data.slice(-10).reverse().map((t: any) => (
+              {(Array.isArray(transitionsQuery.data) ? transitionsQuery.data : []).slice(-10).reverse().map((t: any) => (
                 <div key={t.id} className="flex items-center gap-2 text-xs p-2 rounded bg-accent/5">
                   <Badge variant="outline" className="text-[10px]">{TOPIC_LABELS[t.topic] || t.topic}</Badge>
                   <span className="text-muted-foreground">
@@ -304,7 +304,7 @@ export default function DataSharingTab() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {Object.entries(
-                defaultsQuery.data.reduce((acc: Record<string, typeof defaultsQuery.data>, d: any) => {
+                (Array.isArray(defaultsQuery.data) ? defaultsQuery.data : []).reduce((acc: Record<string, typeof defaultsQuery.data>, d: any) => {
                   const key = d.relationshipType;
                   if (!acc[key]) acc[key] = [];
                   acc[key].push(d);

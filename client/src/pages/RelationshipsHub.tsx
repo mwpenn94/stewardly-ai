@@ -4,6 +4,7 @@
  * Tabs: Network | Meetings | Outreach
  */
 import { useState } from "react";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,8 @@ export default function RelationshipsHub() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="Relationships">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
@@ -85,6 +87,7 @@ export default function RelationshipsHub() {
         </Tabs>
       </div>
     </div>
+    </AppShell>
   );
 }
 

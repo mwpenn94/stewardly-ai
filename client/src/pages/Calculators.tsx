@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,7 +138,8 @@ export default function Calculators() {
   const retCalc = trpc.calculators.retirement.useMutation({ onError: (e) => toast.error(e.message) });
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <AppShell title="Calculators">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
@@ -478,6 +480,7 @@ export default function Calculators() {
         </p>
       </div>
     </div>
+    </AppShell>
   );
 }
 

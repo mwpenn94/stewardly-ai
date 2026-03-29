@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import {
   RefreshCw, Loader2, DollarSign, Activity,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { useLocation } from "wouter";
 
 const WATCHLIST = [
@@ -29,6 +31,7 @@ export default function MarketData() {
   const [searchSymbol, setSearchSymbol] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
+  const utils = trpc.useUtils();
   const stableSymbols = useMemo(() => watchlistSymbols, []);
   const quotesQuery = trpc.market.getQuotes.useQuery(
     { symbols: stableSymbols },
@@ -41,7 +44,7 @@ export default function MarketData() {
   );
 
   if (authLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>;
+    return <AppShell title="Market Data"><div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div></AppShell>;
   }
 
   if (!isAuthenticated) {
@@ -61,7 +64,8 @@ export default function MarketData() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="Market Data">
+    <div className="min-h-screen">
       <header className="border-b border-border px-4 py-3 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
           <ArrowLeft className="w-4 h-4" />
@@ -75,6 +79,7 @@ export default function MarketData() {
         </div>
       </header>
 
+      <SectionErrorBoundary sectionName="Market Data" onRetry={() => { utils.market.getQuotes.invalidate(); utils.market.getQuote.invalidate(); }}>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Search */}
         <div className="flex gap-2">
@@ -147,7 +152,7 @@ export default function MarketData() {
                 <Card key={i}><CardContent className="p-4"><Skeleton className="h-16 w-full" /></CardContent></Card>
               ))
             ) : quotesQuery.data?.length ? (
-              quotesQuery.data.map((q: any, idx: number) => (
+              (Array.isArray(quotesQuery.data) ? quotesQuery.data : []).map((q: any, idx: number) => (
                 <Card
                   key={q.symbol || idx}
                   className={`cursor-pointer transition-all hover:border-accent/40 ${selectedSymbol === q.symbol ? "border-accent/60 bg-accent/5" : ""}`}
@@ -181,6 +186,8 @@ export default function MarketData() {
           Data via Yahoo Finance. Prices may be delayed. Not investment advice.
         </p>
       </div>
+      </SectionErrorBoundary>
     </div>
+    </AppShell>
   );
 }

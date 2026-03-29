@@ -31,6 +31,7 @@ import {
   proactiveInsights, documentTags, documentTagMap, knowledgeGapFeedback,
   knowledgeArticles, plaidHoldings, snapTradeAccounts, snapTradePositions,
   integrationConnections, integrationProviders, clientAssociations,
+  enrichmentCache,
 } from "../../drizzle/schema";
 import { eq, and, desc, like, or, inArray, sql, gte } from "drizzle-orm";
 import { assembleMemoryContext } from "../memoryEngine";
@@ -958,6 +959,124 @@ async function getGapFeedbackContext(userId: number): Promise<string> {
   );
 
   return `Knowledge Gap Feedback (${feedback.length} items):\n${summaries.join("\n")}\n\nUse this feedback to improve gap analysis accuracy. Dismissed gaps should not be re-raised. Acknowledged gaps are being addressed.`;
+}
+
+// ─── STRUCTURED INTEGRATION DATA (Fix 1) ────────────────────────────
+
+export interface UserFinancialSnapshot {
+  holdings: Array<{ symbol: string; shares: number; value: number; accountName: string }>;
+  accounts: Array<{ name: string; type: string; balance: number; institution: string }>;
+  totalInvestedAssets: number;
+  totalLiquidAssets: number;
+  lastSyncTimestamp: string | null;
+}
+
+/**
+ * Returns structured financial data from Plaid/SnapTrade integrations.
+ * Used to auto-populate tool call arguments with real user data.
+ */
+export async function getStructuredIntegrationData(userId: number): Promise<UserFinancialSnapshot> {
+  const db = await getDb();
+  const empty: UserFinancialSnapshot = {
+    holdings: [], accounts: [], totalInvestedAssets: 0, totalLiquidAssets: 0, lastSyncTimestamp: null,
+  };
+  if (!db) return empty;
+
+  const result: UserFinancialSnapshot = { ...empty, holdings: [], accounts: [] };
+  let latestSync: Date | null = null;
+
+  // Plaid holdings
+  try {
+    const holdings = await db.select().from(plaidHoldings)
+      .where(eq(plaidHoldings.userId, userId)).limit(50);
+    for (const h of holdings) {
+      const val = parseFloat(h.currentValue ?? "0");
+      const qty = parseFloat(h.quantity ?? "0");
+      result.holdings.push({
+        symbol: h.ticker || h.name || "Unknown",
+        shares: qty,
+        value: val,
+        accountName: h.accountId || "Plaid",
+      });
+      result.totalInvestedAssets += val;
+      if (h.lastSynced) {
+        const syncDate = new Date(h.lastSynced);
+        if (!latestSync || syncDate > latestSync) latestSync = syncDate;
+      }
+    }
+  } catch {}
+
+  // SnapTrade accounts
+  try {
+    const accounts = await db.select().from(snapTradeAccounts)
+      .where(eq(snapTradeAccounts.userId, userId)).limit(20);
+    for (const a of accounts) {
+      const totalVal = parseFloat(String(a.totalValue ?? a.marketValue ?? "0"));
+      const cashBal = parseFloat(String(a.cashBalance ?? "0"));
+      result.accounts.push({
+        name: a.accountName || "SnapTrade Account",
+        type: a.accountType || "brokerage",
+        balance: totalVal,
+        institution: a.institutionName || "Unknown",
+      });
+      result.totalLiquidAssets += cashBal;
+      if (a.lastSyncAt) {
+        const syncDate = new Date(a.lastSyncAt);
+        if (!latestSync || syncDate > latestSync) latestSync = syncDate;
+      }
+    }
+  } catch {}
+
+  // SnapTrade positions
+  try {
+    const positions = await db.select().from(snapTradePositions)
+      .where(eq(snapTradePositions.userId, userId)).limit(50);
+    for (const p of positions) {
+      const val = parseFloat(String(p.marketValue ?? "0"));
+      const qty = parseFloat(String(p.units ?? "0"));
+      result.holdings.push({
+        symbol: p.symbolTicker || p.symbolName || "Unknown",
+        shares: qty,
+        value: val,
+        accountName: p.accountId || "SnapTrade",
+      });
+      result.totalInvestedAssets += val;
+    }
+  } catch {}
+
+  result.lastSyncTimestamp = latestSync ? latestSync.toISOString() : null;
+  return result;
+}
+
+/**
+ * Get key rates from pipeline data (FRED, BLS) for tool auto-population.
+ * Returns named rates like Treasury yield, SOFR, CPI, etc.
+ */
+export async function getPipelineRates(): Promise<Record<string, number>> {
+  const db = await getDb();
+  if (!db) return {};
+  const rates: Record<string, number> = {};
+  try {
+    const fredData = await db.select().from(enrichmentCache)
+      .where(eq(enrichmentCache.providerSlug, "fred"));
+    for (const entry of fredData) {
+      const d = entry.resultJson as any;
+      if (d?.label && d?.value) {
+        const val = parseFloat(d.value);
+        if (!isNaN(val)) {
+          // Normalize key names
+          const label = String(d.label).toLowerCase();
+          if (label.includes("10-year") || label.includes("10 year")) rates["treasury10y"] = val;
+          if (label.includes("sofr")) rates["sofr"] = val;
+          if (label.includes("fed funds") || label.includes("federal funds")) rates["fedFunds"] = val;
+          if (label.includes("30-year") || label.includes("30 year")) rates["treasury30y"] = val;
+          if (label.includes("mortgage")) rates["mortgage30y"] = val;
+          rates[d.label] = val;
+        }
+      }
+    }
+  } catch {}
+  return rates;
 }
 
 // ─── CONVENIENCE WRAPPERS ────────────────────────────────────────────

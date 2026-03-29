@@ -2,6 +2,7 @@
  * Client Profile Suitability Intelligence Panel — shows suitability scores, product matches, risk analysis
  */
 import { useState } from "react";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,8 @@ export default function SuitabilityPanel() {
   const { score: riskScore, label: riskLabel, color: riskColor } = riskMap[riskTolerance] || riskMap.moderate;
 
   return (
-    <div className="space-y-6">
+    <AppShell title="Suitability">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
       <div className="flex items-center justify-between">
         <div>
@@ -238,5 +240,6 @@ export default function SuitabilityPanel() {
         </Tabs>
       )}
     </div>
+    </AppShell>
   );
 }

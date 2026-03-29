@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -398,6 +399,8 @@ export default function Chat() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const handleSendRef = useRef<(text: string) => void>(() => {});
+  // Mutex guard: prevents concurrent conversation creation (race condition)
+  const creatingConversationRef = useRef(false);
 
   // ─── GUARD REF ─────────────────────────────────────────────────
   // Blocks voice recognition during TTS playback AND AI processing.
@@ -720,11 +723,24 @@ export default function Chat() {
       // ─── AUTHENTICATED PATH ───
       let activeConvId = conversationId;
       if (!activeConvId) {
-        const newConv = await createConversation.mutateAsync({ mode, title: trimmed.slice(0, 80) });
-        activeConvId = newConv.id;
-        setConversationId(activeConvId);
-        navigate(`/chat/${activeConvId}`, { replace: true });
-        utils.conversations.list.invalidate();
+        // Mutex: prevent concurrent conversation creation (double-click, HMR, voice race)
+        if (creatingConversationRef.current) {
+          setIsStreaming(false);
+          setMessages(prev => prev.slice(0, -1)); // remove optimistic user msg
+          return;
+        }
+        creatingConversationRef.current = true;
+        try {
+          const newConv = await createConversation.mutateAsync({ mode, title: trimmed.slice(0, 80) });
+          activeConvId = newConv.id;
+          setConversationId(activeConvId);
+          navigate(`/chat/${activeConvId}`, { replace: true });
+          utils.conversations.list.invalidate();
+        } catch (err) {
+          creatingConversationRef.current = false;
+          throw err;
+        }
+        creatingConversationRef.current = false;
       }
 
       const result = await sendMutation.mutateAsync({
@@ -806,6 +822,7 @@ export default function Chat() {
   };
 
   // ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────
+  const { shortcutMap } = useCustomShortcuts();
   const gPressedRef = useRef(false);
   const gTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -815,7 +832,7 @@ export default function Chat() {
       const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
       const isMod = e.metaKey || e.ctrlKey;
 
-      // G-then-X navigation (only when not in input)
+      // G-then-X navigation — uses custom shortcuts from Settings
       if (!isInput && !isMod && !e.shiftKey) {
         if (e.key.toLowerCase() === "g") {
           gPressedRef.current = true;
@@ -826,10 +843,12 @@ export default function Chat() {
         if (gPressedRef.current) {
           gPressedRef.current = false;
           if (gTimerRef.current) clearTimeout(gTimerRef.current);
-          const k = e.key.toLowerCase();
-          if (k === "c") { e.preventDefault(); navigate("/"); return; }
-          if (k === "s") { e.preventDefault(); navigate("/settings/profile"); return; }
-          if (k === "h") { e.preventDefault(); navigate("/help"); return; }
+          const route = shortcutMap.get(e.key.toLowerCase());
+          if (route) {
+            e.preventDefault();
+            navigate(route);
+            return;
+          }
         }
       }
 
@@ -889,7 +908,7 @@ export default function Chat() {
       window.removeEventListener("keydown", handler);
       if (gTimerRef.current) clearTimeout(gTimerRef.current);
     };
-  }, [showAddMenu, showModeMenu, showFocusPicker, searchOpen]);
+  }, [showAddMenu, showModeMenu, showFocusPicker, searchOpen, shortcutMap]);
 
   const handleFeedback = async (messageId: number, rating: "up" | "down") => {
     if (!conversationId) return;

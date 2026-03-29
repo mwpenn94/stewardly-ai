@@ -1,12 +1,14 @@
 import crypto from "crypto";
-import { eq, desc, and, or, sql, asc, inArray, like, gte } from "drizzle-orm";
+import { eq, desc, and, or, sql, asc, inArray, like, gte, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
   products, auditTrail, reviewQueue, memories, feedback, qualityRatings,
   suitabilityAssessments, conversationFolders, documentVersions,
   documentTags, documentTagMap, knowledgeGapFeedback,
-  documentAnnotations
+  documentAnnotations,
+  aiToolExecutions, aiResponseQuality,
+  type InsertAiToolExecution, type InsertAiResponseQualityEntry,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -87,6 +89,24 @@ export async function updateSuitabilityStatus(userId: number, completed: boolean
 export async function createConversation(userId: number, mode: "client" | "coach" | "manager" = "client", title?: string) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  // Server-side dedup: if user has a conversation created in the last 3 seconds with no messages, reuse it
+  const recentEmpty = await db.select({ id: conversations.id })
+    .from(conversations)
+    .where(and(
+      eq(conversations.userId, userId),
+      gt(conversations.createdAt, new Date(Date.now() - 3000))
+    ))
+    .orderBy(desc(conversations.createdAt))
+    .limit(1);
+  if (recentEmpty.length > 0) {
+    // Check if it has zero messages
+    const msgCount = await db.select({ count: sql<number>`count(*)` })
+      .from(messages)
+      .where(eq(messages.conversationId, recentEmpty[0].id));
+    if (msgCount[0]?.count === 0) {
+      return { id: recentEmpty[0].id };
+    }
+  }
   const result = await db.insert(conversations).values({ userId, mode, title: title || "New Conversation" });
   return { id: result[0].insertId };
 }
@@ -799,4 +819,57 @@ export async function deleteAnnotation(id: number) {
   const db = await getDb();
   if (!db) return;
   await db.delete(documentAnnotations).where(eq(documentAnnotations.id, id));
+}
+
+
+// ─── AI TOOL EXECUTION LOGGING ─────────────────────────────────────
+export async function logAiToolExecution(data: InsertAiToolExecution) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(aiToolExecutions).values(data).$returningId();
+  return result;
+}
+
+export async function getAiToolExecutions(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(aiToolExecutions)
+    .where(eq(aiToolExecutions.userId, userId))
+    .orderBy(desc(aiToolExecutions.createdAt))
+    .limit(limit);
+}
+
+// ─── AI RESPONSE QUALITY LOGGING ───────────────────────────────────
+export async function logAiResponseQuality(data: InsertAiResponseQualityEntry) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(aiResponseQuality).values(data).$returningId();
+  return result;
+}
+
+export async function getAiResponseQualityStats(userId: number, days = 30) {
+  const db = await getDb();
+  if (!db) return null;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const rows = await db.select().from(aiResponseQuality)
+    .where(and(
+      eq(aiResponseQuality.userId, userId),
+      gte(aiResponseQuality.createdAt, since),
+    ))
+    .orderBy(desc(aiResponseQuality.createdAt));
+  
+  const total = rows.length;
+  const emptyResponses = rows.filter(r => r.responseEmpty).length;
+  const avgRetries = total > 0 ? rows.reduce((sum, r) => sum + (r.retryCount || 0), 0) / total : 0;
+  const avgLatency = total > 0 ? rows.reduce((sum, r) => sum + (r.latencyMs || 0), 0) / total : 0;
+  const avgDisclaimers = total > 0 ? rows.reduce((sum, r) => sum + (r.disclaimerCount || 0), 0) / total : 0;
+
+  return {
+    total,
+    emptyResponses,
+    emptyRate: total > 0 ? emptyResponses / total : 0,
+    avgRetries: Math.round(avgRetries * 100) / 100,
+    avgLatencyMs: Math.round(avgLatency),
+    avgDisclaimers: Math.round(avgDisclaimers * 100) / 100,
+  };
 }

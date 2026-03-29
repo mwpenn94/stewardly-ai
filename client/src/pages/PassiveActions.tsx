@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import AppShell from "@/components/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -116,7 +117,8 @@ export default function PassiveActions() {
   };
 
   return (
-    <div className="space-y-6">
+    <AppShell title="Passive Actions">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -451,5 +453,6 @@ export default function PassiveActions() {
         </TabsContent>
       </Tabs>
     </div>
+    </AppShell>
   );
 }

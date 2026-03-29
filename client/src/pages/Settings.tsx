@@ -593,7 +593,7 @@ function AITuningSettings() {
   }, [prefsQuery.data]);
 
   useEffect(() => {
-    if (presetsQuery.data && activePreset) {
+    if (presetsQuery.data && Array.isArray(presetsQuery.data) && activePreset) {
       const preset = presetsQuery.data.find(p => p.id === activePreset);
       if (preset && Object.keys(weights).length === 0) {
         setWeights(preset.weights);
@@ -860,7 +860,7 @@ function AITuningSettings() {
             </Label>
             {presetsQuery.data && (
               <div className="flex flex-wrap gap-1.5 mb-3">
-                {presetsQuery.data.map(preset => (
+                {(Array.isArray(presetsQuery.data) ? presetsQuery.data : []).map(preset => (
                   <button
                     key={preset.id}
                     onClick={() => { setActivePreset(preset.id); setWeights(preset.weights); }}
@@ -877,7 +877,7 @@ function AITuningSettings() {
             )}
             {perspectivesQuery.data && (
               <div className="space-y-2">
-                {perspectivesQuery.data.map(p => (
+                {(Array.isArray(perspectivesQuery.data) ? perspectivesQuery.data : []).map(p => (
                   <div key={p.id} className="flex items-center gap-3">
                     <span className="text-[10px] w-24 text-muted-foreground">{p.name}</span>
                     <Slider

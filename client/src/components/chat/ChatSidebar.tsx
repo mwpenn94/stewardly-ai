@@ -156,7 +156,7 @@ export function ChatSidebar({
             </div>
             {searchQuery && searchResults?.data && (
               <div className="mt-1 max-h-48 overflow-y-auto">
-                {searchResults.data.map((r: any) => (
+                {(Array.isArray(searchResults.data) ? searchResults.data : []).map((r: any) => (
                   <button
                     key={r.id}
                     className="w-full text-left px-2 py-1.5 text-xs hover:bg-secondary/50 rounded-md truncate"

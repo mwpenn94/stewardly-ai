@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -123,7 +124,7 @@ export default function Portal() {
     if (!clientBook.data) return [];
     if (!searchQuery) return clientBook.data;
     const q = searchQuery.toLowerCase();
-    return clientBook.data.filter(
+    return (Array.isArray(clientBook.data) ? clientBook.data : []).filter(
       (c: any) =>
         c.clientName?.toLowerCase().includes(q) ||
         c.clientEmail?.toLowerCase().includes(q) ||
@@ -134,6 +135,7 @@ export default function Portal() {
   // ─── LOADING ────────────────────────────────────────────────────
   if (loading) {
     return (
+      <AppShell title="Advisor Portal">
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-7xl mx-auto space-y-6">
           <Skeleton className="h-8 w-48" />
@@ -143,11 +145,13 @@ export default function Portal() {
           <Skeleton className="h-96" />
         </div>
       </div>
+      </AppShell>
     );
   }
 
   if (!user || (role !== "advisor" && role !== "manager" && role !== "admin")) {
     return (
+      <AppShell title="Advisor Portal">
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="pt-6 text-center space-y-4">
@@ -162,6 +166,7 @@ export default function Portal() {
           </CardContent>
         </Card>
       </div>
+      </AppShell>
     );
   }
 
@@ -275,7 +280,8 @@ export default function Portal() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="Advisor Portal">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -455,7 +461,7 @@ export default function Portal() {
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {teamMembers.data.map((member: any) => (
+                          {(Array.isArray(teamMembers.data) ? teamMembers.data : []).map((member: any) => (
                             <Card key={member.roleId} className="bg-background/50 border-border/30">
                               <CardContent className="pt-4">
                                 <div className="flex items-start gap-3">
@@ -519,7 +525,7 @@ export default function Portal() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {viewAsAudit.data.map((entry: any) => (
+                              {(Array.isArray(viewAsAudit.data) ? viewAsAudit.data : []).map((entry: any) => (
                                 <TableRow key={entry.id}>
                                   <TableCell className="text-sm font-medium">{entry.actorName}</TableCell>
                                   <TableCell className="text-sm">{entry.targetName}</TableCell>
@@ -565,7 +571,7 @@ export default function Portal() {
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {myOrgs.data.map((org: any) => (
+                        {(Array.isArray(myOrgs.data) ? myOrgs.data : []).map((org: any) => (
                           <Card key={org.organizationId} className="bg-background/50 border-border/30 hover:border-sky-500/30 transition-colors cursor-pointer"
                             onClick={() => navigate(`/org/${org.orgSlug}`)}>
                             <CardContent className="pt-4">
@@ -696,6 +702,7 @@ export default function Portal() {
         </DialogContent>
       </Dialog>
     </div>
+    </AppShell>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -91,7 +92,8 @@ export default function ProficiencyDashboard() {
   const overallInfo = OVERALL_LABELS[prof?.overallProficiency || "new_user"] || OVERALL_LABELS.new_user;
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="My Progress">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-card/80 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
@@ -430,6 +432,7 @@ export default function ProficiencyDashboard() {
         )}
       </main>
     </div>
+    </AppShell>
   );
 }
 

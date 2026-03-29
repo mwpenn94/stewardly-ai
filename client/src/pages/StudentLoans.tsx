@@ -90,7 +90,7 @@ export default function StudentLoans() {
                 </div>
                 {compareQuery.data && (
                   <div className="space-y-3">
-                    {compareQuery.data.map((s: any, i: number) => (
+                    {(Array.isArray(compareQuery.data) ? compareQuery.data : []).map((s: any, i: number) => (
                       <Card key={i} className={i === 0 ? "border-emerald-500/50 bg-emerald-500/5" : ""}>
                         <CardContent className="pt-4">
                           <div className="flex items-center justify-between mb-2">

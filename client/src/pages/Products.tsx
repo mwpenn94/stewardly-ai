@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -97,7 +98,8 @@ export default function Products() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <AppShell title="Products">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
@@ -325,6 +327,7 @@ export default function Products() {
         saving={createMutation.isPending || updateMutation.isPending}
       />
     </div>
+    </AppShell>
   );
 }
 

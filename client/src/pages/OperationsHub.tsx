@@ -4,6 +4,7 @@
  * Tabs: Active Work | Agents | Compliance | History
  */
 import { useState } from "react";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,13 +19,16 @@ import {
   CheckCircle2, XCircle, Clock, AlertTriangle, Loader2, Eye,
   Search, Filter, RefreshCw, MoreHorizontal, FileText, Zap,
 } from "lucide-react";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 
 export default function OperationsHub() {
+  const utils = trpc.useUtils();
   const [activeTab, setActiveTab] = useState("active");
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="Operations">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
@@ -81,23 +85,32 @@ export default function OperationsHub() {
           </TabsList>
 
           <TabsContent value="active" className="space-y-4 mt-4">
-            <ActiveWorkSection />
+            <SectionErrorBoundary sectionName="Active Work" onRetry={() => utils.agentic.gate.list.invalidate()}>
+              <ActiveWorkSection />
+            </SectionErrorBoundary>
           </TabsContent>
 
           <TabsContent value="agents" className="space-y-4 mt-4">
-            <AgentsSection />
+            <SectionErrorBoundary sectionName="Agents" onRetry={() => { try { utils.agentic.agent.list.invalidate(); } catch {} }}>
+              <AgentsSection />
+            </SectionErrorBoundary>
           </TabsContent>
 
           <TabsContent value="compliance" className="space-y-4 mt-4">
-            <ComplianceSection />
+            <SectionErrorBoundary sectionName="Compliance">
+              <ComplianceSection />
+            </SectionErrorBoundary>
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 mt-4">
-            <HistorySection />
+            <SectionErrorBoundary sectionName="History">
+              <HistorySection />
+            </SectionErrorBoundary>
           </TabsContent>
         </Tabs>
       </div>
     </div>
+    </AppShell>
   );
 }
 

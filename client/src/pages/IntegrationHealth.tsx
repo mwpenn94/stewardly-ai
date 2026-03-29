@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -119,7 +120,8 @@ export default function IntegrationHealth() {
   const ctx = healthContext.data;
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell title="Integration Health">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
@@ -561,6 +563,7 @@ export default function IntegrationHealth() {
         </Tabs>
       </div>
     </div>
+    </AppShell>
   );
 }
 

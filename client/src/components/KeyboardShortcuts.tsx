@@ -1,6 +1,18 @@
-import { useEffect, useState } from "react";
-import { X, Keyboard } from "lucide-react";
+/**
+ * KeyboardShortcuts — Global overlay modal showing all available keyboard
+ * shortcuts. Toggled with the "?" key from anywhere (except input fields).
+ *
+ * Categories:
+ *   - Navigation (G-then-X sequences for sidebar routes)
+ *   - Chat (conversation management)
+ *   - General (send, new line, search, etc.)
+ */
+import { useEffect, useState, useCallback } from "react";
+import { X, Keyboard, Command } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 interface Shortcut {
   keys: string[];
@@ -9,36 +21,54 @@ interface Shortcut {
 }
 
 const SHORTCUTS: Shortcut[] = [
-  // Chat
-  { keys: ["Ctrl", "Shift", "N"], description: "New conversation", category: "Chat" },
-  { keys: ["Ctrl", "Shift", "S"], description: "Toggle sidebar", category: "Chat" },
-  { keys: ["Ctrl", "K"], description: "Search conversations", category: "Chat" },
-  { keys: ["/"], description: "Focus chat input", category: "Chat" },
-  { keys: ["Esc"], description: "Close menus / cancel", category: "Chat" },
-
-  // Navigation
+  // ── Navigation (G-then-X) ──
   { keys: ["G", "then", "C"], description: "Go to Chat", category: "Navigation" },
+  { keys: ["G", "then", "O"], description: "Go to Operations", category: "Navigation" },
+  { keys: ["G", "then", "I"], description: "Go to Intelligence", category: "Navigation" },
+  { keys: ["G", "then", "A"], description: "Go to Advisory", category: "Navigation" },
+  { keys: ["G", "then", "R"], description: "Go to Relationships", category: "Navigation" },
+  { keys: ["G", "then", "M"], description: "Go to Market Data", category: "Navigation" },
+  { keys: ["G", "then", "D"], description: "Go to Documents", category: "Navigation" },
+  { keys: ["G", "then", "N"], description: "Go to Integrations", category: "Navigation" },
   { keys: ["G", "then", "S"], description: "Go to Settings", category: "Navigation" },
   { keys: ["G", "then", "H"], description: "Go to Help", category: "Navigation" },
 
-  // General
-  { keys: ["?"], description: "Show keyboard shortcuts", category: "General" },
-  { keys: ["Ctrl", "Enter"], description: "Send message", category: "General" },
-  { keys: ["Shift", "Enter"], description: "New line in message", category: "General" },
+  // ── Chat ──
+  { keys: ["Ctrl", "Shift", "N"], description: "New conversation", category: "Chat" },
+  { keys: ["Ctrl", "Shift", "S"], description: "Toggle sidebar", category: "Chat" },
+  { keys: ["Ctrl", "K"], description: "Open command palette", category: "General" },
+  { keys: ["/"], description: "Focus chat input", category: "Chat" },
+  { keys: ["Ctrl", "Enter"], description: "Send message", category: "Chat" },
+  { keys: ["Shift", "Enter"], description: "New line in message", category: "Chat" },
+
+  // ── General ──
+  { keys: ["?"], description: "Show this shortcuts panel", category: "General" },
+  { keys: ["Esc"], description: "Close menus / modals / cancel", category: "General" },
 ];
+
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  Navigation: "Press G, then a letter to jump to a page",
+  Chat: "Available on the Chat page",
+  General: "Available everywhere",
+};
 
 export function KeyboardShortcuts() {
   const [open, setOpen] = useState(false);
+
+  const toggle = useCallback(() => setOpen(prev => !prev), []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       // Don't trigger when typing in inputs
       const target = e.target as HTMLElement;
-      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+      const isInput =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable;
 
       if (e.key === "?" && !isInput) {
         e.preventDefault();
-        setOpen(prev => !prev);
+        toggle();
       }
       if (e.key === "Escape" && open) {
         setOpen(false);
@@ -46,14 +76,14 @@ export function KeyboardShortcuts() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open]);
+  }, [open, toggle]);
 
   if (!open) return null;
 
   const categories = Array.from(new Set(SHORTCUTS.map(s => s.category)));
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -61,65 +91,91 @@ export function KeyboardShortcuts() {
       />
 
       {/* Modal */}
-      <div className="relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
               <Keyboard className="w-4 h-4 text-accent" />
             </div>
             <div>
               <h2 className="text-sm font-semibold">Keyboard Shortcuts</h2>
-              <p className="text-[10px] text-muted-foreground">Press <kbd className="px-1 py-0.5 rounded bg-secondary text-[9px] font-mono">?</kbd> to toggle</p>
+              <p className="text-[10px] text-muted-foreground">
+                Press <kbd className="px-1 py-0.5 rounded bg-secondary text-[9px] font-mono">?</kbd> to toggle
+              </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon-sm" onClick={() => setOpen(false)}>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)} aria-label="Close">
             <X className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto p-5 space-y-5 max-h-[calc(80vh-4rem)]">
-          {categories.map((category) => (
-            <div key={category}>
-              <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
-                {category}
-              </h3>
-              <div className="space-y-1">
-                {SHORTCUTS.filter(s => s.category === category).map((shortcut, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-secondary/30 transition-colors"
-                  >
-                    <span className="text-sm text-foreground">{shortcut.description}</span>
-                    <div className="flex items-center gap-1">
-                      {shortcut.keys.map((key, ki) => (
-                        key === "then" ? (
-                          <span key={ki} className="text-[10px] text-muted-foreground mx-0.5">then</span>
-                        ) : (
-                          <kbd
-                            key={ki}
-                            className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-md bg-secondary border border-border text-[11px] font-mono font-medium text-foreground shadow-sm"
-                          >
-                            {key}
-                          </kbd>
-                        )
-                      ))}
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="p-5 space-y-5">
+            {categories.map((category, ci) => (
+              <div key={category}>
+                {ci > 0 && <Separator className="mb-5" />}
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {category}
+                  </h3>
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 text-muted-foreground/70 border-border/60">
+                    {SHORTCUTS.filter(s => s.category === category).length}
+                  </Badge>
+                </div>
+                {CATEGORY_DESCRIPTIONS[category] && (
+                  <p className="text-[10px] text-muted-foreground/60 mb-2.5">
+                    {CATEGORY_DESCRIPTIONS[category]}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {SHORTCUTS.filter(s => s.category === category).map((shortcut, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-secondary/30 transition-colors group"
+                    >
+                      <span className="text-sm text-foreground/90 group-hover:text-foreground transition-colors">
+                        {shortcut.description}
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0 ml-4">
+                        {shortcut.keys.map((key, ki) =>
+                          key === "then" ? (
+                            <span key={ki} className="text-[10px] text-muted-foreground/50 mx-0.5">
+                              then
+                            </span>
+                          ) : (
+                            <kbd
+                              key={ki}
+                              className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-md bg-secondary/80 border border-border/60 text-[11px] font-mono font-medium text-foreground/80 shadow-sm"
+                            >
+                              {key}
+                            </kbd>
+                          )
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </ScrollArea>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-border bg-card/50">
-          <p className="text-[10px] text-muted-foreground text-center">
-            On macOS, use <kbd className="px-1 py-0.5 rounded bg-secondary text-[9px] font-mono">⌘</kbd> instead of <kbd className="px-1 py-0.5 rounded bg-secondary text-[9px] font-mono">Ctrl</kbd>
-          </p>
+        <div className="px-5 py-3 border-t border-border bg-card/50 shrink-0">
+          <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+            <Command className="w-3 h-3" />
+            <span>On macOS, use</span>
+            <kbd className="px-1 py-0.5 rounded bg-secondary text-[9px] font-mono">⌘</kbd>
+            <span>instead of</span>
+            <kbd className="px-1 py-0.5 rounded bg-secondary text-[9px] font-mono">Ctrl</kbd>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
+/** Expose the shortcut list for testing */
+export { SHORTCUTS };

@@ -60,7 +60,7 @@ export default function Insights() {
   const filtered = useMemo(() => {
     if (!insightsList.data) return [];
     if (activeCategory === "all") return insightsList.data;
-    return insightsList.data.filter((i: any) => i.category === activeCategory);
+    return (Array.isArray(insightsList.data) ? insightsList.data : []).filter((i: any) => i.category === activeCategory);
   }, [insightsList.data, activeCategory]);
 
   // Guest session auto-provisions a user, so this is a fallback for edge cases
