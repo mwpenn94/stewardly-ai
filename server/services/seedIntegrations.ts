@@ -1,6 +1,7 @@
 import { getDb } from "../db";
 import { integrationProviders, carrierImportTemplates } from "../../drizzle/schema";
 import crypto from "crypto";
+import { logger } from "../_core/logger";
 
 const uuid = () => crypto.randomUUID();
 
@@ -229,7 +230,7 @@ const CARRIER_TEMPLATES = [
 
 export async function seedIntegrationProviders() {
   const db = (await getDb())!;
-  console.log("[Seed] Seeding integration providers...");
+  logger.info( { operation: "seed" },"[Seed] Seeding integration providers...");
   for (const provider of PROVIDERS) {
     try {
       await db.insert(integrationProviders).values(provider).onDuplicateKeyUpdate({
@@ -247,25 +248,25 @@ export async function seedIntegrationProviders() {
         },
       });
     } catch (e) {
-      console.error(`[Seed] Failed to seed provider ${provider.slug}:`, e);
+      logger.error( { operation: "seed", err: e },`[Seed] Failed to seed provider ${provider.slug}:`, e);
     }
   }
-  console.log(`[Seed] Seeded ${PROVIDERS.length} integration providers.`);
+  logger.info( { operation: "seed" },`[Seed] Seeded ${PROVIDERS.length} integration providers.`);
 }
 
 export async function seedCarrierTemplates() {
   const db = (await getDb())!;
-  console.log("[Seed] Seeding carrier import templates...");
+  logger.info( { operation: "seed" },"[Seed] Seeding carrier import templates...");
   for (const tmpl of CARRIER_TEMPLATES) {
     try {
       await db.insert(carrierImportTemplates).values(tmpl).onDuplicateKeyUpdate({
         set: { name: tmpl.name },
       });
     } catch (e) {
-      console.error(`[Seed] Failed to seed template ${tmpl.name}:`, e);
+      logger.error( { operation: "seed", err: e },`[Seed] Failed to seed template ${tmpl.name}:`, e);
     }
   }
-  console.log(`[Seed] Seeded ${CARRIER_TEMPLATES.length} carrier import templates.`);
+  logger.info( { operation: "seed" },`[Seed] Seeded ${CARRIER_TEMPLATES.length} carrier import templates.`);
 }
 
 export async function seedAll() {

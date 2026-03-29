@@ -14,6 +14,7 @@
 
 import { broadcastToRole } from "./websocketNotifications";
 import { ensureDbReady } from "./dbResilience";
+import { logger } from "../_core/logger";
 
 // ─── In-App Alert Helper ──────────────────────────────────────────────────
 function alertAdmins(title: string, body: string, priority: "low" | "medium" | "high" | "critical" = "high") {
@@ -26,7 +27,7 @@ function alertAdmins(title: string, body: string, priority: "low" | "medium" | "
       metadata: { source: "scheduler", timestamp: Date.now() },
     });
   } catch (e) {
-    console.warn("[Scheduler] Failed to send in-app alert:", e);
+    logger.warn( { operation: "scheduler" },"[Scheduler] Failed to send in-app alert:", e);
   }
 }
 
@@ -65,13 +66,13 @@ async function runScheduledHealthChecks(): Promise<void> {
     );
   }
   
-  console.log(`[Scheduler] Health checks complete: ${results.filter(r => r.status === "healthy").length}/${results.length} healthy`);
+  logger.info( { operation: "scheduler" },`[Scheduler] Health checks complete: ${results.filter(r => r.status === "healthy").length}/${results.length} healthy`);
 }
 
 // ─── Data Pipeline Job (every 6 hours) ─────────────────────────────────
 async function runScheduledDataPipelines(): Promise<void> {
   const startTime = Date.now();
-  console.log(`[Scheduler] Starting data pipeline run at ${new Date().toISOString()}`);
+  logger.info( { operation: "scheduler" },`[Scheduler] Starting data pipeline run at ${new Date().toISOString()}`);
   
   const { runAllDataPipelines } = await import("./governmentDataPipelines");
   const results = await runAllDataPipelines();
@@ -82,7 +83,7 @@ async function runScheduledDataPipelines(): Promise<void> {
   const totalRecords = results.reduce((sum: number, r: any) => sum + (r.recordsFetched || 0), 0);
   
   // Structured JSON log for every pipeline run (easy to grep/parse in production)
-  console.log(JSON.stringify({
+  logger.info( { operation: "scheduler" },JSON.stringify({
     event: "pipeline_run_complete",
     timestamp: new Date().toISOString(),
     durationMs: totalDuration,
@@ -109,7 +110,7 @@ async function runScheduledDataPipelines(): Promise<void> {
     );
   }
   
-  console.log(`[Scheduler] Data pipelines complete: ${successful}/${results.length} successful, ${totalRecords} records, ${Math.round(totalDuration / 1000)}s`);
+  logger.info( { operation: "scheduler" },`[Scheduler] Data pipelines complete: ${successful}/${results.length} successful, ${totalRecords} records, ${Math.round(totalDuration / 1000)}s`);
 }
 
 // ─── Stale Data Cleanup (daily) ────────────────────────────────────────
@@ -121,7 +122,7 @@ async function revokeExpiredRoleElevations(): Promise<void> {
 
     const db = await getDb();
     if (!db) {
-      console.warn("[Scheduler] Role elevation revoke skipped: DB unavailable");
+      logger.warn( { operation: "scheduler" },"[Scheduler] Role elevation revoke skipped: DB unavailable");
       return;
     }
 
@@ -136,9 +137,9 @@ async function revokeExpiredRoleElevations(): Promise<void> {
         )
       );
 
-    console.log(`[Scheduler] Role elevation auto-revoke completed`);
+    logger.info( { operation: "scheduler" },`[Scheduler] Role elevation auto-revoke completed`);
   } catch (err) {
-    console.error("[Scheduler] Role elevation revoke error:", err);
+    logger.error( { operation: "scheduler", err: err },"[Scheduler] Role elevation revoke error:", err);
   }
 }
 
@@ -150,22 +151,22 @@ async function runStaleDataCleanup(): Promise<void> {
     
     const db = await getDb();
     if (!db) {
-      console.warn("[Scheduler] Stale data cleanup skipped: DB unavailable");
+      logger.warn( { operation: "scheduler" },"[Scheduler] Stale data cleanup skipped: DB unavailable");
       return;
     }
     await db.delete(enrichmentCache)
       .where(lt(enrichmentCache.expiresAt, new Date()));
     
-    console.log(`[Scheduler] Stale data cleanup complete`);
+    logger.info( { operation: "scheduler" },`[Scheduler] Stale data cleanup complete`);
   } catch (e: any) {
-    console.warn(`[Scheduler] Stale data cleanup failed: ${e.message}`);
+    logger.warn( { operation: "scheduler" },`[Scheduler] Stale data cleanup failed: ${e.message}`);
   }
 }
 
 // ─── Scheduler Control ─────────────────────────────────────────────────
 function registerJob(name: string, intervalMs: number, handler: () => Promise<void>): void {
   if (jobs[name]) {
-    console.warn(`[Scheduler] Job "${name}" already registered, skipping`);
+    logger.warn( { operation: "scheduler" },`[Scheduler] Job "${name}" already registered, skipping`);
     return;
   }
   
@@ -186,7 +187,7 @@ function registerJob(name: string, intervalMs: number, handler: () => Promise<vo
 
 async function executeJob(job: ScheduledJob): Promise<void> {
   if (job.isRunning) {
-    console.log(`[Scheduler] Job "${job.name}" is already running, skipping`);
+    logger.info( { operation: "scheduler" },`[Scheduler] Job "${job.name}" is already running, skipping`);
     return;
   }
   
@@ -199,7 +200,7 @@ async function executeJob(job: ScheduledJob): Promise<void> {
   } catch (error: any) {
     job.errorCount++;
     job.lastError = error.message || "Unknown error";
-    console.error(`[Scheduler] Job "${job.name}" failed:`, error.message);
+    logger.error( { operation: "scheduler", err: error },`[Scheduler] Job "${job.name}" failed:`, error.message);
   } finally {
     job.isRunning = false;
   }
@@ -207,7 +208,7 @@ async function executeJob(job: ScheduledJob): Promise<void> {
 
 export function initScheduler(): void {
   if (isInitialized) {
-    console.log("[Scheduler] Already initialized, skipping");
+    logger.info( { operation: "scheduler" },"[Scheduler] Already initialized, skipping");
     return;
   }
   
@@ -219,13 +220,13 @@ export function initScheduler(): void {
   
   // Run self-test first, then start jobs with staggered delays
   const INITIAL_DELAY = 90_000; // 90s after boot
-  console.log(`[Scheduler] Will run startup self-test in ${INITIAL_DELAY / 1000}s...`);
+  logger.info( { operation: "scheduler" },`[Scheduler] Will run startup self-test in ${INITIAL_DELAY / 1000}s...`);
   
   setTimeout(async () => {
     // Wait for DB readiness
     const dbReady = await ensureDbReady(60_000);
     if (!dbReady) {
-      console.error("[Scheduler] CRITICAL: DB not ready after 60s. Starting jobs anyway (they will retry internally).");
+      logger.error( { operation: "scheduler" },"[Scheduler] CRITICAL: DB not ready after 60s. Starting jobs anyway (they will retry internally).");
       alertAdmins(
         "⚠️ Scheduler: Database not ready at startup",
         "The scheduler started but the database was not ready after 60 seconds. Pipelines may fail on their first run but will retry automatically.",
@@ -240,7 +241,7 @@ export function initScheduler(): void {
       lastSelfTestResult = testResult;
       
       if (testResult.overall === "fail") {
-        console.error(`[Scheduler] Self-test FAILED. Pipelines will likely fail.`);
+        logger.error( { operation: "scheduler" },`[Scheduler] Self-test FAILED. Pipelines will likely fail.`);
         const failedProviders = testResult.results
           .filter(r => r.dbLookup === "fail" || r.apiReachable === "fail")
           .map(r => `• ${r.slug}: db=${r.dbLookup}, api=${r.apiReachable}${r.error ? ` — ${r.error}` : ""}`)
@@ -251,27 +252,27 @@ export function initScheduler(): void {
           "critical"
         );
       } else {
-        console.log(`[Scheduler] Self-test ${testResult.overall.toUpperCase()}: ${testResult.results.filter(r => r.apiReachable === "pass").length}/${testResult.results.length} APIs reachable`);
+        logger.info( { operation: "scheduler" },`[Scheduler] Self-test ${testResult.overall.toUpperCase()}: ${testResult.results.filter(r => r.apiReachable === "pass").length}/${testResult.results.length} APIs reachable`);
       }
     } catch (e: any) {
-      console.warn(`[Scheduler] Self-test failed to run: ${e.message}`);
+      logger.warn( { operation: "scheduler" },`[Scheduler] Self-test failed to run: ${e.message}`);
     }
     
     // Start all jobs with staggered delays
     let stagger = 0;
     for (const [name, job] of Object.entries(jobs)) {
       setTimeout(() => {
-        console.log(`[Scheduler] Starting job "${name}"...`);
+        logger.info( { operation: "scheduler" },`[Scheduler] Starting job "${name}"...`);
         executeJob(job);
         job.timerId = setInterval(() => executeJob(job), job.intervalMs);
       }, stagger);
       stagger += 15_000; // 15s between each job start
-      console.log(`[Scheduler] Registered job "${name}" (interval: ${Math.round(job.intervalMs / 1000)}s)`);
+      logger.info( { operation: "scheduler" },`[Scheduler] Registered job "${name}" (interval: ${Math.round(job.intervalMs / 1000)}s)`);
     }
   }, INITIAL_DELAY);
   
   isInitialized = true;
-  console.log(`[Scheduler] Initialized with ${Object.keys(jobs).length} jobs`);
+  logger.info( { operation: "scheduler" },`[Scheduler] Initialized with ${Object.keys(jobs).length} jobs`);
 }
 
 export function stopScheduler(): void {
@@ -283,7 +284,7 @@ export function stopScheduler(): void {
   }
   for (const key of Object.keys(jobs)) delete jobs[key];
   isInitialized = false;
-  console.log("[Scheduler] All jobs stopped");
+  logger.info( { operation: "scheduler" },"[Scheduler] All jobs stopped");
 }
 
 export function getSchedulerStatus(): {

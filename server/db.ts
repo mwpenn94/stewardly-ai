@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { eq, desc, and, or, sql, asc, inArray, like, gte, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { logger } from "./_core/logger";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
   products, auditTrail, reviewQueue, memories, feedback, qualityRatings,
@@ -19,7 +20,7 @@ export async function getDb() {
     try {
       _db = drizzle(process.env.DATABASE_URL);
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      logger.warn( { operation: "database" },"[Database] Failed to connect:", error);
       _db = null;
     }
   }
@@ -48,7 +49,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (!values.lastSignedIn) values.lastSignedIn = new Date();
     if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
     await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
-  } catch (error) { console.error("[Database] Failed to upsert user:", error); throw error; }
+  } catch (error) { logger.error( { operation: "database", err: error },"[Database] Failed to upsert user:", error); throw error; }
 }
 
 export async function getUserByOpenId(openId: string) {

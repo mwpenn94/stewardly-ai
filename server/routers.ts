@@ -14,6 +14,7 @@ import { generateSpeech, getVoiceCatalog } from "./edgeTTS";
 import { callDataApi } from "./_core/dataApi";
 import { SEARCH_TOOLS, executeSearchTool } from "./webSearch";
 import { ALL_AI_TOOLS, executeAITool } from "./aiToolCalling";
+import { logger } from "./_core/logger";
 import {
   createConversation, getUserConversations, getConversation, deleteConversation,
   updateConversationTitle, searchConversations, getConversationContext,
@@ -668,7 +669,7 @@ const documentsRouter = router({
       try {
         extraction = await extractDocumentText(buffer, input.filename, input.mimeType);
       } catch (e) {
-        console.error("[DocumentUpload] Pre-extraction failed:", e);
+        logger.error( { operation: "documentUpload", err: e },"[DocumentUpload] Pre-extraction failed:", e);
       }
 
       // AI auto-categorization: use extracted text (not raw buffer) for binary files
@@ -732,7 +733,7 @@ const documentsRouter = router({
           await updateDocumentStatus(doc.id, "ready", text.substring(0, 5000), chunks.length);
         }
       } catch (e) {
-        console.error("[DocumentUpload] Text extraction failed:", e);
+        logger.error( { operation: "documentUpload", err: e },"[DocumentUpload] Text extraction failed:", e);
         await updateDocumentStatus(doc.id, "error");
       }
 
@@ -864,7 +865,7 @@ const documentsRouter = router({
           await updateDocumentStatus(input.documentId, "ready", text.substring(0, 5000), chunks.length);
         }
       } catch (e) {
-        console.error("[VersionUpload] Text extraction failed:", e);
+        logger.error( { operation: "versionUpload", err: e },"[VersionUpload] Text extraction failed:", e);
         await updateDocumentStatus(input.documentId, "error");
       }
 
@@ -913,7 +914,7 @@ const documentsRouter = router({
         }
         return { success: true };
       } catch (e) {
-        console.error("[Reprocess] Failed:", e);
+        logger.error( { operation: "reprocess", err: e },"[Reprocess] Failed:", e);
         await updateDocumentStatus(input.id, "error");
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Reprocessing failed" });
       }
@@ -1491,7 +1492,7 @@ const voiceRouter = router({
           voice: input.voice,
         };
       } catch (err: any) {
-        console.error("[EdgeTTS] Error:", err.message);
+        logger.error( { operation: "edgeTTS", err: err },"[EdgeTTS] Error:", err.message);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Speech generation failed. Falling back to browser TTS.",
@@ -1706,7 +1707,7 @@ const marketRouter = router({
           fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
         };
       } catch (e) {
-        console.error("Market data error:", e);
+        logger.error( { operation: "routers", err: e },"Market data error:", e);
         return { symbol: input.symbol, price: null, change: null, changePercent: null, volume: null, marketCap: null, name: null };
       }
     }),

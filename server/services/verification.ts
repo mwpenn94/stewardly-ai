@@ -1,4 +1,5 @@
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   professionalVerifications,
   coiVerificationBadges,
@@ -68,7 +69,7 @@ export async function verifySECIAPD(name: string, crdNumber?: string): Promise<V
       badges,
     };
   } catch (err: any) {
-    console.error("[Verification] SEC IAPD error:", err.message);
+    logger.error( { operation: "verification", err: err },"[Verification] SEC IAPD error:", err.message);
     return { source: "sec_iapd", status: "pending", rawData: { error: err.message } };
   }
 }
@@ -112,7 +113,7 @@ export async function verifyCFPBoard(name: string, state?: string): Promise<Veri
       rawData: { manualVerificationRequired: true, lookupUrl: url },
     };
   } catch (err: any) {
-    console.error("[Verification] CFP Board error:", err.message);
+    logger.error( { operation: "verification", err: err },"[Verification] CFP Board error:", err.message);
     return { source: "cfp_board", status: "pending", rawData: { error: err.message } };
   }
 }
@@ -211,7 +212,7 @@ export async function fetchPremiumFinanceRates(): Promise<{
     } catch { /* fallback failed silently */ }
   }
   if (!fredApiKey) {
-    console.warn("[Verification] No FRED API key for rate fetching");
+    logger.warn( { operation: "verification" },"[Verification] No FRED API key for rate fetching");
     return {};
   }
   const seriesMap: Record<string, string> = {
@@ -235,7 +236,7 @@ export async function fetchPremiumFinanceRates(): Promise<{
         }
       }
     } catch (err) {
-      console.warn(`[Verification] FRED ${seriesId} fetch failed:`, err);
+      logger.warn( { operation: "verification" },`[Verification] FRED ${seriesId} fetch failed:`, err);
     }
   }
   return rates;

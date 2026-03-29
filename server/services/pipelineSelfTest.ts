@@ -10,6 +10,7 @@ import { getDb } from "../db";
 import { integrationProviders, integrationConnections } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { decryptCredentials } from "./encryption";
+import { logger } from "../_core/logger";
 
 export interface SelfTestResult {
   provider: string;
@@ -41,7 +42,7 @@ export async function runPipelineSelfTest(): Promise<{
   timestamp: string;
 }> {
   const timestamp = new Date().toISOString();
-  console.log(`[SelfTest] Starting pipeline self-test at ${timestamp}`);
+  logger.info( { operation: "selfTest" },`[SelfTest] Starting pipeline self-test at ${timestamp}`);
 
   // 1. Test DB connectivity
   let dbConnected = false;
@@ -52,14 +53,14 @@ export async function runPipelineSelfTest(): Promise<{
       const { sql } = await import("drizzle-orm");
       await db.execute(sql`SELECT 1`);
       dbConnected = true;
-      console.log("[SelfTest] ✓ Database connected");
+      logger.info( { operation: "selfTest" },"[SelfTest] ✓ Database connected");
     }
   } catch (e: any) {
-    console.error(`[SelfTest] ✗ Database connection failed: ${e.message}`);
+    logger.error( { operation: "selfTest" },`[SelfTest] ✗ Database connection failed: ${e.message}`);
   }
 
   if (!dbConnected || !db) {
-    console.error("[SelfTest] CRITICAL: Database not available. All pipelines will fail.");
+    logger.error( { operation: "selfTest" },"[SelfTest] CRITICAL: Database not available. All pipelines will fail.");
     return {
       overall: "fail",
       dbConnected: false,
@@ -154,7 +155,7 @@ export async function runPipelineSelfTest(): Promise<{
     }
 
     const statusIcon = result.dbLookup === "pass" && result.apiReachable === "pass" ? "✓" : "✗";
-    console.log(`[SelfTest] ${statusIcon} ${slug}: db=${result.dbLookup}, creds=${result.credentialDecrypt}, api=${result.apiReachable}${result.error ? ` (${result.error})` : ""}`);
+    logger.info( { operation: "selfTest" },`[SelfTest] ${statusIcon} ${slug}: db=${result.dbLookup}, creds=${result.credentialDecrypt}, api=${result.apiReachable}${result.error ? ` (${result.error})` : ""}`);
     results.push(result);
   }
 
@@ -163,7 +164,7 @@ export async function runPipelineSelfTest(): Promise<{
   const allFail = results.every(r => r.dbLookup === "fail" || r.apiReachable === "fail");
   const overall = allPass ? "pass" : allFail ? "fail" : "partial";
 
-  console.log(`[SelfTest] Complete: ${overall.toUpperCase()} (${results.filter(r => r.dbLookup === "pass").length}/${results.length} DB, ${results.filter(r => r.apiReachable === "pass").length}/${results.length} API)`);
+  logger.info( { operation: "selfTest" },`[SelfTest] Complete: ${overall.toUpperCase()} (${results.filter(r => r.dbLookup === "pass").length}/${results.length} DB, ${results.filter(r => r.apiReachable === "pass").length}/${results.length} API)`);
 
   return { overall, dbConnected, results, timestamp };
 }

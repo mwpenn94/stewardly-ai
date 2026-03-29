@@ -5,6 +5,7 @@
 import { getDb } from "../db";
 import { economicHistory, marketIndexHistory } from "../../drizzle/schema";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 // ─── Shiller CAPE Historical Data (Annual, 1990–2025) ────────────────────
 
@@ -85,7 +86,7 @@ export async function seedEconomicHistory(): Promise<number> {
       await db.insert(economicHistory).values(batch);
       inserted += batch.length;
     } catch (e: any) {
-      if (!e?.message?.includes("Duplicate")) console.error("[EconHistory] Insert error:", e?.message);
+      if (!e?.message?.includes("Duplicate")) logger.error( { operation: "econHistory", err: e },"[EconHistory] Insert error:", e?.message);
     }
   }
 

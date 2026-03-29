@@ -7,6 +7,7 @@
 
 import { getDb } from "../db";
 import { eq, and, sql, desc } from "drizzle-orm";
+import { logger } from "../_core/logger";
 import {
   probeResults, integrationAnalysisLog, extractionPlans, extractionPlanJobs,
   rateRecommendations, dataValueScores, rateProfiles, rateSignalLog,
@@ -94,7 +95,7 @@ export async function runRateProbe(config: ProbeConfig): Promise<ProbeResultData
       rawLog: { provider: config.provider, recommendedRpm, httpStatusPattern, headerSignals, probeLatencyMs },
     });
   } catch (e) {
-    console.error("[Probe] Failed to save result:", e);
+    logger.error( { operation: "probe", err: e },"[Probe] Failed to save result:", e);
   }
 
   return {
@@ -292,7 +293,7 @@ export async function createExtractionPlan(config: ExtractionPlanConfig): Promis
     });
     planId = result[0]?.insertId || 0;
   } catch (e) {
-    console.error("[ExtractionPlan] Failed to save:", e);
+    logger.error( { operation: "extractionPlan", err: e },"[ExtractionPlan] Failed to save:", e);
   }
 
   return { planId, provider: config.provider, steps, estimatedDurationHours, totalRecords, priority: config.priority };
@@ -397,7 +398,7 @@ export async function generateRateRecommendation(provider: string): Promise<{
     });
     recommendationId = result[0]?.insertId || 0;
   } catch (e) {
-    console.error("[RateRecommender] Failed to save:", e);
+    logger.error( { operation: "rateRecommender", err: e },"[RateRecommender] Failed to save:", e);
   }
 
   return { recommendationId, currentRpm: profile.currentRpm || 10, suggestedRpm, reason, confidence };
@@ -507,7 +508,7 @@ export async function scoreAndSaveDataValue(input: DataValueInput): Promise<{
       },
     });
   } catch (e) {
-    console.error("[DataValueScoring] Failed to save:", e);
+    logger.error( { operation: "dataValueScoring", err: e },"[DataValueScoring] Failed to save:", e);
   }
 
   return { score, refreshPriority };

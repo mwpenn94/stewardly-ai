@@ -18,6 +18,7 @@ import { getDb } from "../db";
 import { integrationSyncLogs, integrationConnections, integrationProviders } from "../../drizzle/schema";
 import { eq, and, sql, lte, isNull, or } from "drizzle-orm";
 import crypto from "crypto";
+import { logger } from "../_core/logger";
 
 const uuid = () => crypto.randomUUID();
 
@@ -150,7 +151,7 @@ async function cronTick(): Promise<void> {
 
     // Don't await — run jobs concurrently but don't block the tick
     executeJob(job).catch(e => {
-      console.error(`[CronManager] Job ${job.name} failed:`, e.message);
+      logger.error( { operation: "cronManager", err: e },`[CronManager] Job ${job.name} failed:`, e.message);
     });
   }
 }
@@ -161,18 +162,18 @@ export function startCronManager(): void {
   // Check every 30 seconds
   cronInterval = setInterval(() => {
     cronTick().catch(e => {
-      console.error("[CronManager] Tick error:", e.message);
+      logger.error( { operation: "cronManager", err: e },"[CronManager] Tick error:", e.message);
     });
   }, 30000);
 
-  console.log(`[CronManager] Started with ${jobs.size} registered jobs`);
+  logger.info( { operation: "cronManager" },`[CronManager] Started with ${jobs.size} registered jobs`);
 }
 
 export function stopCronManager(): void {
   if (cronInterval) {
     clearInterval(cronInterval);
     cronInterval = null;
-    console.log("[CronManager] Stopped");
+    logger.info( { operation: "cronManager" },"[CronManager] Stopped");
   }
 }
 

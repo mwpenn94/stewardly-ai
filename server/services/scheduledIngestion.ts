@@ -6,6 +6,7 @@
  */
 import { getDb } from "../db";
 import { eq, and, lte, desc, sql } from "drizzle-orm";
+import { logger } from "../_core/logger";
 import {
   scrapeSchedules, dataSources, ingestionJobs, ingestedRecords,
   bulkImportBatches, ingestionInsights, insightActions,
@@ -25,7 +26,7 @@ export class ScheduleRunnerService {
   start(intervalMs = 60_000) {
     if (this.intervalId) return;
     this.intervalId = setInterval(() => this.tick(), intervalMs);
-    console.log("[ScheduleRunner] Started with interval", intervalMs, "ms");
+    logger.info( { operation: "scheduleRunner" },"[ScheduleRunner] Started with interval", intervalMs, "ms");
   }
 
   stop() {
@@ -58,7 +59,7 @@ export class ScheduleRunnerService {
         try {
           await this.executeSchedule(schedule);
         } catch (err: any) {
-          console.error(`[ScheduleRunner] Failed schedule ${schedule.id}:`, err.message);
+          logger.error( { operation: "scheduleRunner", err: err },`[ScheduleRunner] Failed schedule ${schedule.id}:`, err.message);
           if (schedule.notifyOnFailure) {
             broadcastToRole("admin", {
               type: "alert",

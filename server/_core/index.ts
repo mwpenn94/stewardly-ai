@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import helmet from "helmet";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerGuestSessionRoutes } from "./guestSession";
@@ -12,8 +13,10 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { initWebSocket } from "../services/websocketNotifications";
 import { initScheduler } from "../services/scheduler";
-import { getCSPHeaders } from "../services/mfaService";
 import { validateRequiredEnvVars } from "./envValidation";
+import { logger } from "./logger";
+import { requestIdMiddleware } from "./requestId";
+import { generalLimiter, authLimiter, sensitiveTrpcGuard } from "./rateLimiter";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -43,14 +46,28 @@ async function startServer() {
   // Initialize WebSocket notifications
   initWebSocket(server);
 
-  // ─── Security Headers Middleware ──────────────────────────────────────
-  app.use((req, res, next) => {
-    const headers = getCSPHeaders();
-    for (const [key, value] of Object.entries(headers)) {
-      res.setHeader(key, value);
-    }
-    next();
-  });
+  // ─── Request ID Middleware (must be first) ──────────────────────────────
+  app.use(requestIdMiddleware);
+
+  // ─── Helmet Security Headers ───────────────────────────────────────────
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
+          styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+          imgSrc: ["'self'", "data:", "https:", "blob:"],
+          connectSrc: ["'self'", "https:", "wss:"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Allow CDN resources
+    })
+  );
 
   // ─── CORS Middleware ──────────────────────────────────────────────────
   const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -73,33 +90,13 @@ async function startServer() {
     });
   }
 
-  // ─── Rate Limiting ────────────────────────────────────────────────────
-  const rateLimitWindow = new Map<string, { count: number; resetAt: number }>();
-  const RATE_LIMIT_MAX = 200; // requests per window
-  const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-  const AUTH_RATE_LIMIT_MAX = 20; // stricter limit for auth endpoints
+  // ─── General Rate Limiting (100 req / 15 min) ────────────────────────
+  app.use(generalLimiter);
 
-  app.use((req, res, next) => {
-    const ip = req.ip || req.socket.remoteAddress || "unknown";
-    const isAuthEndpoint = req.path.startsWith("/api/auth") || req.path.startsWith("/api/oauth");
-    const maxRequests = isAuthEndpoint ? AUTH_RATE_LIMIT_MAX : RATE_LIMIT_MAX;
-    const key = isAuthEndpoint ? `auth:${ip}` : ip;
-    const now = Date.now();
-    const entry = rateLimitWindow.get(key);
-
-    if (!entry || now > entry.resetAt) {
-      rateLimitWindow.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-      next();
-      return;
-    }
-
-    entry.count++;
-    if (entry.count > maxRequests) {
-      res.status(429).json({ error: "Too many requests, please try again later" });
-      return;
-    }
-    next();
-  });
+  // ─── Auth Rate Limiting (5 req / 15 min) ─────────────────────────────
+  app.use("/api/auth", authLimiter);
+  app.use("/api/oauth", authLimiter);
+  app.use("/auth", authLimiter);
 
   // Configure body parser with size limits
   app.use(express.json({ limit: "5mb" }));
@@ -112,7 +109,9 @@ async function startServer() {
   registerSocialAuthRoutes(app);
   // Public webhook ingestion endpoints
   registerWebhookRoutes(app);
-  // tRPC API
+
+  // ─── tRPC API with sensitive route rate limiting ─────────────────────
+  app.use("/api/trpc", sensitiveTrpcGuard);
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -120,6 +119,7 @@ async function startServer() {
       createContext,
     })
   );
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
@@ -131,14 +131,17 @@ async function startServer() {
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    logger.info({ operation: "portFallback", preferredPort, actualPort: port }, `Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+    logger.info({ operation: "startServer", port }, `Server running on http://localhost:${port}/`);
     // Initialize background scheduler for health checks and data pipelines
     initScheduler();
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((err) => {
+  logger.error({ operation: "startServer", err }, "Failed to start server");
+  process.exit(1);
+});

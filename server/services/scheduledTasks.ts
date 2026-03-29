@@ -11,6 +11,7 @@ import { expireOldEvents, deliverPendingEvents } from "./propagationEngine";
 import { applyConfidenceDecay } from "./suitabilityEngine";
 import { authProviderTokens, users } from "../../drizzle/schema";
 import { eq, lt, and, isNotNull } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 // ─── Task Registry ─────────────────────────────────────────────────────────
 
@@ -150,7 +151,7 @@ const tasks: ScheduledTask[] = [
           if (token.refreshTokenEncrypted) {
             // In production: call provider's refresh endpoint
             // For now, log the need for refresh
-            console.log(`[TokenRefresh] Token for user ${token.userId} provider ${token.provider} expires at ${token.tokenExpiresAt}`);
+            logger.info( { operation: "tokenRefresh" },`[TokenRefresh] Token for user ${token.userId} provider ${token.provider} expires at ${token.tokenExpiresAt}`);
             refreshed++;
           }
         }
@@ -170,7 +171,7 @@ let schedulerInterval: NodeJS.Timeout | null = null;
 export function startScheduler() {
   if (schedulerInterval) return;
 
-  console.log(`[Scheduler] Starting with ${tasks.filter(t => t.enabled).length} active tasks`);
+  logger.info( { operation: "scheduler" },`[Scheduler] Starting with ${tasks.filter(t => t.enabled).length} active tasks`);
 
   schedulerInterval = setInterval(async () => {
     const now = Date.now();
@@ -180,12 +181,12 @@ export function startScheduler() {
       if (now - task.lastRun < task.intervalMs) continue;
 
       try {
-        console.log(`[Scheduler] Running: ${task.name}`);
+        logger.info( { operation: "scheduler" },`[Scheduler] Running: ${task.name}`);
         const result = await task.handler();
         task.lastRun = now;
-        console.log(`[Scheduler] ${task.name}: ${result.success ? "OK" : "FAIL"} - ${result.message || ""}`);
+        logger.info( { operation: "scheduler" },`[Scheduler] ${task.name}: ${result.success ? "OK" : "FAIL"} - ${result.message || ""}`);
       } catch (error: any) {
-        console.error(`[Scheduler] ${task.name} error:`, error.message);
+        logger.error( { operation: "scheduler", err: error },`[Scheduler] ${task.name} error:`, error.message);
       }
     }
   }, 60 * 1000); // Check every minute
@@ -195,7 +196,7 @@ export function stopScheduler() {
   if (schedulerInterval) {
     clearInterval(schedulerInterval);
     schedulerInterval = null;
-    console.log("[Scheduler] Stopped");
+    logger.info( { operation: "scheduler" },"[Scheduler] Stopped");
   }
 }
 

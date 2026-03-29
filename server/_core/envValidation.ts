@@ -38,7 +38,7 @@ export function validateRequiredEnvVars(): void {
   }
 
   if (warnings.length > 0) {
-    console.warn(
+    logger.warn( { operation: "envValidation" },
       `[EnvValidation] Missing recommended env vars: ${warnings.join(", ")}`
     );
   }

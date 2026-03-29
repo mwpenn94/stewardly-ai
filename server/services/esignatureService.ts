@@ -5,6 +5,7 @@
 import { getDb } from "../db";
 import { esignatureTracking } from "../../drizzle/schema";
 import { eq, and, desc, isNull, sql } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 export type EsignatureProvider = "docusign" | "dropbox_sign" | "manual";
 export type EsignatureStatus = "created" | "sent" | "delivered" | "viewed" | "signed" | "completed" | "declined" | "voided" | "expired";
@@ -93,7 +94,7 @@ export async function createEnvelope(input: CreateEnvelopeInput): Promise<{ enve
         externalEnvelopeId = data.envelopeId;
       }
     } catch (e) {
-      console.warn("[eSignature] DocuSign API call failed, using local tracking:", e);
+      logger.warn( { operation: "eSignature" },"[eSignature] DocuSign API call failed, using local tracking:", e);
     }
   }
 

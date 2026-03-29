@@ -15,6 +15,7 @@
 
 import { invokeLLM } from "../_core/llm";
 import { getQuickContext, type ContextType } from "./deepContextAssembler";
+import { logger } from "../_core/logger";
 
 interface ContextualLLMParams {
   userId?: number | null;
@@ -42,7 +43,7 @@ export async function contextualLLM(params: ContextualLLMParams) {
       platformContext = await getQuickContext(userId, effectiveQuery, contextType);
     } catch (e) {
       // Best-effort — don't block the LLM call
-      console.warn("[contextualLLM] Context assembly failed:", (e as Error).message);
+      logger.warn( { operation: "contextualLLM" },"[contextualLLM] Context assembly failed:", (e as Error).message);
     }
   }
   

@@ -6,6 +6,7 @@
  */
 
 import * as pdfParseModule from "pdf-parse";
+import { logger } from "../_core/logger";
 const pdfParse = (pdfParseModule as any).default || pdfParseModule;
 import mammoth from "mammoth";
 import * as XLSX from "xlsx";
@@ -109,7 +110,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
     const data = await pdfParse(buffer);
     return data.text || "";
   } catch (err) {
-    console.error("[DocumentExtractor] PDF parse error:", err);
+    logger.error( { operation: "documentExtractor", err: err },"[DocumentExtractor] PDF parse error:", err);
     return "";
   }
 }
@@ -123,7 +124,7 @@ async function extractDocxText(buffer: Buffer, filename: string): Promise<string
       return result.value;
     }
   } catch (err) {
-    console.error("[DocumentExtractor] mammoth DOCX parse error:", err);
+    logger.error( { operation: "documentExtractor", err: err },"[DocumentExtractor] mammoth DOCX parse error:", err);
   }
 
   // Fallback: try extracting XML directly from the ZIP structure
@@ -145,7 +146,7 @@ async function extractDocxText(buffer: Buffer, filename: string): Promise<string
       if (stripped.length > 10) return stripped;
     }
   } catch (zipErr) {
-    console.error("[DocumentExtractor] DOCX ZIP fallback error:", zipErr);
+    logger.error( { operation: "documentExtractor" },"[DocumentExtractor] DOCX ZIP fallback error:", zipErr);
   }
 
   return "";
@@ -167,7 +168,7 @@ function extractXlsxText(buffer: Buffer): string {
     }
     return parts.join("\n\n");
   } catch (err) {
-    console.error("[DocumentExtractor] XLSX parse error:", err);
+    logger.error( { operation: "documentExtractor", err: err },"[DocumentExtractor] XLSX parse error:", err);
     return "";
   }
 }
@@ -212,7 +213,7 @@ function extractPptxText(buffer: Buffer): string {
     }
     return parts.join("\n\n");
   } catch (err) {
-    console.error("[DocumentExtractor] PPTX parse error:", err);
+    logger.error( { operation: "documentExtractor", err: err },"[DocumentExtractor] PPTX parse error:", err);
     return "";
   }
 }
@@ -234,7 +235,7 @@ function extractRtfText(buffer: Buffer): string {
       .trim();
     return text;
   } catch (err) {
-    console.error("[DocumentExtractor] RTF parse error:", err);
+    logger.error( { operation: "documentExtractor", err: err },"[DocumentExtractor] RTF parse error:", err);
     return "";
   }
 }
@@ -268,7 +269,7 @@ function extractEpubText(buffer: Buffer): string {
     }
     return parts.join("\n\n");
   } catch (err) {
-    console.error("[DocumentExtractor] EPUB parse error:", err);
+    logger.error( { operation: "documentExtractor", err: err },"[DocumentExtractor] EPUB parse error:", err);
     return "";
   }
 }

@@ -1,6 +1,7 @@
 import { getDb } from "../db";
 import { insuranceCarriers, insuranceProducts, iulCreditingHistory } from "../../drizzle/schema";
 import { eq, and, like, gte, sql } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 // ─── Top 50 Insurance Carriers (AM Best Ratings as of 2025) ────────────────
 
@@ -85,7 +86,7 @@ export async function seedInsuranceCarriers(): Promise<number> {
       });
       inserted++;
     } catch (e: any) {
-      if (!e?.message?.includes("Duplicate")) console.error("[Carriers] Insert error:", e?.message);
+      if (!e?.message?.includes("Duplicate")) logger.error( { operation: "carriers", err: e },"[Carriers] Insert error:", e?.message);
     }
   }
   return inserted;
@@ -147,7 +148,7 @@ export async function seedSampleProducts(): Promise<number> {
       });
       inserted++;
     } catch (e: any) {
-      if (!e?.message?.includes("Duplicate")) console.error("[Products] Insert error:", e?.message);
+      if (!e?.message?.includes("Duplicate")) logger.error( { operation: "products", err: e },"[Products] Insert error:", e?.message);
     }
   }
   return inserted;

@@ -1,6 +1,7 @@
 import { getDb } from "../db";
 import { enrichmentCache } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 // ─── Enrichment Result ──────────────────────────────────────────────────
 export interface EnrichmentResult {
@@ -33,7 +34,7 @@ export interface EnrichmentResult {
 // ─── Clearbit Enrichment ────────────────────────────────────────────────
 export async function enrichViaClearbit(email: string, apiKey?: string): Promise<EnrichmentResult | null> {
   if (!apiKey) {
-    console.warn("[Enrichment] No Clearbit API key configured");
+    logger.warn( { operation: "enrichment" },"[Enrichment] No Clearbit API key configured");
     return null;
   }
   try {
@@ -83,7 +84,7 @@ export async function enrichViaClearbit(email: string, apiKey?: string): Promise
       },
     };
   } catch (err: any) {
-    console.error("[Enrichment] Clearbit error:", err.message);
+    logger.error( { operation: "enrichment", err: err },"[Enrichment] Clearbit error:", err.message);
     return null;
   }
 }
@@ -91,7 +92,7 @@ export async function enrichViaClearbit(email: string, apiKey?: string): Promise
 // ─── FullContact Enrichment ─────────────────────────────────────────────
 export async function enrichViaFullContact(email: string, apiKey?: string): Promise<EnrichmentResult | null> {
   if (!apiKey) {
-    console.warn("[Enrichment] No FullContact API key configured");
+    logger.warn( { operation: "enrichment" },"[Enrichment] No FullContact API key configured");
     return null;
   }
   try {
@@ -131,7 +132,7 @@ export async function enrichViaFullContact(email: string, apiKey?: string): Prom
       },
     };
   } catch (err: any) {
-    console.error("[Enrichment] FullContact error:", err.message);
+    logger.error( { operation: "enrichment", err: err },"[Enrichment] FullContact error:", err.message);
     return null;
   }
 }

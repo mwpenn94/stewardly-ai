@@ -5,6 +5,7 @@ import { profileMerger, ProviderData } from "./profileMerger";
 import { apolloService } from "./apolloService";
 import { decrypt } from "../encryption";
 import crypto from "crypto";
+import { logger } from "../../_core/logger";
 
 /**
  * Post-signup enrichment pipeline.
@@ -42,7 +43,7 @@ export class PostSignupEnrichment {
         });
       }
     } catch (e) {
-      console.warn("Census enrichment failed:", e);
+      logger.warn( { operation: "postSignupEnrichment" },"Census enrichment failed:", e);
     }
 
     // STEP 2: BLS Occupation Enrichment (FREE, instant)
@@ -57,7 +58,7 @@ export class PostSignupEnrichment {
         });
       }
     } catch (e) {
-      console.warn("BLS enrichment failed:", e);
+      logger.warn( { operation: "postSignupEnrichment" },"BLS enrichment failed:", e);
     }
 
     // STEP 3: FRED Rate Context (FREE, instant)
@@ -75,7 +76,7 @@ export class PostSignupEnrichment {
         }).where(eq(users.id, userId));
       }
     } catch (e) {
-      console.warn("FRED enrichment failed:", e);
+      logger.warn( { operation: "postSignupEnrichment" },"FRED enrichment failed:", e);
     }
 
     // STEP 4: Apollo Enrichment (LIMITED — only if advisor has Apollo key)
@@ -86,7 +87,7 @@ export class PostSignupEnrichment {
         sources.push("apollo");
       }
     } catch (e) {
-      console.warn("Apollo enrichment failed:", e);
+      logger.warn( { operation: "postSignupEnrichment" },"Apollo enrichment failed:", e);
     }
 
     // STEP 5: FINRA BrokerCheck (FREE — if user appears to be a financial professional)
@@ -97,7 +98,7 @@ export class PostSignupEnrichment {
         sources.push("finra");
       }
     } catch (e) {
-      console.warn("FINRA enrichment failed:", e);
+      logger.warn( { operation: "postSignupEnrichment" },"FINRA enrichment failed:", e);
     }
 
     // Calculate final completeness

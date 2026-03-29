@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import {
   registerWebhook,
   listWebhooks,
@@ -134,7 +135,7 @@ export function registerWebhookRoutes(app: Express) {
           message: err.message,
         });
       } else {
-        console.error("[Webhook] Unexpected error:", err);
+        logger.error( { operation: "webhook", err: err },"[Webhook] Unexpected error:", err);
         res.status(500).json({
           status: "error",
           code: "INTERNAL_ERROR",
