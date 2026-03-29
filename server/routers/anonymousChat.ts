@@ -91,7 +91,7 @@ ${parts.join("\n")}
         })),
       ];
 
-      const response = await contextualLLM({ userId: ctx.user?.id, contextType: "anonymous", messages: llmMessages });
+      const response = await contextualLLM({ userId: 0, contextType: "anonymous", messages: llmMessages });
       const content = response.choices?.[0]?.message?.content || "I'm sorry, I couldn't generate a response. Please try again.";
 
       return { content };

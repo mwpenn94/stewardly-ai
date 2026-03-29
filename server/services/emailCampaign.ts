@@ -166,7 +166,7 @@ export async function generateEmailContent(params: {
   recipientType?: string;
   keyPoints?: string[];
 }) {
-  const response = await contextualLLM({ userId: userId, contextType: "analysis",
+  const response = await contextualLLM({ userId: 0, contextType: "analysis",
     messages: [
       {
         role: "system",

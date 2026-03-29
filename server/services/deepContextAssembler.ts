@@ -174,7 +174,7 @@ export async function enhancedSearchChunks(
     .limit(200);
 
   // Get document filenames for citation
-  const docIds = [...new Set(candidates.map(c => c.docId))];
+  const docIds = Array.from(new Set(candidates.map(c => c.docId)));
   let docMap: Record<number, string> = {};
   if (docIds.length > 0) {
     const docs = await db.select({ id: documents.id, filename: documents.filename })
@@ -789,7 +789,7 @@ async function getIntegrationDataContext(userId: number): Promise<string> {
       const holdingSummary = holdings.slice(0, 15).map(h => {
         const val = parseFloat(h.currentValue ?? "0");
         totalValue += val;
-        return `  - ${h.ticker || h.securityName || "Unknown"}: $${val.toLocaleString()} (${h.quantity} shares)`;
+        return `  - ${h.ticker || h.name || "Unknown"}: $${val.toLocaleString()} (${h.quantity} shares)`;
       });
       parts.push(`Plaid Investment Holdings (${holdings.length} positions, total ~$${totalValue.toLocaleString()}):\n${holdingSummary.join("\n")}`);
     }
@@ -801,7 +801,7 @@ async function getIntegrationDataContext(userId: number): Promise<string> {
       .where(eq(snapTradeAccounts.userId, userId)).limit(10);
     if (accounts.length > 0) {
       const acctSummary = accounts.map(a =>
-        `  - ${a.accountName || a.brokerageName || "Account"}: ${a.accountType || "unknown"} (${a.currency || "USD"})`
+        `  - ${a.accountName || a.institutionName || "Account"}: ${a.accountType || "unknown"} (${a.currency || "USD"})`
       );
       parts.push(`SnapTrade Brokerage Accounts (${accounts.length}):\n${acctSummary.join("\n")}`);
     }
@@ -810,7 +810,7 @@ async function getIntegrationDataContext(userId: number): Promise<string> {
       .where(eq(snapTradePositions.userId, userId)).limit(30);
     if (positions.length > 0) {
       const posSummary = positions.slice(0, 15).map(p =>
-        `  - ${p.symbol || "Unknown"}: ${p.units} units @ $${p.price || "?"} (avg cost: $${p.averagePurchasePrice || "?"})`
+        `  - ${p.symbolTicker || "Unknown"}: ${p.units} units @ $${p.averagePrice || "?"} (avg cost: $${p.averagePrice || "?"})`
       );
       parts.push(`SnapTrade Positions (${positions.length}):\n${posSummary.join("\n")}`);
     }
@@ -856,8 +856,8 @@ async function getCalculatorContext(userId: number): Promise<string> {
   if (scenarios.length === 0) return "";
 
   const summaries = scenarios.map(s => {
-    const inputs = typeof s.inputs === "string" ? JSON.parse(s.inputs) : s.inputs;
-    const results = typeof s.results === "string" ? JSON.parse(s.results) : s.results;
+    const inputs = typeof s.inputsJson === "string" ? JSON.parse(s.inputsJson as string) : s.inputsJson;
+    const results = typeof s.resultsJson === "string" ? JSON.parse(s.resultsJson as string) : s.resultsJson;
     return `  - "${s.name}" (${s.calculatorType}): ${JSON.stringify(inputs).slice(0, 200)} → ${JSON.stringify(results).slice(0, 200)}`;
   });
 
@@ -876,7 +876,7 @@ async function getProactiveInsightContext(userId: number): Promise<string> {
   if (insights.length === 0) return "";
 
   const summaries = insights.map(i =>
-    `  - [${i.category}/${i.urgency}] ${i.title}: ${(i.content || "").slice(0, 200)}`
+    `  - [${i.category}/${i.priority}] ${i.title}: ${(i.description || "").slice(0, 200)}`
   );
 
   return `Recent AI Insights (${insights.length}):\n${summaries.join("\n")}`;
@@ -955,7 +955,7 @@ async function getGapFeedbackContext(userId: number): Promise<string> {
   if (feedback.length === 0) return "";
 
   const summaries = feedback.map(f =>
-    `  - Gap "${f.gapTitle}": ${f.action}${f.notes ? ` — "${f.notes}"` : ""}`
+    `  - Gap "${f.gapTitle}": ${f.action}${f.userNote ? ` — "${f.userNote}"` : ""}`
   );
 
   return `Knowledge Gap Feedback (${feedback.length} items):\n${summaries.join("\n")}\n\nUse this feedback to improve gap analysis accuracy. Dismissed gaps should not be re-raised. Acknowledged gaps are being addressed.`;

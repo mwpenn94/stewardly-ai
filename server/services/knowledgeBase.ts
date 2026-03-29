@@ -172,7 +172,7 @@ export async function submitFeedback(articleId: number, userId: number | null, h
 export async function detectGaps(recentQueries: string[]) {
   if (recentQueries.length === 0) return { gaps: [] };
 
-  const resp = await contextualLLM({ userId: userId, contextType: "gap_analysis",
+  const resp = await contextualLLM({ userId: 0, contextType: "gap_analysis",
     messages: [
       { role: "system", content: "You are a knowledge base gap analyzer. Given a list of user queries that returned no or poor results, identify topic clusters that need new articles. Return JSON array of {topicCluster, suggestedTitle, suggestedOutline}." },
       { role: "user", content: JSON.stringify(recentQueries) },

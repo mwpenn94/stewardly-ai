@@ -117,7 +117,7 @@ export async function generateEpisodeSummary(
       .slice(-20) // Last 20 messages
       .map(m => `${m.role === "user" ? "User" : "Steward"}: ${m.content.substring(0, 500)}`)
       .join("\n");
-    const resp = await contextualLLM({ userId: userId, contextType: "chat",
+    const resp = await contextualLLM({ userId: 0, contextType: "chat",
       messages: [
         { role: "system", content: EPISODE_PROMPT },
         { role: "user", content: transcript },

@@ -60,7 +60,7 @@ export async function classifyContent(
   userContext: { hasSuitability: boolean; focus: string },
 ): Promise<ClassificationResult> {
   try {
-    const resp = await contextualLLM({ userId: userId, contextType: "compliance",
+    const resp = await contextualLLM({ userId: 0, contextType: "compliance",
       messages: [
         { role: "system", content: CLASSIFICATION_PROMPT },
         {

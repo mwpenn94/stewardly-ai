@@ -961,7 +961,7 @@ const documentsRouter = router({
         ],
         response_format: { type: "json_schema", json_schema: { name: "tags", strict: true, schema: { type: "object", properties: { tags: { type: "array", items: { type: "object", properties: { name: { type: "string" }, isNew: { type: "boolean" } }, required: ["name", "isNew"], additionalProperties: false } } }, required: ["tags"], additionalProperties: false } } },
       });
-      const parsed = JSON.parse(response.choices[0].message.content || "{}");
+      const parsed = JSON.parse((response.choices[0].message.content as string) || "{}");
       const suggestedTags = parsed.tags || [];
       const appliedTagIds: number[] = [];
       for (const tag of suggestedTags) {
@@ -999,7 +999,7 @@ const documentsRouter = router({
         ],
         response_format: { type: "json_schema", json_schema: { name: "gaps", strict: true, schema: { type: "object", properties: { gaps: { type: "array", items: { type: "object", properties: { id: { type: "string" }, title: { type: "string" }, category: { type: "string" }, priority: { type: "string" }, description: { type: "string" }, suggestedAction: { type: "string" } }, required: ["id", "title", "category", "priority", "description", "suggestedAction"], additionalProperties: false } }, summary: { type: "string" } }, required: ["gaps", "summary"], additionalProperties: false } } },
       });
-      const parsed = JSON.parse(response.choices[0].message.content || "{}");
+      const parsed = JSON.parse((response.choices[0].message.content as string) || "{}");
       return { gaps: parsed.gaps || [], summary: parsed.summary || "", feedbackCount: feedback.length };
     }),
   submitGapFeedback: protectedProcedure
@@ -1545,7 +1545,7 @@ const settingsRouter = router({
 
   // ─── KEYBOARD SHORTCUTS (server-side persistence) ─────────────────
   getShortcuts: protectedProcedure.query(async ({ ctx }) => {
-    const db = await getDb();
+    const db = (await getDb())!;
     const { userPreferences } = await import("../drizzle/schema");
     const [row] = await db
       .select({ customShortcuts: userPreferences.customShortcuts })
@@ -1564,7 +1564,7 @@ const settingsRouter = router({
       })).max(26),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const { userPreferences } = await import("../drizzle/schema");
       const [existing] = await db
         .select({ id: userPreferences.id })

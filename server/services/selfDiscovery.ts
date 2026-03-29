@@ -194,7 +194,7 @@ Return a JSON object with:
 - "reasoning": brief explanation of why this follow-up was chosen (1 sentence)
 - "relatedFeatures": array of feature keys from the platform this connects to (max 3)`;
 
-  const response = await contextualLLM({ userId: userId, contextType: "discovery",
+  const response = await contextualLLM({ userId: context.userId, contextType: "discovery",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: `Last user message: ${context.lastUserQuery.substring(0, 500)}` },

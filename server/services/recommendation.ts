@@ -241,7 +241,7 @@ export class MatchingService {
       .from(organizationRelationships)
       .where(eq(organizationRelationships.parentOrgId, orgId));
 
-    const result = await contextualLLM({ userId: userId, contextType: "recommendation",
+    const result = await contextualLLM({ userId: 0, contextType: "recommendation",
       messages: [
         {
           role: "system",

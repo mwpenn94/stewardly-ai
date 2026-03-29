@@ -107,6 +107,27 @@
 
 ---
 
+## Technical Debt Resolved
+
+### TypeScript Crash Fix (Task 2026-03-29)
+
+The `tsc --noEmit` command was crashing with SIGABRT (exit code 134) due to OOM in the type checker. Root causes and fixes:
+
+| Category | Files Affected | Fix Applied |
+|---|---|---|
+| OOM crash | All (131-table schema) | `NODE_OPTIONS="--max-old-space-size=4096"` required for tsc |
+| Corrupted variable names | AnalyticsDashboard.tsx | First characters stripped from `volume`, `quality`, `severity`, `categories`, `actions`, `observations` — restored all |
+| `userId` not in scope | 13 service files (multiModal, complianceCopilot, memoryEngine, emailCampaign, meetingIntelligence, recommendation, regBIDocumentation, selfDiscovery, knowledgeBase, dataIngestionEnhanced, anonymousChat) | Used `0` for utility functions without user context, `params.userId` or `context.userId` where available |
+| Property name mismatches | deepContextAssembler.ts | `securityName` → `name`, `brokerageName` → `institutionName`, `symbol` → `symbolTicker`, `price`/`averagePurchasePrice` → `averagePrice`, `inputs` → `inputsJson`, `results` → `resultsJson`, `urgency` → `priority`, `content` → `description`, `notes` → `userNote` |
+| `db` possibly null | routers.ts (shortcuts procedures) | Added non-null assertion `(await getDb())!` |
+| Content type mismatch | routers.ts (LLM responses) | Cast `response.choices[0].message.content as string` |
+| Set iteration | deepContextAssembler.ts | `[...new Set()]` → `Array.from(new Set())` |
+| Missing `ctx` | anonymousChat.ts | publicProcedure doesn't have ctx — used `0` for anonymous userId |
+
+**Result:** 101 errors → 0 errors. `tsc --noEmit` completes cleanly with exit code 0. All 1,987 tests pass.
+
+---
+
 ## In-Project Context Files
 
 | File | Content |

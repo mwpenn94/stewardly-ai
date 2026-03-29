@@ -387,7 +387,7 @@ export class InsightGeneratorService {
       .slice(0, 12000);
 
     try {
-      const response = await contextualLLM({ userId: userId, contextType: "ingestion",
+      const response = await contextualLLM({ userId: 0, contextType: "ingestion",
         messages: [
           {
             role: "system",
@@ -527,7 +527,7 @@ export class CompetitorIntelService {
     // Use LLM for deeper competitive analysis
     let analysis: any = {};
     try {
-      const response = await contextualLLM({ userId: userId, contextType: "ingestion",
+      const response = await contextualLLM({ userId: 0, contextType: "ingestion",
         messages: [
           {
             role: "system",
