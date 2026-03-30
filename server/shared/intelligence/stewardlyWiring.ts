@@ -12,7 +12,7 @@
  *   AFTER:  import { contextualLLM } from "../shared/intelligence/stewardlyWiring";
  *
  *   BEFORE: import { assembleDeepContext, getQuickContext } from "../services/deepContextAssembler";
- *   AFTER:  import { assembleContext, getQuickContext } from "../shared/intelligence/stewardlyWiring";
+ *   AFTER:  import { assembleDeepContext, getQuickContext } from "../shared/intelligence/stewardlyWiring";
  *
  *   BEFORE: import { extractMemoriesFromMessage } from "../memoryEngine";
  *   AFTER:  import { memoryEngine } from "../shared/intelligence/stewardlyWiring";
@@ -21,13 +21,19 @@
  * Backward compatibility:
  *   - contextualLLM accepts the same params shape as the original
  *     (userId, contextType, query, messages, ...rest)
+ *   - assembleDeepContext accepts the original ContextRequest shape
+ *     (with boolean include flags) and returns the original flat-field
+ *     AssembledContext shape (documentContext, knowledgeBaseContext, etc.)
  *   - getQuickContext returns a plain string (matching the original API)
  *   - getQuickContext accepts optional 4th param: overrides
  *   - messages support both string and array content blocks
  */
 
 import { createContextualLLM } from "./contextualLLM";
-import { assembleDeepContext, assembleQuickContext } from "./deepContextAssembler";
+import {
+  assembleDeepContext as platformAssembleDeepContext,
+  assembleQuickContext,
+} from "./deepContextAssembler";
 import { createMemoryEngine } from "./memoryEngine";
 import { EXTENDED_MEMORY_CATEGORIES } from "./types";
 import type { ContextType, ContextualLLMResponse, ContextRequest } from "./types";
@@ -35,6 +41,176 @@ import type { ContextType, ContextualLLMResponse, ContextRequest } from "./types
 // ── Stewardly-specific implementations ───────────────────────────────────────
 import { stewardlyContextSources } from "./stewardlyContextSources";
 import { stewardlyMemoryStore } from "./stewardlyMemoryStore";
+
+// ─── LEGACY TYPES ───────────────────────────────────────────────────────────
+//
+// These types match the original deepContextAssembler.ts interfaces exactly,
+// ensuring that production code accessing flat fields continues to work.
+
+/**
+ * Legacy ContextRequest with boolean include flags.
+ * Maps to the original server/services/deepContextAssembler.ts interface.
+ */
+export interface LegacyContextRequest {
+  userId: number;
+  query: string;
+  contextType: ContextType;
+  maxTokenBudget?: number;
+  includeFinancialData?: boolean;
+  includeConversationHistory?: boolean;
+  includePipelineData?: boolean;
+  includeDocuments?: boolean;
+  includeKnowledgeBase?: boolean;
+  includeMemories?: boolean;
+  includeIntegrations?: boolean;
+  includeCalculators?: boolean;
+  includeInsights?: boolean;
+  includeClientData?: boolean;
+  includeActivityLog?: boolean;
+  conversationId?: number;
+  specificDocIds?: number[];
+  category?: string;
+}
+
+/**
+ * Legacy AssembledContext with flat per-source fields.
+ * Maps to the original server/services/deepContextAssembler.ts interface.
+ */
+export interface LegacyAssembledContext {
+  documentContext: string;
+  knowledgeBaseContext: string;
+  userProfileContext: string;
+  suitabilityContext: string;
+  memoryContext: string;
+  graphContext: string;
+  pipelineDataContext: string;
+  conversationContext: string;
+  integrationContext: string;
+  calculatorContext: string;
+  insightContext: string;
+  clientContext: string;
+  activityContext: string;
+  tagContext: string;
+  gapFeedbackContext: string;
+  fullContextPrompt: string;
+  sourcesUsed: string[];
+  totalChunksRetrieved: number;
+  retrievalQuality: "high" | "medium" | "low";
+}
+
+// ─── BOOLEAN FLAG → SOURCE NAME MAPPING ─────────────────────────────────────
+//
+// The original ContextRequest uses boolean flags like `includeDocuments: false`
+// to exclude specific sources. This map translates those flags to source names
+// in the registry so the platform assembler can use `excludeSources`.
+
+const BOOLEAN_FLAG_TO_SOURCE: Record<string, string> = {
+  includeDocuments: "documents",
+  includeKnowledgeBase: "knowledgeBase",
+  includeMemories: "memory",
+  includeConversationHistory: "conversationHistory",
+  includePipelineData: "pipelineData",
+  includeIntegrations: "integrations",
+  includeCalculators: "calculators",
+  includeInsights: "insights",
+  includeClientData: "clientRelationships",
+  includeActivityLog: "activityLog",
+  includeFinancialData: "integrations", // financial data comes from integrations source
+};
+
+// ─── SOURCE NAME → FLAT FIELD MAPPING ───────────────────────────────────────
+//
+// Maps registry source names to the legacy flat field names on AssembledContext.
+
+const SOURCE_TO_FLAT_FIELD: Record<string, keyof LegacyAssembledContext> = {
+  documents: "documentContext",
+  knowledgeBase: "knowledgeBaseContext",
+  userProfile: "userProfileContext",
+  suitability: "suitabilityContext",
+  memory: "memoryContext",
+  graph: "graphContext",
+  pipelineData: "pipelineDataContext",
+  conversationHistory: "conversationContext",
+  integrations: "integrationContext",
+  calculators: "calculatorContext",
+  insights: "insightContext",
+  clientRelationships: "clientContext",
+  activityLog: "activityContext",
+  tags: "tagContext",
+  gapFeedback: "gapFeedbackContext",
+};
+
+/**
+ * Translate a legacy ContextRequest (with boolean include flags)
+ * into the platform-agnostic ContextRequest (with excludeSources).
+ */
+function translateLegacyRequest(legacy: LegacyContextRequest): ContextRequest {
+  const excludeSources: string[] = [];
+
+  for (const [flag, sourceName] of Object.entries(BOOLEAN_FLAG_TO_SOURCE)) {
+    const value = (legacy as Record<string, unknown>)[flag];
+    // Only exclude if explicitly set to false (undefined = include)
+    if (value === false) {
+      excludeSources.push(sourceName);
+    }
+  }
+
+  return {
+    userId: legacy.userId,
+    query: legacy.query,
+    contextType: legacy.contextType,
+    maxTokenBudget: legacy.maxTokenBudget,
+    excludeSources: excludeSources.length > 0 ? excludeSources : undefined,
+    conversationId: legacy.conversationId,
+    specificDocIds: legacy.specificDocIds,
+    category: legacy.category,
+  };
+}
+
+/**
+ * Map the platform AssembledContext (sourceContexts record) to the legacy
+ * flat-field AssembledContext that production code expects.
+ */
+function toLegacyAssembledContext(
+  platformResult: Awaited<ReturnType<typeof platformAssembleDeepContext>>,
+): LegacyAssembledContext {
+  const flat: Record<string, string> = {};
+
+  // Initialize all flat fields to empty string
+  for (const fieldName of Object.values(SOURCE_TO_FLAT_FIELD)) {
+    flat[fieldName] = "";
+  }
+
+  // Map source results to flat fields
+  for (const [sourceName, content] of Object.entries(platformResult.sourceContexts)) {
+    const flatField = SOURCE_TO_FLAT_FIELD[sourceName];
+    if (flatField) {
+      flat[flatField] = content;
+    }
+  }
+
+  return {
+    documentContext: flat.documentContext || "",
+    knowledgeBaseContext: flat.knowledgeBaseContext || "",
+    userProfileContext: flat.userProfileContext || "",
+    suitabilityContext: flat.suitabilityContext || "",
+    memoryContext: flat.memoryContext || "",
+    graphContext: flat.graphContext || "",
+    pipelineDataContext: flat.pipelineDataContext || "",
+    conversationContext: flat.conversationContext || "",
+    integrationContext: flat.integrationContext || "",
+    calculatorContext: flat.calculatorContext || "",
+    insightContext: flat.insightContext || "",
+    clientContext: flat.clientContext || "",
+    activityContext: flat.activityContext || "",
+    tagContext: flat.tagContext || "",
+    gapFeedbackContext: flat.gapFeedbackContext || "",
+    fullContextPrompt: platformResult.fullContextPrompt,
+    sourcesUsed: platformResult.metadata.sourcesHit,
+    totalChunksRetrieved: 0, // Not tracked in platform layer; set to 0 for compat
+    retrievalQuality: platformResult.metadata.retrievalQuality,
+  };
+}
 
 // ── LLM invocation (delegates to Stewardly's existing _core/llm) ────────────
 //
@@ -148,34 +324,109 @@ export async function getMemoryEngine() {
   return _memoryEngine;
 }
 
+// ─── BACKWARD-COMPATIBLE assembleDeepContext ────────────────────────────────
+//
+// This is the key backward-compat adapter. It accepts the original
+// LegacyContextRequest (with boolean include flags) and returns the original
+// flat-field LegacyAssembledContext shape that production code expects.
+//
+// Production code like routers.ts accesses:
+//   deepContext?.documentContext
+//   deepContext?.memoryContext
+//   deepContext?.graphContext
+//   deepContext?.insightContext
+//   deepContext?.integrationContext
+//   deepContext?.fullContextPrompt
+
 /**
- * Convenience: assemble deep context using Stewardly's sources.
- * Returns the full AssembledContext object with metadata.
+ * Backward-compatible assembleDeepContext.
+ *
+ * Accepts either:
+ *   - LegacyContextRequest (with boolean include flags) — original API
+ *   - ContextRequest (with includeSources/excludeSources) — new API
+ *
+ * Returns the legacy flat-field AssembledContext shape with individual
+ * per-source context strings (documentContext, memoryContext, etc.).
+ */
+export async function assembleDeepContext(
+  request: LegacyContextRequest | ContextRequest,
+): Promise<LegacyAssembledContext> {
+  // Detect whether this is a legacy request (has boolean include flags)
+  // or a platform request (has includeSources/excludeSources)
+  const isLegacy = "includeDocuments" in request ||
+    "includeKnowledgeBase" in request ||
+    "includeMemories" in request ||
+    "includeConversationHistory" in request ||
+    "includePipelineData" in request ||
+    "includeIntegrations" in request ||
+    "includeCalculators" in request ||
+    "includeInsights" in request ||
+    "includeClientData" in request ||
+    "includeActivityLog" in request ||
+    "includeFinancialData" in request;
+
+  const platformRequest = isLegacy
+    ? translateLegacyRequest(request as LegacyContextRequest)
+    : request as ContextRequest;
+
+  const platformResult = await platformAssembleDeepContext(
+    stewardlyContextSources,
+    platformRequest,
+  );
+
+  return toLegacyAssembledContext(platformResult);
+}
+
+/**
+ * Convenience: assemble deep context using the platform API directly.
+ * Returns the platform AssembledContext with sourceContexts record and metadata.
+ * Use this when you want the new API shape.
  */
 export async function assembleContext(request: ContextRequest) {
-  return assembleDeepContext(stewardlyContextSources, request);
+  return platformAssembleDeepContext(stewardlyContextSources, request);
 }
+
+// ─── BACKWARD-COMPATIBLE getQuickContext ────────────────────────────────────
 
 /**
  * Backward-compatible getQuickContext that returns a plain string.
  * Matches the original API:
  *   getQuickContext(userId, query, contextType, overrides?) => string
  *
- * The optional 4th parameter `overrides` allows callers to customize
- * the context request (e.g., maxTokenBudget, includeSources, etc.).
+ * The optional 4th parameter `overrides` supports both:
+ *   - Legacy boolean flags (includeDocuments: false, etc.)
+ *   - Platform fields (maxTokenBudget, includeSources, etc.)
  */
 export async function getQuickContext(
   userId: number,
   query: string,
   contextType: ContextType,
-  overrides?: Partial<ContextRequest>,
+  overrides?: Partial<LegacyContextRequest> | Partial<ContextRequest>,
 ): Promise<string> {
+  // If overrides contain boolean flags, translate them
+  let excludeSources: string[] | undefined;
+  let maxTokenBudget: number | undefined;
+
+  if (overrides) {
+    const excludeList: string[] = [];
+    for (const [flag, sourceName] of Object.entries(BOOLEAN_FLAG_TO_SOURCE)) {
+      const value = (overrides as Record<string, unknown>)[flag];
+      if (value === false) {
+        excludeList.push(sourceName);
+      }
+    }
+    if (excludeList.length > 0) {
+      excludeSources = excludeList;
+    }
+    maxTokenBudget = (overrides as any).maxTokenBudget;
+  }
+
   const result = await assembleQuickContext(
     stewardlyContextSources,
     userId,
     query,
     contextType,
-    overrides?.maxTokenBudget,
+    maxTokenBudget,
   );
   return result.contextPrompt;
 }
