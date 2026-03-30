@@ -417,11 +417,16 @@ export async function getQuickContext(
   contextType: ContextType,
   overrides?: Partial<LegacyContextRequest> | Partial<ContextRequest>,
 ): Promise<string> {
-  // If overrides contain boolean flags, translate them
+  // Translate overrides (boolean flags + platform fields) into a
+  // platform ContextRequest and delegate to assembleDeepContext.
+  // This matches the original pattern: getQuickContext spread overrides
+  // directly into assembleDeepContext({ userId, query, contextType, ...overrides }).
   let excludeSources: string[] | undefined;
   let maxTokenBudget: number | undefined;
+  let includeSources: string[] | undefined;
 
   if (overrides) {
+    // Translate boolean include flags to excludeSources
     const excludeList: string[] = [];
     for (const [flag, sourceName] of Object.entries(BOOLEAN_FLAG_TO_SOURCE)) {
       const value = (overrides as Record<string, unknown>)[flag];
@@ -432,17 +437,23 @@ export async function getQuickContext(
     if (excludeList.length > 0) {
       excludeSources = excludeList;
     }
+    // Pass through platform fields
     maxTokenBudget = (overrides as any).maxTokenBudget;
+    includeSources = (overrides as any).includeSources;
   }
 
-  const result = await assembleQuickContext(
+  const platformResult = await platformAssembleDeepContext(
     stewardlyContextSources,
-    userId,
-    query,
-    contextType,
-    maxTokenBudget,
+    {
+      userId,
+      query,
+      contextType,
+      maxTokenBudget,
+      excludeSources,
+      includeSources,
+    },
   );
-  return result.contextPrompt;
+  return platformResult.fullContextPrompt;
 }
 
 /**

@@ -23,7 +23,7 @@ import type {
   AssembledContext,
   AssemblyMetadata,
 } from "./types";
-import { normalizeQualityScore } from "./types";
+// normalizeQualityScore is available via ./types if needed for future quality scoring
 
 // ─── TOKEN BUDGET DEFAULTS ───────────────────────────────────────────────────
 
