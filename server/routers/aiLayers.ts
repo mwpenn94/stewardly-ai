@@ -23,6 +23,7 @@ import {
   userPreferences,
   userOrganizationRoles,
 } from "../../drizzle/schema";
+// Now delegates through the thin adapter to @platform/config
 import { resolveAIConfig, buildLayerOverlayPrompt, validateInheritance } from "../aiConfigResolver";
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────

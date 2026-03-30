@@ -224,8 +224,13 @@ describe("buildLayerOverlayPrompt", () => {
     expect(prompt).toContain("[Organization]: Focus on compliance");
   });
 
-  it("should return empty string when no overlays", () => {
-    expect(buildLayerOverlayPrompt(DEFAULT_CONFIG)).toBe("");
+  it("should include response_style even when no overlays", () => {
+    const prompt = buildLayerOverlayPrompt(DEFAULT_CONFIG);
+    // The full implementation always generates response_style and ai_tuning blocks
+    expect(prompt).toContain("<response_style>");
+    expect(prompt).toContain("Tone: professional");
+    // Should NOT contain layer_overlays when promptOverlays is empty
+    expect(prompt).not.toContain("<layer_overlays>");
   });
 });
 

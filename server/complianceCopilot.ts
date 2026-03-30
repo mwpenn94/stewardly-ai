@@ -13,6 +13,7 @@ import { getDb } from "./db";
 import { complianceAudit, privacyAudit } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm"
+import { normalizeQualityScore } from "./shared/intelligence/types";
 import { contextualLLM } from "./services/contextualLLM";
 
 // ─── TYPES ──────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ export async function classifyContent(
     }
     return {
       classification: parsed.classification || "general_education",
-      confidence: parsed.confidence || 0.5,
+      confidence: normalizeQualityScore(parsed.confidence ?? 0.5),
       flags: parsed.flags || [],
       reasoningChain: parsed.reasoningChain || [],
       suggestedModifications: parsed.suggestedModifications || [],
@@ -151,7 +152,7 @@ export async function logComplianceAudit(data: {
     userId: data.userId,
     conversationId: data.conversationId,
     classification: data.result.classification,
-    confidenceScore: data.result.confidence,
+    confidenceScore: normalizeQualityScore(data.result.confidence),
     flagsJson: data.result.flags,
     reasoningChainJson: data.result.reasoningChain,
     modificationsJson: data.result.suggestedModifications,

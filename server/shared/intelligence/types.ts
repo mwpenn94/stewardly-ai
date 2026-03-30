@@ -117,6 +117,7 @@ export interface AssemblyMetadata {
  * never receive out-of-range values.
  */
 export function normalizeQualityScore(rawScore: number): number {
+  if (!Number.isFinite(rawScore)) return 0;
   const normalized = rawScore > 1 ? rawScore / 100 : rawScore;
   return Math.max(0, Math.min(1, normalized));
 }

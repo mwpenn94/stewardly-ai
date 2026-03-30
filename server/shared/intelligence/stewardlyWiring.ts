@@ -207,9 +207,23 @@ function toLegacyAssembledContext(
     gapFeedbackContext: flat.gapFeedbackContext || "",
     fullContextPrompt: platformResult.fullContextPrompt,
     sourcesUsed: platformResult.metadata.sourcesHit,
-    totalChunksRetrieved: 0, // Not tracked in platform layer; set to 0 for compat
+    totalChunksRetrieved: estimateChunkCount(platformResult.sourceContexts),
     retrievalQuality: platformResult.metadata.retrievalQuality,
   };
+}
+
+/**
+ * Estimate the number of document chunks retrieved by counting
+ * [Source: ...] markers in the documents source result.
+ * The stewardlyContextSources.documents function formats each chunk as:
+ *   [Source: "filename" (category)]\ncontent\n\n---\n\n
+ */
+function estimateChunkCount(sourceContexts: Record<string, string>): number {
+  const docContent = sourceContexts.documents || "";
+  if (!docContent) return 0;
+  // Count [Source: markers — each represents one retrieved chunk
+  const matches = docContent.match(/\[Source:/g);
+  return matches ? matches.length : 0;
 }
 
 // ── LLM invocation (delegates to Stewardly's existing _core/llm) ────────────

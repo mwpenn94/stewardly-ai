@@ -383,13 +383,98 @@ function mergeAutonomyPolicy(
 
 /**
  * Build the assembled overlay prompt from all layers.
+ * Generates XML-tagged directives for tone, style, guardrails,
+ * thinking depth, citations, disclaimers, auto-follow-up, etc.
  */
 export function buildLayerOverlayPrompt(config: ResolvedAIConfig): string {
-  if (config.promptOverlays.length === 0) return "";
+  const parts: string[] = [];
 
-  return config.promptOverlays
-    .map((o) => `[${o.layer}]: ${o.content}`)
-    .join("\n\n");
+  // Prompt overlays from all layers
+  if (config.promptOverlays.length > 0) {
+    parts.push("<layer_overlays>");
+    for (const overlay of config.promptOverlays) {
+      parts.push(`[${overlay.layer}]: ${overlay.content}`);
+    }
+    parts.push("</layer_overlays>");
+  }
+
+  // Tone & style directive
+  parts.push(`<response_style>
+Tone: ${config.toneStyle}
+Format: ${config.responseFormat} (${config.responseFormat === "bullets" ? "use bullet points" : config.responseFormat === "prose" ? "use flowing paragraphs" : "mix bullets and prose as appropriate"})
+Length: ${config.responseLength} (${config.responseLength === "concise" ? "keep responses brief and to the point" : config.responseLength === "comprehensive" ? "provide thorough, detailed responses" : "balanced detail level"})
+Communication level: ${config.communicationStyle}
+</response_style>`);
+
+  // Brand voice
+  if (config.brandVoice) {
+    parts.push(`<brand_voice>${config.brandVoice}</brand_voice>`);
+  }
+
+  // Guardrails
+  if (config.guardrails.length > 0) {
+    parts.push(`<guardrails>\n${config.guardrails.map(g => `- ${g}`).join("\n")}\n</guardrails>`);
+  }
+
+  // Prohibited topics
+  if (config.prohibitedTopics.length > 0) {
+    parts.push(`<prohibited_topics>Do not engage with or provide advice on:\n${config.prohibitedTopics.map(t => `- ${t}`).join("\n")}\n</prohibited_topics>`);
+  }
+
+  // Compliance
+  if (config.complianceLanguage) {
+    parts.push(`<compliance>${config.complianceLanguage}</compliance>`);
+  }
+
+  // Custom prompt additions
+  if (config.customPromptAdditions) {
+    parts.push(`<custom_instructions>${config.customPromptAdditions}</custom_instructions>`);
+  }
+
+  // AI Fine-Tuning directives
+  const tuningParts: string[] = [];
+
+  const depthMap: Record<string, string> = {
+    quick: "Respond quickly with minimal deliberation. Keep analysis brief.",
+    standard: "Use standard reasoning depth. Balance thoroughness with speed.",
+    deep: "Think deeply before responding. Provide thorough multi-step analysis.",
+    extended: "Use maximum reasoning depth. Consider multiple angles, edge cases, and provide comprehensive multi-step analysis with full reasoning chains.",
+  };
+  if (config.thinkingDepth && depthMap[config.thinkingDepth]) {
+    tuningParts.push(`Thinking depth: ${depthMap[config.thinkingDepth]}`);
+  }
+
+  const disclaimerMap: Record<string, string> = {
+    minimal: "Use brief inline disclaimers only when legally necessary.",
+    standard: "Include standard compliance disclaimers on financial topics.",
+    comprehensive: "Include detailed regulatory disclosures and disclaimers on all financial content.",
+  };
+  if (config.disclaimerVerbosity && disclaimerMap[config.disclaimerVerbosity]) {
+    tuningParts.push(`Disclaimers: ${disclaimerMap[config.disclaimerVerbosity]}`);
+  }
+
+  const citationMap: Record<string, string> = {
+    none: "",
+    inline: "Cite sources inline within the text when referencing data or claims.",
+    footnotes: "Add numbered footnote references for all data and claims, with a references section at the end.",
+  };
+  if (config.citationStyle && citationMap[config.citationStyle]) {
+    tuningParts.push(`Citations: ${citationMap[config.citationStyle]}`);
+  }
+
+  if (config.reasoningTransparency) {
+    tuningParts.push("Show your reasoning: Include a brief 'How I got here' section explaining your reasoning chain before conclusions.");
+  }
+
+  if (config.autoFollowUp) {
+    tuningParts.push(`After responding, proactively ask up to ${config.autoFollowUpCount} follow-up question(s) to deepen the conversation.`);
+  }
+
+  if (tuningParts.length > 0) {
+    parts.push(`<ai_tuning>\n${tuningParts.join("\n")}\n</ai_tuning>`);
+  }
+
+  return parts.join("\n\n");
 }
 
 /**
