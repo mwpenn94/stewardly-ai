@@ -34,6 +34,7 @@ import {
   assembleDeepContext as platformAssembleDeepContext,
   assembleQuickContext,
 } from "./deepContextAssembler";
+import type { QuickContextOptions } from "./deepContextAssembler";
 import { createMemoryEngine } from "./memoryEngine";
 import { EXTENDED_MEMORY_CATEGORIES } from "./types";
 import type { ContextType, ContextualLLMResponse, ContextRequest } from "./types";
@@ -400,6 +401,41 @@ export async function assembleContext(request: ContextRequest) {
   return platformAssembleDeepContext(stewardlyContextSources, request);
 }
 
+// ─── OVERRIDE TRANSLATION HELPER ────────────────────────────────────────────
+//
+// Both getQuickContext and getQuickContextWithMetadata need to translate
+// legacy boolean flags + platform fields into QuickContextOptions.
+// This shared helper eliminates the duplication.
+
+function translateOverrides(
+  overrides?: Partial<LegacyContextRequest> | Partial<ContextRequest>,
+): { maxTokenBudget: number | undefined; options: QuickContextOptions } {
+  if (!overrides) {
+    return { maxTokenBudget: undefined, options: {} };
+  }
+
+  // Translate boolean include flags to excludeSources
+  const excludeList: string[] = [];
+  for (const [flag, sourceName] of Object.entries(BOOLEAN_FLAG_TO_SOURCE)) {
+    const value = (overrides as Record<string, unknown>)[flag];
+    if (value === false) {
+      excludeList.push(sourceName);
+    }
+  }
+
+  const o = overrides as Record<string, unknown>;
+  return {
+    maxTokenBudget: o.maxTokenBudget as number | undefined,
+    options: {
+      conversationId: o.conversationId as number | undefined,
+      specificDocIds: o.specificDocIds as number[] | undefined,
+      category: o.category as string | undefined,
+      excludeSources: excludeList.length > 0 ? excludeList : undefined,
+      includeSources: o.includeSources as string[] | undefined,
+    },
+  };
+}
+
 // ─── BACKWARD-COMPATIBLE getQuickContext ────────────────────────────────────
 
 /**
@@ -417,49 +453,14 @@ export async function getQuickContext(
   contextType: ContextType,
   overrides?: Partial<LegacyContextRequest> | Partial<ContextRequest>,
 ): Promise<string> {
-  // Translate overrides (boolean flags + platform fields) into a
-  // platform ContextRequest and delegate to assembleDeepContext.
-  // This matches the original pattern: getQuickContext spread overrides
-  // directly into assembleDeepContext({ userId, query, contextType, ...overrides }).
-  let excludeSources: string[] | undefined;
-  let maxTokenBudget: number | undefined;
-  let includeSources: string[] | undefined;
-
-  if (overrides) {
-    // Translate boolean include flags to excludeSources
-    const excludeList: string[] = [];
-    for (const [flag, sourceName] of Object.entries(BOOLEAN_FLAG_TO_SOURCE)) {
-      const value = (overrides as Record<string, unknown>)[flag];
-      if (value === false) {
-        excludeList.push(sourceName);
-      }
-    }
-    if (excludeList.length > 0) {
-      excludeSources = excludeList;
-    }
-    // Pass through platform fields
-    maxTokenBudget = (overrides as any).maxTokenBudget;
-    includeSources = (overrides as any).includeSources;
-  }
-
-  // Pass through request-level metadata that sources need
-  const conversationId = (overrides as any)?.conversationId;
-  const specificDocIds = (overrides as any)?.specificDocIds;
-  const category = (overrides as any)?.category;
-
+  const { maxTokenBudget, options } = translateOverrides(overrides);
   const { contextPrompt } = await assembleQuickContext(
     stewardlyContextSources,
     userId,
     query,
     contextType,
     maxTokenBudget,
-    {
-      conversationId,
-      specificDocIds,
-      category,
-      excludeSources,
-      includeSources,
-    },
+    options,
   );
   return contextPrompt;
 }
@@ -478,37 +479,8 @@ export async function getQuickContextWithMetadata(
   contextType: ContextType,
   overrides?: Partial<LegacyContextRequest> | Partial<ContextRequest>,
 ) {
-  // Translate overrides if provided
-  let excludeSources: string[] | undefined;
-  let includeSources: string[] | undefined;
-  let maxTokenBudget: number | undefined;
-  let conversationId: number | undefined;
-  let specificDocIds: number[] | undefined;
-  let category: string | undefined;
-
-  if (overrides) {
-    const excludeList: string[] = [];
-    for (const [flag, sourceName] of Object.entries(BOOLEAN_FLAG_TO_SOURCE)) {
-      const value = (overrides as Record<string, unknown>)[flag];
-      if (value === false) {
-        excludeList.push(sourceName);
-      }
-    }
-    if (excludeList.length > 0) excludeSources = excludeList;
-    maxTokenBudget = (overrides as any).maxTokenBudget;
-    includeSources = (overrides as any).includeSources;
-    conversationId = (overrides as any).conversationId;
-    specificDocIds = (overrides as any).specificDocIds;
-    category = (overrides as any).category;
-  }
-
-  return assembleQuickContext(stewardlyContextSources, userId, query, contextType, maxTokenBudget, {
-    conversationId,
-    specificDocIds,
-    category,
-    excludeSources,
-    includeSources,
-  });
+  const { maxTokenBudget, options } = translateOverrides(overrides);
+  return assembleQuickContext(stewardlyContextSources, userId, query, contextType, maxTokenBudget, options);
 }
 
 // ── Re-exports for backward compatibility ────────────────────────────────────

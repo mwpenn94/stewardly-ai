@@ -18,9 +18,8 @@ import {
   professionalAISettings,
   userPreferences,
   userOrganizationRoles,
-  clientAssociations,
 } from "../../../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 // ─── LAYER TABLE MAP ─────────────────────────────────────────────────────────
 

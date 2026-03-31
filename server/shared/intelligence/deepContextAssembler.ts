@@ -216,6 +216,20 @@ export async function assembleDeepContext(
 // ─── QUICK CONTEXT (simplified single-string output) ─────────────────────────
 
 /**
+ * Options for `assembleQuickContext`. Carries request-level metadata
+ * (conversationId, specificDocIds, category) through to source fetchers,
+ * plus source include/exclude filters.
+ */
+export interface QuickContextOptions {
+  conversationId?: number;
+  specificDocIds?: number[];
+  category?: string;
+  excludeSources?: string[];
+  includeSources?: string[];
+  sourceOptions?: Record<string, unknown>;
+}
+
+/**
  * Simplified context assembly that returns a single string and metadata.
  * Used by contextualLLM for automatic context injection.
  *
@@ -230,14 +244,7 @@ export async function assembleQuickContext(
   query: string,
   contextType: ContextType,
   maxTokenBudget?: number,
-  options?: {
-    conversationId?: number;
-    specificDocIds?: number[];
-    category?: string;
-    excludeSources?: string[];
-    includeSources?: string[];
-    sourceOptions?: Record<string, unknown>;
-  },
+  options?: QuickContextOptions,
 ): Promise<{ contextPrompt: string; metadata: AssemblyMetadata }> {
   const result = await assembleDeepContext(registry, {
     userId,

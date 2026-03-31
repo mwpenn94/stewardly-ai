@@ -49,6 +49,7 @@ export {
   assembleDeepContext,
   assembleQuickContext,
 } from "./deepContextAssembler";
+export type { QuickContextOptions } from "./deepContextAssembler";
 
 // ── Memory Engine ────────────────────────────────────────────────────────────
 export { createMemoryEngine } from "./memoryEngine";
