@@ -7,11 +7,10 @@
  * 
  * Auto-extracts facts and preferences from every conversation turn.
  */
-import { invokeLLM } from "./_core/llm"
 import { contextualLLM } from "./shared/intelligence/stewardlyWiring";
 import { getDb } from "./db";
 import { memories, memoryEpisodes } from "../drizzle/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 // ─── TYPES ──────────────────────────────────────────────────────
 interface ExtractedMemory {
