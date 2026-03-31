@@ -18,6 +18,7 @@
 export type {
   ContextSourceRegistry,
   ContextSourceFetcher,
+  SourceFetchOptions,
   ContextType,
   ContextRequest,
   AssembledContext,

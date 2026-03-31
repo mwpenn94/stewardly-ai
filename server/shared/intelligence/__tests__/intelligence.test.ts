@@ -193,6 +193,63 @@ describe("assembleDeepContext", () => {
     // 100 tokens * 4 chars = 400 chars max
     expect(result.fullContextPrompt.length).toBeLessThan(500);
   });
+
+  it("should pass SourceFetchOptions (conversationId, category, specificDocIds) to source fetchers", async () => {
+    const capturedOpts: unknown[] = [];
+    const registry: ContextSourceRegistry = {
+      documents: vi.fn(async (_userId, _query, opts) => {
+        capturedOpts.push({ source: "documents", opts });
+        return "doc content";
+      }),
+      conversationHistory: vi.fn(async (_userId, _query, opts) => {
+        capturedOpts.push({ source: "conversationHistory", opts });
+        return "conv content";
+      }),
+      other: vi.fn(async (_userId, _query, opts) => {
+        capturedOpts.push({ source: "other", opts });
+        return "other content";
+      }),
+    };
+
+    await assembleDeepContext(registry, {
+      userId: 1,
+      query: "test",
+      contextType: "chat",
+      conversationId: 42,
+      specificDocIds: [10, 20],
+      category: "financial",
+    });
+
+    expect(capturedOpts.length).toBe(3);
+    // All sources receive the same SourceFetchOptions
+    for (const captured of capturedOpts) {
+      const { opts } = captured as { source: string; opts: any };
+      expect(opts.conversationId).toBe(42);
+      expect(opts.specificDocIds).toEqual([10, 20]);
+      expect(opts.category).toBe("financial");
+    }
+  });
+
+  it("should pass undefined SourceFetchOptions fields when not provided", async () => {
+    let capturedOpts: unknown = null;
+    const registry: ContextSourceRegistry = {
+      test: vi.fn(async (_userId, _query, opts) => {
+        capturedOpts = opts;
+        return "content";
+      }),
+    };
+
+    await assembleDeepContext(registry, {
+      userId: 1,
+      query: "test",
+      contextType: "chat",
+    });
+
+    expect(capturedOpts).toBeDefined();
+    expect((capturedOpts as any).conversationId).toBeUndefined();
+    expect((capturedOpts as any).specificDocIds).toBeUndefined();
+    expect((capturedOpts as any).category).toBeUndefined();
+  });
 });
 
 describe("assembleQuickContext", () => {

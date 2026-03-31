@@ -16,18 +16,35 @@
 //
 // Usage:
 //   const registry: ContextSourceRegistry = {
-//     documents: async (userId, query) => "...",
+//     documents: async (userId, query, opts) => "...",
 //     knowledgeBase: async (userId, query) => "...",
 //     userProfile: async (userId, query) => "...",
 //   };
 
 /**
+ * Optional context passed to source fetchers beyond userId and query.
+ * This carries request-level metadata that specific sources may need
+ * (e.g., conversationId for conversation history, category for documents).
+ */
+export interface SourceFetchOptions {
+  conversationId?: number;
+  specificDocIds?: number[];
+  category?: string;
+  [key: string]: unknown;
+}
+
+/**
  * A single context source fetch function.
  * Returns a string of assembled context (empty string = no data available).
+ *
+ * The third parameter is optional — sources that don't need extra context
+ * can simply ignore it. This keeps the interface backward-compatible:
+ * existing `(userId, query) => string` implementations still work.
  */
 export type ContextSourceFetcher = (
   userId: number,
   query: string,
+  options?: SourceFetchOptions,
 ) => Promise<string>;
 
 /**

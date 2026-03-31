@@ -442,6 +442,11 @@ export async function getQuickContext(
     includeSources = (overrides as any).includeSources;
   }
 
+  // Pass through request-level metadata that sources need
+  const conversationId = (overrides as any)?.conversationId;
+  const specificDocIds = (overrides as any)?.specificDocIds;
+  const category = (overrides as any)?.category;
+
   const platformResult = await platformAssembleDeepContext(
     stewardlyContextSources,
     {
@@ -451,6 +456,9 @@ export async function getQuickContext(
       maxTokenBudget,
       excludeSources,
       includeSources,
+      conversationId,
+      specificDocIds,
+      category,
     },
   );
   return platformResult.fullContextPrompt;

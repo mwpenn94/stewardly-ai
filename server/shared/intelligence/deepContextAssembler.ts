@@ -22,6 +22,7 @@ import type {
   ContextRequest,
   AssembledContext,
   AssemblyMetadata,
+  SourceFetchOptions,
 } from "./types";
 // normalizeQualityScore is available via ./types if needed for future quality scoring
 
@@ -115,11 +116,19 @@ export async function assembleDeepContext(
     sourceNames = sourceNames.filter((s) => !excludeSet.has(s));
   }
 
+  // ── Build source fetch options from request ────────────────────────────
+  const fetchOpts: SourceFetchOptions = {
+    conversationId: request.conversationId,
+    specificDocIds: request.specificDocIds,
+    category: request.category,
+    ...request.sourceOptions,
+  };
+
   // ── Fetch all sources in parallel ──────────────────────────────────────
   const fetchResults = await Promise.allSettled(
     sourceNames.map(async (name) => {
       try {
-        const result = await registry[name](request.userId, request.query);
+        const result = await registry[name](request.userId, request.query, fetchOpts);
         return { name, result };
       } catch (err) {
         log.warn(`[assembler] Source "${name}" failed:`, err);

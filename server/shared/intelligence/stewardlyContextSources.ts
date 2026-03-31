@@ -25,7 +25,7 @@
  *   15. gapFeedback           — Knowledge gap analysis feedback
  */
 
-import type { ContextSourceRegistry } from "./types";
+import type { ContextSourceRegistry, SourceFetchOptions } from "./types";
 
 // ── Stewardly-specific imports (original service locations) ──────────────────
 
@@ -92,7 +92,7 @@ async function getGraphFn() {
 
 // ─── SOURCE IMPLEMENTATIONS ─────────────────────────────────────────────────
 
-async function fetchDocumentContext(userId: number, query: string): Promise<string> {
+async function fetchDocumentContext(userId: number, query: string, opts?: SourceFetchOptions): Promise<string> {
   const db = await getDb();
   if (!db || !query) return "";
 
@@ -103,14 +103,30 @@ async function fetchDocumentContext(userId: number, query: string): Promise<stri
       .filter((t) => t.length > 2);
     if (terms.length === 0) return "";
 
+    // Build document filter conditions
+    const conditions = [eq(documents.userId, userId)];
+    if (opts?.category) {
+      conditions.push(eq(documents.category, opts.category));
+    }
+
     const userDocs = await db
       .select({ id: documents.id, filename: documents.filename, category: documents.category })
       .from(documents)
-      .where(eq(documents.userId, userId));
+      .where(conditions.length > 1 ? and(...conditions) : conditions[0]);
 
     if (userDocs.length === 0) return "";
 
-    const docIds = userDocs.map((d) => d.id);
+    // If specificDocIds provided, force-include those documents
+    let docIds = userDocs.map((d) => d.id);
+    if (opts?.specificDocIds && opts.specificDocIds.length > 0) {
+      const specificSet = new Set(opts.specificDocIds);
+      // Prioritize specific docs but include others too
+      docIds = [
+        ...docIds.filter((id) => specificSet.has(id)),
+        ...docIds.filter((id) => !specificSet.has(id)),
+      ];
+    }
+
     const chunks = await db
       .select()
       .from(documentChunks)
@@ -299,22 +315,28 @@ async function fetchPipelineDataContext(_userId: number, query: string): Promise
   }
 }
 
-async function fetchConversationHistoryContext(userId: number, _query: string): Promise<string> {
+async function fetchConversationHistoryContext(userId: number, _query: string, opts?: SourceFetchOptions): Promise<string> {
   const db = await getDb();
   if (!db) return "";
 
   try {
+    // Fetch extra conversations to allow filtering out the current one
     const recentConvos = await db
       .select()
       .from(conversations)
       .where(eq(conversations.userId, userId))
       .orderBy(desc(conversations.updatedAt))
-      .limit(3);
+      .limit(5);
 
-    if (recentConvos.length === 0) return "";
+    // Exclude the current conversation to avoid circular context
+    const filtered = opts?.conversationId
+      ? recentConvos.filter((c) => c.id !== opts.conversationId).slice(0, 3)
+      : recentConvos.slice(0, 3);
+
+    if (filtered.length === 0) return "";
 
     const parts: string[] = ["Recent conversations:"];
-    for (const convo of recentConvos) {
+    for (const convo of filtered) {
       const msgs = await db
         .select()
         .from(messagesTable)
