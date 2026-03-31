@@ -49,6 +49,30 @@
       "description": "Backward-compat adapters: thin files, legacy types, flat-field mapping",
       "timestamp": "2026-03-31T23:54:42.942Z",
       "pass": 1
+    },
+    {
+      "id": 9,
+      "description": "Helmet + CSP + 3-tier rate limiting (100/20/5)",
+      "timestamp": "2026-03-31T23:56:16.046Z",
+      "pass": 2
+    },
+    {
+      "id": 10,
+      "description": "Pino structured logging replacing all console calls",
+      "timestamp": "2026-03-31T23:56:26.949Z",
+      "pass": 2
+    },
+    {
+      "id": 11,
+      "description": "RequestId UUID v4 middleware with client ID preservation",
+      "timestamp": "2026-03-31T23:56:31.170Z",
+      "pass": 2
+    },
+    {
+      "id": 12,
+      "description": "DB indexes on all FK columns + composite indexes",
+      "timestamp": "2026-03-31T23:56:41.238Z",
+      "pass": 2
     }
   ],
   "scores": [
@@ -77,8 +101,21 @@
       },
       "average": 9,
       "timestamp": "2026-03-31T23:54:46.735Z"
+    },
+    {
+      "pass": 1,
+      "scores": {
+        "Architecture": 8,
+        "Security": 8,
+        "Performance": 8,
+        "Code Quality": 8,
+        "UX/DX": 8,
+        "Completeness": 8
+      },
+      "average": 8,
+      "timestamp": "2026-03-31T23:56:47.650Z"
     }
   ],
   "passes": 2,
-  "updated": "2026-03-31T23:54:46.736Z"
+  "updated": "2026-03-31T23:56:47.650Z"
 }
