@@ -172,7 +172,7 @@ export type MemoryCategory = BaseMemoryCategory | ExtendedMemoryCategory | strin
 export interface ContextualLLMRequest {
   userId: number;
   contextType: ContextType;
-  messages: Array<{ role: string; content: string }>;
+  messages: Array<{ role: string; content: string | any[] }>;
   /** Override model selection. */
   model?: string;
   /** Override temperature. */
@@ -181,6 +181,16 @@ export interface ContextualLLMRequest {
   maxTokens?: number;
   /** Skip context injection (for internal/extraction calls). */
   skipContext?: boolean;
+  /** Explicit query string (extracted from messages if omitted). */
+  query?: string;
+  /** Current conversation ID — passed to source fetchers for exclusion/filtering. */
+  conversationId?: number;
+  /** Specific document IDs to prioritize in retrieval. */
+  specificDocIds?: number[];
+  /** Category filter for context sources. */
+  category?: string;
+  /** Additional properties for project-specific extensions. */
+  [key: string]: any;
 }
 
 export interface ContextualLLMResponse {

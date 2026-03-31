@@ -371,6 +371,69 @@ describe("stewardlyWiring — backward compatibility", () => {
     });
   });
 
+  // ── SourceFetchOptions passthrough at wiring level ────────────────────
+
+  describe("SourceFetchOptions passthrough", () => {
+    it("getQuickContext should pass conversationId through to source fetchers", async () => {
+      const { stewardlyContextSources } = await import("../stewardlyContextSources");
+      const docsMock = stewardlyContextSources.documents as ReturnType<typeof vi.fn>;
+      const convMock = stewardlyContextSources.conversationHistory as ReturnType<typeof vi.fn>;
+
+      // Clear previous call records
+      docsMock.mockClear();
+      convMock.mockClear();
+
+      await getQuickContext(1, "test", "chat", {
+        conversationId: 99,
+        specificDocIds: [5, 10],
+        category: "financial",
+      });
+
+      // Verify conversationId was passed to conversationHistory source
+      expect(convMock).toHaveBeenCalled();
+      const convCallOpts = convMock.mock.calls[0][2]; // 3rd arg = SourceFetchOptions
+      expect(convCallOpts).toBeDefined();
+      expect(convCallOpts.conversationId).toBe(99);
+
+      // Verify specificDocIds and category were passed to documents source
+      expect(docsMock).toHaveBeenCalled();
+      const docsCallOpts = docsMock.mock.calls[0][2];
+      expect(docsCallOpts).toBeDefined();
+      expect(docsCallOpts.specificDocIds).toEqual([5, 10]);
+      expect(docsCallOpts.category).toBe("financial");
+    });
+
+    it("getQuickContextWithMetadata should pass overrides through to source fetchers", async () => {
+      const { stewardlyContextSources } = await import("../stewardlyContextSources");
+      const convMock = stewardlyContextSources.conversationHistory as ReturnType<typeof vi.fn>;
+      convMock.mockClear();
+
+      await getQuickContextWithMetadata(1, "test", "chat", {
+        conversationId: 77,
+      });
+
+      expect(convMock).toHaveBeenCalled();
+      const convCallOpts = convMock.mock.calls[0][2];
+      expect(convCallOpts).toBeDefined();
+      expect(convCallOpts.conversationId).toBe(77);
+    });
+
+    it("getQuickContext without overrides should pass undefined SourceFetchOptions fields", async () => {
+      const { stewardlyContextSources } = await import("../stewardlyContextSources");
+      const convMock = stewardlyContextSources.conversationHistory as ReturnType<typeof vi.fn>;
+      convMock.mockClear();
+
+      await getQuickContext(1, "test", "chat");
+
+      expect(convMock).toHaveBeenCalled();
+      const convCallOpts = convMock.mock.calls[0][2];
+      expect(convCallOpts).toBeDefined();
+      expect(convCallOpts.conversationId).toBeUndefined();
+      expect(convCallOpts.specificDocIds).toBeUndefined();
+      expect(convCallOpts.category).toBeUndefined();
+    });
+  });
+
   // ── getMemoryEngine ───────────────────────────────────────────────────
 
   describe("getMemoryEngine", () => {

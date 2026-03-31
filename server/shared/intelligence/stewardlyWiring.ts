@@ -447,33 +447,68 @@ export async function getQuickContext(
   const specificDocIds = (overrides as any)?.specificDocIds;
   const category = (overrides as any)?.category;
 
-  const platformResult = await platformAssembleDeepContext(
+  const { contextPrompt } = await assembleQuickContext(
     stewardlyContextSources,
+    userId,
+    query,
+    contextType,
+    maxTokenBudget,
     {
-      userId,
-      query,
-      contextType,
-      maxTokenBudget,
-      excludeSources,
-      includeSources,
       conversationId,
       specificDocIds,
       category,
+      excludeSources,
+      includeSources,
     },
   );
-  return platformResult.fullContextPrompt;
+  return contextPrompt;
 }
 
 /**
  * Extended getQuickContext that also returns metadata.
  * Use this when you need contextSourceHitRate or other assembly metadata.
+ *
+ * The optional 4th parameter `overrides` supports the same fields as
+ * getQuickContext: boolean include flags, platform fields, and
+ * SourceFetchOptions (conversationId, specificDocIds, category).
  */
 export async function getQuickContextWithMetadata(
   userId: number,
   query: string,
   contextType: ContextType,
+  overrides?: Partial<LegacyContextRequest> | Partial<ContextRequest>,
 ) {
-  return assembleQuickContext(stewardlyContextSources, userId, query, contextType);
+  // Translate overrides if provided
+  let excludeSources: string[] | undefined;
+  let includeSources: string[] | undefined;
+  let maxTokenBudget: number | undefined;
+  let conversationId: number | undefined;
+  let specificDocIds: number[] | undefined;
+  let category: string | undefined;
+
+  if (overrides) {
+    const excludeList: string[] = [];
+    for (const [flag, sourceName] of Object.entries(BOOLEAN_FLAG_TO_SOURCE)) {
+      const value = (overrides as Record<string, unknown>)[flag];
+      if (value === false) {
+        excludeList.push(sourceName);
+      }
+    }
+    if (excludeList.length > 0) excludeSources = excludeList;
+    maxTokenBudget = (overrides as any).maxTokenBudget;
+    includeSources = (overrides as any).includeSources;
+    conversationId = (overrides as any).conversationId;
+    specificDocIds = (overrides as any).specificDocIds;
+    category = (overrides as any).category;
+  }
+
+  return assembleQuickContext(stewardlyContextSources, userId, query, contextType, maxTokenBudget, {
+    conversationId,
+    specificDocIds,
+    category,
+    excludeSources,
+    includeSources,
+  });
 }
 
 // ── Re-exports for backward compatibility ────────────────────────────────────

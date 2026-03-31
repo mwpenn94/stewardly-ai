@@ -218,6 +218,11 @@ export async function assembleDeepContext(
 /**
  * Simplified context assembly that returns a single string and metadata.
  * Used by contextualLLM for automatic context injection.
+ *
+ * The optional `options` parameter carries request-level metadata
+ * (conversationId, specificDocIds, category) through to source fetchers.
+ * Without it, SourceFetchOptions fields are undefined and sources like
+ * conversationHistory cannot exclude the current conversation.
  */
 export async function assembleQuickContext(
   registry: ContextSourceRegistry,
@@ -225,12 +230,26 @@ export async function assembleQuickContext(
   query: string,
   contextType: ContextType,
   maxTokenBudget?: number,
+  options?: {
+    conversationId?: number;
+    specificDocIds?: number[];
+    category?: string;
+    excludeSources?: string[];
+    includeSources?: string[];
+    sourceOptions?: Record<string, unknown>;
+  },
 ): Promise<{ contextPrompt: string; metadata: AssemblyMetadata }> {
   const result = await assembleDeepContext(registry, {
     userId,
     query,
     contextType,
     maxTokenBudget,
+    conversationId: options?.conversationId,
+    specificDocIds: options?.specificDocIds,
+    category: options?.category,
+    excludeSources: options?.excludeSources,
+    includeSources: options?.includeSources,
+    sourceOptions: options?.sourceOptions,
   });
 
   return {

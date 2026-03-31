@@ -60,9 +60,9 @@ export function createContextualLLM(deps: ContextualLLMDependencies) {
   const log = deps.logger ?? console;
 
   return async function contextualLLM(
-    request: ContextualLLMRequest & { query?: string; [key: string]: any },
+    request: ContextualLLMRequest,
   ): Promise<ContextualLLMResponse> {
-    const { userId, contextType = "analysis", query, messages, model, temperature, maxTokens, skipContext, ...rest } = request;
+    const { userId, contextType = "analysis", query, messages, model, temperature, maxTokens, skipContext, conversationId, specificDocIds, category, ...rest } = request;
 
     let enrichedMessages = [...messages];
     let hitRate = 0;
@@ -76,12 +76,14 @@ export function createContextualLLM(deps: ContextualLLMDependencies) {
           userId,
           effectiveQuery,
           contextType,
+          undefined, // maxTokenBudget — use default
+          { conversationId, specificDocIds, category },
         );
 
         hitRate = metadata.contextSourceHitRate;
 
         if (contextPrompt.length > 0) {
-          enrichedMessages = injectContext(enrichedMessages, contextPrompt);
+          enrichedMessages = injectContext(enrichedMessages, contextPrompt, log);
         }
       } catch (err) {
         log.warn("[contextualLLM] Context assembly failed, proceeding without context:", err);
@@ -145,6 +147,7 @@ export function extractQuery(messages: Array<{ role: string; content: any }>): s
 export function injectContext(
   messages: Array<{ role: string; content: any }>,
   contextPrompt: string,
+  logger?: { warn: (...args: unknown[]) => void },
 ): Array<{ role: string; content: any }> {
   if (!contextPrompt) return messages;
 
@@ -160,9 +163,14 @@ export function injectContext(
         ...result[systemIdx],
         content: existing + "\n" + contextBlock,
       };
+    } else {
+      // System message has array content blocks (e.g., OpenAI vision format).
+      // Context injection is skipped to avoid breaking structured content.
+      (logger ?? console).warn(
+        "[injectContext] System message has non-string content — context injection skipped. "
+        + "Consider converting to string content or using a separate system message.",
+      );
     }
-    // If content is not a string (array blocks), skip injection
-    // to avoid breaking structured content
   } else {
     result.unshift({
       role: "system",
