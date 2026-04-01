@@ -127,7 +127,7 @@ Infrastructure for detecting optimization signals and tracking convergence:
    - `MODEL_CONCENTRATION`: Over-reliance on a single model version (>80% of messages)
 2. **`checkConvergence(db)`**: Returns true when zero signals are detected
 3. **`antiRegressionCheck(db, baseline)`**: Compares current signal count against a baseline to detect regressions
-4. **Schema tables**: `improvement_signals`, `improvement_passes`, `improvement_convergence`, `improvement_anti_regression`
+4. **Schema tables**: `improvement_signals`, `improvement_hypotheses`, `hypothesis_test_results`, `reasoning_traces`
 
 ### normalizeQualityScore (`server/shared/intelligence/types.ts`)
 

@@ -403,6 +403,7 @@ export default function Chat() {
   const handleSendRef = useRef<(text: string) => void>(() => {});
   // Mutex guard: prevents concurrent conversation creation (race condition)
   const creatingConversationRef = useRef(false);
+  const streamAbortRef = useRef<AbortController | null>(null);
 
   // ─── GUARD REF ─────────────────────────────────────────────────
   // Blocks voice recognition during TTS playback AND AI processing.
@@ -757,10 +758,16 @@ export default function Chat() {
         setMessages(prev => [...prev, placeholderMsg]);
 
         try {
+          // Abort any previous stream before starting a new one
+          streamAbortRef.current?.abort();
+          const abortController = new AbortController();
+          streamAbortRef.current = abortController;
+
           const sseResponse = await fetch("/api/chat/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
+            signal: abortController.signal,
             body: JSON.stringify({
               messages: [
                 ...messages.map(m => ({ role: m.role, content: m.content })),
@@ -840,7 +847,14 @@ export default function Chat() {
             }
           }
           setStreamingContent("");
+          streamAbortRef.current = null;
         } catch (streamErr: any) {
+          streamAbortRef.current = null;
+          // If aborted (user navigated away or sent new message), don't fallback
+          if (streamErr?.name === "AbortError") {
+            setStreamingContent("");
+            return;
+          }
           // If streaming fails, fall back to tRPC
           setMessages(prev => prev.slice(0, -1)); // remove placeholder
           const result = await sendMutation.mutateAsync({
@@ -907,6 +921,14 @@ export default function Chat() {
   };
 
   const handleSend = () => handleSendWithText(input);
+
+  // Abort any active SSE stream on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+    };
+  }, []);
 
   // Keep the ref in sync for voice recognition callback
   useEffect(() => {
