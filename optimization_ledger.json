@@ -76,39 +76,27 @@
     },
     {
       "id": 13,
-      "description": "RequestId injection rejection — validates UUID format, rejects log-forging payloads",
-      "timestamp": "2026-04-01T00:56:39.402Z",
+      "description": "Added graceful shutdown (SIGTERM/SIGINT with 10s timeout)",
+      "timestamp": "2026-04-01T00:59:57.806Z",
       "pass": 2
     },
     {
       "id": 14,
-      "description": "Trust proxy set to 1 — correct client IP behind reverse proxy for rate limiting",
-      "timestamp": "2026-04-01T00:56:39.426Z",
+      "description": "Startup env validation: required vars throw in production, recommended vars warn",
+      "timestamp": "2026-04-01T01:06:34.473Z",
       "pass": 2
     },
     {
       "id": 15,
-      "description": "Response logging with duration — every request logs statusCode + durationMs on finish",
-      "timestamp": "2026-04-01T00:56:39.450Z",
-      "pass": 2
-    },
-    {
-      "id": 16,
-      "description": "coerceNumericFields utility — normalizes MySQL/TiDB aggregate string→number",
-      "timestamp": "2026-04-01T00:56:39.475Z",
-      "pass": 2
-    },
-    {
-      "id": 17,
-      "description": "Graceful shutdown handler — SIGTERM/SIGINT with 10s force-exit timeout",
-      "timestamp": "2026-04-01T01:03:31.018Z",
+      "description": "Global error safety nets: unhandledRejection + uncaughtException handlers",
+      "timestamp": "2026-04-01T01:08:45.181Z",
       "pass": 3
     },
     {
-      "id": 18,
-      "description": "PLATFORM_CORE_MANIFEST.md — @platform/core extraction roadmap for shared modules across all 4 projects",
-      "timestamp": "2026-04-01T01:08:02.150Z",
-      "pass": 4
+      "id": 16,
+      "description": "Enabled trust proxy for correct client IP behind reverse proxies",
+      "timestamp": "2026-04-01T01:10:14.096Z",
+      "pass": 3
     }
   ],
   "scores": [
@@ -157,40 +145,27 @@
         "Architecture": 9,
         "Security": 9,
         "Performance": 8,
-        "Code Quality": 9,
-        "UX/DX": 8,
+        "Code Quality": 8,
+        "UX/DX": 9,
         "Completeness": 9
       },
       "average": 8.67,
-      "timestamp": "2026-04-01T00:56:39.500Z"
+      "timestamp": "2026-04-01T01:06:47.744Z"
     },
     {
       "pass": 4,
       "scores": {
         "Architecture": 9,
         "Security": 9,
-        "Performance": 9,
-        "Code Quality": 9,
-        "UX/DX": 8,
-        "Completeness": 9
-      },
-      "average": 8.83,
-      "timestamp": "2026-04-01T01:03:31.044Z"
-    },
-    {
-      "pass": 5,
-      "scores": {
-        "Architecture": 9,
-        "Security": 9,
-        "Performance": 9,
-        "Code Quality": 9,
+        "Performance": 8,
+        "Code Quality": 8,
         "UX/DX": 9,
         "Completeness": 9
       },
-      "average": 9,
-      "timestamp": "2026-04-01T01:08:02.174Z"
+      "average": 8.67,
+      "timestamp": "2026-04-01T01:10:29.871Z"
     }
   ],
-  "passes": 5,
-  "updated": "2026-04-01T01:08:02.174Z"
+  "passes": 4,
+  "updated": "2026-04-01T01:10:29.872Z"
 }
