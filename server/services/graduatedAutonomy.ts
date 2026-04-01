@@ -1,14 +1,18 @@
 /**
- * Task #50 — Graduated Autonomy Service
+ * Task #50 — Graduated Autonomy Service (DB-Persisted)
  * Progressive trust levels for AI actions based on user interaction history.
  *
- * MIGRATED: In-memory Map → Drizzle DB persistence (userAutonomyProfiles table).
- * Uses write-through cache for read performance.
+ * MIGRATION: Converted from in-memory Map to DB-backed persistence
+ * using the existing `agent_autonomy_levels` table. Falls back to
+ * in-memory cache for fast reads with write-through to DB.
  */
+
 import { getDb } from "../db";
-import { userAutonomyProfiles } from "../../drizzle/schema";
+import { agentAutonomyLevels } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../_core/logger";
+
+const log = logger.child({ module: "graduatedAutonomy" });
 
 export type AutonomyLevel = "supervised" | "guided" | "semi_autonomous" | "autonomous";
 
@@ -52,7 +56,21 @@ const LEVEL_THRESHOLDS: Record<AutonomyLevel, { minTrustScore: number; minIntera
   autonomous: { minTrustScore: 85, minInteractions: 500, maxEscalationRate: 0.05 },
 };
 
-// Write-through cache
+const LEVEL_TO_INT: Record<AutonomyLevel, number> = {
+  supervised: 1,
+  guided: 2,
+  semi_autonomous: 3,
+  autonomous: 4,
+};
+
+const INT_TO_LEVEL: Record<number, AutonomyLevel> = {
+  1: "supervised",
+  2: "guided",
+  3: "semi_autonomous",
+  4: "autonomous",
+};
+
+// Write-through cache for fast reads
 const profileCache = new Map<number, AutonomyProfile>();
 
 function defaultProfile(userId: number): AutonomyProfile {
@@ -68,120 +86,186 @@ function defaultProfile(userId: number): AutonomyProfile {
   };
 }
 
-async function loadFromDb(userId: number): Promise<AutonomyProfile | null> {
-  try {
-    const db = getDb();
-    const [row] = await db.select().from(userAutonomyProfiles).where(eq(userAutonomyProfiles.userId, userId)).limit(1);
-    if (!row) return null;
-    return {
-      userId,
-      level: row.level as AutonomyLevel,
-      trustScore: row.trustScore ?? 0,
-      totalInteractions: row.totalInteractions ?? 0,
-      successfulActions: row.successfulActions ?? 0,
-      overriddenActions: row.overriddenActions ?? 0,
-      escalations: row.escalations ?? 0,
-      lastEscalation: row.lastEscalation ? new Date(row.lastEscalation).toISOString() : undefined,
-      levelHistory: (row.levelHistory as AutonomyProfile["levelHistory"]) ?? [],
-    };
-  } catch (err) {
-    logger.warn({ err, userId }, "graduatedAutonomy: DB read failed, using cache/default");
-    return null;
+/**
+ * Load profile from DB, falling back to in-memory cache or default.
+ */
+async function loadProfile(userId: number): Promise<AutonomyProfile> {
+  // Check cache first
+  if (profileCache.has(userId)) {
+    return profileCache.get(userId)!;
   }
-}
 
-async function persistToDb(profile: AutonomyProfile): Promise<void> {
   try {
-    const db = getDb();
-    const [existing] = await db.select({ id: userAutonomyProfiles.id }).from(userAutonomyProfiles).where(eq(userAutonomyProfiles.userId, profile.userId)).limit(1);
-    const data = {
-      level: profile.level as any,
-      trustScore: profile.trustScore,
-      totalInteractions: profile.totalInteractions,
-      successfulActions: profile.successfulActions,
-      overriddenActions: profile.overriddenActions,
-      escalations: profile.escalations,
-      lastEscalation: profile.lastEscalation ? new Date(profile.lastEscalation) : null,
-      levelHistory: profile.levelHistory,
-    };
-    if (existing) {
-      await db.update(userAutonomyProfiles).set(data).where(eq(userAutonomyProfiles.userId, profile.userId));
-    } else {
-      await db.insert(userAutonomyProfiles).values({ userId: profile.userId, ...data });
+    const db = await getDb();
+    if (db) {
+      const [row] = await db
+        .select()
+        .from(agentAutonomyLevels)
+        .where(eq(agentAutonomyLevels.agentTemplateId, userId))
+        .limit(1);
+
+      if (row) {
+        const profile: AutonomyProfile = {
+          userId,
+          level: INT_TO_LEVEL[row.currentLevel ?? 1] ?? "supervised",
+          trustScore: 0,
+          totalInteractions: (row.level1Runs ?? 0) + (row.level2Runs ?? 0),
+          successfulActions: row.level2Runs ?? 0,
+          overriddenActions: 0,
+          escalations: 0,
+          levelHistory: [{ level: INT_TO_LEVEL[row.currentLevel ?? 1] ?? "supervised", achievedAt: (row.promotedAt ?? new Date()).toISOString(), reason: "Loaded from DB" }],
+        };
+        // Recalculate trust score
+        if (profile.totalInteractions > 0) {
+          profile.trustScore = Math.round((profile.successfulActions / profile.totalInteractions) * 100 * 100) / 100;
+        }
+        profileCache.set(userId, profile);
+        return profile;
+      }
     }
   } catch (err) {
-    logger.warn({ err, userId: profile.userId }, "graduatedAutonomy: DB write failed, cache still valid");
+    log.warn({ userId, error: String(err) }, "Failed to load autonomy profile from DB, using default");
+  }
+
+  const profile = defaultProfile(userId);
+  profileCache.set(userId, profile);
+  return profile;
+}
+
+/**
+ * Persist profile to DB (write-through).
+ */
+async function persistProfile(profile: AutonomyProfile): Promise<void> {
+  profileCache.set(profile.userId, profile);
+
+  try {
+    const db = await getDb();
+    if (!db) return;
+
+    const data = {
+      currentLevel: LEVEL_TO_INT[profile.level] ?? 1,
+      level1Runs: profile.totalInteractions,
+      level2Runs: profile.successfulActions,
+      promotedAt: profile.levelHistory.length > 1
+        ? new Date(profile.levelHistory[profile.levelHistory.length - 1].achievedAt)
+        : undefined,
+    };
+
+    const [existing] = await db
+      .select()
+      .from(agentAutonomyLevels)
+      .where(eq(agentAutonomyLevels.agentTemplateId, profile.userId))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(agentAutonomyLevels)
+        .set(data)
+        .where(eq(agentAutonomyLevels.agentTemplateId, profile.userId));
+    } else {
+      await db.insert(agentAutonomyLevels).values({
+        agentTemplateId: profile.userId,
+        ...data,
+      });
+    }
+  } catch (err) {
+    log.warn({ userId: profile.userId, error: String(err) }, "Failed to persist autonomy profile to DB");
   }
 }
 
 export async function getProfile(userId: number): Promise<AutonomyProfile> {
-  if (profileCache.has(userId)) return profileCache.get(userId)!;
-  const dbProfile = await loadFromDb(userId);
-  if (dbProfile) { profileCache.set(userId, dbProfile); return dbProfile; }
-  const profile = defaultProfile(userId);
-  profileCache.set(userId, profile);
-  await persistToDb(profile);
-  return profile;
+  return loadProfile(userId);
 }
 
 export async function recordInteraction(userId: number, success: boolean, overridden: boolean, escalated: boolean): Promise<AutonomyProfile> {
-  const profile = await getProfile(userId);
+  const profile = await loadProfile(userId);
   profile.totalInteractions++;
   if (success) profile.successfulActions++;
   if (overridden) profile.overriddenActions++;
-  if (escalated) { profile.escalations++; profile.lastEscalation = new Date().toISOString(); }
+  if (escalated) {
+    profile.escalations++;
+    profile.lastEscalation = new Date().toISOString();
+  }
 
+  // Recalculate trust score
   const successRate = profile.totalInteractions > 0 ? profile.successfulActions / profile.totalInteractions : 0;
   const overrideRate = profile.totalInteractions > 0 ? profile.overriddenActions / profile.totalInteractions : 0;
   const escalationRate = profile.totalInteractions > 0 ? profile.escalations / profile.totalInteractions : 0;
-  profile.trustScore = Math.round(Math.max(0, Math.min(100, successRate * 60 + (1 - overrideRate) * 25 + (1 - escalationRate) * 15)));
 
+  profile.trustScore = Math.round(
+    (successRate * 60 + (1 - overrideRate) * 25 + (1 - escalationRate) * 15) * 100
+  ) / 100;
+
+  // Check for level upgrade
   const levels: AutonomyLevel[] = ["supervised", "guided", "semi_autonomous", "autonomous"];
   for (let i = levels.length - 1; i >= 0; i--) {
     const threshold = LEVEL_THRESHOLDS[levels[i]];
-    if (profile.trustScore >= threshold.minTrustScore && profile.totalInteractions >= threshold.minInteractions && escalationRate <= threshold.maxEscalationRate) {
+    if (
+      profile.trustScore >= threshold.minTrustScore &&
+      profile.totalInteractions >= threshold.minInteractions &&
+      escalationRate <= threshold.maxEscalationRate
+    ) {
       if (profile.level !== levels[i]) {
         profile.level = levels[i];
-        profile.levelHistory.push({ level: levels[i], achievedAt: new Date().toISOString(), reason: `Trust score: ${profile.trustScore}, Interactions: ${profile.totalInteractions}` });
+        profile.levelHistory.push({
+          level: levels[i],
+          achievedAt: new Date().toISOString(),
+          reason: `Trust score: ${profile.trustScore}, Interactions: ${profile.totalInteractions}`,
+        });
       }
       break;
     }
   }
 
-  profileCache.set(userId, profile);
-  await persistToDb(profile);
+  // Persist to DB
+  await persistProfile(profile);
+
   return profile;
 }
 
 export async function canPerformAction(userId: number, action: string): Promise<{ allowed: boolean; confirmationRequired: boolean; reason: string }> {
-  const profile = await getProfile(userId);
+  const profile = await loadProfile(userId);
   const actionDef = AUTONOMY_ACTIONS.find(a => a.action === action);
   if (!actionDef) return { allowed: false, confirmationRequired: false, reason: "Unknown action" };
+
   const levels: AutonomyLevel[] = ["supervised", "guided", "semi_autonomous", "autonomous"];
   const userLevelIdx = levels.indexOf(profile.level);
   const requiredLevelIdx = levels.indexOf(actionDef.requiredLevel);
+
   if (userLevelIdx >= requiredLevelIdx) {
-    return { allowed: true, confirmationRequired: actionDef.confirmationRequired && userLevelIdx === requiredLevelIdx, reason: `Level ${profile.level} meets requirement ${actionDef.requiredLevel}` };
+    return {
+      allowed: true,
+      confirmationRequired: actionDef.confirmationRequired && userLevelIdx === requiredLevelIdx,
+      reason: `Level ${profile.level} meets requirement ${actionDef.requiredLevel}`,
+    };
   }
-  return { allowed: false, confirmationRequired: false, reason: `Level ${profile.level} insufficient for ${actionDef.requiredLevel}` };
+
+  return {
+    allowed: false,
+    confirmationRequired: false,
+    reason: `Level ${profile.level} insufficient for ${actionDef.requiredLevel}`,
+  };
 }
 
 export async function getAvailableActions(userId: number): Promise<AutonomyAction[]> {
-  const profile = await getProfile(userId);
+  const profile = await loadProfile(userId);
   const levels: AutonomyLevel[] = ["supervised", "guided", "semi_autonomous", "autonomous"];
   const userLevelIdx = levels.indexOf(profile.level);
   return AUTONOMY_ACTIONS.filter(a => levels.indexOf(a.requiredLevel) <= userLevelIdx);
 }
 
 export async function getLevelProgress(userId: number): Promise<{ currentLevel: AutonomyLevel; nextLevel: AutonomyLevel | null; progress: number }> {
-  const profile = await getProfile(userId);
+  const profile = await loadProfile(userId);
   const levels: AutonomyLevel[] = ["supervised", "guided", "semi_autonomous", "autonomous"];
   const currentIdx = levels.indexOf(profile.level);
   const nextLevel = currentIdx < levels.length - 1 ? levels[currentIdx + 1] : null;
+
   if (!nextLevel) return { currentLevel: profile.level, nextLevel: null, progress: 100 };
+
   const threshold = LEVEL_THRESHOLDS[nextLevel];
   const trustProgress = Math.min(100, (profile.trustScore / threshold.minTrustScore) * 100);
   const interactionProgress = Math.min(100, (profile.totalInteractions / threshold.minInteractions) * 100);
   const progress = Math.round((trustProgress + interactionProgress) / 2);
+
   return { currentLevel: profile.level, nextLevel, progress };
 }

@@ -10,8 +10,8 @@
  * 3. Compare carriers, products, and rates
  */
 
-import { rawInvokeLLM as invokeLLM } from "./shared/stewardlyWiring";
-import type { Tool, Message } from "./_core/llm";
+import { type Tool, type Message } from "./_core/llm";
+import { contextualLLM } from "./services/contextualLLM";
 import { callDataApi } from "./_core/dataApi";
 
 // ─── Tool Definitions ────────────────────────────────────────────

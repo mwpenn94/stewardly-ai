@@ -8,7 +8,6 @@
 import { getDb } from "../db";
 import { users, userProfiles, organizations, userOrganizationRoles, userRelationships, organizationRelationships } from "../../drizzle/schema";
 import { eq, and, sql, ne, inArray } from "drizzle-orm";
-import { contextualLLM as invokeLLM } from "../shared/stewardlyWiring"
 import { contextualLLM } from "./contextualLLM";
 import { broadcastToRole } from "./websocketNotifications";
 

@@ -9,7 +9,6 @@ import {
   regulatoryAlerts, regulatoryImpactAnalyses, complianceWeeklyBriefs,
 } from "../../drizzle/schema";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
-import { contextualLLM as invokeLLM } from "../shared/stewardlyWiring"
 import { contextualLLM } from "./contextualLLM";
 
 // ─── Ingest Regulatory Update ────────────────────────────────────────────

@@ -5,6 +5,8 @@
  */
 import { logger } from "./logger";
 
+import { logger } from "./logger";
+
 const REQUIRED_IN_PRODUCTION = [
   "JWT_SECRET",
   "DATABASE_URL",

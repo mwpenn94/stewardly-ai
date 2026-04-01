@@ -237,11 +237,11 @@ export async function resolveAIConfig(
     // ── UNION: arrays ────────────────────────────────────────────────────
     const gr = safeJsonArray(s.globalGuardrails ?? s.guardrails);
     if (gr.length > 0) {
-      config.guardrails = [...new Set([...config.guardrails, ...gr])];
+      config.guardrails = Array.from(new Set([...config.guardrails, ...gr]));
     }
     const pt = safeJsonArray(s.prohibitedTopics);
     if (pt.length > 0) {
-      config.prohibitedTopics = [...new Set([...config.prohibitedTopics, ...pt])];
+      config.prohibitedTopics = Array.from(new Set([...config.prohibitedTopics, ...pt]));
     }
 
     // ── INTERSECT: approved categories ───────────────────────────────────
@@ -371,7 +371,7 @@ function mergeAutonomyPolicy(
     maxAutonomousAmount: override.maxAutonomousAmount ?? base.maxAutonomousAmount,
     autonomousCategories: override.autonomousCategories ?? base.autonomousCategories,
     requireApprovalCategories: override.requireApprovalCategories
-      ? [...new Set([...base.requireApprovalCategories, ...override.requireApprovalCategories])]
+      ? Array.from(new Set([...base.requireApprovalCategories, ...override.requireApprovalCategories]))
       : base.requireApprovalCategories,
     auditAutonomousDecisions: override.auditAutonomousDecisions ?? base.auditAutonomousDecisions,
     escalationPolicy: override.escalationPolicy ?? base.escalationPolicy,

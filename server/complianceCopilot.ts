@@ -12,7 +12,7 @@
 import { getDb } from "./db";
 import { complianceAudit, privacyAudit } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { contextualLLM as invokeLLM } from "./shared/stewardlyWiring"
+import { contextualLLM } from "./services/contextualLLM";
 
 // ─── TYPES ──────────────────────────────────────────────────────
 export type ContentClassification =

@@ -6,7 +6,6 @@
  * - Unified cross-format search
  * - Data highlighting and annotation storage
  */
-import { contextualLLM as invokeLLM } from "../shared/stewardlyWiring"
 import { contextualLLM } from "./contextualLLM";
 import { transcribeAudio } from "../_core/voiceTranscription";
 import { getDb } from "../db";

@@ -4,7 +4,6 @@
 import { getDb } from "../db";
 import { meetings } from "../../drizzle/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
-import { contextualLLM as invokeLLM } from "../shared/stewardlyWiring"
 import { contextualLLM } from "./contextualLLM";
 
 export interface TranscriptionSegment {

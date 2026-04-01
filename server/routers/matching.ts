@@ -10,7 +10,7 @@ import {
   clientAssociations,
 } from "../../drizzle/schema";
 import { eq, and, ne, sql, inArray } from "drizzle-orm";
-import { contextualLLM as invokeLLM } from "../shared/stewardlyWiring"
+import { contextualLLM } from "../services/contextualLLM";
 
 // Matching score factors
 interface MatchScore {

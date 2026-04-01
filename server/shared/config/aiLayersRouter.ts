@@ -1,141 +1,89 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * @platform/config — 5-Layer AI Personalization Router (Platform-Agnostic)
+ * AI Layers Router — CRUD handlers for the 5-layer config system
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * Provides factory functions for creating layer-specific CRUD handlers.
- * Projects wire these into their own routing framework (tRPC, Express, etc.).
- *
- * Role-gated access:
- *   L1 (Platform) — global_admin only
- *   L2 (Organization) — org_admin
- *   L3 (Manager) — manager+ in org
- *   L4 (Professional) — professional+ in org
- *   L5 (User) — own user only
+ * Provides Express-compatible handlers for managing AI configuration layers:
+ *   1: Platform → 2: Organization → 3: Manager → 4: Professional → 5: User
  */
 
-import type { ResolvedAIConfig, LayerLevel } from "./types";
-import { resolveAIConfig, buildLayerOverlayPrompt, validateInheritance } from "./aiConfigResolver";
-import type { ConfigStore, LayerSettings } from "./aiConfigResolver";
+import type { LayerLevel } from "./types";
 
-// ─── ROLE HIERARCHY ──────────────────────────────────────────────────────────
-
-const ROLE_HIERARCHY: Record<string, number> = {
-  user: 0,
-  professional: 1,
-  manager: 2,
-  org_admin: 3,
-  global_admin: 4,
-};
-
-export function hasMinRole(actualRole: string | null | undefined, minRole: string): boolean {
-  return (ROLE_HIERARCHY[actualRole ?? "user"] ?? 0) >= (ROLE_HIERARCHY[minRole] ?? 0);
-}
-
-// ─── LAYER STORE INTERFACE ───────────────────────────────────────────────────
-//
-// Projects implement this for per-layer CRUD operations.
-
-export interface LayerStore extends ConfigStore {
-  /** Get settings for a specific layer. */
-  getLayerConfig(layer: LayerLevel, entityId: number): Promise<Record<string, unknown> | null>;
-  /** Upsert settings for a specific layer. */
-  upsertLayerConfig(
-    layer: LayerLevel,
-    entityId: number,
-    settings: Record<string, unknown>,
-  ): Promise<void>;
-}
-
-// ─── AUTH CONTEXT ────────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────
 
 export interface AuthContext {
   userId: number;
-  /** User's role in the relevant organization. */
-  orgRole?: string | null;
-  /** Whether the user has global admin privileges. */
-  isGlobalAdmin?: boolean;
-  /** Organization ID (for L2–L4 operations). */
-  organizationId?: number;
+  orgId?: number;
+  teamId?: number;
+  role: "admin" | "manager" | "advisor" | "viewer";
 }
 
-// ─── LAYER HANDLERS ──────────────────────────────────────────────────────────
+export interface LayerStore {
+  getLayer(level: LayerLevel, entityId: number): Promise<Record<string, unknown> | null>;
+  setLayer(level: LayerLevel, entityId: number, settings: Record<string, unknown>): Promise<void>;
+  deleteLayer(level: LayerLevel, entityId: number): Promise<void>;
+}
 
 export interface LayerHandlers {
-  getSettings(auth: AuthContext, entityId: number): Promise<Record<string, unknown> | null>;
-  updateSettings(
-    auth: AuthContext,
-    entityId: number,
-    settings: Record<string, unknown>,
-  ): Promise<void>;
-  previewConfig(auth: AuthContext, targetUserId: number): Promise<{
-    config: ResolvedAIConfig;
-    overlayPrompt: string;
-    warnings: string[];
-  }>;
+  get: (req: any, res: any) => Promise<void>;
+  set: (req: any, res: any) => Promise<void>;
+  delete: (req: any, res: any) => Promise<void>;
 }
 
-/**
- * Create layer-specific handlers for a given layer level.
- */
+// ── Role check ───────────────────────────────────────────────────────────────
+
+const ROLE_RANK: Record<string, number> = {
+  viewer: 0,
+  advisor: 1,
+  manager: 2,
+  admin: 3,
+};
+
+export function hasMinRole(auth: AuthContext, minRole: AuthContext["role"]): boolean {
+  return (ROLE_RANK[auth.role] ?? 0) >= (ROLE_RANK[minRole] ?? 999);
+}
+
+// ── Handler factory ──────────────────────────────────────────────────────────
+
 export function createLayerHandlers(
   store: LayerStore,
-  layer: LayerLevel,
-  requiredRole: string,
+  level: LayerLevel,
+  minRole: AuthContext["role"] = "admin"
 ): LayerHandlers {
-  function assertAccess(auth: AuthContext): void {
-    if (layer === 1 && !auth.isGlobalAdmin) {
-      throw new Error("Global admin required for platform layer");
-    }
-    if (layer >= 2 && layer <= 4 && !hasMinRole(auth.orgRole, requiredRole)) {
-      throw new Error(`Role "${requiredRole}" or higher required for layer ${layer}`);
-    }
-    // Layer 5: users can only access their own settings
-    // (entityId enforcement happens below in get/update)
-  }
-
   return {
-    async getSettings(auth: AuthContext, entityId: number) {
-      assertAccess(auth);
-      if (layer === 5 && entityId !== auth.userId && !auth.isGlobalAdmin) {
-        throw new Error("Users can only access their own settings");
-      }
-      return store.getLayerConfig(layer, entityId);
+    async get(req, res) {
+      const auth: AuthContext = req.auth;
+      if (!hasMinRole(auth, "viewer")) return res.status(403).json({ error: "Forbidden" });
+      const entityId = Number(req.params.entityId ?? auth.userId);
+      const settings = await store.getLayer(level, entityId);
+      res.json({ level, entityId, settings: settings ?? {} });
     },
-
-    async updateSettings(auth: AuthContext, entityId: number, settings: Record<string, unknown>) {
-      assertAccess(auth);
-      if (layer === 5 && entityId !== auth.userId && !auth.isGlobalAdmin) {
-        throw new Error("Users can only update their own settings");
-      }
-      await store.upsertLayerConfig(layer, entityId, settings);
+    async set(req, res) {
+      const auth: AuthContext = req.auth;
+      if (!hasMinRole(auth, minRole)) return res.status(403).json({ error: "Forbidden" });
+      const entityId = Number(req.params.entityId ?? auth.userId);
+      await store.setLayer(level, entityId, req.body);
+      res.json({ ok: true, level, entityId });
     },
-
-    async previewConfig(auth: AuthContext, targetUserId: number) {
-      if (layer <= 3 || auth.isGlobalAdmin) {
-        // Admins and managers can preview any user's config
-      } else if (auth.userId !== targetUserId) {
-        throw new Error("Can only preview own config");
-      }
-
-      const config = await resolveAIConfig(store, targetUserId);
-      const overlayPrompt = buildLayerOverlayPrompt(config);
-      const warnings = validateInheritance(config);
-
-      return { config, overlayPrompt, warnings };
+    async delete(req, res) {
+      const auth: AuthContext = req.auth;
+      if (!hasMinRole(auth, minRole)) return res.status(403).json({ error: "Forbidden" });
+      const entityId = Number(req.params.entityId ?? auth.userId);
+      await store.deleteLayer(level, entityId);
+      res.json({ ok: true, level, entityId, deleted: true });
     },
   };
 }
 
 /**
- * Create all five layer handlers at once.
+ * Create handlers for all 5 layers at once.
  */
 export function createAllLayerHandlers(store: LayerStore): Record<LayerLevel, LayerHandlers> {
   return {
-    1: createLayerHandlers(store, 1, "global_admin"),
-    2: createLayerHandlers(store, 2, "org_admin"),
+    1: createLayerHandlers(store, 1, "admin"),
+    2: createLayerHandlers(store, 2, "admin"),
     3: createLayerHandlers(store, 3, "manager"),
-    4: createLayerHandlers(store, 4, "professional"),
-    5: createLayerHandlers(store, 5, "user"),
+    4: createLayerHandlers(store, 4, "advisor"),
+    5: createLayerHandlers(store, 5, "viewer"),
   };
 }

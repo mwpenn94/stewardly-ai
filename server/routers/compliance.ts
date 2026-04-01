@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { contextualLLM as invokeLLM } from "../shared/stewardlyWiring";
+import { contextualLLM, rawInvokeLLM as invokeLLM } from "../shared/stewardlyWiring";
 import { complianceReviews, complianceFlags } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 

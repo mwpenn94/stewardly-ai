@@ -7,7 +7,7 @@
  * 
  * Auto-extracts facts and preferences from every conversation turn.
  */
-import { contextualLLM } from "./shared/stewardlyWiring";
+import { contextualLLM } from "./services/contextualLLM";
 import { getDb } from "./db";
 import { memories, memoryEpisodes } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";

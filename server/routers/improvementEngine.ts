@@ -10,7 +10,7 @@ import {
   conversationFolders, memories,
 } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
-import { contextualLLM as invokeLLM } from "../shared/stewardlyWiring";
+import { contextualLLM, rawInvokeLLM as invokeLLM } from "../shared/stewardlyWiring";
 import { getQuickContext } from "../services/deepContextAssembler";
 
 const LAYERS = ["platform", "organization", "manager", "professional", "user"] as const;
