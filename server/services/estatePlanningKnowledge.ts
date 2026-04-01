@@ -4,6 +4,7 @@
  */
 import { getDb } from "../db";
 import { industryBenchmarks } from "../../drizzle/schema";
+import { logger } from "../_core/logger";
 
 // ─── Estate Planning Knowledge Articles ──────────────────────────────────
 
@@ -245,7 +246,7 @@ export async function seedIndustryBenchmarks(): Promise<number> {
       await db.insert(industryBenchmarks).values(batch);
       inserted += batch.length;
     } catch (e: any) {
-      if (!e?.message?.includes("Duplicate")) console.error("[Benchmarks] Insert error:", e?.message);
+      if (!e?.message?.includes("Duplicate")) logger.error( { operation: "benchmarks", err: e },"[Benchmarks] Insert error:", e?.message);
     }
   }
 

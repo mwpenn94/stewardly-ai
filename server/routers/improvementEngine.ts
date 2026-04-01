@@ -10,8 +10,8 @@ import {
   conversationFolders, memories,
 } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
-import { invokeLLM } from "../_core/llm";
-import { getQuickContext } from "../services/deepContextAssembler";
+import { contextualLLM } from "../shared/stewardlyWiring";
+// getQuickContext removed — contextualLLM handles context injection automatically
 
 const LAYERS = ["platform", "organization", "manager", "professional", "user"] as const;
 const DIRECTIONS = ["people_performance", "system_infrastructure", "usage_optimization"] as const;
@@ -354,15 +354,10 @@ async function generateDirectionalAnalysis(
 ) {
   const directionPrompt = DIRECTION_PROMPTS[direction]?.[layer] || `Analyze ${layer} layer ${direction} metrics.`;
 
-  // Inject deep platform context for richer analysis
-  let platformContext = "";
-  try {
-    if (targetId) {
-      platformContext = await getQuickContext(targetId, `${layer} ${direction} improvement analysis`, "analysis");
-    }
-  } catch { /* deep context is best-effort */ }
-
-  const response = await invokeLLM({
+  // contextualLLM automatically injects platform context via RAG — no manual getQuickContext needed
+  const response = await contextualLLM({
+    userId: targetId,
+    contextType: "analysis",
     messages: [
       {
         role: "system",
@@ -376,7 +371,6 @@ Direction meanings:
 - usage_optimization: How can users at this layer better LEVERAGE the tools available to them?
 
 ${directionPrompt}
-${platformContext ? `\n<platform_context>\n${platformContext}\n</platform_context>` : ""}
 
 Return JSON only.`,
       },

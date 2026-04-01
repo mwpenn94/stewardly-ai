@@ -16,6 +16,7 @@ import { integrationConnections, integrationProviders, enrichmentCache } from ".
 import { eq, and } from "drizzle-orm";
 import { decryptCredentials } from "./encryption";
 import crypto from "crypto";
+import { logger } from "../_core/logger";
 
 const uuid = () => crypto.randomUUID();
 
@@ -73,7 +74,7 @@ async function getApiKeyForProvider(slug: string, retries = 2): Promise<string |
       }
       return null;
     } catch (err: any) {
-      console.warn(`[Pipeline] getApiKeyForProvider("${slug}") attempt ${attempt + 1} failed:`, err.message);
+      logger.warn( { operation: "pipeline" },`[Pipeline] getApiKeyForProvider("${slug}") attempt ${attempt + 1} failed:`, err.message);
       if (attempt < retries) {
         await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
       } else {
@@ -128,7 +129,7 @@ async function storeDataPoints(
       });
       stored++;
     } catch (e: any) {
-      console.warn(`[Pipeline] Failed to store ${dp.key}:`, e.message);
+      logger.warn( { operation: "pipeline" },`[Pipeline] Failed to store ${dp.key}:`, e.message);
     }
   }
   return stored;
@@ -292,13 +293,13 @@ async function beaFetchWithRetry(url: string, retries = 3): Promise<any> {
       const err = data?.BEAAPI?.Results?.Error;
       // Error 4 = rate limit (misleading "UserId not active" message)
       if (err?.APIErrorCode === "4" && attempt < retries - 1) {
-        console.warn(`[BEA] Rate limited (Error 4), retry ${attempt + 1}/${retries}...`);
+        logger.warn( { operation: "bEA" },`[BEA] Rate limited (Error 4), retry ${attempt + 1}/${retries}...`);
         continue;
       }
       return data;
     } catch (e: any) {
       if (attempt === retries - 1) throw e;
-      console.warn(`[BEA] Fetch error on attempt ${attempt + 1}: ${e.message}`);
+      logger.warn( { operation: "bEA" },`[BEA] Fetch error on attempt ${attempt + 1}: ${e.message}`);
     }
   }
   return null;
@@ -578,7 +579,7 @@ async function updateConnectionSyncStatus(providerSlug: string, recordsFetched: 
         .where(eq(integrationConnections.id, conn.id));
     }
   } catch (e: any) {
-    console.warn(`[Pipeline] updateConnectionSyncStatus("${providerSlug}") failed:`, e.message);
+    logger.warn( { operation: "pipeline" },`[Pipeline] updateConnectionSyncStatus("${providerSlug}") failed:`, e.message);
   }
 }
 
@@ -850,7 +851,7 @@ async function fetchFINRAData(): Promise<PipelineResult> {
 
 // ─── Run All Pipelines ──────────────────────────────────────────────────
 export async function runAllDataPipelines(): Promise<PipelineResult[]> {
-  console.log("[DataPipelines] Starting all data pipelines (6 providers)...");
+  logger.info( { operation: "dataPipelines" },"[DataPipelines] Starting all data pipelines (6 providers)...");
   
   const results = await Promise.allSettled([
     fetchBLSData(),
@@ -885,7 +886,7 @@ export async function runAllDataPipelines(): Promise<PipelineResult[]> {
         result.error,
       );
     } catch (e: any) {
-      console.warn(`[DataPipelines] Failed to update sync status for ${result.providerSlug}:`, e.message);
+      logger.warn( { operation: "dataPipelines" },`[DataPipelines] Failed to update sync status for ${result.providerSlug}:`, e.message);
     }
   }
 

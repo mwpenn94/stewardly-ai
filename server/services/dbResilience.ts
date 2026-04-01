@@ -7,6 +7,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 export interface RetryOptions {
@@ -39,7 +40,7 @@ export async function withRetry<T>(
 
       if (attempt < maxRetries && isTransient) {
         const delay = baseDelayMs * Math.pow(backoffMultiplier, attempt);
-        console.warn(
+        logger.warn( { operation: "dbResilience" },
           `[DbResilience] ${context} attempt ${attempt + 1}/${maxRetries + 1} failed (transient): ${err.message}. Retrying in ${Math.round(delay)}ms...`,
         );
         await sleep(delay);
@@ -47,7 +48,7 @@ export async function withRetry<T>(
         // Non-transient errors: still retry once in case it's a fluke
         if (attempt === 0) {
           const delay = baseDelayMs;
-          console.warn(
+          logger.warn( { operation: "dbResilience" },
             `[DbResilience] ${context} attempt ${attempt + 1} failed: ${err.message}. Retrying once in ${delay}ms...`,
           );
           await sleep(delay);
@@ -91,7 +92,7 @@ export async function ensureDbReady(maxWaitMs = 15000): Promise<boolean> {
     await sleep(checkInterval);
   }
 
-  console.warn(`[DbResilience] DB not ready after ${maxWaitMs}ms`);
+  logger.warn( { operation: "dbResilience" },`[DbResilience] DB not ready after ${maxWaitMs}ms`);
   return false;
 }
 
@@ -110,7 +111,7 @@ export async function safeDbOperation<T>(
     }, retryOpts);
   } catch (err: any) {
     if (fallback !== undefined) {
-      console.warn(
+      logger.warn( { operation: "dbResilience" },
         `[DbResilience] ${retryOpts.context || "safeDbOperation"} failed, using fallback: ${err.message}`,
       );
       return fallback;

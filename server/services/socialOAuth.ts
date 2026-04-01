@@ -20,6 +20,7 @@ import * as db from "../db";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { sdk } from "../_core/sdk";
 import { ENV } from "../_core/env";
+import { logger } from "../_core/logger";
 
 // ─── GOOGLE OIDC ─────────────────────────────────────────────────
 
@@ -109,7 +110,7 @@ async function issueSessionAndRedirect(
         // Trigger migration via internal call
         const targetUser = await db.getUserByOpenId(openId);
         if (targetUser) {
-          console.log(`[SocialOAuth] Migrating guest ${guestOpenId} → ${openId}`);
+          logger.info( { operation: "socialOAuth" },`[SocialOAuth] Migrating guest ${guestOpenId} → ${openId}`);
           // Migration is handled by the existing migrate-guest endpoint logic
           // We'll do a lightweight version here
           const { getDb } = await import("../db");
@@ -126,7 +127,7 @@ async function issueSessionAndRedirect(
         }
       }
     } catch (err) {
-      console.error("[SocialOAuth] Guest migration failed:", err);
+      logger.error( { operation: "socialOAuth", err: err },"[SocialOAuth] Guest migration failed:", err);
     }
   }
 
@@ -171,7 +172,7 @@ export function registerSocialAuthRoutes(app: Express) {
     const error = req.query.error as string;
 
     if (error) {
-      console.error("[Google OAuth] Error:", error);
+      logger.error( { operation: "googleOauth", err: error },"[Google OAuth] Error:", error);
       res.redirect(302, "/?error=google_auth_failed");
       return;
     }
@@ -200,7 +201,7 @@ export function registerSocialAuthRoutes(app: Express) {
 
       if (!tokenRes.ok) {
         const errBody = await tokenRes.text();
-        console.error("[Google OAuth] Token exchange failed:", errBody);
+        logger.error( { operation: "googleOauth" },"[Google OAuth] Token exchange failed:", errBody);
         res.redirect(302, `${returnPath || "/"}?error=google_token_failed`);
         return;
       }
@@ -224,7 +225,7 @@ export function registerSocialAuthRoutes(app: Express) {
           peopleData = await peopleRes.json() as GooglePeopleData;
         }
       } catch (err) {
-        console.warn("[Google OAuth] People API fetch failed (non-critical):", err);
+        logger.warn( { operation: "googleOauth" },"[Google OAuth] People API fetch failed (non-critical):", err);
       }
 
       // Create a stable openId from Google sub
@@ -282,13 +283,13 @@ export function registerSocialAuthRoutes(app: Express) {
         });
 
         await dbConn.update(users).set(enrichment).where(eq(users.openId, openId)).catch(err => {
-          console.error("[Google OAuth] Profile enrichment failed:", err);
+          logger.error( { operation: "googleOauth", err: err },"[Google OAuth] Profile enrichment failed:", err);
         });
       }
 
       await issueSessionAndRedirect(req, res, openId, userInfo.name, returnPath, guestOpenId);
     } catch (err) {
-      console.error("[Google OAuth] Callback failed:", err);
+      logger.error( { operation: "googleOauth", err: err },"[Google OAuth] Callback failed:", err);
       res.redirect(302, `${returnPath || "/"}?error=google_auth_failed`);
     }
   });
@@ -326,7 +327,7 @@ export function registerSocialAuthRoutes(app: Express) {
     const error = req.query.error as string;
 
     if (error) {
-      console.error("[LinkedIn OAuth] Error:", error, req.query.error_description);
+      logger.error( { operation: "linkedinOauth", err: error },"[LinkedIn OAuth] Error:", error, req.query.error_description);
       res.redirect(302, "/?error=linkedin_auth_failed");
       return;
     }
@@ -355,7 +356,7 @@ export function registerSocialAuthRoutes(app: Express) {
 
       if (!tokenRes.ok) {
         const errBody = await tokenRes.text();
-        console.error("[LinkedIn OAuth] Token exchange failed:", errBody);
+        logger.error( { operation: "linkedinOauth" },"[LinkedIn OAuth] Token exchange failed:", errBody);
         res.redirect(302, `${returnPath || "/"}?error=linkedin_token_failed`);
         return;
       }
@@ -369,7 +370,7 @@ export function registerSocialAuthRoutes(app: Express) {
 
       if (!userInfoRes.ok) {
         const errBody = await userInfoRes.text();
-        console.error("[LinkedIn OAuth] Userinfo failed:", errBody);
+        logger.error( { operation: "linkedinOauth" },"[LinkedIn OAuth] Userinfo failed:", errBody);
         res.redirect(302, `${returnPath || "/"}?error=linkedin_userinfo_failed`);
         return;
       }
@@ -414,13 +415,13 @@ export function registerSocialAuthRoutes(app: Express) {
         });
 
         await dbConn.update(users).set(enrichment).where(eq(users.openId, openId)).catch(err => {
-          console.error("[LinkedIn OAuth] Profile enrichment failed:", err);
+          logger.error( { operation: "linkedinOauth", err: err },"[LinkedIn OAuth] Profile enrichment failed:", err);
         });
       }
 
       await issueSessionAndRedirect(req, res, openId, userInfo.name, returnPath, guestOpenId);
     } catch (err) {
-      console.error("[LinkedIn OAuth] Callback failed:", err);
+      logger.error( { operation: "linkedinOauth", err: err },"[LinkedIn OAuth] Callback failed:", err);
       res.redirect(302, `${returnPath || "/"}?error=linkedin_auth_failed`);
     }
   });

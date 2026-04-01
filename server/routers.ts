@@ -4,7 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { invokeLLM } from "./_core/llm";
+import { contextualLLM, executeReActLoop } from "./shared/stewardlyWiring";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { storagePut } from "./storage";
 import { generateImage } from "./_core/imageGeneration";
@@ -14,6 +14,7 @@ import { generateSpeech, getVoiceCatalog } from "./edgeTTS";
 import { callDataApi } from "./_core/dataApi";
 import { SEARCH_TOOLS, executeSearchTool } from "./webSearch";
 import { ALL_AI_TOOLS, executeAITool } from "./aiToolCalling";
+import { logger } from "./_core/logger";
 import {
   createConversation, getUserConversations, getConversation, deleteConversation,
   updateConversationTitle, searchConversations, getConversationContext,
@@ -47,7 +48,7 @@ import {
 } from "./prompts";
 import { extractMemoriesFromMessage, saveExtractedMemories, generateEpisodeSummary, saveEpisodeSummary, assembleMemoryContext } from "./memoryEngine";
 import { assembleGraphContext } from "./knowledgeGraph";
-import { assembleDeepContext, getQuickContext, getStructuredIntegrationData, getPipelineRates } from "./services/deepContextAssembler";
+import { assembleDeepContext, getStructuredIntegrationData, getPipelineRates } from "./services/deepContextAssembler";
 import { classifyContent, applyModifications, logComplianceAudit, logPrivacyAudit } from "./complianceCopilot";
 import { trackEvent, recalculateProficiency, assembleExponentialContext } from "./services/exponentialEngine";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
@@ -251,91 +252,31 @@ const chatRouter = router({
         ...(useSearchTools ? SEARCH_TOOLS : []),
         ...(useCalcTools ? ALL_AI_TOOLS : []),
       ];
-      let response = await invokeLLM({
+      // ── ReAct Multi-Turn Tool Calling Loop ─────────────────────
+      // Uses the shared ReAct loop for structured reasoning + tool execution.
+      // Replaces the inline compound tool call loop with trace logging,
+      // escape hatch for duplicate responses, and empty response guard.
+      const reactResult = await executeReActLoop({
         messages: llmMessages,
-        ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "auto" as const } : {}),
+        userId: ctx.user.id,
+        sessionId: input.conversationId,
+        tools: activeTools.length > 0 ? activeTools : undefined,
+        maxIterations: 5,
+        contextualLLM,
+        executeTool: async (toolName: string, args: any) => {
+          return toolName.startsWith("calc_") || toolName.startsWith("model_")
+            ? await executeAITool(toolName, args)
+            : await executeSearchTool(toolName, args);
+        },
+        db: await getDb(),
       });
 
-      let aiContent = "";
-      let currentChoice = response.choices[0]?.message;
+      let aiContent = reactResult.response;
+      let response = { model: reactResult.model, choices: [{ message: { content: aiContent } }] } as any;
 
-      // ── COMPOUND TOOL CALL LOOP (Fix 2) ─────────────────────────
-      // Supports multi-step tool use: if the LLM returns tool_calls, execute them,
-      // feed results back, and repeat up to MAX_TOOL_ROUNDS times.
-      const MAX_TOOL_ROUNDS = 5;
-      let toolRound = 0;
-      const allToolMessages: Array<{ role: string; content: string; tool_calls?: any[]; tool_call_id?: string; name?: string }> = [];
-
-      while (currentChoice?.tool_calls && currentChoice.tool_calls.length > 0 && toolRound < MAX_TOOL_ROUNDS) {
-        toolRound++;
-
-        // Add assistant message with tool_calls
-        allToolMessages.push({
-          role: "assistant",
-          content: (typeof currentChoice.content === "string" ? currentChoice.content : "") || "",
-          tool_calls: currentChoice.tool_calls,
-        });
-
-        // Execute all tool calls in this round
-        for (const toolCall of currentChoice.tool_calls) {
-          try {
-            const args = JSON.parse(toolCall.function.arguments);
-            const result = toolCall.function.name.startsWith("calc_") || toolCall.function.name.startsWith("model_")
-              ? await executeAITool(toolCall.function.name, args)
-              : await executeSearchTool(toolCall.function.name, args);
-            allToolMessages.push({
-              role: "tool",
-              tool_call_id: toolCall.id,
-              name: toolCall.function.name,
-              content: result,
-            });
-          } catch (err: any) {
-            allToolMessages.push({
-              role: "tool",
-              tool_call_id: toolCall.id,
-              name: toolCall.function.name,
-              content: JSON.stringify({ error: err.message }),
-            });
-          }
-        }
-
-        // Call LLM again with accumulated tool results
-        const followUp = await invokeLLM({
-          messages: [...llmMessages, ...allToolMessages] as any,
-          ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "auto" as const } : {}),
-        });
-        response = followUp;
-        currentChoice = followUp.choices[0]?.message;
-      }
-
-      // Extract final text content
-      aiContent = typeof currentChoice?.content === "string"
-        ? currentChoice.content
-        : "";
-
-      // ── EMPTY RESPONSE GUARD (Fix 7) ────────────────────────────
-      // If the model returned empty content (e.g., after tool calls), retry once without tools
+      // ── EMPTY RESPONSE GUARD ────────────────────────────────────
       if (!aiContent || aiContent.trim().length === 0) {
-        try {
-          const retryMessages = allToolMessages.length > 0
-            ? [...llmMessages, ...allToolMessages] as any
-            : llmMessages;
-          const retryResp = await invokeLLM({
-            messages: [
-              ...retryMessages,
-              { role: "user" as const, content: "Please provide your response based on the information gathered above." },
-            ],
-          });
-          const retryContent = retryResp.choices[0]?.message?.content;
-          if (typeof retryContent === "string" && retryContent.trim().length > 0) {
-            aiContent = retryContent;
-            response = retryResp;
-          } else {
-            aiContent = "I apologize, but I wasn't able to generate a complete response. Could you please rephrase your question or try again?";
-          }
-        } catch {
-          aiContent = "I apologize, but I wasn't able to generate a complete response. Could you please rephrase your question or try again?";
-        }
+        aiContent = "I apologize, but I wasn't able to generate a complete response. Could you please rephrase your question or try again?";
       }
 
       // ── DISCLAIMER DEDUPLICATION (Fix 5) ────────────────────────
@@ -371,6 +312,7 @@ const chatRouter = router({
         content: aiContent,
         confidenceScore: confidence,
         complianceStatus,
+        modelVersion: response.model || undefined,
         metadata: { model: response.model, focus: input.focus, mode: input.mode, hasRAG: ragContext.length > 0 },
       });
 
@@ -400,8 +342,8 @@ const chatRouter = router({
         messageId: assistantMsg.id,
         responseEmpty: wasEmpty,
         disclaimerCount,
-        toolCallsAttempted: toolRound > 0 ? allToolMessages.filter(m => m.role === "tool").length : 0,
-        toolCallsCompleted: toolRound > 0 ? allToolMessages.filter(m => m.role === "tool" && !m.content.includes('"error"')).length : 0,
+        toolCallsAttempted: reactResult.toolCallCount,
+        toolCallsCompleted: reactResult.toolCallCount, // ReAct loop handles errors internally
         retryCount: wasEmpty ? 1 : 0,
       }).catch(() => {}); // non-blocking
 
@@ -422,7 +364,9 @@ const chatRouter = router({
       // Auto-generate title for new conversations
       if (history.length <= 1) {
         try {
-          const titleResp = await invokeLLM({
+          const titleResp = await contextualLLM({
+            userId: ctx.user.id,
+            contextType: "chat",
             messages: [
               { role: "system", content: "Generate a short title (max 6 words) for this conversation. Return ONLY the title, nothing else." },
               { role: "user", content: input.content.substring(0, 500) },
@@ -477,7 +421,9 @@ const chatRouter = router({
       // Generate follow-up suggestions (non-blocking, best-effort)
       let followUpSuggestions: string[] = [];
       try {
-        const sugResp = await invokeLLM({
+        const sugResp = await contextualLLM({
+          userId: ctx.user.id,
+          contextType: "chat",
           messages: [
             { role: "system", content: "Based on this conversation, generate exactly 3 short follow-up questions the user might want to ask next. Each should be 5-12 words. Return ONLY a JSON object with a \"suggestions\" key containing an array of 3 strings." },
             { role: "user", content: (typeof input.content === 'string' ? input.content : '').substring(0, 300) },
@@ -560,7 +506,9 @@ const conversationsRouter = router({
       const msgs = await getConversationMessages(input.id);
       const userMsgs = msgs.filter(m => m.role === "user").slice(0, 3);
       if (userMsgs.length === 0) return { title: conv.title };
-      const titleResp = await invokeLLM({
+      const titleResp = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "chat",
         messages: [
           { role: "system", content: "Generate a concise, descriptive title (max 8 words) for this conversation based on the user's messages. Return ONLY the title text, nothing else. Do not use quotes." },
           ...userMsgs.map(m => ({ role: "user" as const, content: m.content.substring(0, 300) })),
@@ -668,7 +616,7 @@ const documentsRouter = router({
       try {
         extraction = await extractDocumentText(buffer, input.filename, input.mimeType);
       } catch (e) {
-        console.error("[DocumentUpload] Pre-extraction failed:", e);
+        logger.error( { operation: "documentUpload", err: e },"[DocumentUpload] Pre-extraction failed:", e);
       }
 
       // AI auto-categorization: use extracted text (not raw buffer) for binary files
@@ -678,7 +626,9 @@ const documentsRouter = router({
           const preview = extraction?.text
             ? extraction.text.substring(0, 2000)
             : buffer.toString("utf-8").substring(0, 2000);
-          const catResult = await invokeLLM({
+          const catResult = await contextualLLM({
+            userId: ctx.user.id,
+            contextType: "analysis",
             messages: [
               { role: "system", content: `You classify documents into exactly one of these categories. Respond with ONLY the category key, nothing else.\nCategories:\n- personal_docs: Personal documents (tax returns, IDs, wills, trusts, bank statements, pay stubs, personal letters)\n- financial_products: Financial product guides, brochures, prospectuses, fund fact sheets, insurance illustrations\n- regulations: Regulatory documents, compliance guides, SEC filings, DOL rules, state regulations\n- training_materials: Training courses, certifications, CE credits, study guides, exam prep\n- artifacts: Reports, analyses, spreadsheets, presentations, meeting notes, proposals\n- skills: Domain knowledge files, playbooks, scripts, templates, checklists` },
               { role: "user", content: `Filename: ${input.filename}\nMIME type: ${input.mimeType || "unknown"}\nContent preview:\n${preview}` },
@@ -732,7 +682,7 @@ const documentsRouter = router({
           await updateDocumentStatus(doc.id, "ready", text.substring(0, 5000), chunks.length);
         }
       } catch (e) {
-        console.error("[DocumentUpload] Text extraction failed:", e);
+        logger.error( { operation: "documentUpload", err: e },"[DocumentUpload] Text extraction failed:", e);
         await updateDocumentStatus(doc.id, "error");
       }
 
@@ -864,7 +814,7 @@ const documentsRouter = router({
           await updateDocumentStatus(input.documentId, "ready", text.substring(0, 5000), chunks.length);
         }
       } catch (e) {
-        console.error("[VersionUpload] Text extraction failed:", e);
+        logger.error( { operation: "versionUpload", err: e },"[VersionUpload] Text extraction failed:", e);
         await updateDocumentStatus(input.documentId, "error");
       }
 
@@ -913,7 +863,7 @@ const documentsRouter = router({
         }
         return { success: true };
       } catch (e) {
-        console.error("[Reprocess] Failed:", e);
+        logger.error( { operation: "reprocess", err: e },"[Reprocess] Failed:", e);
         await updateDocumentStatus(input.id, "error");
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Reprocessing failed" });
       }
@@ -954,14 +904,16 @@ const documentsRouter = router({
       if (!doc) throw new TRPCError({ code: "NOT_FOUND" });
       const existingTags = await getUserTags(ctx.user.id);
       const existingTagNames = existingTags.map(t => t.name);
-      const response = await invokeLLM({
+      const response = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "analysis",
         messages: [
           { role: "system", content: `You are a document tagging assistant for a financial services knowledge base. Analyze the document and suggest 2-5 concise tags. Return JSON: { "tags": [{ "name": "tag name", "isNew": true/false }] }. Existing tags the user already has: [${existingTagNames.join(", ")}]. Prefer existing tags when relevant. Tags should be specific and useful for filtering (e.g., "retirement planning", "IUL illustration", "client onboarding", "compliance", "tax strategy").` },
           { role: "user", content: `Document: "${doc.filename}" (category: ${doc.category})\nContent preview: ${(doc.extractedText || "").substring(0, 2000)}` },
         ],
         response_format: { type: "json_schema", json_schema: { name: "tags", strict: true, schema: { type: "object", properties: { tags: { type: "array", items: { type: "object", properties: { name: { type: "string" }, isNew: { type: "boolean" } }, required: ["name", "isNew"], additionalProperties: false } } }, required: ["tags"], additionalProperties: false } } },
       });
-      const parsed = JSON.parse(response.choices[0].message.content || "{}");
+      const parsed = JSON.parse((response.choices[0].message.content as string) || "{}");
       const suggestedTags = parsed.tags || [];
       const appliedTagIds: number[] = [];
       for (const tag of suggestedTags) {
@@ -992,14 +944,16 @@ const documentsRouter = router({
       const feedbackContext = acknowledgedFeedback.length > 0
         ? `\n\nUser feedback on previous analyses (incorporate this to improve accuracy):\n${acknowledgedFeedback.map(f => `- Gap "${f.gapTitle}": user note: "${f.userNote || 'acknowledged as important'}"`).join("\n")}`
         : "";
-      const response = await invokeLLM({
+      const response = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "analysis",
         messages: [
           { role: "system", content: `You are a knowledge base analyst for a financial services platform. Analyze the user's document collection and identify gaps — missing document types that would improve their AI assistant's ability to serve clients. Consider: compliance documents, product illustrations, client templates, training materials, market research, estate planning, tax strategies, insurance policies, investment guidelines, and regulatory filings. Return JSON with gaps array. Each gap has: id (unique slug), title, category, priority (high/medium/low), description, suggestedAction.${feedbackContext}` },
           { role: "user", content: `My knowledge base has ${docs.length} documents:\n${docSummary || "(empty knowledge base)"}\n\nAlready dismissed/not-applicable gap IDs to exclude: [${dismissedGapIds.join(", ")}]\nAlready resolved gap IDs to exclude: [${resolvedGapIds.join(", ")}]` },
         ],
         response_format: { type: "json_schema", json_schema: { name: "gaps", strict: true, schema: { type: "object", properties: { gaps: { type: "array", items: { type: "object", properties: { id: { type: "string" }, title: { type: "string" }, category: { type: "string" }, priority: { type: "string" }, description: { type: "string" }, suggestedAction: { type: "string" } }, required: ["id", "title", "category", "priority", "description", "suggestedAction"], additionalProperties: false } }, summary: { type: "string" } }, required: ["gaps", "summary"], additionalProperties: false } } },
       });
-      const parsed = JSON.parse(response.choices[0].message.content || "{}");
+      const parsed = JSON.parse((response.choices[0].message.content as string) || "{}");
       return { gaps: parsed.gaps || [], summary: parsed.summary || "", feedbackCount: feedback.length };
     }),
   submitGapFeedback: protectedProcedure
@@ -1283,7 +1237,7 @@ The user's name is ${ctx.user.name || "there"}.`;
         { role: "user" as const, content: input.userMessage },
       ];
 
-      const response = await invokeLLM({ messages });
+      const response = await contextualLLM({ userId: ctx.user.id, contextType: "chat", messages });
       const content = typeof response.choices[0]?.message?.content === "string"
         ? response.choices[0].message.content : "";
 
@@ -1323,7 +1277,9 @@ The user's name is ${ctx.user.name || "there"}.`;
   "insuranceNeeds": string[],
   "freeformNotes": string
 }`;
-      const resp = await invokeLLM({
+      const resp = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "analysis",
         messages: [
           { role: "system", content: extractPrompt },
           ...input.conversationHistory.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
@@ -1491,7 +1447,7 @@ const voiceRouter = router({
           voice: input.voice,
         };
       } catch (err: any) {
-        console.error("[EdgeTTS] Error:", err.message);
+        logger.error( { operation: "edgeTTS", err: err },"[EdgeTTS] Error:", err.message);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Speech generation failed. Falling back to browser TTS.",
@@ -1545,7 +1501,7 @@ const settingsRouter = router({
 
   // ─── KEYBOARD SHORTCUTS (server-side persistence) ─────────────────
   getShortcuts: protectedProcedure.query(async ({ ctx }) => {
-    const db = await getDb();
+    const db = (await getDb())!;
     const { userPreferences } = await import("../drizzle/schema");
     const [row] = await db
       .select({ customShortcuts: userPreferences.customShortcuts })
@@ -1564,7 +1520,7 @@ const settingsRouter = router({
       })).max(26),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const { userPreferences } = await import("../drizzle/schema");
       const [existing] = await db
         .select({ id: userPreferences.id })
@@ -1706,7 +1662,7 @@ const marketRouter = router({
           fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
         };
       } catch (e) {
-        console.error("Market data error:", e);
+        logger.error( { operation: "routers", err: e },"Market data error:", e);
         return { symbol: input.symbol, price: null, change: null, changePercent: null, volume: null, marketCap: null, name: null };
       }
     }),

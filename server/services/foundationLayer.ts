@@ -7,6 +7,7 @@
 
 import { getDb } from "../db";
 import { eq, and, sql, desc, asc } from "drizzle-orm";
+import { logger } from "../_core/logger";
 import {
   scrapingAudit, scrapingCache, dataFreshnessRegistry,
   rateProfiles, rateSignalLog, probeResults,
@@ -111,7 +112,7 @@ export async function logScrapingRequest(entry: InsertScrapingAudit): Promise<vo
   try {
     await (await db()).insert(scrapingAudit).values(entry);
   } catch (e) {
-    console.error("[ScrapingAudit] Failed to log:", e);
+    logger.error( { operation: "scrapingAudit", err: e },"[ScrapingAudit] Failed to log:", e);
   }
 }
 

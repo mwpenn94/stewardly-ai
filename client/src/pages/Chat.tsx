@@ -368,6 +368,8 @@ export default function Chat() {
   };
   const [mode, setMode] = useState<AdvisoryMode>("client");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [useStreaming, setUseStreaming] = useState(true);
+  const [streamingContent, setStreamingContent] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showFocusPicker, setShowFocusPicker] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -401,6 +403,7 @@ export default function Chat() {
   const handleSendRef = useRef<(text: string) => void>(() => {});
   // Mutex guard: prevents concurrent conversation creation (race condition)
   const creatingConversationRef = useRef(false);
+  const streamAbortRef = useRef<AbortController | null>(null);
 
   // ─── GUARD REF ─────────────────────────────────────────────────
   // Blocks voice recognition during TTS playback AND AI processing.
@@ -743,30 +746,162 @@ export default function Chat() {
         creatingConversationRef.current = false;
       }
 
-      const result = await sendMutation.mutateAsync({
-        content: trimmed,
-        conversationId: activeConvId,
-        mode,
-        focus: focusSerialized,
-      });
+      // ─── SSE STREAMING PATH ───
+      if (useStreaming) {
+        setStreamingContent("");
+        // Add a placeholder assistant message that will be updated as tokens arrive
+        const placeholderMsg = {
+          role: "assistant" as const,
+          content: "",
+          createdAt: new Date(),
+        };
+        setMessages(prev => [...prev, placeholderMsg]);
 
-      const assistantMsg = {
-        id: result.id,
-        role: "assistant" as const,
-        content: result.content,
-        confidenceScore: result.confidenceScore,
-        complianceStatus: result.complianceStatus,
-        createdAt: new Date(),
-      };
-      setMessages(prev => [...prev, assistantMsg]);
+        try {
+          // Abort any previous stream before starting a new one
+          streamAbortRef.current?.abort();
+          const abortController = new AbortController();
+          streamAbortRef.current = abortController;
 
-      // Set follow-up suggestions if returned
-      if (result.followUpSuggestions && result.followUpSuggestions.length > 0) {
-        setFollowUpSuggestions(result.followUpSuggestions);
-      }
+          const sseResponse = await fetch("/api/chat/stream", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            signal: abortController.signal,
+            body: JSON.stringify({
+              messages: [
+                ...messages.map(m => ({ role: m.role, content: m.content })),
+                { role: "user", content: trimmed },
+              ],
+              sessionId: activeConvId,
+              contextType: "chat",
+            }),
+          });
 
-      if (ttsEnabled) {
-        tts.speak(result.content);
+          if (!sseResponse.ok) {
+            throw new Error(`Stream request failed: ${sseResponse.status}`);
+          }
+
+          const reader = sseResponse.body!.getReader();
+          const decoder = new TextDecoder();
+          let accumulated = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const text = decoder.decode(value, { stream: true });
+            const lines = text.split("\n");
+
+            for (const line of lines) {
+              const trimmedLine = line.trim();
+              if (!trimmedLine.startsWith("data: ")) continue;
+              try {
+                const event = JSON.parse(trimmedLine.slice(6));
+                if (event.type === "token" && event.content) {
+                  accumulated += event.content;
+                  setStreamingContent(accumulated);
+                  // Update the last message in-place
+                  setMessages(prev => {
+                    const updated = [...prev];
+                    const last = updated[updated.length - 1];
+                    if (last && last.role === "assistant") {
+                      updated[updated.length - 1] = { ...last, content: accumulated };
+                    }
+                    return updated;
+                  });
+                } else if (event.type === "done") {
+                  // Finalize — save via tRPC to persist the message server-side
+                  const persistResult = await sendMutation.mutateAsync({
+                    content: trimmed,
+                    conversationId: activeConvId,
+                    mode,
+                    focus: focusSerialized,
+                  });
+                  // Update the placeholder with the persisted message data
+                  setMessages(prev => {
+                    const updated = [...prev];
+                    const last = updated[updated.length - 1];
+                    if (last && last.role === "assistant") {
+                      updated[updated.length - 1] = {
+                        ...last,
+                        id: persistResult.id,
+                        content: accumulated || persistResult.content,
+                        confidenceScore: persistResult.confidenceScore,
+                        complianceStatus: persistResult.complianceStatus,
+                      };
+                    }
+                    return updated;
+                  });
+                  if (persistResult.followUpSuggestions?.length) {
+                    setFollowUpSuggestions(persistResult.followUpSuggestions);
+                  }
+                  if (ttsEnabled) tts.speak(accumulated || persistResult.content);
+                } else if (event.type === "error") {
+                  throw new Error(event.message || "Streaming error");
+                }
+              } catch (parseErr: any) {
+                // Skip unparseable SSE lines (heartbeats, etc.)
+                if (parseErr.message && !parseErr.message.includes("JSON")) throw parseErr;
+              }
+            }
+          }
+          setStreamingContent("");
+          streamAbortRef.current = null;
+        } catch (streamErr: any) {
+          streamAbortRef.current = null;
+          // If aborted (user navigated away or sent new message), don't fallback
+          if (streamErr?.name === "AbortError") {
+            setStreamingContent("");
+            return;
+          }
+          // If streaming fails, fall back to tRPC
+          setMessages(prev => prev.slice(0, -1)); // remove placeholder
+          const result = await sendMutation.mutateAsync({
+            content: trimmed,
+            conversationId: activeConvId,
+            mode,
+            focus: focusSerialized,
+          });
+          const assistantMsg = {
+            id: result.id,
+            role: "assistant" as const,
+            content: result.content,
+            confidenceScore: result.confidenceScore,
+            complianceStatus: result.complianceStatus,
+            createdAt: new Date(),
+          };
+          setMessages(prev => [...prev, assistantMsg]);
+          if (result.followUpSuggestions?.length) setFollowUpSuggestions(result.followUpSuggestions);
+          if (ttsEnabled) tts.speak(result.content);
+        }
+      } else {
+        // ─── LEGACY tRPC PATH (useStreaming = false) ───
+        const result = await sendMutation.mutateAsync({
+          content: trimmed,
+          conversationId: activeConvId,
+          mode,
+          focus: focusSerialized,
+        });
+
+        const assistantMsg = {
+          id: result.id,
+          role: "assistant" as const,
+          content: result.content,
+          confidenceScore: result.confidenceScore,
+          complianceStatus: result.complianceStatus,
+          createdAt: new Date(),
+        };
+        setMessages(prev => [...prev, assistantMsg]);
+
+        // Set follow-up suggestions if returned
+        if (result.followUpSuggestions && result.followUpSuggestions.length > 0) {
+          setFollowUpSuggestions(result.followUpSuggestions);
+        }
+
+        if (ttsEnabled) {
+          tts.speak(result.content);
+        }
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to send message");
@@ -786,6 +921,14 @@ export default function Chat() {
   };
 
   const handleSend = () => handleSendWithText(input);
+
+  // Abort any active SSE stream on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+    };
+  }, []);
 
   // Keep the ref in sync for voice recognition callback
   useEffect(() => {
@@ -1570,7 +1713,7 @@ export default function Chat() {
                 </div>
               ))}
 
-              {isStreaming && (
+              {isStreaming && !streamingContent && (
                 <div className="flex gap-3">
                   <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${avatarUrl ? "" : "bg-accent/10"}`}>
                     {avatarUrl ? <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
@@ -1816,6 +1959,25 @@ export default function Chat() {
 
               {/* Spacer pushes right-side buttons to far right */}
               <div className="flex-1" />
+
+              {/* Streaming toggle */}
+              {!isAnonymous && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className={`p-2.5 rounded-full transition-all ${
+                        useStreaming
+                          ? "bg-accent/15 text-accent"
+                          : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() => setUseStreaming(!useStreaming)}
+                    >
+                      <Zap className="w-5 h-5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{useStreaming ? "Streaming on" : "Streaming off"}</TooltipContent>
+                </Tooltip>
+              )}
 
               {/* Audio toggle */}
               <Tooltip>

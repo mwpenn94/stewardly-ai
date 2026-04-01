@@ -5,8 +5,7 @@
 import { getDb } from "../db";
 import { coiDisclosures, recommendationsLog, modelCards, performanceMetrics, reportTemplates, reportJobs } from "../../drizzle/schema";
 import { eq, and, desc, gte, sql } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm"
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1D: Reg BI Documentation Generator
@@ -32,7 +31,7 @@ export async function generateRegBIDocumentation(params: {
   recommendationSummary: string;
   clientProfile: Record<string, unknown>;
 }): Promise<RegBIDocument> {
-  const response = await contextualLLM({ userId: userId, contextType: "compliance",
+  const response = await contextualLLM({ userId: params.userId, contextType: "compliance",
     messages: [
       { role: "system", content: `You are a Reg BI compliance documentation specialist. Generate comprehensive Regulation Best Interest documentation for a financial product recommendation. Include: reasonable basis, customer-specific basis, quantitative analysis, conflicts, alternatives, and cost analysis. Return JSON.` },
       { role: "user", content: `Generate Reg BI documentation for: ${JSON.stringify(params)}` },
@@ -181,7 +180,7 @@ export async function generateReport(params: {
     if (!template) throw new Error("Template not found");
 
     // Generate report content via LLM
-    const response = await contextualLLM({ userId: userId, contextType: "compliance",
+    const response = await contextualLLM({ userId: params.userId, contextType: "compliance",
       messages: [
         { role: "system", content: `You are a financial report generator. Generate a professional report based on the template and parameters provided. Use HTML format.` },
         { role: "user", content: `Template: ${template.templateBody}\nParameters: ${JSON.stringify(params.parameters)}` },
@@ -342,7 +341,7 @@ export async function getRecommendationExplanation(recommendationId: number) {
   if (!rec) return null;
 
   // Generate human-readable explanation
-  const response = await contextualLLM({ userId: userId, contextType: "compliance",
+  const response = await contextualLLM({ userId: 0, contextType: "compliance",
     messages: [
       { role: "system", content: "You are a financial advisor explanation generator. Create a clear, client-friendly explanation of why this recommendation was made. Include the reasoning, key factors, risk considerations, and relevant disclaimers." },
       { role: "user", content: `Explain this recommendation: ${JSON.stringify({ summary: rec.summary, reasoning: rec.reasoning, factors: rec.factors, riskLevel: rec.riskLevel, confidenceScore: rec.confidenceScore })}` },

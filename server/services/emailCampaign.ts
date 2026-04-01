@@ -7,8 +7,7 @@
 import { getDb } from "../db";
 import { emailCampaigns, emailSends, users } from "../../drizzle/schema";
 import { eq, and, sql, count, inArray, like } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm"
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { sendNotification } from "./websocketNotifications";
 
 // ─── Template Engine ─────────────────────────────────────────────────────
@@ -166,7 +165,7 @@ export async function generateEmailContent(params: {
   recipientType?: string;
   keyPoints?: string[];
 }) {
-  const response = await contextualLLM({ userId: userId, contextType: "analysis",
+  const response = await contextualLLM({ userId: 0, contextType: "analysis",
     messages: [
       {
         role: "system",

@@ -6,8 +6,7 @@
  * - Unified cross-format search
  * - Data highlighting and annotation storage
  */
-import { invokeLLM } from "../_core/llm"
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { transcribeAudio } from "../_core/voiceTranscription";
 import { getDb } from "../db";
 import { documents, documentChunks } from "../../drizzle/schema";
@@ -26,7 +25,7 @@ export class VisualOCRService {
     keyValues: Record<string, string>;
     confidence: number;
   }> {
-    const result = await contextualLLM({ userId: userId, contextType: "chat",
+    const result = await contextualLLM({ userId: 0, contextType: "chat",
       messages: [
         {
           role: "system",
@@ -91,7 +90,7 @@ Return as JSON.`,
    * Explain a visual element in an image
    */
   async explainVisual(imageUrl: string, query?: string): Promise<string> {
-    const result = await contextualLLM({ userId: userId, contextType: "chat",
+    const result = await contextualLLM({ userId: 0, contextType: "chat",
       messages: [
         {
           role: "system",
@@ -129,7 +128,7 @@ export class DocumentProcessingService {
       contentParts.push({ type: "file_url", file_url: { url: fileUrl, mime_type: mimeType as any } });
     }
 
-    const result = await contextualLLM({ userId: userId, contextType: "chat",
+    const result = await contextualLLM({ userId: 0, contextType: "chat",
       messages: [
         { role: "system", content: "You are a document table extraction specialist. Extract all tabular data accurately." },
         { role: "user", content: contentParts },
@@ -190,7 +189,7 @@ export class DocumentProcessingService {
       contentParts.push({ type: "file_url", file_url: { url: fileUrl, mime_type: mimeType as any } });
     }
 
-    const result = await contextualLLM({ userId: userId, contextType: "chat",
+    const result = await contextualLLM({ userId: 0, contextType: "chat",
       messages: [
         { role: "system", content: "You are a form parsing specialist. Extract all fields accurately." },
         { role: "user", content: contentParts },
@@ -254,7 +253,7 @@ export class DocumentProcessingService {
       contentParts.push({ type: "file_url", file_url: { url: fileUrl, mime_type: mimeType as any } });
     }
 
-    const result = await contextualLLM({ userId: userId, contextType: "chat",
+    const result = await contextualLLM({ userId: 0, contextType: "chat",
       messages: [
         { role: "system", content: "You are a document analysis specialist. Extract comprehensive information." },
         { role: "user", content: contentParts },

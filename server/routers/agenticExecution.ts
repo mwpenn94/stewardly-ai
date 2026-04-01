@@ -20,8 +20,7 @@ import {
   advisoryExecutions, estateDocuments,
   premiumFinanceCases, carrierConnections,
 } from "../../drizzle/schema";
-import { invokeLLM } from "../_core/llm"
-import { contextualLLM } from "../services/contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 // ─── G8: Licensed Review Gate ──────────────────────────────────────────────
 const gateRouter = router({

@@ -1,6 +1,7 @@
 import { getDb } from "../db";
 import { ssaParameters, ssaLifeTables } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 // ─── SSA 2025 Parameters ──────────────────────────────────────────────────
 
@@ -88,7 +89,7 @@ export async function seedSsaParameters2025(): Promise<number> {
       });
       inserted++;
     } catch (e: any) {
-      if (!e?.message?.includes("Duplicate")) console.error("[SSA] Insert error:", e?.message);
+      if (!e?.message?.includes("Duplicate")) logger.error( { operation: "sSA", err: e },"[SSA] Insert error:", e?.message);
     }
   }
 

@@ -2,6 +2,7 @@ import { getDb } from "../db";
 import { crmSyncLog } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { encrypt, decrypt } from "./encryption";
+import { logger } from "../_core/logger";
 
 // ─── CRM Adapter Interface ──────────────────────────────────────────────
 export interface CRMContact {
@@ -94,7 +95,7 @@ export class WealthboxAdapter implements CRMAdapter {
         updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : undefined,
       }));
     } catch (err: any) {
-      console.error("[CRM:Wealthbox] Pull contacts error:", err.message);
+      logger.error( { operation: "crmAdapter", err: err },"[CRM:Wealthbox] Pull contacts error:", err.message);
       return [];
     }
   }
@@ -119,7 +120,7 @@ export class WealthboxAdapter implements CRMAdapter {
       const data = await resp.json() as any;
       return String(data.id);
     } catch (err: any) {
-      console.error("[CRM:Wealthbox] Push contact error:", err.message);
+      logger.error( { operation: "crmAdapter", err: err },"[CRM:Wealthbox] Push contact error:", err.message);
       throw err;
     }
   }
@@ -146,7 +147,7 @@ export class WealthboxAdapter implements CRMAdapter {
         createdAt: e.created_at ? new Date(e.created_at).getTime() : undefined,
       }));
     } catch (err: any) {
-      console.error("[CRM:Wealthbox] Pull activities error:", err.message);
+      logger.error( { operation: "crmAdapter", err: err },"[CRM:Wealthbox] Pull activities error:", err.message);
       return [];
     }
   }
@@ -168,7 +169,7 @@ export class WealthboxAdapter implements CRMAdapter {
       const data = await resp.json() as any;
       return String(data.id);
     } catch (err: any) {
-      console.error("[CRM:Wealthbox] Push activity error:", err.message);
+      logger.error( { operation: "crmAdapter", err: err },"[CRM:Wealthbox] Push activity error:", err.message);
       throw err;
     }
   }
@@ -224,7 +225,7 @@ export class RedtailAdapter implements CRMAdapter {
         updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : undefined,
       }));
     } catch (err: any) {
-      console.error("[CRM:Redtail] Pull contacts error:", err.message);
+      logger.error( { operation: "crmAdapter", err: err },"[CRM:Redtail] Pull contacts error:", err.message);
       return [];
     }
   }
@@ -249,7 +250,7 @@ export class RedtailAdapter implements CRMAdapter {
       const data = await resp.json() as any;
       return String(data.contact?.id || data.id);
     } catch (err: any) {
-      console.error("[CRM:Redtail] Push contact error:", err.message);
+      logger.error( { operation: "crmAdapter", err: err },"[CRM:Redtail] Push contact error:", err.message);
       throw err;
     }
   }
@@ -276,7 +277,7 @@ export class RedtailAdapter implements CRMAdapter {
         createdAt: a.created_at ? new Date(a.created_at).getTime() : undefined,
       }));
     } catch (err: any) {
-      console.error("[CRM:Redtail] Pull activities error:", err.message);
+      logger.error( { operation: "crmAdapter", err: err },"[CRM:Redtail] Pull activities error:", err.message);
       return [];
     }
   }
@@ -299,7 +300,7 @@ export class RedtailAdapter implements CRMAdapter {
       const data = await resp.json() as any;
       return String(data.activity?.id || data.id);
     } catch (err: any) {
-      console.error("[CRM:Redtail] Push activity error:", err.message);
+      logger.error( { operation: "crmAdapter", err: err },"[CRM:Redtail] Push activity error:", err.message);
       throw err;
     }
   }

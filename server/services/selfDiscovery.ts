@@ -12,8 +12,7 @@
  * improvement loop where each discovery interaction refines future suggestions.
  */
 
-import { invokeLLM } from "../_core/llm"
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { getDb } from "../db";
 import { selfDiscoveryHistory, userPreferences } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -194,7 +193,7 @@ Return a JSON object with:
 - "reasoning": brief explanation of why this follow-up was chosen (1 sentence)
 - "relatedFeatures": array of feature keys from the platform this connects to (max 3)`;
 
-  const response = await contextualLLM({ userId: userId, contextType: "discovery",
+  const response = await contextualLLM({ userId: context.userId, contextType: "discovery",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: `Last user message: ${context.lastUserQuery.substring(0, 500)}` },

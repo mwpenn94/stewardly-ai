@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { eq, desc, and, or, sql, asc, inArray, like, gte, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { logger } from "./_core/logger";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
   products, auditTrail, reviewQueue, memories, feedback, qualityRatings,
@@ -11,6 +12,7 @@ import {
   type InsertAiToolExecution, type InsertAiResponseQualityEntry,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { normalizeQualityScore } from './shared/intelligence/types';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -19,7 +21,7 @@ export async function getDb() {
     try {
       _db = drizzle(process.env.DATABASE_URL);
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      logger.warn( { operation: "database" },"[Database] Failed to connect:", error);
       _db = null;
     }
   }
@@ -48,7 +50,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (!values.lastSignedIn) values.lastSignedIn = new Date();
     if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
     await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
-  } catch (error) { console.error("[Database] Failed to upsert user:", error); throw error; }
+  } catch (error) { logger.error( { operation: "database", err: error },"[Database] Failed to upsert user:", error); throw error; }
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -265,12 +267,13 @@ export async function exportConversation(conversationId: number, userId: number)
 // ─── MESSAGE HELPERS ──────────────────────────────────────────────
 export async function addMessage(data: {
   conversationId: number; userId: number; role: "user" | "assistant" | "system";
-  content: string; confidenceScore?: number; complianceStatus?: "pending" | "approved" | "flagged" | "rejected"; metadata?: unknown;
+  content: string; confidenceScore?: number; complianceStatus?: "pending" | "approved" | "flagged" | "rejected"; modelVersion?: string; metadata?: unknown;
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const result = await db.insert(messages).values({
     ...data,
+    confidenceScore: data.confidenceScore != null ? normalizeQualityScore(data.confidenceScore) : undefined,
     metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
   });
   return { id: result[0].insertId };
@@ -697,7 +700,10 @@ export async function addToReviewQueue(data: {
 }) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(reviewQueue).values(data);
+  await db.insert(reviewQueue).values({
+    ...data,
+    confidenceScore: normalizeQualityScore(data.confidenceScore),
+  });
 }
 
 export async function getPendingReviews() {
@@ -719,7 +725,10 @@ export async function addMemory(data: {
 }) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(memories).values(data);
+  await db.insert(memories).values({
+    ...data,
+    confidence: data.confidence != null ? normalizeQualityScore(data.confidence) : undefined,
+  });
 }
 
 export async function getUserMemories(userId: number, category?: string) {
@@ -757,7 +766,9 @@ export async function getFeedbackStats(userId?: number) {
 export async function addQualityRating(data: { messageId: number; conversationId: number; score: number; reasoning?: string; improvementSuggestions?: string }) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(qualityRatings).values(data);
+  const normalized = { ...data };
+  if (normalized.score != null) normalized.score = normalizeQualityScore(normalized.score);
+  await db.insert(qualityRatings).values(normalized);
 }
 
 // ─── SUITABILITY HELPERS ──────────────────────────────────────────

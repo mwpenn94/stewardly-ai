@@ -4,8 +4,7 @@
 import { getDb } from "../db";
 import { conversations, messages } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm"
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1B: Adaptive Suggested Prompts

@@ -2946,3 +2946,9 @@
 - [x] Add syncing badge in ShortcutsTab when saving to server
 - [x] Update info text to reflect cross-device sync when signed in
 - [x] Write tests — 48 new tests in serverShortcutsRecentToast.test.ts, all 1987 tests pass across 70 files
+
+## TypeScript Crash Fix & Context Update
+- [x] Diagnose tsc abort/crash — OOM (needed --max-old-space-size=4096) + 101 actual TS errors across 14 files
+- [x] Fix all 101 TypeScript errors — corrupted vars in AnalyticsDashboard, userId scope in 13 service files, property mismatches in deepContextAssembler, db null checks, content type casts, Set iteration
+- [x] Verify tsc completes cleanly — exit code 0, zero errors
+- [x] Update project context files — added Technical Debt Resolved section to PROJECT_KNOWLEDGE_BASE.md

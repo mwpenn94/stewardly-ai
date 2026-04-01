@@ -9,6 +9,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   integrationConnections,
   integrationProviders,
@@ -151,7 +152,7 @@ export async function runHealthCheck(connectionId: string): Promise<HealthCheckR
     provider = firstOrNull(providers);
     if (!provider) return unknownResult("Provider not found");
   } catch (e: any) {
-    console.warn(`[HealthCheck] DB query failed for connection ${connectionId}:`, e.message);
+    logger.warn( { operation: "healthCheck" },`[HealthCheck] DB query failed for connection ${connectionId}:`, e.message);
     return unknownResult(`Database query failed: ${e.message}`);
   }
 
@@ -197,7 +198,7 @@ export async function runHealthCheck(connectionId: string): Promise<HealthCheckR
         metadata: { apiResponsePreview: text.substring(0, 200) },
       });
     } catch (e: any) {
-      console.warn(`[HealthCheck] Failed to record check for ${provider.slug}:`, e.message);
+      logger.warn( { operation: "healthCheck" },`[HealthCheck] Failed to record check for ${provider.slug}:`, e.message);
     }
 
     // Update connection status (non-critical)
@@ -212,7 +213,7 @@ export async function runHealthCheck(connectionId: string): Promise<HealthCheckR
           .where(eq(integrationConnections.id, connectionId));
       }
     } catch (e: any) {
-      console.warn(`[HealthCheck] Failed to update connection status for ${provider.slug}:`, e.message);
+      logger.warn( { operation: "healthCheck" },`[HealthCheck] Failed to update connection status for ${provider.slug}:`, e.message);
     }
 
     return { connectionId, providerSlug: provider.slug, providerName: provider.name, status, latencyMs, message, responseCode: resp.status };
@@ -241,7 +242,7 @@ export async function runAllHealthChecks(): Promise<HealthCheckResult[]> {
   try {
     db = await getDb();
   } catch (e: any) {
-    console.warn("[HealthCheck] runAllHealthChecks: DB unavailable:", e.message);
+    logger.warn( { operation: "healthCheck" },"[HealthCheck] runAllHealthChecks: DB unavailable:", e.message);
     return [];
   }
   if (!db) return [];
@@ -251,7 +252,7 @@ export async function runAllHealthChecks(): Promise<HealthCheckResult[]> {
     connections = await db.select().from(integrationConnections)
       .where(sql`${integrationConnections.status} != 'disconnected'`);
   } catch (e: any) {
-    console.warn("[HealthCheck] runAllHealthChecks: Failed to query connections:", e.message);
+    logger.warn( { operation: "healthCheck" },"[HealthCheck] runAllHealthChecks: Failed to query connections:", e.message);
     return [];
   }
 
@@ -327,7 +328,7 @@ async function updateHealthSummaries(results: HealthCheckResult[]) {
       });
     }
     } catch (e: any) {
-      console.warn(`[HealthCheck] Failed to update summary for ${result.connectionId}:`, e.message);
+      logger.warn( { operation: "healthCheck" },`[HealthCheck] Failed to update summary for ${result.connectionId}:`, e.message);
     }
   }
 }
@@ -383,7 +384,7 @@ async function runImprovementAgent(results: HealthCheckResult[]) {
             metadata: { source: "integrationHealth", providerName: result.providerName, consecutiveFailures },
           });
         } catch (e) {
-          console.warn(`[ImprovementAgent] Failed to send critical alert for ${result.providerName}:`, e);
+          logger.warn( { operation: "improvementAgent" },`[ImprovementAgent] Failed to send critical alert for ${result.providerName}:`, e);
         }
       }
     }
@@ -420,7 +421,7 @@ async function runImprovementAgent(results: HealthCheckResult[]) {
       });
     }
     } catch (e: any) {
-      console.warn(`[ImprovementAgent] Error processing ${result.providerSlug}:`, e.message);
+      logger.warn( { operation: "improvementAgent" },`[ImprovementAgent] Error processing ${result.providerSlug}:`, e.message);
     }
   }
 }
@@ -551,7 +552,7 @@ export async function assembleIntegrationHealthContext(): Promise<IntegrationHea
       promptFragment,
     };
   } catch (e) {
-    console.error("[IntegrationHealth] assembleContext error:", e);
+    logger.error( { operation: "integrationHealth", err: e },"[IntegrationHealth] assembleContext error:", e);
     return empty;
   }
 }

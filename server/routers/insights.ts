@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { proactiveInsights, engagementScores } from "../../drizzle/schema";
 import { eq, and, desc, ne, sql } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 async function db() {
   return (await import("../db")).getDb();
@@ -97,17 +97,9 @@ export const insightsRouter = router({
   generate: protectedProcedure.mutation(async ({ ctx }) => {
     const d = (await db())!;
 
-    // Assemble deep context from documents, pipelines, and platform data
-    let platformContext = "";
-    try {
-      const { getQuickContext } = await import("../services/deepContextAssembler");
-      if (ctx.user?.id) {
-        platformContext = await getQuickContext(ctx.user.id, "proactive financial insights generation", "analysis");
-      }
-    } catch { /* deep context is best-effort */ }
-
+    // contextualLLM automatically injects platform context via RAG — no manual getQuickContext needed
     const prompt = `You are a proactive financial advisor AI. Generate 3-5 actionable insights for a client.
-${platformContext ? `\n<platform_context>\n${platformContext}\n</platform_context>\n\nUse the above context about the client\'s documents, financial data, and platform activity to generate highly personalized, specific insights rather than generic ones.` : ""}
+Use the platform context about the client's documents, financial data, and platform activity to generate highly personalized, specific insights rather than generic ones.
 
 Consider these categories:
 - **compliance**: Suitability reviews, CE deadlines, license renewals, regulatory filings
@@ -126,7 +118,9 @@ For each insight, provide:
 
 Return as JSON array.`;
 
-    const response = await invokeLLM({
+    const response = await contextualLLM({
+      userId: ctx.user.id,
+      contextType: "analysis",
       messages: [
         { role: "system", content: "You are a proactive financial advisor intelligence engine. Generate realistic, actionable insights grounded in the client's actual data and documents." },
         { role: "user", content: prompt },

@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean, bigint, decimal, date } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean, bigint, decimal, date, index } from "drizzle-orm/mysql-core";
 
 // ─── ORGANIZATIONS (Multi-Tenant Organizational Units) ─────────────────────
 // DB table: organizations
@@ -33,7 +33,12 @@ export const userOrganizationRoles = mysqlTable("user_organization_roles", {
   approvedAt: timestamp("approvedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_organization_roles_user_id").on(table.userId),
+    organizationIdIdx: index("idx_user_organization_roles_organization_id").on(table.organizationId),
+    managerIdIdx: index("idx_user_organization_roles_manager_id").on(table.managerId),
+    professionalIdIdx: index("idx_user_organization_roles_professional_id").on(table.professionalId),
+  }));
 
 export type UserOrganizationRole = typeof userOrganizationRoles.$inferSelect;
 export type InsertUserOrganizationRole = typeof userOrganizationRoles.$inferInsert;
@@ -48,7 +53,10 @@ export const organizationRelationships = mysqlTable("organization_relationships"
   status: mysqlEnum("status", ["active", "inactive", "pending"]).default("active"),
   metadata: json("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    parentOrgIdIdx: index("idx_organization_relationships_parent_org_id").on(table.parentOrgId),
+    childOrgIdIdx: index("idx_organization_relationships_child_org_id").on(table.childOrgId),
+  }));
 
 export type OrganizationRelationship = typeof organizationRelationships.$inferSelect;
 
@@ -63,7 +71,11 @@ export const userRelationships = mysqlTable("user_relationships", {
   status: mysqlEnum("status", ["active", "inactive", "pending"]).default("active"),
   metadata: json("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_relationships_user_id").on(table.userId),
+    relatedUserIdIdx: index("idx_user_relationships_related_user_id").on(table.relatedUserId),
+    organizationIdIdx: index("idx_user_relationships_organization_id").on(table.organizationId),
+  }));
 
 export type UserRelationship = typeof userRelationships.$inferSelect;
 
@@ -86,7 +98,9 @@ export const organizationLandingPageConfig = mysqlTable("organization_landing_pa
   disclaimerText: text("disclaimerText"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    organizationIdIdx: index("idx_organization_landing_page_config_organization_id").on(table.organizationId),
+  }));
 
 export type OrganizationLandingPageConfig = typeof organizationLandingPageConfig.$inferSelect;
 
@@ -130,7 +144,12 @@ export const users = mysqlTable("users", {
   profileEnrichedAt: timestamp("profile_enriched_at"),
   profileEnrichmentSource: varchar("profile_enrichment_source", { length: 50 }),
   signInDataJson: json("sign_in_data_json"),
-});
+}, (table) => ({
+    openIdIdx: index("idx_users_open_id").on(table.openId),
+    affiliateOrgIdIdx: index("idx_users_affiliate_org_id").on(table.affiliateOrgId),
+    linkedinIdIdx: index("idx_users_linkedin_id").on(table.linkedinId),
+    googleIdIdx: index("idx_users_google_id").on(table.googleId),
+  }));
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -155,7 +174,9 @@ export const userProfiles = mysqlTable("user_profiles", {
   focusPreference: mysqlEnum("focusPreference", ["general", "financial", "both"]).default("both"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_profiles_user_id").on(table.userId),
+  }));
 
 export type UserProfile = typeof userProfiles.$inferSelect;
 
@@ -209,7 +230,9 @@ export const organizationAISettings = mysqlTable("organization_ai_settings", {
   defaultSpeechRate: float("defaultSpeechRate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    organizationIdIdx: index("idx_organization_ai_settings_organization_id").on(table.organizationId),
+  }));
 
 export type OrganizationAISetting = typeof organizationAISettings.$inferSelect;
 
@@ -233,7 +256,10 @@ export const managerAISettings = mysqlTable("manager_ai_settings", {
   defaultSpeechRate: float("defaultSpeechRate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    managerIdIdx: index("idx_manager_ai_settings_manager_id").on(table.managerId),
+    organizationIdIdx: index("idx_manager_ai_settings_organization_id").on(table.organizationId),
+  }));
 
 export type ManagerAISetting = typeof managerAISettings.$inferSelect;
 
@@ -259,7 +285,11 @@ export const professionalAISettings = mysqlTable("professional_ai_settings", {
   defaultSpeechRate: float("defaultSpeechRate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    professionalIdIdx: index("idx_professional_ai_settings_professional_id").on(table.professionalId),
+    organizationIdIdx: index("idx_professional_ai_settings_organization_id").on(table.organizationId),
+    managerIdIdx: index("idx_professional_ai_settings_manager_id").on(table.managerId),
+  }));
 
 export type ProfessionalAISetting = typeof professionalAISettings.$inferSelect;
 
@@ -304,7 +334,9 @@ export const userPreferences = mysqlTable("user_preferences", {
   customShortcuts: json("customShortcuts"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_preferences_user_id").on(table.userId),
+  }));
 
 export type UserPreference = typeof userPreferences.$inferSelect;
 
@@ -320,7 +352,11 @@ export const viewAsAuditLog = mysqlTable("view_as_audit_log", {
   reason: text("reason"),
   sessionDuration: int("sessionDuration"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    actorIdIdx: index("idx_view_as_audit_log_actor_id").on(table.actorId),
+    targetUserIdIdx: index("idx_view_as_audit_log_target_user_id").on(table.targetUserId),
+    organizationIdIdx: index("idx_view_as_audit_log_organization_id").on(table.organizationId),
+  }));
 
 export type ViewAsAuditLogEntry = typeof viewAsAuditLog.$inferSelect;
 
@@ -335,7 +371,9 @@ export const workflowChecklist = mysqlTable("workflow_checklist", {
   completedAt: timestamp("completedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_workflow_checklist_user_id").on(table.userId),
+  }));
 
 export type WorkflowChecklist = typeof workflowChecklist.$inferSelect;
 
@@ -348,7 +386,9 @@ export const professionalContext = mysqlTable("professional_context", {
   parsedDomains: json("parsedDomains"),
   visibleToClient: mysqlBoolean("visibleToClient").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_professional_context_user_id").on(table.userId),
+  }));
 
 export type ProfessionalContext = typeof professionalContext.$inferSelect;
 
@@ -360,7 +400,11 @@ export const clientAssociations = mysqlTable("client_associations", {
   organizationId: int("organizationId"),
   status: mysqlEnum("status", ["active", "inactive"]).default("active"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    clientIdIdx: index("idx_client_associations_client_id").on(table.clientId),
+    professionalIdIdx: index("idx_client_associations_professional_id").on(table.professionalId),
+    organizationIdIdx: index("idx_client_associations_organization_id").on(table.organizationId),
+  }));
 
 export type ClientAssociation = typeof clientAssociations.$inferSelect;
 
@@ -384,7 +428,9 @@ export const enrichmentCohorts = mysqlTable("enrichment_cohorts", {
   matchCriteria: json("matchCriteria").notNull(),
   enrichmentFields: json("enrichmentFields").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    datasetIdIdx: index("idx_enrichment_cohorts_dataset_id").on(table.datasetId),
+  }));
 
 export type EnrichmentCohort = typeof enrichmentCohorts.$inferSelect;
 
@@ -398,7 +444,11 @@ export const enrichmentMatches = mysqlTable("enrichment_matches", {
   confidenceScore: float("confidenceScore").default(0),
   applicableDomains: json("applicableDomains"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_enrichment_matches_user_id").on(table.userId),
+    datasetIdIdx: index("idx_enrichment_matches_dataset_id").on(table.datasetId),
+    cohortIdIdx: index("idx_enrichment_matches_cohort_id").on(table.cohortId),
+  }));
 
 export type EnrichmentMatch = typeof enrichmentMatches.$inferSelect;
 
@@ -412,7 +462,9 @@ export const affiliatedResources = mysqlTable("affiliated_resources", {
   contactInfo: json("contactInfo"),
   isActive: mysqlBoolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    organizationIdIdx: index("idx_affiliated_resources_organization_id").on(table.organizationId),
+  }));
 
 export type AffiliatedResource = typeof affiliatedResources.$inferSelect;
 
@@ -427,7 +479,9 @@ export const conversationFolders = mysqlTable("conversation_folders", {
   sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_conversation_folders_user_id").on(table.userId),
+  }));
 export type ConversationFolder = typeof conversationFolders.$inferSelect;
 
 export const conversations = mysqlTable("conversations", {
@@ -441,7 +495,12 @@ export const conversations = mysqlTable("conversations", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   organizationId: int("organizationId"),
-});
+}, (table) => ({
+    userIdIdx: index("idx_conversations_user_id").on(table.userId),
+    folderIdIdx: index("idx_conversations_folder_id").on(table.folderId),
+    organizationIdIdx: index("idx_conversations_organization_id").on(table.organizationId),
+    userCreatedAtIdx: index("idx_conversations_user_created_at").on(table.userId, table.createdAt),
+  }));
 export type Conversation = typeof conversations.$inferSelect;;
 
 // ─── MESSAGES ─────────────────────────────────────────────────────────────
@@ -453,9 +512,13 @@ export const messages = mysqlTable("messages", {
   content: text("content").notNull(),
   confidenceScore: float("confidenceScore"),
   complianceStatus: mysqlEnum("complianceStatus", ["pending", "approved", "flagged", "rejected"]),
+  modelVersion: varchar("modelVersion", { length: 64 }),
   metadata: json("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    conversationIdIdx: index("idx_messages_conversation_id").on(table.conversationId),
+    userIdIdx: index("idx_messages_user_id").on(table.userId),
+  }));
 
 export type Message = typeof messages.$inferSelect;
 
@@ -475,7 +538,10 @@ export const documents = mysqlTable("documents", {
   status: mysqlEnum("status", ["uploading", "processing", "ready", "error"]).default("uploading").notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_documents_user_id").on(table.userId),
+    organizationIdIdx: index("idx_documents_organization_id").on(table.organizationId),
+  }));
 
 export type Document = typeof documents.$inferSelect;
 
@@ -488,7 +554,10 @@ export const documentChunks = mysqlTable("document_chunks", {
   chunkIndex: int("chunkIndex").notNull(),
   category: mysqlEnum("category", ["personal_docs", "financial_products", "regulations", "training_materials", "artifacts", "skills"]).default("personal_docs").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    documentIdIdx: index("idx_document_chunks_document_id").on(table.documentId),
+    userIdIdx: index("idx_document_chunks_user_id").on(table.userId),
+  }));
 
 export type DocumentChunk = typeof documentChunks.$inferSelect;
 
@@ -506,7 +575,10 @@ export const documentVersions = mysqlTable("document_versions", {
   chunkCount: int("chunkCount").default(0),
   sizeBytes: int("sizeBytes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    documentIdIdx: index("idx_document_versions_document_id").on(table.documentId),
+    userIdIdx: index("idx_document_versions_user_id").on(table.userId),
+  }));
 export type DocumentVersion = typeof documentVersions.$inferSelect;
 
 // ─── DOCUMENT ANNOTATIONS (collaborative) ──────────────────────────────────
@@ -525,7 +597,11 @@ export const documentAnnotations = mysqlTable("document_annotations", {
   resolvedAt: timestamp("resolvedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    documentIdIdx: index("idx_document_annotations_document_id").on(table.documentId),
+    userIdIdx: index("idx_document_annotations_user_id").on(table.userId),
+    parentIdIdx: index("idx_document_annotations_parent_id").on(table.parentId),
+  }));
 export type DocumentAnnotation = typeof documentAnnotations.$inferSelect;
 
 // ─── DOCUMENT TAGS (AI-generated + user-editable) ─────────────────────────
@@ -536,7 +612,9 @@ export const documentTags = mysqlTable("document_tags", {
   color: varchar("color", { length: 32 }).default("#6366f1"),
   isAiGenerated: mysqlBoolean("isAiGenerated").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_document_tags_user_id").on(table.userId),
+  }));
 export type DocumentTag = typeof documentTags.$inferSelect;
 
 export const documentTagMap = mysqlTable("document_tag_map", {
@@ -544,7 +622,10 @@ export const documentTagMap = mysqlTable("document_tag_map", {
   documentId: int("documentId").notNull(),
   tagId: int("tagId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    documentIdIdx: index("idx_document_tag_map_document_id").on(table.documentId),
+    tagIdIdx: index("idx_document_tag_map_tag_id").on(table.tagId),
+  }));
 export type DocumentTagMap = typeof documentTagMap.$inferSelect;
 
 // ─── KNOWLEDGE GAP FEEDBACK ────────────────────────────────────────────────
@@ -557,7 +638,10 @@ export const knowledgeGapFeedback = mysqlTable("knowledge_gap_feedback", {
   action: mysqlEnum("action", ["dismiss", "acknowledge", "resolved", "not_applicable"]).notNull(),
   userNote: text("userNote"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_knowledge_gap_feedback_user_id").on(table.userId),
+    gapIdIdx: index("idx_knowledge_gap_feedback_gap_id").on(table.gapId),
+  }));
 export type KnowledgeGapFeedback = typeof knowledgeGapFeedback.$inferSelect;
 
 // ─── PRODUCTS ──────────────────────────────────────────────────────────────
@@ -577,7 +661,9 @@ export const products = mysqlTable("products", {
   isPlatform: mysqlBoolean("isPlatform").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+    organizationIdIdx: index("idx_products_organization_id").on(table.organizationId),
+  }));
 
 export type Product = typeof products.$inferSelect;
 
@@ -599,7 +685,11 @@ export const auditTrail = mysqlTable("audit_trail", {
   entryHash: varchar("entryHash", { length: 64 }),
   previousHash: varchar("previousHash", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_audit_trail_user_id").on(table.userId),
+    conversationIdIdx: index("idx_audit_trail_conversation_id").on(table.conversationId),
+    messageIdIdx: index("idx_audit_trail_message_id").on(table.messageId),
+  }));
 
 export type AuditTrailEntry = typeof auditTrail.$inferSelect;
 
@@ -619,7 +709,11 @@ export const reviewQueue = mysqlTable("review_queue", {
   reviewedBy: int("reviewedBy"),
   reviewedAt: timestamp("reviewedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_review_queue_user_id").on(table.userId),
+    conversationIdIdx: index("idx_review_queue_conversation_id").on(table.conversationId),
+    messageIdIdx: index("idx_review_queue_message_id").on(table.messageId),
+  }));
 
 export type ReviewQueueItem = typeof reviewQueue.$inferSelect;
 
@@ -635,7 +729,9 @@ export const memories = mysqlTable("memories", {
   validUntil: timestamp("validUntil"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_memories_user_id").on(table.userId),
+  }));
 
 export type Memory = typeof memories.$inferSelect;
 
@@ -648,7 +744,11 @@ export const feedback = mysqlTable("feedback", {
   rating: mysqlEnum("rating", ["up", "down"]).notNull(),
   comment: text("comment"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_feedback_user_id").on(table.userId),
+    messageIdIdx: index("idx_feedback_message_id").on(table.messageId),
+    conversationIdIdx: index("idx_feedback_conversation_id").on(table.conversationId),
+  }));
 
 export type Feedback = typeof feedback.$inferSelect;
 
@@ -661,7 +761,10 @@ export const qualityRatings = mysqlTable("quality_ratings", {
   reasoning: text("reasoning"),
   improvementSuggestions: text("improvementSuggestions"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    messageIdIdx: index("idx_quality_ratings_message_id").on(table.messageId),
+    conversationIdIdx: index("idx_quality_ratings_conversation_id").on(table.conversationId),
+  }));
 
 export type QualityRating = typeof qualityRatings.$inferSelect;
 
@@ -680,7 +783,9 @@ export const suitabilityAssessments = mysqlTable("suitability_assessments", {
   completedAt: timestamp("completedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_suitability_assessments_user_id").on(table.userId),
+  }));
 
 export type SuitabilityAssessment = typeof suitabilityAssessments.$inferSelect;
 
@@ -712,7 +817,11 @@ export const promptExperiments = mysqlTable("prompt_experiments", {
   feedbackRating: mysqlEnum("feedbackRating", ["up", "down"]),
   confidenceScore: float("confidenceScore"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    variantIdIdx: index("idx_prompt_experiments_variant_id").on(table.variantId),
+    conversationIdIdx: index("idx_prompt_experiments_conversation_id").on(table.conversationId),
+    messageIdIdx: index("idx_prompt_experiments_message_id").on(table.messageId),
+  }));
 
 export type PromptExperiment = typeof promptExperiments.$inferSelect;
 
@@ -741,7 +850,11 @@ export const meetings = mysqlTable("meetings", {
   complianceNotes: text("complianceNotes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_meetings_user_id").on(table.userId),
+    organizationIdIdx: index("idx_meetings_organization_id").on(table.organizationId),
+    clientIdIdx: index("idx_meetings_client_id").on(table.clientId),
+  }));
 export type Meeting = typeof meetings.$inferSelect;
 
 // DB table: meeting_action_items
@@ -758,7 +871,10 @@ export const meetingActionItems = mysqlTable("meeting_action_items", {
   completedAt: timestamp("completedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    meetingIdIdx: index("idx_meeting_action_items_meeting_id").on(table.meetingId),
+    userIdIdx: index("idx_meeting_action_items_user_id").on(table.userId),
+  }));
 export type MeetingActionItem = typeof meetingActionItems.$inferSelect;
 
 
@@ -780,7 +896,11 @@ export const proactiveInsights = mysqlTable("proactive_insights", {
   metadata: json("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_proactive_insights_user_id").on(table.userId),
+    organizationIdIdx: index("idx_proactive_insights_organization_id").on(table.organizationId),
+    clientIdIdx: index("idx_proactive_insights_client_id").on(table.clientId),
+  }));
 export type ProactiveInsight = typeof proactiveInsights.$inferSelect;
 
 // ─── ENGAGEMENT SCORES ───────────────────────────────────────────────────
@@ -798,7 +918,11 @@ export const engagementScores = mysqlTable("engagement_scores", {
   periodStart: timestamp("period_start"),
   periodEnd: timestamp("period_end"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_engagement_scores_user_id").on(table.userId),
+    clientIdIdx: index("idx_engagement_scores_client_id").on(table.clientId),
+    organizationIdIdx: index("idx_engagement_scores_organization_id").on(table.organizationId),
+  }));
 export type EngagementScore = typeof engagementScores.$inferSelect;
 
 
@@ -817,7 +941,11 @@ export const complianceReviews = mysqlTable("compliance_reviews", {
   reviewerId: varchar("reviewer_id", { length: 255 }),
   reviewedAt: bigint("reviewed_at", { mode: "number" }),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_compliance_reviews_user_id").on(table.userId),
+    organizationIdIdx: index("idx_compliance_reviews_organization_id").on(table.organizationId),
+    reviewerIdIdx: index("idx_compliance_reviews_reviewer_id").on(table.reviewerId),
+  }));
 export type ComplianceReview = typeof complianceReviews.$inferSelect;
 
 // ─── COMPLIANCE FLAGS ──────────────────────────────────────────────────
@@ -831,7 +959,9 @@ export const complianceFlags = mysqlTable("compliance_flags", {
   autoFixed: mysqlBoolean("auto_fixed").default(false),
   fixApplied: text("fix_applied"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    reviewIdIdx: index("idx_compliance_flags_review_id").on(table.reviewId),
+  }));
 export type ComplianceFlag = typeof complianceFlags.$inferSelect;
 
 // ─── FEATURE FLAGS ──────────────────────────────────────────────────
@@ -846,7 +976,9 @@ export const featureFlags = mysqlTable("feature_flags", {
   updatedBy: int("updatedBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    organizationIdIdx: index("idx_feature_flags_organization_id").on(table.organizationId),
+  }));
 export type FeatureFlag = typeof featureFlags.$inferSelect;
 
 
@@ -864,7 +996,10 @@ export const memoryEpisodes = mysqlTable("memory_episodes", {
   keyTopics: json("keyTopics"), // string[]
   emotionalTone: varchar("emotionalTone", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_memory_episodes_user_id").on(table.userId),
+    conversationIdIdx: index("idx_memory_episodes_conversation_id").on(table.conversationId),
+  }));
 export type MemoryEpisode = typeof memoryEpisodes.$inferSelect;
 
 // ─── KNOWLEDGE GRAPH NODES ──────────────────────────────────────
@@ -881,7 +1016,9 @@ export const kgNodes = mysqlTable("kg_nodes", {
   status: mysqlEnum("status", ["active", "inactive", "pending"]).default("active"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_kg_nodes_user_id").on(table.userId),
+  }));
 export type KgNode = typeof kgNodes.$inferSelect;
 
 // ─── KNOWLEDGE GRAPH EDGES ──────────────────────────────────────
@@ -898,7 +1035,11 @@ export const kgEdges = mysqlTable("kg_edges", {
   weight: float("weight").default(1.0),
   metadataJson: json("metadataJson"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_kg_edges_user_id").on(table.userId),
+    sourceNodeIdIdx: index("idx_kg_edges_source_node_id").on(table.sourceNodeId),
+    targetNodeIdIdx: index("idx_kg_edges_target_node_id").on(table.targetNodeId),
+  }));
 export type KgEdge = typeof kgEdges.$inferSelect;
 
 // ─── COMPLIANCE AUDIT (Enhanced — Immutable Append-Only) ────────
@@ -921,7 +1062,12 @@ export const complianceAudit = mysqlTable("compliance_audit", {
   promptHash: varchar("promptHash", { length: 64 }),
   deliveryStatus: mysqlEnum("deliveryStatus", ["delivered", "held", "blocked", "modified"]).default("delivered"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    messageIdIdx: index("idx_compliance_audit_message_id").on(table.messageId),
+    userIdIdx: index("idx_compliance_audit_user_id").on(table.userId),
+    conversationIdIdx: index("idx_compliance_audit_conversation_id").on(table.conversationId),
+    reviewerIdIdx: index("idx_compliance_audit_reviewer_id").on(table.reviewerId),
+  }));
 export type ComplianceAuditEntry = typeof complianceAudit.$inferSelect;
 
 // ─── PRIVACY AUDIT LOG ──────────────────────────────────────────
@@ -934,7 +1080,9 @@ export const privacyAudit = mysqlTable("privacy_audit", {
   modelUsed: varchar("modelUsed", { length: 64 }),
   tokensSent: int("tokensSent"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_privacy_audit_user_id").on(table.userId),
+  }));
 export type PrivacyAuditEntry = typeof privacyAudit.$inferSelect;
 
 // ─── EDUCATION MODULES ──────────────────────────────────────────
@@ -964,7 +1112,10 @@ export const educationProgress = mysqlTable("education_progress", {
   completedAt: timestamp("completedAt"),
   score: float("score"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_education_progress_user_id").on(table.userId),
+    moduleIdIdx: index("idx_education_progress_module_id").on(table.moduleId),
+  }));
 export type EducationProgressEntry = typeof educationProgress.$inferSelect;
 
 // ─── PLAN ADHERENCE ─────────────────────────────────────────────
@@ -981,7 +1132,9 @@ export const planAdherence = mysqlTable("plan_adherence", {
   periodEnd: timestamp("periodEnd"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_plan_adherence_user_id").on(table.userId),
+  }));
 export type PlanAdherenceEntry = typeof planAdherence.$inferSelect;
 
 // ─── CLIENT SEGMENTS ────────────────────────────────────────────
@@ -1000,7 +1153,10 @@ export const clientSegments = mysqlTable("client_segments", {
   lastClassified: timestamp("lastClassified"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    clientIdIdx: index("idx_client_segments_client_id").on(table.clientId),
+    professionalIdIdx: index("idx_client_segments_professional_id").on(table.professionalId),
+  }));
 export type ClientSegment = typeof clientSegments.$inferSelect;
 
 // ─── PRACTICE METRICS ───────────────────────────────────────────
@@ -1017,7 +1173,10 @@ export const practiceMetrics = mysqlTable("practice_metrics", {
   engagementScoresJson: json("engagementScoresJson"),
   benchmarkPercentilesJson: json("benchmarkPercentilesJson"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    professionalIdIdx: index("idx_practice_metrics_professional_id").on(table.professionalId),
+    firmIdIdx: index("idx_practice_metrics_firm_id").on(table.firmId),
+  }));
 export type PracticeMetric = typeof practiceMetrics.$inferSelect;
 
 // ─── STUDENT LOANS ──────────────────────────────────────────────
@@ -1035,7 +1194,9 @@ export const studentLoans = mysqlTable("student_loans", {
   pslfEligible: mysqlBoolean("pslfEligible").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_student_loans_user_id").on(table.userId),
+  }));
 export type StudentLoan = typeof studentLoans.$inferSelect;
 
 // ─── EQUITY GRANTS ──────────────────────────────────────────────
@@ -1054,7 +1215,9 @@ export const equityGrants = mysqlTable("equity_grants", {
   expirationDate: timestamp("expirationDate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_equity_grants_user_id").on(table.userId),
+  }));
 export type EquityGrant = typeof equityGrants.$inferSelect;
 
 // ─── COI CONTACTS ───────────────────────────────────────────────
@@ -1071,7 +1234,10 @@ export const coiContacts = mysqlTable("coi_contacts", {
   referralsReceived: int("referralsReceived").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    professionalIdIdx: index("idx_coi_contacts_professional_id").on(table.professionalId),
+    firmIdIdx: index("idx_coi_contacts_firm_id").on(table.firmId),
+  }));
 export type CoiContact = typeof coiContacts.$inferSelect;
 
 // ─── REFERRALS ──────────────────────────────────────────────────
@@ -1084,7 +1250,11 @@ export const referrals = mysqlTable("referrals", {
   outcome: mysqlEnum("outcome", ["pending", "accepted", "completed", "declined"]).default("pending"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    fromProfessionalIdIdx: index("idx_referrals_from_professional_id").on(table.fromProfessionalId),
+    toCoiIdIdx: index("idx_referrals_to_coi_id").on(table.toCoiId),
+    clientIdIdx: index("idx_referrals_client_id").on(table.clientId),
+  }));
 export type Referral = typeof referrals.$inferSelect;
 
 // ─── DIGITAL ASSET INVENTORY ────────────────────────────────────
@@ -1105,7 +1275,9 @@ export const digitalAssetInventory = mysqlTable("digital_asset_inventory", {
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_digital_asset_inventory_user_id").on(table.userId),
+  }));
 export type DigitalAssetInventoryItem = typeof digitalAssetInventory.$inferSelect;
 
 // ─── NOTIFICATION LOG ───────────────────────────────────────────
@@ -1122,7 +1294,10 @@ export const notificationLog = mysqlTable("notification_log", {
   suppressed: mysqlBoolean("suppressed").default(false),
   suppressionReason: varchar("suppressionReason", { length: 128 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_notification_log_user_id").on(table.userId),
+    userReadIdx: index("idx_notification_log_user_read").on(table.userId, table.readAt),
+  }));
 export type NotificationLogEntry = typeof notificationLog.$inferSelect;
 
 // ─── LTC Analyses ──────────────────────────────────────────────
@@ -1150,7 +1325,9 @@ export const ltcAnalyses = mysqlTable("ltc_analyses", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_ltc_analyses_user_id").on(table.userId),
+  }));
 
 // ─── Portal Engagement ─────────────────────────────────────────
 export const portalEngagement = mysqlTable("portal_engagement", {
@@ -1165,7 +1342,9 @@ export const portalEngagement = mysqlTable("portal_engagement", {
   actionsCompleted: int("actions_completed").default(0),
   engagementScore: int("engagement_score").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_portal_engagement_user_id").on(table.userId),
+  }));
 
 // ─── Health Scores ─────────────────────────────────────────────
 export const healthScores = mysqlTable("health_scores", {
@@ -1181,7 +1360,9 @@ export const healthScores = mysqlTable("health_scores", {
   recommendationsJson: text("recommendations_json"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_health_scores_user_id").on(table.userId),
+  }));
 
 // ─── Business Exit Plans ───────────────────────────────────────
 export const businessExitPlans = mysqlTable("business_exit_plans", {
@@ -1198,7 +1379,9 @@ export const businessExitPlans = mysqlTable("business_exit_plans", {
   analysisJson: text("analysis_json"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_business_exit_plans_user_id").on(table.userId),
+  }));
 
 // ─── Constitutional Violations ─────────────────────────────────
 export const constitutionalViolations = mysqlTable("constitutional_violations", {
@@ -1211,7 +1394,9 @@ export const constitutionalViolations = mysqlTable("constitutional_violations", 
   originalResponseHash: varchar("original_response_hash", { length: 64 }),
   correctedResponseHash: varchar("corrected_response_hash", { length: 64 }),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+    messageIdIdx: index("idx_constitutional_violations_message_id").on(table.messageId),
+  }));
 
 // ─── Workflow Event Chains ─────────────────────────────────────
 export const workflowEventChains = mysqlTable("workflow_event_chains", {
@@ -1234,7 +1419,9 @@ export const workflowExecutionLog = mysqlTable("workflow_execution_log", {
   actionsFailed: int("actions_failed").default(0),
   resultJson: text("result_json"),
   status: mysqlEnum("status", ["running", "completed", "failed", "partial"]).default("running"),
-});
+}, (table) => ({
+    chainIdIdx: index("idx_workflow_execution_log_chain_id").on(table.chainId),
+  }));
 
 // ─── Annual Reviews ────────────────────────────────────────────
 export const annualReviews = mysqlTable("annual_reviews", {
@@ -1253,7 +1440,10 @@ export const annualReviews = mysqlTable("annual_reviews", {
   status: mysqlEnum("status", ["pending", "scheduled", "in_progress", "completed", "overdue"]).default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+    clientIdIdx: index("idx_annual_reviews_client_id").on(table.clientId),
+    professionalIdIdx: index("idx_annual_reviews_professional_id").on(table.professionalId),
+  }));
 
 
 // ─── Tasks (Practice Management) ──────────────────────────────
@@ -1275,7 +1465,11 @@ export const tasks = mysqlTable("tasks", {
   relatedEntityId: int("related_entity_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_tasks_user_id").on(table.userId),
+    clientIdIdx: index("idx_tasks_client_id").on(table.clientId),
+    relatedEntityIdIdx: index("idx_tasks_related_entity_id").on(table.relatedEntityId),
+  }));
 
 // ─── Communications Log ───────────────────────────────────────
 export const commsLog = mysqlTable("comms_log", {
@@ -1292,7 +1486,11 @@ export const commsLog = mysqlTable("comms_log", {
   sentAt: timestamp("sent_at"),
   complianceFlags: json("compliance_flags"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_comms_log_user_id").on(table.userId),
+    clientIdIdx: index("idx_comms_log_client_id").on(table.clientId),
+    templateIdIdx: index("idx_comms_log_template_id").on(table.templateId),
+  }));
 
 // ─── Saved Financial Analyses ─────────────────────────────────
 export const savedAnalyses = mysqlTable("saved_analyses", {
@@ -1310,7 +1508,10 @@ export const savedAnalyses = mysqlTable("saved_analyses", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_saved_analyses_user_id").on(table.userId),
+    clientIdIdx: index("idx_saved_analyses_client_id").on(table.clientId),
+  }));
 
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1340,7 +1541,13 @@ export const gateReviews = mysqlTable("gate_reviews", {
   slaDeadline: bigint("sla_deadline", { mode: "number" }),
   escalatedTo: int("escalated_to"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    actionIdIdx: index("idx_gate_reviews_action_id").on(table.actionId),
+    reviewerIdIdx: index("idx_gate_reviews_reviewer_id").on(table.reviewerId),
+    clientIdIdx: index("idx_gate_reviews_client_id").on(table.clientId),
+    professionalIdIdx: index("idx_gate_reviews_professional_id").on(table.professionalId),
+    firmIdIdx: index("idx_gate_reviews_firm_id").on(table.firmId),
+  }));
 export type GateReview = typeof gateReviews.$inferSelect;
 
 // ─── G1: Agent Instances ───────────────────────────────────────────────────
@@ -1358,7 +1565,10 @@ export const agentInstances = mysqlTable("agent_instances", {
   totalCostUsd: decimal("total_cost_usd", { precision: 10, scale: 2 }).default("0"),
   spawnedAt: bigint("spawned_at", { mode: "number" }).notNull(),
   terminatedAt: bigint("terminated_at", { mode: "number" }),
-});
+}, (table) => ({
+    userIdIdx: index("idx_agent_instances_user_id").on(table.userId),
+    firmIdIdx: index("idx_agent_instances_firm_id").on(table.firmId),
+  }));
 export type AgentInstance = typeof agentInstances.$inferSelect;
 
 // ─── G1: Agent Actions (immutable log) ─────────────────────────────────────
@@ -1377,7 +1587,9 @@ export const agentActions = mysqlTable("agent_actions", {
   durationMs: int("duration_ms"),
   errorMessage: text("error_message"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    agentInstanceIdIdx: index("idx_agent_actions_agent_instance_id").on(table.agentInstanceId),
+  }));
 export type AgentAction = typeof agentActions.$inferSelect;
 
 // ─── G2: Insurance Quotes ──────────────────────────────────────────────────
@@ -1401,7 +1613,11 @@ export const insuranceQuotes = mysqlTable("insurance_quotes", {
   source: mysqlEnum("source", ["api", "browser", "manual"]).default("manual"),
   status: mysqlEnum("status", ["illustrative", "reviewed", "selected", "expired"]).default("illustrative"),
   comparisonNotes: text("comparison_notes"),
-});
+}, (table) => ({
+    clientIdIdx: index("idx_insurance_quotes_client_id").on(table.clientId),
+    professionalIdIdx: index("idx_insurance_quotes_professional_id").on(table.professionalId),
+    quoteRunIdIdx: index("idx_insurance_quotes_quote_run_id").on(table.quoteRunId),
+  }));
 export type InsuranceQuote = typeof insuranceQuotes.$inferSelect;
 
 // ─── G3: Insurance Applications ────────────────────────────────────────────
@@ -1427,7 +1643,12 @@ export const insuranceApplications = mysqlTable("insurance_applications", {
   issuedAt: bigint("issued_at", { mode: "number" }),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    clientIdIdx: index("idx_insurance_applications_client_id").on(table.clientId),
+    professionalIdIdx: index("idx_insurance_applications_professional_id").on(table.professionalId),
+    gateReviewIdIdx: index("idx_insurance_applications_gate_review_id").on(table.gateReviewId),
+    reviewerIdIdx: index("idx_insurance_applications_reviewer_id").on(table.reviewerId),
+  }));
 export type InsuranceApplication = typeof insuranceApplications.$inferSelect;
 
 // ─── G4: Advisory Executions ───────────────────────────────────────────────
@@ -1446,7 +1667,12 @@ export const advisoryExecutions = mysqlTable("advisory_executions", {
   custodianConfirmation: varchar("custodian_confirmation", { length: 255 }),
   postExecutionAuditJson: json("post_execution_audit_json"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    clientIdIdx: index("idx_advisory_executions_client_id").on(table.clientId),
+    professionalIdIdx: index("idx_advisory_executions_professional_id").on(table.professionalId),
+    gateReviewIdIdx: index("idx_advisory_executions_gate_review_id").on(table.gateReviewId),
+    reviewerIdIdx: index("idx_advisory_executions_reviewer_id").on(table.reviewerId),
+  }));
 export type AdvisoryExecution = typeof advisoryExecutions.$inferSelect;
 
 // ─── G5: Estate Documents ──────────────────────────────────────────────────
@@ -1467,7 +1693,10 @@ export const estateDocuments = mysqlTable("estate_documents", {
   archiveRef: varchar("archive_ref", { length: 255 }),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    clientIdIdx: index("idx_estate_documents_client_id").on(table.clientId),
+    attorneyIdIdx: index("idx_estate_documents_attorney_id").on(table.attorneyId),
+  }));
 export type EstateDocument = typeof estateDocuments.$inferSelect;
 
 // ─── G6: Premium Finance Cases ─────────────────────────────────────────────
@@ -1491,7 +1720,11 @@ export const premiumFinanceCases = mysqlTable("premium_finance_cases", {
   monitoringAlertsJson: json("monitoring_alerts_json"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    clientIdIdx: index("idx_premium_finance_cases_client_id").on(table.clientId),
+    professionalIdIdx: index("idx_premium_finance_cases_professional_id").on(table.professionalId),
+    gateReviewIdIdx: index("idx_premium_finance_cases_gate_review_id").on(table.gateReviewId),
+  }));
 export type PremiumFinanceCase = typeof premiumFinanceCases.$inferSelect;
 
 // ─── G7: Carrier Connections ───────────────────────────────────────────────
@@ -1507,7 +1740,9 @@ export const carrierConnections = mysqlTable("carrier_connections", {
   lastVerified: bigint("last_verified", { mode: "number" }),
   active: mysqlBoolean("active").default(true),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    firmIdIdx: index("idx_carrier_connections_firm_id").on(table.firmId),
+  }));
 export type CarrierConnection = typeof carrierConnections.$inferSelect;
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1532,7 +1767,9 @@ export const dataSources = mysqlTable("data_sources", {
   configJson: json("config_json"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    firmIdIdx: index("idx_data_sources_firm_id").on(table.firmId),
+  }));
 export type DataSource = typeof dataSources.$inferSelect;
 
 // ─── Ingestion Jobs ────────────────────────────────────────────────────────
@@ -1552,7 +1789,9 @@ export const ingestionJobs = mysqlTable("ingestion_jobs", {
   completedAt: bigint("completed_at", { mode: "number" }),
   durationMs: int("duration_ms"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    dataSourceIdIdx: index("idx_ingestion_jobs_data_source_id").on(table.dataSourceId),
+  }));
 export type IngestionJob = typeof ingestionJobs.$inferSelect;
 
 // ─── Ingested Records (normalized) ─────────────────────────────────────────
@@ -1573,7 +1812,11 @@ export const ingestedRecords = mysqlTable("ingested_records", {
   verifiedBy: int("verified_by"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    dataSourceIdIdx: index("idx_ingested_records_data_source_id").on(table.dataSourceId),
+    ingestionJobIdIdx: index("idx_ingested_records_ingestion_job_id").on(table.ingestionJobId),
+    entityIdIdx: index("idx_ingested_records_entity_id").on(table.entityId),
+  }));
 export type IngestedRecord = typeof ingestedRecords.$inferSelect;
 
 // ─── Market Data Cache (time-series) ───────────────────────────────────────
@@ -1604,7 +1847,10 @@ export const webScrapeResults = mysqlTable("web_scrape_results", {
   httpStatus: int("http_status"),
   contentHash: varchar("content_hash", { length: 64 }),
   scrapedAt: bigint("scraped_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    dataSourceIdIdx: index("idx_web_scrape_results_data_source_id").on(table.dataSourceId),
+    ingestionJobIdIdx: index("idx_web_scrape_results_ingestion_job_id").on(table.ingestionJobId),
+  }));
 export type WebScrapeResult = typeof webScrapeResults.$inferSelect;
 
 // ─── Document Extractions ──────────────────────────────────────────────────
@@ -1622,7 +1868,11 @@ export const documentExtractions = mysqlTable("document_extractions", {
   processingTimeMs: int("processing_time_ms"),
   llmModelUsed: varchar("llm_model_used", { length: 100 }),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_document_extractions_user_id").on(table.userId),
+    documentIdIdx: index("idx_document_extractions_document_id").on(table.documentId),
+    ingestionJobIdIdx: index("idx_document_extractions_ingestion_job_id").on(table.ingestionJobId),
+  }));
 export type DocumentExtraction = typeof documentExtractions.$inferSelect;
 
 
@@ -1638,7 +1888,9 @@ export const scrapeSchedules = mysqlTable("scrape_schedules", {
   maxRetries: int("max_retries").default(3),
   notifyOnFailure: mysqlBoolean("notify_on_failure").default(true),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    dataSourceIdIdx: index("idx_scrape_schedules_data_source_id").on(table.dataSourceId),
+  }));
 export type ScrapeSchedule = typeof scrapeSchedules.$inferSelect;
 
 // ─── Data Quality Scores ──────────────────────────────────────────────────
@@ -1654,7 +1906,10 @@ export const dataQualityScores = mysqlTable("data_quality_scores", {
   issuesFound: json("issues_found"),
   recommendations: json("recommendations"),
   scoredAt: bigint("scored_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    dataSourceIdIdx: index("idx_data_quality_scores_data_source_id").on(table.dataSourceId),
+    ingestionJobIdIdx: index("idx_data_quality_scores_ingestion_job_id").on(table.ingestionJobId),
+  }));
 export type DataQualityScore = typeof dataQualityScores.$inferSelect;
 
 // ─── Ingestion Insights (AI-generated) ────────────────────────────────────
@@ -1705,7 +1960,9 @@ export const insightActions = mysqlTable("insight_actions", {
   dueAt: bigint("due_at", { mode: "number" }),
   completedAt: bigint("completed_at", { mode: "number" }),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    insightIdIdx: index("idx_insight_actions_insight_id").on(table.insightId),
+  }));
 export type InsightAction = typeof insightActions.$inferSelect;
 
 // ─── Search Cache ──────────────────────────────────────────────────────────
@@ -1743,7 +2000,10 @@ export const emailCampaigns = mysqlTable("email_campaigns", {
   sentAt: bigint("sent_at", { mode: "number" }),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_email_campaigns_user_id").on(table.userId),
+    templateIdIdx: index("idx_email_campaigns_template_id").on(table.templateId),
+  }));
 export type EmailCampaign = typeof emailCampaigns.$inferSelect;
 
 export const emailSends = mysqlTable("email_sends", {
@@ -1757,7 +2017,9 @@ export const emailSends = mysqlTable("email_sends", {
   clickedAt: bigint("clicked_at", { mode: "number" }),
   errorMessage: text("error_message"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    campaignIdIdx: index("idx_email_sends_campaign_id").on(table.campaignId),
+  }));
 export type EmailSend = typeof emailSends.$inferSelect;
 
 
@@ -1777,7 +2039,9 @@ export const userConsents = mysqlTable("user_consents", {
   userAgent: text("user_agent"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_consents_user_id").on(table.userId),
+  }));
 export type UserConsent = typeof userConsents.$inferSelect;
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1823,7 +2087,10 @@ export const fairnessTestResults = mysqlTable("fairness_test_results", {
   disclaimerPresent: mysqlBoolean("disclaimer_present").default(false),
   responseTimeMs: int("response_time_ms"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    runIdIdx: index("idx_fairness_test_results_run_id").on(table.runId),
+    promptIdIdx: index("idx_fairness_test_results_prompt_id").on(table.promptId),
+  }));
 export type FairnessTestResult = typeof fairnessTestResults.$inferSelect;
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1869,7 +2136,9 @@ export const professionals = mysqlTable("professionals", {
   createdBy: int("created_by"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    linkedUserIdIdx: index("idx_professionals_linked_user_id").on(table.linkedUserId),
+  }));
 export type Professional = typeof professionals.$inferSelect;
 export type InsertProfessional = typeof professionals.$inferInsert;
 
@@ -1889,7 +2158,10 @@ export const professionalRelationships = mysqlTable("professional_relationships"
   referralSource: varchar("referral_source", { length: 128 }),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_professional_relationships_user_id").on(table.userId),
+    professionalIdIdx: index("idx_professional_relationships_professional_id").on(table.professionalId),
+  }));
 export type ProfessionalRelationship = typeof professionalRelationships.$inferSelect;
 
 export const professionalReviews = mysqlTable("professional_reviews", {
@@ -1903,7 +2175,10 @@ export const professionalReviews = mysqlTable("professional_reviews", {
   status: mysqlEnum("status", ["published", "pending", "flagged", "removed"]).default("pending").notNull(),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    professionalIdIdx: index("idx_professional_reviews_professional_id").on(table.professionalId),
+    userIdIdx: index("idx_professional_reviews_user_id").on(table.userId),
+  }));
 export type ProfessionalReview = typeof professionalReviews.$inferSelect;
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1931,7 +2206,9 @@ export const layerAudits = mysqlTable("layer_audits", {
   startedAt: bigint("started_at", { mode: "number" }),
   completedAt: bigint("completed_at", { mode: "number" }),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    targetIdIdx: index("idx_layer_audits_target_id").on(table.targetId),
+  }));
 export type LayerAudit = typeof layerAudits.$inferSelect;
 
 export const improvementActions = mysqlTable("improvement_actions", {
@@ -1969,7 +2246,9 @@ export const improvementActions = mysqlTable("improvement_actions", {
   rolledBackAt: bigint("rolled_back_at", { mode: "number" }),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    auditIdIdx: index("idx_improvement_actions_audit_id").on(table.auditId),
+  }));
 export type ImprovementAction = typeof improvementActions.$inferSelect;
 
 export const layerMetrics = mysqlTable("layer_metrics", {
@@ -1983,7 +2262,9 @@ export const layerMetrics = mysqlTable("layer_metrics", {
   period: varchar("period", { length: 32 }), // "hourly", "daily", "weekly", "monthly"
   recordedAt: bigint("recorded_at", { mode: "number" }).notNull(),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    targetIdIdx: index("idx_layer_metrics_target_id").on(table.targetId),
+  }));
 export type LayerMetric = typeof layerMetrics.$inferSelect;
 
 export const improvementFeedback = mysqlTable("improvement_feedback", {
@@ -1994,7 +2275,10 @@ export const improvementFeedback = mysqlTable("improvement_feedback", {
   helpful: mysqlBoolean("helpful").default(true),
   notes: text("notes"),
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    actionIdIdx: index("idx_improvement_feedback_action_id").on(table.actionId),
+    userIdIdx: index("idx_improvement_feedback_user_id").on(table.userId),
+  }));
 export type ImprovementFeedback = typeof improvementFeedback.$inferSelect;
 
 // ─── USER INSIGHTS CACHE ────────────────────────────────────────
@@ -2011,7 +2295,9 @@ export const userInsightsCache = mysqlTable("user_insights_cache", {
   summary: text("summary").notNull(), // Human-readable summary for prompt injection
   computedAt: bigint("computed_at", { mode: "number" }).notNull(),
   expiresAt: bigint("expires_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_insights_cache_user_id").on(table.userId),
+  }));
 export type UserInsightCache = typeof userInsightsCache.$inferSelect;
 
 // ─── KNOWLEDGE BASE SHARING PERMISSIONS ─────────────────────────────────
@@ -2045,7 +2331,10 @@ export const kbSharingPermissions = mysqlTable("kb_sharing_permissions", {
   expiresAt: bigint("expires_at", { mode: "number" }), // Optional expiry
   createdAt: bigint("created_at", { mode: "number" }).notNull(),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
-});
+}, (table) => ({
+    ownerIdIdx: index("idx_kb_sharing_permissions_owner_id").on(table.ownerId),
+    granteeIdIdx: index("idx_kb_sharing_permissions_grantee_id").on(table.granteeId),
+  }));
 export type KbSharingPermission = typeof kbSharingPermissions.$inferSelect;
 
 // ─── SHARING DEFAULTS (per relationship type) ───────────────────────────
@@ -2087,7 +2376,11 @@ export const kbAccessTransitions = mysqlTable("kb_access_transitions", {
   reason: mysqlEnum("reason", ["client_switched", "professional_left", "org_change", "manual", "expired"]).notNull(),
   transitionedAt: bigint("transitioned_at", { mode: "number" }).notNull(),
   transitionedBy: int("transitioned_by").notNull(), // Who initiated (client or admin)
-});
+}, (table) => ({
+    ownerIdIdx: index("idx_kb_access_transitions_owner_id").on(table.ownerId),
+    fromGranteeIdIdx: index("idx_kb_access_transitions_from_grantee_id").on(table.fromGranteeId),
+    toGranteeIdIdx: index("idx_kb_access_transitions_to_grantee_id").on(table.toGranteeId),
+  }));
 export type KbAccessTransition = typeof kbAccessTransitions.$inferSelect;
 
 
@@ -2139,7 +2432,12 @@ export const integrationConnections = mysqlTable("integration_connections", {
   usagePeriodStart: timestamp("usage_period_start"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    providerIdIdx: index("idx_integration_connections_provider_id").on(table.providerId),
+    ownerIdIdx: index("idx_integration_connections_owner_id").on(table.ownerId),
+    organizationIdIdx: index("idx_integration_connections_organization_id").on(table.organizationId),
+    userIdIdx: index("idx_integration_connections_user_id").on(table.userId),
+  }));
 export type IntegrationConnection = typeof integrationConnections.$inferSelect;
 
 // ─── INTEGRATION SYNC LOGS (Audit trail of sync operations) ──────────────
@@ -2157,7 +2455,10 @@ export const integrationSyncLogs = mysqlTable("integration_sync_logs", {
   errorDetails: json("error_details"),
   triggeredBy: mysqlEnum("triggered_by", ["schedule", "webhook", "manual", "system"]).notNull(),
   triggeredByUserId: int("triggered_by_user_id"),
-});
+}, (table) => ({
+    connectionIdIdx: index("idx_integration_sync_logs_connection_id").on(table.connectionId),
+    triggeredByUserIdIdx: index("idx_integration_sync_logs_triggered_by_user_id").on(table.triggeredByUserId),
+  }));
 export type IntegrationSyncLog = typeof integrationSyncLogs.$inferSelect;
 
 // ─── INTEGRATION FIELD MAPPINGS ──────────────────────────────────────────
@@ -2173,7 +2474,9 @@ export const integrationFieldMappings = mysqlTable("integration_field_mappings",
   ]).default("direct"),
   customTransform: text("custom_transform"),
   isActive: mysqlBoolean("is_active").default(true),
-});
+}, (table) => ({
+    connectionIdIdx: index("idx_integration_field_mappings_connection_id").on(table.connectionId),
+  }));
 export type IntegrationFieldMapping = typeof integrationFieldMappings.$inferSelect;
 
 // ─── INTEGRATION WEBHOOK EVENTS (Raw inbound webhook log) ────────────────
@@ -2188,7 +2491,9 @@ export const integrationWebhookEvents = mysqlTable("integration_webhook_events",
   processingStatus: mysqlEnum("processing_status", ["pending", "processed", "failed", "skipped"]).default("pending"),
   processingError: text("processing_error"),
   receivedAt: timestamp("received_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    connectionIdIdx: index("idx_integration_webhook_events_connection_id").on(table.connectionId),
+  }));
 export type IntegrationWebhookEvent = typeof integrationWebhookEvents.$inferSelect;
 
 // ─── ENRICHMENT CACHE (Cached enrichment lookups) ────────────────────────
@@ -2203,7 +2508,9 @@ export const enrichmentCache = mysqlTable("enrichment_cache", {
   expiresAt: timestamp("expires_at").notNull(),
   hitCount: int("hit_count").default(1),
   connectionId: varchar("connection_id", { length: 36 }),
-});
+}, (table) => ({
+    connectionIdIdx: index("idx_enrichment_cache_connection_id").on(table.connectionId),
+  }));
 export type EnrichmentCacheEntry = typeof enrichmentCache.$inferSelect;
 
 // ─── CARRIER IMPORT TEMPLATES (Parsing templates for manual uploads) ─────
@@ -2238,7 +2545,9 @@ export const integrationSyncConfig = mysqlTable("integration_sync_config", {
   isActive: mysqlBoolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    connectionIdIdx: index("idx_integration_sync_config_connection_id").on(table.connectionId),
+  }));
 export type IntegrationSyncConfig = typeof integrationSyncConfig.$inferSelect;
 
 // ─── SUITABILITY PROFILES (12-dimension model) ────────────────────────────
@@ -2257,7 +2566,10 @@ export const suitabilityProfiles = mysqlTable("suitability_profiles", {
   status: mysqlEnum("status", ["draft", "active", "needs_review", "archived"]).default("draft"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_suitability_profiles_user_id").on(table.userId),
+    organizationIdIdx: index("idx_suitability_profiles_organization_id").on(table.organizationId),
+  }));
 export type SuitabilityProfile = typeof suitabilityProfiles.$inferSelect;
 
 // ─── SUITABILITY DIMENSIONS (Individual dimension tracking) ────────────────
@@ -2273,7 +2585,9 @@ export const suitabilityDimensions = mysqlTable("suitability_dimensions", {
   lastUpdatedAt: timestamp("last_updated_at").defaultNow().notNull(),
   decayRate: float("decay_rate").default(0.01),
   nextReviewAt: timestamp("next_review_at"),
-});
+}, (table) => ({
+    profileIdIdx: index("idx_suitability_dimensions_profile_id").on(table.profileId),
+  }));
 export type SuitabilityDimension = typeof suitabilityDimensions.$inferSelect;
 
 // ─── SUITABILITY CHANGE EVENTS (Track changes over time) ──────────────────
@@ -2289,7 +2603,9 @@ export const suitabilityChangeEvents = mysqlTable("suitability_change_events", {
   triggeredBy: int("triggered_by"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    profileIdIdx: index("idx_suitability_change_events_profile_id").on(table.profileId),
+  }));
 export type SuitabilityChangeEvent = typeof suitabilityChangeEvents.$inferSelect;
 
 // ─── SUITABILITY QUESTIONS QUEUE (Progressive profiling) ──────────────────
@@ -2306,7 +2622,9 @@ export const suitabilityQuestionsQueue = mysqlTable("suitability_questions_queue
   answeredAt: timestamp("answered_at"),
   answer: json("answer"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_suitability_questions_queue_user_id").on(table.userId),
+  }));
 export type SuitabilityQuestion = typeof suitabilityQuestionsQueue.$inferSelect;
 
 // ─── SUITABILITY HOUSEHOLD LINKS (Family/household grouping) ──────────────
@@ -2318,7 +2636,10 @@ export const suitabilityHouseholdLinks = mysqlTable("suitability_household_links
   sharedDimensions: json("shared_dimensions"),
   isActive: mysqlBoolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    primaryUserIdIdx: index("idx_suitability_household_links_primary_user_id").on(table.primaryUserId),
+    linkedUserIdIdx: index("idx_suitability_household_links_linked_user_id").on(table.linkedUserId),
+  }));
 export type SuitabilityHouseholdLink = typeof suitabilityHouseholdLinks.$inferSelect;
 
 // ─── FILE UPLOADS (6-stage pipeline) ──────────────────────────────────────
@@ -2340,7 +2661,11 @@ export const fileUploads = mysqlTable("file_uploads", {
   parsedContent: json("parsed_content"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_file_uploads_user_id").on(table.userId),
+    organizationIdIdx: index("idx_file_uploads_organization_id").on(table.organizationId),
+    connectionIdIdx: index("idx_file_uploads_connection_id").on(table.connectionId),
+  }));
 export type FileUpload = typeof fileUploads.$inferSelect;
 
 // ─── FILE CHUNKS (Parsed segments for RAG) ────────────────────────────────
@@ -2354,7 +2679,9 @@ export const fileChunks = mysqlTable("file_chunks", {
   embedding: json("embedding"),
   metadata: json("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    fileIdIdx: index("idx_file_chunks_file_id").on(table.fileId),
+  }));
 export type FileChunk = typeof fileChunks.$inferSelect;
 
 // ─── FILE DERIVED ENRICHMENTS (Extracted insights from files) ─────────────
@@ -2369,7 +2696,10 @@ export const fileDerivedEnrichments = mysqlTable("file_derived_enrichments", {
   appliedToProfile: mysqlBoolean("applied_to_profile").default(false),
   appliedAt: timestamp("applied_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    fileIdIdx: index("idx_file_derived_enrichments_file_id").on(table.fileId),
+    userIdIdx: index("idx_file_derived_enrichments_user_id").on(table.userId),
+  }));
 export type FileDerivedEnrichment = typeof fileDerivedEnrichments.$inferSelect;
 
 // ─── ANALYTICAL MODELS (Model registry) ───────────────────────────────────
@@ -2405,7 +2735,9 @@ export const modelRuns = mysqlTable("model_runs", {
   affectedUserIds: json("affected_user_ids"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
-});
+}, (table) => ({
+    modelIdIdx: index("idx_model_runs_model_id").on(table.modelId),
+  }));
 export type ModelRun = typeof modelRuns.$inferSelect;
 
 // ─── MODEL OUTPUT RECORDS (Individual results per user/entity) ────────────
@@ -2422,7 +2754,11 @@ export const modelOutputRecords = mysqlTable("model_output_records", {
   delta: json("delta"),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    runIdIdx: index("idx_model_output_records_run_id").on(table.runId),
+    modelIdIdx: index("idx_model_output_records_model_id").on(table.modelId),
+    entityIdIdx: index("idx_model_output_records_entity_id").on(table.entityId),
+  }));
 export type ModelOutputRecord = typeof modelOutputRecords.$inferSelect;
 
 // ─── MODEL SCHEDULES (Cron-based execution) ──────────────────────────────
@@ -2436,7 +2772,9 @@ export const modelSchedules = mysqlTable("model_schedules", {
   nextRunAt: timestamp("next_run_at"),
   filterCriteria: json("filter_criteria"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    modelIdIdx: index("idx_model_schedules_model_id").on(table.modelId),
+  }));
 export type ModelSchedule = typeof modelSchedules.$inferSelect;
 
 // ─── GENERATED DOCUMENTS (Export/report generation) ──────────────────────
@@ -2454,7 +2792,10 @@ export const generatedDocuments = mysqlTable("generated_documents", {
   errorMessage: text("error_message"),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_generated_documents_user_id").on(table.userId),
+    organizationIdIdx: index("idx_generated_documents_organization_id").on(table.organizationId),
+  }));
 export type GeneratedDocument = typeof generatedDocuments.$inferSelect;
 
 // ─── PROPAGATION EVENTS (Cross-layer intelligence cascading) ─────────────
@@ -2471,7 +2812,10 @@ export const propagationEvents = mysqlTable("propagation_events", {
   deliveredAt: timestamp("delivered_at"),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    sourceEntityIdIdx: index("idx_propagation_events_source_entity_id").on(table.sourceEntityId),
+    targetEntityIdIdx: index("idx_propagation_events_target_entity_id").on(table.targetEntityId),
+  }));
 export type PropagationEvent = typeof propagationEvents.$inferSelect;
 
 // ─── PROPAGATION ACTIONS (Actions taken on propagated events) ────────────
@@ -2483,7 +2827,10 @@ export const propagationActions = mysqlTable("propagation_actions", {
   notes: text("notes"),
   resultData: json("result_data"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    eventIdIdx: index("idx_propagation_actions_event_id").on(table.eventId),
+    actorIdIdx: index("idx_propagation_actions_actor_id").on(table.actorId),
+  }));
 export type PropagationAction = typeof propagationActions.$inferSelect;
 
 // ─── COACHING MESSAGES (AI-generated coaching/nudges) ────────────────────
@@ -2503,7 +2850,10 @@ export const coachingMessages = mysqlTable("coaching_messages", {
   expiresAt: timestamp("expires_at"),
   metadata: json("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_coaching_messages_user_id").on(table.userId),
+    organizationIdIdx: index("idx_coaching_messages_organization_id").on(table.organizationId),
+  }));
 export type CoachingMessage = typeof coachingMessages.$inferSelect;
 
 // ─── PLATFORM LEARNINGS (System-wide pattern detection) ──────────────────
@@ -2520,7 +2870,9 @@ export const platformLearnings = mysqlTable("platform_learnings", {
   status: mysqlEnum("status", ["detected", "validated", "applied", "rejected", "expired"]).default("detected"),
   appliedAt: timestamp("applied_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    typeConfidenceIdx: index("idx_platform_learnings_type_confidence").on(table.learningType, table.confidence),
+  }));
 export type PlatformLearning = typeof platformLearnings.$inferSelect;
 
 // ─── EDUCATION TRIGGERS (Contextual education delivery) ──────────────────
@@ -2538,7 +2890,9 @@ export const educationTriggers = mysqlTable("education_triggers", {
   timesTriggered: int("times_triggered").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    educationModuleIdIdx: index("idx_education_triggers_education_module_id").on(table.educationModuleId),
+  }));
 export type EducationTrigger = typeof educationTriggers.$inferSelect;
 
 
@@ -2554,7 +2908,9 @@ export const authProviderTokens = mysqlTable("auth_provider_tokens", {
   lastProfileFetchAt: timestamp("last_profile_fetch_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_auth_provider_tokens_user_id").on(table.userId),
+  }));
 export type AuthProviderToken = typeof authProviderTokens.$inferSelect;
 
 // ─── AUTH ENRICHMENT LOG (Track data captured from each sign-in event) ───
@@ -2569,7 +2925,9 @@ export const authEnrichmentLog = mysqlTable("auth_enrichment_log", {
   rawResponseHash: varchar("raw_response_hash", { length: 64 }).notNull(),
   suitabilityDimensionsUpdated: json("suitability_dimensions_updated"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_auth_enrichment_log_user_id").on(table.userId),
+  }));
 export type AuthEnrichmentLogEntry = typeof authEnrichmentLog.$inferSelect;
 
 
@@ -2595,7 +2953,11 @@ export const promptExperimentResults = mysqlTable("prompt_experiment_results", {
   status: mysqlEnum("status", ["running", "completed", "cancelled"]).default("running"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
-});
+}, (table) => ({
+    variantAIdIdx: index("idx_prompt_experiment_results_variant_a_id").on(table.variantAId),
+    variantBIdIdx: index("idx_prompt_experiment_results_variant_b_id").on(table.variantBId),
+    winnerIdIdx: index("idx_prompt_experiment_results_winner_id").on(table.winnerId),
+  }));
 export type PromptExperimentResult = typeof promptExperimentResults.$inferSelect;
 
 export const promptGoldenTests = mysqlTable("prompt_golden_tests", {
@@ -2622,7 +2984,9 @@ export const promptRegressionRuns = mysqlTable("prompt_regression_runs", {
   qualityDrop: mysqlBoolean("quality_drop").default(false),
   promotionBlocked: mysqlBoolean("promotion_blocked").default(false),
   runAt: timestamp("run_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    variantIdIdx: index("idx_prompt_regression_runs_variant_id").on(table.variantId),
+  }));
 export type PromptRegressionRun = typeof promptRegressionRuns.$inferSelect;
 
 // ─── Task #22: Compliance Pre-Screening ──────────────────────────────────
@@ -2637,7 +3001,10 @@ export const compliancePrescreening = mysqlTable("compliance_prescreening", {
   reviewedBy: int("reviewed_by"),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    messageIdIdx: index("idx_compliance_prescreening_message_id").on(table.messageId),
+    conversationIdIdx: index("idx_compliance_prescreening_conversation_id").on(table.conversationId),
+  }));
 export type CompliancePrescreeningEntry = typeof compliancePrescreening.$inferSelect;
 
 export const conversationComplianceScores = mysqlTable("conversation_compliance_scores", {
@@ -2648,7 +3015,9 @@ export const conversationComplianceScores = mysqlTable("conversation_compliance_
   checksPassed: int("checks_passed").default(0),
   flaggedForReview: mysqlBoolean("flagged_for_review").default(false),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
-});
+}, (table) => ({
+    conversationIdIdx: index("idx_conversation_compliance_scores_conversation_id").on(table.conversationId),
+  }));
 export type ConversationComplianceScore = typeof conversationComplianceScores.$inferSelect;
 
 // ─── Task #23: Canary Deployments ────────────────────────────────────────
@@ -2704,7 +3073,10 @@ export const knowledgeGraphEdges = mysqlTable("knowledge_graph_edges", {
   validUntil: timestamp("valid_until"),
   source: varchar("source", { length: 128 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    fromEntityIdIdx: index("idx_knowledge_graph_edges_from_entity_id").on(table.fromEntityId),
+    toEntityIdIdx: index("idx_knowledge_graph_edges_to_entity_id").on(table.toEntityId),
+  }));
 export type KnowledgeGraphEdge = typeof knowledgeGraphEdges.$inferSelect;
 
 export const entityResolutionRules = mysqlTable("entity_resolution_rules", {
@@ -2713,7 +3085,9 @@ export const entityResolutionRules = mysqlTable("entity_resolution_rules", {
   canonicalEntityId: int("canonical_entity_id").notNull(),
   confidence: float("confidence").default(0.9),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    canonicalEntityIdIdx: index("idx_entity_resolution_rules_canonical_entity_id").on(table.canonicalEntityId),
+  }));
 export type EntityResolutionRule = typeof entityResolutionRules.$inferSelect;
 
 // ─── Task #25: What-If Scenarios + Backtesting ──────────────────────────
@@ -2727,7 +3101,10 @@ export const modelScenarios = mysqlTable("model_scenarios", {
   resultJson: json("result_json"),
   comparisonNotes: text("comparison_notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_model_scenarios_user_id").on(table.userId),
+    baseRunIdIdx: index("idx_model_scenarios_base_run_id").on(table.baseRunId),
+  }));
 export type ModelScenario = typeof modelScenarios.$inferSelect;
 
 export const modelBacktests = mysqlTable("model_backtests", {
@@ -2741,7 +3118,9 @@ export const modelBacktests = mysqlTable("model_backtests", {
   maxDrawdown: float("max_drawdown"),
   recoveryMonths: int("recovery_months"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_model_backtests_user_id").on(table.userId),
+  }));
 export type ModelBacktest = typeof modelBacktests.$inferSelect;
 
 // ─── Task #26: Adaptive Context Management ──────────────────────────────
@@ -2757,7 +3136,10 @@ export const contextAssemblyLog = mysqlTable("context_assembly_log", {
   tokensUsed: int("tokens_used"),
   complexityLevel: mysqlEnum("complexity_level", ["simple", "moderate", "complex"]).default("moderate"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    conversationIdIdx: index("idx_context_assembly_log_conversation_id").on(table.conversationId),
+    messageIdIdx: index("idx_context_assembly_log_message_id").on(table.messageId),
+  }));
 export type ContextAssemblyLogEntry = typeof contextAssemblyLog.$inferSelect;
 
 // ─── Task #27: Error Handling ────────────────────────────────────────────
@@ -2772,7 +3154,9 @@ export const serverErrors = mysqlTable("server_errors", {
   metadata: json("metadata"),
   resolved: mysqlBoolean("resolved").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_server_errors_user_id").on(table.userId),
+  }));
 export type ServerError = typeof serverErrors.$inferSelect;
 
 // ─── Task #29: Calculator Persistence ────────────────────────────────────
@@ -2785,7 +3169,9 @@ export const calculatorScenarios = mysqlTable("calculator_scenarios", {
   resultsJson: json("results_json"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_calculator_scenarios_user_id").on(table.userId),
+  }));
 export type CalculatorScenario = typeof calculatorScenarios.$inferSelect;
 
 // ─── Task #30: Predictive Insights + Benchmarks ─────────────────────────
@@ -2845,7 +3231,10 @@ export const disclaimerAudit = mysqlTable("disclaimer_audit", {
   disclaimerId: int("disclaimer_id").notNull(),
   disclaimerVersion: int("disclaimer_version").default(1),
   shownAt: timestamp("shown_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    conversationIdIdx: index("idx_disclaimer_audit_conversation_id").on(table.conversationId),
+    disclaimerIdIdx: index("idx_disclaimer_audit_disclaimer_id").on(table.disclaimerId),
+  }));
 export type DisclaimerAuditEntry = typeof disclaimerAudit.$inferSelect;
 
 export const regulatoryAlerts = mysqlTable("regulatory_alerts", {
@@ -2872,7 +3261,9 @@ export const onboardingProgress = mysqlTable("onboarding_progress", {
   completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_onboarding_progress_user_id").on(table.userId),
+  }));
 export type OnboardingProgressEntry = typeof onboardingProgress.$inferSelect;
 
 // ─── Task #33: Product Disqualification ──────────────────────────────────
@@ -2885,7 +3276,10 @@ export const productSuitabilityEvaluations = mysqlTable("product_suitability_eva
   qualifyingDimensions: json("qualifying_dimensions"),
   disqualifyingDimensions: json("disqualifying_dimensions"),
   status: mysqlEnum("status", ["qualified", "marginal", "disqualified", "needs_review"]).default("qualified"),
-});
+}, (table) => ({
+    productIdIdx: index("idx_product_suitability_evaluations_product_id").on(table.productId),
+    userIdIdx: index("idx_product_suitability_evaluations_user_id").on(table.userId),
+  }));
 export type ProductSuitabilityEvaluation = typeof productSuitabilityEvaluations.$inferSelect;
 
 // ─── Task #34: Dynamic Disclaimers + Tracking ────────────────────────────
@@ -2895,7 +3289,10 @@ export const disclaimerInteractions = mysqlTable("disclaimer_interactions", {
   userId: int("user_id").notNull(),
   action: mysqlEnum("action", ["shown", "scrolled", "clicked", "acknowledged"]).default("shown"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    disclaimerIdIdx: index("idx_disclaimer_interactions_disclaimer_id").on(table.disclaimerId),
+    userIdIdx: index("idx_disclaimer_interactions_user_id").on(table.userId),
+  }));
 export type DisclaimerInteraction = typeof disclaimerInteractions.$inferSelect;
 
 export const disclaimerTranslations = mysqlTable("disclaimer_translations", {
@@ -2905,7 +3302,9 @@ export const disclaimerTranslations = mysqlTable("disclaimer_translations", {
   translatedText: text("translated_text").notNull(),
   verifiedBy: int("verified_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    disclaimerIdIdx: index("idx_disclaimer_translations_disclaimer_id").on(table.disclaimerId),
+  }));
 export type DisclaimerTranslation = typeof disclaimerTranslations.$inferSelect;
 
 export const conversationTopics = mysqlTable("conversation_topics", {
@@ -2916,7 +3315,10 @@ export const conversationTopics = mysqlTable("conversation_topics", {
   previousTopic: varchar("previous_topic", { length: 128 }),
   disclaimerInjected: mysqlBoolean("disclaimer_injected").default(false),
   detectedAt: timestamp("detected_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    conversationIdIdx: index("idx_conversation_topics_conversation_id").on(table.conversationId),
+    messageIdIdx: index("idx_conversation_topics_message_id").on(table.messageId),
+  }));
 export type ConversationTopic = typeof conversationTopics.$inferSelect;
 
 // ─── Task #35: Proactive Escalation + Video ──────────────────────────────
@@ -2938,7 +3340,9 @@ export const professionalAvailability = mysqlTable("professional_availability", 
   endTime: varchar("end_time", { length: 8 }).notNull(),
   timezone: varchar("timezone", { length: 64 }).default("America/New_York"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    professionalIdIdx: index("idx_professional_availability_professional_id").on(table.professionalId),
+  }));
 export type ProfessionalAvailabilityEntry = typeof professionalAvailability.$inferSelect;
 
 export const consultationBookings = mysqlTable("consultation_bookings", {
@@ -2952,7 +3356,11 @@ export const consultationBookings = mysqlTable("consultation_bookings", {
   dailyRoomUrl: varchar("daily_room_url", { length: 512 }),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_consultation_bookings_user_id").on(table.userId),
+    professionalIdIdx: index("idx_consultation_bookings_professional_id").on(table.professionalId),
+    preBriefIdIdx: index("idx_consultation_bookings_pre_brief_id").on(table.preBriefId),
+  }));
 export type ConsultationBooking = typeof consultationBookings.$inferSelect;
 
 // ─── Task #36: Financial Literacy Detection ──────────────────────────────
@@ -2963,7 +3371,9 @@ export const userGuardrails = mysqlTable("user_guardrails", {
   value: varchar("value", { length: 256 }).notNull(),
   reason: text("reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_guardrails_user_id").on(table.userId),
+  }));
 export type UserGuardrail = typeof userGuardrails.$inferSelect;
 
 // ─── Task #37: Dynamic Permissions + ABAC ────────────────────────────────
@@ -2977,7 +3387,9 @@ export const roleElevations = mysqlTable("role_elevations", {
   expiresAt: timestamp("expires_at").notNull(),
   reason: text("reason"),
   revokedAt: timestamp("revoked_at"),
-});
+}, (table) => ({
+    userIdIdx: index("idx_role_elevations_user_id").on(table.userId),
+  }));
 export type RoleElevation = typeof roleElevations.$inferSelect;
 
 export const delegations = mysqlTable("delegations", {
@@ -2988,7 +3400,10 @@ export const delegations = mysqlTable("delegations", {
   grantedAt: timestamp("granted_at").defaultNow().notNull(),
   expiresAt: timestamp("expires_at"),
   active: mysqlBoolean("active").default(true),
-});
+}, (table) => ({
+    delegatorIdIdx: index("idx_delegations_delegator_id").on(table.delegatorId),
+    delegateIdIdx: index("idx_delegations_delegate_id").on(table.delegateId),
+  }));
 export type Delegation = typeof delegations.$inferSelect;
 
 export const accessPolicies = mysqlTable("access_policies", {
@@ -3040,7 +3455,9 @@ export const orgRetentionPolicies = mysqlTable("org_retention_policies", {
   action: mysqlEnum("action", ["delete", "archive", "anonymize"]).default("archive"),
   configuredBy: int("configured_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    orgIdIdx: index("idx_org_retention_policies_org_id").on(table.orgId),
+  }));
 export type OrgRetentionPolicy = typeof orgRetentionPolicies.$inferSelect;
 
 // ─── Task #41: AI Boundaries ─────────────────────────────────────────────
@@ -3050,7 +3467,9 @@ export const userAiBoundaries = mysqlTable("user_ai_boundaries", {
   boundaryType: varchar("boundary_type", { length: 64 }).notNull(),
   value: text("value").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_ai_boundaries_user_id").on(table.userId),
+  }));
 export type UserAiBoundary = typeof userAiBoundaries.$inferSelect;
 
 // ─── Task #46: Field-Level Sharing ───────────────────────────────────────
@@ -3061,7 +3480,9 @@ export const fieldSharingControls = mysqlTable("field_sharing_controls", {
   shareWithRole: varchar("share_with_role", { length: 32 }),
   grantedAt: timestamp("granted_at").defaultNow().notNull(),
   expiresAt: timestamp("expires_at"),
-});
+}, (table) => ({
+    userIdIdx: index("idx_field_sharing_controls_user_id").on(table.userId),
+  }));
 export type FieldSharingControl = typeof fieldSharingControls.$inferSelect;
 
 // ─── Task #47: Per-Org Model + Token Budget ──────────────────────────────
@@ -3075,7 +3496,9 @@ export const orgAiConfig = mysqlTable("org_ai_config", {
   budgetAlertSent: mysqlBoolean("budget_alert_sent").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    orgIdIdx: index("idx_org_ai_config_org_id").on(table.orgId),
+  }));
 export type OrgAiConfigEntry = typeof orgAiConfig.$inferSelect;
 
 export const orgPromptCustomizations = mysqlTable("org_prompt_customizations", {
@@ -3086,7 +3509,9 @@ export const orgPromptCustomizations = mysqlTable("org_prompt_customizations", {
   reviewedBy: int("reviewed_by"),
   approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    orgIdIdx: index("idx_org_prompt_customizations_org_id").on(table.orgId),
+  }));
 export type OrgPromptCustomization = typeof orgPromptCustomizations.$inferSelect;
 
 // ─── Task #48: Agent Templates ───────────────────────────────────────────
@@ -3099,7 +3524,9 @@ export const agentTemplates = mysqlTable("agent_templates", {
   orgId: int("org_id"),
   isBuiltIn: mysqlBoolean("is_built_in").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    orgIdIdx: index("idx_agent_templates_org_id").on(table.orgId),
+  }));
 export type AgentTemplate = typeof agentTemplates.$inferSelect;
 
 export const agentPerformance = mysqlTable("agent_performance", {
@@ -3111,7 +3538,9 @@ export const agentPerformance = mysqlTable("agent_performance", {
   avgCostUsd: float("avg_cost_usd"),
   avgSatisfactionScore: float("avg_satisfaction_score"),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    agentTemplateIdIdx: index("idx_agent_performance_agent_template_id").on(table.agentTemplateId),
+  }));
 export type AgentPerformanceEntry = typeof agentPerformance.$inferSelect;
 
 // ─── Task #49: Compliance Prediction ─────────────────────────────────────
@@ -3125,7 +3554,9 @@ export const compliancePredictions = mysqlTable("compliance_predictions", {
   approved: mysqlBoolean("approved"),
   approvedBy: int("approved_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    agentActionIdIdx: index("idx_compliance_predictions_agent_action_id").on(table.agentActionId),
+  }));
 export type CompliancePrediction = typeof compliancePredictions.$inferSelect;
 
 // ─── Task #50: Graduated Autonomy ────────────────────────────────────────
@@ -3137,7 +3568,9 @@ export const agentAutonomyLevels = mysqlTable("agent_autonomy_levels", {
   level2Runs: int("level_2_runs").default(0),
   promotedAt: timestamp("promoted_at"),
   promotedBy: int("promoted_by"),
-});
+}, (table) => ({
+    agentTemplateIdIdx: index("idx_agent_autonomy_levels_agent_template_id").on(table.agentTemplateId),
+  }));
 export type AgentAutonomyLevel = typeof agentAutonomyLevels.$inferSelect;
 
 // ─── Task #52: Account Reconciliation ────────────────────────────────────
@@ -3149,7 +3582,9 @@ export const plaidWebhooksLog = mysqlTable("plaid_webhooks_log", {
   processedAt: timestamp("processed_at"),
   status: mysqlEnum("status", ["received", "processing", "processed", "failed"]).default("received"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    itemIdIdx: index("idx_plaid_webhooks_log_item_id").on(table.itemId),
+  }));
 export type PlaidWebhookLogEntry = typeof plaidWebhooksLog.$inferSelect;
 
 export const transactionCategories = mysqlTable("transaction_categories", {
@@ -3160,7 +3595,10 @@ export const transactionCategories = mysqlTable("transaction_categories", {
   userOverrideCategory: varchar("user_override_category", { length: 128 }),
   confidence: float("confidence"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    transactionIdIdx: index("idx_transaction_categories_transaction_id").on(table.transactionId),
+    userIdIdx: index("idx_transaction_categories_user_id").on(table.userId),
+  }));
 export type TransactionCategory = typeof transactionCategories.$inferSelect;
 
 export const reconciliationLog = mysqlTable("reconciliation_log", {
@@ -3172,7 +3610,9 @@ export const reconciliationLog = mysqlTable("reconciliation_log", {
   resolved: mysqlBoolean("resolved").default(false),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    accountIdIdx: index("idx_reconciliation_log_account_id").on(table.accountId),
+  }));
 export type ReconciliationLogEntry = typeof reconciliationLog.$inferSelect;
 
 // ─── Task #53: CRM Sync ─────────────────────────────────────────────────
@@ -3199,7 +3639,10 @@ export const carrierSubmissions = mysqlTable("carrier_submissions", {
   submittedAt: timestamp("submitted_at"),
   responseReceivedAt: timestamp("response_received_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    quoteIdIdx: index("idx_carrier_submissions_quote_id").on(table.quoteId),
+    carrierIdIdx: index("idx_carrier_submissions_carrier_id").on(table.carrierId),
+  }));
 export type CarrierSubmission = typeof carrierSubmissions.$inferSelect;
 
 // ─── Task #54: Real-Time Market Streaming ────────────────────────────────
@@ -3208,7 +3651,9 @@ export const marketDataSubscriptions = mysqlTable("market_data_subscriptions", {
   userId: int("user_id").notNull(),
   symbol: varchar("symbol", { length: 16 }).notNull(),
   subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_market_data_subscriptions_user_id").on(table.userId),
+  }));
 export type MarketDataSubscription = typeof marketDataSubscriptions.$inferSelect;
 
 export const marketEvents = mysqlTable("market_events", {
@@ -3230,7 +3675,9 @@ export const regulatoryImpactAnalyses = mysqlTable("regulatory_impact_analyses",
   affectedAreas: json("affected_areas"),
   recommendedActions: json("recommended_actions"),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    updateIdIdx: index("idx_regulatory_impact_analyses_update_id").on(table.updateId),
+  }));
 export type RegulatoryImpactAnalysis = typeof regulatoryImpactAnalyses.$inferSelect;
 
 export const complianceWeeklyBriefs = mysqlTable("compliance_weekly_briefs", {
@@ -3295,7 +3742,9 @@ export const knowledgeArticleVersions = mysqlTable("knowledge_article_versions",
   changedBy: int("changed_by"),
   changedAt: timestamp("changed_at").defaultNow().notNull(),
   changeReason: text("change_reason"),
-});
+}, (table) => ({
+    articleIdIdx: index("idx_knowledge_article_versions_article_id").on(table.articleId),
+  }));
 export type KnowledgeArticleVersion = typeof knowledgeArticleVersions.$inferSelect;
 
 export const knowledgeArticleFeedback = mysqlTable("knowledge_article_feedback", {
@@ -3306,7 +3755,10 @@ export const knowledgeArticleFeedback = mysqlTable("knowledge_article_feedback",
   feedbackText: text("feedback_text"),
   context: text("context"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    articleIdIdx: index("idx_knowledge_article_feedback_article_id").on(table.articleId),
+    userIdIdx: index("idx_knowledge_article_feedback_user_id").on(table.userId),
+  }));
 export type KnowledgeArticleFeedback = typeof knowledgeArticleFeedback.$inferSelect;
 
 export const knowledgeGaps = mysqlTable("knowledge_gaps", {
@@ -3386,7 +3838,12 @@ export const aiToolCalls = mysqlTable("ai_tool_calls", {
   userModifiedInput: mysqlBoolean("user_modified_input").notNull().default(false),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    toolIdIdx: index("idx_ai_tool_calls_tool_id").on(table.toolId),
+    conversationIdIdx: index("idx_ai_tool_calls_conversation_id").on(table.conversationId),
+    messageIdIdx: index("idx_ai_tool_calls_message_id").on(table.messageId),
+    userIdIdx: index("idx_ai_tool_calls_user_id").on(table.userId),
+  }));
 export type AiToolCall = typeof aiToolCalls.$inferSelect;
 
 // ─── Study Progress ──────────────────────────────────────────────────────
@@ -3404,7 +3861,9 @@ export const studyProgress = mysqlTable("study_progress", {
   lastSessionAt: timestamp("last_session_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_study_progress_user_id").on(table.userId),
+  }));
 export type StudyProgressRecord = typeof studyProgress.$inferSelect;
 
 
@@ -3425,7 +3884,10 @@ export const exportJobs = mysqlTable("export_jobs", {
   completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_export_jobs_user_id").on(table.userId),
+    orgIdIdx: index("idx_export_jobs_org_id").on(table.orgId),
+  }));
 export type ExportJob = typeof exportJobs.$inferSelect;
 
 // ─── Document Templates ────────────────────────────────────────────────────
@@ -3444,7 +3906,9 @@ export const documentTemplates = mysqlTable("document_templates", {
   createdBy: int("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    orgIdIdx: index("idx_document_templates_org_id").on(table.orgId),
+  }));
 export type DocumentTemplate = typeof documentTemplates.$inferSelect;
 
 // ─── MFA Secrets ────────────────────────────────────────────────────────────
@@ -3458,7 +3922,9 @@ export const mfaSecrets = mysqlTable("mfa_secrets", {
   lastUsedAt: timestamp("last_used_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_mfa_secrets_user_id").on(table.userId),
+  }));
 export type MfaSecret = typeof mfaSecrets.$inferSelect;
 
 // ─── MFA Backup Codes ──────────────────────────────────────────────────────
@@ -3469,7 +3935,9 @@ export const mfaBackupCodes = mysqlTable("mfa_backup_codes", {
   used: mysqlBoolean("used").notNull().default(false),
   usedAt: timestamp("used_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_mfa_backup_codes_user_id").on(table.userId),
+  }));
 export type MfaBackupCode = typeof mfaBackupCodes.$inferSelect;
 
 // ─── Model Cards ────────────────────────────────────────────────────────────
@@ -3509,7 +3977,13 @@ export const coiDisclosures = mysqlTable("coi_disclosures", {
   acknowledgedAt: timestamp("acknowledged_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_coi_disclosures_user_id").on(table.userId),
+    advisorIdIdx: index("idx_coi_disclosures_advisor_id").on(table.advisorId),
+    orgIdIdx: index("idx_coi_disclosures_org_id").on(table.orgId),
+    relatedProductIdIdx: index("idx_coi_disclosures_related_product_id").on(table.relatedProductId),
+    relatedRecommendationIdIdx: index("idx_coi_disclosures_related_recommendation_id").on(table.relatedRecommendationId),
+  }));
 export type CoiDisclosure = typeof coiDisclosures.$inferSelect;
 
 // ─── Recommendations Log ────────────────────────────────────────────────────
@@ -3532,7 +4006,13 @@ export const recommendationsLog = mysqlTable("recommendations_log", {
   status: mysqlEnum("status", ["suggested", "accepted", "rejected", "implemented", "expired"]).notNull().default("suggested"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_recommendations_log_user_id").on(table.userId),
+    advisorIdIdx: index("idx_recommendations_log_advisor_id").on(table.advisorId),
+    conversationIdIdx: index("idx_recommendations_log_conversation_id").on(table.conversationId),
+    messageIdIdx: index("idx_recommendations_log_message_id").on(table.messageId),
+    productIdIdx: index("idx_recommendations_log_product_id").on(table.productId),
+  }));
 export type RecommendationLog = typeof recommendationsLog.$inferSelect;
 
 // ─── Report Templates ───────────────────────────────────────────────────────
@@ -3550,7 +4030,9 @@ export const reportTemplates = mysqlTable("report_templates", {
   createdBy: int("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    orgIdIdx: index("idx_report_templates_org_id").on(table.orgId),
+  }));
 export type ReportTemplate = typeof reportTemplates.$inferSelect;
 
 // ─── Report Jobs ────────────────────────────────────────────────────────────
@@ -3572,7 +4054,12 @@ export const reportJobs = mysqlTable("report_jobs", {
   completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_report_jobs_user_id").on(table.userId),
+    orgIdIdx: index("idx_report_jobs_org_id").on(table.orgId),
+    templateIdIdx: index("idx_report_jobs_template_id").on(table.templateId),
+    clientIdIdx: index("idx_report_jobs_client_id").on(table.clientId),
+  }));
 export type ReportJob = typeof reportJobs.$inferSelect;
 
 // ─── Paper Trades ───────────────────────────────────────────────────────────
@@ -3593,7 +4080,9 @@ export const paperTrades = mysqlTable("paper_trades", {
   openedAt: timestamp("opened_at").defaultNow().notNull(),
   closedAt: timestamp("closed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_paper_trades_user_id").on(table.userId),
+  }));
 export type PaperTrade = typeof paperTrades.$inferSelect;
 
 // ─── Prompt Interactions ────────────────────────────────────────────────────
@@ -3608,7 +4097,9 @@ export const promptInteractions = mysqlTable("prompt_interactions", {
   responseQualityScore: float("response_quality_score"),
   sessionContext: json("session_context"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_prompt_interactions_user_id").on(table.userId),
+  }));
 export type PromptInteraction = typeof promptInteractions.$inferSelect;
 
 // ─── Consent Tracking ───────────────────────────────────────────────────────
@@ -3624,7 +4115,9 @@ export const consentTracking = mysqlTable("consent_tracking", {
   version: varchar("version", { length: 50 }).notNull().default("1.0"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_consent_tracking_user_id").on(table.userId),
+  }));
 export type ConsentTrackingRecord = typeof consentTracking.$inferSelect;
 
 // ─── Performance Metrics ────────────────────────────────────────────────────
@@ -3656,7 +4149,11 @@ export const browserSessions = mysqlTable("browser_sessions", {
   startedAt: timestamp("started_at").defaultNow().notNull(),
   endedAt: timestamp("ended_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_browser_sessions_user_id").on(table.userId),
+    agentRunIdIdx: index("idx_browser_sessions_agent_run_id").on(table.agentRunId),
+    userCreatedAtIdx: index("idx_browser_sessions_user_created_at").on(table.userId, table.createdAt),
+  }));
 export type BrowserSession = typeof browserSessions.$inferSelect;
 
 // ─── Workflow Checkpoints ───────────────────────────────────────────────────
@@ -3673,7 +4170,10 @@ export const workflowCheckpoints = mysqlTable("workflow_checkpoints", {
   maxRetries: int("max_retries").notNull().default(3),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    workflowIdIdx: index("idx_workflow_checkpoints_workflow_id").on(table.workflowId),
+    agentRunIdIdx: index("idx_workflow_checkpoints_agent_run_id").on(table.agentRunId),
+  }));
 export type WorkflowCheckpoint = typeof workflowCheckpoints.$inferSelect;
 
 
@@ -3689,7 +4189,10 @@ export const userPlatformEvents = mysqlTable("user_platform_events", {
   metadata: json("metadata"), // { page: "/intelligence", action: "run_model", duration_ms: 12000, ... }
   sessionId: varchar("session_id", { length: 64 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_platform_events_user_id").on(table.userId),
+    sessionIdIdx: index("idx_user_platform_events_session_id").on(table.sessionId),
+  }));
 export type UserPlatformEvent = typeof userPlatformEvents.$inferSelect;
 export type InsertUserPlatformEvent = typeof userPlatformEvents.$inferInsert;
 
@@ -3707,7 +4210,9 @@ export const userFeatureProficiency = mysqlTable("user_feature_proficiency", {
   firstUsedAt: timestamp("first_used_at"),
   lastUsedAt: timestamp("last_used_at"),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_feature_proficiency_user_id").on(table.userId),
+  }));
 export type UserFeatureProficiency = typeof userFeatureProficiency.$inferSelect;
 export type InsertUserFeatureProficiency = typeof userFeatureProficiency.$inferInsert;
 
@@ -3733,7 +4238,10 @@ export const userChangelogAwareness = mysqlTable("user_changelog_awareness", {
   changelogId: int("changelog_id").notNull(),
   informedVia: mysqlEnum("informed_via", ["ai_chat", "notification", "changelog_page", "onboarding"]).notNull(),
   informedAt: timestamp("informed_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_user_changelog_awareness_user_id").on(table.userId),
+    changelogIdIdx: index("idx_user_changelog_awareness_changelog_id").on(table.changelogId),
+  }));
 export type UserChangelogAwareness = typeof userChangelogAwareness.$inferSelect;
 
 // ─── SELF-DISCOVERY HISTORY ──────────────────────────────────────────────
@@ -3753,7 +4261,11 @@ export const selfDiscoveryHistory = mysqlTable("self_discovery_history", {
   status: mysqlEnum("status", ["generated", "sent", "dismissed", "completed"]).default("generated"),
   userEngaged: mysqlBoolean("user_engaged").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_self_discovery_history_user_id").on(table.userId),
+    conversationIdIdx: index("idx_self_discovery_history_conversation_id").on(table.conversationId),
+    triggerMessageIdIdx: index("idx_self_discovery_history_trigger_message_id").on(table.triggerMessageId),
+  }));
 export type SelfDiscoveryEntry = typeof selfDiscoveryHistory.$inferSelect;
 
 
@@ -3769,7 +4281,10 @@ export const integrationHealthChecks = mysqlTable("integration_health_checks", {
   errorMessage: text("error_message"),
   metadata: json("metadata"), // Additional check-specific data (e.g., rate limit remaining, data age)
   checkedAt: timestamp("checked_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    connectionIdIdx: index("idx_integration_health_checks_connection_id").on(table.connectionId),
+    providerIdIdx: index("idx_integration_health_checks_provider_id").on(table.providerId),
+  }));
 export type IntegrationHealthCheck = typeof integrationHealthChecks.$inferSelect;
 
 // ─── INTEGRATION HEALTH SUMMARY (Aggregated health per connection) ─────────
@@ -3787,7 +4302,9 @@ export const integrationHealthSummary = mysqlTable("integration_health_summary",
   consecutiveFailures: int("consecutive_failures").default(0),
   dataFreshnessMinutes: int("data_freshness_minutes"),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    connectionIdIdx: index("idx_integration_health_summary_connection_id").on(table.connectionId),
+  }));
 export type IntegrationHealthSummaryRow = typeof integrationHealthSummary.$inferSelect;
 
 // ─── INTEGRATION IMPROVEMENT LOG (Agent-based continuous improvement) ──────
@@ -3810,7 +4327,10 @@ export const integrationImprovementLog = mysqlTable("integration_improvement_log
   resolvedBy: varchar("resolved_by", { length: 100 }),
   aiGenerated: mysqlBoolean("ai_generated").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    connectionIdIdx: index("idx_integration_improvement_log_connection_id").on(table.connectionId),
+    providerIdIdx: index("idx_integration_improvement_log_provider_id").on(table.providerId),
+  }));
 export type IntegrationImprovementLogEntry = typeof integrationImprovementLog.$inferSelect;
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3826,7 +4346,10 @@ export const snapTradeUsers = mysqlTable("snaptrade_users", {
   status: mysqlEnum("status", ["active", "disabled", "deleted"]).default("active").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_snaptrade_users_user_id").on(table.userId),
+    snapTradeUserIdIdx: index("idx_snaptrade_users_snap_trade_user_id").on(table.snapTradeUserId),
+  }));
 export type SnapTradeUser = typeof snapTradeUsers.$inferSelect;
 
 // ─── SNAPTRADE BROKERAGE CONNECTIONS (Per-user brokerage links) ──────────
@@ -3843,7 +4366,11 @@ export const snapTradeBrokerageConnections = mysqlTable("snaptrade_brokerage_con
   lastSyncStatus: mysqlEnum("last_sync_status", ["success", "partial", "failed"]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_snaptrade_brokerage_connections_user_id").on(table.userId),
+    snapTradeUserIdIdx: index("idx_snaptrade_brokerage_connections_snap_trade_user_id").on(table.snapTradeUserId),
+    brokerageAuthorizationIdIdx: index("idx_snaptrade_brokerage_connections_brokerage_authorization_id").on(table.brokerageAuthorizationId),
+  }));
 export type SnapTradeBrokerageConnection = typeof snapTradeBrokerageConnections.$inferSelect;
 
 // ─── SNAPTRADE ACCOUNTS (Brokerage accounts discovered per connection) ───
@@ -3864,7 +4391,11 @@ export const snapTradeAccounts = mysqlTable("snaptrade_accounts", {
   syncDataJson: json("sync_data_json"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_snaptrade_accounts_user_id").on(table.userId),
+    connectionIdIdx: index("idx_snaptrade_accounts_connection_id").on(table.connectionId),
+    snapTradeAccountIdIdx: index("idx_snaptrade_accounts_snap_trade_account_id").on(table.snapTradeAccountId),
+  }));
 export type SnapTradeAccount = typeof snapTradeAccounts.$inferSelect;
 
 // ─── SNAPTRADE POSITIONS (Holdings per account) ──────────────────────────
@@ -3884,7 +4415,10 @@ export const snapTradePositions = mysqlTable("snaptrade_positions", {
   lastSyncAt: timestamp("last_sync_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_snaptrade_positions_user_id").on(table.userId),
+    accountIdIdx: index("idx_snaptrade_positions_account_id").on(table.accountId),
+  }));
 export type SnapTradePosition = typeof snapTradePositions.$inferSelect;
 
 
@@ -3913,7 +4447,10 @@ export const professionalVerifications = mysqlTable("professional_verifications"
   ]).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    professionalIdIdx: index("idx_professional_verifications_professional_id").on(table.professionalId),
+    externalIdIdx: index("idx_professional_verifications_external_id").on(table.externalId),
+  }));
 export type ProfessionalVerification = typeof professionalVerifications.$inferSelect;
 export type InsertProfessionalVerification = typeof professionalVerifications.$inferInsert;
 
@@ -3937,7 +4474,11 @@ export const coiVerificationBadges = mysqlTable("coi_verification_badges", {
   active: mysqlBoolean("active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    coiContactIdIdx: index("idx_coi_verification_badges_coi_contact_id").on(table.coiContactId),
+    professionalIdIdx: index("idx_coi_verification_badges_professional_id").on(table.professionalId),
+    sourceVerificationIdIdx: index("idx_coi_verification_badges_source_verification_id").on(table.sourceVerificationId),
+  }));
 export type CoiVerificationBadge = typeof coiVerificationBadges.$inferSelect;
 export type InsertCoiVerificationBadge = typeof coiVerificationBadges.$inferInsert;
 
@@ -3956,7 +4497,9 @@ export const verificationSchedules = mysqlTable("verification_schedules", {
   enabled: mysqlBoolean("enabled").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    professionalIdIdx: index("idx_verification_schedules_professional_id").on(table.professionalId),
+  }));
 export type VerificationSchedule = typeof verificationSchedules.$inferSelect;
 export type InsertVerificationSchedule = typeof verificationSchedules.$inferInsert;
 
@@ -4059,7 +4602,10 @@ export const insuranceCarriers = mysqlTable("insurance_carriers", {
   ratingLastUpdated: varchar("rating_last_updated", { length: 20 }),
   active: mysqlBoolean("active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    amBestIdIdx: index("idx_insurance_carriers_am_best_id").on(table.amBestId),
+    naicIdIdx: index("idx_insurance_carriers_naic_id").on(table.naicId),
+  }));
 export type InsuranceCarrier = typeof insuranceCarriers.$inferSelect;
 export type InsertInsuranceCarrier = typeof insuranceCarriers.$inferInsert;
 
@@ -4082,7 +4628,10 @@ export const insuranceProducts = mysqlTable("insurance_products", {
   lastRateUpdate: varchar("last_rate_update", { length: 20 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    carrierIdIdx: index("idx_insurance_products_carrier_id").on(table.carrierId),
+    compulifeProductIdIdx: index("idx_insurance_products_compulife_product_id").on(table.compulifeProductId),
+  }));
 export type InsuranceProduct = typeof insuranceProducts.$inferSelect;
 export type InsertInsuranceProduct = typeof insuranceProducts.$inferInsert;
 
@@ -4098,7 +4647,9 @@ export const iulCreditingHistory = mysqlTable("iul_crediting_history", {
   multiplierBonus: varchar("multiplier_bonus", { length: 10 }),
   source: varchar("source", { length: 30 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    productIdIdx: index("idx_iul_crediting_history_product_id").on(table.productId),
+  }));
 export type IulCreditingHistoryRow = typeof iulCreditingHistory.$inferSelect;
 export type InsertIulCreditingHistory = typeof iulCreditingHistory.$inferInsert;
 
@@ -4154,7 +4705,9 @@ export const nitrogenRiskProfiles = mysqlTable("nitrogen_risk_profiles", {
   riskAlignmentScore: int("risk_alignment_score"),
   lastSyncedAt: bigint("last_synced_at", { mode: "number" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_nitrogen_risk_profiles_user_id").on(table.userId),
+  }));
 export type NitrogenRiskProfile = typeof nitrogenRiskProfiles.$inferSelect;
 export type InsertNitrogenRiskProfile = typeof nitrogenRiskProfiles.$inferInsert;
 
@@ -4172,7 +4725,13 @@ export const esignatureTracking = mysqlTable("esignature_tracking", {
   relatedProductId: int("related_product_id"),
   relatedQuoteId: int("related_quote_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    professionalIdIdx: index("idx_esignature_tracking_professional_id").on(table.professionalId),
+    clientUserIdIdx: index("idx_esignature_tracking_client_user_id").on(table.clientUserId),
+    envelopeIdIdx: index("idx_esignature_tracking_envelope_id").on(table.envelopeId),
+    relatedProductIdIdx: index("idx_esignature_tracking_related_product_id").on(table.relatedProductId),
+    relatedQuoteIdIdx: index("idx_esignature_tracking_related_quote_id").on(table.relatedQuoteId),
+  }));
 export type EsignatureTrackingRow = typeof esignatureTracking.$inferSelect;
 export type InsertEsignatureTracking = typeof esignatureTracking.$inferInsert;
 
@@ -4186,7 +4745,9 @@ export const plaidWebhookLog = mysqlTable("plaid_webhook_log", {
   errorCode: varchar("error_code", { length: 50 }),
   processedAt: bigint("processed_at", { mode: "number" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    itemIdIdx: index("idx_plaid_webhook_log_item_id").on(table.itemId),
+  }));
 export type PlaidWebhookLogRow = typeof plaidWebhookLog.$inferSelect;
 export type InsertPlaidWebhookLog = typeof plaidWebhookLog.$inferInsert;
 
@@ -4202,7 +4763,11 @@ export const plaidHoldings = mysqlTable("plaid_holdings", {
   currentValue: varchar("current_value", { length: 20 }),
   lastSynced: bigint("last_synced", { mode: "number" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_plaid_holdings_user_id").on(table.userId),
+    accountIdIdx: index("idx_plaid_holdings_account_id").on(table.accountId),
+    securityIdIdx: index("idx_plaid_holdings_security_id").on(table.securityId),
+  }));
 export type PlaidHolding = typeof plaidHoldings.$inferSelect;
 export type InsertPlaidHolding = typeof plaidHoldings.$inferInsert;
 
@@ -4220,7 +4785,10 @@ export const creditProfiles = mysqlTable("credit_profiles", {
   oldestAccountYears: int("oldest_account_years"),
   consentId: int("consent_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_credit_profiles_user_id").on(table.userId),
+    consentIdIdx: index("idx_credit_profiles_consent_id").on(table.consentId),
+  }));
 export type CreditProfile = typeof creditProfiles.$inferSelect;
 export type InsertCreditProfile = typeof creditProfiles.$inferInsert;
 
@@ -4410,7 +4978,9 @@ export const extractionPlanJobs = mysqlTable("extraction_plan_jobs", {
   status: mysqlEnum("status", ["pending", "running", "completed", "failed", "skipped"]).default("pending"),
   errorLog: json("error_log"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    planIdIdx: index("idx_extraction_plan_jobs_plan_id").on(table.planId),
+  }));
 
 export type ExtractionPlanJob = typeof extractionPlanJobs.$inferSelect;
 export type InsertExtractionPlanJob = typeof extractionPlanJobs.$inferInsert;
@@ -4441,7 +5011,9 @@ export const dataValueScores = mysqlTable("data_value_scores", {
   refreshPriority: mysqlEnum("refresh_priority", ["critical", "high", "normal", "low", "dormant"]).default("normal"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    recordIdIdx: index("idx_data_value_scores_record_id").on(table.recordId),
+  }));
 
 export type DataValueScore = typeof dataValueScores.$inferSelect;
 export type InsertDataValueScore = typeof dataValueScores.$inferInsert;
@@ -4467,7 +5039,9 @@ export const passiveActionPreferences = mysqlTable("passive_action_preferences",
   triggerCount: int("trigger_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_passive_action_preferences_user_id").on(table.userId),
+  }));
 export type PassiveActionPreference = typeof passiveActionPreferences.$inferSelect;
 export type InsertPassiveActionPreference = typeof passiveActionPreferences.$inferInsert;
 
@@ -4484,7 +5058,10 @@ export const passiveActionLog = mysqlTable("passive_action_log", {
   durationMs: int("duration_ms"),
   errorMessage: text("error_message"),
   executedAt: timestamp("executed_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_passive_action_log_user_id").on(table.userId),
+    preferenceIdIdx: index("idx_passive_action_log_preference_id").on(table.preferenceId),
+  }));
 export type PassiveActionLogEntry = typeof passiveActionLog.$inferSelect;
 export type InsertPassiveActionLogEntry = typeof passiveActionLog.$inferInsert;
 
@@ -4504,7 +5081,11 @@ export const aiToolExecutions = mysqlTable("ai_tool_executions", {
   success: mysqlBoolean("success").default(true),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_ai_tool_executions_user_id").on(table.userId),
+    conversationIdIdx: index("idx_ai_tool_executions_conversation_id").on(table.conversationId),
+    messageIdIdx: index("idx_ai_tool_executions_message_id").on(table.messageId),
+  }));
 export type AiToolExecution = typeof aiToolExecutions.$inferSelect;
 export type InsertAiToolExecution = typeof aiToolExecutions.$inferInsert;
 
@@ -4522,6 +5103,104 @@ export const aiResponseQuality = mysqlTable("ai_response_quality", {
   retryCount: int("retry_count").default(0),
   latencyMs: int("latency_ms"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+    userIdIdx: index("idx_ai_response_quality_user_id").on(table.userId),
+    conversationIdIdx: index("idx_ai_response_quality_conversation_id").on(table.conversationId),
+    messageIdIdx: index("idx_ai_response_quality_message_id").on(table.messageId),
+  }));
 export type AiResponseQualityEntry = typeof aiResponseQuality.$inferSelect;
 export type InsertAiResponseQualityEntry = typeof aiResponseQuality.$inferInsert;
+
+// ─── Graduated Autonomy: User-level persistence ──────────────────────────
+export const userAutonomyProfiles = mysqlTable("user_autonomy_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  level: mysqlEnum("level", ["supervised", "guided", "semi_autonomous", "autonomous"]).default("supervised").notNull(),
+  trustScore: float("trust_score").default(0).notNull(),
+  totalInteractions: int("total_interactions").default(0).notNull(),
+  successfulActions: int("successful_actions").default(0).notNull(),
+  overriddenActions: int("overridden_actions").default(0).notNull(),
+  escalations: int("escalations").default(0).notNull(),
+  lastEscalation: timestamp("last_escalation"),
+  levelHistory: json("level_history").$type<Array<{ level: string; achievedAt: string; reason: string }>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    userIdIdx: index("idx_user_autonomy_profiles_user_id").on(table.userId),
+  }));
+export type UserAutonomyProfile = typeof userAutonomyProfiles.$inferSelect;
+export type InsertUserAutonomyProfile = typeof userAutonomyProfiles.$inferInsert;
+
+// ─── Recursive Improvement Engine ────────────────────────────────────────────
+
+// Signals detected by the improvement engine (quality regressions, unused tools, etc.)
+export const improvementSignals = mysqlTable("improvement_signals", {
+  id: int("id").autoincrement().primaryKey(),
+  signalType: varchar("signal_type", { length: 50 }).notNull(),
+  severity: varchar("severity", { length: 20 }).notNull(),
+  sourceMetric: varchar("source_metric", { length: 100 }),
+  sourceValue: text("source_value"),
+  threshold: varchar("threshold", { length: 100 }),
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedByHypothesisId: int("resolved_by_hypothesis_id"),
+}, (table) => ({
+    signalTypeDetectedAtIdx: index("idx_improvement_signals_type_detected").on(table.signalType, table.detectedAt),
+  }));
+export type ImprovementSignal = typeof improvementSignals.$inferSelect;
+export type InsertImprovementSignal = typeof improvementSignals.$inferInsert;
+
+// Hypotheses generated to address detected signals
+export const improvementHypotheses = mysqlTable("improvement_hypotheses", {
+  id: int("id").autoincrement().primaryKey(),
+  signalId: int("signal_id").notNull(),
+  passType: varchar("pass_type", { length: 50 }).notNull(),
+  scope: json("scope"),
+  hypothesisText: text("hypothesis_text").notNull(),
+  expectedDelta: float("expected_delta"),
+  creditBudget: float("credit_budget"),
+  status: varchar("status", { length: 30 }).default("pending").notNull(),
+  testCount: int("test_count").default(0).notNull(),
+  timeoutAt: timestamp("timeout_at"),
+  promotedAt: timestamp("promoted_at"),
+  rejectedAt: timestamp("rejected_at"),
+  rejectedReason: text("rejected_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+    statusCreatedAtIdx: index("idx_improvement_hypotheses_status_created").on(table.status, table.createdAt),
+  }));
+export type ImprovementHypothesis = typeof improvementHypotheses.$inferSelect;
+export type InsertImprovementHypothesis = typeof improvementHypotheses.$inferInsert;
+
+// Test results for each hypothesis (A/B test outcomes)
+export const hypothesisTestResults = mysqlTable("hypothesis_test_results", {
+  id: int("id").autoincrement().primaryKey(),
+  hypothesisId: int("hypothesis_id").notNull(),
+  sessionId: int("session_id"),
+  qualityBefore: json("quality_before"),
+  qualityAfter: json("quality_after"),
+  regressionDetected: mysqlBoolean("regression_detected").default(false).notNull(),
+  costDelta: float("cost_delta"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+    hypothesisIdIdx: index("idx_hypothesis_test_results_hypothesis_id").on(table.hypothesisId),
+  }));
+export type HypothesisTestResult = typeof hypothesisTestResults.$inferSelect;
+export type InsertHypothesisTestResult = typeof hypothesisTestResults.$inferInsert;
+
+// ReAct reasoning traces — step-by-step thought/action/observation logs
+export const reasoningTraces = mysqlTable("reasoning_traces", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("session_id"),
+  stepNumber: int("step_number").notNull(),
+  thought: text("thought"),
+  action: text("action"),
+  observation: text("observation"),
+  toolName: varchar("tool_name", { length: 100 }),
+  durationMs: int("duration_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+    sessionIdIdx: index("idx_reasoning_traces_session_id").on(table.sessionId),
+  }));
+export type ReasoningTrace = typeof reasoningTraces.$inferSelect;
+export type InsertReasoningTrace = typeof reasoningTraces.$inferInsert;

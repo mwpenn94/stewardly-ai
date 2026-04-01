@@ -1,6 +1,7 @@
 import { getDb } from "../db";
 import { medicareParameters } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 // ─── Medicare 2025 Parameters (CMS) ───────────────────────────────────────
 
@@ -54,7 +55,7 @@ export async function seedMedicareParameters2025(): Promise<number> {
       });
       inserted++;
     } catch (e: any) {
-      if (!e?.message?.includes("Duplicate")) console.error("[Medicare] Insert error:", e?.message);
+      if (!e?.message?.includes("Duplicate")) logger.error( { operation: "medicare", err: e },"[Medicare] Insert error:", e?.message);
     }
   }
 

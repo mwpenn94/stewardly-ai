@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { invokeLLM } from "../_core/llm";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { complianceReviews, complianceFlags } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -38,21 +38,15 @@ export const complianceRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const d = (await db())!;
-      // Assemble deep context for compliance-aware review
-      let platformContext = "";
-      try {
-        const { getQuickContext } = await import("../services/deepContextAssembler");
-        if (ctx.user?.id) {
-          platformContext = await getQuickContext(ctx.user.id, `compliance review: ${input.content.slice(0, 200)}`, "compliance");
-        }
-      } catch { /* best-effort */ }
-      // Use LLM to analyze content for compliance issues
-      const analysisResponse = await invokeLLM({
+      // contextualLLM automatically injects platform context via RAG — no manual getQuickContext needed
+      const analysisResponse = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "compliance",
         messages: [
           {
             role: "system",
             content: `You are a financial compliance reviewer specializing in FINRA Rule 2210, SEC regulations, and Reg BI.
-${platformContext ? `\n<platform_context>\n${platformContext}\n</platform_context>\nUse the above context about the client and organization to provide more specific compliance guidance.\n` : ""}.
+Use the platform context about the client and organization to provide specific compliance guidance.
 Analyze the following content for compliance issues. Check for:
 1. Performance guarantees or promises of returns
 2. Misleading comparisons or statistics
@@ -167,20 +161,15 @@ Return a JSON response with this exact schema:
       alternatives: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      // Assemble deep context for Reg BI documentation
-      let platformContext = "";
-      try {
-        const { getQuickContext } = await import("../services/deepContextAssembler");
-        if (ctx.user?.id) {
-          platformContext = await getQuickContext(ctx.user.id, `Reg BI documentation for: ${input.recommendation.slice(0, 200)}`, "compliance");
-        }
-      } catch { /* best-effort */ }
-      const response = await invokeLLM({
+      // contextualLLM automatically injects platform context via RAG — no manual getQuickContext needed
+      const response = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "compliance",
         messages: [
           {
             role: "system",
             content: `You are a compliance documentation specialist. Generate a Regulation Best Interest (Reg BI) documentation package.
-${platformContext ? `\n<platform_context>\n${platformContext}\n</platform_context>\nUse the above context to enrich the documentation with specific client and organizational details.\n` : ""}
+Use the platform context to enrich the documentation with specific client and organizational details.
 
 Include these sections:
 1. **Client Profile Summary** — risk tolerance, investment objectives, time horizon, financial situation

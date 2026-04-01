@@ -25,6 +25,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   documents, documentChunks, userProfiles, suitabilityAssessments,
   conversations, messages, notificationLog, calculatorScenarios,
@@ -174,7 +175,7 @@ export async function enhancedSearchChunks(
     .limit(200);
 
   // Get document filenames for citation
-  const docIds = [...new Set(candidates.map(c => c.docId))];
+  const docIds = Array.from(new Set(candidates.map(c => c.docId)));
   let docMap: Record<number, string> = {};
   if (docIds.length > 0) {
     const docs = await db.select({ id: documents.id, filename: documents.filename })
@@ -409,12 +410,12 @@ export async function assembleDeepContext(request: ContextRequest): Promise<Asse
 
     // 5. Memory engine
     config.includeMemories !== false
-      ? assembleMemoryContext(config.userId).catch(() => "")
+      ? assembleMemoryContext(config.userId).catch((e) => { logger.debug({ userId: config.userId, source: "memory_context", error: String(e) }, "Memory context assembly failed"); return ""; })
       : Promise.resolve(""),
 
     // 6. Knowledge graph
     config.includeMemories !== false
-      ? assembleGraphContext(config.userId).catch(() => "")
+      ? assembleGraphContext(config.userId).catch((e) => { logger.debug({ userId: config.userId, source: "graph_context", error: String(e) }, "Graph context assembly failed"); return ""; })
       : Promise.resolve(""),
 
     // 7. Pipeline data (economic indicators)
@@ -683,9 +684,8 @@ async function searchKBArticles(query: string, limit: number): Promise<string> {
     return articles.map(a =>
       `[KB Article: "${a.title}" (${a.category}/${a.contentType})]\n${a.content.slice(0, 800)}`
     ).join("\n\n");
-  } catch { return ""; }
+  } catch (e) { logger.debug({ source: "knowledge_base", error: String(e) }, "Knowledge base context fetch failed"); return ""; }
 }
-
 async function getUserProfileContext(userId: number): Promise<string> {
   const db = await getDb();
   if (!db) return "";
@@ -731,9 +731,8 @@ async function getPipelineDataContext(): Promise<string> {
   try {
     const { getEconomicDataSummary } = await import("./governmentDataPipelines");
     return await getEconomicDataSummary();
-  } catch { return ""; }
+   } catch (e) { logger.debug({ source: "pipeline_data", error: String(e) }, "Pipeline data context fetch failed"); return ""; }
 }
-
 async function getRecentConversationContext(userId: number, currentConvId?: number): Promise<string> {
   const db = await getDb();
   if (!db) return "";
@@ -789,11 +788,11 @@ async function getIntegrationDataContext(userId: number): Promise<string> {
       const holdingSummary = holdings.slice(0, 15).map(h => {
         const val = parseFloat(h.currentValue ?? "0");
         totalValue += val;
-        return `  - ${h.ticker || h.securityName || "Unknown"}: $${val.toLocaleString()} (${h.quantity} shares)`;
+        return `  - ${h.ticker || h.name || "Unknown"}: $${val.toLocaleString()} (${h.quantity} shares)`;
       });
       parts.push(`Plaid Investment Holdings (${holdings.length} positions, total ~$${totalValue.toLocaleString()}):\n${holdingSummary.join("\n")}`);
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "plaid_holdings", error: String(e) }, "Context source fetch failed silently"); }
 
   // SnapTrade accounts and positions
   try {
@@ -801,7 +800,7 @@ async function getIntegrationDataContext(userId: number): Promise<string> {
       .where(eq(snapTradeAccounts.userId, userId)).limit(10);
     if (accounts.length > 0) {
       const acctSummary = accounts.map(a =>
-        `  - ${a.accountName || a.brokerageName || "Account"}: ${a.accountType || "unknown"} (${a.currency || "USD"})`
+        `  - ${a.accountName || a.institutionName || "Account"}: ${a.accountType || "unknown"} (${a.currency || "USD"})`
       );
       parts.push(`SnapTrade Brokerage Accounts (${accounts.length}):\n${acctSummary.join("\n")}`);
     }
@@ -810,11 +809,11 @@ async function getIntegrationDataContext(userId: number): Promise<string> {
       .where(eq(snapTradePositions.userId, userId)).limit(30);
     if (positions.length > 0) {
       const posSummary = positions.slice(0, 15).map(p =>
-        `  - ${p.symbol || "Unknown"}: ${p.units} units @ $${p.price || "?"} (avg cost: $${p.averagePurchasePrice || "?"})`
+        `  - ${p.symbolTicker || "Unknown"}: ${p.units} units @ $${p.averagePrice || "?"} (avg cost: $${p.averagePrice || "?"})`
       );
       parts.push(`SnapTrade Positions (${positions.length}):\n${posSummary.join("\n")}`);
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "snaptrade_positions", error: String(e) }, "Context source fetch failed silently"); }
 
   // Connected integrations summary
   try {
@@ -839,7 +838,7 @@ async function getIntegrationDataContext(userId: number): Promise<string> {
       );
       parts.push(`Connected Integrations (${connections.length}):\n${connSummary.join("\n")}`);
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "integrations", error: String(e) }, "Context source fetch failed silently"); }
 
   return parts.join("\n\n");
 }
@@ -856,8 +855,8 @@ async function getCalculatorContext(userId: number): Promise<string> {
   if (scenarios.length === 0) return "";
 
   const summaries = scenarios.map(s => {
-    const inputs = typeof s.inputs === "string" ? JSON.parse(s.inputs) : s.inputs;
-    const results = typeof s.results === "string" ? JSON.parse(s.results) : s.results;
+    const inputs = typeof s.inputsJson === "string" ? JSON.parse(s.inputsJson as string) : s.inputsJson;
+    const results = typeof s.resultsJson === "string" ? JSON.parse(s.resultsJson as string) : s.resultsJson;
     return `  - "${s.name}" (${s.calculatorType}): ${JSON.stringify(inputs).slice(0, 200)} → ${JSON.stringify(results).slice(0, 200)}`;
   });
 
@@ -876,7 +875,7 @@ async function getProactiveInsightContext(userId: number): Promise<string> {
   if (insights.length === 0) return "";
 
   const summaries = insights.map(i =>
-    `  - [${i.category}/${i.urgency}] ${i.title}: ${(i.content || "").slice(0, 200)}`
+    `  - [${i.category}/${i.priority}] ${i.title}: ${(i.description || "").slice(0, 200)}`
   );
 
   return `Recent AI Insights (${insights.length}):\n${summaries.join("\n")}`;
@@ -955,7 +954,7 @@ async function getGapFeedbackContext(userId: number): Promise<string> {
   if (feedback.length === 0) return "";
 
   const summaries = feedback.map(f =>
-    `  - Gap "${f.gapTitle}": ${f.action}${f.notes ? ` — "${f.notes}"` : ""}`
+    `  - Gap "${f.gapTitle}": ${f.action}${f.userNote ? ` — "${f.userNote}"` : ""}`
   );
 
   return `Knowledge Gap Feedback (${feedback.length} items):\n${summaries.join("\n")}\n\nUse this feedback to improve gap analysis accuracy. Dismissed gaps should not be re-raised. Acknowledged gaps are being addressed.`;
@@ -1004,7 +1003,7 @@ export async function getStructuredIntegrationData(userId: number): Promise<User
         if (!latestSync || syncDate > latestSync) latestSync = syncDate;
       }
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "plaid_holdings_financial", error: String(e) }, "Financial data fetch failed silently"); }
 
   // SnapTrade accounts
   try {
@@ -1025,7 +1024,7 @@ export async function getStructuredIntegrationData(userId: number): Promise<User
         if (!latestSync || syncDate > latestSync) latestSync = syncDate;
       }
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "snaptrade_accounts", error: String(e) }, "Financial data fetch failed silently"); }
 
   // SnapTrade positions
   try {
@@ -1042,7 +1041,7 @@ export async function getStructuredIntegrationData(userId: number): Promise<User
       });
       result.totalInvestedAssets += val;
     }
-  } catch {}
+  } catch (e) { logger.debug({ source: "snaptrade_positions_financial", error: String(e) }, "Financial data fetch failed silently"); }
 
   result.lastSyncTimestamp = latestSync ? latestSync.toISOString() : null;
   return result;
@@ -1075,7 +1074,7 @@ export async function getPipelineRates(): Promise<Record<string, number>> {
         }
       }
     }
-  } catch {}
+  } catch (e) { logger.debug({ source: "pipeline_rates", error: String(e) }, "Pipeline rates fetch failed silently"); }
   return rates;
 }
 

@@ -14,6 +14,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   userPlatformEvents,
   userFeatureProficiency,
@@ -110,7 +111,7 @@ export async function trackEvent(params: {
       sessionId: params.sessionId || null,
     });
   } catch (e) {
-    console.error("[ExponentialEngine] trackEvent error:", e);
+    logger.error( { operation: "exponentialEngine", err: e },"[ExponentialEngine] trackEvent error:", e);
   }
 }
 
@@ -221,7 +222,7 @@ export async function recalculateProficiency(userId: number): Promise<void> {
       });
     }
   } catch (e) {
-    console.error("[ExponentialEngine] recalculateProficiency error:", e);
+    logger.error( { operation: "exponentialEngine", err: e },"[ExponentialEngine] recalculateProficiency error:", e);
   }
 }
 
@@ -300,7 +301,7 @@ export async function detectUserLayer(userId: number, userRole: string): Promise
       organizationId: orgRole?.organizationId,
     };
   } catch (e) {
-    console.error("[ExponentialEngine] detectUserLayer error:", e);
+    logger.error( { operation: "exponentialEngine", err: e },"[ExponentialEngine] detectUserLayer error:", e);
     return defaultCtx;
   }
 }
@@ -483,7 +484,7 @@ export async function assembleExponentialContext(
       promptFragment,
     };
   } catch (e) {
-    console.error("[ExponentialEngine] assembleExponentialContext error:", e);
+    logger.error( { operation: "exponentialEngine", err: e },"[ExponentialEngine] assembleExponentialContext error:", e);
     return empty;
   }
 }
@@ -844,7 +845,7 @@ export async function getChangelogFeed(
 
     return { entries, unreadCount };
   } catch (e) {
-    console.error("[ExponentialEngine] getChangelogFeed error:", e);
+    logger.error( { operation: "exponentialEngine", err: e },"[ExponentialEngine] getChangelogFeed error:", e);
     return { entries: [], unreadCount: 0 };
   }
 }
@@ -868,7 +869,7 @@ export async function markChangelogInformed(
       set: { informedVia: via },
     });
   } catch (e) {
-    console.error("[ExponentialEngine] markChangelogInformed error:", e);
+    logger.error( { operation: "exponentialEngine", err: e },"[ExponentialEngine] markChangelogInformed error:", e);
   }
 }
 
@@ -1080,7 +1081,7 @@ export async function getGuestChangelogFeed(limit: number = 20): Promise<{ entri
     const entries: ChangelogEntry[] = allEntries.map(e => ({ ...e, isRead: false }));
     return { entries, unreadCount: entries.length };
   } catch (e) {
-    console.error("[ExponentialEngine] getGuestChangelogFeed error:", e);
+    logger.error( { operation: "exponentialEngine", err: e },"[ExponentialEngine] getGuestChangelogFeed error:", e);
     return { entries: [], unreadCount: 0 };
   }
 }

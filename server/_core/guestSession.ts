@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { logger } from "./logger";
 
 /**
  * Guest Session — auto-provisions anonymous users with a real DB user
@@ -79,7 +80,7 @@ export function registerGuestSessionRoutes(app: Express) {
         isGuest: true,
       });
     } catch (error) {
-      console.error("[GuestSession] Failed to create guest session:", error);
+      logger.error( { operation: "guestSession", err: error },"[GuestSession] Failed to create guest session:", error);
       res.status(500).json({ error: "Failed to create guest session" });
     }
   });
@@ -167,7 +168,7 @@ export function registerGuestSessionRoutes(app: Express) {
 
       res.json({ status: "migrated", migratedFrom: guestUser.id, migratedTo: targetUser.id });
     } catch (error) {
-      console.error("[GuestSession] Migration failed:", error);
+      logger.error( { operation: "guestSession", err: error },"[GuestSession] Migration failed:", error);
       res.status(500).json({ error: "Migration failed" });
     }
   });

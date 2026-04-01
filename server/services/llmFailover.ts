@@ -2,8 +2,7 @@
  * LLM Provider Failover + Model Routing (Max-Scores 1A)
  * Primary → fallback chain, latency tracking, automatic failover, model selection
  */
-import { invokeLLM } from "../_core/llm"
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 export interface LLMProvider {
   id: string;

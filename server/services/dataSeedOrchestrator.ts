@@ -5,6 +5,7 @@ import { seedInsuranceCarriers, seedSampleProducts } from "./insuranceData";
 import { seedIulCreditingHistory, seedMarketIndexHistory } from "./iulMarketData";
 import { seedEconomicHistory } from "./investmentIntelligence";
 import { seedIndustryBenchmarks } from "./estatePlanningKnowledge";
+import { logger } from "../_core/logger";
 
 export interface SeedResult {
   module: string;
@@ -53,7 +54,7 @@ export async function runFullSeed(): Promise<{ results: SeedResult[]; totalRecor
     }
   }
 
-  console.log(`[DataSeed] Complete: ${totalRecords} records across ${results.length} modules`);
+  logger.info( { operation: "dataSeed" },`[DataSeed] Complete: ${totalRecords} records across ${results.length} modules`);
   return { results, totalRecords };
 }
 

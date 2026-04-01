@@ -3,6 +3,7 @@
  * Validates required environment variables at startup.
  * In production, fails fast if critical vars are missing.
  */
+import { logger } from "./logger";
 
 const REQUIRED_IN_PRODUCTION = [
   "JWT_SECRET",
@@ -38,7 +39,7 @@ export function validateRequiredEnvVars(): void {
   }
 
   if (warnings.length > 0) {
-    console.warn(
+    logger.warn( { operation: "envValidation" },
       `[EnvValidation] Missing recommended env vars: ${warnings.join(", ")}`
     );
   }

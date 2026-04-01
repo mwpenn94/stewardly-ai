@@ -1,6 +1,7 @@
 import { getDb } from "../db";
 import { taxParameters } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 // ─── Tax Bracket Data (2025 IRS Rev. Proc. 2024-40) ───────────────────────
 const TAX_BRACKETS_2025 = {
@@ -203,7 +204,7 @@ export async function seedTaxParameters2025(): Promise<number> {
       if (e?.code === "ER_DUP_ENTRY") {
         // Already seeded, skip
       } else {
-        console.error("[TaxParams] Insert error:", e?.message);
+        logger.error( { operation: "taxParams", err: e },"[TaxParams] Insert error:", e?.message);
       }
     }
   }

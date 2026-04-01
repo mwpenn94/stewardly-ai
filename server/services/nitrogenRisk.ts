@@ -5,6 +5,7 @@
 import { getDb } from "../db";
 import { nitrogenRiskProfiles } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 export interface RiskProfile {
   userId: number;
@@ -99,7 +100,7 @@ export async function fetchRiskProfile(userId: number, clientExternalId?: string
         return profile;
       }
     } catch (e) {
-      console.warn("[Nitrogen] API call failed, falling back to cached:", e);
+      logger.warn( { operation: "nitrogen" },"[Nitrogen] API call failed, falling back to cached:", e);
     }
   }
 

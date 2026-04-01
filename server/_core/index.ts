@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import helmet from "helmet";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerGuestSessionRoutes } from "./guestSession";
@@ -12,8 +13,13 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { initWebSocket } from "../services/websocketNotifications";
 import { initScheduler } from "../services/scheduler";
-import { getCSPHeaders } from "../services/mfaService";
 import { validateRequiredEnvVars } from "./envValidation";
+import { logger } from "./logger";
+import { requestIdMiddleware } from "./requestId";
+import { generalLimiter, authLimiter, sensitiveTrpcGuard } from "./rateLimiter";
+import { createSSEStreamHandler } from "../shared/streaming";
+import { contextualLLM } from "../shared/stewardlyWiring";
+import { sdk } from "./sdk";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -43,14 +49,51 @@ async function startServer() {
   // Initialize WebSocket notifications
   initWebSocket(server);
 
-  // ─── Security Headers Middleware ──────────────────────────────────────
+  // ─── Trust Proxy (required for correct IP behind reverse proxy) ────────
+  app.set("trust proxy", 1);
+
+  // ─── Request ID Middleware (must be first) ──────────────────────────────
+  app.use(requestIdMiddleware);
+
+  // ─── Request + Response logging with duration ──────────────────────────
   app.use((req, res, next) => {
-    const headers = getCSPHeaders();
-    for (const [key, value] of Object.entries(headers)) {
-      res.setHeader(key, value);
-    }
+    const start = Date.now();
+    res.on("finish", () => {
+      const durationMs = Date.now() - start;
+      logger.info(
+        {
+          operation: "requestComplete",
+          requestId: req.requestId,
+          method: req.method,
+          path: req.path,
+          statusCode: res.statusCode,
+          durationMs,
+        },
+        `${req.method} ${req.path} ${res.statusCode} ${durationMs}ms`
+      );
+    });
     next();
   });
+
+  // ─── Helmet Security Headers ───────────────────────────────────────────
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
+          styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "'unsafe-inline'"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+          imgSrc: ["'self'", "data:", "https:", "blob:"],
+          connectSrc: ["'self'", "https:", "wss:"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Allow CDN resources
+    })
+  );
 
   // ─── CORS Middleware ──────────────────────────────────────────────────
   const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -73,33 +116,13 @@ async function startServer() {
     });
   }
 
-  // ─── Rate Limiting ────────────────────────────────────────────────────
-  const rateLimitWindow = new Map<string, { count: number; resetAt: number }>();
-  const RATE_LIMIT_MAX = 200; // requests per window
-  const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-  const AUTH_RATE_LIMIT_MAX = 20; // stricter limit for auth endpoints
+  // ─── General Rate Limiting (100 req / 15 min) ────────────────────────
+  app.use(generalLimiter);
 
-  app.use((req, res, next) => {
-    const ip = req.ip || req.socket.remoteAddress || "unknown";
-    const isAuthEndpoint = req.path.startsWith("/api/auth") || req.path.startsWith("/api/oauth");
-    const maxRequests = isAuthEndpoint ? AUTH_RATE_LIMIT_MAX : RATE_LIMIT_MAX;
-    const key = isAuthEndpoint ? `auth:${ip}` : ip;
-    const now = Date.now();
-    const entry = rateLimitWindow.get(key);
-
-    if (!entry || now > entry.resetAt) {
-      rateLimitWindow.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-      next();
-      return;
-    }
-
-    entry.count++;
-    if (entry.count > maxRequests) {
-      res.status(429).json({ error: "Too many requests, please try again later" });
-      return;
-    }
-    next();
-  });
+  // ─── Auth Rate Limiting (5 req / 15 min) ─────────────────────────────
+  app.use("/api/auth", authLimiter);
+  app.use("/api/oauth", authLimiter);
+  app.use("/auth", authLimiter);
 
   // Configure body parser with size limits
   app.use(express.json({ limit: "5mb" }));
@@ -112,7 +135,51 @@ async function startServer() {
   registerSocialAuthRoutes(app);
   // Public webhook ingestion endpoints
   registerWebhookRoutes(app);
-  // tRPC API
+
+  // ─── SSE Streaming endpoint ──────────────────────────────────────────
+  app.post("/api/chat/stream", generalLimiter, async (req, res) => {
+    try {
+      // Authenticate using same session mechanism as tRPC
+      const user = await sdk.authenticateRequest(req);
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const { messages, sessionId, contextType } = req.body;
+      if (!messages || !Array.isArray(messages)) {
+        res.status(400).json({ error: "messages array is required" });
+        return;
+      }
+
+      // Validate sessionId is a number if provided
+      const validSessionId = sessionId != null ? Number(sessionId) : undefined;
+      if (sessionId != null && (isNaN(validSessionId!) || validSessionId! <= 0)) {
+        res.status(400).json({ error: "sessionId must be a positive number" });
+        return;
+      }
+
+      await createSSEStreamHandler(req, res, {
+        contextualLLM,
+        userId: user.id,
+        sessionId: validSessionId,
+        contextType: contextType || "chat",
+        messages,
+      });
+    } catch (err: any) {
+      if (!res.headersSent) {
+        if (err.message?.includes("session") || err.message?.includes("Forbidden")) {
+          res.status(401).json({ error: "Unauthorized" });
+        } else {
+          logger.error({ operation: "sseStream.routeError", error: err.message }, "[SSE] Route error");
+          res.status(500).json({ error: "Internal server error" });
+        }
+      }
+    }
+  });
+
+  // ─── tRPC API with sensitive route rate limiting ─────────────────────
+  app.use("/api/trpc", sensitiveTrpcGuard);
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -120,6 +187,7 @@ async function startServer() {
       createContext,
     })
   );
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
@@ -131,14 +199,31 @@ async function startServer() {
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    logger.info({ operation: "portFallback", preferredPort, actualPort: port }, `Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+    logger.info({ operation: "startServer", port }, `Server running on http://localhost:${port}/`);
     // Initialize background scheduler for health checks and data pipelines
     initScheduler();
   });
+
+  // ── Graceful shutdown ─────────────────────────────────────────────
+  const shutdown = () => {
+    logger.info({ operation: "server.shutdown" }, "Received shutdown signal, closing server...");
+    server.close(() => {
+      logger.info({ operation: "server.shutdown" }, "Server closed gracefully");
+      logger.flush();
+      setTimeout(() => process.exit(0), 100);
+    });
+    // Force exit after 10s if connections don't close
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 }
 
-startServer().catch(console.error);
+startServer().catch((err) => {
+  logger.error({ operation: "startServer", err }, "Failed to start server");
+  process.exit(1);
+});

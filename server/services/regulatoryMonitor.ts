@@ -9,8 +9,7 @@ import {
   regulatoryAlerts, regulatoryImpactAnalyses, complianceWeeklyBriefs,
 } from "../../drizzle/schema";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm"
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 // ─── Ingest Regulatory Update ────────────────────────────────────────────
 export async function ingestRegulatoryUpdate(params: {

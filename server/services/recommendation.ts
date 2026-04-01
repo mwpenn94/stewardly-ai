@@ -8,8 +8,7 @@
 import { getDb } from "../db";
 import { users, userProfiles, organizations, userOrganizationRoles, userRelationships, organizationRelationships } from "../../drizzle/schema";
 import { eq, and, sql, ne, inArray } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm"
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { broadcastToRole } from "./websocketNotifications";
 
 // ─── Matching Score Weights ────────────────────────────────────────────────
@@ -241,7 +240,7 @@ export class MatchingService {
       .from(organizationRelationships)
       .where(eq(organizationRelationships.parentOrgId, orgId));
 
-    const result = await contextualLLM({ userId: userId, contextType: "recommendation",
+    const result = await contextualLLM({ userId: 0, contextType: "recommendation",
       messages: [
         {
           role: "system",

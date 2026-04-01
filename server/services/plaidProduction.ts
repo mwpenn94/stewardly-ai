@@ -5,6 +5,7 @@
 import { getDb } from "../db";
 import { plaidWebhookLog, plaidHoldings } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
+import { logger } from "../_core/logger";
 
 // ─── Transaction Category Mapping (Plaid → Financial Planning) ───────────
 
@@ -256,7 +257,7 @@ export async function processPlaidWebhook(event: PlaidWebhookEvent): Promise<Web
         processedAt: Date.now(),
       });
     } catch (e) {
-      console.error("[PlaidWebhook] Log error:", e);
+      logger.error( { operation: "plaidWebhook", err: e },"[PlaidWebhook] Log error:", e);
     }
   }
 
@@ -443,7 +444,7 @@ export async function syncHoldings(userId: number, holdings: HoldingData[]): Pro
       }
       synced++;
     } catch (e: any) {
-      console.error("[Holdings] Sync error:", e?.message);
+      logger.error( { operation: "holdings", err: e },"[Holdings] Sync error:", e?.message);
       errors++;
     }
   }

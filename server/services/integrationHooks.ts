@@ -10,6 +10,7 @@
 import { getOrCreateProfile, updateDimension, synthesizeProfile } from "./suitabilityEngine";
 import { executeModel } from "./modelEngine";
 import { createPropagationEvent, cascadeInsight, createCoachingMessage } from "./propagationEngine";
+import { logger } from "../_core/logger";
 
 // ─── Hook: After Integration Sync ──────────────────────────────────────────
 
@@ -86,7 +87,7 @@ export async function onIntegrationSyncComplete(params: {
 
     return { success: true };
   } catch (error: any) {
-    console.error("[IntegrationHooks] onIntegrationSyncComplete error:", error.message);
+    logger.error( { operation: "integrationHooks", err: error },"[IntegrationHooks] onIntegrationSyncComplete error:", error.message);
     return { success: false, error: error.message };
   }
 }
@@ -143,7 +144,7 @@ export async function onFileProcessed(params: {
 
     return { success: true };
   } catch (error: any) {
-    console.error("[IntegrationHooks] onFileProcessed error:", error.message);
+    logger.error( { operation: "integrationHooks", err: error },"[IntegrationHooks] onFileProcessed error:", error.message);
     return { success: false, error: error.message };
   }
 }
@@ -217,7 +218,7 @@ export async function onModelRunComplete(params: {
 
     return { success: true };
   } catch (error: any) {
-    console.error("[IntegrationHooks] onModelRunComplete error:", error.message);
+    logger.error( { operation: "integrationHooks", err: error },"[IntegrationHooks] onModelRunComplete error:", error.message);
     return { success: false, error: error.message };
   }
 }
