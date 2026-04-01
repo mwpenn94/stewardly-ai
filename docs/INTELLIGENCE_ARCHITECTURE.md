@@ -1,6 +1,6 @@
 # Stewardly Intelligence Architecture
 
-> Last updated: 2026-04-01 | Pass 12 (Depth — Phase 2 Integration)
+> Last updated: 2026-04-01 | Pass 14 (Depth — Wiring Completeness)
 
 ## Overview
 
@@ -38,7 +38,8 @@ import { contextualLLM } from "../services/contextualLLM";
 │  Wiring Layer: server/shared/stewardlyWiring.ts     │
 │  Re-exports: contextualLLM, getQuickContext,        │
 │              rawInvokeLLM, normalizeQualityScore,   │
-│              executeReActLoop, ReActConfig/Result    │
+│              executeReActLoop, detectSignals,        │
+│              createSSEStreamHandler, resolveAIConfig │
 └──────────────────────┬──────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────┐
