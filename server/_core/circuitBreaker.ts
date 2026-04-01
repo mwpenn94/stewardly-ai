@@ -125,7 +125,8 @@ export function recordFailure(key: string, config: Partial<CircuitBreakerConfig>
  * Get the current state of a circuit breaker (for diagnostics).
  */
 export function getCircuitState(key: string): CircuitBreakerState & { key: string } {
-  return { key, ...getState(key) };
+  const state = getState(key);
+  return Object.assign(state, { key });
 }
 
 /**

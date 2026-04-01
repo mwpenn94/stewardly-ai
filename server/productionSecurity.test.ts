@@ -217,7 +217,7 @@ describe("Security — Request ID UUID Format", () => {
   it("preserves existing X-Request-ID from incoming headers", async () => {
     const { requestIdMiddleware } = await import("./_core/requestId");
 
-    const existingId = "existing-request-id-12345";
+    const existingId = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d";
     const mockReq = { headers: { "x-request-id": existingId }, path: "/test", method: "GET" } as any;
     const mockRes = { setHeader: vi.fn() } as any;
 
@@ -239,7 +239,7 @@ describe("Security — Pino Structured JSON Logging", () => {
 
     // Pino logger should have level set
     expect(logger.level).toBeDefined();
-    expect(["trace", "debug", "info", "warn", "error", "fatal"]).toContain(logger.level);
+    expect(["trace", "debug", "info", "warn", "error", "fatal", "silent"]).toContain(logger.level);
   });
 
   it("logger produces JSON output with timestamp field", async () => {

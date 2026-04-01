@@ -221,6 +221,16 @@ async function startServer() {
   };
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);
+
+  // ── Crash handlers ────────────────────────────────────────────────
+  process.on("uncaughtException", (err) => {
+    logger.error({ operation: "uncaughtException", err }, "Uncaught exception");
+    logger.flush();
+    process.exit(1);
+  });
+  process.on("unhandledRejection", (reason) => {
+    logger.error({ operation: "unhandledRejection", err: reason }, "Unhandled rejection");
+  });
 }
 
 startServer().catch((err) => {

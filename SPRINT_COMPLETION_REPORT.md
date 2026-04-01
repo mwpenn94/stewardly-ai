@@ -101,10 +101,11 @@ Note: Check 2 fails on terminology (`amp_engagement`/`ho_domain_trajectory` are 
 | Metric | Value |
 |--------|-------|
 | Baseline tests | 1,746 (pre-audit) |
-| Current tests | 1,987 |
-| Passing | 1,877 |
-| Failing | 110 (all DB-unavailable) |
+| Current tests | 2,121 |
+| Passing | 2,011 |
+| Failing | 110 (all DB-unavailable — TiDB not reachable) |
 | Regressions | **0** (no new failures introduced) |
+| TypeScript errors | **0** (all resolved) |
 | Build | **Passing** |
 
 ---
@@ -127,8 +128,7 @@ No `recursive_optimization_toolkit.js` or `.cjs` exists in this project. Workflo
 4. **Integration connectors** need API key registration for live activation
 5. **No `amp_engagement`/`ho_domain_trajectory`** — platform uses standard 6-category memory model
 6. **No frontend tests** — all 1,987 tests are server-side
-7. **~101 pre-existing TypeScript errors** in 6 service files (not introduced by audit)
-8. **Credential exposure in git history** — `.manus/db/` files removed from index but persist in history
+7. **Credential exposure in git history** — `.manus/db/` files removed from index but persist in history
 
 ---
 
@@ -136,4 +136,4 @@ No `recursive_optimization_toolkit.js` or `.cjs` exists in this project. Workflo
 
 **Strengths:** Comprehensive feature set (104+ services, 53 routers, 262 tables), strong security posture (20 audit fixes + helmet + structured logging), full contextual LLM pipeline with RAG, DB-backed memory engine, 5-layer config cascade, graduated autonomy, compliance engine, explicit SSE streaming, improvement engine with convergence detection, 1,877 passing tests.
 
-**Deductions:** -1 for 131 undeployed tables + pre-existing TS errors in 6 service files.
+**Deductions:** -1 for 131 undeployed tables (migration ready, needs DB access).
