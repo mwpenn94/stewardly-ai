@@ -256,6 +256,13 @@ export async function sovereignInvokeLLM(params: SovereignLLMParams): Promise<Co
       const config = await sovereignConfigStore.getLayerSettings(params.userId);
       const l1 = config.find((l: any) => l.layer === 1);
       const budgetConfig = l1?.settings?.sovereignBudget as any;
+      // Check alert threshold and trigger alert if crossed
+      if (budgetConfig && !budgetConfig.alertTriggered) {
+        const spendPct = (budgetConfig.currentSpendUsd / budgetConfig.monthlyLimitUsd) * 100;
+        if (spendPct >= (budgetConfig.alertThresholdPct || 80)) {
+          triggerBudgetAlert(params.userId, budgetConfig.currentSpendUsd, budgetConfig.monthlyLimitUsd).catch(() => {});
+        }
+      }
       if (budgetConfig?.hardStop && budgetConfig.currentSpendUsd >= budgetConfig.monthlyLimitUsd) {
         throw new Error(
           `[Sovereign] Budget hard-stop: monthly limit of $${budgetConfig.monthlyLimitUsd} reached ` +
@@ -651,6 +658,37 @@ async function updateBudgetSpend(userId: number, costUsd: number): Promise<void>
       .where(eq(schema.sovereignBudgets.userId, userId));
   } catch {
     // Non-fatal: budget tracking is best-effort
+  }
+}
+
+/**
+ * Trigger budget alert when spend crosses the threshold percentage.
+ * Sets alertTriggered=true in the DB and logs a warning.
+ * Non-fatal: alert triggering is best-effort.
+ */
+async function triggerBudgetAlert(userId: number, currentSpend: number, monthlyLimit: number): Promise<void> {
+  try {
+    const db = await getCachedDb();
+    if (!db) return;
+
+    const schema = await getCachedSchema();
+    if (!schema?.sovereignBudgets) return;
+
+    if (!_drizzleOrmCache) {
+      _drizzleOrmCache = await import("drizzle-orm");
+    }
+    const { eq } = _drizzleOrmCache;
+
+    await db.update(schema.sovereignBudgets)
+      .set({ alertTriggered: true, updatedAt: new Date() })
+      .where(eq(schema.sovereignBudgets.userId, userId));
+
+    console.warn(
+      `[Sovereign] Budget alert: user ${userId} has spent $${currentSpend.toFixed(4)} ` +
+      `of $${monthlyLimit.toFixed(2)} monthly limit.`
+    );
+  } catch {
+    // Non-fatal: alert triggering is best-effort
   }
 }
 
