@@ -2,9 +2,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
-  ArrowLeft, Camera, Brain, Shield, FileText, Sparkles, User,
+  Camera, Brain, Shield, FileText, Sparkles, User,
   Loader2, Settings2, ChevronRight, Bell, Palette, Mic, Link2, Keyboard,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
@@ -100,14 +99,8 @@ export default function SettingsHub() {
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/chat")}>
-            <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Chat</span>
-          </Button>
-          <Separator orientation="vertical" className="h-5" />
-          <div className="flex items-center gap-2 min-w-0">
-            <Settings2 className="w-4 h-4 text-accent shrink-0" />
-            <h1 className="text-sm font-semibold truncate">Settings</h1>
-          </div>
+          <Settings2 className="w-4 h-4 text-accent shrink-0" />
+          <h1 className="text-sm font-semibold truncate">Settings</h1>
           {/* Mobile tab selector */}
           <button
             className="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border text-xs md:hidden"

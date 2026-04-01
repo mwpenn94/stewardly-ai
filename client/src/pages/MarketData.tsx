@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import {
-  ArrowLeft, TrendingUp, TrendingDown, Search, BarChart3,
+  TrendingUp, TrendingDown, Search, BarChart3,
   RefreshCw, Loader2, DollarSign, Activity,
 } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -67,9 +67,6 @@ export default function MarketData() {
     <AppShell title="Market Data">
     <div className="min-h-screen">
       <header className="border-b border-border px-4 py-3 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
         <BarChart3 className="w-5 h-5 text-accent" />
         <h1 className="text-lg font-semibold">Market Data</h1>
         <div className="ml-auto">

@@ -594,8 +594,19 @@ export default function Chat() {
       conversations: convs.filter((c: any) => !c.pinned && c.folderId === f.id),
     }));
     const unfiled = convs.filter((c: any) => !c.pinned && !c.folderId);
-    return { pinned, folderGroups, unfiled };
-  }, [conversationsQuery.data, foldersQuery.data]);
+    // Filter out empty conversations with default title (no user messages yet)
+    // Keep the current active conversation even if empty
+    const filteredUnfiled = unfiled.filter((c: any) => {
+      if (c.id === conversationId) return true; // always show active
+      if (c.title && c.title !== "New Conversation") return true; // has custom title
+      // For "New Conversation" titled ones, check if they have recent activity
+      // (created within last 5 minutes = likely just created, show it)
+      const createdRecently = c.createdAt && (Date.now() - new Date(c.createdAt).getTime()) < 5 * 60 * 1000;
+      if (createdRecently) return true;
+      return false;
+    });
+    return { pinned, folderGroups, unfiled: filteredUnfiled };
+  }, [conversationsQuery.data, foldersQuery.data, conversationId]);
 
   const toggleFolderExpand = (folderId: number) => {
     setExpandedFolders(prev => {

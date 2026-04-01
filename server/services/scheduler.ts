@@ -146,16 +146,34 @@ async function revokeExpiredRoleElevations(): Promise<void> {
 async function runStaleDataCleanup(): Promise<void> {
   try {
     const { getDb } = await import("../db");
-    const { enrichmentCache } = await import("../../drizzle/schema");
-    const { lt } = await import("drizzle-orm");
+    const { enrichmentCache, conversations, messages } = await import("../../drizzle/schema");
+    const { lt, eq, and, sql } = await import("drizzle-orm");
     
     const db = await getDb();
     if (!db) {
       logger.warn( { operation: "scheduler" },"[Scheduler] Stale data cleanup skipped: DB unavailable");
       return;
     }
+    // 1. Clean expired enrichment cache
     await db.delete(enrichmentCache)
       .where(lt(enrichmentCache.expiresAt, new Date()));
+    
+    // 2. Clean empty conversations older than 1 hour with default title
+    try {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const emptyConvs = await db.execute(
+        sql`DELETE FROM ${conversations} 
+            WHERE title = 'New Conversation' 
+            AND createdAt < ${oneHourAgo}
+            AND id NOT IN (SELECT DISTINCT conversationId FROM ${messages})`
+      );
+      const deletedCount = (emptyConvs as any)?.[0]?.affectedRows || 0;
+      if (deletedCount > 0) {
+        logger.info({ operation: "scheduler" }, `[Scheduler] Cleaned ${deletedCount} empty conversations`);
+      }
+    } catch (convErr: any) {
+      logger.warn({ operation: "scheduler" }, `[Scheduler] Empty conversation cleanup failed: ${convErr.message}`);
+    }
     
     logger.info( { operation: "scheduler" },`[Scheduler] Stale data cleanup complete`);
   } catch (e: any) {

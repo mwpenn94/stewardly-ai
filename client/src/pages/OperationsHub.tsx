@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Link } from "wouter";
 import { navigateToChat } from "@/lib/navigateToChat";
 import {
-  ArrowLeft, Activity, Bot, Shield, History, Play, Pause, Square,
+  Activity, Bot, Shield, History, Play, Pause, Square,
   CheckCircle2, XCircle, Clock, AlertTriangle, Loader2, Eye,
   Search, Filter, RefreshCw, MoreHorizontal, FileText, Zap,
 } from "lucide-react";
@@ -32,14 +32,9 @@ export default function OperationsHub() {
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
-          <div className="flex items-center gap-3">
-            <Link href="/chat">
-              <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold">Operations</h1>
-              <p className="text-sm text-muted-foreground">Active work, agents, compliance, and history</p>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold">Operations</h1>
+            <p className="text-sm text-muted-foreground">Active work, agents, compliance, and history</p>
           </div>
         </div>
       </div>

@@ -5,12 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  ArrowLeft, Search, MessageSquare, Shield, Sparkles, BookOpen,
+  Search, MessageSquare, Shield, Sparkles, BookOpen,
   HelpCircle, ChevronDown, ChevronUp, Send, Loader2, Keyboard,
   Brain, FileText, Users, Settings, Monitor, Mic, Globe,
   Calculator, BarChart3, Mail, ExternalLink, CheckCircle,
@@ -525,14 +524,8 @@ export default function Help() {
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/chat")}>
-            <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Chat</span>
-          </Button>
-          <Separator orientation="vertical" className="h-5" />
-          <div className="flex items-center gap-2 min-w-0">
-            <HelpCircle className="w-4 h-4 text-accent shrink-0" />
-            <h1 className="text-sm font-semibold truncate">Help & Platform Guide</h1>
-          </div>
+          <HelpCircle className="w-4 h-4 text-accent shrink-0" />
+          <h1 className="text-sm font-semibold truncate">Help & Platform Guide</h1>
         </div>
       </div>
 

@@ -189,13 +189,13 @@ export async function detectSignals(db: any): Promise<Signal[]> {
     const retryEvents = await db.execute(
       sql`SELECT COUNT(*) as cnt FROM ${messages} m1
           WHERE m1.role = 'user'
-          AND m1.created_at >= ${oneDayAgo}
+          AND m1.createdAt >= ${oneDayAgo}
           AND EXISTS (
             SELECT 1 FROM ${messages} m2
-            WHERE m2.conversation_id = m1.conversation_id
+            WHERE m2.conversationId = m1.conversationId
             AND m2.role = 'user'
             AND m2.id < m1.id
-            AND TIMESTAMPDIFF(SECOND, m2.created_at, m1.created_at) < 60
+            AND TIMESTAMPDIFF(SECOND, m2.createdAt, m1.createdAt) < 60
             AND m2.content = m1.content
           )`,
     );

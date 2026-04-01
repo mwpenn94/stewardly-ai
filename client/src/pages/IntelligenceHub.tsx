@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
 import { navigateToChat } from "@/lib/navigateToChat";
 import {
-  ArrowLeft, Brain, BarChart3, Database, TrendingUp, Loader2,
+  Brain, BarChart3, Database, TrendingUp, Loader2,
   Play, Eye, RefreshCw, Lightbulb, Target, Activity, Zap,
   ChevronRight, Clock, AlertTriangle,
 } from "lucide-react";
@@ -29,14 +29,9 @@ export default function IntelligenceHub() {
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
-          <div className="flex items-center gap-3">
-            <Link href="/chat">
-              <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold">Intelligence</h1>
-              <p className="text-sm text-muted-foreground">Models, data insights, and analytics</p>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold">Intelligence</h1>
+            <p className="text-sm text-muted-foreground">Models, data insights, and analytics</p>
           </div>
         </div>
       </div>

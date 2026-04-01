@@ -12,10 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Link } from "wouter";
 import { navigateToChat } from "@/lib/navigateToChat";
 import {
-  ArrowLeft, Package, Briefcase, Lightbulb, Search, Filter,
+  Package, Briefcase, Lightbulb, Search, Filter,
   Star, TrendingUp, Shield, FileText, Calculator, DollarSign,
   Building2, Scale, ChevronRight, Loader2, Eye, Plus,
   CheckCircle2, Clock, AlertTriangle, BarChart3,
@@ -31,14 +30,9 @@ export default function AdvisoryHub() {
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
-          <div className="flex items-center gap-3">
-            <Link href="/chat">
-              <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold">Advisory</h1>
-              <p className="text-sm text-muted-foreground">Products, cases, and recommendations</p>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold">Advisory</h1>
+            <p className="text-sm text-muted-foreground">Products, cases, and recommendations</p>
           </div>
         </div>
       </div>
@@ -189,9 +183,7 @@ function ProductsSection({ searchQuery }: { searchQuery: string }) {
             <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
             Complete your suitability profile to see product matches.
             <br />
-            <Link href="/chat">
-              <Button size="sm" variant="link" className="mt-2">Start Suitability Assessment →</Button>
-            </Link>
+            <Button size="sm" variant="link" className="mt-2" onClick={() => window.location.href = '/chat'}>Start Suitability Assessment →</Button>
           </div>
         </CardContent>
       </Card>

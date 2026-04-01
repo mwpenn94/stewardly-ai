@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 import { navigateToChat } from "@/lib/navigateToChat";
 import {
-  ArrowLeft, Users, Calendar, Mail, Search, Filter, Plus,
+  Users, Calendar, Mail, Search, Filter, Plus,
   UserPlus, Video, Phone, MessageSquare, Clock, Star,
   Building2, Loader2, ChevronRight, Globe, MapPin,
   Send, FileText, BarChart3, Eye,
@@ -30,14 +30,9 @@ export default function RelationshipsHub() {
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
-          <div className="flex items-center gap-3">
-            <Link href="/chat">
-              <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold">Relationships</h1>
-              <p className="text-sm text-muted-foreground">Network, meetings, and outreach</p>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold">Relationships</h1>
+            <p className="text-sm text-muted-foreground">Network, meetings, and outreach</p>
           </div>
         </div>
       </div>
