@@ -308,15 +308,17 @@ export async function persistBudgetConfig(
     const periodStart = budget.periodStartDate || today;
     const periodStartMonth = periodStart.substring(0, 7); // YYYY-MM
     const currentMonth = today.substring(0, 7);
-    const currentSpend = periodStartMonth !== currentMonth ? 0 : budget.currentSpendUsd;
-    const effectivePeriodStart = periodStartMonth !== currentMonth ? today : periodStart;
-
+     const periodRolledOver = periodStartMonth !== currentMonth;
+    const currentSpend = periodRolledOver ? 0 : budget.currentSpendUsd;
+    const effectivePeriodStart = periodRolledOver ? today : periodStart;
     const data = {
       monthlyLimitUsd: budget.monthlyLimitUsd,
       alertThresholdPct: budget.alertThresholdPct,
       hardStop: budget.hardStop,
       currentSpendUsd: currentSpend,
       periodStartDate: effectivePeriodStart,
+      // Reset alert when billing period rolls over
+      ...(periodRolledOver ? { alertTriggered: false } : {}),
       updatedAt: new Date(),
     };
 
