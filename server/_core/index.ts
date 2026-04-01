@@ -137,7 +137,7 @@ async function startServer() {
   registerWebhookRoutes(app);
 
   // ─── SSE Streaming endpoint ──────────────────────────────────────────
-  app.post("/api/chat/stream", async (req, res) => {
+  app.post("/api/chat/stream", generalLimiter, async (req, res) => {
     try {
       // Authenticate using same session mechanism as tRPC
       const user = await sdk.authenticateRequest(req);
@@ -152,10 +152,17 @@ async function startServer() {
         return;
       }
 
+      // Validate sessionId is a number if provided
+      const validSessionId = sessionId != null ? Number(sessionId) : undefined;
+      if (sessionId != null && (isNaN(validSessionId!) || validSessionId! <= 0)) {
+        res.status(400).json({ error: "sessionId must be a positive number" });
+        return;
+      }
+
       await createSSEStreamHandler(req, res, {
         contextualLLM,
         userId: user.id,
-        sessionId: sessionId || undefined,
+        sessionId: validSessionId,
         contextType: contextType || "chat",
         messages,
       });
