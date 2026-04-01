@@ -378,6 +378,7 @@ const chatRouter = router({
         content: aiContent,
         confidenceScore: confidence,
         complianceStatus,
+        modelVersion: response.model || undefined,
         metadata: { model: response.model, focus: input.focus, mode: input.mode, hasRAG: ragContext.length > 0 },
       });
 

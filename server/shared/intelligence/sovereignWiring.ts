@@ -515,10 +515,22 @@ async function flushUsageLogs(): Promise<void> {
   }
 }
 
-// Start periodic flush
-setInterval(() => {
+// Start periodic flush (store ID for cleanup on module hot-reload or shutdown)
+const _flushIntervalId = setInterval(() => {
   flushUsageLogs().catch(() => {});
 }, USAGE_LOG_FLUSH_INTERVAL);
+
+// Cleanup on process exit to prevent zombie intervals
+if (typeof process !== "undefined") {
+  const cleanup = () => {
+    clearInterval(_flushIntervalId);
+    // Final flush attempt on shutdown
+    flushUsageLogs().catch(() => {});
+  };
+  process.once("SIGTERM", cleanup);
+  process.once("SIGINT", cleanup);
+  process.once("beforeExit", cleanup);
+}
 
 // ── Cached contextualLLM instance ───────────────────────────────────────────
 

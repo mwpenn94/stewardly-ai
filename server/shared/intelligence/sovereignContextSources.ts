@@ -54,6 +54,18 @@ async function getSchema() {
   }
 }
 
+// Autonomy module cache to avoid repeated dynamic imports
+let _autonomyModCache: typeof import("../../services/graduatedAutonomy") | null = null;
+async function getAutonomyMod() {
+  if (_autonomyModCache) return _autonomyModCache;
+  try {
+    _autonomyModCache = await import("../../services/graduatedAutonomy");
+    return _autonomyModCache;
+  } catch {
+    return null;
+  }
+}
+
 // ─── SOVEREIGN SOURCE IMPLEMENTATIONS ──────────────────────────────────────
 
 /**
@@ -369,7 +381,8 @@ async function fetchAutonomyState(userId: number, _query: string): Promise<strin
 
     // Fallback: try DB-backed graduated autonomy service
     try {
-      const autonomyMod = await import("../../services/graduatedAutonomy");
+      const autonomyMod = await getAutonomyMod();
+      if (!autonomyMod) return "Autonomy: supervised (default)";
       const profile = await autonomyMod.getProfile(userId);
       const parts: string[] = ["Graduated Autonomy State:"];
       parts.push(`  Level: ${profile.level}`);
