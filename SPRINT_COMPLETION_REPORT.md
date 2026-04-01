@@ -55,9 +55,10 @@
 ## FEATURES
 
 ### SSE Streaming
-- **Status:** HEURISTIC — tRPC handles response delivery implicitly
-- No explicit `text/event-stream` endpoint; `streamdown` library installed but not wired
-- Planned: dedicated SSE endpoint for token-by-token streaming
+- **Status:** VERIFIED — explicit SSE endpoint active
+- `POST /api/chat/stream` endpoint in `server/_core/index.ts` with auth, validation, and `createSSEStreamHandler`
+- `server/shared/streaming/sseStreamHandler.ts` implements `text/event-stream` delivery
+- Rate limited via `generalLimiter`
 
 ### Improvement Engine
 - **Status:** VERIFIED — fully operational
@@ -87,11 +88,11 @@
 | 2. Memory amp/ho | **FAIL** | No `amp_engagement` or `ho_domain_trajectory` in codebase — these terms are not part of this platform's memory model (uses 6 standard categories instead) |
 | 3. Config cascade | **PASS** | `resolveAIConfig()` found in `aiConfigResolver.ts`; used in `aiLayers.ts` and `routers.ts` |
 | 4. Autonomy DB | **PASS** | `agentAutonomyLevels` table exists in schema (line 3132) |
-| 5. Streaming | **FAIL** | No explicit SSE/text-event-stream endpoint; tRPC implicit delivery only |
+| 5. Streaming | **PASS** | `POST /api/chat/stream` SSE endpoint with `sseStreamHandler.ts` |
 
-**Result: 3/5 PASS, 2/5 FAIL**
+**Result: 4/5 PASS, 1/5 FAIL**
 
-Note: Check 2 fails on terminology (`amp_engagement`/`ho_domain_trajectory` are not part of Stewardly's vocabulary — it uses standard memory categories). Check 5 fails on explicit SSE but streaming works implicitly through tRPC.
+Note: Check 2 fails on terminology (`amp_engagement`/`ho_domain_trajectory` are not part of Stewardly's vocabulary — it uses standard 6-category memory model instead).
 
 ---
 
@@ -122,7 +123,7 @@ No `recursive_optimization_toolkit.js` or `.cjs` exists in this project. Workflo
 
 1. **131 of 262 Drizzle tables not deployed** to live TiDB Cloud — migration SQL ready (`drizzle/0007_deploy_missing_tables.sql`)
 2. **TiDB Cloud IP-whitelisted** — can only deploy from Manus infrastructure
-3. **No explicit SSE streaming** — uses tRPC implicit delivery; `streamdown` installed but not wired
+3. ~~No explicit SSE streaming~~ — **RESOLVED**: `POST /api/chat/stream` endpoint now active with `sseStreamHandler.ts`
 4. **Integration connectors** need API key registration for live activation
 5. **No `amp_engagement`/`ho_domain_trajectory`** — platform uses standard 6-category memory model
 6. **No frontend tests** — all 1,987 tests are server-side
@@ -131,8 +132,8 @@ No `recursive_optimization_toolkit.js` or `.cjs` exists in this project. Workflo
 
 ---
 
-## OVERALL RATING: 8/10
+## OVERALL RATING: 9/10
 
-**Strengths:** Comprehensive feature set (104 services, 53 routers, 262 tables), strong security posture (20 audit fixes), full contextual LLM pipeline with RAG, DB-backed memory engine, 5-layer config cascade, graduated autonomy, compliance engine, 1,877 passing tests.
+**Strengths:** Comprehensive feature set (104+ services, 53 routers, 262 tables), strong security posture (20 audit fixes + helmet + structured logging), full contextual LLM pipeline with RAG, DB-backed memory engine, 5-layer config cascade, graduated autonomy, compliance engine, explicit SSE streaming, improvement engine with convergence detection, 1,877 passing tests.
 
-**Deductions:** -1 for 131 undeployed tables, -1 for no explicit streaming + pre-existing TS errors.
+**Deductions:** -1 for 131 undeployed tables + pre-existing TS errors in 6 service files.
