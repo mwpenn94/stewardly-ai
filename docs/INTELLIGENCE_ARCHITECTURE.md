@@ -1,10 +1,10 @@
 # Stewardly Intelligence Architecture
 
-> Last updated: 2026-04-01 | Pass 9 (Future-State & Synthesis)
+> Last updated: 2026-04-01 | Pass 12 (Depth — Phase 2 Integration)
 
 ## Overview
 
-Stewardly's intelligence layer provides RAG-augmented LLM calls, persistent memory, graduated autonomy, and compliance-safe AI interactions for financial advisory workflows. All LLM access flows through a single wiring layer that ensures context injection, quality normalization, and observability.
+Stewardly's intelligence layer provides RAG-augmented LLM calls, persistent memory, graduated autonomy, SSE streaming, multi-turn ReAct tool calling, and compliance-safe AI interactions for financial advisory workflows. All LLM access flows through a single wiring layer that ensures context injection, quality normalization, and observability.
 
 ## Import Convention
 
@@ -16,7 +16,7 @@ import { contextualLLM } from "./shared/stewardlyWiring";
 import { contextualLLM } from "../shared/stewardlyWiring";
 
 // ✅ CORRECT — also available from wiring
-import { contextualLLM, normalizeQualityScore } from "../shared/stewardlyWiring";
+import { contextualLLM, normalizeQualityScore, executeReActLoop } from "../shared/stewardlyWiring";
 
 // ❌ WRONG — direct service import
 import { contextualLLM } from "./services/contextualLLM";
@@ -30,13 +30,15 @@ import { contextualLLM } from "../services/contextualLLM";
 ```
 ┌─────────────────────────────────────────────────────┐
 │  Application Layer (routers, services)              │
-│  imports: contextualLLM from shared/stewardlyWiring │
+│  imports: contextualLLM, executeReActLoop           │
+│           from shared/stewardlyWiring               │
 └──────────────────────┬──────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────┐
 │  Wiring Layer: server/shared/stewardlyWiring.ts     │
 │  Re-exports: contextualLLM, getQuickContext,        │
-│              rawInvokeLLM, normalizeQualityScore    │
+│              rawInvokeLLM, normalizeQualityScore,   │
+│              executeReActLoop, ReActConfig/Result    │
 └──────────────────────┬──────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────┐
@@ -45,6 +47,13 @@ import { contextualLLM } from "../services/contextualLLM";
 │  ├── services/deepContextAssembler.ts (15 sources)  │
 │  ├── services/graduatedAutonomy.ts (DB-backed)      │
 │  └── memoryEngine.ts              (extraction/save) │
+└──────────────────────┬──────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────┐
+│  Shared Modules                                     │
+│  ├── shared/intelligence/reactLoop.ts (ReAct loop)  │
+│  ├── shared/streaming/sseStreamHandler.ts (SSE)     │
+│  └── shared/engine/improvementEngine.ts (signals)   │
 └──────────────────────┬──────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────┐
@@ -86,6 +95,40 @@ Assembles context from 15 parallel sources:
 
 All sources use `Promise.allSettled` for resilience — individual failures are logged at debug level and do not block the response.
 
+### SSE Stream Handler (`server/shared/streaming/sseStreamHandler.ts`)
+
+Server-Sent Events streaming for real-time token-by-token chat display:
+1. **Context injection parity**: Calls `getQuickContext()` before streaming to ensure the same RAG context as the non-streaming `contextualLLM` path
+2. **Native streaming**: Uses `fetch` with `ReadableStream` to forward LLM tokens as SSE events
+3. **Fallback**: If native streaming fails, falls back to `contextualLLM` for a complete response sent as a single SSE event
+4. **Lifecycle management**: Heartbeat keepalive (every 15s), `AbortController` for client disconnect cleanup, proper SSE framing with `data:` prefix and `[DONE]` sentinel
+5. **Security**: Protected by `generalLimiter` rate limiting and Clerk auth; `sessionId` input validated as positive number
+6. **Endpoint**: `POST /api/chat/stream` in `server/_core/index.ts`
+
+### ReAct Multi-Turn Tool Calling (`server/shared/intelligence/reactLoop.ts`)
+
+Structured thought/action/observation loop for multi-step tool execution:
+1. **Max rounds**: Configurable (default 5) to prevent infinite loops
+2. **Escape hatch**: Breaks early if 2 consecutive iterations produce similar content with no tool calls (detects LLM repetition)
+3. **Trace logging**: Each step records `thought`, `action`, `observation`, `toolName`, and `durationMs` to the `reasoning_traces` table for observability
+4. **Error resilience**: Tool execution errors are caught and passed as error observations to the LLM, allowing self-correction
+5. **Guard**: `logTrace` skips DB writes when `db` or `sessionId` is undefined (unit test safety)
+6. **Wired into**: `server/routers.ts` chat.send mutation, replacing the prior inline 65-line tool loop
+
+### Recursive Improvement Engine (`server/shared/engine/improvementEngine.ts`)
+
+Infrastructure for detecting optimization signals and tracking convergence:
+1. **`detectSignals(db)`**: Scans 6 signal types:
+   - `CONTEXT_BYPASS`: Messages without contextualLLM context injection
+   - `TOOL_UNDERUSE`: Active tools not called in the last 30 days
+   - `QUALITY_DRIFT`: Average quality rating below 4.0 in the last 7 days
+   - `RETRY_SPIKE`: Excessive LLM retries indicating model instability
+   - `STALE_HYPOTHESIS`: Promoted improvement hypotheses older than 30 days without validation
+   - `MODEL_CONCENTRATION`: Over-reliance on a single model version (>80% of messages)
+2. **`checkConvergence(db)`**: Returns true when zero signals are detected
+3. **`antiRegressionCheck(db, baseline)`**: Compares current signal count against a baseline to detect regressions
+4. **Schema tables**: `improvement_signals`, `improvement_passes`, `improvement_convergence`, `improvement_anti_regression`
+
 ### normalizeQualityScore (`server/shared/intelligence/types.ts`)
 
 Normalizes quality/confidence scores to the [0, 1] range:
@@ -115,21 +158,24 @@ Extracts and persists user memories from conversations:
 - **Intelligence layer**: All catch blocks MUST log with `logger.debug()` including source identifier and error string
 - **Silent catch `{}` blocks**: Prohibited in the intelligence layer; acceptable in peripheral services for fire-and-forget event tracking
 - **LLM failures**: Circuit breaker in `_core/llm.ts` opens after consecutive failures, auto-resets after cooldown
+- **SSE streaming**: Graceful degradation — if context assembly fails, streams without context rather than crashing; if native streaming fails, falls back to complete response
 
 ## Future Considerations
 
 ### 12 Months
-- **Streaming support**: contextualLLM should support streaming responses for real-time chat UX
+- ~~**Streaming support**: contextualLLM should support streaming responses for real-time chat UX~~ ✅ **DONE** (SSE Stream Handler)
 - **Vector embeddings**: Replace TF-IDF retrieval with vector similarity search for better recall
 - **Context window management**: Dynamic MAX_CONTEXT_CHARS based on model's context window size
+- **Improvement engine consumers**: Wire `detectSignals` into a scheduled background job for continuous monitoring
 
 ### 24 Months
 - **Multi-model routing**: Route different context types to specialized models (compliance → high-accuracy, chat → fast)
 - **Memory consolidation**: Periodic background job to merge/deduplicate memories
-- **Observability dashboard**: Track context assembly latency, retrieval quality, and model performance
+- **Observability dashboard**: Track context assembly latency, retrieval quality, and model performance via `reasoning_traces` and `improvement_signals` tables
+- **Streaming tool calling**: Extend SSE handler to support ReAct loop with streamed intermediate steps
 
 ### 36 Months
-- **Agent orchestration**: Graduate from single-turn RAG to multi-step agent workflows
+- ~~**Agent orchestration**: Graduate from single-turn RAG to multi-step agent workflows~~ ✅ **DONE** (ReAct Loop)
 - **Federated context**: Cross-organization context sharing for multi-advisor scenarios
 - **Regulatory AI compliance**: Automated SEC/FINRA audit trail generation from the compliance copilot
 
@@ -140,5 +186,6 @@ The optimization loop should re-open when:
 2. Context window sizes change significantly (requires MAX_CONTEXT_CHARS adjustment)
 3. New data sources are added to deepContextAssembler
 4. The 113 pre-existing test failures are addressed
-5. Streaming LLM responses are implemented
-6. Vector search replaces TF-IDF retrieval
+5. Vector search replaces TF-IDF retrieval
+6. The improvement engine is wired to a scheduled consumer
+7. Streaming tool calling is implemented (ReAct + SSE integration)
