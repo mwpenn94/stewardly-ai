@@ -512,6 +512,7 @@ export const messages = mysqlTable("messages", {
   content: text("content").notNull(),
   confidenceScore: float("confidenceScore"),
   complianceStatus: mysqlEnum("complianceStatus", ["pending", "approved", "flagged", "rejected"]),
+  modelVersion: varchar("modelVersion", { length: 64 }),
   metadata: json("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
@@ -5109,3 +5110,23 @@ export const aiResponseQuality = mysqlTable("ai_response_quality", {
   }));
 export type AiResponseQualityEntry = typeof aiResponseQuality.$inferSelect;
 export type InsertAiResponseQualityEntry = typeof aiResponseQuality.$inferInsert;
+
+// ─── Graduated Autonomy: User-level persistence ──────────────────────────
+export const userAutonomyProfiles = mysqlTable("user_autonomy_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  level: mysqlEnum("level", ["supervised", "guided", "semi_autonomous", "autonomous"]).default("supervised").notNull(),
+  trustScore: float("trust_score").default(0).notNull(),
+  totalInteractions: int("total_interactions").default(0).notNull(),
+  successfulActions: int("successful_actions").default(0).notNull(),
+  overriddenActions: int("overridden_actions").default(0).notNull(),
+  escalations: int("escalations").default(0).notNull(),
+  lastEscalation: timestamp("last_escalation"),
+  levelHistory: json("level_history").$type<Array<{ level: string; achievedAt: string; reason: string }>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    userIdIdx: index("idx_user_autonomy_profiles_user_id").on(table.userId),
+  }));
+export type UserAutonomyProfile = typeof userAutonomyProfiles.$inferSelect;
+export type InsertUserAutonomyProfile = typeof userAutonomyProfiles.$inferInsert;

@@ -5,7 +5,7 @@
 import { getDb } from "../db";
 import { knowledgeArticles, knowledgeArticleVersions, knowledgeArticleFeedback, knowledgeGaps } from "../../drizzle/schema";
 import { eq, and, desc, like, or, sql } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm"
+import { contextualLLM as invokeLLM } from "../shared/stewardlyWiring"
 import { contextualLLM } from "./contextualLLM";
 
 // ─── CRUD ────────────────────────────────────────────────────────────────

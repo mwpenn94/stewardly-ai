@@ -168,7 +168,8 @@ async function startServer() {
     logger.info({ operation: "server.shutdown" }, "Received shutdown signal, closing server...");
     server.close(() => {
       logger.info({ operation: "server.shutdown" }, "Server closed gracefully");
-      process.exit(0);
+      logger.flush();
+      setTimeout(() => process.exit(0), 100);
     });
     // Force exit after 10s if connections don't close
     setTimeout(() => process.exit(1), 10000).unref();

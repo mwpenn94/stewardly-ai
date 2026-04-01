@@ -2,7 +2,7 @@
  * Task #49 — Compliance Prediction Service
  * Predictive compliance risk scoring and proactive violation detection
  */
-import { invokeLLM } from "../_core/llm"
+import { contextualLLM as invokeLLM } from "../shared/stewardlyWiring"
 import { contextualLLM } from "./contextualLLM";
 
 export interface ComplianceRiskFactor {

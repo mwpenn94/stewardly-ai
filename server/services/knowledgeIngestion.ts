@@ -5,7 +5,7 @@
 import { getDb } from "../db";
 import { knowledgeIngestionJobs, knowledgeArticles } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm"
+import { contextualLLM as invokeLLM } from "../shared/stewardlyWiring"
 import { contextualLLM } from "./contextualLLM";
 
 // ─── Job Management ──────────────────────────────────────────────────────
