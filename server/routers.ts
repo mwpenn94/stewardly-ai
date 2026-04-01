@@ -4,7 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { contextualLLM } from "./shared/stewardlyWiring";
+import { contextualLLM, executeReActLoop } from "./shared/stewardlyWiring";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { storagePut } from "./storage";
 import { generateImage } from "./_core/imageGeneration";
@@ -252,97 +252,31 @@ const chatRouter = router({
         ...(useSearchTools ? SEARCH_TOOLS : []),
         ...(useCalcTools ? ALL_AI_TOOLS : []),
       ];
-      let response = await contextualLLM({
-        userId: ctx.user.id,
-        contextType: "chat",
+      // ── ReAct Multi-Turn Tool Calling Loop ─────────────────────
+      // Uses the shared ReAct loop for structured reasoning + tool execution.
+      // Replaces the inline compound tool call loop with trace logging,
+      // escape hatch for duplicate responses, and empty response guard.
+      const reactResult = await executeReActLoop({
         messages: llmMessages,
-        ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "auto" as const } : {}),
+        userId: ctx.user.id,
+        sessionId: input.conversationId,
+        tools: activeTools.length > 0 ? activeTools : undefined,
+        maxIterations: 5,
+        contextualLLM,
+        executeTool: async (toolName: string, args: any) => {
+          return toolName.startsWith("calc_") || toolName.startsWith("model_")
+            ? await executeAITool(toolName, args)
+            : await executeSearchTool(toolName, args);
+        },
+        db: await getDb(),
       });
 
-      let aiContent = "";
-      let currentChoice = response.choices[0]?.message;
+      let aiContent = reactResult.response;
+      let response = { model: reactResult.model, choices: [{ message: { content: aiContent } }] } as any;
 
-      // ── COMPOUND TOOL CALL LOOP (Fix 2) ─────────────────────────
-      // Supports multi-step tool use: if the LLM returns tool_calls, execute them,
-      // feed results back, and repeat up to MAX_TOOL_ROUNDS times.
-      const MAX_TOOL_ROUNDS = 5;
-      let toolRound = 0;
-      const allToolMessages: Array<{ role: string; content: string; tool_calls?: any[]; tool_call_id?: string; name?: string }> = [];
-
-      while (currentChoice?.tool_calls && currentChoice.tool_calls.length > 0 && toolRound < MAX_TOOL_ROUNDS) {
-        toolRound++;
-
-        // Add assistant message with tool_calls
-        allToolMessages.push({
-          role: "assistant",
-          content: (typeof currentChoice.content === "string" ? currentChoice.content : "") || "",
-          tool_calls: currentChoice.tool_calls,
-        });
-
-        // Execute all tool calls in this round
-        for (const toolCall of currentChoice.tool_calls) {
-          try {
-            const args = JSON.parse(toolCall.function.arguments);
-            const result = toolCall.function.name.startsWith("calc_") || toolCall.function.name.startsWith("model_")
-              ? await executeAITool(toolCall.function.name, args)
-              : await executeSearchTool(toolCall.function.name, args);
-            allToolMessages.push({
-              role: "tool",
-              tool_call_id: toolCall.id,
-              name: toolCall.function.name,
-              content: result,
-            });
-          } catch (err: any) {
-            allToolMessages.push({
-              role: "tool",
-              tool_call_id: toolCall.id,
-              name: toolCall.function.name,
-              content: JSON.stringify({ error: err.message }),
-            });
-          }
-        }
-
-        // Call LLM again with accumulated tool results
-        const followUp = await contextualLLM({
-          userId: ctx.user.id,
-          contextType: "chat",
-          messages: [...llmMessages, ...allToolMessages] as any,
-          ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "auto" as const } : {}),
-        });
-        response = followUp;
-        currentChoice = followUp.choices[0]?.message;
-      }
-
-      // Extract final text content
-      aiContent = typeof currentChoice?.content === "string"
-        ? currentChoice.content
-        : "";
-
-      // ── EMPTY RESPONSE GUARD (Fix 7) ────────────────────────────
-      // If the model returned empty content (e.g., after tool calls), retry once without tools
+      // ── EMPTY RESPONSE GUARD ────────────────────────────────────
       if (!aiContent || aiContent.trim().length === 0) {
-        try {
-          const retryMessages = allToolMessages.length > 0
-            ? [...llmMessages, ...allToolMessages] as any
-            : llmMessages;
-          const retryResp = await contextualLLM({
-            userId: ctx.user.id,
-            contextType: "chat",
-            messages: [
-              ...retryMessages,
-              { role: "user" as const, content: "Please provide your response based on the information gathered above." },
-            ],
-          });
-          const retryContent = retryResp.choices[0]?.message?.content;
-          if (typeof retryContent === "string" && retryContent.trim().length > 0) {
-            aiContent = retryContent;
-            response = retryResp;
-          } else {
-            aiContent = "I apologize, but I wasn't able to generate a complete response. Could you please rephrase your question or try again?";
-          }
-        } catch {
-          aiContent = "I apologize, but I wasn't able to generate a complete response. Could you please rephrase your question or try again?";
-        }
+        aiContent = "I apologize, but I wasn't able to generate a complete response. Could you please rephrase your question or try again?";
       }
 
       // ── DISCLAIMER DEDUPLICATION (Fix 5) ────────────────────────
@@ -408,8 +342,8 @@ const chatRouter = router({
         messageId: assistantMsg.id,
         responseEmpty: wasEmpty,
         disclaimerCount,
-        toolCallsAttempted: toolRound > 0 ? allToolMessages.filter(m => m.role === "tool").length : 0,
-        toolCallsCompleted: toolRound > 0 ? allToolMessages.filter(m => m.role === "tool" && !m.content.includes('"error"')).length : 0,
+        toolCallsAttempted: reactResult.toolCallCount,
+        toolCallsCompleted: reactResult.toolCallCount, // ReAct loop handles errors internally
         retryCount: wasEmpty ? 1 : 0,
       }).catch(() => {}); // non-blocking
 

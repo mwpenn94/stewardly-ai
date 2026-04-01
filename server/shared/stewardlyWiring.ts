@@ -23,5 +23,9 @@ export type { ContextType } from "../services/deepContextAssembler";
 // ── Raw invokeLLM access ──────────────────────────────────────────────────
 export { invokeLLM as rawInvokeLLM } from "../_core/llm";
 
-// ── Quality score normalization from shared types ─────────────────────────
+// ── ReAct multi-turn tool calling loop ─────────────────────────────────
+export { executeReActLoop } from "./intelligence/reactLoop";
+export type { ReActConfig, ReActTrace, ReActResult } from "./intelligence/reactLoop";
+
+// ── Quality score normalization from shared types ─────────────────
 export { normalizeQualityScore } from "./intelligence/types";

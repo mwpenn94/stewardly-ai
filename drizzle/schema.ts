@@ -5130,3 +5130,77 @@ export const userAutonomyProfiles = mysqlTable("user_autonomy_profiles", {
   }));
 export type UserAutonomyProfile = typeof userAutonomyProfiles.$inferSelect;
 export type InsertUserAutonomyProfile = typeof userAutonomyProfiles.$inferInsert;
+
+// ─── Recursive Improvement Engine ────────────────────────────────────────────
+
+// Signals detected by the improvement engine (quality regressions, unused tools, etc.)
+export const improvementSignals = mysqlTable("improvement_signals", {
+  id: int("id").autoincrement().primaryKey(),
+  signalType: varchar("signal_type", { length: 50 }).notNull(),
+  severity: varchar("severity", { length: 20 }).notNull(),
+  sourceMetric: varchar("source_metric", { length: 100 }),
+  sourceValue: text("source_value"),
+  threshold: varchar("threshold", { length: 100 }),
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedByHypothesisId: int("resolved_by_hypothesis_id"),
+}, (table) => ({
+    signalTypeDetectedAtIdx: index("idx_improvement_signals_type_detected").on(table.signalType, table.detectedAt),
+  }));
+export type ImprovementSignal = typeof improvementSignals.$inferSelect;
+export type InsertImprovementSignal = typeof improvementSignals.$inferInsert;
+
+// Hypotheses generated to address detected signals
+export const improvementHypotheses = mysqlTable("improvement_hypotheses", {
+  id: int("id").autoincrement().primaryKey(),
+  signalId: int("signal_id").notNull(),
+  passType: varchar("pass_type", { length: 50 }).notNull(),
+  scope: json("scope"),
+  hypothesisText: text("hypothesis_text").notNull(),
+  expectedDelta: float("expected_delta"),
+  creditBudget: float("credit_budget"),
+  status: varchar("status", { length: 30 }).default("pending").notNull(),
+  testCount: int("test_count").default(0).notNull(),
+  timeoutAt: timestamp("timeout_at"),
+  promotedAt: timestamp("promoted_at"),
+  rejectedAt: timestamp("rejected_at"),
+  rejectedReason: text("rejected_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+    statusCreatedAtIdx: index("idx_improvement_hypotheses_status_created").on(table.status, table.createdAt),
+  }));
+export type ImprovementHypothesis = typeof improvementHypotheses.$inferSelect;
+export type InsertImprovementHypothesis = typeof improvementHypotheses.$inferInsert;
+
+// Test results for each hypothesis (A/B test outcomes)
+export const hypothesisTestResults = mysqlTable("hypothesis_test_results", {
+  id: int("id").autoincrement().primaryKey(),
+  hypothesisId: int("hypothesis_id").notNull(),
+  sessionId: int("session_id"),
+  qualityBefore: json("quality_before"),
+  qualityAfter: json("quality_after"),
+  regressionDetected: mysqlBoolean("regression_detected").default(false).notNull(),
+  costDelta: float("cost_delta"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+    hypothesisIdIdx: index("idx_hypothesis_test_results_hypothesis_id").on(table.hypothesisId),
+  }));
+export type HypothesisTestResult = typeof hypothesisTestResults.$inferSelect;
+export type InsertHypothesisTestResult = typeof hypothesisTestResults.$inferInsert;
+
+// ReAct reasoning traces — step-by-step thought/action/observation logs
+export const reasoningTraces = mysqlTable("reasoning_traces", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("session_id"),
+  stepNumber: int("step_number").notNull(),
+  thought: text("thought"),
+  action: text("action"),
+  observation: text("observation"),
+  toolName: varchar("tool_name", { length: 100 }),
+  durationMs: int("duration_ms"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+    sessionIdIdx: index("idx_reasoning_traces_session_id").on(table.sessionId),
+  }));
+export type ReasoningTrace = typeof reasoningTraces.$inferSelect;
+export type InsertReasoningTrace = typeof reasoningTraces.$inferInsert;

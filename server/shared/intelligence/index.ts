@@ -51,6 +51,14 @@ export {
 } from "./deepContextAssembler";
 export type { QuickContextOptions } from "./deepContextAssembler";
 
+// ── ReAct Loop ──────────────────────────────────────────────────────────────
+export { executeReActLoop } from "./reactLoop";
+export type {
+  ReActConfig,
+  ReActTrace,
+  ReActResult,
+} from "./reactLoop";
+
 // ── Memory Engine ────────────────────────────────────────────────────────────
 export { createMemoryEngine } from "./memoryEngine";
 export type {

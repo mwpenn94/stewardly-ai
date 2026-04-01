@@ -17,6 +17,9 @@ import { validateRequiredEnvVars } from "./envValidation";
 import { logger } from "./logger";
 import { requestIdMiddleware } from "./requestId";
 import { generalLimiter, authLimiter, sensitiveTrpcGuard } from "./rateLimiter";
+import { createSSEStreamHandler } from "../shared/streaming";
+import { contextualLLM } from "../shared/stewardlyWiring";
+import { sdk } from "./sdk";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -132,6 +135,41 @@ async function startServer() {
   registerSocialAuthRoutes(app);
   // Public webhook ingestion endpoints
   registerWebhookRoutes(app);
+
+  // ─── SSE Streaming endpoint ──────────────────────────────────────────
+  app.post("/api/chat/stream", async (req, res) => {
+    try {
+      // Authenticate using same session mechanism as tRPC
+      const user = await sdk.authenticateRequest(req);
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const { messages, sessionId, contextType } = req.body;
+      if (!messages || !Array.isArray(messages)) {
+        res.status(400).json({ error: "messages array is required" });
+        return;
+      }
+
+      await createSSEStreamHandler(req, res, {
+        contextualLLM,
+        userId: user.id,
+        sessionId: sessionId || undefined,
+        contextType: contextType || "chat",
+        messages,
+      });
+    } catch (err: any) {
+      if (!res.headersSent) {
+        if (err.message?.includes("session") || err.message?.includes("Forbidden")) {
+          res.status(401).json({ error: "Unauthorized" });
+        } else {
+          logger.error({ operation: "sseStream.routeError", error: err.message }, "[SSE] Route error");
+          res.status(500).json({ error: "Internal server error" });
+        }
+      }
+    }
+  });
 
   // ─── tRPC API with sensitive route rate limiting ─────────────────────
   app.use("/api/trpc", sensitiveTrpcGuard);
