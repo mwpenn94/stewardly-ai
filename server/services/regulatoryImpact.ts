@@ -2,7 +2,7 @@
  * Task #55 — Regulatory Impact Analysis Service
  * Assess impact of regulatory changes on products, processes, and compliance
  */
-import { invokeLLM } from "../_core/llm"
+import { invokeLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 
 export interface RegulatoryChange {

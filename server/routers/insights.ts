@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { proactiveInsights, engagementScores } from "../../drizzle/schema";
 import { eq, and, desc, ne, sql } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../shared/intelligence/sovereignWiring";
 
 async function db() {
   return (await import("../db")).getDb();

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { invokeLLM } from "../_core/llm";
+import { invokeLLM } from "../shared/intelligence/sovereignWiring";
 import { complianceReviews, complianceFlags } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 

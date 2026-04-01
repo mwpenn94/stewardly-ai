@@ -140,7 +140,7 @@ export async function detectColorSchemeFromLogo(logoUrl: string): Promise<{
   confidence: number;
 }> {
   // Use LLM to analyze the logo colors
-  const { invokeLLM } = await import("../_core/llm");
+  const { invokeLLM } = await import("../shared/intelligence/sovereignWiring");
 
   const result = await contextualLLM({ userId: null, contextType: "analysis",
     messages: [

@@ -12,7 +12,7 @@
 import { getDb } from "./db";
 import { complianceAudit, privacyAudit } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { invokeLLM } from "./_core/llm"
+import { invokeLLM } from "./shared/intelligence/sovereignWiring"
 import { normalizeQualityScore } from "./shared/intelligence/types";
 import { contextualLLM } from "./services/contextualLLM";
 

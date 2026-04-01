@@ -10,7 +10,8 @@
  * 3. Compare carriers, products, and rates
  */
 
-import { invokeLLM, type Tool, type Message } from "./_core/llm";
+import { invokeLLM } from "./shared/intelligence/sovereignWiring";
+import type { Tool, Message } from "./_core/llm";
 import { contextualLLM } from "./services/contextualLLM";
 import { callDataApi } from "./_core/dataApi";
 

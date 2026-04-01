@@ -11,7 +11,7 @@ import {
   webScrapeResults, bulkImportBatches, dataQualityScores,
   ingestionInsights, scrapeSchedules,
 } from "../../drizzle/schema";
-import { invokeLLM } from "../_core/llm"
+import { invokeLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 import { dataIngestion } from "./dataIngestion";
 

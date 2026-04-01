@@ -5109,3 +5109,94 @@ export const aiResponseQuality = mysqlTable("ai_response_quality", {
   }));
 export type AiResponseQualityEntry = typeof aiResponseQuality.$inferSelect;
 export type InsertAiResponseQualityEntry = typeof aiResponseQuality.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Sovereign AI Tables
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Sovereign Autonomy State — DB-persisted graduated autonomy profiles.
+ * Replaces the in-memory Map in graduatedAutonomy.ts.
+ */
+export const sovereignAutonomyState = mysqlTable("sovereign_autonomy_state", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  level: mysqlEnum("level", ["supervised", "guided", "semi_autonomous", "autonomous"]).notNull().default("supervised"),
+  trustScore: decimal("trust_score", { precision: 8, scale: 4 }).notNull().default("0"),
+  totalInteractions: int("total_interactions").notNull().default(0),
+  successfulActions: int("successful_actions").notNull().default(0),
+  overriddenActions: int("overridden_actions").notNull().default(0),
+  escalations: int("escalations").notNull().default(0),
+  lastEscalation: timestamp("last_escalation"),
+  levelHistory: json("level_history").$type<Array<{ level: string; achievedAt: string; reason: string }>>().default([]),
+  modelVersion: varchar("model_version", { length: 64 }).default("1.0.0"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_sovereign_autonomy_state_user_id").on(table.userId),
+}));
+export type SovereignAutonomyStateEntry = typeof sovereignAutonomyState.$inferSelect;
+export type InsertSovereignAutonomyStateEntry = typeof sovereignAutonomyState.$inferInsert;
+
+/**
+ * Sovereign Budgets — Per-user spending limits and tracking.
+ */
+export const sovereignBudgets = mysqlTable("sovereign_budgets", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  monthlyLimitUsd: decimal("monthly_limit_usd", { precision: 10, scale: 4 }).notNull().default("50.0000"),
+  alertThresholdPct: int("alert_threshold_pct").notNull().default(80),
+  hardStop: mysqlBoolean("hard_stop").notNull().default(false),
+  currentSpendUsd: decimal("current_spend_usd", { precision: 10, scale: 6 }).notNull().default("0.000000"),
+  periodStartDate: varchar("period_start_date", { length: 10 }).notNull(),
+  alertTriggered: mysqlBoolean("alert_triggered").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_sovereign_budgets_user_id").on(table.userId),
+}));
+export type SovereignBudgetEntry = typeof sovereignBudgets.$inferSelect;
+export type InsertSovereignBudgetEntry = typeof sovereignBudgets.$inferInsert;
+
+/**
+ * Sovereign Routing Decisions — Tracks which provider was selected for each task.
+ */
+export const sovereignRoutingDecisions = mysqlTable("sovereign_routing_decisions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  taskType: varchar("task_type", { length: 128 }).notNull(),
+  provider: varchar("provider", { length: 128 }).notNull(),
+  modelVersion: varchar("model_version", { length: 64 }),
+  qualityScore: decimal("quality_score", { precision: 5, scale: 4 }),
+  latencyMs: int("latency_ms"),
+  costUsd: decimal("cost_usd", { precision: 10, scale: 6 }),
+  failoverFrom: varchar("failover_from", { length: 128 }),
+  success: mysqlBoolean("success").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_sovereign_routing_decisions_user_id").on(table.userId),
+  taskTypeIdx: index("idx_sovereign_routing_decisions_task_type").on(table.taskType),
+}));
+export type SovereignRoutingDecisionEntry = typeof sovereignRoutingDecisions.$inferSelect;
+export type InsertSovereignRoutingDecisionEntry = typeof sovereignRoutingDecisions.$inferInsert;
+
+/**
+ * Sovereign Provider Usage Logs — Cost + latency per provider per call.
+ */
+export const sovereignProviderUsageLogs = mysqlTable("sovereign_provider_usage_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  provider: varchar("provider", { length: 128 }).notNull(),
+  modelVersion: varchar("model_version", { length: 64 }),
+  taskType: varchar("task_type", { length: 128 }),
+  latencyMs: int("latency_ms"),
+  costUsd: decimal("cost_usd", { precision: 10, scale: 6 }),
+  qualityScore: decimal("quality_score", { precision: 5, scale: 4 }),
+  success: mysqlBoolean("success").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_sovereign_provider_usage_logs_user_id").on(table.userId),
+  providerIdx: index("idx_sovereign_provider_usage_logs_provider").on(table.provider),
+}));
+export type SovereignProviderUsageLogEntry = typeof sovereignProviderUsageLogs.$inferSelect;
+export type InsertSovereignProviderUsageLogEntry = typeof sovereignProviderUsageLogs.$inferInsert;

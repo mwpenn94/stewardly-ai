@@ -7,7 +7,7 @@
 import { getDb } from "./db";
 import { educationModules, educationProgress } from "../drizzle/schema";
 import { eq, and, desc, isNull } from "drizzle-orm";
-import { invokeLLM } from "./_core/llm"
+import { invokeLLM } from "./shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./services/contextualLLM";
 
 // ─── SEED MODULES ───────────────────────────────────────────────

@@ -6,7 +6,7 @@
 import { getDb } from "../db";
 import { modelScenarios, modelBacktests } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm"
+import { invokeLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 
 // ─── Historical Events for Backtesting ───────────────────────────────────

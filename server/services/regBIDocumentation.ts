@@ -5,7 +5,7 @@
 import { getDb } from "../db";
 import { coiDisclosures, recommendationsLog, modelCards, performanceMetrics, reportTemplates, reportJobs } from "../../drizzle/schema";
 import { eq, and, desc, gte, sql } from "drizzle-orm";
-import { invokeLLM } from "../_core/llm"
+import { invokeLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 
 // ═══════════════════════════════════════════════════════════════════════════

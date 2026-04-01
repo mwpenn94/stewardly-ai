@@ -12,7 +12,7 @@ import {
   probeResults, integrationAnalysisLog, extractionPlans, extractionPlanJobs,
   rateRecommendations, dataValueScores, rateProfiles, rateSignalLog,
 } from "../../drizzle/schema";
-import { invokeLLM } from "../_core/llm"
+import { invokeLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 
 // ─── DB HELPER ──────────────────────────────────────────────────────────

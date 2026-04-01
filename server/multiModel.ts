@@ -5,7 +5,7 @@
  * and synthesizes their responses into a single cohesive answer.
  */
 
-import { invokeLLM } from "./_core/llm"
+import { invokeLLM } from "./shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./services/contextualLLM";
 
 // ─── PERSPECTIVE DEFINITIONS ────────────────────────────────────────────────

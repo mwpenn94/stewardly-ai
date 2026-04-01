@@ -4,7 +4,7 @@
  * Provides 9 pre-built document templates for financial advisory workflows.
  * Each template defines structure, required fields, and LLM generation prompts.
  */
-import { invokeLLM } from "../_core/llm"
+import { invokeLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 
 // ─── Template Definitions ───────────────────────────────────────────────────
