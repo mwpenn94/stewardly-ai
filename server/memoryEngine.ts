@@ -6,8 +6,12 @@
  * Tier 3: Episodic Summaries (2-3 sentence conversation summaries)
  * 
  * Auto-extracts facts and preferences from every conversation turn.
+ *
+ * IMPORTANT: This module uses raw invokeLLM, NOT contextualLLM.
+ * contextualLLM → deepContextAssembler → assembleMemoryContext → memoryEngine
+ * Using contextualLLM here would create an infinite circular dependency loop.
  */
-import { contextualLLM } from "./services/contextualLLM";
+import { invokeLLM } from "./_core/llm";
 import { getDb } from "./db";
 import { memories, memoryEpisodes } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -49,7 +53,7 @@ export async function extractMemoriesFromMessage(
   aiResponse: string,
 ): Promise<ExtractedMemory[]> {
   try {
-    const resp = await contextualLLM({ userId: userId, contextType: "chat",
+    const resp = await invokeLLM({
       messages: [
         { role: "system", content: EXTRACTION_PROMPT },
         { role: "user", content: `User said: "${userMessage.substring(0, 2000)}"\n\nAI responded: "${aiResponse.substring(0, 1000)}"` },
@@ -116,7 +120,7 @@ export async function generateEpisodeSummary(
       .slice(-20) // Last 20 messages
       .map(m => `${m.role === "user" ? "User" : "Steward"}: ${m.content.substring(0, 500)}`)
       .join("\n");
-    const resp = await contextualLLM({ userId: 0, contextType: "chat",
+    const resp = await invokeLLM({
       messages: [
         { role: "system", content: EPISODE_PROMPT },
         { role: "user", content: transcript },

@@ -13,6 +13,7 @@ import { getDb } from "./db";
 import { complianceAudit, privacyAudit } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { contextualLLM } from "./services/contextualLLM";
+import { normalizeQualityScore } from "./shared/intelligence/types";
 
 // ─── TYPES ──────────────────────────────────────────────────────
 export type ContentClassification =
@@ -150,7 +151,7 @@ export async function logComplianceAudit(data: {
     userId: data.userId,
     conversationId: data.conversationId,
     classification: data.result.classification,
-    confidenceScore: data.result.confidence,
+    confidenceScore: normalizeQualityScore(data.result.confidence),
     flagsJson: data.result.flags,
     reasoningChainJson: data.result.reasoningChain,
     modificationsJson: data.result.suggestedModifications,

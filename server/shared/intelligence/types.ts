@@ -126,17 +126,25 @@ export interface AssemblyMetadata {
 /**
  * Normalize a raw quality score to the [0, 1] range.
  *
- * Handles two common input conventions:
+ * Handles multiple input conventions:
  *   - Scores already in [0, 1] (e.g., 0.85) are passed through.
- *   - Scores on a 0–100 scale (e.g., 85) are divided by 100.
+ *   - Scores on a 1–10 scale (e.g., 8.5) are divided by 10.
+ *   - Scores above 10 are clamped to 1.
+ *   - String representations (e.g., "0.85") are parsed.
+ *   - null, undefined, and NaN return 0.
+ *   - Negative values return 0.
  *
  * The result is clamped to [0, 1] to guarantee downstream consumers
  * never receive out-of-range values.
  */
-export function normalizeQualityScore(rawScore: number): number {
-  if (!Number.isFinite(rawScore)) return 0;
-  const normalized = rawScore > 1 ? rawScore / 100 : rawScore;
-  return Math.max(0, Math.min(1, normalized));
+export function normalizeQualityScore(rawScore: number | string | null | undefined): number {
+  if (rawScore === null || rawScore === undefined) return 0;
+  const num = typeof rawScore === 'string' ? Number(rawScore) : rawScore;
+  if (isNaN(num) || !Number.isFinite(num)) return 0;
+  if (num < 0) return 0;
+  if (num > 1 && num <= 10) return num / 10;
+  if (num > 10) return 1;
+  return Math.max(0, Math.min(1, num));
 }
 
 // ─── MEMORY CATEGORIES ───────────────────────────────────────────────────────
