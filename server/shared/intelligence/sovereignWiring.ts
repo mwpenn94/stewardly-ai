@@ -312,6 +312,11 @@ export async function sovereignInvokeLLM(params: SovereignLLMParams): Promise<Co
       success: true,
     });
 
+    // Update budget spend tracking
+    if (costUsd > 0 && params.userId) {
+      updateBudgetSpend(params.userId, costUsd).catch(() => {});
+    }
+
     // Update canary state — healthy
     updateCanaryState(provider, true);
     recordCircuitBreakerSuccess();
@@ -399,6 +404,11 @@ async function attemptFailover(params: SovereignLLMParams, failedProvider: strin
         failoverFrom: failedProvider,
         success: true,
       });
+
+      // Update budget spend for fallback call
+      if (fallbackCostUsd > 0 && params.userId) {
+        updateBudgetSpend(params.userId, fallbackCostUsd).catch(() => {});
+      }
 
       // Fallback succeeded — mark it healthy
       updateCanaryState(fallback, true);
@@ -499,9 +509,10 @@ function logRoutingDecision(entry: RoutingDecisionEntry): void {
   }
 }
 
-// Cached DB and schema references for flush (avoid dynamic import on every 30s cycle)
+// Cached DB, schema, and drizzle-orm references (avoid dynamic import on every call)
 let _dbModuleCache: { getDb: () => Promise<any> } | null = null;
 let _schemaModuleCache: typeof import("../../../drizzle/schema") | null = null;
+let _drizzleOrmCache: typeof import("drizzle-orm") | null = null;
 
 async function getCachedDb() {
   if (!_dbModuleCache) {
@@ -609,6 +620,37 @@ async function flushRoutingDecisions(): Promise<void> {
       routingDecisionBuffer.unshift(...entries);
     }
     console.warn("[Sovereign] Routing decision flush failed:", flushErr instanceof Error ? flushErr.message : flushErr);
+  }
+}
+
+/**
+ * Update budget spend after a successful LLM call.
+ * Increments currentSpendUsd in the sovereignBudgets table.
+ * Non-fatal: budget tracking is best-effort.
+ */
+async function updateBudgetSpend(userId: number, costUsd: number): Promise<void> {
+  try {
+    const db = await getCachedDb();
+    if (!db) return;
+
+    const schema = await getCachedSchema();
+    if (!schema?.sovereignBudgets) return;
+
+    // Use cached drizzle-orm imports
+    if (!_drizzleOrmCache) {
+      _drizzleOrmCache = await import("drizzle-orm");
+    }
+    const { sql, eq } = _drizzleOrmCache;
+
+    // Atomic increment to avoid race conditions between concurrent LLM calls
+    await db.update(schema.sovereignBudgets)
+      .set({
+        currentSpendUsd: sql`${schema.sovereignBudgets.currentSpendUsd} + ${costUsd}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.sovereignBudgets.userId, userId));
+  } catch {
+    // Non-fatal: budget tracking is best-effort
   }
 }
 
