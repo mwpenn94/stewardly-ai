@@ -1,34 +1,41 @@
 /**
  * Tests for SSE Stream Handler
+ *
+ * Tests cover: SSE event types, fallback simulation, error handling,
+ * disconnect cleanup, and — critically — context injection parity
+ * between native streaming and fallback paths.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// ── Unit tests for helper functions (extracted via import) ────────────────────
+// Mock getQuickContext before importing the module
+vi.mock("../stewardlyWiring", () => ({
+  getQuickContext: vi.fn().mockResolvedValue("mock platform context for user"),
+}));
+
+// Mock logger to avoid real logging in tests
+vi.mock("../../_core/logger", () => ({
+  logger: {
+    debug: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  },
+}));
 
 describe("SSE Stream Handler", () => {
-  describe("chunkByWords", () => {
-    // We test the chunking logic by importing the module and testing indirectly
-    it("should split text into word-sized chunks", async () => {
-      // Import the module to test the internal chunking
-      const mod = await import("./sseStreamHandler");
-      // The chunkByWords function is not exported, but we can test the fallback
-      // simulation behavior which uses it internally
-      expect(mod.createSSEStreamHandler).toBeDefined();
-    });
-  });
-
   describe("SSE Event Types", () => {
-    it("should define all required event types", () => {
-      // Verify the type contract
+    it("should define all required event types including tool_status", () => {
       const tokenEvent = { type: "token" as const, content: "Hello" };
       const doneEvent = { type: "done" as const, sessionId: 1, totalTokens: 100 };
       const errorEvent = { type: "error" as const, message: "fail" };
       const heartbeatEvent = { type: "heartbeat" as const };
+      const toolEvent = { type: "tool_status" as const, toolName: "search" };
 
       expect(tokenEvent.type).toBe("token");
       expect(doneEvent.type).toBe("done");
       expect(errorEvent.type).toBe("error");
       expect(heartbeatEvent.type).toBe("heartbeat");
+      expect(toolEvent.type).toBe("tool_status");
     });
   });
 
@@ -38,6 +45,7 @@ describe("SSE Stream Handler", () => {
     let writtenData: string[];
 
     beforeEach(() => {
+      vi.clearAllMocks();
       writtenData = [];
       mockReq = {
         on: vi.fn(),
@@ -54,21 +62,16 @@ describe("SSE Stream Handler", () => {
 
     it("should set correct SSE headers", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-
       const mockContextualLLM = vi.fn().mockResolvedValue({
         choices: [{ message: { content: "Hello world" } }],
         usage: { total_tokens: 10 },
       });
 
-      // Don't await — we need to check headers immediately
-      const promise = createSSEStreamHandler(mockReq, mockRes, {
+      await createSSEStreamHandler(mockReq, mockRes, {
         contextualLLM: mockContextualLLM,
         userId: 1,
         messages: [{ role: "user", content: "test" }],
       });
-
-      // Wait for the handler to complete
-      await promise;
 
       expect(mockRes.setHeader).toHaveBeenCalledWith("Content-Type", "text/event-stream");
       expect(mockRes.setHeader).toHaveBeenCalledWith("Cache-Control", "no-cache");
@@ -79,7 +82,6 @@ describe("SSE Stream Handler", () => {
 
     it("should emit token events and a done event in fallback mode", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-
       const mockContextualLLM = vi.fn().mockResolvedValue({
         choices: [{ message: { content: "Hello world from the AI" } }],
         usage: { total_tokens: 10 },
@@ -91,7 +93,6 @@ describe("SSE Stream Handler", () => {
         messages: [{ role: "user", content: "test" }],
       });
 
-      // Should have written some token events and a done event
       const events = writtenData.map(d => {
         const match = d.match(/^data: (.+)\n\n$/);
         return match ? JSON.parse(match[1]) : null;
@@ -103,14 +104,12 @@ describe("SSE Stream Handler", () => {
       expect(tokenEvents.length).toBeGreaterThan(0);
       expect(doneEvents.length).toBe(1);
 
-      // Concatenated tokens should equal the original content
       const reconstructed = tokenEvents.map((e: any) => e.content).join("");
       expect(reconstructed).toBe("Hello world from the AI");
     });
 
     it("should emit error event when contextualLLM fails", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-
       const mockContextualLLM = vi.fn().mockRejectedValue(new Error("LLM is down"));
 
       await createSSEStreamHandler(mockReq, mockRes, {
@@ -131,7 +130,6 @@ describe("SSE Stream Handler", () => {
 
     it("should register disconnect handler on request", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-
       const mockContextualLLM = vi.fn().mockResolvedValue({
         choices: [{ message: { content: "Hi" } }],
       });
@@ -147,7 +145,6 @@ describe("SSE Stream Handler", () => {
 
     it("should call res.end() when stream completes", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-
       const mockContextualLLM = vi.fn().mockResolvedValue({
         choices: [{ message: { content: "Done" } }],
       });
@@ -163,7 +160,6 @@ describe("SSE Stream Handler", () => {
 
     it("should include sessionId in done event when provided", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-
       const mockContextualLLM = vi.fn().mockResolvedValue({
         choices: [{ message: { content: "Hi" } }],
         usage: { total_tokens: 5 },
@@ -183,6 +179,92 @@ describe("SSE Stream Handler", () => {
 
       const doneEvent = events.find((e: any) => e.type === "done");
       expect(doneEvent.sessionId).toBe(42);
+    });
+
+    it("should call getQuickContext for context injection when userId is provided", async () => {
+      const { createSSEStreamHandler } = await import("./sseStreamHandler");
+      const { getQuickContext } = await import("../stewardlyWiring");
+
+      const mockContextualLLM = vi.fn().mockResolvedValue({
+        choices: [{ message: { content: "Response" } }],
+      });
+
+      await createSSEStreamHandler(mockReq, mockRes, {
+        contextualLLM: mockContextualLLM,
+        userId: 123,
+        contextType: "chat",
+        messages: [{ role: "user", content: "What is my portfolio?" }],
+      });
+
+      expect(getQuickContext).toHaveBeenCalledWith(123, "What is my portfolio?", "chat");
+    });
+
+    it("should skip context injection when userId is 0 (system-level call)", async () => {
+      const { createSSEStreamHandler } = await import("./sseStreamHandler");
+      const { getQuickContext } = await import("../stewardlyWiring");
+
+      const mockContextualLLM = vi.fn().mockResolvedValue({
+        choices: [{ message: { content: "System response" } }],
+      });
+
+      await createSSEStreamHandler(mockReq, mockRes, {
+        contextualLLM: mockContextualLLM,
+        userId: 0,
+        messages: [{ role: "user", content: "system query" }],
+      });
+
+      expect(getQuickContext).not.toHaveBeenCalled();
+    });
+
+    it("should gracefully handle getQuickContext failure and still stream", async () => {
+      const { createSSEStreamHandler } = await import("./sseStreamHandler");
+      const { getQuickContext } = await import("../stewardlyWiring");
+      (getQuickContext as any).mockRejectedValueOnce(new Error("DB connection failed"));
+
+      const mockContextualLLM = vi.fn().mockResolvedValue({
+        choices: [{ message: { content: "Fallback response" } }],
+      });
+
+      await createSSEStreamHandler(mockReq, mockRes, {
+        contextualLLM: mockContextualLLM,
+        userId: 1,
+        messages: [{ role: "user", content: "test" }],
+      });
+
+      const events = writtenData.map(d => {
+        const match = d.match(/^data: (.+)\n\n$/);
+        return match ? JSON.parse(match[1]) : null;
+      }).filter(Boolean);
+
+      const tokenEvents = events.filter((e: any) => e.type === "token");
+      expect(tokenEvents.length).toBeGreaterThan(0);
+
+      const reconstructed = tokenEvents.map((e: any) => e.content).join("");
+      expect(reconstructed).toBe("Fallback response");
+    });
+
+    it("should pass original messages to contextualLLM fallback to avoid double injection", async () => {
+      const { createSSEStreamHandler } = await import("./sseStreamHandler");
+
+      const mockContextualLLM = vi.fn().mockResolvedValue({
+        choices: [{ message: { content: "OK" } }],
+      });
+
+      const originalMessages = [
+        { role: "system", content: "You are a helpful assistant" },
+        { role: "user", content: "test" },
+      ];
+
+      await createSSEStreamHandler(mockReq, mockRes, {
+        contextualLLM: mockContextualLLM,
+        userId: 1,
+        messages: originalMessages,
+      });
+
+      // contextualLLM should receive the ORIGINAL messages, not enriched ones
+      // (contextualLLM handles its own context injection internally)
+      const callArgs = mockContextualLLM.mock.calls[0][0];
+      expect(callArgs.messages).toBe(originalMessages);
     });
   });
 });

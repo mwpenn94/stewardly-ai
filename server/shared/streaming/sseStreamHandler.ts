@@ -3,10 +3,12 @@
  *
  * Supports two modes:
  * 1. Native streaming: If the LLM provider supports `stream: true`, tokens are
- *    forwarded in real-time as SSE `data:` frames.
+ *    forwarded in real-time as SSE `data:` frames. Context is injected BEFORE
+ *    the streaming call via getQuickContext, ensuring RAG parity with the
+ *    non-streaming contextualLLM path.
  * 2. Fallback simulation: If streaming is not supported, the full response is
  *    chunked into ~5-token segments emitted with 20ms delays to simulate a
- *    streaming UX.
+ *    streaming UX. Uses contextualLLM which handles its own context injection.
  *
  * Wire this into an Express POST endpoint; the handler manages the full SSE
  * lifecycle including headers, heartbeat, disconnect cleanup, and error framing.
@@ -14,6 +16,8 @@
 
 import type { Request, Response } from "express";
 import { logger } from "../../_core/logger";
+import { getQuickContext } from "../stewardlyWiring";
+import type { ContextType } from "../stewardlyWiring";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -37,11 +41,12 @@ export interface SSEStreamConfig {
 }
 
 export interface SSEEvent {
-  type: "token" | "done" | "error" | "heartbeat";
+  type: "token" | "done" | "error" | "heartbeat" | "tool_status";
   content?: string;
   sessionId?: number;
   totalTokens?: number;
   message?: string;
+  toolName?: string;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -49,6 +54,7 @@ export interface SSEEvent {
 const FALLBACK_CHUNK_SIZE = 5; // words per simulated chunk
 const FALLBACK_DELAY_MS = 20; // ms between simulated chunks
 const HEARTBEAT_INTERVAL_MS = 15_000; // keep-alive every 15s
+const MAX_CONTEXT_CHARS = 12_000; // match contextualLLM's safety limit
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -85,6 +91,59 @@ function chunkByWords(text: string, size: number): string[] {
   }
   if (current) chunks.push(current);
   return chunks;
+}
+
+/**
+ * Extract the last user message as a query string for context assembly.
+ * Mirrors the extractQuery logic in contextualLLM.ts.
+ */
+function extractQuery(messages: Array<{ role: string; content: any }>): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === "user") {
+      const content = messages[i].content;
+      if (typeof content === "string") return content.slice(0, 500);
+      if (Array.isArray(content)) {
+        const textPart = content.find((p: any) => p.type === "text");
+        if (textPart) return textPart.text?.slice(0, 500) || "";
+      }
+    }
+  }
+  return "";
+}
+
+/**
+ * Inject platform context into the system message of a messages array.
+ * Mirrors the injectContext logic in contextualLLM.ts, including the
+ * MAX_CONTEXT_CHARS safety truncation.
+ */
+function injectStreamContext(
+  messages: Array<{ role: string; content: any }>,
+  platformContext: string,
+): Array<{ role: string; content: any }> {
+  if (!platformContext) return messages;
+
+  let safeContext = platformContext;
+  if (safeContext.length > MAX_CONTEXT_CHARS) {
+    logger.warn(
+      { originalLength: safeContext.length, truncatedTo: MAX_CONTEXT_CHARS },
+      "[SSE] Platform context exceeded size limit, truncating",
+    );
+    safeContext = safeContext.slice(0, MAX_CONTEXT_CHARS) + "\n[... context truncated for token safety ...]";
+  }
+
+  const contextBlock = `\n<platform_context>\n${safeContext}\n</platform_context>\nUse the above platform context to provide more personalized, data-rich responses. Reference specific details from the user's profile, documents, financial data, and history when relevant.`;
+
+  const enriched = [...messages];
+  const systemIdx = enriched.findIndex((m) => m.role === "system");
+  if (systemIdx >= 0) {
+    enriched[systemIdx] = {
+      ...enriched[systemIdx],
+      content: enriched[systemIdx].content + contextBlock,
+    };
+  } else {
+    enriched.unshift({ role: "system", content: contextBlock.trim() });
+  }
+  return enriched;
 }
 
 // ── Main Handler ──────────────────────────────────────────────────────────────
@@ -128,14 +187,33 @@ export async function createSSEStreamHandler(
   }, HEARTBEAT_INTERVAL_MS);
 
   try {
+    // ── Assemble platform context ONCE for both paths ─────────────
+    // This ensures RAG parity: native streaming gets the same context
+    // injection as the fallback contextualLLM path.
+    let enrichedMessages = messages;
+    if (userId) {
+      try {
+        const query = extractQuery(messages);
+        const platformContext = await getQuickContext(userId, query, contextType as ContextType);
+        enrichedMessages = injectStreamContext(messages, platformContext);
+        logger.debug(
+          { operation: "sseStream.contextInjected", userId, contextLength: platformContext.length },
+          "[SSE] Platform context injected into streaming messages",
+        );
+      } catch (ctxErr: any) {
+        // Best-effort — don't block the stream for context assembly failure
+        logger.warn(
+          { operation: "sseStream.contextFailed", userId, error: ctxErr.message },
+          "[SSE] Context assembly failed, proceeding without context",
+        );
+      }
+    }
+
     // ── Attempt native streaming via fetch with stream: true ──────
-    // The current invokeLLM uses fetch directly, so we can attempt
-    // streaming by adding stream: true to the payload. If it fails
-    // or the provider doesn't support it, we fall back to simulation.
     let streamed = false;
 
     try {
-      const streamResponse = await attemptNativeStream(config, abortController.signal);
+      const streamResponse = await attemptNativeStream(enrichedMessages, config, abortController.signal);
       if (streamResponse) {
         streamed = true;
         let totalContent = "";
@@ -166,6 +244,10 @@ export async function createSSEStreamHandler(
     }
 
     // ── Fallback: call contextualLLM normally, simulate streaming ──
+    // Note: contextualLLM will inject context again, but since the
+    // enrichedMessages already have context, contextualLLM's injection
+    // is additive. For the fallback path, we pass the ORIGINAL messages
+    // to avoid double injection (contextualLLM handles its own context).
     if (!streamed && !disconnected) {
       const result = await contextualLLM({
         userId,
@@ -211,9 +293,11 @@ export async function createSSEStreamHandler(
 
 /**
  * Attempt to call the LLM API with `stream: true` using fetch.
+ * Uses the context-enriched messages to ensure RAG parity with non-streaming.
  * Returns an async iterable of SSE chunks, or null if not supported.
  */
 async function attemptNativeStream(
+  enrichedMessages: Array<{ role: string; content: any }>,
   config: SSEStreamConfig,
   signal: AbortSignal,
 ): Promise<AsyncIterable<string> | null> {
@@ -228,7 +312,7 @@ async function attemptNativeStream(
 
   const payload: Record<string, unknown> = {
     model: "gemini-2.5-flash",
-    messages: config.messages,
+    messages: enrichedMessages, // Uses context-enriched messages, not raw
     stream: true,
     max_tokens: 32768,
   };
