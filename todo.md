@@ -2963,3 +2963,23 @@
 - [x] Fix: added modelVersion varchar(64) column to messages table via ALTER TABLE, removed duplicate logger import
 - [x] Verified: server starts cleanly, 2119/2121 tests pass (2 flaky timeouts in consolidatedPhase3, pre-existing)
 - [x] Discovered: 246 tables have camelCase vs snake_case column mismatches — systemic issue from GitHub merge, needs broader migration (tracked separately)
+
+## Full Schema Migration, Flaky Tests Fix, Startup Validation
+- [ ] Analyze full schema diff — categorize tables by migration type (add missing columns vs rename snake_case)
+- [ ] Generate and execute ALTER TABLE ADD COLUMN for columns missing in DB but defined in Drizzle schema
+- [ ] Verify all critical-path tables (messages, conversations, documents, users, etc.) are fully aligned
+- [ ] Fix 2 flaky consolidatedPhase3 tests (timeout in Adaptive Rate Management)
+- [ ] Add startup schema validation check that compares Drizzle schema columns against actual DB
+- [ ] Run all tests and verify everything passes
+
+## Schema Migration & Recursive Optimization (2026-04-01)
+- [x] Complete schema migration: CREATE 5 missing tables (user_autonomy_profiles, improvement_signals, improvement_hypotheses, hypothesis_test_results, reasoning_traces)
+- [x] Complete schema migration: ADD 6 missing columns to onboarding_progress
+- [x] Fix schema validator to handle camelCase column names (eliminate 52 false alarms)
+- [ ] Recursive optimization Landscape pass: Audit UI/UX for desktop and mobile
+- [ ] Recursive optimization Depth pass: Implement UI/UX fixes and improvements
+- [ ] Virtual user testing: Navigate all major flows and fix issues found
+- [ ] Test suite optimization: Expand coverage and fix gaps
+- [ ] Create comprehensive guide with design specs (standalone document)
+- [ ] Build admin-only in-app guide and design specs page
+- [x] Copy recursive-optimization-converged-prompt(4).md to project shared files

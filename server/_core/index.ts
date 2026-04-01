@@ -14,6 +14,7 @@ import { serveStatic, setupVite } from "./vite";
 import { initWebSocket } from "../services/websocketNotifications";
 import { initScheduler } from "../services/scheduler";
 import { validateRequiredEnvVars } from "./envValidation";
+import { validateDatabaseSchema } from "./schemaValidation";
 import { logger } from "./logger";
 import { requestIdMiddleware } from "./requestId";
 import { generalLimiter, authLimiter, sensitiveTrpcGuard } from "./rateLimiter";
@@ -43,6 +44,11 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   // Validate required environment variables (fails fast in production)
   validateRequiredEnvVars();
+
+  // Validate database schema matches Drizzle definitions (non-blocking, logs warnings)
+  validateDatabaseSchema().catch((err) =>
+    logger.error({ operation: "schemaValidation", error: String(err) }, "Schema validation failed")
+  );
 
   const app = express();
   const server = createServer(app);

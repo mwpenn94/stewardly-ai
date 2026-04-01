@@ -1,0 +1,446 @@
+{
+  "missingTables": [
+    "user_autonomy_profiles",
+    "improvement_signals",
+    "improvement_hypotheses",
+    "hypothesis_test_results",
+    "reasoning_traces"
+  ],
+  "missingColumns": [
+    {
+      "table": "gate_reviews",
+      "column": "action_id",
+      "isNewTable": false
+    },
+    {
+      "table": "agent_instances",
+      "column": "user_id",
+      "isNewTable": false
+    },
+    {
+      "table": "agent_instances",
+      "column": "firm_id",
+      "isNewTable": false
+    },
+    {
+      "table": "agent_instances",
+      "column": "workflow_type",
+      "isNewTable": false
+    },
+    {
+      "table": "agent_actions",
+      "column": "agent_instance_id",
+      "isNewTable": false
+    },
+    {
+      "table": "agent_actions",
+      "column": "action_type",
+      "isNewTable": false
+    },
+    {
+      "table": "insurance_quotes",
+      "column": "client_id",
+      "isNewTable": false
+    },
+    {
+      "table": "insurance_quotes",
+      "column": "professional_id",
+      "isNewTable": false
+    },
+    {
+      "table": "insurance_quotes",
+      "column": "quote_run_id",
+      "isNewTable": false
+    },
+    {
+      "table": "insurance_applications",
+      "column": "client_id",
+      "isNewTable": false
+    },
+    {
+      "table": "insurance_applications",
+      "column": "professional_id",
+      "isNewTable": false
+    },
+    {
+      "table": "insurance_applications",
+      "column": "carrier_name",
+      "isNewTable": false
+    },
+    {
+      "table": "advisory_executions",
+      "column": "client_id",
+      "isNewTable": false
+    },
+    {
+      "table": "advisory_executions",
+      "column": "professional_id",
+      "isNewTable": false
+    },
+    {
+      "table": "advisory_executions",
+      "column": "execution_type",
+      "isNewTable": false
+    },
+    {
+      "table": "advisory_executions",
+      "column": "execution_data_json",
+      "isNewTable": false
+    },
+    {
+      "table": "advisory_executions",
+      "column": "tax_impact_estimate",
+      "isNewTable": false
+    },
+    {
+      "table": "estate_documents",
+      "column": "client_id",
+      "isNewTable": false
+    },
+    {
+      "table": "estate_documents",
+      "column": "document_type",
+      "isNewTable": false
+    },
+    {
+      "table": "estate_documents",
+      "column": "draft_version",
+      "isNewTable": false
+    },
+    {
+      "table": "estate_documents",
+      "column": "draft_content_url",
+      "isNewTable": false
+    },
+    {
+      "table": "estate_documents",
+      "column": "draft_content_hash",
+      "isNewTable": false
+    },
+    {
+      "table": "premium_finance_cases",
+      "column": "client_id",
+      "isNewTable": false
+    },
+    {
+      "table": "premium_finance_cases",
+      "column": "professional_id",
+      "isNewTable": false
+    },
+    {
+      "table": "premium_finance_cases",
+      "column": "insurance_policy_ref",
+      "isNewTable": false
+    },
+    {
+      "table": "carrier_connections",
+      "column": "firm_id",
+      "isNewTable": false
+    },
+    {
+      "table": "carrier_connections",
+      "column": "carrier_name",
+      "isNewTable": false
+    },
+    {
+      "table": "data_sources",
+      "column": "firm_id",
+      "isNewTable": false
+    },
+    {
+      "table": "ingestion_jobs",
+      "column": "data_source_id",
+      "isNewTable": false
+    },
+    {
+      "table": "ingestion_jobs",
+      "column": "triggered_by",
+      "isNewTable": false
+    },
+    {
+      "table": "ingestion_jobs",
+      "column": "progress_pct",
+      "isNewTable": false
+    },
+    {
+      "table": "ingestion_jobs",
+      "column": "records_processed",
+      "isNewTable": false
+    },
+    {
+      "table": "ingestion_jobs",
+      "column": "records_created",
+      "isNewTable": false
+    },
+    {
+      "table": "ingestion_jobs",
+      "column": "records_updated",
+      "isNewTable": false
+    },
+    {
+      "table": "ingestion_jobs",
+      "column": "records_skipped",
+      "isNewTable": false
+    },
+    {
+      "table": "ingestion_jobs",
+      "column": "records_errored",
+      "isNewTable": false
+    },
+    {
+      "table": "ingestion_jobs",
+      "column": "error_log",
+      "isNewTable": false
+    },
+    {
+      "table": "ingestion_jobs",
+      "column": "started_at",
+      "isNewTable": false
+    },
+    {
+      "table": "ingested_records",
+      "column": "data_source_id",
+      "isNewTable": false
+    },
+    {
+      "table": "ingested_records",
+      "column": "ingestion_job_id",
+      "isNewTable": false
+    },
+    {
+      "table": "ingested_records",
+      "column": "record_type",
+      "isNewTable": false
+    },
+    {
+      "table": "ingested_records",
+      "column": "entity_id",
+      "isNewTable": false
+    },
+    {
+      "table": "web_scrape_results",
+      "column": "data_source_id",
+      "isNewTable": false
+    },
+    {
+      "table": "web_scrape_results",
+      "column": "ingestion_job_id",
+      "isNewTable": false
+    },
+    {
+      "table": "document_extractions",
+      "column": "user_id",
+      "isNewTable": false
+    },
+    {
+      "table": "document_extractions",
+      "column": "document_id",
+      "isNewTable": false
+    },
+    {
+      "table": "document_extractions",
+      "column": "ingestion_job_id",
+      "isNewTable": false
+    },
+    {
+      "table": "document_extractions",
+      "column": "extraction_type",
+      "isNewTable": false
+    },
+    {
+      "table": "document_extractions",
+      "column": "extracted_data",
+      "isNewTable": false
+    },
+    {
+      "table": "document_extractions",
+      "column": "extracted_entities",
+      "isNewTable": false
+    },
+    {
+      "table": "document_extractions",
+      "column": "extracted_amounts",
+      "isNewTable": false
+    },
+    {
+      "table": "document_extractions",
+      "column": "extraction_confidence",
+      "isNewTable": false
+    },
+    {
+      "table": "onboarding_progress",
+      "column": "path",
+      "isNewTable": false
+    },
+    {
+      "table": "onboarding_progress",
+      "column": "current_step",
+      "isNewTable": false
+    },
+    {
+      "table": "onboarding_progress",
+      "column": "total_steps",
+      "isNewTable": false
+    },
+    {
+      "table": "onboarding_progress",
+      "column": "completed_steps",
+      "isNewTable": false
+    },
+    {
+      "table": "onboarding_progress",
+      "column": "completed_at",
+      "isNewTable": false
+    },
+    {
+      "table": "user_autonomy_profiles",
+      "column": "id",
+      "isNewTable": true
+    },
+    {
+      "table": "user_autonomy_profiles",
+      "column": "user_id",
+      "isNewTable": true
+    },
+    {
+      "table": "user_autonomy_profiles",
+      "column": "level",
+      "isNewTable": true
+    },
+    {
+      "table": "user_autonomy_profiles",
+      "column": "trust_score",
+      "isNewTable": true
+    },
+    {
+      "table": "user_autonomy_profiles",
+      "column": "total_interactions",
+      "isNewTable": true
+    },
+    {
+      "table": "user_autonomy_profiles",
+      "column": "successful_actions",
+      "isNewTable": true
+    },
+    {
+      "table": "user_autonomy_profiles",
+      "column": "overridden_actions",
+      "isNewTable": true
+    },
+    {
+      "table": "user_autonomy_profiles",
+      "column": "escalations",
+      "isNewTable": true
+    },
+    {
+      "table": "user_autonomy_profiles",
+      "column": "last_escalation",
+      "isNewTable": true
+    },
+    {
+      "table": "user_autonomy_profiles",
+      "column": "level_history",
+      "isNewTable": true
+    },
+    {
+      "table": "improvement_signals",
+      "column": "id",
+      "isNewTable": true
+    },
+    {
+      "table": "improvement_signals",
+      "column": "signal_type",
+      "isNewTable": true
+    },
+    {
+      "table": "improvement_hypotheses",
+      "column": "id",
+      "isNewTable": true
+    },
+    {
+      "table": "improvement_hypotheses",
+      "column": "signal_id",
+      "isNewTable": true
+    },
+    {
+      "table": "improvement_hypotheses",
+      "column": "pass_type",
+      "isNewTable": true
+    },
+    {
+      "table": "hypothesis_test_results",
+      "column": "id",
+      "isNewTable": true
+    },
+    {
+      "table": "hypothesis_test_results",
+      "column": "hypothesis_id",
+      "isNewTable": true
+    },
+    {
+      "table": "hypothesis_test_results",
+      "column": "session_id",
+      "isNewTable": true
+    },
+    {
+      "table": "hypothesis_test_results",
+      "column": "quality_before",
+      "isNewTable": true
+    },
+    {
+      "table": "hypothesis_test_results",
+      "column": "quality_after",
+      "isNewTable": true
+    },
+    {
+      "table": "hypothesis_test_results",
+      "column": "cost_delta",
+      "isNewTable": true
+    },
+    {
+      "table": "hypothesis_test_results",
+      "column": "created_at",
+      "isNewTable": true
+    },
+    {
+      "table": "reasoning_traces",
+      "column": "id",
+      "isNewTable": true
+    },
+    {
+      "table": "reasoning_traces",
+      "column": "session_id",
+      "isNewTable": true
+    },
+    {
+      "table": "reasoning_traces",
+      "column": "step_number",
+      "isNewTable": true
+    },
+    {
+      "table": "reasoning_traces",
+      "column": "thought",
+      "isNewTable": true
+    },
+    {
+      "table": "reasoning_traces",
+      "column": "action",
+      "isNewTable": true
+    },
+    {
+      "table": "reasoning_traces",
+      "column": "observation",
+      "isNewTable": true
+    },
+    {
+      "table": "reasoning_traces",
+      "column": "tool_name",
+      "isNewTable": true
+    }
+  ],
+  "summary": {
+    "missingTables": 5,
+    "missingColumns": 57,
+    "total": 62
+  }
+}

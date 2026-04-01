@@ -1,0 +1,11 @@
+{
+  "trulyMissingTables": [],
+  "trulyMissingColumns": [],
+  "falseAlarmColumns": 52,
+  "summary": {
+    "missingTables": 0,
+    "missingColumns": 0,
+    "falseAlarms": 52,
+    "totalRealIssues": 0
+  }
+}
