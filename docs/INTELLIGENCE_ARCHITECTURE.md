@@ -1,6 +1,6 @@
 # Stewardly Intelligence Architecture
 
-> Last updated: 2026-04-01 | Pass 14 (Depth — Wiring Completeness)
+> Last updated: 2026-04-01 | Pass 16 (Adversarial — DRY Consolidation + Silent Failure Fix)
 
 ## Overview
 
@@ -39,7 +39,9 @@ import { contextualLLM } from "../services/contextualLLM";
 │  Re-exports: contextualLLM, getQuickContext,        │
 │              rawInvokeLLM, normalizeQualityScore,   │
 │              executeReActLoop, detectSignals,        │
-│              createSSEStreamHandler, resolveAIConfig │
+│              createSSEStreamHandler, resolveAIConfig,│
+│              extractQuery, injectContext,            │
+│              MAX_CONTEXT_CHARS                       │
 └──────────────────────┬──────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────┐

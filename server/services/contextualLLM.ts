@@ -126,6 +126,13 @@ Use the above platform context to provide more personalized, data-rich responses
         ...result[systemIdx],
         content: existing + "\n" + contextBlock,
       };
+    } else {
+      // System message has array content blocks (e.g., OpenAI vision format).
+      // Context injection is skipped to avoid breaking structured content.
+      logger.warn(
+        "[injectContext] System message has non-string content — context injection skipped. "
+        + "Consider converting to string content or using a separate system message.",
+      );
     }
   } else {
     // Prepend a system message with context
