@@ -1,6 +1,6 @@
 import { publicProcedure, router } from "../_core/trpc";
 import { z } from "zod";
-import { contextualLLM } from "../services/contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { buildSystemPrompt } from "../prompts";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
 

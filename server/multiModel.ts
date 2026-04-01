@@ -5,7 +5,7 @@
  * and synthesizes their responses into a single cohesive answer.
  */
 
-import { contextualLLM } from "./services/contextualLLM";
+import { contextualLLM } from "./shared/stewardlyWiring";
 
 // ─── PERSPECTIVE DEFINITIONS ────────────────────────────────────────────────
 

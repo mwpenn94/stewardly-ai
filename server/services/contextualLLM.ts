@@ -5,7 +5,7 @@
  * deep platform context (RAG) into every LLM call.
  * 
  * Usage: Replace `import { invokeLLM } from "../_core/llm"`
- * with `import { contextualLLM } from "../services/contextualLLM"`
+ * with `import { contextualLLM } from "./shared/stewardlyWiring"` (or `"../shared/stewardlyWiring"` from routers)
  * 
  * The wrapper:
  * 1. Assembles deep context for the given userId + query
@@ -16,6 +16,14 @@
 import { invokeLLM } from "../_core/llm";
 import { getQuickContext, type ContextType } from "./deepContextAssembler";
 import { logger } from "../_core/logger";
+
+/**
+ * Maximum character length for injected platform context.
+ * ~12,000 chars ≈ ~3,000 tokens, leaving ample room for the user's
+ * messages and the model's response within typical context windows.
+ * Adjust upward if using models with 128k+ context windows.
+ */
+const MAX_CONTEXT_CHARS = 12_000;
 
 interface ContextualLLMParams {
   userId?: number | null;
@@ -43,7 +51,7 @@ export async function contextualLLM(params: ContextualLLMParams) {
       platformContext = await getQuickContext(userId, effectiveQuery, contextType);
     } catch (e) {
       // Best-effort — don't block the LLM call
-      logger.warn( { operation: "contextualLLM" },"[contextualLLM] Context assembly failed:", (e as Error).message);
+      logger.warn({ operation: "contextualLLM", userId, error: String(e) }, "[contextualLLM] Context assembly failed");
     }
   }
   
@@ -84,16 +92,27 @@ function extractQuery(messages: Array<{ role: string; content: any }>): string {
 /**
  * Inject platform context into the system message.
  * If no system message exists, prepend one.
+ * Truncates context to MAX_CONTEXT_CHARS to prevent token overflow.
  */
 function injectContext(
   messages: Array<{ role: string; content: any }>,
   platformContext: string
 ): Array<{ role: string; content: any }> {
   if (!platformContext) return messages;
+
+  // Safety truncation to prevent token overflow with large user profiles
+  let safeContext = platformContext;
+  if (safeContext.length > MAX_CONTEXT_CHARS) {
+    logger.warn(
+      { originalLength: safeContext.length, truncatedTo: MAX_CONTEXT_CHARS },
+      "[contextualLLM] Platform context exceeded size limit, truncating",
+    );
+    safeContext = safeContext.slice(0, MAX_CONTEXT_CHARS) + "\n[... context truncated for token safety ...]";
+  }
   
   const contextBlock = `
 <platform_context>
-${platformContext}
+${safeContext}
 </platform_context>
 Use the above platform context to provide more personalized, data-rich responses. Reference specific details from the user's profile, documents, financial data, and history when relevant.`;
   

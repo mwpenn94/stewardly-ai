@@ -11,7 +11,7 @@
  */
 
 import { type Tool, type Message } from "./_core/llm";
-import { contextualLLM } from "./services/contextualLLM";
+import { contextualLLM } from "./shared/stewardlyWiring";
 import { callDataApi } from "./_core/dataApi";
 
 // ─── Tool Definitions ────────────────────────────────────────────

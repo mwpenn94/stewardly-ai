@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import {
   integrationProviders,
@@ -691,7 +692,7 @@ export const integrationsRouter = router({
       try {
         const { trackEvent } = await import("../services/exponentialEngine");
         trackEvent({ userId: ctx.user.id, eventType: "page_view", featureKey: "integration_health", metadata: {} }).catch(() => {});
-      } catch {}
+      } catch (e) { logger.debug({ error: String(e) }, "Event tracking failed for integration_health page_view"); }
       return getHealthDashboardData();
     }),
 
@@ -703,7 +704,7 @@ export const integrationsRouter = router({
       try {
         const { trackEvent } = await import("../services/exponentialEngine");
         trackEvent({ userId: ctx.user.id, eventType: "feature_use", featureKey: "integration_improvement", metadata: { checksRun: results.length } }).catch(() => {});
-      } catch {}
+      } catch (e) { logger.debug({ error: String(e) }, "Event tracking failed for integration_improvement"); }
       return { results, checkedAt: new Date() };
     }),
 
@@ -740,7 +741,7 @@ export const integrationsRouter = router({
       const { runAllDataPipelines } = await import("../services/governmentDataPipelines");
       const { trackEvent } = await import("../services/exponentialEngine");
       const results = await runAllDataPipelines();
-      try { await trackEvent({ userId: ctx.user.id, eventType: "feature_use", featureKey: "data_pipeline_run", metadata: { pipelinesRun: results.length } }); } catch {}
+      try { await trackEvent({ userId: ctx.user.id, eventType: "feature_use", featureKey: "data_pipeline_run", metadata: { pipelinesRun: results.length } }); } catch (e) { logger.debug({ error: String(e) }, "Event tracking failed for data_pipeline_run"); }
       return results;
     }),
 

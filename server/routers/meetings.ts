@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { meetings, meetingActionItems } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { contextualLLM } from "../services/contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 async function db() {
   return (await import("../db")).getDb();

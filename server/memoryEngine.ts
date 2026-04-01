@@ -12,6 +12,7 @@
  * Using contextualLLM here would create an infinite circular dependency loop.
  */
 import { invokeLLM } from "./_core/llm";
+import { logger } from "./_core/logger";
 import { getDb } from "./db";
 import { memories, memoryEpisodes } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -69,7 +70,8 @@ export async function extractMemoriesFromMessage(
     return parsed.filter(
       (m: any) => m.category && m.content && typeof m.confidence === "number"
     ).slice(0, 5);
-  } catch {
+  } catch (e) {
+    logger.debug({ operation: "extractMemories", error: String(e) }, "Memory extraction failed, returning empty");
     return [];
   }
 }
@@ -131,7 +133,8 @@ export async function generateEpisodeSummary(
       : "{}";
     const jsonStr = raw.replace(/^```json?\n?/, "").replace(/\n?```$/, "").trim();
     return JSON.parse(jsonStr);
-  } catch {
+  } catch (e) {
+    logger.debug({ operation: "generateEpisodeSummary", error: String(e) }, "Episode summary generation failed, returning null");
     return null;
   }
 }

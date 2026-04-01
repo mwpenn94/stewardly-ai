@@ -7,7 +7,7 @@
 import { getDb } from "./db";
 import { educationModules, educationProgress } from "../drizzle/schema";
 import { eq, and, desc, isNull } from "drizzle-orm";
-import { contextualLLM } from "./services/contextualLLM";
+import { contextualLLM } from "./shared/stewardlyWiring";
 
 // ─── SEED MODULES ───────────────────────────────────────────────
 const SEED_MODULES = [

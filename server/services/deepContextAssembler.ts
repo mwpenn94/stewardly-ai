@@ -25,6 +25,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   documents, documentChunks, userProfiles, suitabilityAssessments,
   conversations, messages, notificationLog, calculatorScenarios,
@@ -409,12 +410,12 @@ export async function assembleDeepContext(request: ContextRequest): Promise<Asse
 
     // 5. Memory engine
     config.includeMemories !== false
-      ? assembleMemoryContext(config.userId).catch(() => "")
+      ? assembleMemoryContext(config.userId).catch((e) => { logger.debug({ userId: config.userId, source: "memory_context", error: String(e) }, "Memory context assembly failed"); return ""; })
       : Promise.resolve(""),
 
     // 6. Knowledge graph
     config.includeMemories !== false
-      ? assembleGraphContext(config.userId).catch(() => "")
+      ? assembleGraphContext(config.userId).catch((e) => { logger.debug({ userId: config.userId, source: "graph_context", error: String(e) }, "Graph context assembly failed"); return ""; })
       : Promise.resolve(""),
 
     // 7. Pipeline data (economic indicators)
@@ -683,9 +684,8 @@ async function searchKBArticles(query: string, limit: number): Promise<string> {
     return articles.map(a =>
       `[KB Article: "${a.title}" (${a.category}/${a.contentType})]\n${a.content.slice(0, 800)}`
     ).join("\n\n");
-  } catch { return ""; }
+  } catch (e) { logger.debug({ source: "knowledge_base", error: String(e) }, "Knowledge base context fetch failed"); return ""; }
 }
-
 async function getUserProfileContext(userId: number): Promise<string> {
   const db = await getDb();
   if (!db) return "";
@@ -731,9 +731,8 @@ async function getPipelineDataContext(): Promise<string> {
   try {
     const { getEconomicDataSummary } = await import("./governmentDataPipelines");
     return await getEconomicDataSummary();
-  } catch { return ""; }
+   } catch (e) { logger.debug({ source: "pipeline_data", error: String(e) }, "Pipeline data context fetch failed"); return ""; }
 }
-
 async function getRecentConversationContext(userId: number, currentConvId?: number): Promise<string> {
   const db = await getDb();
   if (!db) return "";
@@ -793,7 +792,7 @@ async function getIntegrationDataContext(userId: number): Promise<string> {
       });
       parts.push(`Plaid Investment Holdings (${holdings.length} positions, total ~$${totalValue.toLocaleString()}):\n${holdingSummary.join("\n")}`);
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "plaid_holdings", error: String(e) }, "Context source fetch failed silently"); }
 
   // SnapTrade accounts and positions
   try {
@@ -814,7 +813,7 @@ async function getIntegrationDataContext(userId: number): Promise<string> {
       );
       parts.push(`SnapTrade Positions (${positions.length}):\n${posSummary.join("\n")}`);
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "snaptrade_positions", error: String(e) }, "Context source fetch failed silently"); }
 
   // Connected integrations summary
   try {
@@ -839,7 +838,7 @@ async function getIntegrationDataContext(userId: number): Promise<string> {
       );
       parts.push(`Connected Integrations (${connections.length}):\n${connSummary.join("\n")}`);
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "integrations", error: String(e) }, "Context source fetch failed silently"); }
 
   return parts.join("\n\n");
 }
@@ -1004,7 +1003,7 @@ export async function getStructuredIntegrationData(userId: number): Promise<User
         if (!latestSync || syncDate > latestSync) latestSync = syncDate;
       }
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "plaid_holdings_financial", error: String(e) }, "Financial data fetch failed silently"); }
 
   // SnapTrade accounts
   try {
@@ -1025,7 +1024,7 @@ export async function getStructuredIntegrationData(userId: number): Promise<User
         if (!latestSync || syncDate > latestSync) latestSync = syncDate;
       }
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "snaptrade_accounts", error: String(e) }, "Financial data fetch failed silently"); }
 
   // SnapTrade positions
   try {
@@ -1042,7 +1041,7 @@ export async function getStructuredIntegrationData(userId: number): Promise<User
       });
       result.totalInvestedAssets += val;
     }
-  } catch {}
+  } catch (e) { logger.debug({ source: "snaptrade_positions_financial", error: String(e) }, "Financial data fetch failed silently"); }
 
   result.lastSyncTimestamp = latestSync ? latestSync.toISOString() : null;
   return result;
@@ -1075,7 +1074,7 @@ export async function getPipelineRates(): Promise<Record<string, number>> {
         }
       }
     }
-  } catch {}
+  } catch (e) { logger.debug({ source: "pipeline_rates", error: String(e) }, "Pipeline rates fetch failed silently"); }
   return rates;
 }
 

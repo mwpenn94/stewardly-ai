@@ -13,6 +13,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import { dataSources, ingestionJobs, ingestedRecords } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 import crypto from "crypto";
@@ -400,7 +401,7 @@ async function loadWebhookFromDb(webhookId: string): Promise<boolean> {
         });
         return true;
       }
-    } catch {}
+    } catch (e) { logger.debug({ webhookId, error: String(e) }, "Failed to parse webhook config from DB"); }
   }
   return false;
 }
@@ -438,7 +439,7 @@ export async function listWebhooks(): Promise<WebhookConfig[]> {
           webhookRegistry.set(config.webhookId, { ...wh, secretKey: config.secretKey || "" });
         }
       }
-    } catch {}
+    } catch (e) { logger.debug({ sourceId: src.id, error: String(e) }, "Failed to parse webhook config during listing"); }
   }
   return webhooks;
 }
