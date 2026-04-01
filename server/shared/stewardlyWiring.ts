@@ -29,3 +29,33 @@ export type { ReActConfig, ReActTrace, ReActResult } from "./intelligence/reactL
 
 // ── Quality score normalization from shared types ─────────────────
 export { normalizeQualityScore } from "./intelligence/types";
+
+// ── Recursive Improvement Engine ──────────────────────────────────
+export { detectSignals, checkConvergence, antiRegressionCheck } from "./engine/improvementEngine";
+export type { Signal, ConvergenceResult, QualityDimensions, RegressionResult } from "./engine/improvementEngine";
+
+// ── SSE Streaming ─────────────────────────────────────────────────
+export { createSSEStreamHandler } from "./streaming/sseStreamHandler";
+export type { SSEStreamConfig, SSEEvent } from "./streaming/sseStreamHandler";
+
+// ── AI Config Resolution (5-layer system) ──────────────────────
+export {
+  resolveAIConfig as resolveSharedAIConfig,
+  buildLayerOverlayPrompt as buildSharedLayerOverlayPrompt,
+  validateInheritance,
+  DEFAULT_CONFIG,
+  createLayerHandlers,
+  createAllLayerHandlers,
+  hasMinRole,
+  LAYER_NAMES,
+  FIELD_MERGE_STRATEGIES,
+} from "./config";
+export type {
+  ResolvedAIConfig,
+  LayerLevel,
+  ConfigStore,
+  LayerSettings,
+  LayerStore,
+  AuthContext,
+  LayerHandlers,
+} from "./config";
