@@ -48,7 +48,7 @@ import {
 } from "./prompts";
 import { extractMemoriesFromMessage, saveExtractedMemories, generateEpisodeSummary, saveEpisodeSummary, assembleMemoryContext } from "./memoryEngine";
 import { assembleGraphContext } from "./knowledgeGraph";
-import { assembleDeepContext, getQuickContext, getStructuredIntegrationData, getPipelineRates } from "./services/deepContextAssembler";
+import { assembleDeepContext, getStructuredIntegrationData, getPipelineRates } from "./services/deepContextAssembler";
 import { classifyContent, applyModifications, logComplianceAudit, logPrivacyAudit } from "./complianceCopilot";
 import { trackEvent, recalculateProficiency, assembleExponentialContext } from "./services/exponentialEngine";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
