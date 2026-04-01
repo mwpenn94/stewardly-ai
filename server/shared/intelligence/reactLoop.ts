@@ -15,14 +15,44 @@ import { logger } from "../../_core/logger";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+/** OpenAI-compatible message shape used throughout the ReAct loop. */
+export interface ReActMessage {
+  role: string;
+  content: string | null;
+  tool_calls?: Array<{
+    id: string;
+    type: "function";
+    function: { name: string; arguments: string };
+  }>;
+  tool_call_id?: string;
+  name?: string;
+}
+
+/** LLM response shape expected by the ReAct loop (OpenAI-compatible subset). */
+export interface ReActLLMResponse {
+  model?: string;
+  choices?: Array<{
+    message?: {
+      content?: string | null;
+      tool_calls?: Array<{
+        id: string;
+        type: "function";
+        function: { name: string; arguments: string };
+      }>;
+    };
+  }>;
+}
+
 export interface ReActConfig {
-  messages: any[];
+  messages: ReActMessage[];
   userId: number;
   sessionId?: number;
-  tools?: any[];
+  tools?: Array<Record<string, unknown>>;
   maxIterations?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accepts legacy ContextualLLMParams & InvokeResult
   contextualLLM: (params: any) => Promise<any>;
-  executeTool: (toolName: string, args: any) => Promise<string>;
+  executeTool: (toolName: string, args: Record<string, unknown>) => Promise<string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accepts Drizzle DB instance
   db?: any;
 }
 
@@ -79,8 +109,21 @@ export async function executeReActLoop(config: ReActConfig): Promise<ReActResult
   // Working copy of messages that accumulates tool results
   const workingMessages = [...messages];
 
+  // Guard: prevent unbounded message growth (max ~500KB of accumulated messages)
+  const MAX_WORKING_MESSAGES_SIZE = 500_000;
+
   while (iteration < maxIterations) {
     iteration++;
+
+    // Check accumulated message size to prevent memory exhaustion
+    const estimatedSize = JSON.stringify(workingMessages).length;
+    if (estimatedSize > MAX_WORKING_MESSAGES_SIZE) {
+      logger.warn(
+        { iteration, estimatedSize, maxSize: MAX_WORKING_MESSAGES_SIZE },
+        "[ReActLoop] Working messages exceeded size limit — forcing final answer",
+      );
+      break;
+    }
     const stepStart = Date.now();
 
     // ── Think: call the LLM ──────────────────────────────────────────
@@ -153,10 +196,38 @@ export async function executeReActLoop(config: ReActConfig): Promise<ReActResult
       let observation: string;
 
       try {
-        const args = JSON.parse(toolCall.function.arguments);
-        observation = await executeTool(toolCall.function.name, args);
+        let args: Record<string, unknown>;
+        try {
+          args = JSON.parse(toolCall.function.arguments);
+        } catch {
+          // Malformed JSON from LLM — log and skip this tool call
+          logger.warn(
+            { toolName: toolCall.function.name, rawArgs: toolCall.function.arguments.substring(0, 200) },
+            "[ReActLoop] Malformed tool call arguments — skipping",
+          );
+          workingMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: JSON.stringify({ error: "Malformed arguments — could not parse JSON" }),
+          });
+          totalToolCalls++;
+          continue;
+        }
+        // Timeout guard: prevent tool calls from hanging indefinitely (30s default)
+        const TOOL_TIMEOUT_MS = 30_000;
+        observation = await Promise.race([
+          executeTool(toolCall.function.name, args),
+          new Promise<string>((_, reject) =>
+            setTimeout(() => reject(new Error(`Tool '${toolCall.function.name}' timed out after ${TOOL_TIMEOUT_MS}ms`)), TOOL_TIMEOUT_MS),
+          ),
+        ]);
       } catch (err: any) {
         observation = JSON.stringify({ error: err.message });
+        logger.warn(
+          { toolName: toolCall.function.name, error: err.message },
+          "[ReActLoop] Tool execution failed",
+        );
       }
 
       const toolDuration = Date.now() - toolStart;

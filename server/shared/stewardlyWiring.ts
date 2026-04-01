@@ -25,7 +25,7 @@ export { invokeLLM as rawInvokeLLM } from "../_core/llm";
 
 // ── ReAct multi-turn tool calling loop ─────────────────────────────────
 export { executeReActLoop } from "./intelligence/reactLoop";
-export type { ReActConfig, ReActTrace, ReActResult } from "./intelligence/reactLoop";
+export type { ReActConfig, ReActTrace, ReActResult, ReActMessage, ReActLLMResponse } from "./intelligence/reactLoop";
 
 // ── Quality score normalization from shared types ─────────────────
 export { normalizeQualityScore } from "./intelligence/types";

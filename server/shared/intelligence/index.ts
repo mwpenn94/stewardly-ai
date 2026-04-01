@@ -57,6 +57,8 @@ export type {
   ReActConfig,
   ReActTrace,
   ReActResult,
+  ReActMessage,
+  ReActLLMResponse,
 } from "./reactLoop";
 
 // ── Memory Engine ────────────────────────────────────────────────────────────

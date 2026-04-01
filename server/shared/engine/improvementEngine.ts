@@ -55,6 +55,19 @@ const DIMENSION_WEIGHTS: Record<keyof QualityDimensions, number> = {
   reliability: 0.15,
 };
 
+// ── Circuit Breaker for DB-heavy signal detection ───────────────────────────
+// Prevents cascading failures if the DB is slow or unresponsive.
+const QUERY_TIMEOUT_MS = 10_000;
+
+async function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`[ImprovementEngine] Query timeout: ${label} exceeded ${QUERY_TIMEOUT_MS}ms`)), QUERY_TIMEOUT_MS),
+    ),
+  ]);
+}
+
 // ── Signal Detection ─────────────────────────────────────────────────────────
 
 export async function detectSignals(db: any): Promise<Signal[]> {
@@ -250,13 +263,6 @@ export async function detectSignals(db: any): Promise<Signal[]> {
       )
       .groupBy(messages.modelVersion);
 
-    const allModels = await db
-      .select({ model: messages.modelVersion })
-      .from(messages)
-      .where(sql`${messages.modelVersion} IS NOT NULL`)
-      .groupBy(messages.modelVersion);
-
-    const allModelSet = new Set(allModels.map((r: any) => r.model));
     const recentModelSet = new Set<string>(recentModels.map((r: any) => r.model as string));
 
     for (const model of Array.from(recentModelSet)) {

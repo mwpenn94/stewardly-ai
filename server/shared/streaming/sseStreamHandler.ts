@@ -14,23 +14,25 @@
  * lifecycle including headers, heartbeat, disconnect cleanup, and error framing.
  *
  * IMPORTANT: extractQuery and injectContext are imported from the canonical
- * services/contextualLLM.ts (via stewardlyWiring) to prevent behavioral drift
- * between streaming and non-streaming paths. Do NOT duplicate these functions.
+ * shared/intelligence/contextualLLM.ts to prevent behavioral drift between
+ * streaming and non-streaming paths. getQuickContext is imported from
+ * services/deepContextAssembler.ts. Do NOT duplicate these functions.
  */
 
 import type { Request, Response } from "express";
 import { logger } from "../../_core/logger";
-import { getQuickContext } from "../intelligence/sovereignWiring";
-import type { ContextType } from "../intelligence/sovereignWiring";
+// Re-use the legacy wiring's getQuickContext (which delegates to services/deepContextAssembler)
+// and the shared intelligence layer's extractQuery/injectContext helpers.
+import { getQuickContext } from "../../services/deepContextAssembler";
+import type { ContextType } from "../../services/deepContextAssembler";
 import { extractQuery, injectContext } from "../intelligence/contextualLLM";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface SSEStreamConfig {
-  /** The contextualLLM function from sovereignWiring */
+  /** The contextualLLM function from stewardlyWiring */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accepts legacy ContextualLLMParams & InvokeResult
   contextualLLM: (params: any) => Promise<any>;
-  /** Raw invokeLLM for streaming (fetch-based, supports stream: true) */
-  invokeLLMStream?: (params: any) => Promise<ReadableStream<Uint8Array> | AsyncIterable<any>>;
   /** User ID for context injection */
   userId: number;
   /** Conversation/session ID */
@@ -40,9 +42,9 @@ export interface SSEStreamConfig {
   /** Messages array (OpenAI-compatible format) */
   messages: Array<{ role: string; content: string }>;
   /** Optional tools for tool calling */
-  tools?: any[];
+  tools?: Array<Record<string, unknown>>;
   /** Optional tool_choice */
-  tool_choice?: any;
+  tool_choice?: string | Record<string, unknown>;
 }
 
 export interface SSEEvent {
@@ -264,8 +266,10 @@ async function attemptNativeStream(
 
   if (!apiKey) return null;
 
+  // Use the same model as the non-streaming path (configurable via env)
+  const model = process.env.DEFAULT_LLM_MODEL || "gemini-2.5-flash";
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model,
     messages: enrichedMessages, // Uses context-enriched messages, not raw
     stream: true,
     max_tokens: 32768,
@@ -275,15 +279,28 @@ async function attemptNativeStream(
     payload.tool_choice = config.tool_choice || "auto";
   }
 
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(payload),
-    signal,
-  });
+  // Streaming connection timeout: abort if no response in 30s
+  const STREAM_CONNECT_TIMEOUT_MS = 30_000;
+  const timeoutId = setTimeout(() => {
+    if (!signal.aborted) {
+      logger.warn({ operation: "sseStream.connectTimeout" }, "[SSE] Native stream connection timed out");
+    }
+  }, STREAM_CONNECT_TIMEOUT_MS);
+
+  let response: globalThis.Response;
+  try {
+    response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     throw new Error(`Streaming API returned ${response.status}: ${response.statusText}`);

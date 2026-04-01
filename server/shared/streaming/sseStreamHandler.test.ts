@@ -7,8 +7,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock sovereignWiring and contextualLLM before importing the module
-vi.mock("../intelligence/sovereignWiring", () => ({
+// Mock deepContextAssembler and contextualLLM before importing the module
+vi.mock("../../services/deepContextAssembler", () => ({
   getQuickContext: vi.fn().mockResolvedValue("mock platform context for user"),
 }));
 
@@ -214,7 +214,7 @@ describe("SSE Stream Handler", () => {
 
     it("should call getQuickContext for context injection when userId is provided", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-      const { getQuickContext } = await import("../intelligence/sovereignWiring");
+      const { getQuickContext } = await import("../../services/deepContextAssembler");
 
       const mockContextualLLM = vi.fn().mockResolvedValue({
         choices: [{ message: { content: "Response" } }],
@@ -232,7 +232,7 @@ describe("SSE Stream Handler", () => {
 
     it("should skip context injection when userId is 0 (system-level call)", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-      const { getQuickContext } = await import("../intelligence/sovereignWiring");
+      const { getQuickContext } = await import("../../services/deepContextAssembler");
 
       const mockContextualLLM = vi.fn().mockResolvedValue({
         choices: [{ message: { content: "System response" } }],
@@ -249,7 +249,7 @@ describe("SSE Stream Handler", () => {
 
     it("should gracefully handle getQuickContext failure and still stream", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-      const { getQuickContext } = await import("../intelligence/sovereignWiring");
+      const { getQuickContext } = await import("../../services/deepContextAssembler");
       (getQuickContext as any).mockRejectedValueOnce(new Error("DB connection failed"));
 
       const mockContextualLLM = vi.fn().mockResolvedValue({
