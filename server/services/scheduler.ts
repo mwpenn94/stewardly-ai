@@ -163,6 +163,67 @@ async function runStaleDataCleanup(): Promise<void> {
   }
 }
 
+// ─── Improvement Engine Job (every 6 hours) ──────────────────────────────
+async function runImprovementEngine(): Promise<void> {
+  try {
+    const { getDb } = await import("../db");
+    const { detectSignals, checkConvergence } = await import("../shared/engine/improvementEngine");
+
+    const db = await getDb();
+    if (!db) {
+      logger.warn({ operation: "scheduler" }, "[Scheduler] Improvement engine skipped: DB unavailable");
+      return;
+    }
+
+    // Detect quality signals
+    const signals = await detectSignals(db);
+    const criticalSignals = signals.filter(s => s.severity === "critical" || s.severity === "high");
+
+    // Check convergence status
+    const convergence = await checkConvergence(db);
+
+    // Log structured output
+    logger.info({ operation: "scheduler" }, JSON.stringify({
+      event: "improvement_engine_run",
+      timestamp: new Date().toISOString(),
+      signalsDetected: signals.length,
+      criticalSignals: criticalSignals.length,
+      convergenceStatus: convergence.status,
+      convergenceRate: convergence.currentRate,
+      signals: signals.map(s => ({
+        type: s.signalType,
+        severity: s.severity,
+        metric: s.sourceMetric,
+        value: s.sourceValue,
+      })),
+    }));
+
+    // Alert admins on critical signals
+    if (criticalSignals.length > 0) {
+      alertAdmins(
+        `🔍 Improvement Engine: ${criticalSignals.length} critical signal(s) detected`,
+        `The improvement engine detected the following signals:\n\n${signals.map(s =>
+          `• [${s.severity.toUpperCase()}] ${s.signalType}: ${s.sourceMetric} = ${s.sourceValue} (threshold: ${s.threshold})`
+        ).join("\n")}\n\nConvergence status: ${convergence.status}${convergence.currentRate !== undefined ? ` (rate: ${(convergence.currentRate * 100).toFixed(1)}%)` : ""}`,
+        "high"
+      );
+    }
+
+    // Alert on convergence
+    if (convergence.status === "CONVERGED") {
+      alertAdmins(
+        "✅ Improvement Engine: System has converged",
+        `The improvement engine has detected convergence. Promotion rate across all 3 windows is below 10%.\nCurrent rate: ${((convergence.currentRate ?? 0) * 100).toFixed(1)}%\n\nThe system is operating at a stable quality level. New hypotheses are unlikely to produce significant improvements.`,
+        "low"
+      );
+    }
+
+    logger.info({ operation: "scheduler" }, `[Scheduler] Improvement engine complete: ${signals.length} signals, convergence=${convergence.status}`);
+  } catch (e: any) {
+    logger.warn({ operation: "scheduler" }, `[Scheduler] Improvement engine failed: ${e.message}`);
+  }
+}
+
 // ─── Scheduler Control ─────────────────────────────────────────────────
 function registerJob(name: string, intervalMs: number, handler: () => Promise<void>): void {
   if (jobs[name]) {
@@ -217,6 +278,7 @@ export function initScheduler(): void {
   registerJob("data_pipelines", 6 * 60 * 60 * 1000, runScheduledDataPipelines); // 6 hours
   registerJob("stale_cleanup", 24 * 60 * 60 * 1000, runStaleDataCleanup);       // 24 hours
   registerJob("role_elevation_revoke", 5 * 60 * 1000, revokeExpiredRoleElevations); // 5 min
+  registerJob("improvement_engine", 6 * 60 * 60 * 1000, runImprovementEngine);       // 6 hours
   
   // Run self-test first, then start jobs with staggered delays
   const INITIAL_DELAY = 90_000; // 90s after boot

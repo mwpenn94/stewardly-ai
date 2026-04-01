@@ -20,13 +20,14 @@
 
 import type { Request, Response } from "express";
 import { logger } from "../../_core/logger";
-import { getQuickContext, extractQuery, injectContext } from "../stewardlyWiring";
-import type { ContextType } from "../stewardlyWiring";
+import { getQuickContext } from "../intelligence/sovereignWiring";
+import type { ContextType } from "../intelligence/sovereignWiring";
+import { extractQuery, injectContext } from "../intelligence/contextualLLM";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface SSEStreamConfig {
-  /** The contextualLLM function from stewardlyWiring */
+  /** The contextualLLM function from sovereignWiring */
   contextualLLM: (params: any) => Promise<any>;
   /** Raw invokeLLM for streaming (fetch-based, supports stream: true) */
   invokeLLMStream?: (params: any) => Promise<ReadableStream<Uint8Array> | AsyncIterable<any>>;

@@ -7,10 +7,12 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock stewardlyWiring before importing the module
-vi.mock("../stewardlyWiring", () => {
-  // Provide real implementations of extractQuery and injectContext
-  // so the handler's context injection logic works correctly in tests.
+// Mock sovereignWiring and contextualLLM before importing the module
+vi.mock("../intelligence/sovereignWiring", () => ({
+  getQuickContext: vi.fn().mockResolvedValue("mock platform context for user"),
+}));
+
+vi.mock("../intelligence/contextualLLM", () => {
   function extractQuery(messages: Array<{ role: string; content: any }>): string {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === "user") {
@@ -36,7 +38,6 @@ vi.mock("../stewardlyWiring", () => {
     return result;
   }
   return {
-    getQuickContext: vi.fn().mockResolvedValue("mock platform context for user"),
     extractQuery,
     injectContext,
   };
@@ -213,7 +214,7 @@ describe("SSE Stream Handler", () => {
 
     it("should call getQuickContext for context injection when userId is provided", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-      const { getQuickContext } = await import("../stewardlyWiring");
+      const { getQuickContext } = await import("../intelligence/sovereignWiring");
 
       const mockContextualLLM = vi.fn().mockResolvedValue({
         choices: [{ message: { content: "Response" } }],
@@ -231,7 +232,7 @@ describe("SSE Stream Handler", () => {
 
     it("should skip context injection when userId is 0 (system-level call)", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-      const { getQuickContext } = await import("../stewardlyWiring");
+      const { getQuickContext } = await import("../intelligence/sovereignWiring");
 
       const mockContextualLLM = vi.fn().mockResolvedValue({
         choices: [{ message: { content: "System response" } }],
@@ -248,7 +249,7 @@ describe("SSE Stream Handler", () => {
 
     it("should gracefully handle getQuickContext failure and still stream", async () => {
       const { createSSEStreamHandler } = await import("./sseStreamHandler");
-      const { getQuickContext } = await import("../stewardlyWiring");
+      const { getQuickContext } = await import("../intelligence/sovereignWiring");
       (getQuickContext as any).mockRejectedValueOnce(new Error("DB connection failed"));
 
       const mockContextualLLM = vi.fn().mockResolvedValue({
