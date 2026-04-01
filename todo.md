@@ -2952,3 +2952,8 @@
 - [x] Fix all 101 TypeScript errors — corrupted vars in AnalyticsDashboard, userId scope in 13 service files, property mismatches in deepContextAssembler, db null checks, content type casts, Set iteration
 - [x] Verify tsc completes cleanly — exit code 0, zero errors
 - [x] Update project context files — added Technical Debt Resolved section to PROJECT_KNOWLEDGE_BASE.md
+
+## Deployment Fix — logger not defined
+- [x] Fix 'logger is not defined' error in envValidation.ts — added missing `import { logger } from "./logger"` 
+- [x] Verify all tests pass after fix — 2,001 tests pass across 71 files
+- [x] Save checkpoint and publish
