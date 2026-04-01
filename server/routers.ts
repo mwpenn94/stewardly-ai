@@ -253,6 +253,8 @@ const chatRouter = router({
         ...(useCalcTools ? ALL_AI_TOOLS : []),
       ];
       let response = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "chat" as any,
         messages: llmMessages,
         ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "auto" as const } : {}),
       });
@@ -302,6 +304,8 @@ const chatRouter = router({
 
         // Call LLM again with accumulated tool results
         const followUp = await contextualLLM({
+          userId: ctx.user.id,
+          contextType: "chat" as any,
           messages: [...llmMessages, ...allToolMessages] as any,
           ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "auto" as const } : {}),
         });
@@ -322,6 +326,8 @@ const chatRouter = router({
             ? [...llmMessages, ...allToolMessages] as any
             : llmMessages;
           const retryResp = await contextualLLM({
+            userId: ctx.user.id,
+            contextType: "chat" as any,
             messages: [
               ...retryMessages,
               { role: "user" as const, content: "Please provide your response based on the information gathered above." },
@@ -424,6 +430,9 @@ const chatRouter = router({
       if (history.length <= 1) {
         try {
           const titleResp = await contextualLLM({
+            userId: ctx.user.id,
+            contextType: "analysis" as any,
+            skipContext: true,
             messages: [
               { role: "system", content: "Generate a short title (max 6 words) for this conversation. Return ONLY the title, nothing else." },
               { role: "user", content: input.content.substring(0, 500) },
@@ -479,6 +488,9 @@ const chatRouter = router({
       let followUpSuggestions: string[] = [];
       try {
         const sugResp = await contextualLLM({
+          userId: ctx.user.id,
+          contextType: "analysis" as any,
+          skipContext: true,
           messages: [
             { role: "system", content: "Based on this conversation, generate exactly 3 short follow-up questions the user might want to ask next. Each should be 5-12 words. Return ONLY a JSON object with a \"suggestions\" key containing an array of 3 strings." },
             { role: "user", content: (typeof input.content === 'string' ? input.content : '').substring(0, 300) },
@@ -562,6 +574,9 @@ const conversationsRouter = router({
       const userMsgs = msgs.filter(m => m.role === "user").slice(0, 3);
       if (userMsgs.length === 0) return { title: conv.title };
       const titleResp = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "analysis" as any,
+        skipContext: true,
         messages: [
           { role: "system", content: "Generate a concise, descriptive title (max 8 words) for this conversation based on the user's messages. Return ONLY the title text, nothing else. Do not use quotes." },
           ...userMsgs.map(m => ({ role: "user" as const, content: m.content.substring(0, 300) })),
@@ -680,6 +695,9 @@ const documentsRouter = router({
             ? extraction.text.substring(0, 2000)
             : buffer.toString("utf-8").substring(0, 2000);
           const catResult = await contextualLLM({
+            userId: ctx.user.id,
+            contextType: "analysis" as any,
+            skipContext: true,
             messages: [
               { role: "system", content: `You classify documents into exactly one of these categories. Respond with ONLY the category key, nothing else.\nCategories:\n- personal_docs: Personal documents (tax returns, IDs, wills, trusts, bank statements, pay stubs, personal letters)\n- financial_products: Financial product guides, brochures, prospectuses, fund fact sheets, insurance illustrations\n- regulations: Regulatory documents, compliance guides, SEC filings, DOL rules, state regulations\n- training_materials: Training courses, certifications, CE credits, study guides, exam prep\n- artifacts: Reports, analyses, spreadsheets, presentations, meeting notes, proposals\n- skills: Domain knowledge files, playbooks, scripts, templates, checklists` },
               { role: "user", content: `Filename: ${input.filename}\nMIME type: ${input.mimeType || "unknown"}\nContent preview:\n${preview}` },
@@ -956,6 +974,9 @@ const documentsRouter = router({
       const existingTags = await getUserTags(ctx.user.id);
       const existingTagNames = existingTags.map(t => t.name);
       const response = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "analysis" as any,
+        skipContext: true,
         messages: [
           { role: "system", content: `You are a document tagging assistant for a financial services knowledge base. Analyze the document and suggest 2-5 concise tags. Return JSON: { "tags": [{ "name": "tag name", "isNew": true/false }] }. Existing tags the user already has: [${existingTagNames.join(", ")}]. Prefer existing tags when relevant. Tags should be specific and useful for filtering (e.g., "retirement planning", "IUL illustration", "client onboarding", "compliance", "tax strategy").` },
           { role: "user", content: `Document: "${doc.filename}" (category: ${doc.category})\nContent preview: ${(doc.extractedText || "").substring(0, 2000)}` },
@@ -994,6 +1015,8 @@ const documentsRouter = router({
         ? `\n\nUser feedback on previous analyses (incorporate this to improve accuracy):\n${acknowledgedFeedback.map(f => `- Gap "${f.gapTitle}": user note: "${f.userNote || 'acknowledged as important'}"`).join("\n")}`
         : "";
       const response = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "analysis" as any,
         messages: [
           { role: "system", content: `You are a knowledge base analyst for a financial services platform. Analyze the user's document collection and identify gaps — missing document types that would improve their AI assistant's ability to serve clients. Consider: compliance documents, product illustrations, client templates, training materials, market research, estate planning, tax strategies, insurance policies, investment guidelines, and regulatory filings. Return JSON with gaps array. Each gap has: id (unique slug), title, category, priority (high/medium/low), description, suggestedAction.${feedbackContext}` },
           { role: "user", content: `My knowledge base has ${docs.length} documents:\n${docSummary || "(empty knowledge base)"}\n\nAlready dismissed/not-applicable gap IDs to exclude: [${dismissedGapIds.join(", ")}]\nAlready resolved gap IDs to exclude: [${resolvedGapIds.join(", ")}]` },
@@ -1284,7 +1307,7 @@ The user's name is ${ctx.user.name || "there"}.`;
         { role: "user" as const, content: input.userMessage },
       ];
 
-      const response = await contextualLLM({ messages });
+      const response = await contextualLLM({ userId: ctx.user.id, contextType: "chat" as any, skipContext: true, messages });
       const content = typeof response.choices[0]?.message?.content === "string"
         ? response.choices[0].message.content : "";
 
@@ -1325,6 +1348,9 @@ The user's name is ${ctx.user.name || "there"}.`;
   "freeformNotes": string
 }`;
       const resp = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "analysis" as any,
+        skipContext: true,
         messages: [
           { role: "system", content: extractPrompt },
           ...input.conversationHistory.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),

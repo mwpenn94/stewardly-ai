@@ -114,6 +114,10 @@ function checkCircuitBreaker(): boolean {
   if (Date.now() - circuitBreakerOpenedAt > CIRCUIT_BREAKER_RECOVERY_MS) {
     circuitBreakerOpen = false;
     circuitBreakerFailures = [];
+    // Reset all canary states to allow recovery probes to reach primary
+    // Without this, the canary check below would redirect to failover
+    // and the recovery probe would never test the primary provider
+    canaryStates.clear();
     return false;
   }
   return true;
@@ -135,22 +139,37 @@ function recordCircuitBreakerSuccess(): void {
   circuitBreakerFailures = [];
 }
 
-let _baseInvokeLLMFn: ((params: any) => Promise<any>) | null = null;
+/** LLM invocation parameters accepted by the Sovereign router */
+interface SovereignLLMParams {
+  messages: Array<{ role: string; content: any }>;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  userId?: number | null;
+  contextType?: string;
+  tools?: any[];
+  tool_choice?: any;
+  response_format?: any;
+  [key: string]: any;
+}
 
-async function getBaseInvokeLLM(): Promise<(params: any) => Promise<any>> {
+let _baseInvokeLLMFn: ((params: SovereignLLMParams) => Promise<ContextualLLMResponse>) | null = null;
+
+async function getBaseInvokeLLM(): Promise<(params: SovereignLLMParams) => Promise<ContextualLLMResponse>> {
   if (_baseInvokeLLMFn) return _baseInvokeLLMFn;
 
   try {
     const llmModule = await import("../../_core/llm");
     _baseInvokeLLMFn = llmModule.invokeLLM;
     return _baseInvokeLLMFn!;
-  } catch {
-    // Fallback: direct OpenAI call
+  } catch (llmImportErr) {
+    // Fallback: direct OpenAI call (core/llm not available)
+    console.warn("[Sovereign] _core/llm import failed, falling back to direct OpenAI:", llmImportErr instanceof Error ? llmImportErr.message : llmImportErr);
     try {
       const openaiModule = await import("openai");
       const OpenAI = openaiModule.default;
       const client = new OpenAI();
-      _baseInvokeLLMFn = async (params: any): Promise<ContextualLLMResponse> => {
+      _baseInvokeLLMFn = async (params: SovereignLLMParams): Promise<ContextualLLMResponse> => {
         const response = await client.chat.completions.create({
           model: params.model || DEFAULT_SOVEREIGN_CONFIG.provider.primaryModel,
           messages: params.messages,
@@ -176,7 +195,8 @@ async function getBaseInvokeLLM(): Promise<(params: any) => Promise<any>> {
             : undefined,
         };
       };
-    } catch {
+    } catch (openaiImportErr) {
+      console.error("[Sovereign] No LLM provider available. Both _core/llm and openai failed.", openaiImportErr instanceof Error ? openaiImportErr.message : openaiImportErr);
       _baseInvokeLLMFn = async () => {
         throw new Error("No LLM provider available — install openai or ensure _core/llm is accessible");
       };
@@ -190,7 +210,7 @@ async function getBaseInvokeLLM(): Promise<(params: any) => Promise<any>> {
  * Adds provider usage logging, quality normalization, model version tracking,
  * canary detection, and failover.
  */
-export async function sovereignInvokeLLM(params: any): Promise<any> {
+export async function sovereignInvokeLLM(params: SovereignLLMParams): Promise<ContextualLLMResponse> {
   const startTime = Date.now();
   const provider = params.model || DEFAULT_SOVEREIGN_CONFIG.provider.primaryModel;
   const modelVersion = DEFAULT_SOVEREIGN_CONFIG.provider.modelVersion;
@@ -303,7 +323,7 @@ export async function sovereignInvokeLLM(params: any): Promise<any> {
 /**
  * Attempt failover to alternative providers.
  */
-async function attemptFailover(params: any, failedProvider: string): Promise<any | null> {
+async function attemptFailover(params: SovereignLLMParams, failedProvider: string): Promise<ContextualLLMResponse | null> {
   const fallbacks = DEFAULT_SOVEREIGN_CONFIG.provider.fallbackModels.filter(
     (m) => m !== failedProvider,
   );
@@ -338,9 +358,24 @@ async function attemptFailover(params: any, failedProvider: string): Promise<any
         timestamp: new Date().toISOString(),
       });
 
+      // Fallback succeeded — mark it healthy
+      updateCanaryState(fallback, true);
       return result;
-    } catch {
-      // Try next fallback
+    } catch (fallbackErr) {
+      // Track fallback failure in canary state and usage logs
+      const fallbackLatency = Date.now() - startTime;
+      updateCanaryState(fallback, false);
+      logProviderUsage({
+        userId: params.userId || null,
+        provider: fallback,
+        modelVersion: DEFAULT_SOVEREIGN_CONFIG.provider.modelVersion,
+        taskType: params.contextType || "unknown",
+        latencyMs: fallbackLatency,
+        costUsd: 0,
+        qualityScore: null,
+        success: false,
+        timestamp: new Date().toISOString(),
+      });
       continue;
     }
   }
@@ -391,9 +426,11 @@ function estimateCost(
   };
 
   const rates = costTable[provider] || { input: 0.0002, output: 0.0008 };
+  const promptTokens = Number(usage.prompt_tokens) || 0;
+  const completionTokens = Number(usage.completion_tokens) || 0;
   return (
-    (usage.prompt_tokens / 1000) * rates.input +
-    (usage.completion_tokens / 1000) * rates.output
+    (promptTokens / 1000) * rates.input +
+    (completionTokens / 1000) * rates.output
   );
 }
 
@@ -408,9 +445,28 @@ function logProviderUsage(entry: ProviderUsageEntry): void {
   }
 }
 
+// Cached DB and schema references for flush (avoid dynamic import on every 30s cycle)
+let _dbModuleCache: { getDb: () => Promise<any> } | null = null;
+let _schemaModuleCache: typeof import("../../../drizzle/schema") | null = null;
+
+async function getCachedDb() {
+  if (!_dbModuleCache) {
+    _dbModuleCache = await import("../../db");
+  }
+  return _dbModuleCache.getDb();
+}
+
+async function getCachedSchema() {
+  if (!_schemaModuleCache) {
+    _schemaModuleCache = await import("../../../drizzle/schema").catch(() => null) as any;
+  }
+  return _schemaModuleCache;
+}
+
 /**
  * Flush usage logs to the database.
  * Uses a lock to prevent concurrent flushes (race condition fix).
+ * DB and schema imports are cached to avoid repeated dynamic imports.
  */
 async function flushUsageLogs(): Promise<void> {
   if (usageLogBuffer.length === 0) return;
@@ -422,7 +478,7 @@ async function flushUsageLogs(): Promise<void> {
   usageLogBuffer = [];
 
   try {
-    const db = await (await import("../../db")).getDb();
+    const db = await getCachedDb();
     if (!db) {
       // DB unavailable — re-buffer but cap to prevent unbounded growth
       if (usageLogBuffer.length < USAGE_LOG_MAX_BUFFER * 3) {
@@ -432,7 +488,7 @@ async function flushUsageLogs(): Promise<void> {
       return;
     }
 
-    const schema = await import("../../../drizzle/schema").catch(() => null);
+    const schema = await getCachedSchema();
     if (!schema?.sovereignProviderUsageLogs) return;
 
     await db.insert(schema.sovereignProviderUsageLogs).values(
@@ -447,11 +503,13 @@ async function flushUsageLogs(): Promise<void> {
         success: e.success,
       })),
     );
-  } catch {
+  } catch (flushErr) {
     // Re-add entries to buffer if flush fails, but cap to prevent memory leak
     if (usageLogBuffer.length < USAGE_LOG_MAX_BUFFER * 3) {
       usageLogBuffer.unshift(...entries);
     }
+    // Log flush failure for observability (non-fatal)
+    console.warn("[Sovereign] Usage log flush failed:", flushErr instanceof Error ? flushErr.message : flushErr);
   } finally {
     _flushInProgress = false;
   }
@@ -464,7 +522,7 @@ setInterval(() => {
 
 // ── Cached contextualLLM instance ───────────────────────────────────────────
 
-let _contextualLLMFn: ((params: any) => Promise<any>) | null = null;
+let _contextualLLMFn: ((params: SovereignLLMParams) => Promise<ContextualLLMResponse>) | null = null;
 
 /**
  * Sovereign-aware contextualLLM.
@@ -475,8 +533,9 @@ export async function contextualLLM(params: {
   contextType?: ContextType;
   query?: string;
   messages: Array<{ role: string; content: any }>;
+  skipContext?: boolean;
   [key: string]: any;
-}) {
+}): Promise<ContextualLLMResponse> {
   if (!_contextualLLMFn) {
     _contextualLLMFn = createContextualLLM({
       registry: sovereignContextSources,
@@ -493,7 +552,7 @@ let _memoryEngine: ReturnType<typeof createMemoryEngine> | null = null;
 /**
  * Get the Sovereign memory engine with enriched categories.
  */
-export async function getMemoryEngine() {
+export async function getMemoryEngine(): Promise<ReturnType<typeof createMemoryEngine>> {
   if (_memoryEngine) return _memoryEngine;
 
   _memoryEngine = createMemoryEngine({
@@ -642,7 +701,7 @@ function estimateChunkCount(sourceContexts: Record<string, string>): number {
 /**
  * Platform-native assembleContext (returns the new API shape).
  */
-export async function assembleContext(request: ContextRequest) {
+export async function assembleContext(request: ContextRequest): ReturnType<typeof platformAssembleDeepContext> {
   return platformAssembleDeepContext(sovereignContextSources, request);
 }
 
@@ -699,7 +758,7 @@ export async function getQuickContextWithMetadata(
   query: string,
   contextType: ContextType,
   overrides?: Record<string, unknown>,
-) {
+): Promise<{ contextPrompt: string; metadata: any }> {
   const { maxTokenBudget, options } = translateOverrides(overrides);
   return assembleQuickContext(
     sovereignContextSources,

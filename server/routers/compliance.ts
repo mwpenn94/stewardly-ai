@@ -48,6 +48,8 @@ export const complianceRouter = router({
       } catch { /* best-effort */ }
       // Use LLM to analyze content for compliance issues
       const analysisResponse = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "compliance" as any,
         messages: [
           {
             role: "system",
@@ -176,6 +178,8 @@ Return a JSON response with this exact schema:
         }
       } catch { /* best-effort */ }
       const response = await contextualLLM({
+        userId: ctx.user.id,
+        contextType: "compliance" as any,
         messages: [
           {
             role: "system",

@@ -127,6 +127,8 @@ For each insight, provide:
 Return as JSON array.`;
 
     const response = await contextualLLM({
+      userId: ctx.user!.id,
+      contextType: "analysis" as any,
       messages: [
         { role: "system", content: "You are a proactive financial advisor intelligence engine. Generate realistic, actionable insights grounded in the client's actual data and documents." },
         { role: "user", content: prompt },

@@ -363,6 +363,8 @@ async function generateDirectionalAnalysis(
   } catch { /* deep context is best-effort */ }
 
   const response = await contextualLLM({
+    userId: targetId || null,
+    contextType: "analysis" as any,
     messages: [
       {
         role: "system",
