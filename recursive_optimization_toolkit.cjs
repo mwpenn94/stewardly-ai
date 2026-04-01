@@ -200,6 +200,27 @@ switch (command) {
   case "reset":
     resetLedger(args);
     break;
+  case "suggest": {
+    const ledger = loadLedger();
+    const lastScore = ledger.scores.length > 0 ? ledger.scores[ledger.scores.length - 1] : null;
+    let suggestion;
+    if (ledger.passes === 0) {
+      suggestion = "Landscape pass \u2014 establish broad coverage";
+    } else if (lastScore && lastScore.average < 7) {
+      suggestion = "Depth pass \u2014 strengthen weak dimensions";
+    } else if (lastScore && lastScore.average < 8.5) {
+      suggestion = "Adversarial pass \u2014 stress-test for hidden failures";
+    } else if (lastScore && lastScore.average < 9.5) {
+      suggestion = "Future-State & Synthesis \u2014 integrate and future-proof";
+    } else {
+      suggestion = "Convergence reached \u2014 monitor for re-entry triggers";
+    }
+    console.log(`\n\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557`);
+    console.log(`\u2551  Suggested next pass:                            \u2551`);
+    console.log(`\u2551    ${suggestion.padEnd(46)}\u2551`);
+    console.log(`\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d\n`);
+    break;
+  }
   default:
     console.log(`
 Recursive Optimization Toolkit v1.0.0
@@ -208,6 +229,7 @@ Commands:
   add-improvement <description>    Record a new improvement
   score <pass> <s1,s2,...,s6>      Record scores for a pass (6 dimensions)
   status                           Show current ledger summary
+  suggest                          Recommend next pass type
   history                          Show full ledger history
   reset --yes                      Clear the ledger
 `);

@@ -1,16 +1,30 @@
 import rateLimit from "express-rate-limit";
 import { logger } from "./logger";
 
+// ─── Rate Limit Messages (DRY constants) ──────────────────────
+const MESSAGES = {
+  general: "Too many requests, please try again later.",
+  sensitive: "Too many sensitive operation requests, please try again later.",
+  auth: "Too many authentication attempts, please try again later.",
+} as const;
+
+// ─── Skip static assets from rate limiting ────────────────────
+const STATIC_EXTENSIONS = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|map)$/;
+function skipStatic(req: { path: string }): boolean {
+  return STATIC_EXTENSIONS.test(req.path);
+}
+
 /**
  * General rate limiter: 100 requests per 15-minute window.
+ * Skips static asset requests to avoid penalizing normal page loads.
  */
 export const generalLimiter = rateLimit({
   windowMs: 900_000, // 15 minutes
   max: 100,
-  standardHeaders: true,
+  standardHeaders: "draft-7",
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false, default: true },
-  message: { error: "Too many requests, please try again later" },
+  skip: skipStatic,
+  message: { error: MESSAGES.general },
   handler: (req, res, _next, options) => {
     logger.warn(
       { operation: "rateLimitExceeded", requestId: (req as any).requestId, ip: req.ip, path: req.path, limiter: "general" },
@@ -27,10 +41,10 @@ export const generalLimiter = rateLimit({
 export const sensitiveTrpcLimiter = rateLimit({
   windowMs: 900_000,
   max: 20,
-  standardHeaders: true,
+  standardHeaders: "draft-7",
   legacyHeaders: false,
   validate: { xForwardedForHeader: false, default: true },
-  message: { error: "Too many sensitive operation requests, please try again later" },
+  message: { error: MESSAGES.sensitive },
   handler: (req, res, _next, options) => {
     logger.warn(
       { operation: "rateLimitExceeded", requestId: (req as any).requestId, ip: req.ip, path: req.path, limiter: "sensitiveTrpc" },
@@ -46,10 +60,10 @@ export const sensitiveTrpcLimiter = rateLimit({
 export const authLimiter = rateLimit({
   windowMs: 900_000,
   max: 5,
-  standardHeaders: true,
+  standardHeaders: "draft-7",
   legacyHeaders: false,
   validate: { xForwardedForHeader: false, default: true },
-  message: { error: "Too many authentication attempts, please try again later" },
+  message: { error: MESSAGES.auth },
   handler: (req, res, _next, options) => {
     logger.warn(
       { operation: "rateLimitExceeded", requestId: (req as any).requestId, ip: req.ip, path: req.path, limiter: "auth" },

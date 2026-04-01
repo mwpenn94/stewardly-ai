@@ -50,7 +50,18 @@ export async function contextualLLM(params: ContextualLLMParams) {
   // Inject context into the system message
   const enhancedMessages = injectContext(messages, platformContext);
   
-  return invokeLLM({ messages: enhancedMessages as any, ...rest });
+  const result = await invokeLLM({ messages: enhancedMessages as any, ...rest });
+
+  // Track model version for observability
+  if (result.model) {
+    (result as any).__modelVersion = result.model;
+    logger.debug(
+      { operation: "contextualLLM", userId, model: result.model },
+      `LLM call completed \u2014 model: ${result.model}`,
+    );
+  }
+
+  return result;
 }
 
 /**

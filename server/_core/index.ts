@@ -43,11 +43,32 @@ async function startServer() {
 
   const app = express();
   const server = createServer(app);
+
+  // ─── Trust Proxy (required for correct IP resolution behind reverse proxies) ─
+  app.set("trust proxy", 1);
+
   // Initialize WebSocket notifications
   initWebSocket(server);
 
   // ─── Request ID Middleware (must be first) ──────────────────────────────
   app.use(requestIdMiddleware);
+
+  // ─── Request + Response Logging with Duration ───────────────────
+  app.use((req, res, next) => {
+    const start = Date.now();
+    logger.info(
+      { operation: "http.request", requestId: req.requestId, method: req.method, url: req.originalUrl },
+      `\u2192 ${req.method} ${req.originalUrl}`
+    );
+    res.on("finish", () => {
+      const durationMs = Date.now() - start;
+      logger.info(
+        { operation: "http.response", requestId: req.requestId, method: req.method, url: req.originalUrl, status: res.statusCode, durationMs },
+        `\u2190 ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`
+      );
+    });
+    next();
+  });
 
   // ─── Helmet Security Headers ───────────────────────────────────────────
   app.use(
@@ -134,10 +155,25 @@ async function startServer() {
     logger.info({ operation: "portFallback", preferredPort, actualPort: port }, `Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
+  // ── Health check endpoint ──
+  app.get("/healthz", (_req, res) => res.json({ status: "ok", uptime: process.uptime() }));
+
   server.listen(port, () => {
     logger.info({ operation: "startServer", port }, `Server running on http://localhost:${port}/`);
     // Initialize background scheduler for health checks and data pipelines
     initScheduler();
+
+    // ── Graceful shutdown ──
+    const shutdown = () => {
+      logger.info({ operation: "server.shutdown" }, "Shutting down gracefully");
+      server.close(() => {
+        logger.info({ operation: "server.closed" }, "Server closed");
+        process.exit(0);
+      });
+      setTimeout(() => process.exit(1), 10_000).unref();
+    };
+    process.on("SIGTERM", shutdown);
+    process.on("SIGINT", shutdown);
   });
 }
 

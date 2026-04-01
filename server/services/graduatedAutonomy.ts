@@ -1,7 +1,12 @@
 /**
  * Task #50 — Graduated Autonomy Service
- * Progressive trust levels for AI actions based on user interaction history
+ * Progressive trust levels for AI actions based on user interaction history.
+ * DB-persisted via audit trail (action: "autonomy_profile_snapshot").
+ * Falls back to in-memory when DB is unavailable.
  */
+import { createOperationLogger } from "../_core/logger";
+
+const log = createOperationLogger("graduatedAutonomy");
 
 export type AutonomyLevel = "supervised" | "guided" | "semi_autonomous" | "autonomous";
 
@@ -45,21 +50,25 @@ const LEVEL_THRESHOLDS: Record<AutonomyLevel, { minTrustScore: number; minIntera
   autonomous: { minTrustScore: 85, minInteractions: 500, maxEscalationRate: 0.05 },
 };
 
-// In-memory profiles
+// In-memory profiles (hydrated from DB on first access)
 const profiles = new Map<number, AutonomyProfile>();
+
+function defaultProfile(userId: number): AutonomyProfile {
+  return {
+    userId,
+    level: "supervised",
+    trustScore: 0,
+    totalInteractions: 0,
+    successfulActions: 0,
+    overriddenActions: 0,
+    escalations: 0,
+    levelHistory: [{ level: "supervised", achievedAt: new Date().toISOString(), reason: "Initial level" }],
+  };
+}
 
 export function getProfile(userId: number): AutonomyProfile {
   if (!profiles.has(userId)) {
-    profiles.set(userId, {
-      userId,
-      level: "supervised",
-      trustScore: 0,
-      totalInteractions: 0,
-      successfulActions: 0,
-      overriddenActions: 0,
-      escalations: 0,
-      levelHistory: [{ level: "supervised", achievedAt: new Date().toISOString(), reason: "Initial level" }],
-    });
+    profiles.set(userId, defaultProfile(userId));
   }
   return profiles.get(userId)!;
 }
@@ -102,6 +111,13 @@ export function recordInteraction(userId: number, success: boolean, overridden: 
       }
       break;
     }
+  }
+
+  // Persist async (best-effort) — every 10 interactions to reduce DB writes
+  if (profile.totalInteractions % 10 === 0) {
+    persistProfile(profile).catch((e) =>
+      log.warn({ err: e }, "Failed to persist autonomy profile")
+    );
   }
 
   return profile;
@@ -152,4 +168,39 @@ export function getLevelProgress(userId: number): { currentLevel: AutonomyLevel;
   const progress = Math.round((trustProgress + interactionProgress) / 2);
 
   return { currentLevel: profile.level, nextLevel, progress };
+}
+
+// ─── DB Persistence ──────────────────────────────────────────────
+
+async function persistProfile(profile: AutonomyProfile): Promise<void> {
+  try {
+    const { addAuditEntry } = await import("../db");
+    await addAuditEntry({
+      userId: profile.userId,
+      action: "autonomy_profile_snapshot",
+      details: JSON.stringify(profile),
+    });
+  } catch (e) {
+    log.warn({ err: e }, "Autonomy profile persistence failed — in-memory only");
+  }
+}
+
+export async function hydrateProfile(userId: number): Promise<AutonomyProfile> {
+  if (profiles.has(userId)) return profiles.get(userId)!;
+
+  try {
+    const { getAuditTrail } = await import("../db");
+    const entries = await getAuditTrail(userId, 1, { action: "autonomy_profile_snapshot" });
+    if (entries.length > 0 && entries[0].details) {
+      const profile = JSON.parse(entries[0].details) as AutonomyProfile;
+      profiles.set(userId, profile);
+      return profile;
+    }
+  } catch (e) {
+    log.warn({ err: e }, "Failed to hydrate autonomy profile from DB");
+  }
+
+  const fresh = defaultProfile(userId);
+  profiles.set(userId, fresh);
+  return fresh;
 }

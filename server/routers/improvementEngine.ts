@@ -11,6 +11,7 @@ import {
 } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "../_core/llm";
+import { contextualLLM } from "../services/contextualLLM";
 import { getQuickContext } from "../services/deepContextAssembler";
 
 const LAYERS = ["platform", "organization", "manager", "professional", "user"] as const;
@@ -362,7 +363,8 @@ async function generateDirectionalAnalysis(
     }
   } catch { /* deep context is best-effort */ }
 
-  const response = await invokeLLM({
+  const response = await contextualLLM({
+    contextType: "analysis",
     messages: [
       {
         role: "system",
