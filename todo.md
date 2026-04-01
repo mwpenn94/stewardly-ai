@@ -2957,3 +2957,9 @@
 - [x] Fix 'logger is not defined' error in envValidation.ts — added missing `import { logger } from "./logger"` 
 - [x] Verify all tests pass after fix — 2,001 tests pass across 71 files
 - [x] Save checkpoint and publish
+
+## Chat Messages Insert Fix
+- [x] Diagnose messages table schema mismatch — modelVersion column missing from DB, plus duplicate logger import in envValidation.ts
+- [x] Fix: added modelVersion varchar(64) column to messages table via ALTER TABLE, removed duplicate logger import
+- [x] Verified: server starts cleanly, 2119/2121 tests pass (2 flaky timeouts in consolidatedPhase3, pre-existing)
+- [x] Discovered: 246 tables have camelCase vs snake_case column mismatches — systemic issue from GitHub merge, needs broader migration (tracked separately)
