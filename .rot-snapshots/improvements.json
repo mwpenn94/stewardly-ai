@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "timestamp": "2026-04-01T00:35:23.264Z",
+    "category": "atlas-integration",
+    "description": "ATLAS @platform intelligence integration — Phase 5",
+    "items": [
+      "Created atlasContextSources.ts with 23 sources (15 AEGIS + 8 ATLAS kernel)",
+      "Created dbCoercion.ts resolving Training System P-02 (TiDB string aggregate coercion)",
+      "Created atlasMemoryStore.ts with P-02 coercion at DB boundary",
+      "Created atlasConfigStore.ts mirroring 5-layer cascade",
+      "Created atlasWiring.ts with model_version tracking, quality normalization, autonomy persistence",
+      "Created atlasLLMAdapter.ts as drop-in invokeLLM replacement",
+      "Created atlasGraduatedAutonomy.ts with DB-persisted autonomy levels",
+      "Added 56 new tests (dbCoercion, contextSources, wiring, autonomy, adapter, integration)",
+      "Applied recursive optimization: BigInt coercion, userId validation, defensive error handling",
+      "All 176 shared tests passing (120 baseline + 56 new)"
+    ],
+    "passType": "Depth",
+    "rating": 8.5
+  }
+]

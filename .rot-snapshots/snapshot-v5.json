@@ -1,0 +1,118 @@
+{
+  "version": 5,
+  "timestamp": "2026-04-01T00:35:14.319Z",
+  "atlasFiles": {
+    "server/shared/intelligence/atlasContextSources.ts": {
+      "lines": 926,
+      "functions": 27,
+      "exports": 1,
+      "hash": "3e01461923a2"
+    },
+    "server/shared/intelligence/atlasMemoryStore.ts": {
+      "lines": 108,
+      "functions": 0,
+      "exports": 1,
+      "hash": "63003f7cd19f"
+    },
+    "server/shared/intelligence/atlasWiring.ts": {
+      "lines": 606,
+      "functions": 16,
+      "exports": 17,
+      "hash": "6a220b1cc849"
+    },
+    "server/shared/intelligence/atlasLLMAdapter.ts": {
+      "lines": 58,
+      "functions": 2,
+      "exports": 2,
+      "hash": "fd8e1c6ddffd"
+    },
+    "server/shared/intelligence/atlasGraduatedAutonomy.ts": {
+      "lines": 256,
+      "functions": 8,
+      "exports": 9,
+      "hash": "df2925a0f5c4"
+    },
+    "server/shared/intelligence/dbCoercion.ts": {
+      "lines": 89,
+      "functions": 3,
+      "exports": 3,
+      "hash": "7b67d5841286"
+    },
+    "server/shared/config/atlasConfigStore.ts": {
+      "lines": 210,
+      "functions": 0,
+      "exports": 1,
+      "hash": "9003c00eb8c6"
+    },
+    "server/shared/intelligence/__tests__/atlas.test.ts": {
+      "lines": 493,
+      "functions": 0,
+      "exports": 0,
+      "hash": "2b2edfc4cd07"
+    }
+  },
+  "platformFiles": {
+    "server/shared/intelligence/types.ts": {
+      "lines": 216,
+      "functions": 1,
+      "exports": 15,
+      "hash": "693c77f89a0b"
+    },
+    "server/shared/intelligence/index.ts": {
+      "lines": 65,
+      "functions": 0,
+      "exports": 4,
+      "hash": "56c01ae414c9"
+    },
+    "server/shared/intelligence/contextualLLM.ts": {
+      "lines": 183,
+      "functions": 6,
+      "exports": 4,
+      "hash": "9202d0d222f9"
+    },
+    "server/shared/intelligence/deepContextAssembler.ts": {
+      "lines": 314,
+      "functions": 5,
+      "exports": 3,
+      "hash": "3eea370226ba"
+    },
+    "server/shared/intelligence/memoryEngine.ts": {
+      "lines": 339,
+      "functions": 11,
+      "exports": 8,
+      "hash": "0a2a5e6bd556"
+    },
+    "server/shared/intelligence/stewardlyContextSources.ts": {
+      "lines": 600,
+      "functions": 19,
+      "exports": 1,
+      "hash": "eb150f031004"
+    },
+    "server/shared/intelligence/stewardlyMemoryStore.ts": {
+      "lines": 102,
+      "functions": 0,
+      "exports": 1,
+      "hash": "6aecf5473b98"
+    },
+    "server/shared/intelligence/stewardlyWiring.ts": {
+      "lines": 490,
+      "functions": 13,
+      "exports": 9,
+      "hash": "7ede261f8de9"
+    },
+    "server/shared/config/stewardlyConfigStore.ts": {
+      "lines": 204,
+      "functions": 0,
+      "exports": 1,
+      "hash": "7b621c9f8149"
+    }
+  },
+  "testResults": {
+    "testsPassed": 176,
+    "filesPassed": 6,
+    "raw": "Test Files  6 passed (6)\n      Tests  176 passed (176)\n   Start at  20:35:14\n   Duration  1.04s (transform 880ms, setup 0ms, collect 883ms, tests 1.40s, environment 1ms, prepare 476ms)"
+  },
+  "totalLines": 2746,
+  "totalFunctions": 56,
+  "totalExports": 34
+}
