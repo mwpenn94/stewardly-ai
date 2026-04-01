@@ -12,11 +12,15 @@
  *
  * Wire this into an Express POST endpoint; the handler manages the full SSE
  * lifecycle including headers, heartbeat, disconnect cleanup, and error framing.
+ *
+ * IMPORTANT: extractQuery and injectContext are imported from the canonical
+ * services/contextualLLM.ts (via stewardlyWiring) to prevent behavioral drift
+ * between streaming and non-streaming paths. Do NOT duplicate these functions.
  */
 
 import type { Request, Response } from "express";
 import { logger } from "../../_core/logger";
-import { getQuickContext } from "../stewardlyWiring";
+import { getQuickContext, extractQuery, injectContext } from "../stewardlyWiring";
 import type { ContextType } from "../stewardlyWiring";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -54,7 +58,6 @@ export interface SSEEvent {
 const FALLBACK_CHUNK_SIZE = 5; // words per simulated chunk
 const FALLBACK_DELAY_MS = 20; // ms between simulated chunks
 const HEARTBEAT_INTERVAL_MS = 15_000; // keep-alive every 15s
-const MAX_CONTEXT_CHARS = 12_000; // match contextualLLM's safety limit
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -91,59 +94,6 @@ function chunkByWords(text: string, size: number): string[] {
   }
   if (current) chunks.push(current);
   return chunks;
-}
-
-/**
- * Extract the last user message as a query string for context assembly.
- * Mirrors the extractQuery logic in contextualLLM.ts.
- */
-function extractQuery(messages: Array<{ role: string; content: any }>): string {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role === "user") {
-      const content = messages[i].content;
-      if (typeof content === "string") return content.slice(0, 500);
-      if (Array.isArray(content)) {
-        const textPart = content.find((p: any) => p.type === "text");
-        if (textPart) return textPart.text?.slice(0, 500) || "";
-      }
-    }
-  }
-  return "";
-}
-
-/**
- * Inject platform context into the system message of a messages array.
- * Mirrors the injectContext logic in contextualLLM.ts, including the
- * MAX_CONTEXT_CHARS safety truncation.
- */
-function injectStreamContext(
-  messages: Array<{ role: string; content: any }>,
-  platformContext: string,
-): Array<{ role: string; content: any }> {
-  if (!platformContext) return messages;
-
-  let safeContext = platformContext;
-  if (safeContext.length > MAX_CONTEXT_CHARS) {
-    logger.warn(
-      { originalLength: safeContext.length, truncatedTo: MAX_CONTEXT_CHARS },
-      "[SSE] Platform context exceeded size limit, truncating",
-    );
-    safeContext = safeContext.slice(0, MAX_CONTEXT_CHARS) + "\n[... context truncated for token safety ...]";
-  }
-
-  const contextBlock = `\n<platform_context>\n${safeContext}\n</platform_context>\nUse the above platform context to provide more personalized, data-rich responses. Reference specific details from the user's profile, documents, financial data, and history when relevant.`;
-
-  const enriched = [...messages];
-  const systemIdx = enriched.findIndex((m) => m.role === "system");
-  if (systemIdx >= 0) {
-    enriched[systemIdx] = {
-      ...enriched[systemIdx],
-      content: enriched[systemIdx].content + contextBlock,
-    };
-  } else {
-    enriched.unshift({ role: "system", content: contextBlock.trim() });
-  }
-  return enriched;
 }
 
 // ── Main Handler ──────────────────────────────────────────────────────────────
@@ -195,7 +145,10 @@ export async function createSSEStreamHandler(
       try {
         const query = extractQuery(messages);
         const platformContext = await getQuickContext(userId, query, contextType as ContextType);
-        enrichedMessages = injectStreamContext(messages, platformContext);
+        // Use the canonical injectContext from services/contextualLLM.ts
+        // which handles MAX_CONTEXT_CHARS truncation, array content blocks,
+        // and the "You are an intelligent AI assistant..." preamble.
+        enrichedMessages = injectContext(messages, platformContext);
         logger.debug(
           { operation: "sseStream.contextInjected", userId, contextLength: platformContext.length },
           "[SSE] Platform context injected into streaming messages",

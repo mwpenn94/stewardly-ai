@@ -23,7 +23,7 @@ import { logger } from "../_core/logger";
  * messages and the model's response within typical context windows.
  * Adjust upward if using models with 128k+ context windows.
  */
-const MAX_CONTEXT_CHARS = 12_000;
+export const MAX_CONTEXT_CHARS = 12_000;
 
 interface ContextualLLMParams {
   userId?: number | null;
@@ -75,7 +75,7 @@ export async function contextualLLM(params: ContextualLLMParams) {
 /**
  * Extract a query string from the messages array (last user message)
  */
-function extractQuery(messages: Array<{ role: string; content: any }>): string {
+export function extractQuery(messages: Array<{ role: string; content: any }>): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].role === "user") {
       const content = messages[i].content;
@@ -94,7 +94,7 @@ function extractQuery(messages: Array<{ role: string; content: any }>): string {
  * If no system message exists, prepend one.
  * Truncates context to MAX_CONTEXT_CHARS to prevent token overflow.
  */
-function injectContext(
+export function injectContext(
   messages: Array<{ role: string; content: any }>,
   platformContext: string
 ): Array<{ role: string; content: any }> {

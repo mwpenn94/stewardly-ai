@@ -7,10 +7,40 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock getQuickContext before importing the module
-vi.mock("../stewardlyWiring", () => ({
-  getQuickContext: vi.fn().mockResolvedValue("mock platform context for user"),
-}));
+// Mock stewardlyWiring before importing the module
+vi.mock("../stewardlyWiring", () => {
+  // Provide real implementations of extractQuery and injectContext
+  // so the handler's context injection logic works correctly in tests.
+  function extractQuery(messages: Array<{ role: string; content: any }>): string {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        const content = messages[i].content;
+        if (typeof content === "string") return content.slice(0, 500);
+      }
+    }
+    return "";
+  }
+  function injectContext(
+    messages: Array<{ role: string; content: any }>,
+    platformContext: string,
+  ): Array<{ role: string; content: any }> {
+    if (!platformContext) return messages;
+    const contextBlock = `\n<platform_context>\n${platformContext}\n</platform_context>`;
+    const result = [...messages];
+    const systemIdx = result.findIndex((m) => m.role === "system");
+    if (systemIdx >= 0) {
+      result[systemIdx] = { ...result[systemIdx], content: result[systemIdx].content + contextBlock };
+    } else {
+      result.unshift({ role: "system", content: contextBlock.trim() });
+    }
+    return result;
+  }
+  return {
+    getQuickContext: vi.fn().mockResolvedValue("mock platform context for user"),
+    extractQuery,
+    injectContext,
+  };
+});
 
 // Mock logger to avoid real logging in tests
 vi.mock("../../_core/logger", () => ({

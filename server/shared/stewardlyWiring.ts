@@ -16,7 +16,7 @@
  */
 
 // ── Re-export existing Stewardly contextualLLM ────────────────────────────
-export { contextualLLM } from "../services/contextualLLM";
+export { contextualLLM, extractQuery, injectContext, MAX_CONTEXT_CHARS } from "../services/contextualLLM";
 export { getQuickContext } from "../services/deepContextAssembler";
 export type { ContextType } from "../services/deepContextAssembler";
 
