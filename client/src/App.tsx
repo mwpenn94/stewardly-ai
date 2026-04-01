@@ -52,6 +52,7 @@ const SuitabilityPanel = lazy(() => import("./pages/SuitabilityPanel"));
 const ProficiencyDashboard = lazy(() => import("./pages/ProficiencyDashboard"));
 const ProductIntelligence = lazy(() => import("./pages/ProductIntelligence"));
 const AdminIntelligenceDashboard = lazy(() => import("./pages/AdminIntelligenceDashboard"));
+const PlatformGuide = lazy(() => import("./pages/PlatformGuide"));
 const PassiveActions = lazy(() => import("./pages/PassiveActions"));
 const MarketData = lazy(() => import("./pages/MarketData"));
 const OperationsHub = lazy(() => import("./pages/OperationsHub"));
@@ -120,6 +121,7 @@ function Router() {
         <Route path={"/proficiency"} component={ProficiencyDashboard} />
         <Route path={"/product-intelligence"} component={ProductIntelligence} />
         <Route path={"/admin/intelligence"} component={AdminIntelligenceDashboard} />
+        <Route path={"/admin/guide"} component={PlatformGuide} />
         <Route path={"/passive-actions"} component={PassiveActions} />
         <Route path={"/market-data"} component={MarketData} />
 

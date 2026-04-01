@@ -23,7 +23,7 @@ import {
   MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
   Link2, HeartPulse, RefreshCw, Activity, Briefcase, Building2,
   BarChart3, Globe, Wrench, HelpCircle, Settings, LogIn, LogOut,
-  Menu, X, ChevronLeft, ChevronRight, PanelLeftClose, Keyboard,
+  Menu, X, ChevronLeft, ChevronRight, PanelLeftClose, Keyboard, BookOpen,
 } from "lucide-react";
 
 type UserRole = "user" | "advisor" | "manager" | "admin";
@@ -54,6 +54,7 @@ const ADMIN_NAV: NavItem[] = [
   { icon: <BarChart3 className="w-4 h-4" />, label: "Manager Dashboard", href: "/manager", minRole: "manager" },
   { icon: <Globe className="w-4 h-4" />, label: "Global Admin", href: "/admin", minRole: "admin" },
   { icon: <Wrench className="w-4 h-4" />, label: "Improvement Engine", href: "/improvement", minRole: "advisor" },
+  { icon: <BookOpen className="w-4 h-4" />, label: "Platform Guide", href: "/admin/guide", minRole: "admin" },
 ];
 
 interface AppShellProps {

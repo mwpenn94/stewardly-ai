@@ -116,7 +116,17 @@ export async function createConversation(userId: number, mode: "client" | "coach
 export async function getUserConversations(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(conversations).where(eq(conversations.userId, userId)).orderBy(desc(conversations.updatedAt));
+  return db.select({
+    id: conversations.id,
+    userId: conversations.userId,
+    title: conversations.title,
+    mode: conversations.mode,
+    pinned: conversations.pinned,
+    folderId: conversations.folderId,
+    createdAt: conversations.createdAt,
+    updatedAt: conversations.updatedAt,
+    messageCount: sql<number>`(SELECT COUNT(*) FROM \`messages\` WHERE \`messages\`.\`conversationId\` = \`conversations\`.\`id\`)`.as('messageCount'),
+  }).from(conversations).where(eq(conversations.userId, userId)).orderBy(desc(conversations.updatedAt));
 }
 
 export async function getConversation(id: number, userId: number) {

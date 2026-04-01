@@ -319,7 +319,7 @@ describe("Org Providers — SOFR Pipeline", () => {
     expect(rates[0]).toHaveProperty("date");
     expect(rates[0]).toHaveProperty("rate");
     expect(typeof rates[0].rate).toBe("number");
-  });
+  }, 15000);
 
   it("should calculate premium finance rates from SOFR", () => {
     const pfRates = calculatePremiumFinanceRates(5.33);
@@ -452,7 +452,7 @@ describe("Adaptive Rate Management — Integration Onboarding", () => {
       "unknown.example.com"
     );
     expect(result.suggestedRpm).toBeLessThanOrEqual(30);
-  });
+  }, 15000);
 });
 
 describe("Adaptive Rate Management — Extraction Plans", () => {

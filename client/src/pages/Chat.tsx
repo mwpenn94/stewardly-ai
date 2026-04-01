@@ -594,16 +594,21 @@ export default function Chat() {
       conversations: convs.filter((c: any) => !c.pinned && c.folderId === f.id),
     }));
     const unfiled = convs.filter((c: any) => !c.pinned && !c.folderId);
-    // Filter out empty conversations with default title (no user messages yet)
-    // Keep the current active conversation even if empty
+    // Filter out empty conversations (no messages) unless they're the active one or very recent
     const filteredUnfiled = unfiled.filter((c: any) => {
-      if (c.id === conversationId) return true; // always show active
-      if (c.title && c.title !== "New Conversation") return true; // has custom title
-      // For "New Conversation" titled ones, check if they have recent activity
-      // (created within last 5 minutes = likely just created, show it)
-      const createdRecently = c.createdAt && (Date.now() - new Date(c.createdAt).getTime()) < 5 * 60 * 1000;
-      if (createdRecently) return true;
-      return false;
+      if (c.id === conversationId) return true; // always show active conversation
+      // If we have messageCount from the API, use it for precise filtering
+      if (typeof c.messageCount === 'number' && c.messageCount === 0) {
+        // Empty conversation — only show if created within last 5 minutes
+        const createdRecently = c.createdAt && (Date.now() - new Date(c.createdAt).getTime()) < 5 * 60 * 1000;
+        return createdRecently;
+      }
+      // Fallback for when messageCount is not available: filter by default title
+      if (c.title === "New Conversation") {
+        const createdRecently = c.createdAt && (Date.now() - new Date(c.createdAt).getTime()) < 5 * 60 * 1000;
+        return createdRecently;
+      }
+      return true;
     });
     return { pinned, folderGroups, unfiled: filteredUnfiled };
   }, [conversationsQuery.data, foldersQuery.data, conversationId]);

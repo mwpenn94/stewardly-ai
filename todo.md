@@ -2965,21 +2965,21 @@
 - [x] Discovered: 246 tables have camelCase vs snake_case column mismatches — systemic issue from GitHub merge, needs broader migration (tracked separately)
 
 ## Full Schema Migration, Flaky Tests Fix, Startup Validation
-- [ ] Analyze full schema diff — categorize tables by migration type (add missing columns vs rename snake_case)
-- [ ] Generate and execute ALTER TABLE ADD COLUMN for columns missing in DB but defined in Drizzle schema
-- [ ] Verify all critical-path tables (messages, conversations, documents, users, etc.) are fully aligned
-- [ ] Fix 2 flaky consolidatedPhase3 tests (timeout in Adaptive Rate Management)
-- [ ] Add startup schema validation check that compares Drizzle schema columns against actual DB
-- [ ] Run all tests and verify everything passes
+- [x] Analyze full schema diff — categorize tables by migration type (add missing columns vs rename snake_case)
+- [x] Generate and execute ALTER TABLE ADD COLUMN for columns missing in DB but defined in Drizzle schema
+- [x] Verify all critical-path tables (messages, conversations, documents, users, etc.) are fully aligned
+- [x] Fix 2 flaky consolidatedPhase3 tests (timeout in Adaptive Rate Management + SOFR)
+- [x] Add startup schema validation check that compares Drizzle schema columns against actual DB
+- [x] Run all tests and verify everything passes (2139/2139, 80 files)
 
 ## Schema Migration & Recursive Optimization (2026-04-01)
 - [x] Complete schema migration: CREATE 5 missing tables (user_autonomy_profiles, improvement_signals, improvement_hypotheses, hypothesis_test_results, reasoning_traces)
 - [x] Complete schema migration: ADD 6 missing columns to onboarding_progress
 - [x] Fix schema validator to handle camelCase column names (eliminate 52 false alarms)
-- [ ] Recursive optimization Landscape pass: Audit UI/UX for desktop and mobile
-- [ ] Recursive optimization Depth pass: Implement UI/UX fixes and improvements
-- [ ] Virtual user testing: Navigate all major flows and fix issues found
-- [ ] Test suite optimization: Expand coverage and fix gaps
-- [ ] Create comprehensive guide with design specs (standalone document)
-- [ ] Build admin-only in-app guide and design specs page
+- [x] Recursive optimization Landscape pass: Audit UI/UX for desktop and mobile
+- [x] Recursive optimization Depth pass: Implement UI/UX fixes and improvements (CSP fix, 7 pages back-button cleanup, nested anchors, empty conversation filtering, scheduler cleanup, SQL column fix)
+- [x] Virtual user testing: Navigate all major flows and fix issues found (all 9 pages pass, fixed 185 col names + 7 missing cols + messageCount subquery)
+- [x] Test suite optimization: Expand coverage and fix gaps (18 new schema tests, 2 flaky tests fixed, 2139/2139 pass)
+- [x] Create comprehensive guide with design specs (standalone document)
+- [x] Build admin-only in-app guide and design specs page (10 tabs, admin-only, sidebar nav at /admin/guide)
 - [x] Copy recursive-optimization-converged-prompt(4).md to project shared files
