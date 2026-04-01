@@ -3,7 +3,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { eq, desc } from "drizzle-orm";
 import { fairnessTestPrompts, fairnessTestRuns, fairnessTestResults } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
-import { invokeLLM } from "../shared/intelligence/sovereignWiring"
+import { contextualLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "../services/contextualLLM";
 
 // Default demographic-varied prompts for fairness testing

@@ -367,11 +367,11 @@ async function fetchAutonomyState(userId: number, _query: string): Promise<strin
       }
     }
 
-    // Fallback: try in-memory graduated autonomy service
+    // Fallback: try DB-backed graduated autonomy service
     try {
       const autonomyMod = await import("../../services/graduatedAutonomy");
-      const profile = autonomyMod.getProfile(userId);
-      const parts: string[] = ["Graduated Autonomy State (in-memory):"];
+      const profile = await autonomyMod.getProfile(userId);
+      const parts: string[] = ["Graduated Autonomy State:"];
       parts.push(`  Level: ${profile.level}`);
       parts.push(`  Trust score: ${profile.trustScore}`);
       parts.push(`  Total interactions: ${profile.totalInteractions}`);

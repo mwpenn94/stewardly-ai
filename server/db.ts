@@ -12,6 +12,7 @@ import {
   type InsertAiToolExecution, type InsertAiResponseQualityEntry,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { normalizeQualityScore } from './shared/intelligence/types';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -267,11 +268,13 @@ export async function exportConversation(conversationId: number, userId: number)
 export async function addMessage(data: {
   conversationId: number; userId: number; role: "user" | "assistant" | "system";
   content: string; confidenceScore?: number; complianceStatus?: "pending" | "approved" | "flagged" | "rejected"; metadata?: unknown;
+  modelVersion?: string;
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const result = await db.insert(messages).values({
     ...data,
+    confidenceScore: data.confidenceScore != null ? normalizeQualityScore(data.confidenceScore) : undefined,
     metadata: data.metadata ? JSON.stringify(data.metadata) : undefined,
   });
   return { id: result[0].insertId };
@@ -698,7 +701,10 @@ export async function addToReviewQueue(data: {
 }) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(reviewQueue).values(data);
+  await db.insert(reviewQueue).values({
+    ...data,
+    confidenceScore: normalizeQualityScore(data.confidenceScore),
+  });
 }
 
 export async function getPendingReviews() {
@@ -720,7 +726,10 @@ export async function addMemory(data: {
 }) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(memories).values(data);
+  await db.insert(memories).values({
+    ...data,
+    confidence: data.confidence != null ? normalizeQualityScore(data.confidence) : undefined,
+  });
 }
 
 export async function getUserMemories(userId: number, category?: string) {

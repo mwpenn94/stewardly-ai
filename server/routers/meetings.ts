@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { meetings, meetingActionItems } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { invokeLLM } from "../shared/intelligence/sovereignWiring"
+import { contextualLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "../services/contextualLLM";
 
 async function db() {

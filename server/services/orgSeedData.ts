@@ -4,7 +4,7 @@
  * and wires the owner user with all permission levels.
  */
 import { getDb } from "../db";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/intelligence/sovereignWiring";
 import { organizations, userOrganizationRoles, users } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 
@@ -140,9 +140,7 @@ export async function detectColorSchemeFromLogo(logoUrl: string): Promise<{
   confidence: number;
 }> {
   // Use LLM to analyze the logo colors
-  const { invokeLLM } = await import("../shared/intelligence/sovereignWiring");
-
-  const result = await contextualLLM({ userId: null, contextType: "analysis",
+  const result = await contextualLLM({ userId: 0, contextType: "analysis", skipContext: true,
     messages: [
       {
         role: "system",

@@ -83,9 +83,10 @@ interface ProviderUsageEntry {
 }
 
 /** In-memory usage log buffer (flushed to DB periodically) */
-const usageLogBuffer: ProviderUsageEntry[] = [];
+let usageLogBuffer: ProviderUsageEntry[] = [];
 const USAGE_LOG_FLUSH_INTERVAL = 30_000; // 30 seconds
 const USAGE_LOG_MAX_BUFFER = 100;
+let _flushInProgress = false; // Guard against concurrent flushes
 
 /** Canary route tracking */
 interface CanaryState {
@@ -98,6 +99,41 @@ interface CanaryState {
 const canaryStates = new Map<string, CanaryState>();
 const CANARY_CHECK_INTERVAL = 60_000; // 1 minute
 const CANARY_FAILURE_THRESHOLD = 3;
+
+/** Circuit breaker: if ALL providers fail within this window, fast-fail */
+const CIRCUIT_BREAKER_WINDOW_MS = 30_000; // 30 seconds
+const CIRCUIT_BREAKER_THRESHOLD = 5; // 5 total failures across all providers
+let circuitBreakerFailures: number[] = []; // timestamps of recent failures
+let circuitBreakerOpen = false;
+let circuitBreakerOpenedAt = 0;
+const CIRCUIT_BREAKER_RECOVERY_MS = 15_000; // 15s before half-open
+
+function checkCircuitBreaker(): boolean {
+  if (!circuitBreakerOpen) return false;
+  // Half-open: allow one probe after recovery period
+  if (Date.now() - circuitBreakerOpenedAt > CIRCUIT_BREAKER_RECOVERY_MS) {
+    circuitBreakerOpen = false;
+    circuitBreakerFailures = [];
+    return false;
+  }
+  return true;
+}
+
+function recordCircuitBreakerFailure(): void {
+  const now = Date.now();
+  circuitBreakerFailures.push(now);
+  // Trim old failures outside the window
+  circuitBreakerFailures = circuitBreakerFailures.filter(t => now - t < CIRCUIT_BREAKER_WINDOW_MS);
+  if (circuitBreakerFailures.length >= CIRCUIT_BREAKER_THRESHOLD) {
+    circuitBreakerOpen = true;
+    circuitBreakerOpenedAt = now;
+  }
+}
+
+function recordCircuitBreakerSuccess(): void {
+  circuitBreakerOpen = false;
+  circuitBreakerFailures = [];
+}
 
 let _baseInvokeLLMFn: ((params: any) => Promise<any>) | null = null;
 
@@ -158,6 +194,14 @@ export async function sovereignInvokeLLM(params: any): Promise<any> {
   const startTime = Date.now();
   const provider = params.model || DEFAULT_SOVEREIGN_CONFIG.provider.primaryModel;
   const modelVersion = DEFAULT_SOVEREIGN_CONFIG.provider.modelVersion;
+
+  // Circuit breaker: fast-fail if all providers are down
+  if (checkCircuitBreaker()) {
+    throw new Error(
+      `[Sovereign] Circuit breaker OPEN: all LLM providers failed within ${CIRCUIT_BREAKER_WINDOW_MS / 1000}s window. ` +
+      `Recovery probe in ${Math.max(0, CIRCUIT_BREAKER_RECOVERY_MS - (Date.now() - circuitBreakerOpenedAt))}ms.`
+    );
+  }
 
   // Check canary health — but allow recovery probes after cooldown
   const canary = canaryStates.get(provider);
@@ -222,6 +266,7 @@ export async function sovereignInvokeLLM(params: any): Promise<any> {
 
     // Update canary state — healthy
     updateCanaryState(provider, true);
+    recordCircuitBreakerSuccess();
 
     return result;
   } catch (error) {
@@ -242,10 +287,14 @@ export async function sovereignInvokeLLM(params: any): Promise<any> {
 
     // Update canary state — unhealthy
     updateCanaryState(provider, false);
+    recordCircuitBreakerFailure();
 
     // Attempt failover
     const fallbackResult = await attemptFailover(params, provider);
-    if (fallbackResult) return fallbackResult;
+    if (fallbackResult) {
+      recordCircuitBreakerSuccess();
+      return fallbackResult;
+    }
 
     throw error;
   }
@@ -361,11 +410,16 @@ function logProviderUsage(entry: ProviderUsageEntry): void {
 
 /**
  * Flush usage logs to the database.
+ * Uses a lock to prevent concurrent flushes (race condition fix).
  */
 async function flushUsageLogs(): Promise<void> {
   if (usageLogBuffer.length === 0) return;
+  if (_flushInProgress) return; // Prevent concurrent flushes
+  _flushInProgress = true;
 
-  const entries = usageLogBuffer.splice(0);
+  // Atomic swap: take current buffer, replace with empty
+  const entries = usageLogBuffer;
+  usageLogBuffer = [];
 
   try {
     const db = await (await import("../../db")).getDb();
@@ -398,6 +452,8 @@ async function flushUsageLogs(): Promise<void> {
     if (usageLogBuffer.length < USAGE_LOG_MAX_BUFFER * 3) {
       usageLogBuffer.unshift(...entries);
     }
+  } finally {
+    _flushInProgress = false;
   }
 }
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { invokeLLM } from "../shared/intelligence/sovereignWiring";
+import { contextualLLM } from "../shared/intelligence/sovereignWiring";
 import { complianceReviews, complianceFlags } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -47,7 +47,7 @@ export const complianceRouter = router({
         }
       } catch { /* best-effort */ }
       // Use LLM to analyze content for compliance issues
-      const analysisResponse = await invokeLLM({
+      const analysisResponse = await contextualLLM({
         messages: [
           {
             role: "system",
@@ -175,7 +175,7 @@ Return a JSON response with this exact schema:
           platformContext = await getQuickContext(ctx.user.id, `Reg BI documentation for: ${input.recommendation.slice(0, 200)}`, "compliance");
         }
       } catch { /* best-effort */ }
-      const response = await invokeLLM({
+      const response = await contextualLLM({
         messages: [
           {
             role: "system",

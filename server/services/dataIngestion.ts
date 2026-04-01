@@ -9,7 +9,7 @@ import {
   dataSources, ingestionJobs, ingestedRecords,
   marketDataCache, webScrapeResults, documentExtractions,
 } from "../../drizzle/schema";
-import { invokeLLM } from "../shared/intelligence/sovereignWiring"
+import { contextualLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 
 // ─── Types ─────────────────────────────────────────────────────────────────

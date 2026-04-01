@@ -4,7 +4,7 @@
 import { getDb } from "../db";
 import { conversations, messages } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
-import { invokeLLM } from "../shared/intelligence/sovereignWiring"
+import { contextualLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 
 // ═══════════════════════════════════════════════════════════════════════════

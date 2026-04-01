@@ -7,7 +7,7 @@
 import { getDb } from "../db";
 import { compliancePrescreening, conversationComplianceScores } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { invokeLLM } from "../shared/intelligence/sovereignWiring"
+import { contextualLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 
 export type ComplianceCheckType = "unsuitable_recommendation" | "promissory_language" | "unauthorized_practice" | "concentration_risk" | "missing_disclosure";

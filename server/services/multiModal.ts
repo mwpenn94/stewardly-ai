@@ -6,7 +6,7 @@
  * - Unified cross-format search
  * - Data highlighting and annotation storage
  */
-import { invokeLLM } from "../shared/intelligence/sovereignWiring"
+import { contextualLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 import { transcribeAudio } from "../_core/voiceTranscription";
 import { getDb } from "../db";

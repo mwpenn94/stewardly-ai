@@ -10,7 +10,7 @@ import {
   conversationFolders, memories,
 } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
-import { invokeLLM } from "../shared/intelligence/sovereignWiring";
+import { contextualLLM } from "../shared/intelligence/sovereignWiring";
 import { getQuickContext } from "../services/deepContextAssembler";
 
 const LAYERS = ["platform", "organization", "manager", "professional", "user"] as const;
@@ -362,7 +362,7 @@ async function generateDirectionalAnalysis(
     }
   } catch { /* deep context is best-effort */ }
 
-  const response = await invokeLLM({
+  const response = await contextualLLM({
     messages: [
       {
         role: "system",

@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { proactiveInsights, engagementScores } from "../../drizzle/schema";
 import { eq, and, desc, ne, sql } from "drizzle-orm";
-import { invokeLLM } from "../shared/intelligence/sovereignWiring";
+import { contextualLLM } from "../shared/intelligence/sovereignWiring";
 
 async function db() {
   return (await import("../db")).getDb();
@@ -126,7 +126,7 @@ For each insight, provide:
 
 Return as JSON array.`;
 
-    const response = await invokeLLM({
+    const response = await contextualLLM({
       messages: [
         { role: "system", content: "You are a proactive financial advisor intelligence engine. Generate realistic, actionable insights grounded in the client's actual data and documents." },
         { role: "user", content: prompt },

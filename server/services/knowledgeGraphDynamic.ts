@@ -6,7 +6,7 @@
 import { getDb } from "../db";
 import { knowledgeGraphEntities, knowledgeGraphEdges, entityResolutionRules } from "../../drizzle/schema";
 import { eq, and, desc, like, sql, or } from "drizzle-orm";
-import { invokeLLM } from "../shared/intelligence/sovereignWiring"
+import { contextualLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 
 type EntityType = "person" | "company" | "product" | "concept" | "regulation" | "account";

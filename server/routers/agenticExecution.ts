@@ -20,7 +20,7 @@ import {
   advisoryExecutions, estateDocuments,
   premiumFinanceCases, carrierConnections,
 } from "../../drizzle/schema";
-import { invokeLLM } from "../shared/intelligence/sovereignWiring"
+import { contextualLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "../services/contextualLLM";
 
 // ─── G8: Licensed Review Gate ──────────────────────────────────────────────

@@ -513,6 +513,7 @@ export const messages = mysqlTable("messages", {
   confidenceScore: float("confidenceScore"),
   complianceStatus: mysqlEnum("complianceStatus", ["pending", "approved", "flagged", "rejected"]),
   metadata: json("metadata"),
+  modelVersion: varchar("model_version", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
     conversationIdIdx: index("idx_messages_conversation_id").on(table.conversationId),
@@ -726,6 +727,7 @@ export const memories = mysqlTable("memories", {
   confidence: float("confidence").default(0.8),
   validFrom: timestamp("validFrom"),
   validUntil: timestamp("validUntil"),
+  modelVersion: varchar("model_version", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
@@ -3728,6 +3730,7 @@ export const knowledgeArticles = mysqlTable("knowledge_articles", {
   freshnessScore: float("freshness_score").default(100),
   lastUsedAt: timestamp("last_used_at"),
   active: mysqlBoolean("active").notNull().default(true),
+  modelVersion: varchar("model_version", { length: 64 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -5200,3 +5203,66 @@ export const sovereignProviderUsageLogs = mysqlTable("sovereign_provider_usage_l
 }));
 export type SovereignProviderUsageLogEntry = typeof sovereignProviderUsageLogs.$inferSelect;
 export type InsertSovereignProviderUsageLogEntry = typeof sovereignProviderUsageLogs.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GRADUATED AUTONOMY — DB-PERSISTED TABLES (Universal Fix P0-7)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Autonomy Levels — Per-user, per-capability trust levels.
+ * Replaces the in-memory Map in graduatedAutonomy.ts.
+ */
+export const autonomyLevels = mysqlTable("autonomy_levels", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  capability: varchar("capability", { length: 100 }).notNull().default("global"),
+  trustLevel: int("trust_level").notNull().default(1),
+  trustScore: decimal("trust_score", { precision: 8, scale: 4 }).notNull().default("0"),
+  totalInteractions: int("total_interactions").notNull().default(0),
+  successfulActions: int("successful_actions").notNull().default(0),
+  overriddenActions: int("overridden_actions").notNull().default(0),
+  escalations: int("escalations").notNull().default(0),
+  lastEscalation: timestamp("last_escalation"),
+  levelHistory: json("level_history").$type<Array<{ level: string; achievedAt: string; reason: string }>>().default([]),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_autonomy_levels_user_id").on(table.userId),
+  userCapIdx: index("idx_autonomy_levels_user_cap").on(table.userId, table.capability),
+}));
+export type AutonomyLevelEntry = typeof autonomyLevels.$inferSelect;
+export type InsertAutonomyLevelEntry = typeof autonomyLevels.$inferInsert;
+
+/**
+ * User Capabilities — Fine-grained capability toggles per user.
+ */
+export const userCapabilities = mysqlTable("user_capabilities", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  capabilityName: varchar("capability_name", { length: 100 }).notNull(),
+  enabled: mysqlBoolean("enabled").notNull().default(true),
+  constraints: json("constraints").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_user_capabilities_user_id").on(table.userId),
+}));
+export type UserCapabilityEntry = typeof userCapabilities.$inferSelect;
+export type InsertUserCapabilityEntry = typeof userCapabilities.$inferInsert;
+
+/**
+ * Escalation History — Audit trail for autonomy level changes.
+ */
+export const escalationHistory = mysqlTable("escalation_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  action: varchar("action", { length: 200 }).notNull(),
+  previousLevel: int("previous_level").notNull(),
+  newLevel: int("new_level").notNull(),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_escalation_history_user_id").on(table.userId),
+}));
+export type EscalationHistoryEntry = typeof escalationHistory.$inferSelect;
+export type InsertEscalationHistoryEntry = typeof escalationHistory.$inferInsert;

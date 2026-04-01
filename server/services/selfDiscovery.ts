@@ -12,7 +12,7 @@
  * improvement loop where each discovery interaction refines future suggestions.
  */
 
-import { invokeLLM } from "../shared/intelligence/sovereignWiring"
+import { contextualLLM } from "../shared/intelligence/sovereignWiring"
 import { contextualLLM } from "./contextualLLM";
 import { getDb } from "../db";
 import { selfDiscoveryHistory, userPreferences } from "../../drizzle/schema";
