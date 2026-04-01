@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4, validate as uuidValidate } from "uuid";
 import { logger } from "./logger";
 
 // Extend Express Request to include requestId
@@ -12,38 +12,35 @@ declare global {
 }
 
 /**
- * UUID v4 pattern for fast regex pre-check.
- * Catches obvious injection attempts (HTML, SQL, newlines, etc.)
+ * Fast pre-check: rejects obviously malformed IDs (wrong length, illegal chars)
+ * before the more expensive uuid.validate() call.
  */
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_FAST_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Safe ID pattern: alphanumeric strings with hyphens/underscores (max 128 chars).
- * Allows non-UUID correlation IDs from upstream services.
- */
-const SAFE_ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
-
-/**
- * Validates that an incoming request ID is safe to propagate.
- * Accepts UUIDs and alphanumeric strings up to 128 chars.
- * Rejects anything that could be used for header/log injection.
- */
-function isValidRequestId(id: string): boolean {
-  return UUID_PATTERN.test(id) || SAFE_ID_PATTERN.test(id);
-}
-
-/**
- * Middleware that generates a UUID v4 per request and attaches it to req.requestId.
- * Also sets the X-Request-ID response header for traceability.
+ * Request ID middleware with injection rejection.
  *
- * Security:
- * - Client-provided X-Request-Id is validated against safe character sets.
- * - Malformed or oversized IDs are rejected and replaced with a fresh UUID.
- * - Prevents log injection via crafted request IDs containing newlines or control chars.
+ * Accepts a client-provided X-Request-Id only if it passes UUID v4 validation.
+ * Non-UUID values are rejected and replaced with a server-generated UUID to
+ * prevent log-forging attacks (e.g., injecting newlines, JSON payloads, or
+ * excessively long strings into structured logs).
  */
 export function requestIdMiddleware(req: Request, res: Response, next: NextFunction): void {
   const incoming = req.headers["x-request-id"] as string | undefined;
-  const requestId = (incoming && isValidRequestId(incoming)) ? incoming : uuidv4();
+  let requestId: string;
+
+  if (incoming && UUID_FAST_RE.test(incoming) && uuidValidate(incoming)) {
+    requestId = incoming;
+  } else {
+    if (incoming) {
+      logger.warn(
+        { operation: "requestIdRejected", rejected: incoming.slice(0, 72), ip: req.ip },
+        "Rejected malformed X-Request-Id header"
+      );
+    }
+    requestId = uuidv4();
+  }
+
   req.requestId = requestId;
   res.setHeader("X-Request-ID", requestId);
 

@@ -174,6 +174,60 @@ function resetLedger(args) {
 }
 
 // ── main ─────────────────────────────────────────────────────────────
+
+function suggestNextPass() {
+  const ledger = loadLedger();
+  const totalPasses = ledger.passes;
+  const lastScore = ledger.scores.length ? ledger.scores[ledger.scores.length - 1] : null;
+  
+  console.log("\n╔══════════════════════════════════════════════════╗");
+  console.log("║       Recursive Optimization — Suggestion        ║");
+  console.log("╠══════════════════════════════════════════════════╣");
+  
+  let temperature = "cold";
+  let deltaHistory = [];
+  if (ledger.scores.length >= 2) {
+    for (let i = 1; i < ledger.scores.length; i++) {
+      deltaHistory.push(ledger.scores[i].average - ledger.scores[i-1].average);
+    }
+    const recentDelta = deltaHistory[deltaHistory.length - 1];
+    if (Math.abs(recentDelta) > 0.5) temperature = "hot";
+    else if (Math.abs(recentDelta) > 0.25) temperature = "warm";
+    else temperature = "cold";
+  } else if (totalPasses === 0) {
+    temperature = "initial";
+  } else {
+    temperature = "warm";
+  }
+  
+  console.log(`║  Temperature: ${temperature.toUpperCase().padEnd(33)}║`);
+  if (lastScore) {
+    console.log(`║  Latest Score: ${lastScore.average}/10 (Pass ${lastScore.pass})${" ".repeat(20)}║`);
+  }
+  
+  let suggestion, reasoning;
+  if (totalPasses === 0) {
+    suggestion = "Landscape Pass";
+    reasoning = "No passes recorded.";
+  } else if (lastScore && lastScore.average < 7) {
+    suggestion = "Depth Pass";
+    reasoning = `Avg ${lastScore.average}/10 below expert threshold.`;
+  } else if (lastScore && lastScore.average < 8.5) {
+    suggestion = temperature === "hot" ? "Depth Pass" : "Adversarial Pass";
+    reasoning = `Avg ${lastScore.average}/10, temp ${temperature}.`;
+  } else if (lastScore && lastScore.average < 9.5) {
+    suggestion = temperature === "cold" ? "Future-State & Synthesis" : "Adversarial Pass";
+    reasoning = `Avg ${lastScore.average}/10, temp ${temperature}.`;
+  } else {
+    suggestion = "Future-State & Synthesis";
+    reasoning = `Avg ${lastScore.average}/10 near ceiling.`;
+  }
+  
+  console.log("╠══════════════════════════════════════════════════╣");
+  console.log(`║  RECOMMENDED: ${suggestion.padEnd(33)}║`);
+  console.log(`║  ${reasoning.padEnd(47)}║`);
+  console.log("╚══════════════════════════════════════════════════╝\n");
+}
 const [, , command, ...args] = process.argv;
 
 switch (command) {
@@ -196,6 +250,9 @@ switch (command) {
     break;
   case "history":
     showHistory();
+    break;
+  case "suggest":
+    suggestNextPass();
     break;
   case "reset":
     resetLedger(args);

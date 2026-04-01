@@ -43,28 +43,30 @@ async function startServer() {
 
   const app = express();
   const server = createServer(app);
-
-  // ─── Trust Proxy (required for correct IP resolution behind reverse proxies) ─
-  app.set("trust proxy", 1);
-
   // Initialize WebSocket notifications
   initWebSocket(server);
+
+  // ─── Trust Proxy (required for correct IP behind reverse proxy) ────────
+  app.set("trust proxy", 1);
 
   // ─── Request ID Middleware (must be first) ──────────────────────────────
   app.use(requestIdMiddleware);
 
-  // ─── Request + Response Logging with Duration ───────────────────
+  // ─── Request + Response logging with duration ──────────────────────────
   app.use((req, res, next) => {
     const start = Date.now();
-    logger.info(
-      { operation: "http.request", requestId: req.requestId, method: req.method, url: req.originalUrl },
-      `\u2192 ${req.method} ${req.originalUrl}`
-    );
     res.on("finish", () => {
       const durationMs = Date.now() - start;
       logger.info(
-        { operation: "http.response", requestId: req.requestId, method: req.method, url: req.originalUrl, status: res.statusCode, durationMs },
-        `\u2190 ${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`
+        {
+          operation: "requestComplete",
+          requestId: req.requestId,
+          method: req.method,
+          path: req.path,
+          statusCode: res.statusCode,
+          durationMs,
+        },
+        `${req.method} ${req.path} ${res.statusCode} ${durationMs}ms`
       );
     });
     next();
@@ -155,26 +157,24 @@ async function startServer() {
     logger.info({ operation: "portFallback", preferredPort, actualPort: port }, `Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  // ── Health check endpoint ──
-  app.get("/healthz", (_req, res) => res.json({ status: "ok", uptime: process.uptime() }));
-
   server.listen(port, () => {
     logger.info({ operation: "startServer", port }, `Server running on http://localhost:${port}/`);
     // Initialize background scheduler for health checks and data pipelines
     initScheduler();
-
-    // ── Graceful shutdown ──
-    const shutdown = () => {
-      logger.info({ operation: "server.shutdown" }, "Shutting down gracefully");
-      server.close(() => {
-        logger.info({ operation: "server.closed" }, "Server closed");
-        process.exit(0);
-      });
-      setTimeout(() => process.exit(1), 10_000).unref();
-    };
-    process.on("SIGTERM", shutdown);
-    process.on("SIGINT", shutdown);
   });
+
+  // ── Graceful shutdown ─────────────────────────────────────────────
+  const shutdown = () => {
+    logger.info({ operation: "server.shutdown" }, "Received shutdown signal, closing server...");
+    server.close(() => {
+      logger.info({ operation: "server.shutdown" }, "Server closed gracefully");
+      process.exit(0);
+    });
+    // Force exit after 10s if connections don't close
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 }
 
 startServer().catch((err) => {

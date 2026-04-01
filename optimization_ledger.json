@@ -76,75 +76,39 @@
     },
     {
       "id": 13,
-      "description": "Trust proxy setting for correct IP resolution behind reverse proxies",
-      "timestamp": "2026-04-01T00:53:12.854Z",
+      "description": "RequestId injection rejection — validates UUID format, rejects log-forging payloads",
+      "timestamp": "2026-04-01T00:56:39.402Z",
       "pass": 2
     },
     {
       "id": 14,
-      "description": "RequestId injection validation (UUID + safe ID patterns, max 128 chars)",
-      "timestamp": "2026-04-01T00:53:12.896Z",
+      "description": "Trust proxy set to 1 — correct client IP behind reverse proxy for rate limiting",
+      "timestamp": "2026-04-01T00:56:39.426Z",
       "pass": 2
     },
     {
       "id": 15,
-      "description": "DRY rate limit message constants",
-      "timestamp": "2026-04-01T00:53:12.934Z",
+      "description": "Response logging with duration — every request logs statusCode + durationMs on finish",
+      "timestamp": "2026-04-01T00:56:39.450Z",
       "pass": 2
     },
     {
       "id": 16,
-      "description": "Static file skip in generalLimiter to avoid penalizing page loads",
-      "timestamp": "2026-04-01T00:53:12.975Z",
+      "description": "coerceNumericFields utility — normalizes MySQL/TiDB aggregate string→number",
+      "timestamp": "2026-04-01T00:56:39.475Z",
       "pass": 2
     },
     {
       "id": 17,
-      "description": "standardHeaders draft-7 for latest RateLimit header spec",
-      "timestamp": "2026-04-01T00:53:13.015Z",
-      "pass": 2
+      "description": "Graceful shutdown handler — SIGTERM/SIGINT with 10s force-exit timeout",
+      "timestamp": "2026-04-01T01:03:31.018Z",
+      "pass": 3
     },
     {
       "id": 18,
-      "description": "createOperationLogger child logger factory for consistent operation context",
-      "timestamp": "2026-04-01T01:00:53.518Z",
-      "pass": 3
-    },
-    {
-      "id": 19,
-      "description": "Test-silent logger mode (VITEST/NODE_ENV=test)",
-      "timestamp": "2026-04-01T01:00:53.555Z",
-      "pass": 3
-    },
-    {
-      "id": 20,
-      "description": "Request/Response logging with duration tracking (http.request/http.response)",
-      "timestamp": "2026-04-01T01:00:53.593Z",
-      "pass": 3
-    },
-    {
-      "id": 21,
-      "description": "Debug log level in development for enhanced DX",
-      "timestamp": "2026-04-01T01:00:53.630Z",
-      "pass": 3
-    },
-    {
-      "id": 22,
-      "description": "All standardHeaders upgraded to draft-7 across all rate limiters",
-      "timestamp": "2026-04-01T01:02:46.422Z",
+      "description": "PLATFORM_CORE_MANIFEST.md — @platform/core extraction roadmap for shared modules across all 4 projects",
+      "timestamp": "2026-04-01T01:08:02.150Z",
       "pass": 4
-    },
-    {
-      "id": 23,
-      "description": "Health check /healthz endpoint",
-      "timestamp": "2026-04-01T01:04:34.001Z",
-      "pass": 5
-    },
-    {
-      "id": 24,
-      "description": "Graceful shutdown with SIGTERM/SIGINT handlers and 10s force-exit",
-      "timestamp": "2026-04-01T01:04:34.048Z",
-      "pass": 5
     }
   ],
   "scores": [
@@ -175,58 +139,58 @@
       "timestamp": "2026-03-31T23:54:46.735Z"
     },
     {
+      "pass": 1,
+      "scores": {
+        "Architecture": 8,
+        "Security": 8,
+        "Performance": 8,
+        "Code Quality": 8,
+        "UX/DX": 8,
+        "Completeness": 8
+      },
+      "average": 8,
+      "timestamp": "2026-03-31T23:56:47.650Z"
+    },
+    {
       "pass": 3,
       "scores": {
         "Architecture": 9,
-        "Security": 9.5,
+        "Security": 9,
+        "Performance": 8,
+        "Code Quality": 9,
+        "UX/DX": 8,
+        "Completeness": 9
+      },
+      "average": 8.67,
+      "timestamp": "2026-04-01T00:56:39.500Z"
+    },
+    {
+      "pass": 4,
+      "scores": {
+        "Architecture": 9,
+        "Security": 9,
+        "Performance": 9,
+        "Code Quality": 9,
+        "UX/DX": 8,
+        "Completeness": 9
+      },
+      "average": 8.83,
+      "timestamp": "2026-04-01T01:03:31.044Z"
+    },
+    {
+      "pass": 5,
+      "scores": {
+        "Architecture": 9,
+        "Security": 9,
         "Performance": 9,
         "Code Quality": 9,
         "UX/DX": 9,
         "Completeness": 9
       },
-      "average": 9.08,
-      "timestamp": "2026-04-01T00:53:13.054Z"
-    },
-    {
-      "pass": 4,
-      "scores": {
-        "Architecture": 9.5,
-        "Security": 9.5,
-        "Performance": 9,
-        "Code Quality": 9.5,
-        "UX/DX": 9,
-        "Completeness": 9.5
-      },
-      "average": 9.33,
-      "timestamp": "2026-04-01T01:00:53.671Z"
-    },
-    {
-      "pass": 5,
-      "scores": {
-        "Architecture": 9.5,
-        "Security": 9.5,
-        "Performance": 9.5,
-        "Code Quality": 9.5,
-        "UX/DX": 9.5,
-        "Completeness": 9.5
-      },
-      "average": 9.5,
-      "timestamp": "2026-04-01T01:02:46.462Z"
-    },
-    {
-      "pass": 6,
-      "scores": {
-        "Architecture": 9.5,
-        "Security": 9.5,
-        "Performance": 9.5,
-        "Code Quality": 9.5,
-        "UX/DX": 9.5,
-        "Completeness": 9.5
-      },
-      "average": 9.5,
-      "timestamp": "2026-04-01T01:04:34.095Z"
+      "average": 9,
+      "timestamp": "2026-04-01T01:08:02.174Z"
     }
   ],
-  "passes": 6,
-  "updated": "2026-04-01T01:04:34.095Z"
+  "passes": 5,
+  "updated": "2026-04-01T01:08:02.174Z"
 }
