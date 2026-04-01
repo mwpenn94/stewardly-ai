@@ -3,7 +3,6 @@
  * Predictive compliance risk scoring and proactive violation detection
  */
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 
 export interface ComplianceRiskFactor {
   factor: string;

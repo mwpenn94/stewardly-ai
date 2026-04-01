@@ -54,7 +54,7 @@ export const complianceRouter = router({
           {
             role: "system",
             content: `You are a financial compliance reviewer specializing in FINRA Rule 2210, SEC regulations, and Reg BI.
-${platformContext ? `\n<platform_context>\n${platformContext}\n</platform_context>\nUse the above context about the client and organization to provide more specific compliance guidance.\n` : ""}.
+Use the platform context about the client and organization to provide specific compliance guidance.
 Analyze the following content for compliance issues. Check for:
 1. Performance guarantees or promises of returns
 2. Misleading comparisons or statistics
@@ -184,7 +184,7 @@ Return a JSON response with this exact schema:
           {
             role: "system",
             content: `You are a compliance documentation specialist. Generate a Regulation Best Interest (Reg BI) documentation package.
-${platformContext ? `\n<platform_context>\n${platformContext}\n</platform_context>\nUse the above context to enrich the documentation with specific client and organizational details.\n` : ""}
+Use the platform context to enrich the documentation with specific client and organizational details.
 
 Include these sections:
 1. **Client Profile Summary** — risk tolerance, investment objectives, time horizon, financial situation

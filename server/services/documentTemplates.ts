@@ -5,7 +5,6 @@
  * Each template defines structure, required fields, and LLM generation prompts.
  */
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 
 // ─── Template Definitions ───────────────────────────────────────────────────
 

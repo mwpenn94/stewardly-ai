@@ -6,6 +6,10 @@
  * Tier 3: Episodic Summaries (2-3 sentence conversation summaries)
  * 
  * Auto-extracts facts and preferences from every conversation turn.
+ *
+ * IMPORTANT: This module uses raw invokeLLM, NOT contextualLLM.
+ * contextualLLM → deepContextAssembler → assembleMemoryContext → memoryEngine
+ * Using contextualLLM here would create an infinite circular dependency loop.
  */
 import { contextualLLM } from "./shared/intelligence/stewardlyWiring";
 import { getDb } from "./db";
@@ -49,7 +53,7 @@ export async function extractMemoriesFromMessage(
   aiResponse: string,
 ): Promise<ExtractedMemory[]> {
   try {
-    const resp = await contextualLLM({ userId: userId, contextType: "chat",
+    const resp = await invokeLLM({
       messages: [
         { role: "system", content: EXTRACTION_PROMPT },
         { role: "user", content: `User said: "${userMessage.substring(0, 2000)}"\n\nAI responded: "${aiResponse.substring(0, 1000)}"` },
@@ -65,7 +69,8 @@ export async function extractMemoriesFromMessage(
     return parsed.filter(
       (m: any) => m.category && m.content && typeof m.confidence === "number"
     ).slice(0, 5);
-  } catch {
+  } catch (e) {
+    logger.debug({ operation: "extractMemories", error: String(e) }, "Memory extraction failed, returning empty");
     return [];
   }
 }
@@ -116,7 +121,7 @@ export async function generateEpisodeSummary(
       .slice(-20) // Last 20 messages
       .map(m => `${m.role === "user" ? "User" : "Steward"}: ${m.content.substring(0, 500)}`)
       .join("\n");
-    const resp = await contextualLLM({ userId: 0, contextType: "chat",
+    const resp = await invokeLLM({
       messages: [
         { role: "system", content: EPISODE_PROMPT },
         { role: "user", content: transcript },
@@ -127,7 +132,8 @@ export async function generateEpisodeSummary(
       : "{}";
     const jsonStr = raw.replace(/^```json?\n?/, "").replace(/\n?```$/, "").trim();
     return JSON.parse(jsonStr);
-  } catch {
+  } catch (e) {
+    logger.debug({ operation: "generateEpisodeSummary", error: String(e) }, "Episode summary generation failed, returning null");
     return null;
   }
 }

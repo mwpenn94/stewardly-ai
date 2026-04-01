@@ -14,7 +14,6 @@ import { complianceAudit, privacyAudit } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { contextualLLM } from "./shared/intelligence/sovereignWiring"
 import { normalizeQualityScore } from "./shared/intelligence/types";
-import { contextualLLM } from "./services/contextualLLM";
 
 // ─── TYPES ──────────────────────────────────────────────────────
 export type ContentClassification =

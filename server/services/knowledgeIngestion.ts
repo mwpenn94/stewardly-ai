@@ -6,7 +6,6 @@ import { getDb } from "../db";
 import { knowledgeIngestionJobs, knowledgeArticles } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 
 // ─── Job Management ──────────────────────────────────────────────────────
 export async function createIngestionJob(data: {

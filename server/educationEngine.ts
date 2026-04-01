@@ -8,7 +8,6 @@ import { getDb } from "./db";
 import { educationModules, educationProgress } from "../drizzle/schema";
 import { eq, and, desc, isNull } from "drizzle-orm";
 import { contextualLLM } from "./shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./services/contextualLLM";
 
 // ─── SEED MODULES ───────────────────────────────────────────────
 const SEED_MODULES = [

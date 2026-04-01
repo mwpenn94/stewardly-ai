@@ -10,7 +10,6 @@ import {
 } from "../../drizzle/schema";
 import { eq, desc, sql, and, gte } from "drizzle-orm";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 
 // ─── Ingest Regulatory Update ────────────────────────────────────────────
 export async function ingestRegulatoryUpdate(params: {

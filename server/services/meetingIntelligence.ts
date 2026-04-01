@@ -5,7 +5,6 @@ import { getDb } from "../db";
 import { meetings } from "../../drizzle/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 
 export interface TranscriptionSegment {
   speaker: string;

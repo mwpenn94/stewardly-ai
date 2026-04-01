@@ -11,7 +11,6 @@ import {
 } from "../../drizzle/schema";
 import { eq, and, ne, sql, inArray } from "drizzle-orm";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "../services/contextualLLM";
 
 // Matching score factors
 interface MatchScore {

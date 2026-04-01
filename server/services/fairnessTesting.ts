@@ -2,7 +2,6 @@
  * Automated Fairness Testing (2C) — 20 demographic-varied prompts, bias detection, scoring
  */
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 
 export interface FairnessTestCase {
   id: string;

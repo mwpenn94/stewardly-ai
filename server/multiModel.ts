@@ -6,7 +6,6 @@
  */
 
 import { contextualLLM } from "./shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./services/contextualLLM";
 
 // ─── PERSPECTIVE DEFINITIONS ────────────────────────────────────────────────
 

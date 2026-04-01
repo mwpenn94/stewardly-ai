@@ -13,7 +13,6 @@ import {
   rateRecommendations, dataValueScores, rateProfiles, rateSignalLog,
 } from "../../drizzle/schema";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 
 // ─── DB HELPER ──────────────────────────────────────────────────────────
 

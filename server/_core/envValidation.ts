@@ -3,6 +3,7 @@
  * Validates required environment variables at startup.
  * In production, fails fast if critical vars are missing.
  */
+import { logger } from "./logger";
 
 const REQUIRED_IN_PRODUCTION = [
   "JWT_SECRET",

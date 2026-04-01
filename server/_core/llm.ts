@@ -1,4 +1,5 @@
 import { ENV } from "./env";
+import { isRequestAllowed, recordSuccess, recordFailure } from "./circuitBreaker";
 
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
 
@@ -265,8 +266,21 @@ const normalizeResponseFormat = ({
   };
 };
 
+const CIRCUIT_KEY = "llm-primary";
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 1000;
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   assertApiKey();
+
+  if (!isRequestAllowed(CIRCUIT_KEY)) {
+    throw new Error("Circuit breaker OPEN — LLM requests are temporarily blocked. Retry after cooldown.");
+  }
 
   const {
     messages,
@@ -296,10 +310,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
+  payload.max_tokens = 32768;
   payload.thinking = {
     "budget_tokens": 128
-  }
+  };
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
@@ -312,21 +326,57 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetch(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
-    );
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(resolveApiUrl(), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${ENV.forgeApiKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const err = new Error(
+          `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
+        );
+
+        if (RETRYABLE_STATUS.has(response.status) && attempt < MAX_RETRIES) {
+          const delay = BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 500;
+          lastError = err;
+          await sleep(delay);
+          continue;
+        }
+
+        recordFailure(CIRCUIT_KEY);
+        throw err;
+      }
+
+      const result = (await response.json()) as InvokeResult;
+      recordSuccess(CIRCUIT_KEY);
+      return result;
+
+    } catch (error: any) {
+      if (error.message?.startsWith("LLM invoke failed:")) {
+        throw error;
+      }
+
+      if (attempt < MAX_RETRIES) {
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt) + Math.random() * 500;
+        lastError = error;
+        await sleep(delay);
+        continue;
+      }
+
+      recordFailure(CIRCUIT_KEY);
+      throw error;
+    }
   }
 
-  return (await response.json()) as InvokeResult;
+  recordFailure(CIRCUIT_KEY);
+  throw lastError || new Error("LLM invocation failed after all retries");
 }

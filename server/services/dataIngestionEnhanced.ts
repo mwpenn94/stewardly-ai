@@ -12,7 +12,6 @@ import {
   ingestionInsights, scrapeSchedules,
 } from "../../drizzle/schema";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 import { dataIngestion } from "./dataIngestion";
 
 // ─── Bulk Scraper Service ─────────────────────────────────────────────────

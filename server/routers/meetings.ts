@@ -8,7 +8,6 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { meetings, meetingActionItems } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "../services/contextualLLM";
 
 async function db() {
   return (await import("../db")).getDb();

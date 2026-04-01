@@ -767,7 +767,9 @@ export async function getFeedbackStats(userId?: number) {
 export async function addQualityRating(data: { messageId: number; conversationId: number; score: number; reasoning?: string; improvementSuggestions?: string }) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(qualityRatings).values(data);
+  const normalized = { ...data };
+  if (normalized.score != null) normalized.score = normalizeQualityScore(normalized.score);
+  await db.insert(qualityRatings).values(normalized);
 }
 
 // ─── SUITABILITY HELPERS ──────────────────────────────────────────

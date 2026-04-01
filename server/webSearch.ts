@@ -12,7 +12,6 @@
 
 import { contextualLLM } from "./shared/intelligence/sovereignWiring";
 import type { Tool, Message } from "./_core/llm";
-import { contextualLLM } from "./services/contextualLLM";
 import { callDataApi } from "./_core/dataApi";
 
 // ─── Tool Definitions ────────────────────────────────────────────

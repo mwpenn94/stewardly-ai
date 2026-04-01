@@ -7,7 +7,6 @@
  * - Data highlighting and annotation storage
  */
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 import { transcribeAudio } from "../_core/voiceTranscription";
 import { getDb } from "../db";
 import { documents, documentChunks } from "../../drizzle/schema";

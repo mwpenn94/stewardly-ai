@@ -20,6 +20,7 @@
  */
 
 import { getDb } from "../db";
+import { logger } from "../_core/logger";
 import {
   documents, documentChunks, plaidHoldings,
   snapTradeAccounts, snapTradePositions, enrichmentCache,
@@ -252,7 +253,7 @@ export async function getStructuredIntegrationData(userId: number): Promise<User
         if (!latestSync || syncDate > latestSync) latestSync = syncDate;
       }
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "plaid_holdings_financial", error: String(e) }, "Financial data fetch failed silently"); }
 
   // SnapTrade accounts
   try {
@@ -273,7 +274,7 @@ export async function getStructuredIntegrationData(userId: number): Promise<User
         if (!latestSync || syncDate > latestSync) latestSync = syncDate;
       }
     }
-  } catch {}
+  } catch (e) { logger.debug({ userId, source: "snaptrade_accounts", error: String(e) }, "Financial data fetch failed silently"); }
 
   // SnapTrade positions
   try {
@@ -290,7 +291,7 @@ export async function getStructuredIntegrationData(userId: number): Promise<User
       });
       result.totalInvestedAssets += val;
     }
-  } catch {}
+  } catch (e) { logger.debug({ source: "snaptrade_positions_financial", error: String(e) }, "Financial data fetch failed silently"); }
 
   result.lastSyncTimestamp = latestSync ? latestSync.toISOString() : null;
   return result;
@@ -324,7 +325,7 @@ export async function getPipelineRates(): Promise<Record<string, number>> {
         }
       }
     }
-  } catch {}
+  } catch (e) { logger.debug({ source: "pipeline_rates", error: String(e) }, "Pipeline rates fetch failed silently"); }
   return rates;
 }
 

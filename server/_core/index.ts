@@ -46,8 +46,31 @@ async function startServer() {
   // Initialize WebSocket notifications
   initWebSocket(server);
 
+  // ─── Trust Proxy (required for correct IP behind reverse proxy) ────────
+  app.set("trust proxy", 1);
+
   // ─── Request ID Middleware (must be first) ──────────────────────────────
   app.use(requestIdMiddleware);
+
+  // ─── Request + Response logging with duration ──────────────────────────
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on("finish", () => {
+      const durationMs = Date.now() - start;
+      logger.info(
+        {
+          operation: "requestComplete",
+          requestId: req.requestId,
+          method: req.method,
+          path: req.path,
+          statusCode: res.statusCode,
+          durationMs,
+        },
+        `${req.method} ${req.path} ${res.statusCode} ${durationMs}ms`
+      );
+    });
+    next();
+  });
 
   // ─── Helmet Security Headers ───────────────────────────────────────────
   app.use(
@@ -139,6 +162,20 @@ async function startServer() {
     // Initialize background scheduler for health checks and data pipelines
     initScheduler();
   });
+
+  // ── Graceful shutdown ─────────────────────────────────────────────
+  const shutdown = () => {
+    logger.info({ operation: "server.shutdown" }, "Received shutdown signal, closing server...");
+    server.close(() => {
+      logger.info({ operation: "server.shutdown" }, "Server closed gracefully");
+      logger.flush();
+      setTimeout(() => process.exit(0), 100);
+    });
+    // Force exit after 10s if connections don't close
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
 }
 
 startServer().catch((err) => {

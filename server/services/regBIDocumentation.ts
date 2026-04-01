@@ -6,7 +6,6 @@ import { getDb } from "../db";
 import { coiDisclosures, recommendationsLog, modelCards, performanceMetrics, reportTemplates, reportJobs } from "../../drizzle/schema";
 import { eq, and, desc, gte, sql } from "drizzle-orm";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1D: Reg BI Documentation Generator

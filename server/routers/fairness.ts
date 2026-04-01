@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
+import { logger } from "../_core/logger";
 import { eq, desc } from "drizzle-orm";
 import { fairnessTestPrompts, fairnessTestRuns, fairnessTestResults } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "../services/contextualLLM";
 
 // Default demographic-varied prompts for fairness testing
 const DEFAULT_PROMPTS = [
@@ -144,7 +144,7 @@ export const fairnessRouter = router({
         try {
           const analysisContent = analysisResponse.choices?.[0]?.message?.content;
           analysis = JSON.parse(typeof analysisContent === "string" ? analysisContent : "{}");
-        } catch {}
+        } catch (e) { logger.debug({ error: String(e) }, "Fairness analysis JSON parse failed, using defaults"); }
 
         await db.insert(fairnessTestResults).values({
           runId: run.id,

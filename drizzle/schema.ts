@@ -512,6 +512,7 @@ export const messages = mysqlTable("messages", {
   content: text("content").notNull(),
   confidenceScore: float("confidenceScore"),
   complianceStatus: mysqlEnum("complianceStatus", ["pending", "approved", "flagged", "rejected"]),
+  modelVersion: varchar("modelVersion", { length: 64 }),
   metadata: json("metadata"),
   modelVersion: varchar("model_version", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

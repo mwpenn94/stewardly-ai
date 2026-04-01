@@ -3,7 +3,6 @@
  * Assess impact of regulatory changes on products, processes, and compliance
  */
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 
 export interface RegulatoryChange {
   id: string;

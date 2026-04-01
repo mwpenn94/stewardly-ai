@@ -8,7 +8,6 @@ import { getDb } from "../db";
 import { emailCampaigns, emailSends, users } from "../../drizzle/schema";
 import { eq, and, sql, count, inArray, like } from "drizzle-orm";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 import { sendNotification } from "./websocketNotifications";
 
 // ─── Template Engine ─────────────────────────────────────────────────────

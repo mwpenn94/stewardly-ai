@@ -378,7 +378,6 @@ Direction meanings:
 - usage_optimization: How can users at this layer better LEVERAGE the tools available to them?
 
 ${directionPrompt}
-${platformContext ? `\n<platform_context>\n${platformContext}\n</platform_context>` : ""}
 
 Return JSON only.`,
       },

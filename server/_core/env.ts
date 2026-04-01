@@ -14,3 +14,23 @@ export const ENV = {
   snapTradeClientId: process.env.SNAPTRADE_CLIENT_ID ?? "",
   snapTradeConsumerKey: process.env.SNAPTRADE_CONSUMER_KEY ?? "",
 };
+
+const REQUIRED_IN_PRODUCTION = ["DATABASE_URL", "JWT_SECRET"] as const;
+const RECOMMENDED = ["OWNER_OPEN_ID", "OAUTH_SERVER_URL"] as const;
+
+if (ENV.isProduction) {
+  const missing = REQUIRED_IN_PRODUCTION.filter(
+    (key) => !process.env[key]?.trim()
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `[ENV] Missing required environment variables in production: ${missing.join(", ")}`
+    );
+  }
+}
+
+for (const key of RECOMMENDED) {
+  if (!process.env[key]?.trim()) {
+    console.warn(`[ENV] Recommended variable ${key} is not set`);
+  }
+}

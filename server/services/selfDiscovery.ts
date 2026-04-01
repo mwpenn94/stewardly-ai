@@ -13,7 +13,6 @@
  */
 
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "./contextualLLM";
 import { getDb } from "../db";
 import { selfDiscoveryHistory, userPreferences } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";

@@ -21,7 +21,6 @@ import {
   premiumFinanceCases, carrierConnections,
 } from "../../drizzle/schema";
 import { contextualLLM } from "../shared/intelligence/sovereignWiring"
-import { contextualLLM } from "../services/contextualLLM";
 
 // ─── G8: Licensed Review Gate ──────────────────────────────────────────────
 const gateRouter = router({
