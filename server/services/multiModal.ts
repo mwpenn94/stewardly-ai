@@ -6,7 +6,7 @@
  * - Unified cross-format search
  * - Data highlighting and annotation storage
  */
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { transcribeAudio } from "../_core/voiceTranscription";
 import { getDb } from "../db";
 import { documents, documentChunks } from "../../drizzle/schema";

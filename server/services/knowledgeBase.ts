@@ -5,7 +5,7 @@
 import { getDb } from "../db";
 import { knowledgeArticles, knowledgeArticleVersions, knowledgeArticleFeedback, knowledgeGaps } from "../../drizzle/schema";
 import { eq, and, desc, like, or, sql } from "drizzle-orm";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 // ─── CRUD ────────────────────────────────────────────────────────────────
 export async function createArticle(data: {

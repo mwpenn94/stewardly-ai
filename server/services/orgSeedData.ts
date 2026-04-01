@@ -4,7 +4,7 @@
  * and wires the owner user with all permission levels.
  */
 import { getDb } from "../db";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { organizations, userOrganizationRoles, users } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
 

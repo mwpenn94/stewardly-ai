@@ -12,7 +12,7 @@
  * improvement loop where each discovery interaction refines future suggestions.
  */
 
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { getDb } from "../db";
 import { selfDiscoveryHistory, userPreferences } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";

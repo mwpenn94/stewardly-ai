@@ -7,7 +7,7 @@
 import { getDb } from "../db";
 import { searchCache } from "../../drizzle/schema";
 import { eq, and, gt, sql } from "drizzle-orm";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { callDataApi } from "../_core/dataApi";
 import crypto from "crypto";
 

@@ -6,7 +6,7 @@
 import { getDb } from "../db";
 import { modelScenarios, modelBacktests } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 // ─── Historical Events for Backtesting ───────────────────────────────────
 export const HISTORICAL_EVENTS = [

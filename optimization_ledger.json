@@ -115,6 +115,12 @@
       "description": "Phase 1 integration: replaced all invokeLLM with contextualLLM, fixed circular dep in memoryEngine, normalized quality scores, added modelVersion to messages, updated normalizeQualityScore to handle string/null/undefined, added 27 new tests, zero regressions",
       "timestamp": "2026-04-01T04:29:10.412Z",
       "pass": 6
+    },
+    {
+      "id": 20,
+      "description": "Adversarial Pass 8: Token overflow protection (MAX_CONTEXT_CHARS=12k), 17 silent catch blocks replaced with debug logging, 8 files standardized to wiring imports, normalizeQualityScore edge cases verified",
+      "timestamp": "2026-04-01T13:18:44.336Z",
+      "pass": 6
     }
   ],
   "scores": [
@@ -208,8 +214,21 @@
       },
       "average": 9,
       "timestamp": "2026-04-01T04:29:05.748Z"
+    },
+    {
+      "pass": 8,
+      "scores": {
+        "Architecture": 9,
+        "Security": 9,
+        "Performance": 9,
+        "Code Quality": 9,
+        "UX/DX": 9,
+        "Completeness": 10
+      },
+      "average": 9.17,
+      "timestamp": "2026-04-01T13:18:44.399Z"
     }
   ],
-  "passes": 6,
-  "updated": "2026-04-01T04:29:10.412Z"
+  "passes": 8,
+  "updated": "2026-04-01T13:18:44.400Z"
 }

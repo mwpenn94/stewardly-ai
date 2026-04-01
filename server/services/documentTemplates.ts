@@ -4,7 +4,7 @@
  * Provides 9 pre-built document templates for financial advisory workflows.
  * Each template defines structure, required fields, and LLM generation prompts.
  */
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 // ─── Template Definitions ───────────────────────────────────────────────────
 

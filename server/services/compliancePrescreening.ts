@@ -7,7 +7,7 @@
 import { getDb } from "../db";
 import { compliancePrescreening, conversationComplianceScores } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 export type ComplianceCheckType = "unsuitable_recommendation" | "promissory_language" | "unauthorized_practice" | "concentration_risk" | "missing_disclosure";
 export type ComplianceSeverity = "low" | "medium" | "high" | "critical";

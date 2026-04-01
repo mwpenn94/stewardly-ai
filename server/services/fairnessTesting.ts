@@ -1,7 +1,7 @@
 /**
  * Automated Fairness Testing (2C) — 20 demographic-varied prompts, bias detection, scoring
  */
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 export interface FairnessTestCase {
   id: string;

@@ -7,7 +7,7 @@
 import { getDb } from "../db";
 import { emailCampaigns, emailSends, users } from "../../drizzle/schema";
 import { eq, and, sql, count, inArray, like } from "drizzle-orm";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { sendNotification } from "./websocketNotifications";
 
 // ─── Template Engine ─────────────────────────────────────────────────────

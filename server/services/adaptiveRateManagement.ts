@@ -12,7 +12,7 @@ import {
   probeResults, integrationAnalysisLog, extractionPlans, extractionPlanJobs,
   rateRecommendations, dataValueScores, rateProfiles, rateSignalLog,
 } from "../../drizzle/schema";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 // ─── DB HELPER ──────────────────────────────────────────────────────────
 

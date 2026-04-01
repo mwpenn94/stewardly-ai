@@ -8,7 +8,7 @@
 import { getDb } from "../db";
 import { users, userProfiles, organizations, userOrganizationRoles, userRelationships, organizationRelationships } from "../../drizzle/schema";
 import { eq, and, sql, ne, inArray } from "drizzle-orm";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { broadcastToRole } from "./websocketNotifications";
 
 // ─── Matching Score Weights ────────────────────────────────────────────────

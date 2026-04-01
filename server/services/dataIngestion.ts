@@ -9,7 +9,7 @@ import {
   dataSources, ingestionJobs, ingestedRecords,
   marketDataCache, webScrapeResults, documentExtractions,
 } from "../../drizzle/schema";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 export interface IngestionResult {

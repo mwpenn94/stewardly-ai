@@ -11,7 +11,7 @@ import {
   webScrapeResults, bulkImportBatches, dataQualityScores,
   ingestionInsights, scrapeSchedules,
 } from "../../drizzle/schema";
-import { contextualLLM } from "./contextualLLM";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { dataIngestion } from "./dataIngestion";
 
 // ─── Bulk Scraper Service ─────────────────────────────────────────────────
