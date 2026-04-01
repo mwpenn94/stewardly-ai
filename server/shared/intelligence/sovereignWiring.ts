@@ -82,8 +82,22 @@ interface ProviderUsageEntry {
   timestamp: string;
 }
 
+/** Routing decision log entry */
+interface RoutingDecisionEntry {
+  userId: number | null;
+  taskType: string;
+  provider: string;
+  modelVersion: string;
+  qualityScore: number | null;
+  latencyMs: number;
+  costUsd: number;
+  failoverFrom: string | null;
+  success: boolean;
+}
+
 /** In-memory usage log buffer (flushed to DB periodically) */
 let usageLogBuffer: ProviderUsageEntry[] = [];
+let routingDecisionBuffer: RoutingDecisionEntry[] = [];
 const USAGE_LOG_FLUSH_INTERVAL = 30_000; // 30 seconds
 const USAGE_LOG_MAX_BUFFER = 100;
 let _flushInProgress = false; // Guard against concurrent flushes
@@ -272,16 +286,30 @@ export async function sovereignInvokeLLM(params: SovereignLLMParams): Promise<Co
     result.metadata.latencyMs = latencyMs;
 
     // Log usage
+    const costUsd = estimateCost(result.usage, provider);
     logProviderUsage({
       userId: params.userId || null,
       provider,
       modelVersion,
       taskType: params.contextType || "unknown",
       latencyMs,
-      costUsd: estimateCost(result.usage, provider),
+      costUsd,
       qualityScore: result.metadata?.qualityScore ?? null,
       success: true,
       timestamp: new Date().toISOString(),
+    });
+
+    // Log routing decision (populates sovereignRoutingDecisions table)
+    logRoutingDecision({
+      userId: params.userId || null,
+      taskType: params.contextType || "unknown",
+      provider,
+      modelVersion,
+      qualityScore: result.metadata?.qualityScore ?? null,
+      latencyMs,
+      costUsd,
+      failoverFrom: null,
+      success: true,
     });
 
     // Update canary state — healthy
@@ -346,16 +374,30 @@ async function attemptFailover(params: SovereignLLMParams, failedProvider: strin
       result.metadata.latencyMs = latencyMs;
       result.metadata.failoverFrom = failedProvider;
 
+      const fallbackCostUsd = estimateCost(result.usage, fallback);
       logProviderUsage({
         userId: params.userId || null,
         provider: fallback,
         modelVersion: DEFAULT_SOVEREIGN_CONFIG.provider.modelVersion,
         taskType: params.contextType || "unknown",
         latencyMs,
-        costUsd: estimateCost(result.usage, fallback),
+        costUsd: fallbackCostUsd,
         qualityScore: result.metadata?.qualityScore ?? null,
         success: true,
         timestamp: new Date().toISOString(),
+      });
+
+      // Log routing decision with failover info
+      logRoutingDecision({
+        userId: params.userId || null,
+        taskType: params.contextType || "unknown",
+        provider: fallback,
+        modelVersion: DEFAULT_SOVEREIGN_CONFIG.provider.modelVersion,
+        qualityScore: result.metadata?.qualityScore ?? null,
+        latencyMs,
+        costUsd: fallbackCostUsd,
+        failoverFrom: failedProvider,
+        success: true,
       });
 
       // Fallback succeeded — mark it healthy
@@ -445,6 +487,18 @@ function logProviderUsage(entry: ProviderUsageEntry): void {
   }
 }
 
+/**
+ * Log routing decision to the buffer.
+ * This populates the sovereignRoutingDecisions table that contextSources reads from.
+ */
+function logRoutingDecision(entry: RoutingDecisionEntry): void {
+  routingDecisionBuffer.push(entry);
+
+  if (routingDecisionBuffer.length >= USAGE_LOG_MAX_BUFFER) {
+    flushRoutingDecisions().catch(() => {});
+  }
+}
+
 // Cached DB and schema references for flush (avoid dynamic import on every 30s cycle)
 let _dbModuleCache: { getDb: () => Promise<any> } | null = null;
 let _schemaModuleCache: typeof import("../../../drizzle/schema") | null = null;
@@ -515,9 +569,53 @@ async function flushUsageLogs(): Promise<void> {
   }
 }
 
+/**
+ * Flush routing decisions to the database.
+ * Same pattern as flushUsageLogs — atomic swap, lock guard, re-buffer on failure.
+ */
+async function flushRoutingDecisions(): Promise<void> {
+  if (routingDecisionBuffer.length === 0) return;
+
+  const entries = routingDecisionBuffer;
+  routingDecisionBuffer = [];
+
+  try {
+    const db = await getCachedDb();
+    if (!db) {
+      if (routingDecisionBuffer.length < USAGE_LOG_MAX_BUFFER * 3) {
+        routingDecisionBuffer.unshift(...entries);
+      }
+      return;
+    }
+
+    const schema = await getCachedSchema();
+    if (!schema?.sovereignRoutingDecisions) return;
+
+    await db.insert(schema.sovereignRoutingDecisions).values(
+      entries.map((e) => ({
+        userId: e.userId,
+        taskType: e.taskType,
+        provider: e.provider,
+        modelVersion: e.modelVersion,
+        qualityScore: e.qualityScore,
+        latencyMs: e.latencyMs,
+        costUsd: e.costUsd,
+        failoverFrom: e.failoverFrom,
+        success: e.success,
+      })),
+    );
+  } catch (flushErr) {
+    if (routingDecisionBuffer.length < USAGE_LOG_MAX_BUFFER * 3) {
+      routingDecisionBuffer.unshift(...entries);
+    }
+    console.warn("[Sovereign] Routing decision flush failed:", flushErr instanceof Error ? flushErr.message : flushErr);
+  }
+}
+
 // Start periodic flush (store ID for cleanup on module hot-reload or shutdown)
 const _flushIntervalId = setInterval(() => {
   flushUsageLogs().catch(() => {});
+  flushRoutingDecisions().catch(() => {});
 }, USAGE_LOG_FLUSH_INTERVAL);
 
 // Cleanup on process exit to prevent zombie intervals
@@ -526,6 +624,7 @@ if (typeof process !== "undefined") {
     clearInterval(_flushIntervalId);
     // Final flush attempt on shutdown
     flushUsageLogs().catch(() => {});
+    flushRoutingDecisions().catch(() => {});
   };
   process.once("SIGTERM", cleanup);
   process.once("SIGINT", cleanup);

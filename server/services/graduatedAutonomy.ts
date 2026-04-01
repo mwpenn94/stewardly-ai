@@ -240,6 +240,42 @@ export async function recordInteraction(
       }).catch(() => {});
     }
 
+    // Sync aggregate state to sovereignAutonomyState (read by contextSources)
+    if (schema.sovereignAutonomyState) {
+      try {
+        const [existing] = await db.select({ id: schema.sovereignAutonomyState.id })
+          .from(schema.sovereignAutonomyState)
+          .where(eq(schema.sovereignAutonomyState.userId, userId))
+          .limit(1);
+
+        const stateData = {
+          level: profile.level,
+          trustScore: String(profile.trustScore),
+          totalInteractions: profile.totalInteractions,
+          successfulActions: profile.successfulActions,
+          overriddenActions: profile.overriddenActions,
+          escalations: profile.escalations,
+          lastEscalation: profile.lastEscalation ? new Date(profile.lastEscalation) : null,
+          levelHistory: profile.levelHistory,
+          updatedAt: new Date(),
+        };
+
+        if (existing) {
+          await db.update(schema.sovereignAutonomyState)
+            .set(stateData)
+            .where(eq(schema.sovereignAutonomyState.userId, userId));
+        } else {
+          await db.insert(schema.sovereignAutonomyState).values({
+            userId,
+            ...stateData,
+            modelVersion: "1.0.0",
+          });
+        }
+      } catch {
+        // Non-fatal: autonomy_levels is the source of truth, this is a read-optimized copy
+      }
+    }
+
     return profile;
   } catch {
     return defaultProfile(userId);
