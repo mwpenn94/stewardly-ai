@@ -3008,3 +3008,11 @@
 - [x] Continue until convergence declared — convergence achieved
 - [x] Update comprehensive guide (STEWARDLY_COMPREHENSIVE_GUIDE.md) — v2.1 with updated metrics and new features
 - [x] Update in-app Platform Guide page with new features (updated stats: 197K+ LOC, 2,162 tests, 893 files, 860 procedures)
+
+## Mobile Popup/Tour Conflicts & Sidebar Consistency (2026-04-02)
+- [x] BUG: Tour wizard + What's New modal + consent banner all stack on mobile, blocking interaction
+- [x] FIX: Implement popup priority queue — only show one popup at a time, dismiss to advance (usePopupQueue hook)
+- [x] FIX: Ensure all popups are dismissible on mobile (touch targets, close buttons visible, top-right skip on tour)
+- [x] BUG: Sidebar UI inconsistent between landing page and main app (chat/dashboard pages)
+- [x] FIX: Make sidebar UI consistent — Chat sidebar now uses single-column list, active states, route prefetching, text-[13px] matching AppShell
+- [x] Write tests for popup priority and sidebar consistency (25 tests)

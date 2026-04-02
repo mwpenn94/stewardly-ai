@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { X, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { usePopupSlot, registerPopup, dismissPopup } from "@/hooks/usePopupQueue";
 
 interface TourStep {
   target: string; // CSS selector
@@ -50,35 +51,47 @@ const TOUR_STEPS: TourStep[] = [
 const TOUR_STORAGE_KEY = "stewardly_tour_completed";
 
 export function GuidedTour() {
+  const [wantsToStart, setWantsToStart] = useState(false);
+  const canShow = usePopupSlot("guidedTour");
   const [isActive, setIsActive] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [location] = useLocation();
-  // Track the effective steps (skipping ones whose targets don't exist)
   const [effectiveSteps, setEffectiveSteps] = useState<TourStep[]>([]);
 
-  // Only auto-start tour on /chat page where the target elements exist
+  // Register with the popup queue when on /chat and tour not completed
   useEffect(() => {
     if (!location.startsWith("/chat")) return;
     const completed = localStorage.getItem(TOUR_STORAGE_KEY);
     if (!completed) {
-      // Delay tour start to let the page render fully
       const timer = setTimeout(() => {
-        // Build effective steps list by checking which targets exist
-        const available = TOUR_STEPS.filter(step => {
-          const el = document.querySelector(step.target);
-          return el || !step.optional;
-        });
-        if (available.length > 0 && document.querySelector(available[0].target)) {
-          setEffectiveSteps(available);
-          setCurrentStep(0);
-          setIsActive(true);
-        }
-      }, 3000);
+        setWantsToStart(true);
+        registerPopup("guidedTour");
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, [location]);
+
+  // When the queue grants us the slot, actually start the tour
+  useEffect(() => {
+    if (wantsToStart && canShow && !isActive) {
+      // Build effective steps list by checking which targets exist
+      const available = TOUR_STEPS.filter(step => {
+        const el = document.querySelector(step.target);
+        return el || !step.optional;
+      });
+      if (available.length > 0 && document.querySelector(available[0].target)) {
+        setEffectiveSteps(available);
+        setCurrentStep(0);
+        setIsActive(true);
+      } else {
+        // No valid targets — dismiss from queue
+        dismissPopup("guidedTour");
+        setWantsToStart(false);
+      }
+    }
+  }, [wantsToStart, canShow, isActive]);
 
   const currentTourStep = effectiveSteps[currentStep];
 
@@ -95,7 +108,6 @@ export function GuidedTour() {
 
   useEffect(() => {
     if (!isActive) return;
-    // Small delay to let DOM settle after step change
     const timer = setTimeout(updateSpotlight, 100);
     window.addEventListener("resize", updateSpotlight);
     window.addEventListener("scroll", updateSpotlight, true);
@@ -111,10 +123,10 @@ export function GuidedTour() {
     while (idx >= 0 && idx < effectiveSteps.length) {
       const el = document.querySelector(effectiveSteps[idx].target);
       if (el) return idx;
-      if (!effectiveSteps[idx].optional) return idx; // Required step, show even without target
+      if (!effectiveSteps[idx].optional) return idx;
       idx += direction;
     }
-    return -1; // No more steps
+    return -1;
   };
 
   const handleNext = () => {
@@ -136,20 +148,23 @@ export function GuidedTour() {
   const handleComplete = () => {
     setIsActive(false);
     setCurrentStep(0);
+    setWantsToStart(false);
     localStorage.setItem(TOUR_STORAGE_KEY, "true");
+    dismissPopup("guidedTour");
   };
 
   const handleSkip = () => {
     setIsActive(false);
     setCurrentStep(0);
+    setWantsToStart(false);
     localStorage.setItem(TOUR_STORAGE_KEY, "true");
+    dismissPopup("guidedTour");
   };
 
   if (!isActive || !currentTourStep) return null;
 
   const padding = 8;
 
-  // Calculate tooltip position
   const getTooltipStyle = (): React.CSSProperties => {
     if (!spotlightRect) {
       return {
@@ -199,7 +214,7 @@ export function GuidedTour() {
 
   return (
     <div ref={overlayRef} className="fixed inset-0 z-[9999]">
-      {/* Dark overlay with spotlight cutout — clicking overlay does NOT close tour */}
+      {/* Dark overlay with spotlight cutout */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
           <mask id="tour-mask">
@@ -224,8 +239,17 @@ export function GuidedTour() {
         />
       </svg>
 
-      {/* Transparent click-blocker over the entire page (prevents interaction with page elements) */}
+      {/* Click-blocker — but with a visible skip button at top-right for mobile */}
       <div className="absolute inset-0" />
+
+      {/* Mobile-friendly skip button at top of screen */}
+      <button
+        onClick={handleSkip}
+        className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-card/90 backdrop-blur-sm border border-border text-sm text-muted-foreground hover:text-foreground transition-colors shadow-lg"
+      >
+        <X className="w-4 h-4" />
+        <span className="sm:inline hidden">Skip tour</span>
+      </button>
 
       {/* Spotlight ring */}
       {spotlightRect && (

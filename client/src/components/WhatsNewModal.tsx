@@ -2,6 +2,9 @@
  * WhatsNewModal — Shows recent platform updates to users on first visit
  * after a new version is deployed. Uses localStorage to track the last
  * seen version and only shows when there are new entries.
+ *
+ * Participates in the popup queue so it doesn't stack with the
+ * consent banner or guided tour on mobile.
  */
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -21,6 +24,7 @@ import {
   ArrowRight, CheckCircle2, Keyboard, Globe, Brain,
   FileText, Users, TrendingUp, Lock, Gauge,
 } from "lucide-react";
+import { usePopupSlot, registerPopup, dismissPopup } from "@/hooks/usePopupQueue";
 
 // ── Changelog entries — newest first ──────────────────────────────────
 // Bump CURRENT_VERSION when adding new entries so the modal re-appears.
@@ -181,15 +185,19 @@ export const CHANGELOG: ChangelogRelease[] = [
 ];
 
 export default function WhatsNewModal() {
-  const [open, setOpen] = useState(false);
+  const [wantsToShow, setWantsToShow] = useState(false);
+  const canShow = usePopupSlot("whatsNew");
   const [, navigate] = useLocation();
 
   useEffect(() => {
     try {
       const seen = localStorage.getItem(LS_KEY);
       if (seen !== CURRENT_VERSION) {
-        // Small delay so the app finishes rendering first
-        const t = setTimeout(() => setOpen(true), 1200);
+        // Register with the queue after a brief delay
+        const t = setTimeout(() => {
+          setWantsToShow(true);
+          registerPopup("whatsNew");
+        }, 1000);
         return () => clearTimeout(t);
       }
     } catch {
@@ -198,14 +206,18 @@ export default function WhatsNewModal() {
   }, []);
 
   const handleDismiss = useCallback(() => {
-    setOpen(false);
+    setWantsToShow(false);
     try {
       localStorage.setItem(LS_KEY, CURRENT_VERSION);
     } catch {}
+    dismissPopup("whatsNew");
   }, []);
 
   const latest = CHANGELOG[0];
   if (!latest) return null;
+
+  // Only render when the queue says it's our turn
+  const open = wantsToShow && canShow;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleDismiss(); }}>
