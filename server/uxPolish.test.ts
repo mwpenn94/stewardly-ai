@@ -20,30 +20,31 @@ describe("What's New Changelog Modal", () => {
     expect(source).toContain("entries:");
   });
 
-  it("should use localStorage to track seen version", async () => {
+  it("should export CURRENT_VERSION for changelog tracking", async () => {
     const fs = await import("fs");
     const source = fs.readFileSync("client/src/components/WhatsNewModal.tsx", "utf-8");
 
-    // Must reference localStorage for version tracking
-    expect(source).toContain("localStorage");
-    expect(source).toMatch(/whats-new|whatsnew|changelog/i);
+    // Data-only export — no modal UI, just changelog data
+    expect(source).toContain("export const CURRENT_VERSION");
+    expect(source).toContain("export const CHANGELOG");
+    expect(source).toContain("export const CATEGORY_STYLES");
   });
 
-  it("should delay display to avoid blocking initial render", async () => {
+  it("should not render a modal popup (moved to notifications)", async () => {
     const fs = await import("fs");
     const source = fs.readFileSync("client/src/components/WhatsNewModal.tsx", "utf-8");
 
-    // Must use a timeout to delay modal appearance
-    expect(source).toContain("setTimeout");
-    expect(source).toContain("1200");
+    // Modal UI has been removed — no Dialog, no localStorage, no setTimeout
+    expect(source).not.toContain("export default function");
+    expect(source).not.toContain("<Dialog");
   });
 
-  it("should be mounted in App.tsx", async () => {
+  it("should not be mounted in App.tsx (popup removed)", async () => {
     const fs = await import("fs");
     const appSource = fs.readFileSync("client/src/App.tsx", "utf-8");
 
-    expect(appSource).toContain("WhatsNewModal");
-    expect(appSource).toContain("import WhatsNewModal");
+    // WhatsNewModal is no longer rendered as a popup in App.tsx
+    expect(appSource).not.toContain("WhatsNewModal");
   });
 });
 
@@ -186,8 +187,8 @@ describe("Feature Integration", () => {
     const fs = await import("fs");
     const source = fs.readFileSync("client/src/App.tsx", "utf-8");
 
-    // WhatsNew modal
-    expect(source).toContain("WhatsNewModal");
+    // WhatsNew modal removed — changelog data is now in WhatsNewModal.tsx as data-only export
+    // Surfaced through ChangelogBell and /changelog page instead of a popup
 
     // Suspense with lazy loading (enables prefetch)
     expect(source).toContain("Suspense");

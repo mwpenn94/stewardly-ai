@@ -359,25 +359,26 @@ describe("App.tsx integrations", () => {
 
 // ── 10. WhatsNewModal "View all releases" link ─────────────────────
 
-describe("WhatsNewModal changelog link", () => {
+describe("WhatsNewModal data exports (modal removed)", () => {
   const filePath = path.resolve(__dirname, "../client/src/components/WhatsNewModal.tsx");
   const src = fs.readFileSync(filePath, "utf-8");
 
-  it("has 'View all releases' text", () => {
-    expect(src).toContain("View all releases");
+  it("exports CHANGELOG array", () => {
+    expect(src).toContain("export const CHANGELOG");
   });
 
-  it("navigates to /changelog on click", () => {
-    expect(src).toContain('navigate("/changelog")');
+  it("exports CURRENT_VERSION", () => {
+    expect(src).toContain("export const CURRENT_VERSION");
   });
 
-  it("dismisses modal before navigating", () => {
-    expect(src).toContain("handleDismiss()");
-    expect(src).toContain('navigate("/changelog")');
+  it("exports CATEGORY_STYLES", () => {
+    expect(src).toContain("export const CATEGORY_STYLES");
   });
 
-  it("imports useLocation from wouter", () => {
-    expect(src).toContain('import { useLocation } from "wouter"');
+  it("does not contain modal UI (Dialog, handleDismiss)", () => {
+    expect(src).not.toContain("<Dialog");
+    expect(src).not.toContain("handleDismiss");
+    expect(src).not.toContain("export default function");
   });
 });
 

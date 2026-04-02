@@ -6,16 +6,15 @@
  * navigation context and never hit a dead-end.
  *
  * The sidebar mirrors the same nav items from Chat's "Tools" and "Admin"
- * sections, plus Help and Settings links.
+ * sections, with collapsible groups for a compact, mobile-friendly layout.
  */
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLocation } from "wouter";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { prefetchRoute } from "@/lib/routePrefetch";
 import { recordPageVisit } from "@/hooks/useRecentPages";
@@ -23,7 +22,7 @@ import {
   MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
   Link2, HeartPulse, RefreshCw, Activity, Briefcase, Building2,
   BarChart3, Globe, Wrench, HelpCircle, Settings, LogIn, LogOut,
-  Menu, X, ChevronLeft, ChevronRight, PanelLeftClose, Keyboard, BookOpen,
+  Menu, X, ChevronDown, PanelLeftClose, Keyboard, BookOpen,
 } from "lucide-react";
 
 type UserRole = "user" | "advisor" | "manager" | "admin";
@@ -71,9 +70,23 @@ export default function AppShell({ children, title }: AppShellProps) {
     try { return localStorage.getItem("appshell-collapsed") === "true"; } catch { return false; }
   });
 
+  // Collapsible nav sections — matching Chat sidebar pattern
+  const [navExpanded, setNavExpanded] = useState(() => {
+    try { const v = localStorage.getItem("appshell-nav-expanded"); return v === "true"; } catch { return false; }
+  });
+  const [adminExpanded, setAdminExpanded] = useState(() => {
+    try { const v = localStorage.getItem("appshell-admin-expanded"); return v === "true"; } catch { return false; }
+  });
+
   useEffect(() => {
     try { localStorage.setItem("appshell-collapsed", String(collapsed)); } catch {}
   }, [collapsed]);
+  useEffect(() => {
+    try { localStorage.setItem("appshell-nav-expanded", String(navExpanded)); } catch {}
+  }, [navExpanded]);
+  useEffect(() => {
+    try { localStorage.setItem("appshell-admin-expanded", String(adminExpanded)); } catch {}
+  }, [adminExpanded]);
 
   // Close mobile sidebar on navigation + record page visit for command palette
   useEffect(() => {
@@ -125,6 +138,48 @@ export default function AppShell({ children, title }: AppShellProps) {
     return location === href || location.startsWith(href + "/");
   }
 
+  /** Render a single nav item — collapsed (icon-only with tooltip) or expanded */
+  function renderNavItem(item: NavItem) {
+    const active = isActive(item.href);
+    if (collapsed) {
+      return (
+        <Tooltip key={item.href}>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => navigate(item.href)}
+              onMouseEnter={() => prefetchRoute(item.href)}
+              onFocus={() => prefetchRoute(item.href)}
+              className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
+                active
+                  ? "bg-accent/15 text-accent"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+              }`}
+            >
+              {item.icon}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">{item.label}</TooltipContent>
+        </Tooltip>
+      );
+    }
+    return (
+      <button
+        key={item.href}
+        onClick={() => navigate(item.href)}
+        onMouseEnter={() => prefetchRoute(item.href)}
+        onFocus={() => prefetchRoute(item.href)}
+        className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${
+          active
+            ? "bg-accent/15 text-accent font-medium"
+            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+        }`}
+      >
+        {item.icon}
+        <span className="truncate">{item.label}</span>
+      </button>
+    );
+  }
+
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Logo / Brand */}
@@ -145,104 +200,48 @@ export default function AppShell({ children, title }: AppShellProps) {
         )}
       </div>
 
-      {/* Navigation */}
+      {/* Navigation — collapsible sections */}
       <ScrollArea className="flex-1">
         <div className={collapsed ? "p-1 space-y-0.5" : "p-2 space-y-0.5"}>
-          {/* Tools section */}
-          {!collapsed && (
-            <p className="px-2 pt-2 pb-1 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
-              Navigate
-            </p>
-          )}
-          {visibleTools.map(item => {
-            const active = isActive(item.href);
-            return collapsed ? (
-              <Tooltip key={item.href}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => navigate(item.href)}
-                    onMouseEnter={() => prefetchRoute(item.href)}
-                    onFocus={() => prefetchRoute(item.href)}
-                    className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
-                      active
-                        ? "bg-accent/15 text-accent"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                    }`}
-                  >
-                    {item.icon}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">{item.label}</TooltipContent>
-              </Tooltip>
-            ) : (
-              <button
-                key={item.href}
-                onClick={() => navigate(item.href)}
-                onMouseEnter={() => prefetchRoute(item.href)}
-                onFocus={() => prefetchRoute(item.href)}
-                className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
-                  active
-                    ? "bg-accent/15 text-accent font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                }`}
-              >
-                {item.icon}
-                <span className="truncate">{item.label}</span>
-              </button>
-            );
-          })}
+          {/* NAVIGATE section — collapsible */}
+          {!collapsed ? (
+            <button
+              onClick={() => setNavExpanded(!navExpanded)}
+              className="flex items-center justify-between w-full px-2 pt-2 pb-1 group"
+            >
+              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
+                Navigate
+              </span>
+              <ChevronDown className={`w-3 h-3 text-muted-foreground/40 transition-transform duration-200 ${navExpanded ? "" : "-rotate-90"}`} />
+            </button>
+          ) : null}
+          {(collapsed || navExpanded) && visibleTools.map(renderNavItem)}
 
-          {/* Admin section */}
+          {/* ADMIN section — collapsible */}
           {visibleAdmin.length > 0 && (
             <>
-              <Separator className="my-2" />
-              {!collapsed && (
-                <p className="px-2 pt-1 pb-1 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
-                  Admin
-                </p>
+              {!collapsed ? (
+                <button
+                  onClick={() => setAdminExpanded(!adminExpanded)}
+                  className="flex items-center justify-between w-full px-2 pt-3 pb-1 group"
+                >
+                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
+                    Admin
+                  </span>
+                  <ChevronDown className={`w-3 h-3 text-muted-foreground/40 transition-transform duration-200 ${adminExpanded ? "" : "-rotate-90"}`} />
+                </button>
+              ) : (
+                <div className="my-1 border-t border-border/50" />
               )}
-              {visibleAdmin.map(item => {
-                const active = isActive(item.href);
-                return collapsed ? (
-                  <Tooltip key={item.href}>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => navigate(item.href)}
-                        onMouseEnter={() => prefetchRoute(item.href)}
-                        onFocus={() => prefetchRoute(item.href)}
-                        className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
-                          active
-                            ? "bg-accent/15 text-accent"
-                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                        }`}
-                      >
-                        {item.icon}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">{item.label}</TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <button
-                    key={item.href}
-                    onClick={() => navigate(item.href)}
-                    onMouseEnter={() => prefetchRoute(item.href)}
-                    onFocus={() => prefetchRoute(item.href)}
-                    className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
-                      active
-                        ? "bg-accent/15 text-accent font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                    }`}
-                  >
-                    {item.icon}
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                );
-              })}
+              {(collapsed || adminExpanded) && visibleAdmin.map(renderNavItem)}
             </>
           )}
+        </div>
+      </ScrollArea>
 
-          {/* Utility links */}
-          <Separator className="my-2" />
+      {/* Bottom utility links — always visible */}
+      <div className="border-t border-border/50 shrink-0">
+        <div className={collapsed ? "p-1 space-y-0.5" : "p-2 space-y-0.5"}>
           {collapsed ? (
             <>
               <Tooltip>
@@ -264,13 +263,13 @@ export default function AppShell({ children, title }: AppShellProps) {
             </>
           ) : (
             <>
-              <button onClick={() => navigate("/help")} onMouseEnter={() => prefetchRoute("/help")} onFocus={() => prefetchRoute("/help")} className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+              <button onClick={() => navigate("/help")} onMouseEnter={() => prefetchRoute("/help")} onFocus={() => prefetchRoute("/help")} className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${isActive("/help") ? "bg-accent/15 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"}`}>
                 <HelpCircle className="w-4 h-4" /> Help & Support
               </button>
-              <button onClick={() => navigate("/settings/profile")} onMouseEnter={() => prefetchRoute("/settings/profile")} onFocus={() => prefetchRoute("/settings/profile")} className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+              <button onClick={() => navigate("/settings/profile")} onMouseEnter={() => prefetchRoute("/settings/profile")} onFocus={() => prefetchRoute("/settings/profile")} className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${isActive("/settings") ? "bg-accent/15 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"}`}>
                 <Settings className="w-4 h-4" /> Settings
               </button>
-              <div className="mt-1 px-2.5 py-1.5">
+              <div className="mt-1 px-2.5 py-1">
                 <p className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
                   <Keyboard className="w-3 h-3" />
                   Press <kbd className="px-1 py-0.5 rounded bg-secondary/60 text-[9px] font-mono">?</kbd> for shortcuts
@@ -279,7 +278,7 @@ export default function AppShell({ children, title }: AppShellProps) {
             </>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* User footer */}
       <div className="border-t border-border shrink-0">

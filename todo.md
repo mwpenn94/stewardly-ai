@@ -3016,3 +3016,17 @@
 - [x] BUG: Sidebar UI inconsistent between landing page and main app (chat/dashboard pages)
 - [x] FIX: Make sidebar UI consistent — Chat sidebar now uses single-column list, active states, route prefetching, text-[13px] matching AppShell
 - [x] Write tests for popup priority and sidebar consistency (25 tests)
+
+## Sidebar Fix v2 — AppShell matches Chat sidebar (2026-04-02)
+- [x] REVERT: Rolled back Chat.tsx to original sidebar (the good one)
+- [x] FIX: Updated AppShell sidebar to match Chat sidebar — collapsible NAVIGATE/ADMIN sections
+- [x] FIX: AppShell sections default to collapsed (matching Chat sidebar behavior)
+- [x] REMOVE: GuidedTour component deleted entirely
+- [x] REMOVE: WhatsNewModal converted to data-only export (no modal popup)
+- [x] REMOVE: WhatsNewModal and GuidedTour removed from App.tsx
+- [x] REMOVE: "Restart Guided Tour" button removed from ContextualHelp
+- [x] Updated popupQueueAndSidebar.test.ts — consent-only queue, removed component verification
+- [x] Updated uxPolish.test.ts — data-only WhatsNewModal checks
+- [x] Updated keyboardShortcutsChangelog.test.ts — version 2026.04.01, 4 releases
+- [x] Updated commandPaletteShortcutsChangelog.test.ts — data export checks instead of modal link checks
+- [x] All 2,180 tests passing (1 pre-existing flaky timeout in consolidatedPhase3)
