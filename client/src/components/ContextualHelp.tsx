@@ -11,10 +11,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   HelpCircle, X, Lightbulb, Keyboard, MessageSquare,
-  ChevronRight, ExternalLink, BookOpen, Sparkles, Search,
+  ChevronRight, ExternalLink, BookOpen, Search,
 } from "lucide-react";
 import { useLocation, useRouter } from "wouter";
-import { resetTour } from "./GuidedTour";
 
 interface HelpTip {
   title: string;
@@ -266,20 +265,7 @@ export function ContextualHelp() {
                   </TabsContent>
                 </ScrollArea>
               </Tabs>
-              <div className="p-3 border-t">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs gap-1.5"
-                  onClick={() => {
-                    resetTour();
-                    setIsOpen(false);
-                    window.location.href = "/chat";
-                  }}
-                >
-                  <Sparkles className="w-3 h-3" /> Restart Guided Tour
-                </Button>
-              </div>
+
             </CardContent>
           </Card>
         </>

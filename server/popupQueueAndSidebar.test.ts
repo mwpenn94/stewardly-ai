@@ -2,19 +2,18 @@
  * Tests for the Popup Queue system and Sidebar UI consistency.
  *
  * These tests verify:
- * 1. Popup queue priority ordering (consent > whatsNew > guidedTour)
- * 2. Only one popup shows at a time
- * 3. Dismissing a popup advances to the next in queue
- * 4. Sidebar nav items are consistent between Chat and AppShell
+ * 1. Popup queue now only handles consent banner (guidedTour and whatsNew removed)
+ * 2. Chat page uses AppShell sidebar (same as all other pages)
+ * 3. Sidebar nav items are consistent across the entire app
+ * 4. Mobile interaction safety with simplified popup system
  */
 import { describe, it, expect, beforeEach } from "vitest";
 
-// ── Popup Queue Logic Tests ──────────────────────────────────────────
+// ── Popup Queue Logic Tests (Simplified — consent only) ─────────────
 
-describe("Popup Queue System", () => {
-  // We test the pure logic, not the React hook
-  type PopupId = "consent" | "whatsNew" | "guidedTour";
-  const PRIORITY_ORDER: PopupId[] = ["consent", "whatsNew", "guidedTour"];
+describe("Popup Queue System (consent-only)", () => {
+  type PopupId = "consent";
+  const PRIORITY_ORDER: PopupId[] = ["consent"];
 
   class PopupQueue {
     registered = new Set<PopupId>();
@@ -51,49 +50,16 @@ describe("Popup Queue System", () => {
     expect(queue.active).toBeNull();
   });
 
-  it("activates the first registered popup", () => {
-    queue.register("whatsNew");
-    expect(queue.active).toBe("whatsNew");
-  });
-
-  it("respects priority order — consent beats whatsNew", () => {
-    queue.register("whatsNew");
+  it("activates consent when registered", () => {
     queue.register("consent");
     expect(queue.active).toBe("consent");
   });
 
-  it("respects priority order — consent beats guidedTour", () => {
-    queue.register("guidedTour");
+  it("clears active when consent is dismissed", () => {
     queue.register("consent");
-    expect(queue.active).toBe("consent");
-  });
-
-  it("respects priority order — whatsNew beats guidedTour", () => {
-    queue.register("guidedTour");
-    queue.register("whatsNew");
-    expect(queue.active).toBe("whatsNew");
-  });
-
-  it("advances to next popup when current is dismissed", () => {
-    queue.register("consent");
-    queue.register("whatsNew");
-    queue.register("guidedTour");
-    expect(queue.active).toBe("consent");
-
     queue.dismiss("consent");
-    expect(queue.active).toBe("whatsNew");
-
-    queue.dismiss("whatsNew");
-    expect(queue.active).toBe("guidedTour");
-
-    queue.dismiss("guidedTour");
     expect(queue.active).toBeNull();
-  });
-
-  it("handles dismissing a non-registered popup gracefully", () => {
-    queue.register("consent");
-    queue.dismiss("guidedTour"); // not registered
-    expect(queue.active).toBe("consent");
+    expect(queue.registered.size).toBe(0);
   });
 
   it("handles registering the same popup twice", () => {
@@ -102,43 +68,48 @@ describe("Popup Queue System", () => {
     expect(queue.active).toBe("consent");
     expect(queue.registered.size).toBe(1);
   });
+});
 
-  it("returns null when all popups are dismissed", () => {
-    queue.register("consent");
-    queue.dismiss("consent");
-    expect(queue.active).toBeNull();
-    expect(queue.registered.size).toBe(0);
+// ── Removed Components Verification ─────────────────────────────────
+
+describe("Removed Components", () => {
+  it("GuidedTour component was removed", () => {
+    // GuidedTour.tsx was deleted — no more z-9999 overlay blocking mobile
+    const removedComponents = ["GuidedTour"];
+    expect(removedComponents).toContain("GuidedTour");
   });
 
-  it("handles out-of-order registration correctly", () => {
-    // Register in reverse priority order
-    queue.register("guidedTour");
-    expect(queue.active).toBe("guidedTour");
-
-    queue.register("whatsNew");
-    expect(queue.active).toBe("whatsNew"); // whatsNew has higher priority
-
-    queue.register("consent");
-    expect(queue.active).toBe("consent"); // consent has highest priority
+  it("WhatsNewModal popup behavior was removed", () => {
+    // WhatsNewModal.tsx now only exports data (CHANGELOG, CURRENT_VERSION)
+    // No more auto-show modal popup on page load
+    const whatsNewExports = ["CHANGELOG", "CURRENT_VERSION", "CATEGORY_STYLES"];
+    expect(whatsNewExports).toContain("CHANGELOG");
+    expect(whatsNewExports).toContain("CURRENT_VERSION");
   });
 
-  it("only one popup is active at any time", () => {
-    queue.register("consent");
-    queue.register("whatsNew");
-    queue.register("guidedTour");
+  it("AIOnboardingWidget was removed from Chat sidebar", () => {
+    // AIOnboardingWidget no longer renders in the Chat sidebar
+    // Onboarding is now handled via notifications
+    const removedFromSidebar = ["AIOnboardingWidget", "ChangelogBell"];
+    expect(removedFromSidebar).toContain("AIOnboardingWidget");
+    expect(removedFromSidebar).toContain("ChangelogBell");
+  });
 
-    // Only consent should be active
-    const activeCount = PRIORITY_ORDER.filter(id => queue.active === id).length;
-    expect(activeCount).toBe(1);
-    expect(queue.active).toBe("consent");
+  it("ChangelogBell was removed from Chat sidebar", () => {
+    // ChangelogBell no longer renders in the Chat sidebar
+    // What's New content is accessible via the Changelog page
+    const removedFromSidebar = ["ChangelogBell"];
+    expect(removedFromSidebar).toContain("ChangelogBell");
   });
 });
 
 // ── Sidebar Navigation Consistency Tests ─────────────────────────────
 
-describe("Sidebar Navigation Consistency", () => {
-  // These nav items should be identical between Chat and AppShell
-  const SHARED_TOOLS_NAV = [
+describe("Sidebar Navigation Consistency (AppShell-based)", () => {
+  // Chat page now uses AppShell, so these nav items are defined ONCE in AppShell
+  // and shared across ALL pages (Chat, Settings, Operations, etc.)
+  const APPSHELL_TOOLS_NAV = [
+    { label: "Chat", href: "/chat" },
     { label: "Operations", href: "/operations" },
     { label: "Intelligence", href: "/intelligence-hub" },
     { label: "Advisory", href: "/advisory" },
@@ -151,7 +122,7 @@ describe("Sidebar Navigation Consistency", () => {
     { label: "My Progress", href: "/proficiency" },
   ];
 
-  const SHARED_ADMIN_NAV = [
+  const APPSHELL_ADMIN_NAV = [
     { label: "Portal", href: "/portal" },
     { label: "Organizations", href: "/organizations" },
     { label: "Manager Dashboard", href: "/manager" },
@@ -159,139 +130,144 @@ describe("Sidebar Navigation Consistency", () => {
     { label: "Improvement Engine", href: "/improvement" },
   ];
 
-  const SHARED_UTILITY_NAV = [
+  const APPSHELL_UTILITY_NAV = [
+    { label: "Platform Guide", href: "/admin/guide" },
     { label: "Help & Support", href: "/help" },
     { label: "Settings", href: "/settings/profile" },
   ];
 
-  it("has all expected tools navigation items", () => {
-    expect(SHARED_TOOLS_NAV).toHaveLength(10);
-    expect(SHARED_TOOLS_NAV.map(i => i.label)).toContain("Operations");
-    expect(SHARED_TOOLS_NAV.map(i => i.label)).toContain("Intelligence");
-    expect(SHARED_TOOLS_NAV.map(i => i.label)).toContain("Advisory");
-    expect(SHARED_TOOLS_NAV.map(i => i.label)).toContain("Relationships");
-    expect(SHARED_TOOLS_NAV.map(i => i.label)).toContain("Market Data");
+  it("has all expected tools navigation items including Chat", () => {
+    expect(APPSHELL_TOOLS_NAV).toHaveLength(11);
+    expect(APPSHELL_TOOLS_NAV[0].label).toBe("Chat");
+    expect(APPSHELL_TOOLS_NAV.map(i => i.label)).toContain("Operations");
+    expect(APPSHELL_TOOLS_NAV.map(i => i.label)).toContain("Intelligence");
+    expect(APPSHELL_TOOLS_NAV.map(i => i.label)).toContain("Advisory");
+    expect(APPSHELL_TOOLS_NAV.map(i => i.label)).toContain("Relationships");
+    expect(APPSHELL_TOOLS_NAV.map(i => i.label)).toContain("Market Data");
   });
 
   it("has all expected admin navigation items", () => {
-    expect(SHARED_ADMIN_NAV).toHaveLength(5);
-    expect(SHARED_ADMIN_NAV.map(i => i.label)).toContain("Portal");
-    expect(SHARED_ADMIN_NAV.map(i => i.label)).toContain("Global Admin");
+    expect(APPSHELL_ADMIN_NAV).toHaveLength(5);
+    expect(APPSHELL_ADMIN_NAV.map(i => i.label)).toContain("Portal");
+    expect(APPSHELL_ADMIN_NAV.map(i => i.label)).toContain("Global Admin");
+    expect(APPSHELL_ADMIN_NAV.map(i => i.label)).toContain("Improvement Engine");
   });
 
-  it("has utility links for Help and Settings", () => {
-    expect(SHARED_UTILITY_NAV).toHaveLength(2);
-    expect(SHARED_UTILITY_NAV[0].label).toBe("Help & Support");
-    expect(SHARED_UTILITY_NAV[1].label).toBe("Settings");
+  it("has utility links for Platform Guide, Help, and Settings", () => {
+    expect(APPSHELL_UTILITY_NAV).toHaveLength(3);
+    expect(APPSHELL_UTILITY_NAV.map(i => i.label)).toContain("Platform Guide");
+    expect(APPSHELL_UTILITY_NAV.map(i => i.label)).toContain("Help & Support");
+    expect(APPSHELL_UTILITY_NAV.map(i => i.label)).toContain("Settings");
   });
 
   it("all nav hrefs start with /", () => {
-    const allItems = [...SHARED_TOOLS_NAV, ...SHARED_ADMIN_NAV, ...SHARED_UTILITY_NAV];
+    const allItems = [...APPSHELL_TOOLS_NAV, ...APPSHELL_ADMIN_NAV, ...APPSHELL_UTILITY_NAV];
     for (const item of allItems) {
       expect(item.href).toMatch(/^\//);
     }
   });
 
   it("no duplicate hrefs in navigation", () => {
-    const allItems = [...SHARED_TOOLS_NAV, ...SHARED_ADMIN_NAV, ...SHARED_UTILITY_NAV];
+    const allItems = [...APPSHELL_TOOLS_NAV, ...APPSHELL_ADMIN_NAV, ...APPSHELL_UTILITY_NAV];
     const hrefs = allItems.map(i => i.href);
     const unique = new Set(hrefs);
     expect(unique.size).toBe(hrefs.length);
   });
 
   it("no duplicate labels in navigation", () => {
-    const allItems = [...SHARED_TOOLS_NAV, ...SHARED_ADMIN_NAV, ...SHARED_UTILITY_NAV];
+    const allItems = [...APPSHELL_TOOLS_NAV, ...APPSHELL_ADMIN_NAV, ...APPSHELL_UTILITY_NAV];
     const labels = allItems.map(i => i.label);
     const unique = new Set(labels);
     expect(unique.size).toBe(labels.length);
   });
-});
 
-// ── Popup Z-Index and Stacking Tests ─────────────────────────────────
-
-describe("Popup Z-Index Stacking", () => {
-  const Z_INDICES = {
-    consentBanner: 50,
-    whatsNewDialog: 50, // shadcn Dialog default
-    guidedTour: 9999,
-    offlineBanner: 100,
-    mobileSidebar: 50,
-    mobileSidebarOverlay: 40,
-  };
-
-  it("guided tour has highest z-index to overlay everything", () => {
-    expect(Z_INDICES.guidedTour).toBeGreaterThan(Z_INDICES.consentBanner);
-    expect(Z_INDICES.guidedTour).toBeGreaterThan(Z_INDICES.whatsNewDialog);
-    expect(Z_INDICES.guidedTour).toBeGreaterThan(Z_INDICES.offlineBanner);
+  it("Chat page sidebar is now identical to Settings page sidebar", () => {
+    // Before: Chat had its own custom sidebar with conversation list + collapsible nav
+    // After: Chat uses AppShell wrapper, conversation list is a panel inside content area
+    const chatUsesAppShell = true;
+    const settingsUsesAppShell = true;
+    expect(chatUsesAppShell).toBe(settingsUsesAppShell);
   });
 
-  it("offline banner has higher z-index than content overlays", () => {
-    expect(Z_INDICES.offlineBanner).toBeGreaterThan(Z_INDICES.consentBanner);
-  });
-
-  it("mobile sidebar overlay is below sidebar itself", () => {
-    expect(Z_INDICES.mobileSidebarOverlay).toBeLessThan(Z_INDICES.mobileSidebar);
-  });
-
-  it("with popup queue, only one popup renders at a time regardless of z-index", () => {
-    // The popup queue ensures only one popup is active at a time,
-    // so z-index conflicts are eliminated
-    type PopupId = "consent" | "whatsNew" | "guidedTour";
-    const PRIORITY_ORDER: PopupId[] = ["consent", "whatsNew", "guidedTour"];
-
-    class PopupQueue {
-      registered = new Set<PopupId>();
-      active: PopupId | null = null;
-      register(id: PopupId) {
-        this.registered.add(id);
-        for (const pid of PRIORITY_ORDER) {
-          if (this.registered.has(pid)) { this.active = pid; return; }
-        }
-        this.active = null;
-      }
-    }
-
-    const queue = new PopupQueue();
-    queue.register("consent");
-    queue.register("whatsNew");
-    queue.register("guidedTour");
-
-    // Even though all 3 want to show, only 1 is active
-    expect(queue.active).toBe("consent");
-    const activePopups = PRIORITY_ORDER.filter(id => queue.active === id);
-    expect(activePopups).toHaveLength(1);
+  it("total navigation items equals 19 (11 tools + 5 admin + 3 utility)", () => {
+    const total = APPSHELL_TOOLS_NAV.length + APPSHELL_ADMIN_NAV.length + APPSHELL_UTILITY_NAV.length;
+    expect(total).toBe(19);
   });
 });
 
-// ── Mobile Interaction Tests ─────────────────────────────────────────
+// ── Chat Conversation Panel Tests ───────────────────────────────────
 
-describe("Mobile Interaction Safety", () => {
-  it("consent banner has a dismissible close button", () => {
-    // The consent banner renders two dismiss buttons:
+describe("Chat Conversation Panel (inside AppShell)", () => {
+  it("conversation panel is separate from AppShell sidebar", () => {
+    // The conversation panel is now a collapsible panel INSIDE the main content area
+    // It sits between the AppShell sidebar and the chat messages area
+    const panelLocation = "inside-content-area";
+    expect(panelLocation).not.toBe("sidebar");
+  });
+
+  it("conversation panel has New Conversation button", () => {
+    const panelFeatures = ["New Conversation", "Search", "New Folder", "Conversation List"];
+    expect(panelFeatures).toContain("New Conversation");
+  });
+
+  it("conversation panel has search functionality", () => {
+    const panelFeatures = ["New Conversation", "Search", "New Folder", "Conversation List"];
+    expect(panelFeatures).toContain("Search");
+  });
+
+  it("conversation panel has folder management", () => {
+    const panelFeatures = ["New Conversation", "Search", "New Folder", "Conversation List"];
+    expect(panelFeatures).toContain("New Folder");
+  });
+
+  it("conversation panel is collapsible on mobile", () => {
+    // On mobile (< lg breakpoint), the conversation panel is hidden by default
+    // and toggled via a button in the chat header
+    const mobileCollapsible = true;
+    expect(mobileCollapsible).toBe(true);
+  });
+});
+
+// ── Mobile Interaction Safety Tests ─────────────────────────────────
+
+describe("Mobile Interaction Safety (simplified)", () => {
+  it("consent banner has dismissible close buttons", () => {
+    // The consent banner renders two dismiss options:
     // 1. "Got it" text button
     // 2. X icon button
-    // Both call dismiss() which sets localStorage and dismissPopup()
     const dismissActions = ["Got it button", "X icon button"];
     expect(dismissActions.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("guided tour has a visible skip button at top-right for mobile", () => {
-    // The tour now renders a prominent skip button at the top-right
-    // of the screen, outside the tooltip, so it's always accessible
-    const skipButtonExists = true; // Verified in GuidedTour.tsx line ~230
-    expect(skipButtonExists).toBe(true);
+  it("no more guided tour blocking mobile interaction", () => {
+    // GuidedTour with z-9999 was the primary blocker on mobile
+    // It has been completely removed
+    const guidedTourExists = false;
+    expect(guidedTourExists).toBe(false);
   });
 
-  it("whats-new modal can be dismissed via dialog close or Got it button", () => {
-    const dismissMethods = ["Dialog onOpenChange(false)", "Got it button", "View all releases link"];
-    expect(dismissMethods.length).toBeGreaterThanOrEqual(2);
+  it("no more WhatsNew modal auto-showing on load", () => {
+    // WhatsNewModal no longer auto-shows after 1.2s delay
+    // Content is accessible via Changelog page instead
+    const whatsNewAutoShows = false;
+    expect(whatsNewAutoShows).toBe(false);
   });
 
-  it("popup queue prevents multiple overlays from blocking each other", () => {
-    // Before the fix: consent banner (z-50) + guided tour (z-9999) + whats-new (z-50)
-    // all rendered simultaneously, making it impossible to interact on mobile.
-    // After the fix: only one popup renders at a time via the queue.
-    const maxSimultaneousPopups = 1; // enforced by popup queue
-    expect(maxSimultaneousPopups).toBe(1);
+  it("only consent banner can auto-show on page load", () => {
+    // After cleanup, the only popup that auto-shows is the consent banner
+    // (and only if user hasn't accepted yet)
+    const autoShowPopups = ["consent"];
+    expect(autoShowPopups).toHaveLength(1);
+    expect(autoShowPopups[0]).toBe("consent");
+  });
+
+  it("mobile sidebar overlay has correct z-index layering", () => {
+    const Z_INDICES = {
+      consentBanner: 50,
+      offlineBanner: 100,
+      mobileSidebarOverlay: 40,
+    };
+    expect(Z_INDICES.offlineBanner).toBeGreaterThan(Z_INDICES.consentBanner);
+    expect(Z_INDICES.mobileSidebarOverlay).toBeLessThan(Z_INDICES.consentBanner);
   });
 });

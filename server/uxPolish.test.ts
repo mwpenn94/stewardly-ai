@@ -20,30 +20,21 @@ describe("What's New Changelog Modal", () => {
     expect(source).toContain("entries:");
   });
 
-  it("should use localStorage to track seen version", async () => {
+  it("should export CURRENT_VERSION and CATEGORY_STYLES", async () => {
     const fs = await import("fs");
     const source = fs.readFileSync("client/src/components/WhatsNewModal.tsx", "utf-8");
-
-    // Must reference localStorage for version tracking
-    expect(source).toContain("localStorage");
-    expect(source).toMatch(/whats-new|whatsnew|changelog/i);
+    // Data-only export — modal removed, data consumed by ChangelogBell and Changelog page
+    expect(source).toContain("export const CURRENT_VERSION");
+    expect(source).toContain("export const CATEGORY_STYLES");
+    expect(source).toContain("export const CHANGELOG");
   });
 
-  it("should delay display to avoid blocking initial render", async () => {
+  it("should have changelog data consumed by ChangelogBell (not a modal)", async () => {
     const fs = await import("fs");
     const source = fs.readFileSync("client/src/components/WhatsNewModal.tsx", "utf-8");
-
-    // Must use a timeout to delay modal appearance
-    expect(source).toContain("setTimeout");
-    expect(source).toContain("1200");
-  });
-
-  it("should be mounted in App.tsx", async () => {
-    const fs = await import("fs");
-    const appSource = fs.readFileSync("client/src/App.tsx", "utf-8");
-
-    expect(appSource).toContain("WhatsNewModal");
-    expect(appSource).toContain("import WhatsNewModal");
+    // Modal removed — file is now data-only
+    expect(source).toContain("No-op: modal removed");
+    expect(source).toContain("return null");
   });
 });
 
@@ -185,9 +176,6 @@ describe("Feature Integration", () => {
   it("should have all three features in App.tsx", async () => {
     const fs = await import("fs");
     const source = fs.readFileSync("client/src/App.tsx", "utf-8");
-
-    // WhatsNew modal
-    expect(source).toContain("WhatsNewModal");
 
     // Suspense with lazy loading (enables prefetch)
     expect(source).toContain("Suspense");
