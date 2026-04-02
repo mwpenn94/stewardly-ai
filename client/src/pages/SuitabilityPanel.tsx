@@ -10,8 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Shield, Target, AlertTriangle, CheckCircle, TrendingUp, BarChart3, FileText, Zap, ArrowLeft } from "lucide-react";
-import { Link } from "wouter";
+import { Shield, Target, AlertTriangle, CheckCircle, TrendingUp, BarChart3, FileText, Zap } from "lucide-react";
 
 export default function SuitabilityPanel() {
   const [tab, setTab] = useState("overview");
@@ -33,7 +32,6 @@ export default function SuitabilityPanel() {
   return (
     <AppShell title="Suitability">
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-      <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Suitability Intelligence</h1>

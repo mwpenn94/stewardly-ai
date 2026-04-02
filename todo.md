@@ -2983,3 +2983,28 @@
 - [x] Create comprehensive guide with design specs (standalone document)
 - [x] Build admin-only in-app guide and design specs page (10 tabs, admin-only, sidebar nav at /admin/guide)
 - [x] Copy recursive-optimization-converged-prompt(4).md to project shared files
+
+## Feature: Conversation Sidebar Search/Filter (2026-04-02)
+- [x] Add search input to sidebar header with debounced filtering (already existed)
+- [x] Filter conversations by title match (case-insensitive) — inline client-side filter for short queries
+- [x] Add date grouping (Today, Yesterday, Previous 7 Days, Previous 30 Days, Older)
+- [x] Ensure search works on mobile sidebar view (uses same sidebar component)
+- [x] Write tests for sidebar search/filter (23 tests in dataExportAndFiltering.test.ts)
+
+## Feature: Data Export (Conversations, Profiles, Documents as ZIP)
+- [x] Create server-side export router with protectedProcedure (fullDataExport endpoint)
+- [x] Export conversation history (messages + metadata) as JSON + Markdown per conversation
+- [x] Export suitability profile data + AI memories
+- [x] Export user documents metadata
+- [x] Bundle all exports into ZIP archive via archiver + S3 upload
+- [x] Add Export Data UI to Settings > Privacy & Data with 5 section checkboxes
+- [x] Handle large exports with loading toast + success toast with file size
+- [x] Write tests for data export (23 tests in dataExportAndFiltering.test.ts)
+
+## Recursive Optimization to Convergence
+- [x] Landscape pass: Audit new features + existing UI holistically
+- [x] Depth pass: Fix all issues found (redundant back links, empty conversation filtering)
+- [x] Adversarial pass: Edge cases, failure modes, silent failures (DST edge case in tests, export router named export fix)
+- [x] Continue until convergence declared — convergence achieved
+- [x] Update comprehensive guide (STEWARDLY_COMPREHENSIVE_GUIDE.md) — v2.1 with updated metrics and new features
+- [x] Update in-app Platform Guide page with new features (updated stats: 197K+ LOC, 2,162 tests, 893 files, 860 procedures)

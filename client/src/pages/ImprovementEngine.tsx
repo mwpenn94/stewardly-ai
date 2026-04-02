@@ -12,9 +12,9 @@ import {
   Layers, TrendingUp, Wrench, Eye, CheckCircle, XCircle,
   AlertTriangle, Clock, Loader2, ChevronDown, ChevronRight,
   Zap, BarChart3, Settings, RefreshCw, ThumbsUp, ThumbsDown,
-  ArrowRight, Play, Gauge, ArrowLeft,
+  ArrowRight, Play, Gauge,
 } from "lucide-react";
-import { Link } from "wouter";
+
 
 const LAYERS = [
   { key: "platform", label: "Platform", icon: Layers, color: "text-violet-400", bg: "bg-violet-500/10" },
@@ -104,7 +104,7 @@ export default function ImprovementEngine() {
     <AppShell title="Improvement Engine">
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold flex items-center gap-3 mb-2">

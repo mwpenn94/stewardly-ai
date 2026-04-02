@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Shield, Download, Trash2, Eye, Database, Mic, FileText,
   MessageSquare, AlertTriangle, CheckCircle, Loader2, Clock,
+  Archive, Settings, ScrollText, UserCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,10 +20,25 @@ const CONSENT_MAP = [
   { key: "data_sharing" as const, label: "Data Sharing", desc: "Allow sharing anonymized data with your organization's professionals", icon: Eye },
 ];
 
+const EXPORT_SECTIONS = [
+  { key: "includeConversations" as const, label: "Conversations", desc: "Full chat history with all messages", icon: MessageSquare },
+  { key: "includeProfile" as const, label: "Profile & Suitability", desc: "Account info, suitability assessment, AI memories", icon: UserCircle },
+  { key: "includeDocuments" as const, label: "Documents", desc: "Document metadata and index", icon: FileText },
+  { key: "includeSettings" as const, label: "Settings", desc: "User preferences and style profile", icon: Settings },
+  { key: "includeAuditTrail" as const, label: "Audit Trail", desc: "Activity log and compliance records", icon: ScrollText },
+];
+
 export default function PrivacyDataTab() {
   const { user } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportSections, setExportSections] = useState({
+    includeConversations: true,
+    includeProfile: true,
+    includeDocuments: true,
+    includeSettings: true,
+    includeAuditTrail: true,
+  });
 
   // Server-backed consent tracking
   const consentsQuery = trpc.consent.list.useQuery(undefined, { retry: 1, staleTime: 30000 });
@@ -34,6 +51,8 @@ export default function PrivacyDataTab() {
   const revokeAllMut = trpc.consent.revokeAll.useMutation({
     onSuccess: () => { consentsQuery.refetch(); toast.success("All consents revoked"); },
   });
+
+  const fullExportMut = trpc.exports.fullDataExport.useMutation();
 
   const consents = Array.isArray(consentsQuery.data) ? consentsQuery.data : [];
   const isConsentGranted = (type: string) => {
@@ -55,35 +74,37 @@ export default function PrivacyDataTab() {
     }
   };
 
-  const utils = trpc.useUtils();
-
-  const handleExportData = async () => {
+  const handleFullExport = async () => {
     setExporting(true);
+    const loadingToast = toast.loading("Preparing your data export... This may take a moment.");
     try {
-      const conversations = await utils.conversations.list.fetch();
-      const exportData = {
-        exportedAt: new Date().toISOString(),
-        user: { name: user?.name, email: user?.email, role: user?.role, createdAt: user?.createdAt },
-        conversations: conversations?.map((c: any) => ({ id: c.id, title: c.title, createdAt: c.createdAt, pinned: c.pinned })) || [],
-        consentSettings: consents,
-        note: "For full conversation exports, use the Export option in each conversation's context menu.",
-      };
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
+      const result = await fullExportMut.mutateAsync(exportSections);
+      toast.dismiss(loadingToast);
+
+      // Trigger download
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `stewardly-data-export-${new Date().toISOString().split("T")[0]}.json`;
+      a.href = result.url;
+      a.download = result.filename;
+      a.target = "_blank";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("Data exported successfully");
-    } catch {
-      toast.error("Failed to export data");
+
+      const sizeMB = (result.sizeBytes / (1024 * 1024)).toFixed(2);
+      toast.success(`Export ready! ${sizeMB} MB ZIP with ${result.sections.length} sections downloaded.`);
+    } catch (err: any) {
+      toast.dismiss(loadingToast);
+      toast.error(err?.message || "Failed to export data. Please try again.");
     } finally {
       setExporting(false);
     }
   };
+
+  const toggleSection = (key: keyof typeof exportSections) => {
+    setExportSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const selectedCount = Object.values(exportSections).filter(Boolean).length;
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -136,19 +157,55 @@ export default function PrivacyDataTab() {
         </div>
       </section>
 
-      {/* ─── DATA EXPORT ─── */}
+      {/* ─── COMPREHENSIVE DATA EXPORT ─── */}
       <section>
-        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Download className="w-4 h-4" />
+        <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+          <Archive className="w-4 h-4" />
           Export Your Data
         </h3>
-        <p className="text-xs text-muted-foreground mb-3">
-          Download a copy of your account data, including profile information, consent history, and conversation metadata.
+        <p className="text-xs text-muted-foreground mb-4">
+          Download a comprehensive ZIP archive of your data. Includes conversations with full message history,
+          suitability profile, documents, settings, and audit trail. Select which sections to include:
         </p>
-        <Button size="sm" variant="outline" onClick={handleExportData} disabled={exporting}>
-          {exporting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Download className="w-4 h-4 mr-1.5" />}
-          Export Account Data
-        </Button>
+
+        <div className="space-y-2 mb-4">
+          {EXPORT_SECTIONS.map(({ key, label, desc, icon: Icon }) => (
+            <label
+              key={key}
+              className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 cursor-pointer hover:bg-card/80 transition-colors"
+            >
+              <Checkbox
+                checked={exportSections[key]}
+                onCheckedChange={() => toggleSection(key)}
+                disabled={exporting}
+              />
+              <div className="text-muted-foreground shrink-0"><Icon className="w-4 h-4" /></div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{label}</p>
+                <p className="text-[10px] text-muted-foreground">{desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleFullExport}
+            disabled={exporting || selectedCount === 0}
+          >
+            {exporting ? (
+              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-1.5" />
+            )}
+            {exporting ? "Exporting..." : `Export ${selectedCount} Section${selectedCount !== 1 ? "s" : ""} as ZIP`}
+          </Button>
+          {selectedCount === 0 && (
+            <span className="text-xs text-muted-foreground">Select at least one section</span>
+          )}
+        </div>
       </section>
 
       {/* ─── DATA ACTIVITY LOG ─── */}

@@ -191,12 +191,12 @@ export default function PlatformGuide() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <StatCard label="Lines of Code" value="146K+" icon={Code2} />
+                <StatCard label="Lines of Code" value="197K+" icon={Code2} />
                 <StatCard label="Database Tables" value={270} icon={Database} />
-                <StatCard label="API Routers" value={95} icon={Globe} />
-                <StatCard label="Tests Passing" value="2,139" icon={TestTube} />
-                <StatCard label="Source Files" value={454} icon={FileText} />
-                <StatCard label="Frontend Pages" value={75} icon={Layout} />
+                <StatCard label="API Routers" value="51 (860 procs)" icon={Globe} />
+                <StatCard label="Tests Passing" value="2,162" icon={TestTube} />
+                <StatCard label="Source Files" value={893} icon={FileText} />
+                <StatCard label="Frontend Pages" value={76} icon={Layout} />
                 <StatCard label="Server Services" value={112} icon={Cpu} />
                 <StatCard label="Custom Hooks" value={16} icon={Zap} />
               </div>
@@ -376,14 +376,14 @@ Response (typed, Superjson) → React Query Cache → UI`} />
 │       ├── App.tsx           # Route definitions (221 lines)
 │       ├── main.tsx          # Provider wiring
 │       ├── index.css         # Design tokens (OKLCH)
-│       ├── pages/            # 75 page components
+│       ├── pages/            # 76 page components
 │       ├── components/       # 42 custom + 53 shadcn/ui
 │       ├── hooks/            # 16 custom hooks
 │       ├── contexts/         # Theme + Notification contexts
 │       └── lib/              # tRPC client, utils
 ├── server/
 │   ├── _core/               # Framework plumbing (DO NOT EDIT)
-│   ├── routers.ts           # Main appRouter (95 sub-routers)
+│   ├── routers.ts           # Main appRouter (51 sub-routers, 860 procedures)
 │   ├── routers/             # 53 feature router modules
 │   ├── services/            # 112 business logic services
 │   ├── shared/              # Cross-cutting AI capabilities
@@ -744,8 +744,8 @@ user    (level 0) → Consumer-facing features`} />
             <div className="space-y-6">
               <Section id="test-overview" title="Test Suite" icon={TestTube}>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <StatCard label="Total Tests" value="2,139" icon={TestTube} />
-                  <StatCard label="Test Files" value={80} icon={FileText} />
+                  <StatCard label="Total Tests" value="2,162" icon={TestTube} />
+                  <StatCard label="Test Files" value={81} icon={FileText} />
                   <StatCard label="Pass Rate" value="100%" icon={Check} />
                   <StatCard label="Framework" value="Vitest" icon={Zap} />
                 </div>

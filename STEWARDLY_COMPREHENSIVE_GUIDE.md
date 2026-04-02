@@ -1,6 +1,6 @@
 # Stewardly AI — Comprehensive Platform Guide
 
-**Version:** 2.0 | **Date:** April 2026 | **Status:** Production  
+**Version:** 2.1 | **Date:** April 2026 | **Status:** Production  
 **Domains:** stewardly.manus.space, wealthai-gakeferp.manus.space
 
 ---
@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with 146,000+ lines of code across 534 source files, 270 database tables, 95 tRPC API routers, and 2,139 automated tests. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with 197,000+ lines of code across 893 source files, 270 database tables, 51 tRPC API routers (860 procedures), and 2,162 automated tests. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -38,19 +38,19 @@ The system is built on a modern TypeScript full-stack architecture with 146,000+
 
 | Metric | Count |
 |--------|-------|
-| Total lines of code | 146,618 |
-| Source files (non-test) | 454 |
-| Test files | 80 |
-| Total tests | 2,139 |
+| Total lines of code | 197,000+ |
+| Source files (non-test) | 893 |
+| Test files | 81 |
+| Total tests | 2,162 |
 | Database tables | 270 |
-| tRPC routers | 95 |
-| Frontend pages | 75 |
+| tRPC routers | 51 (860 procedures) |
+| Frontend pages | 76 |
 | Custom components | 42 |
 | UI primitives (shadcn) | 53 |
 | Custom hooks | 16 |
 | Server services | 112 |
-| Router modules | 53 |
-| NPM dependencies | 86 |
+| Router modules | 53 (+ main routers.ts) |
+| NPM dependencies | 88 |
 | Dev dependencies | 28 |
 
 ### 2.3 Directory Structure
@@ -64,8 +64,8 @@ wealthbridge-ai/
 │       ├── App.tsx           # Route definitions (221 lines)
 │       ├── main.tsx          # Provider wiring
 │       ├── index.css         # Design tokens (OKLCH)
-│       ├── pages/            # 75 page components
-│       │   ├── Chat.tsx      # Main chat interface (2,114 lines)
+│       ├── pages/            # 76 page components
+│       │   ├── Chat.tsx      # Main chat interface (2,143 lines)
 │       │   ├── Landing.tsx   # Public landing page
 │       │   ├── Settings.tsx  # Settings hub
 │       │   └── settings/     # 12 settings sub-tabs
@@ -264,10 +264,12 @@ The application defines 45+ active routes and 20+ redirect routes for backward c
 
 ### 5.1 AI Chat Engine
 
-The chat system is the primary interface, implemented in `Chat.tsx` (2,114 lines). It provides:
+The chat system is the primary interface, implemented in `Chat.tsx` (2,143 lines). It provides:
 
 - **Multi-model AI responses** with streaming via SSE (Server-Sent Events)
-- **Conversation management** with folders, pinning, archiving, and search
+- **Conversation management** with folders, pinning, archiving, date-grouped sidebar, and search/filter
+- **Date-grouped conversation sidebar** with Today, Yesterday, Previous 7 Days, Previous 30 Days, and Older categories
+- **Empty conversation filtering** that hides zero-message conversations from the sidebar
 - **Focus modes**: General, Financial, Insurance, Estate Planning, Premium Finance, and more
 - **Voice input/output** via Web Speech API and TTS integration
 - **Screen capture** for visual context sharing
@@ -321,6 +323,33 @@ Real-time financial intelligence:
 - **Premium finance rates** with SOFR-based calculations
 - **IUL market data** and index performance
 - **Investment intelligence** with risk analytics
+
+### 5.7 Comprehensive Data Export
+
+Full user data portability via the Settings page:
+
+- **5 Selectable Sections**: Conversations, Profile, Documents, Settings, Audit Trail
+- **ZIP Archive Generation** using the `archiver` library with maximum compression
+- **S3 Upload** with presigned download URL for secure retrieval
+- **Manifest File** included in every export with metadata (date, platform version, sections, file count)
+- **Markdown-formatted conversations** with role labels (You / Steward) and message separators
+- **Automatic download** triggered after successful export generation
+- **Router**: `server/routers/exports.ts` — `exportsRouter.fullExport` procedure
+
+### 5.8 UX Resilience Features
+
+Platform-wide quality-of-life improvements:
+
+- **Command Palette** (Ctrl+K / Cmd+K) with 25+ pages, 5 actions, and conversation search
+- **Customizable Keyboard Shortcuts** with G-then-X navigation (10 routes), server-persisted via `user_preferences.customShortcuts`
+- **What's New Changelog Modal** with version tracking via localStorage, delayed display (1.2s)
+- **Route Prefetch on Hover** for 18 sidebar routes with deduplication
+- **Section Error Boundaries** with retry counting, query invalidation, and "Refresh page" fallback
+- **Offline/Reconnection Banner** with auto-dismiss on reconnect
+- **Toast Notifications on Retry Exhaustion** with deduplication and manual retry button
+- **Code Splitting** with React.lazy for 50+ pages (critical pages eagerly loaded)
+- **Recently Visited Pages** tracked in command palette via `useSyncExternalStore`
+- **Dedicated Changelog Page** at `/changelog` with timeline layout and category badges
 
 ---
 
@@ -613,8 +642,9 @@ The platform runs automated background jobs via `server/services/scheduler.ts`:
 | Schema validation | 1 | 18 | Column alignment, missing tables, naming conventions |
 | Platform integration | 1 | 50+ | Memory engine, AI config, context assembly |
 | Consolidated Phase 3 | 1 | 30+ | SOFR rates, rate management, org providers |
-| Feature routers | 76 | 2,000+ | Individual feature tests |
-| **Total** | **80** | **2,139** | **All passing** |
+| Data export & filtering | 1 | 23 | Export ZIP structure, sidebar date grouping, search |
+| Feature routers | 77 | 2,000+ | Individual feature tests |
+| **Total** | **81** | **2,162** | **All passing** |
 
 ### 12.2 Test Patterns
 

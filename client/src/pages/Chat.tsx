@@ -584,34 +584,61 @@ export default function Chat() {
     } catch { /* ignore */ }
   }, [utils]);
 
-  // Group conversations by pinned, folder, and unfiled
+  // Helper: classify conversation date into groups
+  const getDateGroup = (dateStr: string | undefined) => {
+    if (!dateStr) return "Older";
+    const d = new Date(dateStr);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today.getTime() - 86400000);
+    const weekAgo = new Date(today.getTime() - 7 * 86400000);
+    const monthAgo = new Date(today.getTime() - 30 * 86400000);
+    if (d >= today) return "Today";
+    if (d >= yesterday) return "Yesterday";
+    if (d >= weekAgo) return "Previous 7 Days";
+    if (d >= monthAgo) return "Previous 30 Days";
+    return "Older";
+  };
+
+  // Group conversations by pinned, folder, and unfiled with date groups
   const groupedConversations = useMemo(() => {
     const convs = conversationsQuery.data || [];
-    const pinned = convs.filter((c: any) => c.pinned);
+    // Apply inline client-side filter when search is open but query is short (< 2 chars for server search)
+    const inlineFilter = searchOpen && searchQuery.length > 0 && searchQuery.length < 2;
+    const filterFn = (c: any) => {
+      if (inlineFilter) {
+        return (c.title || "").toLowerCase().includes(searchQuery.toLowerCase());
+      }
+      return true;
+    };
+    const pinned = convs.filter((c: any) => c.pinned && filterFn(c));
     const folders = foldersQuery.data || [];
     const folderGroups = folders.map((f: any) => ({
       ...f,
-      conversations: convs.filter((c: any) => !c.pinned && c.folderId === f.id),
+      conversations: convs.filter((c: any) => !c.pinned && c.folderId === f.id && filterFn(c)),
     }));
-    const unfiled = convs.filter((c: any) => !c.pinned && !c.folderId);
+    const unfiled = convs.filter((c: any) => !c.pinned && !c.folderId && filterFn(c));
     // Filter out empty conversations (no messages) unless they're the active one or very recent
     const filteredUnfiled = unfiled.filter((c: any) => {
-      if (c.id === conversationId) return true; // always show active conversation
-      // If we have messageCount from the API, use it for precise filtering
+      if (c.id === conversationId) return true;
       if (typeof c.messageCount === 'number' && c.messageCount === 0) {
-        // Empty conversation — only show if created within last 5 minutes
         const createdRecently = c.createdAt && (Date.now() - new Date(c.createdAt).getTime()) < 5 * 60 * 1000;
         return createdRecently;
       }
-      // Fallback for when messageCount is not available: filter by default title
       if (c.title === "New Conversation") {
         const createdRecently = c.createdAt && (Date.now() - new Date(c.createdAt).getTime()) < 5 * 60 * 1000;
         return createdRecently;
       }
       return true;
     });
-    return { pinned, folderGroups, unfiled: filteredUnfiled };
-  }, [conversationsQuery.data, foldersQuery.data, conversationId]);
+    // Group unfiled by date
+    const dateOrder = ["Today", "Yesterday", "Previous 7 Days", "Previous 30 Days", "Older"] as const;
+    const dateGroups = dateOrder.map(label => ({
+      label,
+      conversations: filteredUnfiled.filter((c: any) => getDateGroup(c.updatedAt || c.createdAt) === label),
+    })).filter(g => g.conversations.length > 0);
+    return { pinned, folderGroups, unfiled: filteredUnfiled, dateGroups };
+  }, [conversationsQuery.data, foldersQuery.data, conversationId, searchOpen, searchQuery]);
 
   const toggleFolderExpand = (folderId: number) => {
     setExpandedFolders(prev => {
@@ -1322,19 +1349,21 @@ export default function Chat() {
                   </button>
                 )}
 
-                {/* Unfiled conversations */}
-                {groupedConversations.unfiled.length > 0 && (groupedConversations.pinned.length > 0 || groupedConversations.folderGroups.some((f: any) => f.conversations.length > 0)) && (
-                  <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-1">
-                    <MessageSquare className="w-3 h-3" /> Conversations
+                {/* Unfiled conversations — grouped by date */}
+                {groupedConversations.dateGroups.map((group) => (
+                  <div key={group.label} className="mb-1">
+                    <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-1">
+                      <Calendar className="w-3 h-3" /> {group.label}
+                    </div>
+                    {group.conversations.map((conv: any) => (
+                      <ConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
+                        setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
+                        handleDeleteConversation={handleDeleteConversation}
+                        togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
+                        handleExportConversation={handleExportConversation}
+                        folders={foldersQuery.data || []} />
+                    ))}
                   </div>
-                )}
-                {groupedConversations.unfiled.map((conv: any) => (
-                  <ConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
-                    setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
-                    handleDeleteConversation={handleDeleteConversation}
-                    togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
-                    handleExportConversation={handleExportConversation}
-                    folders={foldersQuery.data || []} />
                 ))}
               </>
             )}
