@@ -3030,3 +3030,23 @@
 - [x] Updated keyboardShortcutsChangelog.test.ts — version 2026.04.01, 4 releases
 - [x] Updated commandPaletteShortcutsChangelog.test.ts — data export checks instead of modal link checks
 - [x] All 2,180 tests passing (1 pre-existing flaky timeout in consolidatedPhase3)
+
+## Recommended Next Steps Implementation (2026-04-02)
+- [x] Extract shared navigation config into `client/src/lib/navigation.ts` — single source of truth for TOOLS_NAV, ADMIN_NAV, UTILITY_NAV
+- [x] AppShell and Chat both consume shared nav config (no more duplicate nav arrays)
+- [x] hasMinRole and ROLE_HIERARCHY centralized in navigation.ts
+- [x] Chat page filters out "/chat" from its own tools list automatically
+- [x] Move AI Getting Started checklist from sidebar widget into notification system
+- [x] Created `OnboardingNotifications` hook that converts checklist items to Notification objects
+- [x] Onboarding items appear as "Getting Started" type in NotificationBell panel
+- [x] Clicking onboarding notification navigates to the relevant feature page
+- [x] Dismiss all onboarding via existing dismissOnboarding mutation
+- [x] Removed AIOnboardingWidget from Chat sidebar (frees sidebar space)
+- [x] Add mobile swipe gesture for sidebar open/close (both Chat and AppShell)
+- [x] Swipe right from left edge (30px zone) opens sidebar on mobile
+- [x] Swipe left while sidebar is open closes it
+- [x] Only active on screens < 1024px (lg breakpoint)
+- [x] 50px minimum swipe threshold, 500ms max duration, horizontal-dominant check
+- [x] NotificationBell updated with `onNavigate` prop and "onboarding" type config
+- [x] Write navigation.test.ts — 11 tests for hasMinRole, nav arrays, duplicate detection
+- [x] Write onboarding-notifications.test.ts — 4 tests for checklist→notification transform

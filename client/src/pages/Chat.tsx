@@ -37,7 +37,8 @@ import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
-import AIOnboardingWidget from "@/components/AIOnboardingWidget";
+import { TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole as sharedHasMinRole, type NavItemDef } from "@/lib/navigation";
+import { useOnboardingNotifications } from "@/components/OnboardingNotifications";
 import ChangelogBell from "@/components/ChangelogBell";
 import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
 import { useSelfDiscovery } from "@/hooks/useSelfDiscovery";
@@ -220,10 +221,33 @@ function getDynamicPrompts(focus: FocusMode[], hasConversations: boolean, role: 
   return result;
 }
 
-// Role hierarchy for access checks
-const ROLE_HIERARCHY: Record<UserRole, number> = { user: 0, advisor: 1, manager: 2, admin: 3 };
-function hasMinRole(userRole: string | undefined, minRole: UserRole): boolean {
-  return ROLE_HIERARCHY[userRole as UserRole ?? "user"] >= ROLE_HIERARCHY[minRole];
+// Role hierarchy — delegated to shared navigation config
+const hasMinRole = sharedHasMinRole;
+
+// Icon lookup for shared NavItemDef → React element (Chat uses 3.5 size)
+const NAV_ICON_MAP: Record<string, React.ReactNode> = {
+  Zap: <Zap className="w-3.5 h-3.5" />,
+  Brain: <Brain className="w-3.5 h-3.5" />,
+  Package: <Package className="w-3.5 h-3.5" />,
+  Users: <Users className="w-3.5 h-3.5" />,
+  TrendingUp: <TrendingUp className="w-3.5 h-3.5" />,
+  FileText: <FileText className="w-3.5 h-3.5" />,
+  Link2: <Link2 className="w-3.5 h-3.5" />,
+  HeartPulse: <HeartPulse className="w-3.5 h-3.5" />,
+  RefreshCw: <RefreshCw className="w-3.5 h-3.5" />,
+  Activity: <Activity className="w-3.5 h-3.5" />,
+  Briefcase: <Briefcase className="w-3.5 h-3.5" />,
+  Building2: <Building2 className="w-3.5 h-3.5" />,
+  BarChart3: <BarChart3 className="w-3.5 h-3.5" />,
+  Globe: <Globe className="w-3.5 h-3.5" />,
+  Wrench: <Wrench className="w-3.5 h-3.5" />,
+  BookOpen: <BookOpen className="w-3.5 h-3.5" />,
+  HelpCircle: <HelpCircle className="w-3.5 h-3.5" />,
+  Settings: <Settings className="w-3.5 h-3.5" />,
+  Fingerprint: <Fingerprint className="w-3.5 h-3.5" />,
+};
+function getNavIcon(name: string): React.ReactNode {
+  return NAV_ICON_MAP[name] ?? <Zap className="w-3.5 h-3.5" />;
 }
 
 // Typing animation hook
@@ -346,7 +370,12 @@ export default function Chat() {
   const [location, navigate] = useLocation();
   const [matchChat, paramsChat] = useRoute("/chat/:id");
   const utils = trpc.useUtils();
-  const { notifications, unreadCount, connected: wsConnected, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
+  const { notifications: wsNotifications, unreadCount: wsUnreadCount, connected: wsConnected, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
+  const { notifications: onboardingNotifs, unreadCount: onboardingUnread } = useOnboardingNotifications();
+
+  // Merge onboarding items into the notification list
+  const notifications = useMemo(() => [...onboardingNotifs, ...wsNotifications], [onboardingNotifs, wsNotifications]);
+  const unreadCount = wsUnreadCount + onboardingUnread;
 
   // ─── STATE ──────────────────────────────────────────────────────
   const [conversationId, setConversationId] = useState<number | null>(
@@ -1114,6 +1143,40 @@ export default function Chat() {
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [adminExpanded, setAdminExpanded] = useState(false);
 
+  // ─── MOBILE SWIPE GESTURE for sidebar open/close ──────────────
+  const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const SWIPE_THRESHOLD = 50;
+  const EDGE_ZONE = 30;
+
+  const handleSwipeStart = useCallback((e: TouchEvent) => {
+    const t = e.touches[0];
+    swipeStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
+  }, []);
+
+  const handleSwipeEnd = useCallback((e: TouchEvent) => {
+    if (!swipeStartRef.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipeStartRef.current.x;
+    const dy = t.clientY - swipeStartRef.current.y;
+    const elapsed = Date.now() - swipeStartRef.current.time;
+    const startX = swipeStartRef.current.x;
+    swipeStartRef.current = null;
+    if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dy) > Math.abs(dx) || elapsed > 500) return;
+    if (dx > 0 && startX < EDGE_ZONE && !sidebarOpen) setSidebarOpen(true);
+    else if (dx < 0 && sidebarOpen) setSidebarOpen(false);
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    if (!mq.matches) return;
+    document.addEventListener("touchstart", handleSwipeStart, { passive: true });
+    document.addEventListener("touchend", handleSwipeEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", handleSwipeStart);
+      document.removeEventListener("touchend", handleSwipeEnd);
+    };
+  }, [handleSwipeStart, handleSwipeEnd]);
+
   // ─── AUTH GATE ────────────────────────────────────────────────
   if (authLoading) {
     return (
@@ -1130,29 +1193,21 @@ export default function Chat() {
     ? "All Modes"
     : selectedFocus.map(f => FOCUS_OPTIONS.find(o => o.value === f)?.label).filter(Boolean).join(" + ");
 
-  // ─── SIDEBAR NAV ITEMS (role-aware) ───────────────────────────
+  // ─── SIDEBAR NAV ITEMS (from shared config, role-aware) ────────
+  // Chat page filters out "/chat" from tools since we ARE the chat page
+  const toolsNav = TOOLS_NAV.filter(i => i.href !== "/chat").map(i => ({
+    icon: getNavIcon(i.iconName),
+    label: i.label,
+    href: i.href,
+    minRole: i.minRole,
+  }));
 
-  // Consolidated navigation (C26) — 7 hub items replacing 28 individual pages
-  const toolsNav = [
-    { icon: <Zap className="w-3.5 h-3.5" />, label: "Operations", href: "/operations", minRole: "user" as UserRole },
-    { icon: <Brain className="w-3.5 h-3.5" />, label: "Intelligence", href: "/intelligence-hub", minRole: "user" as UserRole },
-    { icon: <Package className="w-3.5 h-3.5" />, label: "Advisory", href: "/advisory", minRole: "user" as UserRole },
-    { icon: <Users className="w-3.5 h-3.5" />, label: "Relationships", href: "/relationships", minRole: "user" as UserRole },
-    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Market Data", href: "/market-data", minRole: "user" as UserRole },
-    { icon: <FileText className="w-3.5 h-3.5" />, label: "Documents", href: "/documents", minRole: "user" as UserRole },
-    { icon: <Link2 className="w-3.5 h-3.5" />, label: "Integrations", href: "/integrations", minRole: "user" as UserRole },
-    { icon: <HeartPulse className="w-3.5 h-3.5" />, label: "Integration Health", href: "/integration-health", minRole: "advisor" as UserRole },
-    { icon: <RefreshCw className="w-3.5 h-3.5" />, label: "Passive Actions", href: "/passive-actions", minRole: "user" as UserRole },
-    { icon: <Activity className="w-3.5 h-3.5" />, label: "My Progress", href: "/proficiency", minRole: "user" as UserRole },
-  ];
-
-  const adminNav = [
-    { icon: <Briefcase className="w-3.5 h-3.5" />, label: "Portal", href: "/portal", minRole: "advisor" as UserRole },
-    { icon: <Building2 className="w-3.5 h-3.5" />, label: "Organizations", href: "/organizations", minRole: "advisor" as UserRole },
-    { icon: <BarChart3 className="w-3.5 h-3.5" />, label: "Manager Dashboard", href: "/manager", minRole: "manager" as UserRole },
-    { icon: <Globe className="w-3.5 h-3.5" />, label: "Global Admin", href: "/admin", minRole: "admin" as UserRole },
-    { icon: <Activity className="w-3.5 h-3.5" />, label: "Improvement Engine", href: "/improvement", minRole: "advisor" as UserRole },
-  ];
+  const adminNav = ADMIN_NAV.map(i => ({
+    icon: getNavIcon(i.iconName),
+    label: i.label,
+    href: i.href,
+    minRole: i.minRole,
+  }));
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
@@ -1510,8 +1565,7 @@ export default function Chat() {
                   <Fingerprint className="w-4 h-4" /> Settings
                 </button>
               </div>
-              {/* AI Onboarding Widget */}
-              {!sidebarCollapsed && <AIOnboardingWidget />}
+
               {/* Desktop notification bell + changelog bell */}
               <div className="hidden lg:flex items-center gap-1 px-2 pb-1">
                 <NotificationBell
@@ -1521,6 +1575,7 @@ export default function Chat() {
                   onMarkAsRead={markAsRead}
                   onMarkAllAsRead={markAllAsRead}
                   onClear={clearNotifications}
+                  onNavigate={(href) => { navigate(href); setSidebarOpen(false); }}
                 />
                 <ChangelogBell collapsed={sidebarCollapsed} />
                 {!sidebarCollapsed && unreadCount > 0 && (
@@ -1638,6 +1693,7 @@ export default function Chat() {
               onMarkAsRead={markAsRead}
               onMarkAllAsRead={markAllAsRead}
               onClear={clearNotifications}
+              onNavigate={(href) => { navigate(href); setSidebarOpen(false); }}
             />
             {user?.authTier === "anonymous" && (
               <Button

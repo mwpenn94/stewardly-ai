@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bell, BellRing, Check, CheckCheck, X, Zap, Brain, Shield, TrendingUp, Radio, Settings2 } from "lucide-react";
+import { Bell, BellRing, Check, CheckCheck, X, Zap, Brain, Shield, TrendingUp, Radio, Settings2, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ interface NotificationBellProps {
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
   onClear: () => void;
+  /** Optional: navigate callback for actionable notifications (e.g. onboarding items) */
+  onNavigate?: (href: string) => void;
 }
 
 // ─── Type Config ────────────────────────────────────────────────────────────
@@ -26,6 +28,7 @@ const TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; label:
   model_complete: { icon: <TrendingUp className="w-3.5 h-3.5" />, color: "text-emerald-400", label: "Model" },
   enrichment: { icon: <Zap className="w-3.5 h-3.5" />, color: "text-amber-400", label: "Enrichment" },
   system: { icon: <Settings2 className="w-3.5 h-3.5" />, color: "text-gray-400", label: "System" },
+  onboarding: { icon: <Rocket className="w-3.5 h-3.5" />, color: "text-sky-400", label: "Getting Started" },
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -57,6 +60,7 @@ export function NotificationBell({
   onMarkAsRead,
   onMarkAllAsRead,
   onClear,
+  onNavigate,
 }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
@@ -253,6 +257,12 @@ export function NotificationBell({
                       }`}
                       onClick={() => {
                         if (isUnread) onMarkAsRead(notification.id);
+                        // Navigate for actionable notifications (onboarding items)
+                        const href = (notification.metadata as any)?.href;
+                        if (href && onNavigate) {
+                          onNavigate(href);
+                          setOpen(false);
+                        }
                       }}
                     >
                       <div className="flex items-start gap-3">

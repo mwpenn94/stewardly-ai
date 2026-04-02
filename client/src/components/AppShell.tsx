@@ -5,8 +5,8 @@
  * authenticated page should be wrapped in AppShell so users always have
  * navigation context and never hit a dead-end.
  *
- * The sidebar mirrors the same nav items from Chat's "Tools" and "Admin"
- * sections, with collapsible groups for a compact, mobile-friendly layout.
+ * Both AppShell and Chat consume the same shared navigation config from
+ * `lib/navigation.ts` so items never drift out of sync.
  */
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -14,47 +14,47 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLocation } from "wouter";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { prefetchRoute } from "@/lib/routePrefetch";
 import { recordPageVisit } from "@/hooks/useRecentPages";
 import {
+  TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole,
+  type NavItemDef, type UserRole,
+} from "@/lib/navigation";
+import {
   MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
   Link2, HeartPulse, RefreshCw, Activity, Briefcase, Building2,
   BarChart3, Globe, Wrench, HelpCircle, Settings, LogIn, LogOut,
-  Menu, X, ChevronDown, PanelLeftClose, Keyboard, BookOpen,
+  Menu, X, ChevronDown, Keyboard, BookOpen,
 } from "lucide-react";
 
-type UserRole = "user" | "advisor" | "manager" | "admin";
-const ROLE_HIERARCHY: Record<UserRole, number> = { user: 0, advisor: 1, manager: 2, admin: 3 };
-function hasMinRole(userRole: string | undefined, minRole: UserRole): boolean {
-  return ROLE_HIERARCHY[userRole as UserRole ?? "user"] >= ROLE_HIERARCHY[minRole];
+// ─── Icon lookup ─────────────────────────────────────────────────────────────
+const ICON_MAP: Record<string, React.ReactNode> = {
+  MessageSquare: <MessageSquare className="w-4 h-4" />,
+  Zap: <Zap className="w-4 h-4" />,
+  Brain: <Brain className="w-4 h-4" />,
+  Package: <Package className="w-4 h-4" />,
+  Users: <Users className="w-4 h-4" />,
+  TrendingUp: <TrendingUp className="w-4 h-4" />,
+  FileText: <FileText className="w-4 h-4" />,
+  Link2: <Link2 className="w-4 h-4" />,
+  HeartPulse: <HeartPulse className="w-4 h-4" />,
+  RefreshCw: <RefreshCw className="w-4 h-4" />,
+  Activity: <Activity className="w-4 h-4" />,
+  Briefcase: <Briefcase className="w-4 h-4" />,
+  Building2: <Building2 className="w-4 h-4" />,
+  BarChart3: <BarChart3 className="w-4 h-4" />,
+  Globe: <Globe className="w-4 h-4" />,
+  Wrench: <Wrench className="w-4 h-4" />,
+  BookOpen: <BookOpen className="w-4 h-4" />,
+  HelpCircle: <HelpCircle className="w-4 h-4" />,
+  Settings: <Settings className="w-4 h-4" />,
+};
+
+function getIcon(name: string): React.ReactNode {
+  return ICON_MAP[name] ?? <Zap className="w-4 h-4" />;
 }
-
-type NavItem = { icon: React.ReactNode; label: string; href: string; minRole: UserRole };
-
-const TOOLS_NAV: NavItem[] = [
-  { icon: <MessageSquare className="w-4 h-4" />, label: "Chat", href: "/chat", minRole: "user" },
-  { icon: <Zap className="w-4 h-4" />, label: "Operations", href: "/operations", minRole: "user" },
-  { icon: <Brain className="w-4 h-4" />, label: "Intelligence", href: "/intelligence-hub", minRole: "user" },
-  { icon: <Package className="w-4 h-4" />, label: "Advisory", href: "/advisory", minRole: "user" },
-  { icon: <Users className="w-4 h-4" />, label: "Relationships", href: "/relationships", minRole: "user" },
-  { icon: <TrendingUp className="w-4 h-4" />, label: "Market Data", href: "/market-data", minRole: "user" },
-  { icon: <FileText className="w-4 h-4" />, label: "Documents", href: "/documents", minRole: "user" },
-  { icon: <Link2 className="w-4 h-4" />, label: "Integrations", href: "/integrations", minRole: "user" },
-  { icon: <HeartPulse className="w-4 h-4" />, label: "Integration Health", href: "/integration-health", minRole: "advisor" },
-  { icon: <RefreshCw className="w-4 h-4" />, label: "Passive Actions", href: "/passive-actions", minRole: "user" },
-  { icon: <Activity className="w-4 h-4" />, label: "My Progress", href: "/proficiency", minRole: "user" },
-];
-
-const ADMIN_NAV: NavItem[] = [
-  { icon: <Briefcase className="w-4 h-4" />, label: "Portal", href: "/portal", minRole: "advisor" },
-  { icon: <Building2 className="w-4 h-4" />, label: "Organizations", href: "/organizations", minRole: "advisor" },
-  { icon: <BarChart3 className="w-4 h-4" />, label: "Manager Dashboard", href: "/manager", minRole: "manager" },
-  { icon: <Globe className="w-4 h-4" />, label: "Global Admin", href: "/admin", minRole: "admin" },
-  { icon: <Wrench className="w-4 h-4" />, label: "Improvement Engine", href: "/improvement", minRole: "advisor" },
-  { icon: <BookOpen className="w-4 h-4" />, label: "Platform Guide", href: "/admin/guide", minRole: "admin" },
-];
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -93,6 +93,50 @@ export default function AppShell({ children, title }: AppShellProps) {
     setMobileOpen(false);
     recordPageVisit(location);
   }, [location]);
+
+  // ─── Mobile swipe gesture to open/close sidebar ────────────────────────────
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const SWIPE_THRESHOLD = 50; // minimum px to count as swipe
+  const EDGE_ZONE = 30; // px from left edge to start open-swipe
+
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    const elapsed = Date.now() - touchStartRef.current.time;
+    const startX = touchStartRef.current.x;
+    touchStartRef.current = null;
+
+    // Must be more horizontal than vertical and fast enough
+    if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dy) > Math.abs(dx) || elapsed > 500) return;
+
+    if (dx > 0 && startX < EDGE_ZONE && !mobileOpen) {
+      // Swipe right from left edge → open
+      setMobileOpen(true);
+    } else if (dx < 0 && mobileOpen) {
+      // Swipe left while open → close
+      setMobileOpen(false);
+    }
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    // Only attach on mobile-sized screens
+    const mq = window.matchMedia("(max-width: 1023px)");
+    if (!mq.matches) return;
+
+    document.addEventListener("touchstart", handleTouchStart, { passive: true });
+    document.addEventListener("touchend", handleTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchEnd]);
 
   // G-then-X keyboard navigation — uses custom shortcuts from Settings
   const { shortcutMap } = useCustomShortcuts();
@@ -135,12 +179,14 @@ export default function AppShell({ children, title }: AppShellProps) {
 
   function isActive(href: string) {
     if (href === "/chat") return location === "/chat" || location.startsWith("/chat/");
+    if (href === "/settings/profile") return location.startsWith("/settings");
     return location === href || location.startsWith(href + "/");
   }
 
   /** Render a single nav item — collapsed (icon-only with tooltip) or expanded */
-  function renderNavItem(item: NavItem) {
+  function renderNavItem(item: NavItemDef) {
     const active = isActive(item.href);
+    const icon = getIcon(item.iconName);
     if (collapsed) {
       return (
         <Tooltip key={item.href}>
@@ -155,7 +201,7 @@ export default function AppShell({ children, title }: AppShellProps) {
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
               }`}
             >
-              {item.icon}
+              {icon}
             </button>
           </TooltipTrigger>
           <TooltipContent side="right">{item.label}</TooltipContent>
@@ -174,7 +220,7 @@ export default function AppShell({ children, title }: AppShellProps) {
             : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
         }`}
       >
-        {item.icon}
+        {icon}
         <span className="truncate">{item.label}</span>
       </button>
     );
@@ -244,31 +290,40 @@ export default function AppShell({ children, title }: AppShellProps) {
         <div className={collapsed ? "p-1 space-y-0.5" : "p-2 space-y-0.5"}>
           {collapsed ? (
             <>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button onClick={() => navigate("/help")} onMouseEnter={() => prefetchRoute("/help")} onFocus={() => prefetchRoute("/help")} className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
-                    <HelpCircle className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Help & Support</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button onClick={() => navigate("/settings/profile")} onMouseEnter={() => prefetchRoute("/settings/profile")} onFocus={() => prefetchRoute("/settings/profile")} className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
-                    <Settings className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Settings</TooltipContent>
-              </Tooltip>
+              {UTILITY_NAV.map(item => (
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => navigate(item.href)}
+                      onMouseEnter={() => prefetchRoute(item.href)}
+                      onFocus={() => prefetchRoute(item.href)}
+                      className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                    >
+                      {getIcon(item.iconName)}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
+                </Tooltip>
+              ))}
             </>
           ) : (
             <>
-              <button onClick={() => navigate("/help")} onMouseEnter={() => prefetchRoute("/help")} onFocus={() => prefetchRoute("/help")} className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${isActive("/help") ? "bg-accent/15 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"}`}>
-                <HelpCircle className="w-4 h-4" /> Help & Support
-              </button>
-              <button onClick={() => navigate("/settings/profile")} onMouseEnter={() => prefetchRoute("/settings/profile")} onFocus={() => prefetchRoute("/settings/profile")} className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${isActive("/settings") ? "bg-accent/15 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"}`}>
-                <Settings className="w-4 h-4" /> Settings
-              </button>
+              {UTILITY_NAV.map(item => (
+                <button
+                  key={item.href}
+                  onClick={() => navigate(item.href)}
+                  onMouseEnter={() => prefetchRoute(item.href)}
+                  onFocus={() => prefetchRoute(item.href)}
+                  className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${
+                    isActive(item.href)
+                      ? "bg-accent/15 text-accent font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}
+                >
+                  {getIcon(item.iconName)}
+                  <span className="truncate">{item.label}</span>
+                </button>
+              ))}
               <div className="mt-1 px-2.5 py-1">
                 <p className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
                   <Keyboard className="w-3 h-3" />
