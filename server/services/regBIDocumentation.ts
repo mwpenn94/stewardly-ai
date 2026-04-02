@@ -81,7 +81,7 @@ export async function createCOIDisclosure(params: {
   relatedProductId?: number;
   severity: "low" | "medium" | "high";
 }) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [result] = await db.insert(coiDisclosures).values({
     userId: params.userId,
     advisorId: params.advisorId,
@@ -96,12 +96,12 @@ export async function createCOIDisclosure(params: {
 }
 
 export async function listCOIDisclosures(userId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(coiDisclosures).where(eq(coiDisclosures.userId, userId)).orderBy(desc(coiDisclosures.createdAt));
 }
 
 export async function acknowledgeCOI(disclosureId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.update(coiDisclosures).set({ status: "acknowledged", acknowledgedAt: new Date() }).where(eq(coiDisclosures.id, disclosureId));
 }
 
@@ -132,7 +132,7 @@ export async function createReportTemplate(params: {
   branding?: unknown;
   createdBy: number;
 }) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [result] = await db.insert(reportTemplates).values({
     orgId: params.orgId,
     name: params.name,
@@ -146,7 +146,7 @@ export async function createReportTemplate(params: {
 }
 
 export async function listReportTemplates(orgId?: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   if (orgId) {
     return db.select().from(reportTemplates).where(eq(reportTemplates.orgId, orgId)).orderBy(desc(reportTemplates.createdAt));
   }
@@ -160,7 +160,7 @@ export async function generateReport(params: {
   clientId?: number;
   parameters?: Record<string, unknown>;
 }) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [result] = await db.insert(reportJobs).values({
     userId: params.userId,
     orgId: params.orgId,
@@ -214,7 +214,7 @@ export async function createModelCard(params: {
   ethicalConsiderations: string;
   createdBy: number;
 }) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [result] = await db.insert(modelCards).values({
     modelName: params.modelName,
     version: params.version,
@@ -231,18 +231,18 @@ export async function createModelCard(params: {
 }
 
 export async function listModelCards() {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(modelCards).orderBy(desc(modelCards.createdAt));
 }
 
 export async function getModelCard(id: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [card] = await db.select().from(modelCards).where(eq(modelCards.id, id));
   return card || null;
 }
 
 export async function publishModelCard(id: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.update(modelCards).set({ published: true, lastEvaluatedAt: new Date() }).where(eq(modelCards.id, id));
 }
 
@@ -257,7 +257,7 @@ export async function recordMetric(params: {
   tags?: Record<string, unknown>;
   slaTarget?: number;
 }) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const slaMet = params.slaTarget ? params.value <= params.slaTarget : undefined;
   await db.insert(performanceMetrics).values({
     metricName: params.metricName,
@@ -271,7 +271,7 @@ export async function recordMetric(params: {
 }
 
 export async function getMetricsSummary(category?: string, since?: Date) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const conditions = [];
   if (category) conditions.push(eq(performanceMetrics.metricCategory, category as any));
   if (since) conditions.push(gte(performanceMetrics.recordedAt, since));
@@ -315,7 +315,7 @@ export async function logRecommendation(params: {
   riskLevel: "low" | "medium" | "high" | "very_high";
   disclaimers: string[];
 }) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [result] = await db.insert(recommendationsLog).values({
     userId: params.userId,
     advisorId: params.advisorId,
@@ -336,7 +336,7 @@ export async function logRecommendation(params: {
 }
 
 export async function getRecommendationExplanation(recommendationId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [rec] = await db.select().from(recommendationsLog).where(eq(recommendationsLog.id, recommendationId));
   if (!rec) return null;
 
@@ -355,11 +355,11 @@ export async function getRecommendationExplanation(recommendationId: number) {
 }
 
 export async function listRecommendations(userId: number, limit = 50) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(recommendationsLog).where(eq(recommendationsLog.userId, userId)).orderBy(desc(recommendationsLog.createdAt)).limit(limit);
 }
 
 export async function updateRecommendationStatus(id: number, status: "accepted" | "rejected" | "implemented" | "expired") {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.update(recommendationsLog).set({ status }).where(eq(recommendationsLog.id, id));
 }

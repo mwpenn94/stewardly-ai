@@ -229,7 +229,7 @@ const CARRIER_TEMPLATES = [
 ];
 
 export async function seedIntegrationProviders() {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   logger.info( { operation: "seed" },"[Seed] Seeding integration providers...");
   for (const provider of PROVIDERS) {
     try {
@@ -255,7 +255,7 @@ export async function seedIntegrationProviders() {
 }
 
 export async function seedCarrierTemplates() {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   logger.info( { operation: "seed" },"[Seed] Seeding carrier import templates...");
   for (const tmpl of CARRIER_TEMPLATES) {
     try {

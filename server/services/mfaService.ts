@@ -25,7 +25,7 @@ function generateTOTP(secret: string, timeStep = 30): string {
 }
 
 export async function enrollMFA(userId: number): Promise<{ secret: string; qrUri: string; backupCodes: string[] }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const secret = generateTOTPSecret();
 
   // Store secret
@@ -51,7 +51,7 @@ export async function enrollMFA(userId: number): Promise<{ secret: string; qrUri
 }
 
 export async function verifyMFA(userId: number, code: string): Promise<boolean> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [mfa] = await db.select().from(mfaSecrets).where(and(eq(mfaSecrets.userId, userId), eq(mfaSecrets.method, "totp")));
   if (!mfa) return false;
 
@@ -77,7 +77,7 @@ export async function verifyMFA(userId: number, code: string): Promise<boolean> 
 }
 
 export async function getMFAStatus(userId: number): Promise<{ enrolled: boolean; verified: boolean; enabled: boolean; method: string; backupCodesRemaining: number }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [mfa] = await db.select().from(mfaSecrets).where(eq(mfaSecrets.userId, userId));
   if (!mfa) return { enrolled: false, verified: false, enabled: false, method: "none", backupCodesRemaining: 0 };
 
@@ -92,7 +92,7 @@ export async function getMFAStatus(userId: number): Promise<{ enrolled: boolean;
 }
 
 export async function disableMFA(userId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.update(mfaSecrets).set({ enabled: false }).where(eq(mfaSecrets.userId, userId));
 }
 
@@ -177,7 +177,7 @@ export async function recordConsent(params: {
   ipAddress?: string;
   userAgent?: string;
 }) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [existing] = await db.select().from(consentTracking).where(and(eq(consentTracking.userId, params.userId), eq(consentTracking.consentType, params.consentType)));
 
   if (existing) {
@@ -200,7 +200,7 @@ export async function recordConsent(params: {
 }
 
 export async function getConsents(userId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(consentTracking).where(eq(consentTracking.userId, userId));
 }
 
@@ -212,7 +212,7 @@ export async function generateDSAR(userId: number): Promise<{
   data: Record<string, unknown>;
 }> {
   // Data Subject Access Request — compile all user data for export
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const { users, conversations, messages, documents, auditTrail, consentTracking } = await import("../../drizzle/schema");
   const { eq } = await import("drizzle-orm");
 

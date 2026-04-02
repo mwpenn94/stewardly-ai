@@ -116,7 +116,7 @@ export async function runWhatIfScenario(
     yearByYear,
   };
 
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [result] = await db.insert(modelScenarios).values({
     userId,
     baseRunId,
@@ -165,7 +165,7 @@ export async function runBacktest(
   const recoveryFactor = Math.abs(weightedImpact) / Math.abs(event.spDrop / 100);
   const estimatedRecovery = Math.round(event.recoveryMonths * recoveryFactor);
 
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [result] = await db.insert(modelBacktests).values({
     userId,
     modelType,
@@ -189,14 +189,14 @@ export async function runBacktest(
 
 // ─── Query Helpers ───────────────────────────────────────────────────────
 export async function getUserScenarios(userId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(modelScenarios)
     .where(eq(modelScenarios.userId, userId))
     .orderBy(desc(modelScenarios.createdAt)).limit(20);
 }
 
 export async function getUserBacktests(userId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(modelBacktests)
     .where(eq(modelBacktests.userId, userId))
     .orderBy(desc(modelBacktests.createdAt)).limit(20);

@@ -34,7 +34,7 @@ export async function handleTopicChange(
   messageId: number,
   message: string
 ): Promise<{ topicChanged: boolean; newTopic: string; disclaimer: string | null }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const newTopic = detectTopic(message);
 
   // Get previous topic
@@ -80,12 +80,12 @@ export async function trackDisclaimerInteraction(
   userId: number,
   action: "shown" | "scrolled" | "clicked" | "acknowledged"
 ): Promise<void> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.insert(disclaimerInteractions).values({ disclaimerId, userId, action });
 }
 
 export async function getDisclaimerEngagement(disclaimerId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const interactions = await db.select().from(disclaimerInteractions)
     .where(eq(disclaimerInteractions.disclaimerId, disclaimerId));
 
@@ -103,12 +103,12 @@ export async function getDisclaimerEngagement(disclaimerId: number) {
 
 // ─── Translation Support ─────────────────────────────────────────────────
 export async function addTranslation(disclaimerId: number, language: string, translatedText: string): Promise<void> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.insert(disclaimerTranslations).values({ disclaimerId, language, translatedText });
 }
 
 export async function getTranslation(disclaimerId: number, language: string): Promise<string | null> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [t] = await db.select().from(disclaimerTranslations)
     .where(and(eq(disclaimerTranslations.disclaimerId, disclaimerId), eq(disclaimerTranslations.language, language)))
     .limit(1);
@@ -117,14 +117,14 @@ export async function getTranslation(disclaimerId: number, language: string): Pr
 
 // ─── Query Helpers ───────────────────────────────────────────────────────
 export async function getConversationTopicHistory(conversationId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(conversationTopics)
     .where(eq(conversationTopics.conversationId, conversationId))
     .orderBy(desc(conversationTopics.detectedAt));
 }
 
 export async function getAllDisclaimers() {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(disclaimerVersions)
     .where(sql`superseded_by IS NULL`)
     .orderBy(desc(disclaimerVersions.createdAt));

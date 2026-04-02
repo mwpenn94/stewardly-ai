@@ -47,7 +47,7 @@ export async function evaluateProductSuitability(
   else if (score < 0.7) status = "marginal";
   else if (disqualifying.length > 0) status = "needs_review";
 
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [result] = await db.insert(productSuitabilityEvaluations).values({
     productId,
     userId,
@@ -61,7 +61,7 @@ export async function evaluateProductSuitability(
 }
 
 export async function getProductEvaluations(userId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(productSuitabilityEvaluations)
     .where(eq(productSuitabilityEvaluations.userId, userId))
     .orderBy(desc(productSuitabilityEvaluations.evaluationDate));

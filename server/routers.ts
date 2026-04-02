@@ -1501,7 +1501,7 @@ const settingsRouter = router({
 
   // ─── KEYBOARD SHORTCUTS (server-side persistence) ─────────────────
   getShortcuts: protectedProcedure.query(async ({ ctx }) => {
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
     const { userPreferences } = await import("../drizzle/schema");
     const [row] = await db
       .select({ customShortcuts: userPreferences.customShortcuts })
@@ -1520,7 +1520,7 @@ const settingsRouter = router({
       })).max(26),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = (await getDb())!;
+      const db = await getDb(); if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const { userPreferences } = await import("../drizzle/schema");
       const [existing] = await db
         .select({ id: userPreferences.id })

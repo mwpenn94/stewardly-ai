@@ -12,7 +12,7 @@ export async function createIngestionJob(data: {
   sourceType: "document"|"url"|"conversation"|"api"|"template"|"bulk";
   sourceUrl?: string; sourceFilename?: string;
 }) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [row] = await db.insert(knowledgeIngestionJobs).values({
     sourceType: data.sourceType,
     sourceUrl: data.sourceUrl ?? null,
@@ -22,13 +22,13 @@ export async function createIngestionJob(data: {
 }
 
 export async function getJob(id: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [job] = await db.select().from(knowledgeIngestionJobs).where(eq(knowledgeIngestionJobs.id, id));
   return job ?? null;
 }
 
 export async function listJobs(limit = 50) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(knowledgeIngestionJobs).orderBy(desc(knowledgeIngestionJobs.createdAt)).limit(limit);
 }
 
@@ -36,7 +36,7 @@ async function updateJob(id: number, data: Partial<{
   status: string; articlesCreated: number; articlesUpdated: number;
   startedAt: Date; completedAt: Date; error: string;
 }>) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.update(knowledgeIngestionJobs).set(data as any).where(eq(knowledgeIngestionJobs.id, id));
 }
 
@@ -88,7 +88,7 @@ export async function ingestDocument(jobId: number, content: string, filename: s
     });
 
     const parsed = JSON.parse(typeof resp.choices?.[0]?.message?.content === "string" ? resp.choices[0].message.content : "{}");
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return null as any;
     let created = 0;
 
     for (const article of parsed.articles ?? []) {
@@ -168,7 +168,7 @@ export async function mineConversation(jobId: number, messages: Array<{ role: st
       return { success: true, articlesCreated: 0, reason: "No significant knowledge found" };
     }
 
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return null as any;
     let created = 0;
     for (const article of parsed.articles) {
       await db.insert(knowledgeArticles).values({
@@ -195,7 +195,7 @@ export async function seedFromTemplate(articles: Array<{
   category: string; subcategory?: string; title: string; content: string;
   contentType: "process"|"concept"|"reference"|"template"|"faq"|"policy"|"guide";
 }>) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   let created = 0;
   for (const a of articles) {
     await db.insert(knowledgeArticles).values({
@@ -213,7 +213,7 @@ export async function seedFromTemplate(articles: Array<{
 
 // ─── Ingestion Stats ─────────────────────────────────────────────────────
 export async function getIngestionStats() {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const jobs = await db.select().from(knowledgeIngestionJobs);
   return {
     totalJobs: jobs.length,

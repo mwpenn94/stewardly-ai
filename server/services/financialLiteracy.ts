@@ -88,7 +88,7 @@ export function assessLiteracy(messages: string[]): LiteracyAssessment {
 
 // ─── User Guardrails ─────────────────────────────────────────────────────
 export async function setGuardrail(userId: number, guardrailType: string, value: string, reason?: string): Promise<number> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [result] = await db.insert(userGuardrails).values({
     userId, guardrailType, value, reason,
   }).$returningId();
@@ -96,13 +96,13 @@ export async function setGuardrail(userId: number, guardrailType: string, value:
 }
 
 export async function getUserGuardrails(userId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(userGuardrails)
     .where(eq(userGuardrails.userId, userId))
     .orderBy(desc(userGuardrails.createdAt));
 }
 
 export async function removeGuardrail(id: number, userId: number): Promise<void> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.delete(userGuardrails).where(and(eq(userGuardrails.id, id), eq(userGuardrails.userId, userId)));
 }

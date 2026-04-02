@@ -420,7 +420,7 @@ export default function PassiveActions() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {history.map((entry) => (
+                  {history.map((entry: any) => (
                     <div
                       key={entry.id}
                       className="flex items-center justify-between py-2 px-3 rounded-md border text-sm"

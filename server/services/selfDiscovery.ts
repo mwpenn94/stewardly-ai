@@ -56,7 +56,7 @@ export interface GeneratedDiscovery {
 // ── Settings CRUD ────────────────────────────────────────────────────────
 
 export async function getDiscoverySettings(userId: number): Promise<DiscoverySettings> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const prefs = await db.select().from(userPreferences).where(eq(userPreferences.userId, userId)).limit(1);
   const p = prefs[0];
   return {
@@ -72,7 +72,7 @@ export async function updateDiscoverySettings(
   userId: number,
   settings: Partial<DiscoverySettings>
 ): Promise<DiscoverySettings> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const updateFields: Record<string, any> = {};
   if (settings.enabled !== undefined) updateFields.autoFollowUp = settings.enabled;
   if (settings.maxOccurrences !== undefined) updateFields.autoFollowUpCount = settings.maxOccurrences;
@@ -242,7 +242,7 @@ export async function saveDiscoveryEntry(
   discovery: GeneratedDiscovery,
   status: "generated" | "sent" | "dismissed" | "completed" = "generated",
 ): Promise<number> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const result = await db.insert(selfDiscoveryHistory).values({
     userId: context.userId,
     conversationId: context.conversationId,
@@ -265,7 +265,7 @@ export async function updateDiscoveryStatus(
   status: "generated" | "sent" | "dismissed" | "completed",
   userEngaged?: boolean,
 ): Promise<void> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const updateFields: Record<string, any> = { status };
   if (userEngaged !== undefined) updateFields.userEngaged = userEngaged;
   await db.update(selfDiscoveryHistory).set(updateFields).where(eq(selfDiscoveryHistory.id, id));
@@ -276,7 +276,7 @@ export async function getDiscoveryHistory(
   conversationId?: number,
   limit = 20,
 ): Promise<any[]> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const conditions = [eq(selfDiscoveryHistory.userId, userId)];
   if (conversationId) conditions.push(eq(selfDiscoveryHistory.conversationId, conversationId));
 
@@ -291,7 +291,7 @@ export async function getConversationDiscoveryCount(
   userId: number,
   conversationId: number,
 ): Promise<number> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const result = await db.select({ count: sql<number>`count(*)` })
     .from(selfDiscoveryHistory)
     .where(and(
@@ -316,7 +316,7 @@ export async function recordDiscoveryEngagement(
   await updateDiscoveryStatus(discoveryId, engaged ? "completed" : "dismissed", engaged);
 
   // Get the discovery entry to extract feature context
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const entries = await db.select()
     .from(selfDiscoveryHistory)
     .where(eq(selfDiscoveryHistory.id, discoveryId))

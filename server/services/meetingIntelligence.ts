@@ -45,7 +45,7 @@ export interface MeetingSummary {
 
 // ─── Pre-Meeting Brief ─────────────────────────────────────────────────────
 export async function generatePreMeetingBrief(userId: number, clientId: number): Promise<MeetingBrief> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const recentMeetings = await db.select().from(meetings)
     .where(and(eq(meetings.userId, userId)))
     .orderBy(desc(meetings.createdAt))

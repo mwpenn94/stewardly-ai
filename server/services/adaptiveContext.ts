@@ -131,7 +131,7 @@ export async function assembleContext(
   }
 
   // Log assembly
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   for (const layer of assembledLayers) {
     await db.insert(contextAssemblyLog).values({
       conversationId,
@@ -156,14 +156,14 @@ export async function assembleContext(
 
 // ─── Query Helpers ───────────────────────────────────────────────────────
 export async function getAssemblyLog(conversationId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(contextAssemblyLog)
     .where(eq(contextAssemblyLog.conversationId, conversationId))
     .orderBy(desc(contextAssemblyLog.createdAt)).limit(50);
 }
 
 export async function getContextStats() {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const rows = await db.select().from(contextAssemblyLog).orderBy(desc(contextAssemblyLog.createdAt)).limit(100);
   const complexityDist = { simple: 0, moderate: 0, complex: 0 };
   let totalTokens = 0;

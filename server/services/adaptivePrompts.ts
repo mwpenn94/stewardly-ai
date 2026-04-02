@@ -28,7 +28,7 @@ const BASE_PROMPTS: SuggestedPrompt[] = [
 ];
 
 export async function getAdaptivePrompts(userId: number, limit = 4): Promise<SuggestedPrompt[]> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
 
   // Get recent conversation topics
   const recentConvos = await db.select({ topic: conversations.title })

@@ -43,7 +43,7 @@ export abstract class BaseProvider {
   abstract normalizeData(rawData: unknown[]): Record<string, unknown>[];
 
   async sync(config: ProviderConfig): Promise<SyncResult> {
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return null as any;
     const startedAt = new Date();
     const syncId = uuid();
 
@@ -227,7 +227,7 @@ export class PlaidProvider extends BaseProvider {
     }
 
     // Cache normalized data
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return null as any;
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 4);
 

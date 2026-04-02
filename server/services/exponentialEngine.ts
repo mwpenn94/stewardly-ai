@@ -241,69 +241,74 @@ export interface UserLayerContext {
 export async function detectUserLayer(userId: number, userRole: string): Promise<UserLayerContext> {
   const db = await getDb();
 
-  // Default: client layer
-  const defaultCtx: UserLayerContext = {
+  // Determine layer from role first (works even without DB)
+  let orgId: number | undefined;
+  let orgRoleStr: string | undefined;
+  let managerId: number | undefined;
+  let professionalId: number | undefined;
+
+  if (db) {
+    try {
+      const orgRoles = await db
+        .select()
+        .from(userOrganizationRoles)
+        .where(and(
+          eq(userOrganizationRoles.userId, userId),
+          eq(userOrganizationRoles.status, "active")
+        ))
+        .limit(1);
+
+      const orgRole = orgRoles[0];
+      if (orgRole) {
+        orgId = orgRole.organizationId;
+        orgRoleStr = orgRole.organizationRole || undefined;
+        managerId = orgRole.managerId || undefined;
+        professionalId = orgRole.professionalId || undefined;
+      }
+    } catch (e) {
+      logger.error({ operation: "exponentialEngine", err: e }, "[ExponentialEngine] detectUserLayer DB error");
+    }
+  }
+
+  if (userRole === "admin") {
+    return {
+      activeLayer: "platform",
+      layerLabel: "Platform",
+      organizationId: orgId,
+      organizationRole: orgRoleStr,
+      accessibleLayers: ["platform", "organization", "manager", "professional", "client"],
+    };
+  }
+
+  if (userRole === "manager") {
+    return {
+      activeLayer: "manager",
+      layerLabel: "Manager",
+      organizationId: orgId,
+      organizationRole: orgRoleStr,
+      managerId,
+      accessibleLayers: ["manager", "professional", "client"],
+    };
+  }
+
+  if (userRole === "advisor") {
+    return {
+      activeLayer: "professional",
+      layerLabel: "Professional",
+      organizationId: orgId,
+      organizationRole: orgRoleStr,
+      professionalId,
+      accessibleLayers: ["professional", "client"],
+    };
+  }
+
+  // Regular user = client layer
+  return {
     activeLayer: "client",
     layerLabel: "Client",
+    organizationId: orgId,
     accessibleLayers: ["client"],
   };
-
-  if (!db) return defaultCtx;
-
-  try {
-    // Check organization membership
-    const orgRoles = await db
-      .select()
-      .from(userOrganizationRoles)
-      .where(and(
-        eq(userOrganizationRoles.userId, userId),
-        eq(userOrganizationRoles.status, "active")
-      ))
-      .limit(1);
-
-    const orgRole = orgRoles[0];
-
-    if (userRole === "admin") {
-      return {
-        activeLayer: "platform",
-        layerLabel: "Platform",
-        organizationId: orgRole?.organizationId,
-        organizationRole: orgRole?.organizationRole || undefined,
-        accessibleLayers: ["platform", "organization", "manager", "professional", "client"],
-      };
-    }
-
-    if (userRole === "manager") {
-      return {
-        activeLayer: "manager",
-        layerLabel: "Manager",
-        organizationId: orgRole?.organizationId,
-        organizationRole: orgRole?.organizationRole || undefined,
-        managerId: orgRole?.managerId || undefined,
-        accessibleLayers: ["manager", "professional", "client"],
-      };
-    }
-
-    if (userRole === "advisor") {
-      return {
-        activeLayer: "professional",
-        layerLabel: "Professional",
-        organizationId: orgRole?.organizationId,
-        organizationRole: orgRole?.organizationRole || undefined,
-        professionalId: orgRole?.professionalId || undefined,
-        accessibleLayers: ["professional", "client"],
-      };
-    }
-
-    // Regular user = client layer
-    return {
-      ...defaultCtx,
-      organizationId: orgRole?.organizationId,
-    };
-  } catch (e) {
-    logger.error( { operation: "exponentialEngine", err: e },"[ExponentialEngine] detectUserLayer error:", e);
-    return defaultCtx;
-  }
 }
 
 // ─── CONTEXT ASSEMBLY (5-Layer Aware) ───────────────────────────────────────

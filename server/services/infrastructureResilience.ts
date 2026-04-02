@@ -30,7 +30,7 @@ export async function checkSystemHealth(): Promise<HealthStatus[]> {
 
   // Database health
   try {
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return null as any;
     const dbStart = Date.now();
     await db.execute({ sql: "SELECT 1", params: [] } as any);
     checks.push({ service: "database", status: "healthy", latencyMs: Date.now() - dbStart, lastChecked: Date.now() });

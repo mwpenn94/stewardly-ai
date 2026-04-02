@@ -12,7 +12,13 @@
  * - Event logging and replay capability
  */
 
-import { getDb } from "../db";
+import { getDb as _getDb } from "../db";
+
+async function requireDb() {
+  const db = await _getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db;
+}
 import { logger } from "../_core/logger";
 import { dataSources, ingestionJobs, ingestedRecords } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -134,7 +140,7 @@ export async function registerWebhook(opts: {
   const now = Date.now();
 
   // Create a data source entry for this webhook
-  const dbConn = (await getDb())!;
+  const dbConn = await requireDb();
   const [result] = await dbConn.insert(dataSources).values({
     name: `Webhook: ${opts.name}`,
     sourceType: "api_feed",
@@ -253,7 +259,7 @@ export async function processWebhook(
 
   // Create ingestion job
   const now = Date.now();
-  const dbConnJob = (await getDb())!;
+  const dbConnJob = await requireDb();
   const [jobResult] = await dbConnJob.insert(ingestionJobs).values({
     dataSourceId: webhook.dataSourceId,
     status: "running",
@@ -269,7 +275,7 @@ export async function processWebhook(
   let rejected = 0;
   const errors: string[] = [];
 
-  const dbConn2 = (await getDb())!;
+  const dbConn2 = await requireDb();
 
   for (const record of records) {
     try {
@@ -377,7 +383,7 @@ function applyFieldMapping(
 // ─── DB Loader ─────────────────────────────────────────────────────────────
 
 async function loadWebhookFromDb(webhookId: string): Promise<boolean> {
-  const dbConn3 = (await getDb())!;
+  const dbConn3 = await requireDb();
   const sources = await dbConn3.select().from(dataSources)
     .where(eq(dataSources.isActive, true));
 
@@ -410,7 +416,7 @@ async function loadWebhookFromDb(webhookId: string): Promise<boolean> {
 
 export async function listWebhooks(): Promise<WebhookConfig[]> {
   // Load all webhook-type data sources from DB
-  const dbConn4 = (await getDb())!;
+  const dbConn4 = await requireDb();
   const sources = await dbConn4.select().from(dataSources)
     .where(eq(dataSources.sourceType, "api_feed"));
 
@@ -454,7 +460,7 @@ export async function toggleWebhook(webhookId: string, active: boolean): Promise
   if (!wh) return false;
 
   wh.isActive = active;
-  const dbConn5 = (await getDb())!;
+  const dbConn5 = await requireDb();
   await dbConn5.update(dataSources)
     .set({ isActive: active, updatedAt: Date.now() })
     .where(eq(dataSources.id, wh.dataSourceId));
@@ -465,7 +471,7 @@ export async function deleteWebhook(webhookId: string): Promise<boolean> {
   const config = webhookRegistry.get(webhookId);
   if (!config) return false;
 
-  const dbConn6 = (await getDb())!;
+  const dbConn6 = await requireDb();
   await dbConn6.update(dataSources)
     .set({ isActive: false, updatedAt: Date.now() })
     .where(eq(dataSources.id, config.dataSourceId));
@@ -482,7 +488,7 @@ export async function rotateSecret(webhookId: string): Promise<string | null> {
   config.secretKey = newSecret;
 
   // Update in DB
-  const dbConn7 = (await getDb())!;
+  const dbConn7 = await requireDb();
   const src = await dbConn7.select().from(dataSources)
     .where(eq(dataSources.id, config.dataSourceId));
   if (src.length > 0) {

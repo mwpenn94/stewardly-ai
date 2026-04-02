@@ -277,13 +277,13 @@ export const ACTION_TYPE_META: Record<ActionType, { label: string; description: 
 
 /** Get all passive action preferences for a user */
 export async function getUserPreferences(userId: number): Promise<PassiveActionPreference[]> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(passiveActionPreferences).where(eq(passiveActionPreferences.userId, userId));
 }
 
 /** Get preferences for a specific source */
 export async function getSourcePreferences(userId: number, source: string): Promise<PassiveActionPreference[]> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db
     .select()
     .from(passiveActionPreferences)
@@ -298,7 +298,7 @@ export async function toggleAction(
   enabled: boolean,
   config?: Record<string, unknown>
 ): Promise<PassiveActionPreference> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
 
   // Check if preference exists
   const existing = await db
@@ -368,7 +368,7 @@ export async function bulkToggleAll(
 
 /** Get summary stats for a user's passive actions */
 export async function getPassiveActionStats(userId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const prefs = await getUserPreferences(userId);
   const enabledCount = prefs.filter((p) => p.enabled).length;
   const totalPossible = DATA_SOURCES.reduce((sum, s) => sum + s.supportedActions.length, 0);
@@ -418,7 +418,7 @@ export async function logPassiveExecution(entry: {
   durationMs?: number;
   errorMessage?: string;
 }) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.insert(passiveActionLog).values(entry);
 
   // Update trigger count on the preference
@@ -435,7 +435,7 @@ export async function logPassiveExecution(entry: {
 
 /** Get execution history for a user */
 export async function getExecutionHistory(userId: number, limit = 50) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db
     .select()
     .from(passiveActionLog)

@@ -7,7 +7,7 @@ import { capabilityModes } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export async function listModes(activeOnly = true) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const conditions: any[] = [];
   if (activeOnly) conditions.push(eq(capabilityModes.active, true));
   return db.select().from(capabilityModes)
@@ -16,13 +16,13 @@ export async function listModes(activeOnly = true) {
 }
 
 export async function getMode(id: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [mode] = await db.select().from(capabilityModes).where(eq(capabilityModes.id, id));
   return mode ?? null;
 }
 
 export async function getModeByName(name: string) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [mode] = await db.select().from(capabilityModes).where(eq(capabilityModes.name, name));
   return mode ?? null;
 }
@@ -33,7 +33,7 @@ export async function createMode(data: {
   availableTools?: string[]; availableModels?: string[];
   defaultForRoles?: string[]; sortOrder?: number;
 }) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [row] = await db.insert(capabilityModes).values({
     name: data.name,
     description: data.description ?? null,
@@ -54,7 +54,7 @@ export async function updateMode(id: number, data: Partial<{
   availableTools: string[]; availableModels: string[];
   defaultForRoles: string[]; active: boolean; sortOrder: number;
 }>) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const updateData: any = { ...data };
   if (data.requiredKnowledgeCategories) updateData.requiredKnowledgeCategories = JSON.stringify(data.requiredKnowledgeCategories);
   if (data.availableTools) updateData.availableTools = JSON.stringify(data.availableTools);
@@ -65,7 +65,7 @@ export async function updateMode(id: number, data: Partial<{
 }
 
 export async function deleteMode(id: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.update(capabilityModes).set({ active: false } as any).where(eq(capabilityModes.id, id));
   return true;
 }
@@ -103,7 +103,7 @@ export function suggestMode(query: string, userRole: string): string {
 /** Get modes available for a specific role */
 export async function getModesForRole(role: string) {
   const modes = await listModes(true);
-  return modes.filter(m => {
+  return modes.filter((m: any) => {
     const roles = typeof m.defaultForRoles === "string"
       ? JSON.parse(m.defaultForRoles)
       : m.defaultForRoles;

@@ -47,7 +47,7 @@ function detectEventType(provider: string, body: unknown): string {
 }
 
 export async function processWebhook(payload: WebhookPayload): Promise<WebhookResult> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const eventType = detectEventType(payload.provider, payload.body);
   const eventId = crypto.randomUUID();
 
@@ -77,12 +77,12 @@ export async function processWebhook(payload: WebhookPayload): Promise<WebhookRe
 }
 
 export async function listWebhookEvents(connectionId: string, limit = 50) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(integrationWebhookEvents).where(eq(integrationWebhookEvents.connectionId, connectionId)).orderBy(desc(integrationWebhookEvents.receivedAt)).limit(limit);
 }
 
 export async function retryWebhookEvent(eventId: string): Promise<WebhookResult> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [event] = await db.select().from(integrationWebhookEvents).where(eq(integrationWebhookEvents.id, eventId));
   if (!event) throw new Error("Event not found");
   return processWebhook({

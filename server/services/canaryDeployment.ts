@@ -24,7 +24,7 @@ export async function runPreDeployChecklist(): Promise<{
   // 1. Database connectivity check
   const dbStart = Date.now();
   try {
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return null as any;
     await db.execute(sql`SELECT 1`);
     results.push({ checkType: "database_connectivity", passed: true, details: "Database connection OK", durationMs: Date.now() - dbStart });
   } catch (e: any) {
@@ -58,7 +58,7 @@ export async function runPreDeployChecklist(): Promise<{
   // 4. Schema migration check
   const schemaStart = Date.now();
   try {
-    const db = (await getDb())!;
+    const db = await getDb(); if (!db) return null as any;
     await db.execute(sql`SELECT COUNT(*) FROM users`);
     results.push({ checkType: "schema_migration", passed: true, details: "Core tables accessible", durationMs: Date.now() - schemaStart });
   } catch (e: any) {
@@ -66,7 +66,7 @@ export async function runPreDeployChecklist(): Promise<{
   }
 
   // Persist results
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   for (const r of results) {
     await db.insert(deploymentChecks).values({
       checkType: r.checkType,
@@ -91,7 +91,7 @@ export async function createDeployment(params: {
   bundleSizeKb?: number;
   deployedBy?: number;
 }): Promise<number> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
 
   // Get previous version
   const [prev] = await db.select().from(deploymentHistory)
@@ -115,7 +115,7 @@ export async function createDeployment(params: {
 
 // ─── Update Rollout ──────────────────────────────────────────────────────
 export async function updateRollout(deploymentId: number, percentage: number, errorRate?: number): Promise<void> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const updates: Record<string, any> = { rolloutPercentage: percentage };
 
   if (errorRate !== undefined) {
@@ -137,17 +137,17 @@ export async function updateRollout(deploymentId: number, percentage: number, er
 
 // ─── Query Helpers ───────────────────────────────────────────────────────
 export async function getDeploymentHistory(limit = 20) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(deploymentHistory).orderBy(desc(deploymentHistory.deployedAt)).limit(limit);
 }
 
 export async function getLatestChecks() {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(deploymentChecks).orderBy(desc(deploymentChecks.runAt)).limit(20);
 }
 
 export async function getCurrentDeployment() {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [current] = await db.select().from(deploymentHistory)
     .where(eq(deploymentHistory.status, "canary"))
     .orderBy(desc(deploymentHistory.deployedAt)).limit(1);

@@ -36,7 +36,9 @@ async function getDb() {
 
 /** Check if user has global_admin role in any org */
 async function isGlobalAdmin(userId: number): Promise<boolean> {
-  const db = await getDb();
+  const mod = await import("../db");
+  const db = await mod.getDb();
+  if (!db) return false; // Not admin if DB unavailable
   const [role] = await db
     .select()
     .from(userOrganizationRoles)

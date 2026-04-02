@@ -45,7 +45,7 @@ export async function fetchFREDData(apiKey?: string): Promise<{
   seriesFetched: number;
   errors: string[];
 }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const errors: string[] = [];
   let seriesFetched = 0;
 
@@ -121,7 +121,7 @@ export async function fetchBLSData(apiKey?: string): Promise<{
   seriesFetched: number;
   errors: string[];
 }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const errors: string[] = [];
   let seriesFetched = 0;
 
@@ -203,7 +203,7 @@ export async function fetchCensusData(apiKey?: string, zipCode?: string): Promis
   recordsFetched: number;
   errors: string[];
 }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const errors: string[] = [];
   let recordsFetched = 0;
 
@@ -328,7 +328,7 @@ export async function fetchSECFilings(ticker?: string): Promise<{
   filingsFetched: number;
   errors: string[];
 }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const errors: string[] = [];
   let filingsFetched = 0;
 
@@ -401,7 +401,7 @@ export async function fetchBEAData(apiKey?: string): Promise<{
   datasetsFetched: number;
   errors: string[];
 }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const errors: string[] = [];
   let datasetsFetched = 0;
 
@@ -466,7 +466,7 @@ export async function lookupFINRAAdvisor(name: string): Promise<{
   results: Array<Record<string, unknown>>;
   errors: string[];
 }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const errors: string[] = [];
 
   try {

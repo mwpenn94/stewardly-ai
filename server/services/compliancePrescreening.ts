@@ -98,7 +98,7 @@ export async function prescreenResponse(
   }
 
   // Persist checks
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   for (const check of checks) {
     await db.insert(compliancePrescreening).values({
       messageId,
@@ -138,7 +138,7 @@ async function updateConversationScore(
   conversationId: number,
   checks: PrescreenResult["checks"]
 ): Promise<number> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [existing] = await db.select().from(conversationComplianceScores)
     .where(eq(conversationComplianceScores.conversationId, conversationId)).limit(1);
 
@@ -162,21 +162,21 @@ async function updateConversationScore(
 
 // ─── Query Helpers ───────────────────────────────────────────────────────
 export async function getConversationComplianceScore(conversationId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [score] = await db.select().from(conversationComplianceScores)
     .where(eq(conversationComplianceScores.conversationId, conversationId)).limit(1);
   return score ?? { score: 100, checksRun: 0, checksPassed: 0, flaggedForReview: false };
 }
 
 export async function getPrescreeningHistory(conversationId: number) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(compliancePrescreening)
     .where(eq(compliancePrescreening.conversationId, conversationId))
     .orderBy(desc(compliancePrescreening.createdAt)).limit(50);
 }
 
 export async function getFlaggedConversations() {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(conversationComplianceScores)
     .where(eq(conversationComplianceScores.flaggedForReview, true))
     .orderBy(desc(conversationComplianceScores.lastUpdated));

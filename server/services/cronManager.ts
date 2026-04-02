@@ -92,7 +92,7 @@ export function toggleJob(id: string, enabled: boolean): boolean {
 // ─── Job Execution ─────────────────────────────────────────────────────
 async function executeJob(job: ScheduledJob): Promise<void> {
   const start = Date.now();
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
 
   try {
     const result = await job.handler();
@@ -264,7 +264,7 @@ export function registerPlatformJobs(apiKeys: {
     intervalMs: 15 * 60 * 1000, // 15 minutes
     handler: async () => {
       // Refresh insights for recently active users
-      const db = (await getDb())!;
+      const db = await getDb(); if (!db) return null as any;
       const { userInsightsCache } = require("../../drizzle/schema");
       const staleThreshold = new Date(Date.now() - 15 * 60 * 1000);
       

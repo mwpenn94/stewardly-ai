@@ -26,7 +26,7 @@ export async function ingestRegulatoryUpdate(params: {
   const relevanceScore = Math.min(1.0, matchCount * 0.15 + 0.1);
   const actionRequired = relevanceScore >= 0.5;
 
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [result] = await db.insert(regulatoryUpdates).values({
     source: params.source,
     title: params.title,
@@ -79,7 +79,7 @@ async function generateImpactAnalysis(updateId: number, title: string, summary: 
     const content = response.choices?.[0]?.message?.content;
     if (typeof content === "string") {
       const analysis = JSON.parse(content);
-      const db = (await getDb())!;
+      const db = await getDb(); if (!db) return null as any;
       await db.insert(regulatoryImpactAnalyses).values({
         updateId,
         impactLevel: analysis.impactLevel,
@@ -94,7 +94,7 @@ async function generateImpactAnalysis(updateId: number, title: string, summary: 
 
 // ─── Disclaimer Management ───────────────────────────────────────────────
 export async function createDisclaimerVersion(topic: string, text: string): Promise<number> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   // Supersede previous version
   const [prev] = await db.select().from(disclaimerVersions)
     .where(eq(disclaimerVersions.topic, topic))
@@ -115,7 +115,7 @@ export async function createDisclaimerVersion(topic: string, text: string): Prom
 }
 
 export async function getCurrentDisclaimer(topic: string) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [disclaimer] = await db.select().from(disclaimerVersions)
     .where(and(eq(disclaimerVersions.topic, topic), sql`superseded_by IS NULL`))
     .orderBy(desc(disclaimerVersions.version)).limit(1);
@@ -123,13 +123,13 @@ export async function getCurrentDisclaimer(topic: string) {
 }
 
 export async function logDisclaimerShown(conversationId: number, disclaimerId: number, version: number): Promise<void> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   await db.insert(disclaimerAudit).values({ conversationId, disclaimerId, disclaimerVersion: version });
 }
 
 // ─── Weekly Brief ────────────────────────────────────────────────────────
 export async function generateWeeklyBrief(): Promise<number> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   const updates = await db.select().from(regulatoryUpdates)
@@ -159,21 +159,21 @@ export async function generateWeeklyBrief(): Promise<number> {
 
 // ─── Query Helpers ───────────────────────────────────────────────────────
 export async function getRecentUpdates(limit = 20) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(regulatoryUpdates).orderBy(desc(regulatoryUpdates.ingestedAt)).limit(limit);
 }
 
 export async function getImpactAnalyses(limit = 20) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(regulatoryImpactAnalyses).orderBy(desc(regulatoryImpactAnalyses.generatedAt)).limit(limit);
 }
 
 export async function getWeeklyBriefs(limit = 10) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(complianceWeeklyBriefs).orderBy(desc(complianceWeeklyBriefs.createdAt)).limit(limit);
 }
 
 export async function getAlerts(limit = 20) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(regulatoryAlerts).orderBy(desc(regulatoryAlerts.createdAt)).limit(limit);
 }

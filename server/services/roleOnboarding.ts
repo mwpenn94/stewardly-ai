@@ -47,7 +47,7 @@ export async function initializeOnboarding(userId: number, path: OnboardingPath,
   currentStep: number;
   totalSteps: number;
 }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const steps = ONBOARDING_PATHS[path];
 
   // Check for existing progress
@@ -80,7 +80,7 @@ export async function completeStep(userId: number, path: OnboardingPath, stepId:
   nextStep: number | null;
   completed: boolean;
 }> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [progress] = await db.select().from(onboardingProgress)
     .where(and(eq(onboardingProgress.userId, userId), eq(onboardingProgress.path, path))).limit(1);
 
@@ -106,7 +106,7 @@ export async function completeStep(userId: number, path: OnboardingPath, stepId:
 
 // ─── Query Helpers ───────────────────────────────────────────────────────
 export async function getOnboardingProgress(userId: number, path?: OnboardingPath) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const conditions = [eq(onboardingProgress.userId, userId)];
   if (path) conditions.push(eq(onboardingProgress.path, path));
   return db.select().from(onboardingProgress).where(and(...conditions));

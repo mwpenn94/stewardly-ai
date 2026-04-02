@@ -97,7 +97,7 @@ Focus on: people, companies, financial products, regulatory concepts, and accoun
 
 // ─── Entity Resolution ───────────────────────────────────────────────────
 export async function resolveEntity(name: string): Promise<number | null> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
 
   // Check resolution rules first
   const rules = await db.select().from(entityResolutionRules).orderBy(desc(entityResolutionRules.confidence));
@@ -120,7 +120,7 @@ export async function resolveEntity(name: string): Promise<number | null> {
 
 // ─── Upsert Entity ──────────────────────────────────────────────────────
 export async function upsertEntity(entity: ExtractedEntity): Promise<number> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const existingId = await resolveEntity(entity.name);
 
   if (existingId) {
@@ -147,7 +147,7 @@ export async function upsertEntity(entity: ExtractedEntity): Promise<number> {
 
 // ─── Add Edge ────────────────────────────────────────────────────────────
 export async function addEdge(fromId: number, toId: number, relationshipType: string, weight = 1.0): Promise<void> {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   // Check for existing edge
   const [existing] = await db.select().from(knowledgeGraphEdges)
     .where(and(
@@ -202,7 +202,8 @@ export async function getEntityNeighborhood(entityId: number, depth = 2): Promis
   entities: Array<{ id: number; name: string; type: string; confidence: number }>;
   edges: Array<{ from: number; to: number; type: string; weight: number }>;
 }> {
-  const db = (await getDb())!;
+  const _db = await getDb(); if (!_db) return { entities: [], edges: [] };
+  const db = _db;
   const visited = new Set<number>();
   const entities: Array<{ id: number; name: string; type: string; confidence: number }> = [];
   const edges: Array<{ from: number; to: number; type: string; weight: number }> = [];
@@ -245,7 +246,7 @@ export async function getEntityNeighborhood(entityId: number, depth = 2): Promis
 
 // ─── Query Helpers ───────────────────────────────────────────────────────
 export async function searchEntities(query: string, limit = 20) {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   return db.select().from(knowledgeGraphEntities)
     .where(like(knowledgeGraphEntities.canonicalName, `%${query}%`))
     .orderBy(desc(knowledgeGraphEntities.confidence))
@@ -253,7 +254,7 @@ export async function searchEntities(query: string, limit = 20) {
 }
 
 export async function getGraphStats() {
-  const db = (await getDb())!;
+  const db = await getDb(); if (!db) return null as any;
   const [entityCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(knowledgeGraphEntities);
   const [edgeCount] = await db.select({ count: sql<number>`COUNT(*)` }).from(knowledgeGraphEdges);
   return {

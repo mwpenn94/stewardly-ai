@@ -3,7 +3,13 @@
  * Orchestrates multi-source data ingestion: web scraping, document processing,
  * market data feeds, entity extraction, and continuous learning.
  */
-import { getDb } from "../db";
+import { getDb as _getDb } from "../db";
+
+async function requireDb() {
+  const db = await _getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db;
+}
 import { eq, and, desc, sql } from "drizzle-orm";
 import {
   dataSources, ingestionJobs, ingestedRecords,
@@ -163,7 +169,7 @@ export class WebScraperService {
     httpStatus: number = 200
   ) {
     const hash = await this.hashContent(page.content);
-    await (await getDb())!.insert(webScrapeResults).values({
+    await (await requireDb()).insert(webScrapeResults).values({
       dataSourceId: dataSourceId,
       ingestionJobId: jobId,
       url: page.url,
@@ -266,7 +272,7 @@ export class DocumentProcessorService {
       const processingTime = Date.now() - startTime;
 
       // Save extraction to database
-      await (await getDb())!.insert(documentExtractions).values({
+      await (await requireDb()).insert(documentExtractions).values({
         userId,
         documentId,
         extractionType: this.mapDocType(documentType),
@@ -387,7 +393,7 @@ export class MarketDataService {
   ) {
     const now = observedAt || Date.now();
     try {
-      await (await getDb())!.insert(marketDataCache).values({
+      await (await requireDb()).insert(marketDataCache).values({
         symbol,
         dataType: dataType as any,
         value: String(value),
@@ -404,7 +410,7 @@ export class MarketDataService {
    * Get latest cached value for a symbol
    */
   async getLatestPrice(symbol: string): Promise<number | null> {
-    const rows = await (await getDb())!
+    const rows = await (await requireDb())
       .select()
       .from(marketDataCache)
       .where(eq(marketDataCache.symbol, symbol))
@@ -494,7 +500,7 @@ export class DataNormalizerService {
     for (const record of records) {
       try {
         // Check for existing record with same entity ID
-        const existing = await (await getDb())!
+        const existing = await (await requireDb())
           .select()
           .from(ingestedRecords)
           .where(
@@ -508,7 +514,7 @@ export class DataNormalizerService {
         if (existing.length > 0) {
           // Update if new data has higher confidence
           if (record.confidence > Number(existing[0].confidenceScore)) {
-            await (await getDb())!
+            await (await requireDb())
               .update(ingestedRecords)
               .set({
                 contentSummary: record.summary,
@@ -523,7 +529,7 @@ export class DataNormalizerService {
             skipped++;
           }
         } else {
-          await (await getDb())!.insert(ingestedRecords).values({
+          await (await requireDb()).insert(ingestedRecords).values({
             dataSourceId: record.dataSourceId,
             ingestionJobId: record.jobId,
             recordType: record.recordType as any,
@@ -555,7 +561,7 @@ export class ContinuousLearningService {
   async generateInsights(firmId?: number): Promise<string[]> {
     try {
       // Get recent ingested records
-      const recentRecords = await (await getDb())!
+      const recentRecords = await (await requireDb())
         .select()
         .from(ingestedRecords)
         .orderBy(desc(ingestedRecords.createdAt))
@@ -611,7 +617,7 @@ export class ContinuousLearningService {
   async getContextEnrichment(query: string, userId?: number): Promise<string> {
     try {
       // Search ingested records relevant to the query
-      const records = await (await getDb())!
+      const records = await (await requireDb())
         .select()
         .from(ingestedRecords)
         .where(eq(ingestedRecords.isVerified, true))
@@ -647,7 +653,7 @@ export class DataIngestionOrchestrator {
     const startTime = Date.now();
 
     // Get the data source config
-    const sources = await (await getDb())!
+    const sources = await (await requireDb())
       .select()
       .from(dataSources)
       .where(eq(dataSources.id, dataSourceId))
@@ -660,8 +666,8 @@ export class DataIngestionOrchestrator {
     const source = sources[0];
 
     // Create ingestion job
-    const db = await getDb();
-    const [job] = await db!.insert(ingestionJobs).values({
+    const db = await requireDb();
+    const [job] = await db.insert(ingestionJobs).values({
       dataSourceId,
       triggeredBy,
       status: "running",
@@ -778,7 +784,7 @@ export class DataIngestionOrchestrator {
         insights,
       };
     } catch (error: any) {
-      await (await getDb())!
+      await (await requireDb())
         .update(ingestionJobs)
         .set({
           status: "failed",

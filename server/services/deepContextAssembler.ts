@@ -681,7 +681,7 @@ async function searchKBArticles(query: string, limit: number): Promise<string> {
     const { searchArticles } = await import("./knowledgeBase");
     const articles = await searchArticles(query, { limit });
     if (articles.length === 0) return "";
-    return articles.map(a =>
+    return articles.map((a: any) =>
       `[KB Article: "${a.title}" (${a.category}/${a.contentType})]\n${a.content.slice(0, 800)}`
     ).join("\n\n");
   } catch (e) { logger.debug({ source: "knowledge_base", error: String(e) }, "Knowledge base context fetch failed"); return ""; }
