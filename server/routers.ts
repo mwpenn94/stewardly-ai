@@ -56,6 +56,7 @@ import { eq, and } from "drizzle-orm";
 import { integrationConnections, integrationProviders } from "../drizzle/schema";
 import { getDb } from "./db";
 import { aiLayersRouter } from "./routers/aiLayers";
+import { esignatureRouter, pdfRouter, creditBureauRouter, crmRouter } from "./routers/serviceRouters";
 import AdmZip from "adm-zip";
 import { exportsRouter } from "./routers/exports";
 import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
@@ -1870,6 +1871,10 @@ export const appRouter = router({
   productIntelligence: productIntelligenceRouter,
   adminIntelligence: adminIntelligenceRouter,
   passiveActions: passiveActionsRouter,
+  esignature: esignatureRouter,
+  pdf: pdfRouter,
+  creditBureau: creditBureauRouter,
+  crm: crmRouter,
 });
 
 export type AppRouter = typeof appRouter;

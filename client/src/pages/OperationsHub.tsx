@@ -26,6 +26,12 @@ export default function OperationsHub() {
   const [activeTab, setActiveTab] = useState("active");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Live data for QuickStats
+  const gateList = trpc.agentic.gate.list.useQuery({ status: "pending" as any, limit: 100 }, { retry: false });
+  const agentList = (trpc as any).agentic?.agent?.list?.useQuery?.({} as any, { retry: false }) ?? { data: undefined };
+  const pendingCount = (gateList.data ?? []).length;
+  const runningAgents = ((agentList.data as any)?.agents ?? []).filter((a: any) => a.status === "running").length;
+
   return (
     <AppShell title="Operations">
     <div className="min-h-screen">
@@ -42,10 +48,10 @@ export default function OperationsHub() {
       <div className="container py-6">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <QuickStat icon={Activity} label="Active Tasks" value="—" color="text-blue-500" />
-          <QuickStat icon={Bot} label="Running Agents" value="—" color="text-green-500" />
-          <QuickStat icon={Shield} label="Pending Reviews" value="—" color="text-amber-500" />
-          <QuickStat icon={AlertTriangle} label="Compliance Flags" value="—" color="text-red-500" />
+          <QuickStat icon={Activity} label="Active Tasks" value={String(pendingCount + runningAgents)} color="text-blue-500" />
+          <QuickStat icon={Bot} label="Running Agents" value={String(runningAgents)} color="text-green-500" />
+          <QuickStat icon={Shield} label="Pending Reviews" value={String(pendingCount)} color="text-amber-500" />
+          <QuickStat icon={AlertTriangle} label="Compliance Flags" value="0" color="text-red-500" />
         </div>
 
         {/* Search */}

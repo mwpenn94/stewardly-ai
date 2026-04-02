@@ -41,8 +41,8 @@ export default function IntelligenceHub() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <QuickStat icon={Brain} label="AI Models" value="8" color="text-blue-500" />
           <QuickStat icon={Database} label="Data Sources" value="5" color="text-purple-500" />
-          <QuickStat icon={TrendingUp} label="Insights Today" value="—" color="text-green-500" />
-          <QuickStat icon={Lightbulb} label="Predictions" value="—" color="text-amber-500" />
+          <QuickStat icon={TrendingUp} label="Insights Today" value="0" color="text-green-500" />
+          <QuickStat icon={Lightbulb} label="Predictions" value="0" color="text-amber-500" />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

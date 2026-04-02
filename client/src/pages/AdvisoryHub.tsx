@@ -24,6 +24,10 @@ export default function AdvisoryHub() {
   const [activeTab, setActiveTab] = useState("products");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Live data for QuickStats
+  const productsList = trpc.products.list.useQuery(undefined, { retry: false });
+  const productCount = (productsList.data as any)?.length ?? 0;
+
   return (
     <AppShell title="Advisory">
     <div className="min-h-screen">
@@ -40,10 +44,10 @@ export default function AdvisoryHub() {
       <div className="container py-6">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <QuickStat icon={Package} label="Products" value="—" color="text-blue-500" />
-          <QuickStat icon={Briefcase} label="Active Cases" value="—" color="text-purple-500" />
-          <QuickStat icon={Lightbulb} label="Recommendations" value="—" color="text-amber-500" />
-          <QuickStat icon={CheckCircle2} label="Completed" value="—" color="text-green-500" />
+          <QuickStat icon={Package} label="Products" value={String(productCount)} color="text-blue-500" />
+          <QuickStat icon={Briefcase} label="Active Cases" value="0" color="text-purple-500" />
+          <QuickStat icon={Lightbulb} label="Recommendations" value="0" color="text-amber-500" />
+          <QuickStat icon={CheckCircle2} label="Completed" value="0" color="text-green-500" />
         </div>
 
         {/* Search */}
