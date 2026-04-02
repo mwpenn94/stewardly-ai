@@ -51,6 +51,7 @@ import {
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { useLocation, useRoute } from "wouter";
 import { consumePendingPrompt } from "@/lib/navigateToChat";
+import { prefetchRoute } from "@/lib/routePrefetch";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
 import { ConvItem, SortableConvItem } from "@/components/chat/ConvItem";
@@ -342,7 +343,7 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
 
 export default function Chat() {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [matchChat, paramsChat] = useRoute("/chat/:id");
   const utils = trpc.useUtils();
   const { notifications, unreadCount, connected: wsConnected, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
@@ -1376,16 +1377,22 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Compact navigation — collapsible sections to preserve conversation space */}
+        {/* Navigation — matches AppShell sidebar style for consistency */}
         <div className="border-t border-border shrink-0 max-h-[45%] overflow-y-auto">
           {sidebarCollapsed ? (
-            <div className="p-1 space-y-1">
-              {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).slice(0, 6).map(item => (
+            <div className="p-1 space-y-0.5">
+              {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
                 <Tooltip key={item.href}>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                      className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                      onMouseEnter={() => prefetchRoute(item.href)}
+                      onFocus={() => prefetchRoute(item.href)}
+                      className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
+                        location.startsWith(item.href)
+                          ? "bg-accent/15 text-accent"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      }`}
                     >
                       {item.icon}
                     </button>
@@ -1398,6 +1405,7 @@ export default function Chat() {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                    onMouseEnter={() => prefetchRoute("/help")}
                     className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                   >
                     <HelpCircle className="w-4 h-4" />
@@ -1409,6 +1417,7 @@ export default function Chat() {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                    onMouseEnter={() => prefetchRoute("/settings/profile")}
                     className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
                   >
                     <Fingerprint className="w-4 h-4" />
@@ -1421,18 +1430,24 @@ export default function Chat() {
             <>
               <button
                 onClick={() => setToolsExpanded(!toolsExpanded)}
-                className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/70 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
+                className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
               >
-                <span>Tools</span>
+                <span>Navigate</span>
                 <ChevronDown className={`w-3 h-3 transition-transform ${toolsExpanded ? "rotate-180" : ""}`} />
               </button>
               {toolsExpanded && (
-                <div data-tour="sidebar-nav" className="px-1 pb-1 grid grid-cols-2 gap-0.5">
+                <div data-tour="sidebar-nav" className="px-2 pb-1 space-y-0.5">
                   {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
                     <button
                       key={item.href}
                       onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                      className="flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                      onMouseEnter={() => prefetchRoute(item.href)}
+                      onFocus={() => prefetchRoute(item.href)}
+                      className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
+                        location.startsWith(item.href)
+                          ? "bg-accent/15 text-accent font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      }`}
                     >
                       {item.icon} <span className="truncate">{item.label}</span>
                     </button>
@@ -1441,40 +1456,58 @@ export default function Chat() {
               )}
               {adminNav.filter(item => hasMinRole(userRole, item.minRole)).length > 0 && (
                 <>
+                  <Separator className="my-1 mx-2" />
                   <button
                     onClick={() => setAdminExpanded(!adminExpanded)}
-                    className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/70 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
+                    className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
                   >
                     <span>Admin</span>
                     <ChevronDown className={`w-3 h-3 transition-transform ${adminExpanded ? "rotate-180" : ""}`} />
                   </button>
                   {adminExpanded && (
-                    <div className="px-1 pb-1">
+                    <div className="px-2 pb-1 space-y-0.5">
                       {adminNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
                         <button
                           key={item.href}
                           onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+                          onMouseEnter={() => prefetchRoute(item.href)}
+                          onFocus={() => prefetchRoute(item.href)}
+                          className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
+                            location.startsWith(item.href)
+                              ? "bg-accent/15 text-accent font-medium"
+                              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                          }`}
                         >
-                          {item.icon} {item.label}
+                          {item.icon} <span className="truncate">{item.label}</span>
                         </button>
                       ))}
                     </div>
                   )}
                 </>
               )}
-              <div className="px-1 pb-1">
+              <Separator className="my-1 mx-2" />
+              <div className="px-2 pb-1 space-y-0.5">
                 <button
                   onClick={() => { navigate("/help"); setSidebarOpen(false); }}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+                  onMouseEnter={() => prefetchRoute("/help")}
+                  className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
+                    location === "/help"
+                      ? "bg-accent/15 text-accent font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}
                 >
-                  <HelpCircle className="w-3.5 h-3.5" /> Help & Support
+                  <HelpCircle className="w-4 h-4" /> Help & Support
                 </button>
                 <button
                   onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors w-full"
+                  onMouseEnter={() => prefetchRoute("/settings/profile")}
+                  className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
+                    location.startsWith("/settings")
+                      ? "bg-accent/15 text-accent font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}
                 >
-                  <Fingerprint className="w-3.5 h-3.5" /> Settings
+                  <Fingerprint className="w-4 h-4" /> Settings
                 </button>
               </div>
               {/* AI Onboarding Widget */}

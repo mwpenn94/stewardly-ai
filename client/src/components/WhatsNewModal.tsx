@@ -1,32 +1,19 @@
 /**
- * WhatsNewModal — Shows recent platform updates to users on first visit
- * after a new version is deployed. Uses localStorage to track the last
- * seen version and only shows when there are new entries.
+ * WhatsNewData — Changelog data for the platform.
+ * The modal popup has been removed; changelog entries are now surfaced
+ * through the ChangelogBell notification and the /changelog page.
+ *
+ * This file is kept as the single source of truth for changelog data.
  */
-import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "wouter";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   Sparkles, Shield, Zap, RefreshCw, Wifi, Layout,
-  ArrowRight, CheckCircle2, Keyboard, Globe, Brain,
+  Keyboard, Globe, Brain,
   FileText, Users, TrendingUp, Lock, Gauge,
 } from "lucide-react";
 
 // ── Changelog entries — newest first ──────────────────────────────────
-// Bump CURRENT_VERSION when adding new entries so the modal re-appears.
 
-export const CURRENT_VERSION = "2026.03.28b";
-const LS_KEY = "stewardly-whats-new-seen";
+export const CURRENT_VERSION = "2026.04.01";
 
 type ChangeCategory = "feature" | "fix" | "improvement" | "security";
 
@@ -44,7 +31,7 @@ interface ChangelogRelease {
   entries: ChangeEntry[];
 }
 
-const CATEGORY_STYLES: Record<ChangeCategory, { label: string; className: string }> = {
+export const CATEGORY_STYLES: Record<ChangeCategory, { label: string; className: string }> = {
   feature:     { label: "New",         className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
   fix:         { label: "Fix",         className: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
   improvement: { label: "Improved",    className: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
@@ -52,6 +39,34 @@ const CATEGORY_STYLES: Record<ChangeCategory, { label: string; className: string
 };
 
 export const CHANGELOG: ChangelogRelease[] = [
+  {
+    version: "2026.04.01",
+    date: "April 1, 2026",
+    headline: "Streamlined UI, removed popup clutter, consistent sidebar",
+    entries: [
+      {
+        category: "improvement",
+        title: "Consistent sidebar across all pages",
+        description:
+          "The sidebar navigation is now identical on every page — collapsible NAVIGATE and ADMIN sections that default to collapsed, with Help & Support and Settings always visible.",
+        icon: <Layout className="w-5 h-5 text-blue-400" />,
+      },
+      {
+        category: "improvement",
+        title: "Removed popup clutter",
+        description:
+          "Guided tour and What's New modal have been removed. Platform updates are now surfaced through the changelog notification bell and the /changelog page.",
+        icon: <Zap className="w-5 h-5 text-blue-400" />,
+      },
+      {
+        category: "improvement",
+        title: "Mobile-friendly sidebar",
+        description:
+          "Sidebar sections default to collapsed on mobile, preventing options from being cut off. All navigation items are accessible without scrolling.",
+        icon: <Globe className="w-5 h-5 text-blue-400" />,
+      },
+    ],
+  },
   {
     version: "2026.03.28b",
     date: "March 28, 2026",
@@ -179,92 +194,3 @@ export const CHANGELOG: ChangelogRelease[] = [
     ],
   },
 ];
-
-export default function WhatsNewModal() {
-  const [open, setOpen] = useState(false);
-  const [, navigate] = useLocation();
-
-  useEffect(() => {
-    try {
-      const seen = localStorage.getItem(LS_KEY);
-      if (seen !== CURRENT_VERSION) {
-        // Small delay so the app finishes rendering first
-        const t = setTimeout(() => setOpen(true), 1200);
-        return () => clearTimeout(t);
-      }
-    } catch {
-      // localStorage unavailable — don't show
-    }
-  }, []);
-
-  const handleDismiss = useCallback(() => {
-    setOpen(false);
-    try {
-      localStorage.setItem(LS_KEY, CURRENT_VERSION);
-    } catch {}
-  }, []);
-
-  const latest = CHANGELOG[0];
-  if (!latest) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleDismiss(); }}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden">
-        {/* Header */}
-        <DialogHeader className="px-6 pt-6 pb-4 space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" />
-            <DialogTitle className="text-lg">What's New</DialogTitle>
-          </div>
-          <DialogDescription className="text-sm text-muted-foreground">
-            {latest.headline}
-          </DialogDescription>
-          <p className="text-xs text-muted-foreground/60">{latest.date} · v{latest.version}</p>
-        </DialogHeader>
-
-        <Separator />
-
-        {/* Entries */}
-        <ScrollArea className="flex-1 min-h-0">
-          <div className="px-6 py-4 space-y-4">
-            {latest.entries.map((entry, i) => (
-              <div key={i} className="flex gap-3">
-                <div className="shrink-0 mt-0.5">{entry.icon}</div>
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium">{entry.title}</span>
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] px-1.5 py-0 ${CATEGORY_STYLES[entry.category].className}`}
-                    >
-                      {CATEGORY_STYLES[entry.category].label}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {entry.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-
-        <Separator />
-
-        {/* Footer */}
-        <div className="px-6 py-4 flex items-center justify-between">
-          <button
-            className="text-xs text-muted-foreground hover:text-accent transition-colors flex items-center gap-1"
-            onClick={() => { handleDismiss(); navigate("/changelog"); }}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            View all releases
-          </button>
-          <Button size="sm" onClick={handleDismiss} className="gap-1.5">
-            Got it <ArrowRight className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}

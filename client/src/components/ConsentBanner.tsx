@@ -1,29 +1,38 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { usePopupSlot, registerPopup, dismissPopup } from "@/hooks/usePopupQueue";
 
 /**
  * Browse-wrap consent banner — non-blocking, subtle.
  * Shows at the bottom of the page for new users.
- * Dismissed after user clicks "Got it" or after 3 sessions.
+ * Dismissed after user clicks "Got it".
+ *
+ * Participates in the popup queue so it doesn't stack with the
+ * tour or what's-new modal on mobile.
  */
 export default function ConsentBanner() {
-  const [visible, setVisible] = useState(false);
+  const [wantsToShow, setWantsToShow] = useState(false);
+  const canShow = usePopupSlot("consent");
 
   useEffect(() => {
     const dismissed = localStorage.getItem("consentBannerDismissed");
     if (!dismissed) {
-      // Show after a brief delay so it doesn't flash on page load
-      const timer = setTimeout(() => setVisible(true), 1500);
+      // Register with the queue after a brief delay
+      const timer = setTimeout(() => {
+        setWantsToShow(true);
+        registerPopup("consent");
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, []);
 
   const dismiss = () => {
-    setVisible(false);
+    setWantsToShow(false);
     localStorage.setItem("consentBannerDismissed", "true");
+    dismissPopup("consent");
   };
 
-  if (!visible) return null;
+  if (!wantsToShow || !canShow) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-500">
