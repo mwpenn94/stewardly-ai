@@ -99,11 +99,11 @@ function RouteRow({ path, page, role, desc }: { path: string; page: string; role
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════
 export default function PlatformGuide() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  if (isLoading) return null;
+  if (loading) return null;
   if (!user || (user as any).role !== "admin") return <Redirect to="/chat" />;
 
   const sections = [
