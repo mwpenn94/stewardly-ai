@@ -1,5 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import AppShell from "@/components/AppShell";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,14 +17,14 @@ import {
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
-  AlertTriangle, ArrowUp, AudioLines, BarChart3, BookOpen, Bot, Brain, Calculator, Check, CheckCircle, ClipboardList,
+  AlertTriangle, ArrowUp, AudioLines, BarChart3, BookOpen, Bot, Briefcase, Building2, Calculator, Check, CheckCircle, ClipboardList,
   ChevronDown, ChevronUp, FileText, GraduationCap, Image, Key, Loader2, LogOut, Menu, MessageSquare,
-  Mic, MicOff, Monitor, PanelLeft, PanelLeftOpen, Paperclip, PhoneOff, Plus,
+  Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
-  Video, Volume2, VolumeX, X, TrendingUp, Palette, Calendar, DollarSign, Shield,
-  Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search,
+  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
+  Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
-  LogIn, Fingerprint, Globe
+  LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2, HeartPulse
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
@@ -38,10 +37,12 @@ import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
-// Note: ChangelogBell and AIOnboardingWidget removed — decluttered into notifications
+import AIOnboardingWidget from "@/components/AIOnboardingWidget";
+import ChangelogBell from "@/components/ChangelogBell";
 import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
 import { useSelfDiscovery } from "@/hooks/useSelfDiscovery";
-// NotificationBell and notifications now handled by AppShell
+import { NotificationBell } from "@/components/NotificationBell";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -50,7 +51,7 @@ import {
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { useLocation, useRoute } from "wouter";
 import { consumePendingPrompt } from "@/lib/navigateToChat";
-// prefetchRoute removed — AppShell handles navigation
+import { prefetchRoute } from "@/lib/routePrefetch";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
 import { ConvItem, SortableConvItem } from "@/components/chat/ConvItem";
@@ -345,7 +346,7 @@ export default function Chat() {
   const [location, navigate] = useLocation();
   const [matchChat, paramsChat] = useRoute("/chat/:id");
   const utils = trpc.useUtils();
-  // notifications now handled by AppShell
+  const { notifications, unreadCount, connected: wsConnected, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
 
   // ─── STATE ──────────────────────────────────────────────────────
   const [conversationId, setConversationId] = useState<number | null>(
@@ -1109,7 +1110,9 @@ export default function Chat() {
   }, [userRole]);
   const showModes = availableModes.length > 0;
 
-  // (sidebar nav state removed — AppShell handles navigation)
+  // ─── SIDEBAR NAV STATE (must be before auth gate to maintain hook order) ─
+  const [toolsExpanded, setToolsExpanded] = useState(false);
+  const [adminExpanded, setAdminExpanded] = useState(false);
 
   // ─── AUTH GATE ────────────────────────────────────────────────
   if (authLoading) {
@@ -1127,23 +1130,44 @@ export default function Chat() {
     ? "All Modes"
     : selectedFocus.map(f => FOCUS_OPTIONS.find(o => o.value === f)?.label).filter(Boolean).join(" + ");
 
-  // (sidebar nav items removed — AppShell handles navigation)
+  // ─── SIDEBAR NAV ITEMS (role-aware) ───────────────────────────
+
+  // Consolidated navigation (C26) — 7 hub items replacing 28 individual pages
+  const toolsNav = [
+    { icon: <Zap className="w-3.5 h-3.5" />, label: "Operations", href: "/operations", minRole: "user" as UserRole },
+    { icon: <Brain className="w-3.5 h-3.5" />, label: "Intelligence", href: "/intelligence-hub", minRole: "user" as UserRole },
+    { icon: <Package className="w-3.5 h-3.5" />, label: "Advisory", href: "/advisory", minRole: "user" as UserRole },
+    { icon: <Users className="w-3.5 h-3.5" />, label: "Relationships", href: "/relationships", minRole: "user" as UserRole },
+    { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Market Data", href: "/market-data", minRole: "user" as UserRole },
+    { icon: <FileText className="w-3.5 h-3.5" />, label: "Documents", href: "/documents", minRole: "user" as UserRole },
+    { icon: <Link2 className="w-3.5 h-3.5" />, label: "Integrations", href: "/integrations", minRole: "user" as UserRole },
+    { icon: <HeartPulse className="w-3.5 h-3.5" />, label: "Integration Health", href: "/integration-health", minRole: "advisor" as UserRole },
+    { icon: <RefreshCw className="w-3.5 h-3.5" />, label: "Passive Actions", href: "/passive-actions", minRole: "user" as UserRole },
+    { icon: <Activity className="w-3.5 h-3.5" />, label: "My Progress", href: "/proficiency", minRole: "user" as UserRole },
+  ];
+
+  const adminNav = [
+    { icon: <Briefcase className="w-3.5 h-3.5" />, label: "Portal", href: "/portal", minRole: "advisor" as UserRole },
+    { icon: <Building2 className="w-3.5 h-3.5" />, label: "Organizations", href: "/organizations", minRole: "advisor" as UserRole },
+    { icon: <BarChart3 className="w-3.5 h-3.5" />, label: "Manager Dashboard", href: "/manager", minRole: "manager" as UserRole },
+    { icon: <Globe className="w-3.5 h-3.5" />, label: "Global Admin", href: "/admin", minRole: "admin" as UserRole },
+    { icon: <Activity className="w-3.5 h-3.5" />, label: "Improvement Engine", href: "/improvement", minRole: "advisor" as UserRole },
+  ];
 
   return (
-    <AppShell title="Chat">
-      <div className="flex overflow-hidden" style={{ height: 'calc(100vh - 3rem)', marginTop: '-1.5rem', marginLeft: '-1.5rem', marginRight: '-1.5rem', marginBottom: '-1.5rem' }}>
-        {/* Mobile conversation panel overlay */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
-        )}
+    <div className="h-screen flex bg-background overflow-hidden">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
 
-        {/* ─── CONVERSATION PANEL ──────────────────────────────── */}
-        <aside className={`
-          fixed lg:relative z-50 h-full bg-card border-r border-border flex flex-col
-          transition-all duration-200
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          ${sidebarCollapsed ? "w-14" : "w-64"}
-        `}>
+      {/* ─── SIDEBAR ──────────────────────────────────────────── */}
+      <aside className={`
+        fixed lg:relative z-50 h-full bg-card border-r border-border flex flex-col
+        transition-all duration-200
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        ${sidebarCollapsed ? "w-14" : "w-72"}
+      `}>
         <div className={`flex items-center border-b border-border shrink-0 ${sidebarCollapsed ? "p-2 justify-center" : "p-3 justify-between"}`}>
           {sidebarCollapsed ? (
             <div className="flex flex-col gap-1 items-center">
@@ -1353,15 +1377,290 @@ export default function Chat() {
           )}
         </div>
 
+        {/* Navigation — matches AppShell sidebar style for consistency */}
+        <div className="border-t border-border shrink-0 max-h-[45%] overflow-y-auto">
+          {sidebarCollapsed ? (
+            <div className="p-1 space-y-0.5">
+              {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+                      onMouseEnter={() => prefetchRoute(item.href)}
+                      onFocus={() => prefetchRoute(item.href)}
+                      className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
+                        location.startsWith(item.href)
+                          ? "bg-accent/15 text-accent"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      }`}
+                    >
+                      {item.icon}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
+                </Tooltip>
+              ))}
+              <Separator className="mx-1" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                    onMouseEnter={() => prefetchRoute("/help")}
+                    className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Help & Support</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                    onMouseEnter={() => prefetchRoute("/settings/profile")}
+                    className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                  >
+                    <Fingerprint className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Settings</TooltipContent>
+              </Tooltip>
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={() => setToolsExpanded(!toolsExpanded)}
+                className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
+              >
+                <span>Navigate</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${toolsExpanded ? "rotate-180" : ""}`} />
+              </button>
+              {toolsExpanded && (
+                <div data-tour="sidebar-nav" className="px-2 pb-1 space-y-0.5">
+                  {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
+                    <button
+                      key={item.href}
+                      onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+                      onMouseEnter={() => prefetchRoute(item.href)}
+                      onFocus={() => prefetchRoute(item.href)}
+                      className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
+                        location.startsWith(item.href)
+                          ? "bg-accent/15 text-accent font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      }`}
+                    >
+                      {item.icon} <span className="truncate">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {adminNav.filter(item => hasMinRole(userRole, item.minRole)).length > 0 && (
+                <>
+                  <Separator className="my-1 mx-2" />
+                  <button
+                    onClick={() => setAdminExpanded(!adminExpanded)}
+                    className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
+                  >
+                    <span>Admin</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${adminExpanded ? "rotate-180" : ""}`} />
+                  </button>
+                  {adminExpanded && (
+                    <div className="px-2 pb-1 space-y-0.5">
+                      {adminNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
+                        <button
+                          key={item.href}
+                          onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+                          onMouseEnter={() => prefetchRoute(item.href)}
+                          onFocus={() => prefetchRoute(item.href)}
+                          className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
+                            location.startsWith(item.href)
+                              ? "bg-accent/15 text-accent font-medium"
+                              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                          }`}
+                        >
+                          {item.icon} <span className="truncate">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              <Separator className="my-1 mx-2" />
+              <div className="px-2 pb-1 space-y-0.5">
+                <button
+                  onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                  onMouseEnter={() => prefetchRoute("/help")}
+                  className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
+                    location === "/help"
+                      ? "bg-accent/15 text-accent font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}
+                >
+                  <HelpCircle className="w-4 h-4" /> Help & Support
+                </button>
+                <button
+                  onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                  onMouseEnter={() => prefetchRoute("/settings/profile")}
+                  className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
+                    location.startsWith("/settings")
+                      ? "bg-accent/15 text-accent font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}
+                >
+                  <Fingerprint className="w-4 h-4" /> Settings
+                </button>
+              </div>
+              {/* AI Onboarding Widget */}
+              {!sidebarCollapsed && <AIOnboardingWidget />}
+              {/* Desktop notification bell + changelog bell */}
+              <div className="hidden lg:flex items-center gap-1 px-2 pb-1">
+                <NotificationBell
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  connected={wsConnected}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                  onClear={clearNotifications}
+                />
+                <ChangelogBell collapsed={sidebarCollapsed} />
+                {!sidebarCollapsed && unreadCount > 0 && (
+                  <span className="text-[10px] text-muted-foreground ml-1">{unreadCount} unread</span>
+                )}
+              </div>
+            </>
+          )}
+          <Separator className="mx-2" />
+          {/* ─── PERSISTENT AUTH CONTROLS ─── */}
+          {user?.authTier === "anonymous" ? (
+            /* Guest user: always show sign-in CTA */
+            sidebarCollapsed ? (
+              <div className="p-2 space-y-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
+                        window.location.href = getLoginUrl();
+                      }}
+                      className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/30 transition-colors mx-auto"
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Sign in to save your progress</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { logout(); }}
+                      className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors mx-auto"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Clear guest session</TooltipContent>
+                </Tooltip>
+              </div>
+            ) : (
+              <div className="px-3 py-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                    <User className="w-3 h-3 text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs text-amber-300 font-medium block">Guest</span>
+                    <span className="text-[10px] text-muted-foreground">Session is temporary</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
+                    window.location.href = getLoginUrl();
+                  }}
+                  className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors text-xs font-medium"
+                >
+                  <LogIn className="w-3.5 h-3.5" /> Sign In to Save Progress
+                </button>
+                <button
+                  onClick={() => { logout(); }}
+                  className="flex items-center justify-center gap-1.5 w-full px-3 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors text-[11px]"
+                >
+                  <LogOut className="w-3 h-3" /> Clear Session
+                </button>
+              </div>
+            )
+          ) : (
+            /* Authenticated user: show user info + sign-out */
+            <div className={`flex items-center ${sidebarCollapsed ? "justify-center p-2" : "gap-2 px-3 py-2"}`}>
+              {sidebarCollapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)}>
+                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{user?.name || "User"} — Click to expand</TooltipContent>
+                </Tooltip>
+              ) : (
+                <>
+                  <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent">
+                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs truncate block">{user?.name || "User"}</span>
+                    <span className="text-[10px] text-muted-foreground capitalize">{userRole}</span>
+                  </div>
+                  <button onClick={() => setSidebarCollapsed(true)} className="text-muted-foreground hover:text-foreground" title="Collapse sidebar">
+                    <PanelLeftClose className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => logout()} className="text-muted-foreground hover:text-foreground" title="Sign out">
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </aside>
 
-      {/* ─── MAIN CHAT AREA ─────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile conversation panel toggle */}
-        <div className="lg:hidden flex items-center h-8 px-3 shrink-0">
-          <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs text-muted-foreground" onClick={() => setSidebarOpen(true)}>
-            <PanelLeftOpen className="w-3.5 h-3.5" /> Conversations
+      {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
+      <main className="flex-1 flex flex-col min-w-0">
+        {/* Mobile-only sidebar toggle + escalation + guest sign-in */}
+        <div className="lg:hidden flex items-center h-12 px-3 shrink-0 justify-between">
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
+            <Menu className="w-5 h-5" />
           </Button>
+          <div className="flex items-center gap-1.5">
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadCount}
+              connected={wsConnected}
+              onMarkAsRead={markAsRead}
+              onMarkAllAsRead={markAllAsRead}
+              onClear={clearNotifications}
+            />
+            {user?.authTier === "anonymous" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-[10px] h-7 gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                onClick={() => {
+                  if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
+                  window.location.href = getLoginUrl();
+                }}
+              >
+                <LogIn className="w-3 h-3" /> Sign In
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-[10px] h-7 gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+              onClick={() => navigate("/professionals")}
+            >
+              <Phone className="w-3 h-3" /> Talk to a Pro
+            </Button>
+          </div>
         </div>
 
         {/* ─── LIVE SESSION ──────────────────────────────────── */}
@@ -1819,8 +2118,9 @@ export default function Chat() {
             </div>
           </div>
         </div>
-      </div>
-      </div>
+      </main>
+
+
       {/* Folder Create/Edit Dialog */}
       <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
         <DialogContent className="sm:max-w-[360px]">
@@ -1869,7 +2169,7 @@ export default function Chat() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AppShell>
+    </div>
   );
 }
 

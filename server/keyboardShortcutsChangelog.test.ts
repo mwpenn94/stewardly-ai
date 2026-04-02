@@ -177,18 +177,19 @@ describe("Keyboard Shortcut Hint in Sidebar", () => {
 describe("Expanded WhatsNewModal Changelog", () => {
   const source = fs.readFileSync("client/src/components/WhatsNewModal.tsx", "utf-8");
 
-  it("should have version bumped to 2026.04.01", () => {
-    expect(source).toContain('CURRENT_VERSION = "2026.04.01"');
+  it("should have version bumped to 2026.03.28b", () => {
+    expect(source).toContain('CURRENT_VERSION = "2026.03.28b"');
   });
 
-  it("should have 4 changelog releases", () => {
+  it("should have 3 changelog releases", () => {
     const versionMatches = source.match(/version:\s*"/g);
     expect(versionMatches).toBeTruthy();
-    expect(versionMatches!.length).toBe(4);
+    expect(versionMatches!.length).toBe(3);
   });
 
-  it("should have a release about keyboard shortcuts", () => {
-    expect(source).toContain("Customizable keyboard shortcuts");
+  it("should have the latest release about keyboard shortcuts", () => {
+    expect(source).toContain("Keyboard shortcuts, expanded navigation");
+    expect(source).toContain("Keyboard shortcuts overlay");
     expect(source).toContain("Full keyboard navigation");
   });
 
@@ -233,9 +234,10 @@ describe("Expanded WhatsNewModal Changelog", () => {
 // ─── Integration: Shortcuts + Changelog coexist ────────────────────────────
 
 describe("Feature Integration — Shortcuts and Changelog", () => {
-  it("should have KeyboardShortcuts in App.tsx (WhatsNewModal removed — data only)", () => {
+  it("should have both KeyboardShortcuts and WhatsNewModal in App.tsx", () => {
     const appSource = fs.readFileSync("client/src/App.tsx", "utf-8");
     expect(appSource).toContain("KeyboardShortcuts");
+    expect(appSource).toContain("WhatsNewModal");
   });
 
   it("should have '?' shortcut listed in KeyboardShortcuts", () => {

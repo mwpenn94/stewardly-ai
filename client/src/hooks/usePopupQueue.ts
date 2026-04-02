@@ -1,23 +1,26 @@
 /**
  * usePopupQueue — Centralized popup priority system.
  *
- * Prevents multiple popups from stacking on top of each other,
- * especially on mobile where they block interaction. Only one popup
- * is shown at a time; dismissing it advances to the next in priority order.
+ * Prevents multiple popups (tour, what's-new, consent banner) from
+ * stacking on top of each other, especially on mobile where they
+ * block interaction. Only one popup is shown at a time; dismissing
+ * it advances to the next in priority order.
  *
  * Priority (highest first):
  *   1. ConsentBanner  — legal requirement, must be shown first
+ *   2. WhatsNewModal  — important for returning users
+ *   3. GuidedTour     — helpful but can wait
  *
- * GuidedTour and WhatsNewModal have been removed. What's New content
- * is now surfaced through the ChangelogBell notification system, and
- * onboarding is handled via the notification bell.
+ * Each popup registers itself via the shared store and checks
+ * `canShow` before rendering. When dismissed, the next popup
+ * in the queue is allowed to show.
  */
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, useCallback } from "react";
 
-type PopupId = "consent";
+type PopupId = "consent" | "whatsNew" | "guidedTour";
 
 // Priority order — lower index = higher priority
-const PRIORITY_ORDER: PopupId[] = ["consent"];
+const PRIORITY_ORDER: PopupId[] = ["consent", "whatsNew", "guidedTour"];
 
 // ── Shared store (singleton outside React) ──────────────────────────
 

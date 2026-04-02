@@ -6,12 +6,14 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ConsentBanner from "./components/ConsentBanner";
 import OfflineBanner from "./components/OfflineBanner";
+import WhatsNewModal from "./components/WhatsNewModal";
 import { GuestBanner } from "./components/GuestBanner";
 import { ContextualHelp } from "./components/ContextualHelp";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { CommandPalette } from "./components/CommandPalette";
 import { useGuestSession } from "./hooks/useGuestSession";
 import GlobalFooter from "./components/GlobalFooter";
+import { GuidedTour } from "./components/GuidedTour";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { usePageTracking } from "./hooks/useExponentialTracking";
 import PageSuspenseFallback from "./components/PageSuspenseFallback";
@@ -195,6 +197,8 @@ function AppContent() {
       <ConsentBanner />
       <GlobalFooter />
       <ContextualHelp />
+      <GuidedTour />
+      <WhatsNewModal />
     </>
   );
 }
