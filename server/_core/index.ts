@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import { randomBytes } from "crypto";
 import helmet from "helmet";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
@@ -21,6 +22,7 @@ import { generalLimiter, authLimiter, sensitiveTrpcGuard } from "./rateLimiter";
 import { createSSEStreamHandler } from "../shared/streaming";
 import { contextualLLM } from "../shared/stewardlyWiring";
 import { sdk } from "./sdk";
+import { initSentry, captureException } from "./sentry";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -42,6 +44,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Initialize Sentry error tracking (no-ops if SENTRY_DSN not set)
+  await initSentry();
+
   // Validate required environment variables (fails fast in production)
   validateRequiredEnvVars();
 
@@ -81,14 +86,20 @@ async function startServer() {
     next();
   });
 
+  // ─── CSP Nonce Middleware ────────────────────────────────────────────────
+  app.use((_req, res, next) => {
+    res.locals.cspNonce = randomBytes(16).toString("base64");
+    next();
+  });
+
   // ─── Helmet Security Headers ───────────────────────────────────────────
   app.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", "'unsafe-inline'"],
-          styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://api.fontshare.com", "'unsafe-inline'"],
+          scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", (_req: any, res: any) => `'nonce-${res.locals.cspNonce}'`],
+          styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://api.fontshare.com", (_req: any, res: any) => `'nonce-${res.locals.cspNonce}'`],
           fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://cdn.fontshare.com"],
           imgSrc: ["'self'", "data:", "https:", "blob:"],
           connectSrc: ["'self'", "https:", "wss:"],
@@ -141,6 +152,24 @@ async function startServer() {
   registerSocialAuthRoutes(app);
   // Public webhook ingestion endpoints
   registerWebhookRoutes(app);
+
+  // ─── Health / Readiness Probes (plain HTTP, no auth) ─────────────────
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+  app.get("/ready", async (_req, res) => {
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) {
+        res.status(503).json({ status: "not_ready", reason: "database_unavailable" });
+        return;
+      }
+      res.json({ status: "ready" });
+    } catch {
+      res.status(503).json({ status: "not_ready", reason: "database_error" });
+    }
+  });
 
   // ─── SSE Streaming endpoint ──────────────────────────────────────────
   app.post("/api/chat/stream", generalLimiter, async (req, res) => {
@@ -230,11 +259,13 @@ async function startServer() {
 
   // ── Crash handlers ────────────────────────────────────────────────
   process.on("uncaughtException", (err) => {
+    captureException(err);
     logger.error({ operation: "uncaughtException", err }, "Uncaught exception");
     logger.flush();
     process.exit(1);
   });
   process.on("unhandledRejection", (reason) => {
+    captureException(reason);
     logger.error({ operation: "unhandledRejection", err: reason }, "Unhandled rejection");
   });
 }

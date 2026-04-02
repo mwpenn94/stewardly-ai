@@ -15,7 +15,7 @@ export const ENV = {
   snapTradeConsumerKey: process.env.SNAPTRADE_CONSUMER_KEY ?? "",
 };
 
-const REQUIRED_IN_PRODUCTION = ["DATABASE_URL", "JWT_SECRET"] as const;
+const REQUIRED_IN_PRODUCTION = ["DATABASE_URL", "JWT_SECRET", "ALLOWED_ORIGINS"] as const;
 const RECOMMENDED = ["OWNER_OPEN_ID", "OAUTH_SERVER_URL"] as const;
 
 if (ENV.isProduction) {

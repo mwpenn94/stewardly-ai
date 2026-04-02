@@ -44,6 +44,46 @@ describe("Intelligence Wiring Verification", () => {
     expect(indexContent).toContain("createSSEStreamHandler");
   });
 
+  // Test 3b: Health and readiness probes registered
+  it("should have /health and /ready endpoints", () => {
+    const indexContent = fs.readFileSync(
+      path.join(ROOT, "server/_core/index.ts"),
+      "utf-8"
+    );
+    expect(indexContent).toContain('app.get("/health"');
+    expect(indexContent).toContain('app.get("/ready"');
+  });
+
+  // Test 3c: CSP uses nonces instead of unsafe-inline
+  it("should use CSP nonces instead of unsafe-inline", () => {
+    const indexContent = fs.readFileSync(
+      path.join(ROOT, "server/_core/index.ts"),
+      "utf-8"
+    );
+    expect(indexContent).toContain("cspNonce");
+    expect(indexContent).not.toContain("'unsafe-inline'");
+  });
+
+  // Test 3d: ALLOWED_ORIGINS is required in production
+  it("should require ALLOWED_ORIGINS in production", () => {
+    const envContent = fs.readFileSync(
+      path.join(ROOT, "server/_core/env.ts"),
+      "utf-8"
+    );
+    expect(envContent).toContain("ALLOWED_ORIGINS");
+    expect(envContent).toMatch(/REQUIRED_IN_PRODUCTION.*ALLOWED_ORIGINS|ALLOWED_ORIGINS.*REQUIRED_IN_PRODUCTION/s);
+  });
+
+  // Test 3e: Sentry integration exists
+  it("should have Sentry error tracking module", () => {
+    const sentryContent = fs.readFileSync(
+      path.join(ROOT, "server/_core/sentry.ts"),
+      "utf-8"
+    );
+    expect(sentryContent).toContain("captureException");
+    expect(sentryContent).toContain("SENTRY_DSN");
+  });
+
   // Test 4: normalizeQualityScore handles edge cases
   it("should normalize quality scores correctly", async () => {
     const { normalizeQualityScore } = await import(
