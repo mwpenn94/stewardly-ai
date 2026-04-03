@@ -23,6 +23,8 @@ import { createSSEStreamHandler } from "../shared/streaming";
 import { contextualLLM } from "../shared/stewardlyWiring";
 import { sdk } from "./sdk";
 import { initSentry, captureException } from "./sentry";
+import { initOTel } from "../shared/telemetry/otel";
+import { registerMCPEndpoint } from "../mcp/stewardlyServer";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -46,6 +48,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   // Initialize Sentry error tracking (no-ops if SENTRY_DSN not set)
   await initSentry();
+
+  // Initialize OpenTelemetry (no-ops if OTEL_EXPORTER_OTLP_ENDPOINT not set)
+  await initOTel();
 
   // Validate required environment variables (fails fast in production)
   validateRequiredEnvVars();
@@ -170,6 +175,9 @@ async function startServer() {
       res.status(503).json({ status: "not_ready", reason: "database_error" });
     }
   });
+
+  // ─── MCP Server (Model Context Protocol) ────────────────────────────
+  await registerMCPEndpoint(app);
 
   // ─── SSE Streaming endpoint ──────────────────────────────────────────
   app.post("/api/chat/stream", generalLimiter, async (req, res) => {
