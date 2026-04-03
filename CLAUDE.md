@@ -27,32 +27,55 @@ Periodically export `_status.json` to mitigate session resets.
 pnpm run dev          # Dev server (tsx watch)
 pnpm run build        # Production build (Vite + esbuild)
 pnpm run check        # TypeScript type check
-pnpm test             # Run vitest (1,635 passing, 111 need DB)
+pnpm test             # Run vitest (2,142 passing, 108 need DB)
 pnpm run db:push      # Drizzle generate + migrate
 pnpm run db:deploy-missing  # Deploy 131 missing tables
 ```
 
 ## Architecture
 - **Client**: `client/src/` — React 19, Tailwind 4, shadcn/ui, Wouter routing
-- **Server**: `server/` — Express 4, tRPC 11, 53 routers, 104 services
+- **Server**: `server/` — Express 4, tRPC 11, 57 routers, 116 services
 - **Shared**: `shared/` — Types, constants, errors
-- **Schema**: `drizzle/schema.ts` — 262 tables, Drizzle ORM
-- **Tests**: `server/**/*.test.ts` — 63 files, vitest
+- **Schema**: `drizzle/schema.ts` — 270 tables, Drizzle ORM
+- **Tests**: `server/**/*.test.ts` — 85 files, vitest
+- **Shared Intelligence**: `server/shared/` — contextualLLM, config, streaming, engine, guardrails, telemetry, events, tenant
 
 ## Database
 - TiDB Cloud (MySQL-compatible), connection via `DATABASE_URL` env var
-- 131 of 262 tables deployed; migration ready at `drizzle/0007_deploy_missing_tables.sql`
+- 131 of 270 tables deployed; migration ready at `drizzle/0007_deploy_missing_tables.sql`
 - IP-whitelisted to Manus infrastructure
 
-## Security (Audit v4 Applied)
+## Intelligence Layer
+- **contextualLLM**: RAG-enabled LLM wrapper with deep context injection from 40+ sources
+- **Guardrails**: PII screening (SSN, CC, phone, DOB) + injection detection on every LLM call
+- **5-Layer Config**: platform → organization → manager → professional → user (deep merge)
+- **Graduated Autonomy**: DB-backed via `agent_autonomy_levels`, write-through cache, default fallback
+- **ReAct Loop**: Multi-turn tool calling with trace logging in `reasoning_traces`
+- **Improvement Engine**: Signal detection on 6h schedule, anti-regression checks
+- **SSE Streaming**: POST `/api/chat/stream` with token/done/error events
+- **Memory Engine**: DB-backed with 6 categories, episodic summaries, context injection
+- **Event Bus**: Typed events (prompt.scored, compliance.flagged, goal.completed)
+- **OpenTelemetry**: GenAI semantic conventions, OTLP export when configured
+- **MCP Server**: 6 financial tools at `/mcp/sse` and `/mcp/call`
+
+## Security (Audit v4 Applied + Hardened)
 - Session: 24h expiry, sameSite=lax, httpOnly cookies
-- Security headers: CSP, HSTS, X-Frame-Options applied as middleware
-- Rate limiting: 200 req/15min global, 20/15min auth
+- Security headers: CSP with per-request nonces (no unsafe-inline), HSTS, X-Frame-Options
+- Rate limiting: 100 req/15min global, 5/15min auth, 20/15min sensitive tRPC
 - Body limit: 5MB default
-- CORS: restricted to ALLOWED_ORIGINS env var
+- CORS: ALLOWED_ORIGINS required in production (fails fast if missing)
 - Encryption: AES-256-GCM, production guard on missing keys
 - RBAC: org-role checks via `userOrganizationRoles` table
 - Audit: SHA-256 hash chain logging, DSAR data export
+- Guardrails: PII + injection screening on all LLM I/O
+- Multi-tenant: tenantId in tRPC context via AsyncLocalStorage
+
+## Production Infrastructure
+- **Docker**: Multi-stage Dockerfile (Alpine, non-root user, HEALTHCHECK)
+- **CI/CD**: GitHub Actions (type check + test + Docker build)
+- **Health Probes**: GET `/health` (liveness) + GET `/ready` (readiness w/ DB check)
+- **Error Tracking**: Sentry (optional, dynamic import, no build dep)
+- **Observability**: Pino structured JSON logging + OpenTelemetry (optional)
 
 ## Sensitive Files
 - `.manus/db/` — Contains DB credentials in query logs (gitignored, removed from index)

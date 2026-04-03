@@ -2,7 +2,7 @@
 
 **Project:** Stewardly AI (wealthbridge-ai)
 **Architecture:** Full-stack TypeScript — React 19 + Express 4 + tRPC 11 + MySQL (TiDB Cloud) + Drizzle ORM
-**Date:** April 1, 2026
+**Date:** April 3, 2026
 **Branch:** main
 
 ---
@@ -43,16 +43,15 @@
 
 | Feature | Detail |
 |---------|--------|
-| Streaming Responses | tRPC handles response delivery; no explicit SSE endpoint. Currently using baseline heuristics — dedicated SSE streaming upgrade planned. |
-| Integration Connectors | Infrastructure exists (provider/connection/sync tables) but most require API key registration. Currently using baseline heuristics — live activation with partner keys planned. |
-| Notification Preferences | System exists; granular per-type preferences stored client-side. Currently using baseline heuristics — server-side filtering upgrade planned. |
+| Integration Connectors | Infrastructure exists (provider/connection/sync tables) but most require API key registration. CRM clients (Wealthbox + Redtail) created but need production credentials. |
+| Notification Preferences | System exists; granular per-type preferences stored client-side. Server-side filtering upgrade planned. |
 
 ### SCAFFOLDED (code structure exists, not fully functional)
 
 | Feature | Detail |
 |---------|--------|
 | 131 Missing DB Tables | Defined in Drizzle schema but not deployed to live TiDB. Migration ready at `drizzle/0007_deploy_missing_tables.sql` |
-| Browser Automation | No code exists; listed as future work |
+| Plaid End-to-End | Service defined, schema exists, but no live account aggregation flow |
 
 ---
 
@@ -73,18 +72,36 @@
 
 | Metric | Value |
 |--------|-------|
-| Test files | 70 |
-| Tests passing | 1,877 |
-| Tests failing | 110 (all DB-unavailable — no TiDB access in CI) |
-| Total tests | 1,987 |
+| Test files | 85 |
+| Tests passing | 2,142 |
+| Tests failing | 108 (all DB-unavailable — no TiDB access in CI) |
+| Total tests | 2,250 |
 | Build status | Passing |
-| TypeScript errors | ~101 pre-existing (userId references in 6 service files) |
+| TypeScript errors | 0 |
+
+---
+
+## New Modules (April 2026 Build-Out)
+
+| Module | Location | Purpose |
+|--------|----------|---------|
+| Guardrails | `server/shared/guardrails/` | PII + injection screening on all LLM I/O |
+| OpenTelemetry | `server/shared/telemetry/otel.ts` | GenAI spans with OTLP export |
+| Event Bus | `server/shared/events/eventBus.ts` | Typed cross-module events |
+| Multi-Tenant | `server/shared/tenantContext.ts` | AsyncLocalStorage per-request isolation |
+| MCP Server | `server/mcp/stewardlyServer.ts` | 6 financial tools via Model Context Protocol |
+| CRM Clients | `server/services/wealthboxClient.ts`, `redtailClient.ts` | REST API clients |
+| CRM Sync | `server/services/crmSyncEngine.ts` | Bidirectional sync with logging |
+| Accessible Charts | `client/src/components/AccessibleChart.tsx` | WCAG 2.1 AA Recharts wrapper |
+| Sentry | `server/_core/sentry.ts` | Optional error tracking |
+| Health Probes | In `server/_core/index.ts` | `/health` + `/ready` endpoints |
+| Service Routers | `server/routers/serviceRouters.ts` | eSignature, PDF, creditBureau, CRM endpoints |
 
 ---
 
 ## Known Limitations
 
-1. **131 of 262 Drizzle tables not deployed** to live TiDB Cloud — migration SQL ready
+1. **131 of 270 Drizzle tables not deployed** to live TiDB Cloud — migration SQL ready
 2. **TiDB Cloud IP-whitelisted** to Manus infrastructure — cannot deploy from external environments
 3. **No frontend tests** — all 70 test files are server-side
 4. **Streaming** is implicit via tRPC, not explicit SSE

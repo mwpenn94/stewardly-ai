@@ -1,6 +1,6 @@
 # SPRINT COMPLETION — Stewardly AI
 
-**Date:** April 1, 2026
+**Date:** April 3, 2026 (Updated)
 **Project:** Stewardly AI (wealthbridge-ai)
 **Branch:** main
 **Architecture:** React 19 + Express 4 + tRPC 11 + TiDB Cloud + Drizzle ORM
@@ -101,10 +101,54 @@ Note: Check 2 fails on terminology (`amp_engagement`/`ho_domain_trajectory` are 
 | Metric | Value |
 |--------|-------|
 | Baseline tests | 1,746 (pre-audit) |
-| Current tests | 2,121 |
-| Passing | 2,011 |
-| Failing | 110 (all DB-unavailable — TiDB not reachable) |
+| Current tests | 2,250 |
+| Passing | 2,142 |
+| Failing | 108 (all DB-unavailable — TiDB not reachable) |
 | Regressions | **0** (no new failures introduced) |
+| TypeScript errors | **0** |
+| Build status | **Passing** |
+
+## BUILD-OUT ADDITIONS (April 3, 2026)
+
+### Production Hardening
+- ALLOWED_ORIGINS required in production (server refuses to start without)
+- CSP nonces replace unsafe-inline (per-request randomBytes(16))
+- GET /health (liveness) + GET /ready (readiness with DB check)
+- Dockerfile: multi-stage, non-root user, Alpine, HEALTHCHECK
+- docker-compose.yml with parameterized env vars
+- GitHub Actions CI/CD: check + test + Docker build
+- Sentry error tracking (optional dynamic import)
+- 222 unsafe `(await getDb())!` assertions eliminated across 36 files
+
+### Intelligence Pipeline
+- Guardrails wired into contextualLLM: input screening (PII + injection), output PII masking
+- OpenTelemetry spans on every contextualLLM call (GenAI conventions)
+- Event bus: prompt.scored + compliance.flagged emitted from contextualLLM
+- Multi-tenant context in tRPC (tenantId from user.organizationId)
+
+### New Service Routers
+- eSignature: envelopes CRUD, pending, stats (wired to esignatureService)
+- PDF: financial reports, conversation export, suitability assessment
+- Credit Bureau: rating, DTI analysis, insurance impact, history
+- CRM: sync trigger for Wealthbox/Salesforce/Redtail
+
+### CRM Client Preparation
+- Wealthbox REST client (contacts, tasks, notes, OAuth Bearer, rate limiting)
+- Redtail REST client (contacts, activities, notes)
+- CRM sync engine with bidirectional sync + crm_sync_log tracking
+
+### MCP Server
+- 6 financial tools: calculate_tax, calculate_retirement, assess_suitability, search_products, check_compliance, get_market_data
+- SSE endpoint at /mcp/sse, call endpoint at /mcp/call
+
+### Accessibility
+- AccessibleChart component: WCAG 2.1 AA, Wong colorblind-safe palette, sr-only data tables, View as Table toggle
+
+### Bug Fixes
+- Exponential engine layer detection: role-based resolution works without DB
+- getProvider returns NOT_FOUND (not null) for unknown slugs
+- AI settings returns FORBIDDEN (not INTERNAL_SERVER_ERROR) for non-admins
+- Hub pages (Operations, Advisory, Intelligence, Relationships) show live QuickStats
 | TypeScript errors | **0** (all resolved) |
 | Build | **Passing** |
 

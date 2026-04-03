@@ -1,6 +1,6 @@
 # Stewardly AI — Comprehensive Platform Guide
 
-**Version:** 2.1 | **Date:** April 2026 | **Status:** Production  
+**Version:** 3.0 | **Date:** April 3, 2026 | **Status:** Production  
 **Domains:** stewardly.manus.space, wealthai-gakeferp.manus.space
 
 ---
@@ -38,18 +38,19 @@ The system is built on a modern TypeScript full-stack architecture with 197,000+
 
 | Metric | Count |
 |--------|-------|
-| Total lines of code | 197,000+ |
-| Source files (non-test) | 893 |
-| Test files | 81 |
-| Total tests | 2,162 |
+| Total lines of code | 200,000+ |
+| Source files (non-test) | 920+ |
+| Test files | 85 |
+| Total tests | 2,250 (2,142 passing) |
 | Database tables | 270 |
-| tRPC routers | 51 (860 procedures) |
+| tRPC routers | 57 (880+ procedures) |
 | Frontend pages | 76 |
-| Custom components | 42 |
+| Custom components | 43 (+ AccessibleChart) |
 | UI primitives (shadcn) | 53 |
-| Custom hooks | 16 |
-| Server services | 112 |
-| Router modules | 53 (+ main routers.ts) |
+| Custom hooks | 17 |
+| Server services | 116 |
+| Router modules | 57 (+ main routers.ts) |
+| Shared modules | 12 (intelligence, config, streaming, engine, guardrails, telemetry, events, tenant, MCP) |
 | NPM dependencies | 88 |
 | Dev dependencies | 28 |
 
@@ -89,9 +90,13 @@ wealthbridge-ai/
 │   ├── services/             # 112 business logic services
 │   ├── shared/               # Cross-cutting concerns
 │   │   ├── engine/           # Improvement engine
-│   │   ├── intelligence/     # Memory, context, LLM
+│   │   ├── intelligence/     # Memory, context, LLM, ReAct
 │   │   ├── streaming/        # SSE stream handler
-│   │   └── config/           # AI config resolver
+│   │   ├── config/           # 5-layer AI config resolver
+│   │   ├── guardrails/       # PII + injection screening
+│   │   ├── telemetry/        # OpenTelemetry GenAI spans
+│   │   ├── events/           # Typed event bus
+│   │   └── tenantContext.ts  # Multi-tenant isolation
 │   ├── db.ts                 # Query helpers (896 lines)
 │   └── storage.ts            # S3 file storage
 ├── drizzle/
