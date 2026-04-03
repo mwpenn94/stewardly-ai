@@ -1248,7 +1248,7 @@ The user's name is ${ctx.user.name || "there"}.`;
       let cleanContent = content;
       if (buttonMatch) {
         cleanContent = content.replace(/\[BUTTONS:\s*.+?\]/, "").trim();
-        buttons = buttonMatch[1].split(",").map(b => b.trim().replace(/^"|"$/g, "").replace(/^'|'$/g, ""));
+        buttons = buttonMatch[1].split(",").map((b: string) => b.trim().replace(/^"|"$/g, "").replace(/^'|'$/g, ""));
       }
 
       // Check if the AI is wrapping up (summary detected)

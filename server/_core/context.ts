@@ -1,11 +1,13 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
+import { runWithTenant } from "../shared/tenantContext";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
   user: User | null;
+  tenantId: number | null;
 };
 
 export async function createContext(
@@ -20,9 +22,12 @@ export async function createContext(
     user = null;
   }
 
+  const tenantId = (user as any)?.organizationId ?? null;
+
   return {
     req: opts.req,
     res: opts.res,
     user,
+    tenantId,
   };
 }

@@ -16,6 +16,9 @@
 import { invokeLLM } from "../_core/llm";
 import { getQuickContext, type ContextType } from "./deepContextAssembler";
 import { logger } from "../_core/logger";
+import { screenInput, screenOutput } from "../shared/guardrails";
+import { createLLMSpan } from "../shared/telemetry/otel";
+import { eventBus } from "../shared/events/eventBus";
 
 /**
  * Maximum character length for injected platform context.
@@ -41,13 +44,37 @@ interface ContextualLLMParams {
  */
 export async function contextualLLM(params: ContextualLLMParams) {
   const { userId, contextType = "analysis", query, messages, ...rest } = params;
-  
+
+  // ── Guardrail: screen user input ──────────────────────────────────
+  const userInput = extractQuery(messages);
+  if (userInput) {
+    const inputScreen = screenInput(userInput);
+    if (!inputScreen.passed) {
+      const flagged = inputScreen.checks.filter(c => c.matched).map(c => c.name);
+      logger.warn({ operation: "contextualLLM.guardrail", userId, flagged }, "Input screening failed");
+      eventBus.emit("compliance.flagged", { userId, type: "input", flagged });
+      if (inputScreen.checks.some(c => c.matched && c.severity === "high")) {
+        const refusal = "I can't process that request. It appears to contain sensitive personal information or an unsupported instruction pattern. Please rephrase without including SSNs, credit card numbers, or similar data.";
+        return {
+          id: "guardrail-block",
+          created: Math.floor(Date.now() / 1000),
+          model: "guardrail",
+          content: refusal,
+          choices: [{ index: 0, message: { role: "assistant" as const, content: refusal }, finish_reason: "stop" }],
+          usage: { input_tokens: 0, output_tokens: 0, total_tokens: 0 },
+        } as any;
+      }
+    }
+  }
+
+  // ── OTel span ─────────────────────────────────────────────────────
+  const { end: endSpan } = createLLMSpan("contextualLLM", { operation: contextType });
+
   // Assemble platform context if userId is available
   let platformContext = "";
   if (userId) {
     try {
-      // Extract query from the last user message if not provided
-      const effectiveQuery = query || extractQuery(messages);
+      const effectiveQuery = query || userInput;
       platformContext = await getQuickContext(userId, effectiveQuery, contextType);
     } catch (e) {
       // Best-effort — don't block the LLM call
@@ -59,6 +86,33 @@ export async function contextualLLM(params: ContextualLLMParams) {
   const enhancedMessages = injectContext(messages, platformContext);
   
   const result = await invokeLLM({ messages: enhancedMessages as any, ...rest });
+
+  // ── OTel: end span with token usage ───────────────────────────────
+  endSpan({
+    model: result.model,
+    inputTokens: result.usage?.prompt_tokens,
+    outputTokens: result.usage?.completion_tokens,
+  });
+
+  // ── Guardrail: screen output for PII leakage ─────────────────────
+  const outputContent = result.choices?.[0]?.message?.content;
+  if (outputContent && typeof outputContent === "string") {
+    const outputScreen = screenOutput(outputContent);
+    if (!outputScreen.passed) {
+      const { maskPII } = await import("../shared/guardrails");
+      logger.warn({ operation: "contextualLLM.guardrail.output", userId }, "Output PII detected, masking");
+      eventBus.emit("compliance.flagged", { userId, type: "output_pii" });
+      result.choices[0].message.content = maskPII(outputContent);
+    }
+  }
+
+  // ── Emit quality event ────────────────────────────────────────────
+  eventBus.emit("prompt.scored", {
+    userId,
+    model: result.model,
+    inputTokens: result.usage?.prompt_tokens,
+    outputTokens: result.usage?.completion_tokens,
+  });
 
   // Track model version for observability
   if (result.model) {
