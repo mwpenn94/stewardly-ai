@@ -3070,3 +3070,8 @@
 - [x] Seed 8 changelog entries into platform_changelog table via seed-changelog.mjs
 - [x] Fix ChangelogBell dropdown clipping — now uses createPortal with fixed positioning
 - [x] Write changelog-update.test.ts — 11 tests for data and portal fix
+
+## Bug Fix — ChangelogBell Positioning (2026-04-04)
+- [x] FIX: ChangelogBell panel now uses NotificationBell's bottom-anchored positioning pattern (panelStyle with bottom/top)
+- [x] FIX: Tooltip suppressed when panel is open — no more help text rendering behind the dropdown
+- [x] Updated changelog-update.test.ts — 13 tests (added tooltip suppression + positioning pattern checks)

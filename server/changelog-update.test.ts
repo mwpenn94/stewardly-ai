@@ -78,7 +78,9 @@ describe("ChangelogBell Portal Fix", () => {
   it("supports upward and downward opening", () => {
     expect(content).toContain("spaceBelow");
     expect(content).toContain("spaceAbove");
-    expect(content).toContain("openUp");
+    // Uses bottom/top style properties for direction
+    expect(content).toContain("bottom:");
+    expect(content).toContain("top: rect.bottom");
   });
 
   it("handles outside clicks and Escape key", () => {
@@ -89,5 +91,23 @@ describe("ChangelogBell Portal Fix", () => {
   it("recalculates position on resize and scroll", () => {
     expect(content).toContain("resize");
     expect(content).toContain("scroll");
+  });
+
+  it("suppresses tooltip when panel is open", () => {
+    // When isOpen, the bell button renders without Tooltip wrapper
+    expect(content).toContain("isOpen ? (");
+    expect(content).toContain("bellButton");
+    // When closed, tooltip wraps the bell
+    expect(content).toContain("<Tooltip>");
+    expect(content).toContain("<TooltipTrigger asChild>");
+  });
+
+  it("matches NotificationBell positioning pattern (bottom/top style, panelStyle object)", () => {
+    expect(content).toContain("panelStyle");
+    expect(content).toContain("setPanelStyle");
+    expect(content).toContain("calculatePosition");
+    // Uses same margin and width approach
+    expect(content).toContain("margin");
+    expect(content).toContain("panelWidth");
   });
 });
