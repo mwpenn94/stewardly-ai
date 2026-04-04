@@ -3059,3 +3059,8 @@
 - [x] Install @sentry/node and wire into Express server for production error tracking
 - [x] Deploy 131 pending database tables from drizzle/0007_deploy_missing_tables.sql (270 total tables)
 - [x] Write tests for Sentry integration and DB table verification (8 tests passing)
+
+## Bug Fix — Notification Panel (2026-04-03)
+- [x] FIX: Notification dropdown panel clipped by sidebar overflow — now uses createPortal with fixed positioning
+- [x] FIX: Chat audio responses render without text — root cause: sendMutation regenerated AI response. Added persistStreamed procedure to save streamed content directly
+- [x] Write bugfix-streaming-notification.test.ts — 13 tests for both fixes

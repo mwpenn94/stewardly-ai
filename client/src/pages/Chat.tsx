@@ -555,6 +555,7 @@ export default function Chat() {
 
   // ─── MUTATIONS ────────────────────────────────────────────────
   const sendMutation = trpc.chat.send.useMutation();
+  const persistStreamedMutation = trpc.chat.persistStreamed.useMutation();
   const createConversation = trpc.conversations.create.useMutation();
   const deleteConversation = trpc.conversations.delete.useMutation();
   const feedbackMutation = trpc.feedback.submit.useMutation();
@@ -884,32 +885,48 @@ export default function Chat() {
                     return updated;
                   });
                 } else if (event.type === "done") {
-                  // Finalize — save via tRPC to persist the message server-side
-                  const persistResult = await sendMutation.mutateAsync({
-                    content: trimmed,
-                    conversationId: activeConvId,
-                    mode,
-                    focus: focusSerialized,
-                  });
-                  // Update the placeholder with the persisted message data
+                  // Finalize — persist the streamed content (NOT regenerate)
+                  // First update the UI immediately with the accumulated content
                   setMessages(prev => {
                     const updated = [...prev];
                     const last = updated[updated.length - 1];
                     if (last && last.role === "assistant") {
-                      updated[updated.length - 1] = {
-                        ...last,
-                        id: persistResult.id,
-                        content: accumulated || persistResult.content,
-                        confidenceScore: persistResult.confidenceScore,
-                        complianceStatus: persistResult.complianceStatus,
-                      };
+                      updated[updated.length - 1] = { ...last, content: accumulated };
                     }
                     return updated;
                   });
-                  if (persistResult.followUpSuggestions?.length) {
-                    setFollowUpSuggestions(persistResult.followUpSuggestions);
-                  }
-                  if (ttsEnabled) tts.speak(accumulated || persistResult.content);
+                  // Start TTS immediately with the streamed content
+                  if (ttsEnabled) tts.speak(accumulated);
+                  // Then persist to DB in background (won't regenerate)
+                  persistStreamedMutation.mutateAsync({
+                    conversationId: activeConvId,
+                    userContent: trimmed,
+                    assistantContent: accumulated,
+                    mode,
+                    focus: focusSerialized,
+                  }).then((persistResult) => {
+                    // Update with the persisted ID (for feedback buttons etc.)
+                    setMessages(prev => {
+                      const updated = [...prev];
+                      const last = updated[updated.length - 1];
+                      if (last && last.role === "assistant" && last.content === accumulated) {
+                        updated[updated.length - 1] = {
+                          ...last,
+                          id: persistResult.id,
+                          confidenceScore: persistResult.confidenceScore,
+                          complianceStatus: persistResult.complianceStatus,
+                        };
+                      }
+                      return updated;
+                    });
+                    if (persistResult.followUpSuggestions?.length) {
+                      setFollowUpSuggestions(persistResult.followUpSuggestions);
+                    }
+                    // Refresh conversation list for title update
+                    utils.conversations.list.invalidate();
+                  }).catch((err: any) => {
+                    console.warn("[Chat] Failed to persist streamed message:", err.message);
+                  });
                 } else if (event.type === "error") {
                   throw new Error(event.message || "Streaming error");
                 }

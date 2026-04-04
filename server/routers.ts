@@ -63,6 +63,144 @@ import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
+  /**
+   * Persist a streamed response — saves user + assistant messages without
+   * regenerating the AI response. Used by the SSE streaming path so the
+   * streamed content is saved to the database exactly as the user saw it.
+   */
+  persistStreamed: protectedProcedure
+    .input(z.object({
+      conversationId: z.number(),
+      userContent: z.string().min(1).max(50000),
+      assistantContent: z.string().min(1),
+      mode: z.enum(["client", "coach", "manager"]).default("client"),
+      focus: z.string().default("general,financial"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const conversation = await getConversation(input.conversationId, ctx.user.id);
+      if (!conversation) throw new TRPCError({ code: "NOT_FOUND", message: "Conversation not found" });
+
+      // Save user message
+      await addMessage({
+        conversationId: input.conversationId,
+        userId: ctx.user.id,
+        role: "user",
+        content: input.userContent,
+      });
+
+      // Parse focus for confidence calculation
+      const focusModes = input.focus.split(",").filter(Boolean);
+      const primaryFocus = (focusModes[0] || "general") as FocusMode;
+      const isFinancial = needsFinancialDisclaimer(input.assistantContent, primaryFocus);
+
+      // Calculate confidence
+      const confidence = calculateConfidence({
+        hasRAGContext: false,
+        hasSuitability: ctx.user.suitabilityCompleted || false,
+        focus: primaryFocus,
+        isFinancialAdvice: isFinancial,
+        responseLength: input.assistantContent.length,
+      });
+
+      let complianceStatus: "approved" | "pending" | "flagged" = "approved";
+      if (isFinancial && confidence < 0.6) complianceStatus = "flagged";
+      else if (isFinancial && confidence < 0.85) complianceStatus = "pending";
+
+      // Save assistant message (the streamed content)
+      const assistantMsg = await addMessage({
+        conversationId: input.conversationId,
+        userId: ctx.user.id,
+        role: "assistant",
+        content: input.assistantContent,
+        confidenceScore: confidence,
+        complianceStatus,
+        metadata: { focus: input.focus, mode: input.mode, streamed: true },
+      });
+
+      // Track event (non-blocking)
+      trackEvent({
+        userId: ctx.user.id,
+        eventType: "chat_message",
+        featureKey: "chat",
+        metadata: { focus: input.focus, mode: input.mode, streamed: true },
+      }).catch(() => {});
+
+      // Auto-generate title for new conversations (non-blocking)
+      const history = await getConversationMessages(input.conversationId);
+      if (history.length <= 2) {
+        (async () => {
+          try {
+            const titleResp = await contextualLLM({
+              userId: ctx.user.id,
+              contextType: "chat",
+              messages: [
+                { role: "system", content: "Generate a short title (max 6 words) for this conversation. Return ONLY the title, nothing else." },
+                { role: "user", content: input.userContent.substring(0, 500) },
+              ],
+            });
+            const title = typeof titleResp.choices[0]?.message?.content === "string"
+              ? titleResp.choices[0].message.content.replace(/["']/g, "").substring(0, 100)
+              : "New Conversation";
+            await updateConversationTitle(input.conversationId, ctx.user.id, title);
+          } catch { /* title generation is optional */ }
+        })();
+      }
+
+      // Memory extraction (non-blocking)
+      (async () => {
+        try {
+          const extracted = await extractMemoriesFromMessage(ctx.user.id, input.userContent, input.assistantContent);
+          if (extracted.length > 0) await saveExtractedMemories(ctx.user.id, extracted);
+        } catch { /* memory extraction is optional */ }
+      })();
+
+      // Generate follow-up suggestions
+      let followUpSuggestions: string[] = [];
+      try {
+        const sugResp = await contextualLLM({
+          userId: ctx.user.id,
+          contextType: "chat",
+          messages: [
+            { role: "system", content: "Based on this conversation, generate exactly 3 short follow-up questions the user might want to ask next. Each should be 5-12 words. Return ONLY a JSON object with a \"suggestions\" key containing an array of 3 strings." },
+            { role: "user", content: input.userContent.substring(0, 300) },
+            { role: "assistant", content: input.assistantContent.substring(0, 500) },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "follow_up_suggestions",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  suggestions: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "3 follow-up question suggestions",
+                  },
+                },
+                required: ["suggestions"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const rawContent = sugResp.choices[0]?.message?.content;
+        const parsed = JSON.parse(typeof rawContent === "string" ? rawContent : "{}");
+        if (Array.isArray(parsed.suggestions)) {
+          followUpSuggestions = parsed.suggestions.slice(0, 3);
+        }
+      } catch { /* follow-up suggestions are optional */ }
+
+      return {
+        id: assistantMsg.id,
+        content: input.assistantContent,
+        confidenceScore: confidence,
+        complianceStatus,
+        followUpSuggestions,
+      };
+    }),
+
   send: protectedProcedure
     .input(z.object({
       conversationId: z.number(),

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Bell, BellRing, Check, CheckCheck, X, Zap, Brain, Shield, TrendingUp, Radio, Settings2, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -64,29 +65,59 @@ export function NotificationBell({
 }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<string | null>(null);
-  const [openDirection, setOpenDirection] = useState<"down" | "up">("down");
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const panelRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
 
-  // Determine whether to open upward or downward based on available space
-  const calculateDirection = useCallback(() => {
+  // Calculate fixed position for the panel based on bell button location
+  const calculatePosition = useCallback(() => {
     if (!bellRef.current) return;
     const rect = bellRef.current.getBoundingClientRect();
+    const panelWidth = 360;
+    const panelMaxHeight = 480;
+    const margin = 8;
+
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const panelHeight = 480; // approximate max panel height
-    // Open upward if not enough space below but enough above
-    if (spaceBelow < panelHeight && spaceAbove > spaceBelow) {
-      setOpenDirection("up");
+
+    // Horizontal: try to align left edge with bell, but keep on screen
+    let left = rect.left;
+    if (left + panelWidth > window.innerWidth - 16) {
+      left = window.innerWidth - panelWidth - 16;
+    }
+    if (left < 16) left = 16;
+
+    // Vertical: prefer opening upward since bell is at bottom of sidebar
+    if (spaceAbove > spaceBelow && spaceAbove > 200) {
+      // Open upward
+      setPanelStyle({
+        position: "fixed",
+        bottom: window.innerHeight - rect.top + margin,
+        left,
+        width: panelWidth,
+        maxHeight: Math.min(panelMaxHeight, spaceAbove - 16),
+        zIndex: 9999,
+      });
     } else {
-      setOpenDirection("down");
+      // Open downward
+      setPanelStyle({
+        position: "fixed",
+        top: rect.bottom + margin,
+        left,
+        width: panelWidth,
+        maxHeight: Math.min(panelMaxHeight, spaceBelow - 16),
+        zIndex: 9999,
+      });
     }
   }, []);
 
   // Close on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+      if (
+        panelRef.current && !panelRef.current.contains(e.target as Node) &&
+        bellRef.current && !bellRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -107,9 +138,21 @@ export function NotificationBell({
     }
   }, [open]);
 
+  // Recalculate position on scroll/resize while open
+  useEffect(() => {
+    if (!open) return;
+    const recalc = () => calculatePosition();
+    window.addEventListener("resize", recalc);
+    window.addEventListener("scroll", recalc, true);
+    return () => {
+      window.removeEventListener("resize", recalc);
+      window.removeEventListener("scroll", recalc, true);
+    };
+  }, [open, calculatePosition]);
+
   const handleToggle = () => {
     if (!open) {
-      calculateDirection();
+      calculatePosition();
     }
     setOpen(!open);
   };
@@ -123,17 +166,172 @@ export function NotificationBell({
     return acc;
   }, {} as Record<string, number>);
 
-  // Position classes based on direction
-  const panelPositionClasses = openDirection === "up"
-    ? "bottom-full mb-2 right-0"
-    : "top-full mt-2 right-0";
+  const panel = open ? (
+    <div
+      ref={panelRef}
+      style={panelStyle}
+      className="bg-popover text-popover-foreground border border-border rounded-xl shadow-2xl shadow-black/30 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 flex flex-col"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
+          {unreadCount > 0 && (
+            <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+              {unreadCount} new
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          {unreadCount > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMarkAllAsRead}>
+                  <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Mark all as read</TooltipContent>
+            </Tooltip>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Close</TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
 
-  const animationClass = openDirection === "up"
-    ? "animate-in fade-in slide-in-from-bottom-2 duration-200"
-    : "animate-in fade-in slide-in-from-top-2 duration-200";
+      {/* Filter Tabs */}
+      {notifications.length > 0 && (
+        <div className="flex items-center gap-1 px-3 py-2 border-b border-border overflow-x-auto shrink-0">
+          <button
+            className={`text-[10px] px-2 py-1 rounded-full whitespace-nowrap transition-colors ${
+              !filter ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+            onClick={() => setFilter(null)}
+          >
+            All ({notifications.length})
+          </button>
+          {Object.entries(typeCountMap).map(([type, count]) => {
+            const config = TYPE_CONFIG[type];
+            return (
+              <button
+                key={type}
+                className={`text-[10px] px-2 py-1 rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${
+                  filter === type ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+                onClick={() => setFilter(filter === type ? null : type)}
+              >
+                {config?.label || type} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Notification List */}
+      <ScrollArea className="flex-1 min-h-0">
+        {filteredNotifications.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <Bell className="w-8 h-8 mb-3 opacity-30" />
+            <p className="text-sm">No notifications yet</p>
+            <p className="text-xs mt-1 opacity-60">
+              {connected ? "You'll see updates here in real time" : "Reconnecting..."}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {filteredNotifications.map((notification) => {
+              const typeConfig = TYPE_CONFIG[notification.type] || TYPE_CONFIG.system;
+              const isUnread = !notification.readAt;
+              const priorityClass = PRIORITY_COLORS[notification.priority] || PRIORITY_COLORS.medium;
+
+              return (
+                <button
+                  key={notification.id}
+                  className={`w-full text-left px-4 py-3 transition-colors hover:bg-muted/50 ${
+                    isUnread ? "bg-primary/[0.03]" : ""
+                  }`}
+                  onClick={() => {
+                    if (isUnread) onMarkAsRead(notification.id);
+                    // Navigate for actionable notifications (onboarding items)
+                    const href = (notification.metadata as any)?.href;
+                    if (href && onNavigate) {
+                      onNavigate(href);
+                      setOpen(false);
+                    }
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Type Icon */}
+                    <div className={`mt-0.5 ${typeConfig.color}`}>
+                      {typeConfig.icon}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`text-xs font-medium truncate ${isUnread ? "text-foreground" : "text-muted-foreground"}`}>
+                          {notification.title}
+                        </span>
+                        {isUnread && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                        {notification.body}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full border ${priorityClass}`}>
+                          {notification.priority}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/60">
+                          {timeAgo(notification.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Read indicator */}
+                    {isUnread && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="mt-1 p-1 rounded hover:bg-muted">
+                            <Check className="w-3 h-3 text-muted-foreground" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>Mark as read</TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </ScrollArea>
+
+      {/* Footer */}
+      {notifications.length > 0 && (
+        <div className="flex items-center justify-between px-4 py-2 border-t border-border shrink-0">
+          <span className="text-[10px] text-muted-foreground">
+            {notifications.length} notification{notifications.length !== 1 ? "s" : ""}
+          </span>
+          <button
+            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            onClick={onClear}
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+    </div>
+  ) : null;
 
   return (
-    <div className="relative" ref={panelRef}>
+    <>
       {/* Bell Button */}
       <Tooltip>
         <TooltipTrigger asChild>
@@ -169,166 +367,8 @@ export function NotificationBell({
         </TooltipContent>
       </Tooltip>
 
-      {/* Dropdown Panel */}
-      {open && (
-        <div className={`absolute ${panelPositionClasses} w-[360px] max-w-[calc(100vw-2rem)] bg-popover border border-border rounded-xl shadow-2xl shadow-black/30 z-50 overflow-hidden ${animationClass}`}>
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
-              {unreadCount > 0 && (
-                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
-                  {unreadCount} new
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              {unreadCount > 0 && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMarkAllAsRead}>
-                      <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Mark all as read</TooltipContent>
-                </Tooltip>
-              )}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
-                    <X className="w-3.5 h-3.5 text-muted-foreground" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Close</TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-
-          {/* Filter Tabs */}
-          {notifications.length > 0 && (
-            <div className="flex items-center gap-1 px-3 py-2 border-b border-border overflow-x-auto">
-              <button
-                className={`text-[10px] px-2 py-1 rounded-full whitespace-nowrap transition-colors ${
-                  !filter ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-                onClick={() => setFilter(null)}
-              >
-                All ({notifications.length})
-              </button>
-              {Object.entries(typeCountMap).map(([type, count]) => {
-                const config = TYPE_CONFIG[type];
-                return (
-                  <button
-                    key={type}
-                    className={`text-[10px] px-2 py-1 rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${
-                      filter === type ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                    }`}
-                    onClick={() => setFilter(filter === type ? null : type)}
-                  >
-                    {config?.label || type} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Notification List */}
-          <ScrollArea className="max-h-[400px]">
-            {filteredNotifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Bell className="w-8 h-8 mb-3 opacity-30" />
-                <p className="text-sm">No notifications yet</p>
-                <p className="text-xs mt-1 opacity-60">
-                  {connected ? "You'll see updates here in real time" : "Reconnecting..."}
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {filteredNotifications.map((notification) => {
-                  const typeConfig = TYPE_CONFIG[notification.type] || TYPE_CONFIG.system;
-                  const isUnread = !notification.readAt;
-                  const priorityClass = PRIORITY_COLORS[notification.priority] || PRIORITY_COLORS.medium;
-
-                  return (
-                    <button
-                      key={notification.id}
-                      className={`w-full text-left px-4 py-3 transition-colors hover:bg-muted/50 ${
-                        isUnread ? "bg-primary/[0.03]" : ""
-                      }`}
-                      onClick={() => {
-                        if (isUnread) onMarkAsRead(notification.id);
-                        // Navigate for actionable notifications (onboarding items)
-                        const href = (notification.metadata as any)?.href;
-                        if (href && onNavigate) {
-                          onNavigate(href);
-                          setOpen(false);
-                        }
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Type Icon */}
-                        <div className={`mt-0.5 ${typeConfig.color}`}>
-                          {typeConfig.icon}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className={`text-xs font-medium ${isUnread ? "text-foreground" : "text-muted-foreground"}`}>
-                              {notification.title}
-                            </span>
-                            {isUnread && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                            {notification.body}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full border ${priorityClass}`}>
-                              {notification.priority}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground/60">
-                              {timeAgo(notification.createdAt)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Read indicator */}
-                        {isUnread && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="mt-1 p-1 rounded hover:bg-muted">
-                                <Check className="w-3 h-3 text-muted-foreground" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>Mark as read</TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </ScrollArea>
-
-          {/* Footer */}
-          {notifications.length > 0 && (
-            <div className="flex items-center justify-between px-4 py-2 border-t border-border">
-              <span className="text-[10px] text-muted-foreground">
-                {notifications.length} notification{notifications.length !== 1 ? "s" : ""}
-              </span>
-              <button
-                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                onClick={onClear}
-              >
-                Clear all
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+      {/* Portal the dropdown to document.body so it escapes sidebar overflow */}
+      {panel && createPortal(panel, document.body)}
+    </>
   );
 }
