@@ -1,0 +1,19 @@
+{
+  "project": "stewardly",
+  "created": "2026-04-04T19:48:10.140Z",
+  "last_updated": "2026-04-04T19:48:10.140Z",
+  "automation_tier": "manual",
+  "safety_sensitive": true,
+  "improvements": [],
+  "failed_approaches": [],
+  "regressions": [],
+  "convergence_history": [],
+  "branches": [],
+  "graduation_history": {
+    "cycles_completed": 0,
+    "false_convergences": 0,
+    "regressions_detected": 0,
+    "regressions_missed": 0,
+    "judge_scores": []
+  }
+}

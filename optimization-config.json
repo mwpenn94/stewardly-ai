@@ -1,0 +1,37 @@
+{
+  "project": "stewardly",
+  "automation_tier": "manual",
+  "convergence": {
+    "min_improvement_delta": 0.02,
+    "target_quality_score": 9,
+    "max_passes": 7,
+    "stagnation_window": 2,
+    "regression_tolerance": 0,
+    "novelty_threshold": 3,
+    "cost_ratio_ceiling": 5
+  },
+  "divergence": {
+    "enabled": true,
+    "max_active_branches": 3,
+    "temperature_schedule": "adaptive",
+    "initial_temperature": 1,
+    "min_temperature": 0.1,
+    "cooling_rate": 0.15,
+    "divergence_budget": 0.3,
+    "auto_prune_after_passes": 3
+  },
+  "graduation": {
+    "manual_to_semi": {
+      "min_cycles": 10,
+      "max_false_convergence_rate": 0.05,
+      "min_regression_detection_rate": 0.95,
+      "min_kappa": 0.7
+    },
+    "semi_to_auto": {
+      "min_cycles": 20,
+      "max_regression_rate": 0.02,
+      "min_judge_kappa": 0.8,
+      "min_convergence_accuracy": 0.95
+    }
+  }
+}

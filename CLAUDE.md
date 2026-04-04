@@ -1,91 +1,66 @@
-# Stewardly AI — Claude Code Instructions
+# Stewardly — Recursive Optimization Project
 
-## Project
-Full-stack TypeScript financial advisory platform. React 19 + Express + tRPC + MySQL (TiDB Cloud) + Drizzle ORM.
+## Overview
+5-layer financial advisory AI platform. Reference architecture from which shared packages (@platform/intelligence, @platform/config) are extracted for Atlas, AEGIS, and Sovereign.
 
-## Workflow Orchestrator
-Task tracking lives in `.workflow/_status.json`. Use the orchestrator CLI:
+## Stack
+TypeScript, tRPC, Drizzle ORM, TiDB, React 19
+62 pages, 262 tables, 1,746 tests, 174 services
+Current state: ~70% deep, 20% partial, 10% scaffolded
 
-```bash
-node orchestrate.js init                      # Initialize
-node orchestrate.js add "task" --phase P      # Add task
-node orchestrate.js start <id>                # Begin work
-node orchestrate.js done <id> --note "..."    # Complete
-node orchestrate.js fail <id> --note "..."    # Mark failed
-node orchestrate.js block <id> --note "..."   # Mark blocked
-node orchestrate.js list                      # List all
-node orchestrate.js summary                   # Status overview
-node orchestrate.js export > backup.json      # Backup state
-node orchestrate.js import backup.json        # Restore state
-node orchestrate.js log "message"             # Activity log
-```
+## Commands
+`node toolkit.js init stewardly --safety` — Initialize (run once)
+`node toolkit.js verify` — Pre-pass ledger check
+`node toolkit.js snapshot <N>` — Save pre-pass state
+`node toolkit.js score <N> "<6 scores>" <type> <novelty>` — Record scores
+`node toolkit.js suggest` — Get AI-recommended next pass type
+`node toolkit.js fail "<desc>"` — Log failed approach (prevents re-attempt)
+`node toolkit.js check-gaming` — Detect evaluation gaming (every 3rd pass)
+`node toolkit.js status` — Full dashboard
+`node toolkit.js diverge <name>` — Create branch
+`node toolkit.js converge <name>` — Merge winning branch
+`node toolkit.js prune <name> "<reason>"` — Reject branch with decision record
 
-Periodically export `_status.json` to mitigate session resets.
+## Workflow (every pass)
+`node toolkit.js verify && node toolkit.js snapshot <N>`
+Execute the pass (see optimization prompt below)
+`node toolkit.js score <N> "<C,A,D,N,Ac,R>" <type> <novelty>`
+If approach failed: `node toolkit.js fail "<what failed and why>"`
+If branch work: `node toolkit.js diverge|converge|prune` as needed
+Every 3rd pass: `node toolkit.js check-gaming`
 
-## Key Commands
-```bash
-pnpm run dev          # Dev server (tsx watch)
-pnpm run build        # Production build (Vite + esbuild)
-pnpm run check        # TypeScript type check
-pnpm test             # Run vitest (2,142 passing, 108 need DB)
-pnpm run db:push      # Drizzle generate + migrate
-pnpm run db:deploy-missing  # Deploy 131 missing tables
-```
+## Known Gaps
+main `chat.send` bypasses `contextualLLM` (38 raw invokeLLM calls)
+`graduatedAutonomy` uses in-memory Map (resets on restart)
+7-stage workflow engine doesn't exist (workflowRouter is onboarding checklist)
+Tool calling is single-turn only — no ReAct loop
 
-## Architecture
-- **Client**: `client/src/` — React 19, Tailwind 4, shadcn/ui, Wouter routing
-- **Server**: `server/` — Express 4, tRPC 11, 57 routers, 116 services
-- **Shared**: `shared/` — Types, constants, errors
-- **Schema**: `drizzle/schema.ts` — 270 tables, Drizzle ORM
-- **Tests**: `server/**/*.test.ts` — 85 files, vitest
-- **Shared Intelligence**: `server/shared/` — contextualLLM, config, streaming, engine, guardrails, telemetry, events, tenant
+## Extraction Targets
+contextualLLM (deepContextAssembler, adaptivePrompts, promptCascade)
+memoryEngine (semanticCache, conversationMemory, entityExtraction)
+aiToolsRegistry (toolDefinitions, toolCalling, resultIntegration)
+graduatedAutonomy (autonomyLevels, permissionGating, escalation)
+adaptiveRateManagement (rateLimiting, llmFailover, costTracking)
+qualityScoring (replace hardcoded 0.8 scores with LLM-as-judge)
 
-## Database
-- TiDB Cloud (MySQL-compatible), connection via `DATABASE_URL` env var
-- 131 of 270 tables deployed; migration ready at `drizzle/0007_deploy_missing_tables.sql`
-- IP-whitelisted to Manus infrastructure
+## Safety
+This is a SAFETY-SENSITIVE project (financial advisory). Max 3 consecutive passes without human verification. All changes to recommendation logic require audit trail.
 
-## Intelligence Layer
-- **contextualLLM**: RAG-enabled LLM wrapper with deep context injection from 40+ sources
-- **Guardrails**: PII screening (SSN, CC, phone, DOB) + injection detection on every LLM call
-- **5-Layer Config**: platform → organization → manager → professional → user (deep merge)
-- **Graduated Autonomy**: DB-backed via `agent_autonomy_levels`, write-through cache, default fallback
-- **ReAct Loop**: Multi-turn tool calling with trace logging in `reasoning_traces`
-- **Improvement Engine**: Signal detection on 6h schedule, anti-regression checks
-- **SSE Streaming**: POST `/api/chat/stream` with token/done/error events
-- **Memory Engine**: DB-backed with 6 categories, episodic summaries, context injection
-- **Event Bus**: Typed events (prompt.scored, compliance.flagged, goal.completed)
-- **OpenTelemetry**: GenAI semantic conventions, OTLP export when configured
-- **MCP Server**: 6 financial tools at `/mcp/sse` and `/mcp/call`
+## Custom Domain Passes
+When working on client-facing features, also run these:
 
-## Security (Audit v4 Applied + Hardened)
-- Session: 24h expiry, sameSite=lax, httpOnly cookies
-- Security headers: CSP with per-request nonces (no unsafe-inline), HSTS, X-Frame-Options
-- Rate limiting: 100 req/15min global, 5/15min auth, 20/15min sensitive tRPC
-- Body limit: 5MB default
-- CORS: ALLOWED_ORIGINS required in production (fails fast if missing)
-- Encryption: AES-256-GCM, production guard on missing keys
-- RBAC: org-role checks via `userOrganizationRoles` table
-- Audit: SHA-256 hash chain logging, DSAR data export
-- Guardrails: PII + injection screening on all LLM I/O
-- Multi-tenant: tenantId in tRPC context via AsyncLocalStorage
+**Compliance pass** — Check: SEC/FINRA requirements for automated advice, suitability standards, disclosure requirements, record-keeping (all recommendations logged and auditable?), data privacy (PII, SOC 2, encryption at rest), AML (transaction monitoring, KYC). Output: compliance gap register with regulatory citation.
 
-## Production Infrastructure
-- **Docker**: Multi-stage Dockerfile (Alpine, non-root user, HEALTHCHECK)
-- **CI/CD**: GitHub Actions (type check + test + Docker build)
-- **Health Probes**: GET `/health` (liveness) + GET `/ready` (readiness w/ DB check)
-- **Error Tracking**: Sentry (optional, dynamic import, no build dep)
-- **Observability**: Pino structured JSON logging + OpenTelemetry (optional)
+**Fiduciary pass** — Check: Does system recommend lowest-cost when equivalent? Does graduated autonomy prevent actions against client interest? Are conflicts visible and managed? Can client challenge a recommendation? Output: fiduciary alignment score per capability.
 
-## Sensitive Files
-- `.manus/db/` — Contains DB credentials in query logs (gitignored, removed from index)
-- `.env` — Never commit (gitignored)
-- `server/services/encryption.ts` — Hardcoded dev fallback key, guarded in production
+**Cost pass** — Check: Token consumption per operation, semantic cache hit rates, cost per interaction, cost scaling at 10x/100x, provider cost comparison for routing. Output: cost model with projections + optimization recommendations.
 
-## Audit Documentation
-- `task_plan.md` — Audit goal, phases, key questions, errors
-- `findings.md` — All findings with decisions
-- `progress.md` — Action log with test/build output
-- `AUDIT_PROGRESS.md` — Checklist status
-- `audit-action-items.md` — All items with completion status
-- `db-schema-drift.md` — 131 missing tables analysis
+## Recursive Optimization Prompt
+Apply the Universal Holistic Optimization Prompt v4 to this project.
+Starting temperature: 0.5 (Mid-stage maturity + Technical type)
+See @docs/Universal_Holistic_Optimization_Prompt_v4.md for the complete prompt
+When temperature drops and no alternatives explored yet, trigger Exploration pass
+Use Sequential Halving for branch resolution (drop weakest first)
+Score DIVERSITY separately from QUALITY when comparing branches
+Log failed approaches with `node toolkit.js fail`
+SCORING BIAS: Self-scores inflate by 0.5-0.7 points. Err conservative.
