@@ -340,8 +340,20 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
         </Tooltip>
       )}
 
-      {/* Portal the dropdown to document.body so it escapes sidebar overflow */}
-      {panel && createPortal(panel, document.body)}
+      {/* Portal: backdrop overlay + dropdown panel */}
+      {panel && createPortal(
+        <>
+          {/* Transparent backdrop blocks sidebar tooltips and hover interactions */}
+          <div
+            className="fixed inset-0"
+            style={{ zIndex: 9998 }}
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+          {panel}
+        </>,
+        document.body
+      )}
     </>
   );
 }

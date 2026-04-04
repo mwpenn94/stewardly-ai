@@ -3075,3 +3075,6 @@
 - [x] FIX: ChangelogBell panel now uses NotificationBell's bottom-anchored positioning pattern (panelStyle with bottom/top)
 - [x] FIX: Tooltip suppressed when panel is open — no more help text rendering behind the dropdown
 - [x] Updated changelog-update.test.ts — 13 tests (added tooltip suppression + positioning pattern checks)
+
+## Bug Fix — Sidebar Tooltips Behind Panels (2026-04-04)
+- [x] FIX: Added transparent backdrop overlay (z-9998) to both ChangelogBell and NotificationBell portals — blocks sidebar tooltips and hover interactions while panels are open
