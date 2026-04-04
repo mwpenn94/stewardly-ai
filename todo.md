@@ -3050,3 +3050,7 @@
 - [x] NotificationBell updated with `onNavigate` prop and "onboarding" type config
 - [x] Write navigation.test.ts — 11 tests for hasMinRole, nav arrays, duplicate detection
 - [x] Write onboarding-notifications.test.ts — 4 tests for checklist→notification transform
+
+## Deployment Fix — ALLOWED_ORIGINS (2026-04-03)
+- [x] FIX: Set ALLOWED_ORIGINS env variable for production (stewardly.manus.space, wealthai-gakeferp.manus.space)
+- [x] Write allowed-origins.test.ts — 2 tests validating env is set and contains valid URLs
