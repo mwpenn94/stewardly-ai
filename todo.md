@@ -3064,3 +3064,9 @@
 - [x] FIX: Notification dropdown panel clipped by sidebar overflow — now uses createPortal with fixed positioning
 - [x] FIX: Chat audio responses render without text — root cause: sendMutation regenerated AI response. Added persistStreamed procedure to save streamed content directly
 - [x] Write bugfix-streaming-notification.test.ts — 13 tests for both fixes
+
+## What's New / Changelog Update (2026-04-04)
+- [x] Add new changelog release v2026.04.04 to WhatsNewModal.tsx (8 entries: 4 features, 1 improvement, 2 fixes, 1 security)
+- [x] Seed 8 changelog entries into platform_changelog table via seed-changelog.mjs
+- [x] Fix ChangelogBell dropdown clipping — now uses createPortal with fixed positioning
+- [x] Write changelog-update.test.ts — 11 tests for data and portal fix

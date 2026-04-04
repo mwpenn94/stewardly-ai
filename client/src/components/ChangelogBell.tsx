@@ -1,11 +1,12 @@
 /**
  * Changelog Notification Bell
  * 
- * Shows a bell icon with unread badge in the sidebar.
+ * Shows a megaphone icon with unread badge in the sidebar.
  * Clicking opens a dropdown feed of platform updates.
- * Powered by the Exponential Engine's changelog system.
+ * Uses createPortal with fixed positioning to escape sidebar overflow.
  */
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
@@ -32,8 +33,52 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
   const { user } = useAuth();
   const isGuest = !user || user.authTier === "anonymous";
   const [isOpen, setIsOpen] = useState(false);
+  const bellRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
+
+  // ── Position state for portal ──────────────────────────────────
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number; openUp: boolean }>({
+    top: 0, left: 0, openUp: true,
+  });
+
+  const recalcPosition = useCallback(() => {
+    if (!bellRef.current) return;
+    const rect = bellRef.current.getBoundingClientRect();
+    const panelHeight = 480;
+    const panelWidth = 320;
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceAbove > spaceBelow;
+
+    let top: number;
+    if (openUp) {
+      top = rect.top - panelHeight - 8;
+      if (top < 8) top = 8;
+    } else {
+      top = rect.bottom + 8;
+    }
+
+    let left = rect.left;
+    if (left + panelWidth > window.innerWidth - 8) {
+      left = window.innerWidth - panelWidth - 8;
+    }
+    if (left < 8) left = 8;
+
+    setPanelPos({ top, left, openUp });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    recalcPosition();
+    const onResize = () => recalcPosition();
+    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onResize, true);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onResize, true);
+    };
+  }, [isOpen, recalcPosition]);
 
   // Guest: track which changelog IDs have been "read" in localStorage
   const [guestReadIds, setGuestReadIds] = useState<Set<number>>(() => {
@@ -83,17 +128,27 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
     },
   });
 
-  // Close on outside click
+  // Close on outside click + Escape
   useEffect(() => {
+    if (!isOpen) return;
     function handleClickOutside(e: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        panelRef.current && !panelRef.current.contains(target) &&
+        bellRef.current && !bellRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setIsOpen(false);
     }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, [isOpen]);
 
   const entriesRaw = feedQuery.data?.entries || [];
@@ -108,10 +163,11 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
     : entriesRaw;
 
   return (
-    <div className="relative" ref={panelRef}>
+    <>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            ref={bellRef}
             onClick={() => setIsOpen(!isOpen)}
             className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
               isOpen ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -130,9 +186,18 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
         </TooltipContent>
       </Tooltip>
 
-      {/* Dropdown Feed Panel */}
-      {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-80 max-h-[480px] bg-popover text-popover-foreground border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+      {/* Dropdown Feed Panel — portaled to document.body */}
+      {isOpen && createPortal(
+        <div
+          ref={panelRef}
+          style={{
+            position: "fixed",
+            top: panelPos.top,
+            left: panelPos.left,
+            zIndex: 9999,
+          }}
+          className="w-80 max-h-[480px] bg-popover text-popover-foreground border border-border rounded-xl shadow-xl overflow-hidden"
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
@@ -234,8 +299,9 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
               </div>
             )}
           </ScrollArea>
-        </div>
+        </div>,
+        document.body
       )}
-    </div>
+    </>
   );
 }
