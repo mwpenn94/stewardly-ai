@@ -5,6 +5,7 @@
  * and a request error handler for Express. No-ops gracefully when
  * Sentry is not configured or @sentry/node is not installed.
  */
+import { logger } from "./logger";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let sentryInstance: any = null;
@@ -29,9 +30,9 @@ export async function initSentry(): Promise<void> {
       },
     });
     sentryInstance = Sentry;
-    console.log("[Sentry] Initialized successfully");
+    logger.info({ operation: "sentry.init" }, "Sentry initialized successfully");
   } catch {
-    console.warn("[Sentry] @sentry/node not installed, skipping error tracking");
+    logger.warn({ operation: "sentry.init" }, "@sentry/node not installed, skipping error tracking");
   }
 }
 

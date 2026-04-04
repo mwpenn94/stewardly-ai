@@ -45,8 +45,12 @@ interface ContextualLLMParams {
 export async function contextualLLM(params: ContextualLLMParams) {
   const { userId, contextType = "analysis", query, messages, ...rest } = params;
 
-  // ── Guardrail: screen user input ──────────────────────────────────
-  const userInput = extractQuery(messages);
+  // ── Guardrail: screen ALL user messages, not just the last one ─────
+  const allUserContent = messages
+    .filter(m => m.role === "user")
+    .map(m => typeof m.content === "string" ? m.content : JSON.stringify(m.content))
+    .join(" ");
+  const userInput = allUserContent || extractQuery(messages);
   if (userInput) {
     const inputScreen = screenInput(userInput);
     if (!inputScreen.passed) {

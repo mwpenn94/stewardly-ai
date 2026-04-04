@@ -3,7 +3,7 @@
  * esignature, pdfGenerator, creditBureau, crmAdapter
  */
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
 // ─── eSignature Router ────────────────────────────────────────────────────
@@ -157,7 +157,7 @@ export const creditBureauRouter = router({
 
 // ─── CRM Adapter Router ─────────────────────────────────────────────────
 export const crmRouter = router({
-  sync: protectedProcedure
+  sync: adminProcedure
     .input(z.object({
       provider: z.enum(["wealthbox", "salesforce", "redtail"]),
       direction: z.enum(["push", "pull", "bidirectional"]).default("pull"),

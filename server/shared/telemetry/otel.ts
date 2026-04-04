@@ -21,9 +21,10 @@ export async function initOTel(): Promise<void> {
     provider.addSpanProcessor(new SimpleSpanProcessor(new OTLPTraceExporter()));
     provider.register();
     tracer = api.trace.getTracer("stewardly-ai", "1.0.0");
-    console.log("[OTel] Initialized successfully");
+    // Use process.stderr for pre-logger init messages
+    process.stderr.write("[OTel] Initialized successfully\n");
   } catch {
-    console.warn("[OTel] Packages not installed, tracing disabled");
+    process.stderr.write("[OTel] Packages not installed, tracing disabled\n");
   }
 }
 

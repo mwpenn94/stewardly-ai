@@ -28,19 +28,19 @@ const tools: MCPTool[] = [
       required: ["income", "filingStatus"],
     },
     handler: async (input) => {
-      // Simple tax estimation (no external service dependency)
-      const brackets2024 = [
-        { min: 0, max: 11600, rate: 0.10 },
-        { min: 11600, max: 47150, rate: 0.12 },
-        { min: 47150, max: 100525, rate: 0.22 },
-        { min: 100525, max: 191950, rate: 0.24 },
-        { min: 191950, max: 243725, rate: 0.32 },
-        { min: 243725, max: 609350, rate: 0.35 },
-        { min: 609350, max: Infinity, rate: 0.37 },
+      // Simple tax estimation — 2026 projected brackets (inflation-adjusted)
+      const brackets2026 = [
+        { min: 0, max: 12200, rate: 0.10 },
+        { min: 12200, max: 49550, rate: 0.12 },
+        { min: 49550, max: 105600, rate: 0.22 },
+        { min: 105600, max: 201650, rate: 0.24 },
+        { min: 201650, max: 256050, rate: 0.32 },
+        { min: 256050, max: 640400, rate: 0.35 },
+        { min: 640400, max: Infinity, rate: 0.37 },
       ];
       let remaining = input.income;
       let tax = 0;
-      for (const b of brackets2024) {
+      for (const b of brackets2026) {
         const taxable = Math.min(remaining, b.max - b.min);
         if (taxable <= 0) break;
         tax += taxable * b.rate;

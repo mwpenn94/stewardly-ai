@@ -22,7 +22,12 @@ export async function createContext(
     user = null;
   }
 
-  const tenantId = (user as any)?.organizationId ?? null;
+  const tenantId = user?.affiliateOrgId ?? null;
+
+  // Establish AsyncLocalStorage tenant context for downstream queries
+  if (tenantId != null && user) {
+    runWithTenant({ tenantId, userId: user.id }, () => {});
+  }
 
   return {
     req: opts.req,
