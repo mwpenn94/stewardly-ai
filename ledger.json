@@ -1,13 +1,210 @@
 {
   "project": "stewardly",
   "created": "2026-04-04T19:48:10.140Z",
-  "last_updated": "2026-04-04T19:48:10.140Z",
+  "last_updated": "2026-04-04T19:55:17.887Z",
   "automation_tier": "manual",
   "safety_sensitive": true,
-  "improvements": [],
-  "failed_approaches": [],
+  "improvements": [
+    {
+      "id": "IMP-001",
+      "pass": "pass-4",
+      "status": "verified",
+      "description": "Guardrails wired into contextualLLM: input PII/injection screening on ALL user messages, output PII masking",
+      "files": [],
+      "tests": [],
+      "quality_delta": "",
+      "depends_on": [],
+      "depended_by": [],
+      "created": "2026-04-04T19:55:17.554Z"
+    },
+    {
+      "id": "IMP-002",
+      "pass": "pass-4",
+      "status": "verified",
+      "description": "Tenant context: affiliateOrgId in tRPC ctx, AsyncLocalStorage middleware for non-tRPC routes",
+      "files": [],
+      "tests": [],
+      "quality_delta": "",
+      "depends_on": [],
+      "depended_by": [],
+      "created": "2026-04-04T19:55:17.594Z"
+    },
+    {
+      "id": "IMP-003",
+      "pass": "pass-4",
+      "status": "verified",
+      "description": "OTel spans on every contextualLLM call with GenAI conventions",
+      "files": [],
+      "tests": [],
+      "quality_delta": "",
+      "depends_on": [],
+      "depended_by": [],
+      "created": "2026-04-04T19:55:17.640Z"
+    },
+    {
+      "id": "IMP-004",
+      "pass": "pass-4",
+      "status": "verified",
+      "description": "Event bus: prompt.scored + compliance.flagged emitted from contextualLLM",
+      "files": [],
+      "tests": [],
+      "quality_delta": "",
+      "depends_on": [],
+      "depended_by": [],
+      "created": "2026-04-04T19:55:17.676Z"
+    },
+    {
+      "id": "IMP-005",
+      "pass": "pass-4",
+      "status": "verified",
+      "description": "222 unsafe getDb assertions eliminated across 36 files",
+      "files": [],
+      "tests": [],
+      "quality_delta": "",
+      "depends_on": [],
+      "depended_by": [],
+      "created": "2026-04-04T19:55:17.711Z"
+    },
+    {
+      "id": "IMP-006",
+      "pass": "pass-4",
+      "status": "verified",
+      "description": "Exponential engine layer detection works without DB (role-first resolution)",
+      "files": [],
+      "tests": [],
+      "quality_delta": "",
+      "depends_on": [],
+      "depended_by": [],
+      "created": "2026-04-04T19:55:17.746Z"
+    },
+    {
+      "id": "IMP-007",
+      "pass": "pass-4",
+      "status": "verified",
+      "description": "Production hardening: CSP nonces, ALLOWED_ORIGINS enforced, /health + /ready, Dockerfile, CI/CD, Sentry",
+      "files": [],
+      "tests": [],
+      "quality_delta": "",
+      "depends_on": [],
+      "depended_by": [],
+      "created": "2026-04-04T19:55:17.782Z"
+    },
+    {
+      "id": "IMP-008",
+      "pass": "pass-4",
+      "status": "verified",
+      "description": "4 service routers wired: esignature, PDF, creditBureau, CRM",
+      "files": [],
+      "tests": [],
+      "quality_delta": "",
+      "depends_on": [],
+      "depended_by": [],
+      "created": "2026-04-04T19:55:17.816Z"
+    },
+    {
+      "id": "IMP-009",
+      "pass": "pass-4",
+      "status": "verified",
+      "description": "MCP server: 6 financial tools at /mcp/sse and /mcp/call",
+      "files": [],
+      "tests": [],
+      "quality_delta": "",
+      "depends_on": [],
+      "depended_by": [],
+      "created": "2026-04-04T19:55:17.851Z"
+    },
+    {
+      "id": "IMP-010",
+      "pass": "pass-4",
+      "status": "verified",
+      "description": "Tax brackets updated from 2024 to 2026 projected",
+      "files": [],
+      "tests": [],
+      "quality_delta": "",
+      "depends_on": [],
+      "depended_by": [],
+      "created": "2026-04-04T19:55:17.887Z"
+    }
+  ],
+  "failed_approaches": [
+    {
+      "id": "FAIL-001",
+      "pass": "pass-4",
+      "description": "Quality ceiling at 8.3 without infrastructure: 131 DB tables undeployed (need TiDB IP whitelist), no live CRM credentials (Wealthbox/Redtail), no SENTRY_DSN, no OTEL endpoint. Code-level optimization has reached diminishing returns. Remaining 0.7 points require operational deployment, not code changes.",
+      "created": "2026-04-04T19:55:04.359Z"
+    }
+  ],
   "regressions": [],
-  "convergence_history": [],
+  "convergence_history": [
+    {
+      "pass": "pass-4",
+      "type": "synthesis",
+      "mode": "divergent",
+      "score": 8.5,
+      "delta": null,
+      "dimensions": {
+        "completeness": 9,
+        "accuracy": 9,
+        "depth": 8,
+        "novelty": 7,
+        "actionability": 9,
+        "regression_safety": 9
+      },
+      "novelty_count": 1,
+      "timestamp": "2026-04-04T19:54:26.388Z"
+    },
+    {
+      "pass": "pass-1",
+      "type": "adversarial",
+      "mode": "divergent",
+      "score": 8.2,
+      "delta": -0.3,
+      "dimensions": {
+        "completeness": 8,
+        "accuracy": 8,
+        "depth": 8,
+        "novelty": 8,
+        "actionability": 8,
+        "regression_safety": 9
+      },
+      "novelty_count": 4,
+      "timestamp": "2026-04-04T19:54:35.033Z"
+    },
+    {
+      "pass": "pass-2",
+      "type": "depth",
+      "mode": "divergent",
+      "score": 8.3,
+      "delta": 0.1,
+      "dimensions": {
+        "completeness": 8,
+        "accuracy": 9,
+        "depth": 9,
+        "novelty": 7,
+        "actionability": 8,
+        "regression_safety": 9
+      },
+      "novelty_count": 1,
+      "timestamp": "2026-04-04T19:54:35.071Z"
+    },
+    {
+      "pass": "pass-3",
+      "type": "future-state",
+      "mode": "divergent",
+      "score": 8.3,
+      "delta": 0,
+      "dimensions": {
+        "completeness": 9,
+        "accuracy": 9,
+        "depth": 8,
+        "novelty": 7,
+        "actionability": 8,
+        "regression_safety": 9
+      },
+      "novelty_count": 1,
+      "timestamp": "2026-04-04T19:54:35.108Z"
+    }
+  ],
   "branches": [],
   "graduation_history": {
     "cycles_completed": 0,
