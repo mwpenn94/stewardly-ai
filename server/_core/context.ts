@@ -1,8 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
-import { runWithTenant } from "../shared/tenantContext";
-
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
@@ -22,12 +20,11 @@ export async function createContext(
     user = null;
   }
 
+  // Tenant ID from user's affiliated organization — available in ctx.tenantId
+  // for all tRPC procedures. Use ctx.tenantId in queries to enforce row-level isolation.
+  // AsyncLocalStorage (runWithTenant) is used at the Express middleware level
+  // for non-tRPC routes (SSE streaming, MCP, webhooks).
   const tenantId = user?.affiliateOrgId ?? null;
-
-  // Establish AsyncLocalStorage tenant context for downstream queries
-  if (tenantId != null && user) {
-    runWithTenant({ tenantId, userId: user.id }, () => {});
-  }
 
   return {
     req: opts.req,

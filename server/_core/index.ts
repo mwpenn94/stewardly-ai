@@ -25,6 +25,7 @@ import { sdk } from "./sdk";
 import { initSentry, captureException } from "./sentry";
 import { initOTel } from "../shared/telemetry/otel";
 import { registerMCPEndpoint } from "../mcp/stewardlyServer";
+import { runWithTenant } from "../shared/tenantContext";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -149,6 +150,18 @@ async function startServer() {
   // Configure body parser with size limits
   app.use(express.json({ limit: "5mb" }));
   app.use(express.urlencoded({ limit: "5mb", extended: true }));
+
+  // ─── Tenant Context Middleware (AsyncLocalStorage for non-tRPC routes) ──
+  app.use(async (req, _res, next) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (user?.affiliateOrgId) {
+        return runWithTenant({ tenantId: user.affiliateOrgId, userId: user.id }, () => next());
+      }
+    } catch { /* Auth is optional — proceed without tenant context */ }
+    next();
+  });
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // Guest session auto-provisioning
