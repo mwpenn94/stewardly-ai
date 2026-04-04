@@ -3054,3 +3054,8 @@
 ## Deployment Fix — ALLOWED_ORIGINS (2026-04-03)
 - [x] FIX: Set ALLOWED_ORIGINS env variable for production (stewardly.manus.space, wealthai-gakeferp.manus.space)
 - [x] Write allowed-origins.test.ts — 2 tests validating env is set and contains valid URLs
+
+## Sentry + DB Migration (2026-04-03)
+- [x] Install @sentry/node and wire into Express server for production error tracking
+- [x] Deploy 131 pending database tables from drizzle/0007_deploy_missing_tables.sql (270 total tables)
+- [x] Write tests for Sentry integration and DB table verification (8 tests passing)
