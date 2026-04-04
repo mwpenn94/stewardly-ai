@@ -3050,3 +3050,31 @@
 - [x] NotificationBell updated with `onNavigate` prop and "onboarding" type config
 - [x] Write navigation.test.ts — 11 tests for hasMinRole, nav arrays, duplicate detection
 - [x] Write onboarding-notifications.test.ts — 4 tests for checklist→notification transform
+
+## Deployment Fix — ALLOWED_ORIGINS (2026-04-03)
+- [x] FIX: Set ALLOWED_ORIGINS env variable for production (stewardly.manus.space, wealthai-gakeferp.manus.space)
+- [x] Write allowed-origins.test.ts — 2 tests validating env is set and contains valid URLs
+
+## Sentry + DB Migration (2026-04-03)
+- [x] Install @sentry/node and wire into Express server for production error tracking
+- [x] Deploy 131 pending database tables from drizzle/0007_deploy_missing_tables.sql (270 total tables)
+- [x] Write tests for Sentry integration and DB table verification (8 tests passing)
+
+## Bug Fix — Notification Panel (2026-04-03)
+- [x] FIX: Notification dropdown panel clipped by sidebar overflow — now uses createPortal with fixed positioning
+- [x] FIX: Chat audio responses render without text — root cause: sendMutation regenerated AI response. Added persistStreamed procedure to save streamed content directly
+- [x] Write bugfix-streaming-notification.test.ts — 13 tests for both fixes
+
+## What's New / Changelog Update (2026-04-04)
+- [x] Add new changelog release v2026.04.04 to WhatsNewModal.tsx (8 entries: 4 features, 1 improvement, 2 fixes, 1 security)
+- [x] Seed 8 changelog entries into platform_changelog table via seed-changelog.mjs
+- [x] Fix ChangelogBell dropdown clipping — now uses createPortal with fixed positioning
+- [x] Write changelog-update.test.ts — 11 tests for data and portal fix
+
+## Bug Fix — ChangelogBell Positioning (2026-04-04)
+- [x] FIX: ChangelogBell panel now uses NotificationBell's bottom-anchored positioning pattern (panelStyle with bottom/top)
+- [x] FIX: Tooltip suppressed when panel is open — no more help text rendering behind the dropdown
+- [x] Updated changelog-update.test.ts — 13 tests (added tooltip suppression + positioning pattern checks)
+
+## Bug Fix — Sidebar Tooltips Behind Panels (2026-04-04)
+- [x] FIX: Added transparent backdrop overlay (z-9998) to both ChangelogBell and NotificationBell portals — blocks sidebar tooltips and hover interactions while panels are open

@@ -13,7 +13,7 @@ import {
 
 // ── Changelog entries — newest first ──────────────────────────────────
 
-export const CURRENT_VERSION = "2026.04.01";
+export const CURRENT_VERSION = "2026.04.04";
 
 type ChangeCategory = "feature" | "fix" | "improvement" | "security";
 
@@ -39,6 +39,69 @@ export const CATEGORY_STYLES: Record<ChangeCategory, { label: string; className:
 };
 
 export const CHANGELOG: ChangelogRelease[] = [
+  {
+    version: "2026.04.04",
+    date: "April 4, 2026",
+    headline: "Production hardening, bug fixes, and infrastructure upgrades",
+    entries: [
+      {
+        category: "feature",
+        title: "Sentry error tracking",
+        description:
+          "Production error monitoring is now active via @sentry/node. Crashes, unhandled rejections, and server errors are automatically captured and reported.",
+        icon: <Shield className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "feature",
+        title: "131 new database tables deployed",
+        description:
+          "Full schema deployment brings the database to 270 tables — unlocking CRM, guardrails, event bus, tenant context, accessible charts, and more service features.",
+        icon: <Zap className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "feature",
+        title: "Shared navigation config",
+        description:
+          "Sidebar navigation is now driven by a single source of truth. Both Chat and AppShell consume the same config — no more drift between pages.",
+        icon: <Layout className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "feature",
+        title: "Mobile swipe gestures",
+        description:
+          "Swipe right from the left edge to open the sidebar, swipe left to close it. Works on all pages for screens under 1024px.",
+        icon: <Globe className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "improvement",
+        title: "Onboarding moved to notifications",
+        description:
+          "The Getting Started checklist has moved from the sidebar widget into the notification bell. Checklist items appear as actionable notifications that navigate to the relevant feature.",
+        icon: <Sparkles className="w-5 h-5 text-blue-400" />,
+      },
+      {
+        category: "fix",
+        title: "Notification panel visibility",
+        description:
+          "Fixed the notification dropdown being clipped by the sidebar. It now renders via a portal with fixed positioning, visible over all content.",
+        icon: <RefreshCw className="w-5 h-5 text-amber-400" />,
+      },
+      {
+        category: "fix",
+        title: "Chat audio text rendering",
+        description:
+          "Fixed streamed responses showing blank text during audio playback. The AI response is now persisted directly instead of being regenerated, and TTS starts immediately.",
+        icon: <RefreshCw className="w-5 h-5 text-amber-400" />,
+      },
+      {
+        category: "security",
+        title: "CORS enforcement",
+        description:
+          "Production CORS is now enforced via ALLOWED_ORIGINS. Only stewardly.manus.space and wealthai-gakeferp.manus.space are permitted.",
+        icon: <Lock className="w-5 h-5 text-purple-400" />,
+      },
+    ],
+  },
   {
     version: "2026.04.01",
     date: "April 1, 2026",
