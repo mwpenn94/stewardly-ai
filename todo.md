@@ -3185,3 +3185,15 @@
 - [ ] Add model preset CRUD (create, read, update, delete custom presets) (future)
 - [x] Verify TS compilation and tests pass (94 files, 2370 tests, 0 errors)
 - [x] Run recursive optimization passes to convergence (4 passes, 2 consecutive clean)
+
+## Seed Scripts Expansion — New Modules
+- [x] seedFeatureFlags.ts — 30 platform-level feature flags (AI, calculators, integrations, compliance, marketing)
+- [x] seedGlossaryTerms.ts — 25 financial glossary terms (insurance, tax, estate, retirement, investing)
+- [x] seedEducationModules.ts — 10 education modules (budgeting, investing, insurance, tax, estate, retirement, debt, credit, real_estate, general)
+- [x] seedContentArticles.ts — 8 SEO-optimized content articles (IUL, estate planning, Social Security, Roth conversions, Medicare, term vs whole, retirement income, tax planning)
+- [x] seedLeadAndAIConfig.ts — Lead capture config (5), propensity models (5), platform AI settings (6), prompt variants (8), fairness test prompts (12), disclaimer versions (6)
+- [x] seedPlatformConfig.ts — Workflow event chains (8), KB sharing defaults (12), compensation brackets (5), ZIP code demographics (10 AZ zips), platform changelog (5), usage budgets (4)
+- [x] seeds/index.ts — Unified seed runner with 5-phase dependency ordering, re-exports all 30 individual seed functions
+- [x] seeds/seeds.test.ts — 19 tests validating all seed module exports and unified runner
+- [x] Fix flaky web search test (buildout-intelligence-extended.test.ts)
+- [x] Full test suite: 97 files, 2,417 tests — ALL PASSING
