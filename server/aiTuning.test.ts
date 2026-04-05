@@ -182,3 +182,93 @@ describe("multiModel presets", () => {
     expect(comprehensive!.perspectives.length).toBe(4);
   });
 });
+
+// ─── MODEL REGISTRY TESTS ──────────────────────────────────────────────────
+import {
+  MODEL_REGISTRY,
+  getEnabledModels,
+  getDefaultModelId,
+  isValidModel,
+  getModelsWithCapability,
+  getModelsByCostTier,
+  getBestModelForTask,
+} from "./shared/config/modelRegistry";
+
+describe("Model Registry", () => {
+  it("should have at least 10 registered models", () => {
+    expect(MODEL_REGISTRY.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it("every model should have required fields", () => {
+    for (const m of MODEL_REGISTRY) {
+      expect(m.id).toBeTruthy();
+      expect(m.displayName).toBeTruthy();
+      expect(m.provider).toBeTruthy();
+      expect(m.costTier).toBeTruthy();
+      expect(m.contextWindow).toBeGreaterThan(0);
+      expect(m.maxOutputTokens).toBeGreaterThan(0);
+      expect(m.bestFor.length).toBeGreaterThan(0);
+      expect(m.capabilities).toBeDefined();
+    }
+  });
+
+  it("should have unique model IDs", () => {
+    const ids = MODEL_REGISTRY.map(m => m.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("getEnabledModels should return a subset of all models", () => {
+    const enabled = getEnabledModels();
+    expect(enabled.length).toBeGreaterThan(0);
+    expect(enabled.length).toBeLessThanOrEqual(MODEL_REGISTRY.length);
+    for (const m of enabled) {
+      expect(m.enabledByDefault).toBe(true);
+    }
+  });
+
+  it("getDefaultModelId should return a valid model ID", () => {
+    const defaultId = getDefaultModelId();
+    expect(isValidModel(defaultId)).toBe(true);
+  });
+
+  it("isValidModel should return false for invalid IDs", () => {
+    expect(isValidModel("nonexistent-model-xyz")).toBe(false);
+  });
+
+  it("getModelsWithCapability should filter correctly", () => {
+    const visionModels = getModelsWithCapability("vision");
+    expect(visionModels.length).toBeGreaterThan(0);
+    for (const m of visionModels) {
+      expect(m.capabilities.vision).toBe(true);
+    }
+  });
+
+  it("getModelsByCostTier should filter correctly", () => {
+    const economyModels = getModelsByCostTier("economy");
+    expect(economyModels.length).toBeGreaterThan(0);
+    for (const m of economyModels) {
+      expect(m.costTier).toBe("economy");
+    }
+  });
+
+  it("getBestModelForTask should return a model for common task types", () => {
+    const chatModel = getBestModelForTask("chat");
+    expect(chatModel).toBeDefined();
+    expect(chatModel!.bestFor).toContain("chat");
+
+    const analysisModel = getBestModelForTask("analysis");
+    expect(analysisModel).toBeDefined();
+  });
+
+  it("should have models from multiple providers", () => {
+    const providers = new Set(MODEL_REGISTRY.map(m => m.provider));
+    expect(providers.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it("should have models across all cost tiers", () => {
+    const tiers = new Set(MODEL_REGISTRY.map(m => m.costTier));
+    expect(tiers.has("economy")).toBe(true);
+    expect(tiers.has("standard")).toBe(true);
+    expect(tiers.has("premium")).toBe(true);
+  });
+});

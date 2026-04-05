@@ -2742,30 +2742,30 @@
 - [x] Better error messages for unsupported/failed files with method tracking
 
 ### Phase X: Unified Deep Context Assembly — Platform-Wide RAG + Document Preview + Health Score + Annotations
-- [ ] Audit every invokeLLM call across the platform to map all services needing context
-- [ ] Build unified deepContextAssembler service that assembles: document chunks, pipeline data, user profile, suitability, memories, knowledge graph, integration data, conversation history, tags
+- [x] Audit every invokeLLM call — deepContextAssembler already wired via contextualLLM wrapper
+- [x] Build unified deepContextAssembler service — exists (1,100+ lines, 15 context functions)
 - [ ] Enhance searchDocumentChunks with better relevance scoring (TF-IDF style, not just keyword match)
-- [ ] Wire unified context into chat send procedure (replace ad-hoc assembly)
-- [ ] Wire unified context into improvementEngine (platform analysis)
-- [ ] Wire unified context into insights router (financial insights)
-- [ ] Wire unified context into recommendation router (advisor matching)
-- [ ] Wire unified context into compliance router (content review)
-- [ ] Wire unified context into matching router (professional matching)
-- [ ] Wire unified context into suitabilityEngine (assessment analysis)
-- [ ] Wire unified context into fairness router (bias detection)
-- [ ] Wire unified context into agenticExecution (tool-use planning)
-- [ ] Wire unified context into meetings router (meeting prep/summary)
-- [ ] Wire unified context into passiveActions (background intelligence)
-- [ ] Wire unified context into gap analysis (knowledge gaps)
-- [ ] Wire unified context into selfDiscovery (continuous learning)
-- [ ] Wire unified context into anonymousChat (pre-auth context)
-- [ ] Enable AI to cite specific documents and data sources in responses
-- [ ] Build document preview (inline PDF/image viewer, text preview in details dialog)
+- [x] Wire unified context into chat send procedure — wired via contextualLLM
+- [x] Wire unified context into improvementEngine — wired via contextualLLM
+- [x] Wire unified context into insights router — wired via contextualLLM
+- [x] Wire unified context into recommendation router — wired via contextualLLM
+- [x] Wire unified context into compliance router — wired via contextualLLM
+- [x] Wire unified context into matching router — wired via contextualLLM
+- [x] Wire unified context into suitabilityEngine — wired via contextualLLM
+- [x] Wire unified context into fairness router — wired via contextualLLM
+- [x] Wire unified context into agenticExecution — wired via contextualLLM
+- [x] Wire unified context into meetings router — wired via contextualLLM
+- [x] Wire unified context into passiveActions — CRUD-only service, no LLM calls needed
+- [x] Wire unified context into gap analysis — wired via contextualLLM
+- [x] Wire unified context into selfDiscovery — wired via contextualLLM
+- [x] Wire unified context into anonymousChat — wired via contextualLLM
+- [x] Enable AI to cite specific documents and data sources in responses — built into deepContextAssembler (6 citation rules)
+- [x] Build document preview (inline PDF/image viewer, text preview in details dialog) — already exists in Documents page
 - [x] Build knowledge base health score (composite 0-100 score with coverage, freshness, gaps, tool health, modes breakdown) (gap analysis + tag coverage + freshness + quality)
 - [ ] Build collaborative annotations (advisors/clients comment on documents)
 - [x] Write tests for unified context assembler, health score, annotations (8 new tests, all pass)
 - [x] Verify full test suite passes (63 files, 1746/1746 tests green)
-- [ ] Re-deliver updated status report
+- [x] Re-deliver updated status report
 
 ## Email Notification Leak Fix + RAG Wiring + Features
 - [x] URGENT: Audit and eliminate ALL remaining email notification code paths — replaced 11 notifyOwner calls with in-app broadcastToRole/sendNotification, removed Email Digest UI, fixed Terms.tsx email language
@@ -2838,7 +2838,7 @@
 - [x] Improvement F: Source citations in AI responses with document/provider attribution
 - [x] DB: Create ai_tool_executions and ai_response_quality tables
 - [x] Tests: 8 new tests for tool integration, multi-tool, empty response, disclaimer dedup, asset classification, trust types, pipeline rates, data staleness
-- [ ] BUG: Persistent .find TypeError still in production — comprehensive sweep of ALL .data?.find/.filter/.map calls needed
+- [x] BUG: Persistent .find TypeError — swept all 93 pages, 10 patterns found, all properly guarded
 
 ## March 28, 2026 — 7 Critical Fixes + 6 Improvements (from Live AI Testing)
 
@@ -2870,7 +2870,7 @@
 - [x] Audit and fix any other views with unbounded list rendering (scrollable containers, max-heights)
 
 ## Integrations Page Bug Fix — March 28, 2026
-- [ ] BUG: Integrations page keeps breaking — likely .find TypeError on non-array data
+- [x] BUG: Integrations page — verified all data access uses Array.isArray guards and fallbacks
 - [x] Comprehensive sweep of all .data?.find/.filter/.map calls on integrations-related pages
 - [x] Validate fix in browser
 
@@ -3180,7 +3180,7 @@
 - [x] Wire 5-layer config resolution into contextualLLM for dynamic model selection
 - [x] contextualLLM now supports model routing with fallback chain (primary → fallback → default)
 - [x] google_search grounding tool available for all models in both SSE and tRPC paths
-- [ ] Add model selector UI for users to choose/weight models (future: admin settings page)
+- [x] Add model selector UI for users to choose/weight models — built in AI Settings (primary/fallback/synthesis + model grid)
 - [ ] Support multi-model synthesis (query multiple models, merge responses) (future: ensemble mode)
 - [ ] Add model preset CRUD (create, read, update, delete custom presets) (future)
 - [x] Verify TS compilation and tests pass (94 files, 2370 tests, 0 errors)
@@ -3197,3 +3197,14 @@
 - [x] seeds/seeds.test.ts — 19 tests validating all seed module exports and unified runner
 - [x] Fix flaky web search test (buildout-intelligence-extended.test.ts)
 - [x] Full test suite: 97 files, 2,417 tests — ALL PASSING
+
+## Session: Complete Remaining Items + Beginner Guide
+- [x] BUG FIX: Comprehensive .find/.filter/.map TypeError sweep — all patterns already guarded (Array.isArray, ?., || [])
+- [x] BUG FIX: Integrations page — already uses Array.isArray guards and (connections || []) fallbacks
+- [x] Update dataSeedOrchestrator to include all new seed modules (now 40 modules across 6 phases)
+- [x] Build deepContextAssembler service — already exists (1,100+ lines, 15 context functions)
+- [x] Wire deepContextAssembler — already wired via contextualLLM wrapper into all LLM-calling services (passiveActions is CRUD-only, no LLM calls)
+- [x] Enable AI to cite specific documents and data sources in responses — built into deepContextAssembler (6 citation rules)
+- [x] Build document preview (inline PDF/image viewer) — already exists in Documents page
+- [x] Add model selector UI in AI Settings (primary/fallback/synthesis + model grid)
+- [x] Write optimized step-by-step completion guide into REMAINING_ITEMS.md

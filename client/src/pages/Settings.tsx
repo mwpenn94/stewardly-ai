@@ -567,6 +567,12 @@ function AITuningSettings() {
   const [activePreset, setActivePreset] = useState("balanced");
   const [weights, setWeights] = useState<Record<string, number>>({});
 
+  // Model selector state
+  const modelsQuery = trpc.aiLayers.getAvailableModels.useQuery();
+  const [primaryModel, setPrimaryModel] = useState("");
+  const [fallbackModel, setFallbackModel] = useState("");
+  const [synthesisModel, setSynthesisModel] = useState("");
+
   useEffect(() => {
     if (prefsQuery.data) {
       const p = prefsQuery.data;
@@ -587,6 +593,16 @@ function AITuningSettings() {
         try {
           const w = typeof p.ensembleWeights === "string" ? JSON.parse(p.ensembleWeights) : p.ensembleWeights;
           if (typeof w === "object" && w) setWeights(w as Record<string, number>);
+        } catch {}
+      }
+      if (p.modelPreferences) {
+        try {
+          const mp = typeof p.modelPreferences === "string" ? JSON.parse(p.modelPreferences) : p.modelPreferences;
+          if (mp && typeof mp === "object") {
+            if ((mp as any).primary) setPrimaryModel((mp as any).primary);
+            if ((mp as any).fallback) setFallbackModel((mp as any).fallback);
+            if ((mp as any).synthesis) setSynthesisModel((mp as any).synthesis);
+          }
         } catch {}
       }
     }
@@ -617,6 +633,11 @@ function AITuningSettings() {
       reasoningTransparency,
       customPromptAdditions: customInstructions || undefined,
       ensembleWeights: Object.keys(weights).length > 0 ? weights : undefined,
+      modelPreferences: (primaryModel || fallbackModel || synthesisModel) ? {
+        primary: primaryModel || undefined,
+        fallback: fallbackModel || undefined,
+        synthesis: synthesisModel || undefined,
+      } : undefined,
     });
   };
 
@@ -851,6 +872,98 @@ function AITuningSettings() {
             </div>
             <Switch checked={crossModelVerify} onCheckedChange={setCrossModelVerify} />
           </div>
+
+          {/* Model Selector */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Brain className="w-4 h-4 text-accent" /> Model Selection
+              </CardTitle>
+              <CardDescription className="text-xs">Choose which AI models handle different task types</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {modelsQuery.isLoading ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-3 h-3 animate-spin" /> Loading models...</div>
+              ) : modelsQuery.data ? (
+                <>
+                  {/* Primary Model */}
+                  <div>
+                    <Label className="text-xs font-medium">Primary Model <TuningTooltip text="The main model used for most responses. Affects quality, speed, and cost." /></Label>
+                    <Select value={primaryModel || modelsQuery.data.defaultModel} onValueChange={setPrimaryModel}>
+                      <SelectTrigger className="mt-1.5 text-xs h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {modelsQuery.data.models.filter(m => m.enabledByDefault).map(m => (
+                          <SelectItem key={m.id} value={m.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{m.displayName}</span>
+                              <Badge variant="outline" className="text-[9px] px-1 py-0">{m.costTier}</Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {(() => {
+                      const sel = modelsQuery.data?.models.find(m => m.id === (primaryModel || modelsQuery.data?.defaultModel));
+                      return sel ? <p className="text-[10px] text-muted-foreground mt-1">{sel.description}</p> : null;
+                    })()}
+                  </div>
+                  {/* Fallback Model */}
+                  <div>
+                    <Label className="text-xs font-medium">Fallback Model <TuningTooltip text="Used when the primary model is unavailable or fails." /></Label>
+                    <Select value={fallbackModel || "gpt-4o-mini"} onValueChange={setFallbackModel}>
+                      <SelectTrigger className="mt-1.5 text-xs h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {modelsQuery.data.models.filter(m => m.enabledByDefault).map(m => (
+                          <SelectItem key={m.id} value={m.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{m.displayName}</span>
+                              <Badge variant="outline" className="text-[9px] px-1 py-0">{m.costTier}</Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Synthesis Model */}
+                  <div>
+                    <Label className="text-xs font-medium">Synthesis Model <TuningTooltip text="Used for multi-perspective synthesis and cross-model verification." /></Label>
+                    <Select value={synthesisModel || "gemini-2.5-pro"} onValueChange={setSynthesisModel}>
+                      <SelectTrigger className="mt-1.5 text-xs h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {modelsQuery.data.models.filter(m => m.enabledByDefault && (m.costTier === "premium" || m.costTier === "reasoning")).map(m => (
+                          <SelectItem key={m.id} value={m.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{m.displayName}</span>
+                              <Badge variant="outline" className="text-[9px] px-1 py-0">{m.costTier}</Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Model Capabilities Grid */}
+                  <div className="mt-2">
+                    <p className="text-[10px] font-medium text-muted-foreground mb-2">Available Models ({modelsQuery.data.enabledModels.length} enabled)</p>
+                    <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto">
+                      {modelsQuery.data.models.filter(m => m.enabledByDefault).map(m => (
+                        <div key={m.id} className={`p-2 rounded-md border text-left transition-all ${
+                          m.id === (primaryModel || modelsQuery.data?.defaultModel)
+                            ? "border-accent bg-accent/10"
+                            : "border-border/50 hover:border-border"
+                        }`}>
+                          <div className="text-[10px] font-medium truncate">{m.displayName}</div>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Badge variant="outline" className="text-[8px] px-1 py-0">{m.provider}</Badge>
+                            <Badge variant="outline" className="text-[8px] px-1 py-0">{m.costTier}</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </CardContent>
+          </Card>
 
           {/* Model Weighting */}
           <div>

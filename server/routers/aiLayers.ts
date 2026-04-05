@@ -456,6 +456,28 @@ export const aiLayersRouter = router({
       };
     }),
 
+  /** Get available LLM models from the model registry for the UI model selector */
+  getAvailableModels: protectedProcedure.query(async () => {
+    const { MODEL_REGISTRY, getEnabledModels, getDefaultModelId } = await import("../shared/config/modelRegistry");
+    const enabled = getEnabledModels();
+    return {
+      models: MODEL_REGISTRY.map(m => ({
+        id: m.id,
+        displayName: m.displayName,
+        description: m.description,
+        provider: m.provider,
+        costTier: m.costTier,
+        contextWindow: m.contextWindow,
+        maxOutputTokens: m.maxOutputTokens,
+        enabledByDefault: m.enabledByDefault,
+        capabilities: m.capabilities,
+        bestFor: m.bestFor,
+      })),
+      enabledModels: enabled.map(m => m.id),
+      defaultModel: getDefaultModelId(),
+    };
+  }),
+
   /** Validate inheritance rules across all 5 layers */
   validateInheritance: protectedProcedure
     .input(z.object({ organizationId: z.number().optional() }))

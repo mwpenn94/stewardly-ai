@@ -17,6 +17,18 @@ import { seedRateProfiles, seedFreshnessRegistry } from "../services/foundationL
 import { seedAnalyticalModels } from "../services/modelEngine";
 import { seedIntegrationProviders, seedCarrierTemplates } from "../services/seedIntegrations";
 
+// ─── Numbered seed files (from GitHub) ──────────────────────────────────────
+import { seed as seedRateLimitProfiles } from "./00-rateLimitProfiles";
+import { seed as seedDataFreshnessRegistry } from "./01-dataFreshnessRegistry";
+import { seed as seedTosClassifications } from "./02-tosClassifications";
+import { seed as seedLeadSources } from "./13-leadSources";
+import { seed as seedPropensityFeatures } from "./14-propensityFeatures";
+import { seed as seedComplianceRules } from "./16-complianceRules";
+import { seed as seedLeadCaptureConfigs } from "./17-leadCaptureConfigs";
+import { seed as seedVerificationBadgeTypes } from "./19-verificationBadgeTypes";
+import { seed as seedHolisticSummaryActions } from "./31-holisticSummaryActions";
+import { seed as seedChannelPilotDefaults } from "./32-channelPilotDefaults";
+
 // ─── New seed modules ───────────────────────────────────────────────────────
 import { seedFeatureFlags } from "./seedFeatureFlags";
 import { seedGlossaryTerms } from "./seedGlossaryTerms";
@@ -97,6 +109,19 @@ export async function runAllSeeds(): Promise<{ results: SeedResult[]; totalRecor
       { name: "Prompt Variants", fn: seedPromptVariants },
       { name: "Fairness Test Prompts", fn: seedFairnessTestPrompts },
       { name: "Disclaimer Versions", fn: seedDisclaimerVersions },
+      { name: "Lead Sources", fn: seedLeadSources },
+      { name: "Propensity Features", fn: seedPropensityFeatures },
+      { name: "Compliance Rules", fn: seedComplianceRules },
+      { name: "Lead Capture Configs (numbered)", fn: seedLeadCaptureConfigs },
+      { name: "Verification Badge Types", fn: seedVerificationBadgeTypes },
+    ],
+    // Phase 6: Platform operations & advanced config
+    [
+      { name: "Rate Limit Profiles (numbered)", fn: seedRateLimitProfiles },
+      { name: "Data Freshness Registry (numbered)", fn: seedDataFreshnessRegistry },
+      { name: "TOS Classifications", fn: seedTosClassifications },
+      { name: "Holistic Summary Actions", fn: seedHolisticSummaryActions },
+      { name: "Channel Pilot Defaults", fn: seedChannelPilotDefaults },
     ],
   ];
 
@@ -105,7 +130,7 @@ export async function runAllSeeds(): Promise<{ results: SeedResult[]; totalRecor
       const start = Date.now();
       try {
         const count = await fn();
-        const inserted = typeof count === "number" ? count : 0;
+        const inserted = (typeof count === "number" && !isNaN(count)) ? count : 0;
         results.push({ module: name, recordsInserted: inserted, durationMs: Date.now() - start, error: null });
         totalRecords += inserted;
       } catch (e: any) {
@@ -134,4 +159,9 @@ export {
   seedPromptVariants, seedFairnessTestPrompts, seedDisclaimerVersions,
   seedWorkflowEventChains, seedKbSharingDefaults, seedCompensationBrackets,
   seedZipCodeDemographics, seedPlatformChangelog, seedUsageBudgets,
+  // Numbered seed files
+  seedRateLimitProfiles, seedDataFreshnessRegistry, seedTosClassifications,
+  seedLeadSources, seedPropensityFeatures, seedComplianceRules,
+  seedLeadCaptureConfigs, seedVerificationBadgeTypes,
+  seedHolisticSummaryActions, seedChannelPilotDefaults,
 };
