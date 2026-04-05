@@ -101,12 +101,15 @@ Note: Check 2 fails on terminology (`amp_engagement`/`ho_domain_trajectory` are 
 | Metric | Value |
 |--------|-------|
 | Baseline tests | 1,746 (pre-audit) |
-| Current tests | 2,250 |
-| Passing | 2,142 |
-| Failing | 108 (all DB-unavailable — TiDB not reachable) |
+| Current tests | 2,343 |
+| Passing | 2,231 |
+| Failing | 112 (all DB-unavailable — TiDB not reachable) |
 | Regressions | **0** (no new failures introduced) |
 | TypeScript errors | **0** |
 | Build status | **Passing** |
+| Database tables | **309** (was 270, +39 business tables) |
+| Server services | **151** (was 116, +35 new service files) |
+| tRPC routers | **65** (was 57, +8 files, 18 registrations) |
 
 ## BUILD-OUT ADDITIONS (April 3, 2026)
 

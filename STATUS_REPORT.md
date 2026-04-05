@@ -2,7 +2,7 @@
 
 **Project:** Stewardly AI (wealthbridge-ai)
 **Architecture:** Full-stack TypeScript — React 19 + Express 4 + tRPC 11 + MySQL (TiDB Cloud) + Drizzle ORM
-**Date:** April 3, 2026
+**Date:** April 5, 2026
 **Branch:** main
 
 ---
@@ -72,12 +72,15 @@
 
 | Metric | Value |
 |--------|-------|
-| Test files | 85 |
-| Tests passing | 2,142 |
-| Tests failing | 108 (all DB-unavailable — no TiDB access in CI) |
-| Total tests | 2,250 |
+| Test files | 94 |
+| Tests passing | 2,231 |
+| Tests failing | 112 (all DB-unavailable — no TiDB access in CI) |
+| Total tests | 2,343 |
 | Build status | Passing |
 | TypeScript errors | 0 |
+| Database tables | 309 |
+| Server services | 151 |
+| tRPC routers | 65 |
 
 ---
 
@@ -96,6 +99,21 @@
 | Sentry | `server/_core/sentry.ts` | Optional error tracking |
 | Health Probes | In `server/_core/index.ts` | `/health` + `/ready` endpoints |
 | Service Routers | `server/routers/serviceRouters.ts` | eSignature, PDF, creditBureau, CRM endpoints |
+| PII Layer | `server/services/pii/` | AES-256-GCM encryption, SHA-256 hashing, CCPA retention sweep |
+| Health Monitor | `server/services/monitoring/` | Cron wrapper with timeouts, data freshness checks |
+| Verification | `server/services/verification/` | 7 credential providers (SEC, FINRA, CFP, etc.) |
+| GoHighLevel CRM | `server/services/crm/gohighlevel.ts` | V2 API: contacts, opportunities, webhooks |
+| Propensity Engine | `server/services/propensity/` | 3-phase scoring, 14 expert models, bias audit, control group |
+| Lead Engine | `server/services/leadEngine/` | Insights, profiler, qualification, distributor, protection score, brief, embed, coaching |
+| Import Engine | `server/services/import/` | CSV/Dripify/Sales Nav parsers, field mapping, validation, orchestrator |
+| Enrichment | `server/services/enrichment/` | Waterfall PDL→Clearbit→Apollo→AI with fair lending compliance |
+| Scraping | `server/services/scraping/` | robots.txt checker, per-domain token bucket rate limiter |
+| Reporting | `server/services/reporting/` | Pipeline health, performance, campaign ROI with snapshots |
+| Planning | `server/services/planning/` | Business plans, weekly AI variance analysis |
+| Premium Finance | `server/services/premiumFinance/` | SOFR via FRED API |
+| SMS-iT | `server/services/smsit/` | Bidirectional sync, TCPA opt-out compliance |
+| SEO | `server/services/seo/` | Dynamic XML sitemap |
+| Email | `server/services/email/` | Bounce handling (hard/soft/complaint) |
 
 ---
 

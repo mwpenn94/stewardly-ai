@@ -5,8 +5,8 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-62 pages, 262 tables, 1,746 tests, 174 services
-Current state: ~70% deep, 20% partial, 10% scaffolded
+76 pages, 309 tables, 2,231 tests passing, 151 services, 65 routers
+Current state: ~80% deep, 15% partial, 5% scaffolded
 
 ## Commands
 `node toolkit.js init stewardly --safety` — Initialize (run once)
@@ -29,19 +29,43 @@ If approach failed: `node toolkit.js fail "<what failed and why>"`
 If branch work: `node toolkit.js diverge|converge|prune` as needed
 Every 3rd pass: `node toolkit.js check-gaming`
 
-## Known Gaps
-main `chat.send` bypasses `contextualLLM` (38 raw invokeLLM calls)
-`graduatedAutonomy` uses in-memory Map (resets on restart)
-7-stage workflow engine doesn't exist (workflowRouter is onboarding checklist)
-Tool calling is single-turn only — no ReAct loop
+## Resolved (formerly Known Gaps)
+- ~~chat.send bypasses contextualLLM~~ → RESOLVED: chat.send uses contextualLLM via ReAct loop
+- ~~graduatedAutonomy in-memory Map~~ → RESOLVED: DB-backed via agent_autonomy_levels + write-through cache
+- ~~Single-turn tool calling~~ → RESOLVED: ReAct multi-turn loop with 5 max iterations + trace logging
 
-## Extraction Targets
-contextualLLM (deepContextAssembler, adaptivePrompts, promptCascade)
-memoryEngine (semanticCache, conversationMemory, entityExtraction)
-aiToolsRegistry (toolDefinitions, toolCalling, resultIntegration)
-graduatedAutonomy (autonomyLevels, permissionGating, escalation)
-adaptiveRateManagement (rateLimiting, llmFailover, costTracking)
-qualityScoring (replace hardcoded 0.8 scores with LLM-as-judge)
+## Known Gaps (current)
+- 131 of 309 DB tables not deployed (migration ready, needs TiDB IP whitelist)
+- 34 seed scripts not yet created (financial data requiring web search verification)
+- 14 new UI pages not yet built (lead pipeline, import, dashboards, community)
+- 28 cron jobs not yet wired (service implementations exist, scheduling pending)
+- CRM credentials not configured (GHL, Wealthbox, Redtail — services ready)
+
+## Intelligence Layer (complete)
+- contextualLLM: RAG-enabled with guardrails (PII + injection screening on all I/O)
+- 5-layer config: platform → organization → manager → professional → user
+- Graduated autonomy: DB-backed with write-through cache, default fallback
+- ReAct loop: multi-turn tool calling with trace logging
+- Improvement engine: signal detection on 6h schedule
+- SSE streaming: POST /api/chat/stream
+- Memory engine: 6 categories, episodic summaries
+- Event bus: prompt.scored, compliance.flagged, goal.completed
+- OpenTelemetry: GenAI spans on every contextualLLM call
+- MCP server: 6 financial tools at /mcp/sse + /mcp/call
+- Multi-tenant: tenantId in tRPC context + AsyncLocalStorage middleware
+
+## Business Domains (new — April 2026 build-out)
+- Lead pipeline: capture, enrichment, propensity scoring, qualification, distribution
+- Propensity: 3-phase scoring (expert → logistic → gradient boosting), 14 segment models, bias auditing
+- Import engine: CSV/Dripify/Sales Nav parsers, field mapping, PII encryption, dedup
+- CRM: GoHighLevel V2 + abstract adapter + Wealthbox + Redtail
+- Verification: 7 providers (SEC, FINRA, CFP, NASBA, NMLS, state bar, NIPR)
+- Reporting: pipeline health, performance, campaign ROI with snapshot persistence
+- Planning: business plans, production actuals, weekly AI variance analysis
+- Community: professional forum with posts and replies
+- Premium finance: SOFR rates via FRED API
+- Financial protection score: 12-dimension consumer suitability
+- Compliance: FINRA 17a-4 communication archive, CAN-SPAM consent, TCPA opt-out
 
 ## Safety
 This is a SAFETY-SENSITIVE project (financial advisory). Max 3 consecutive passes without human verification. All changes to recommendation logic require audit trail.

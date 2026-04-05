@@ -38,19 +38,20 @@ The system is built on a modern TypeScript full-stack architecture with 197,000+
 
 | Metric | Count |
 |--------|-------|
-| Total lines of code | 200,000+ |
-| Source files (non-test) | 920+ |
-| Test files | 85 |
-| Total tests | 2,250 (2,142 passing) |
-| Database tables | 270 |
-| tRPC routers | 57 (880+ procedures) |
+| Total lines of code | 210,000+ |
+| Source files (non-test) | 960+ |
+| Test files | 94 |
+| Total tests | 2,343 (2,231 passing) |
+| Database tables | 309 |
+| tRPC routers | 65 (920+ procedures) |
 | Frontend pages | 76 |
 | Custom components | 43 (+ AccessibleChart) |
 | UI primitives (shadcn) | 53 |
 | Custom hooks | 17 |
-| Server services | 116 |
-| Router modules | 57 (+ main routers.ts) |
+| Server services | 151 |
+| Router modules | 65 (+ main routers.ts) |
 | Shared modules | 12 (intelligence, config, streaming, engine, guardrails, telemetry, events, tenant, MCP) |
+| Business domains | 15 (PII, verification, CRM, propensity, lead engine, import, enrichment, scraping, reporting, planning, premium finance, SMS-iT, SEO, email, monitoring) |
 | NPM dependencies | 88 |
 | Dev dependencies | 28 |
 
