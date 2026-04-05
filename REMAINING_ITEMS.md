@@ -1,7 +1,7 @@
 # Stewardly — Remaining Items to Complete
 
 **Date:** April 5, 2026
-**Current State:** 309 tables, 151 services, 65 routers, 2,231 tests passing, 0 TS errors
+**Current State:** 314 tables, 158 services, 65 routers, 2,249 tests passing, 0 TS errors
 **What's Done:** Intelligence layer (complete), schema (complete), core business services (complete), tRPC routers (complete for built services)
 **What's Left:** Seed data, UI pages, components, remaining service files, webhook routers, cron jobs, web search
 
@@ -202,7 +202,7 @@ Seeds 03, 04, 06, 07, 08, 26, 30 contain financial data that MUST be web-search 
 
 | Priority | Item | Count | Status |
 |----------|------|-------|--------|
-| 1 | Web search tool | 1 file | NOT STARTED |
+| 1 | Web search tool | 1 file | DONE |
 | 2 | UI components | 13 files | NOT STARTED |
 | 3 | UI pages | 14 files | NOT STARTED |
 | 4 | Webhook routers | 3 files | NOT STARTED |

@@ -5762,3 +5762,71 @@ export const escalationHistory = mysqlTable("escalation_history", {
   decidedBy: varchar("decided_by", { length: 50 }),
   decidedAt: timestamp("decided_at").defaultNow(),
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INTELLIGENCE INFRASTRUCTURE — Extended Tables (5 new)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const usageTracking = mysqlTable("usage_tracking", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  operationType: varchar("operation_type", { length: 50 }),
+  model: varchar("model", { length: 100 }),
+  inputTokens: int("input_tokens"),
+  outputTokens: int("output_tokens"),
+  estimatedCost: decimal("estimated_cost", { precision: 8, scale: 6 }),
+  endpoint: varchar("endpoint", { length: 200 }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userDateIdx: index("idx_usage_tracking_user_date").on(table.userId, table.createdAt),
+}));
+
+export const usageBudgets = mysqlTable("usage_budgets", {
+  id: int("id").autoincrement().primaryKey(),
+  scopeType: mysqlEnum("scope_type", ["platform", "organization", "user"]).notNull(),
+  scopeId: int("scope_id").notNull(),
+  dailyQueryLimit: int("daily_query_limit").default(50),
+  monthlyQueryLimit: int("monthly_query_limit").default(1000),
+  monthlyCostCeiling: decimal("monthly_cost_ceiling", { precision: 10, scale: 2 }).default("10.00"),
+  alertThresholdPct: int("alert_threshold_pct").default(80),
+  currentPeriodCost: decimal("current_period_cost", { precision: 10, scale: 2 }).default("0"),
+  currentPeriodQueries: int("current_period_queries").default(0),
+  periodResetAt: timestamp("period_reset_at"),
+});
+
+export const templateOptimizationResults = mysqlTable("template_optimization_results", {
+  id: int("id").autoincrement().primaryKey(),
+  templateId: int("template_id"),
+  model: varchar("model", { length: 100 }),
+  domain: varchar("domain", { length: 50 }),
+  avgScore: decimal("avg_score", { precision: 3, scale: 2 }),
+  sampleCount: int("sample_count"),
+  testedAt: timestamp("tested_at").defaultNow(),
+}, (table) => ({
+  templateModelIdx: index("idx_template_opt_template_model").on(table.templateId, table.model),
+}));
+
+export const responseRatings = mysqlTable("response_ratings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  messageId: int("message_id"),
+  responseType: mysqlEnum("response_type", ["chat", "insight", "brief", "plan", "consensus"]),
+  rating: mysqlEnum("rating_value", ["thumbs_up", "thumbs_down"]),
+  feedbackText: text("feedback_text"),
+  model: varchar("model", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userTypeIdx: index("idx_response_ratings_user_type").on(table.userId, table.responseType),
+}));
+
+export const sharedLinks = mysqlTable("shared_links", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  contentType: mysqlEnum("shared_content_type", ["protection_score", "plan_summary", "calculator_result", "chat_excerpt"]).notNull(),
+  contentId: int("content_id").notNull(),
+  shareToken: varchar("share_token", { length: 64 }).unique().notNull(),
+  expiresAt: timestamp("expires_at"),
+  viewCount: int("view_count").default(0),
+  maxViews: int("max_views").default(100),
+  createdAt: timestamp("created_at").defaultNow(),
+});
