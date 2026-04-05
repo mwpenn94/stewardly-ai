@@ -18,7 +18,7 @@ export default function AdvisorProfile() {
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-6">
-            <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-3xl font-bold text-primary shrink-0">
+            <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center text-3xl font-bold font-mono tabular-nums text-primary shrink-0">
               SJ
             </div>
             <div className="flex-1 space-y-3">
@@ -52,21 +52,21 @@ export default function AdvisorProfile() {
         <Card>
           <CardContent className="p-4 text-center">
             <Award className="h-8 w-8 mx-auto text-primary/60 mb-2" />
-            <p className="text-2xl font-bold">18</p>
+            <p className="text-2xl font-bold font-mono tabular-nums">18</p>
             <p className="text-xs text-muted-foreground">Years Experience</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <BookOpen className="h-8 w-8 mx-auto text-primary/60 mb-2" />
-            <p className="text-2xl font-bold">$145M</p>
+            <p className="text-2xl font-bold font-mono tabular-nums">$145M</p>
             <p className="text-xs text-muted-foreground">Assets Under Advisement</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Star className="h-8 w-8 mx-auto text-primary/60 mb-2" />
-            <p className="text-2xl font-bold">4.9</p>
+            <p className="text-2xl font-bold font-mono tabular-nums">4.9</p>
             <p className="text-xs text-muted-foreground">Client Rating (127 reviews)</p>
           </CardContent>
         </Card>

@@ -634,9 +634,9 @@ function AITuningSettings() {
       customPromptAdditions: customInstructions || undefined,
       ensembleWeights: Object.keys(weights).length > 0 ? weights : undefined,
       modelPreferences: (primaryModel || fallbackModel || synthesisModel) ? {
-        primary: primaryModel || undefined,
-        fallback: fallbackModel || undefined,
-        synthesis: synthesisModel || undefined,
+        ...(primaryModel ? { primary: primaryModel } : {}),
+        ...(fallbackModel ? { fallback: fallbackModel } : {}),
+        ...(synthesisModel ? { synthesis: synthesisModel } : {}),
       } : undefined,
     });
   };
@@ -706,7 +706,7 @@ function AITuningSettings() {
               Context Window
               <TuningTooltip text="How much conversation history to include in each request" />
             </Label>
-            <div className="grid grid-cols-3 gap-2 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
               {CONTEXT_DEPTH_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
@@ -738,7 +738,7 @@ function AITuningSettings() {
           {/* Disclaimer Verbosity */}
           <div>
             <Label className="text-xs font-medium">Financial Disclaimers</Label>
-            <div className="grid grid-cols-3 gap-2 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
               {DISCLAIMER_OPTIONS.map(opt => (
                 <button
                   key={opt.value}
@@ -759,7 +759,7 @@ function AITuningSettings() {
           {/* Citation Style */}
           <div>
             <Label className="text-xs font-medium">Source Citations</Label>
-            <div className="grid grid-cols-3 gap-2 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
               {CITATION_OPTIONS.map(opt => (
                 <button
                   key={opt.value}

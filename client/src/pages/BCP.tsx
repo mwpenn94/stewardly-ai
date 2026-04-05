@@ -205,7 +205,7 @@ export default function BCP() {
                       <Badge variant="outline" className={`${TIER_COLORS[tier]} mb-2`}>
                         {tier.toUpperCase()}
                       </Badge>
-                      <p className="text-2xl font-bold">{count}</p>
+                      <p className="text-2xl font-bold font-mono tabular-nums">{count}</p>
                       <p className="text-[10px] text-muted-foreground">dependencies</p>
                     </CardContent>
                   </Card>

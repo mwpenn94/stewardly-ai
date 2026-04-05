@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Lock, Shield, TrendingUp, Brain, BarChart3, Rocket } from "lucide-react";
+import { Lock, Shield, TrendingUp, Brain, BarChart3, Rocket, FileText, Monitor, Video, Mic } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useEffect } from "react";
@@ -182,13 +182,13 @@ export default function Welcome() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: "📄", title: "Documents", desc: "Upload PDFs, images, spreadsheets — get instant analysis and summaries" },
-              { icon: "🖥️", title: "Screen Share", desc: "Share your screen for real-time visual context and guidance" },
-              { icon: "🎥", title: "Live Video", desc: "Point your camera at documents, whiteboards, or anything for instant understanding" },
-              { icon: "🎙️", title: "Voice", desc: "Talk naturally — ask questions, get answers, have a real conversation" },
+              { icon: <FileText className="w-7 h-7 text-sky-400" />, title: "Documents", desc: "Upload PDFs, images, spreadsheets — get instant analysis and summaries" },
+              { icon: <Monitor className="w-7 h-7 text-sky-400" />, title: "Screen Share", desc: "Share your screen for real-time visual context and guidance" },
+              { icon: <Video className="w-7 h-7 text-sky-400" />, title: "Live Video", desc: "Point your camera at documents, whiteboards, or anything for instant understanding" },
+              { icon: <Mic className="w-7 h-7 text-sky-400" />, title: "Voice", desc: "Talk naturally — ask questions, get answers, have a real conversation" },
             ].map((item) => (
               <div key={item.title} className="p-6 rounded-xl border border-border/30 bg-card/30 backdrop-blur text-center space-y-3">
-                <span className="text-3xl">{item.icon}</span>
+                <div className="flex justify-center">{item.icon}</div>
                 <h3 className="font-semibold text-foreground">{item.title}</h3>
                 <p className="text-xs text-muted-foreground">{item.desc}</p>
               </div>

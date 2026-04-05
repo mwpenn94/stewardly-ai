@@ -255,7 +255,7 @@ function RetirementProjection() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4 text-center">
-                <p className={`text-3xl font-bold ${successColor(results.successRate)}`}>{fmtPct(results.successRate)}</p>
+                <p className={`text-3xl font-bold font-mono tabular-nums ${successColor(results.successRate)}`}>{fmtPct(results.successRate)}</p>
                 <p className="text-xs text-muted-foreground mt-1">Success Rate</p>
               </CardContent>
             </Card>
@@ -317,7 +317,7 @@ function RetirementProjection() {
                 <CardTitle className="text-sm">Scenario Comparison</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Metric</p>
                     <p className="text-xs font-medium">Success Rate</p>

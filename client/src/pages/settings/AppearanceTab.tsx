@@ -71,7 +71,7 @@ export default function AppearanceTab() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {([
               { id: "dark", label: "Dark", icon: <Moon className="w-5 h-5" />, desc: "Easy on the eyes" },
               { id: "light", label: "Light", icon: <Sun className="w-5 h-5" />, desc: "Classic bright" },

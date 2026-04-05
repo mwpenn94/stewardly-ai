@@ -33,10 +33,10 @@ interface UseWebSocketReturn {
 // ─── Priority-based toast styling ───────────────────────────────────────────
 
 const PRIORITY_CONFIG: Record<string, { icon: string; duration: number }> = {
-  critical: { icon: "🚨", duration: 10000 },
-  high: { icon: "⚠️", duration: 7000 },
-  medium: { icon: "📬", duration: 5000 },
-  low: { icon: "ℹ️", duration: 3000 },
+  critical: { icon: "!", duration: 10000 },
+  high: { icon: "!", duration: 7000 },
+  medium: { icon: "i", duration: 5000 },
+  low: { icon: "i", duration: 3000 },
 };
 
 const TYPE_LABELS: Record<string, string> = {

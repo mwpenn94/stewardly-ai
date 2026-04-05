@@ -73,7 +73,7 @@ function StatCard({ label, value, sub, variant }: { label: string; value: string
   return (
     <div className={`rounded-lg border p-3 space-y-0.5 ${colors[variant || "default"]}`}>
       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="text-lg font-bold tabular-nums">{value}</p>
+      <p className="text-lg font-bold font-mono tabular-nums">{value}</p>
       {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
     </div>
   );

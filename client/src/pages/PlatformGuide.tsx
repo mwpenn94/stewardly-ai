@@ -49,7 +49,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string |
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <p className="text-2xl font-bold font-heading">{value}</p>
+        <p className="text-2xl font-bold font-mono tabular-nums font-heading">{value}</p>
         <p className="text-xs text-muted-foreground">{label}</p>
       </div>
     </div>

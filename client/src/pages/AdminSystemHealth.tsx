@@ -107,7 +107,7 @@ export default function AdminSystemHealth() {
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{CRON_JOBS.length}</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">{CRON_JOBS.length}</p>
                   <p className="text-xs text-muted-foreground">Total Jobs</p>
                 </div>
               </div>
@@ -120,7 +120,7 @@ export default function AdminSystemHealth() {
                   <Zap className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{CRON_JOBS.length}</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">{CRON_JOBS.length}</p>
                   <p className="text-xs text-muted-foreground">Active</p>
                 </div>
               </div>
@@ -133,7 +133,7 @@ export default function AdminSystemHealth() {
                   <AlertTriangle className="w-5 h-5 text-amber-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">0</p>
                   <p className="text-xs text-muted-foreground">Warnings</p>
                 </div>
               </div>
@@ -146,7 +146,7 @@ export default function AdminSystemHealth() {
                   <XCircle className="w-5 h-5 text-red-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">0</p>
                   <p className="text-xs text-muted-foreground">Errors</p>
                 </div>
               </div>

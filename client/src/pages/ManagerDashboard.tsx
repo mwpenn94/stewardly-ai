@@ -65,25 +65,25 @@ export default function ManagerDashboard() {
           <Card className="bg-card border-border">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1"><AlertTriangle className="w-4 h-4 text-amber-400" /><span className="text-xs text-muted-foreground">Pending Reviews</span></div>
-              <p className="text-2xl font-bold">{pendingCount}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{pendingCount}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1"><MessageSquare className="w-4 h-4 text-blue-400" /><span className="text-xs text-muted-foreground">Total Feedback</span></div>
-              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{stats.total}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1"><TrendingUp className="w-4 h-4 text-emerald-400" /><span className="text-xs text-muted-foreground">Satisfaction</span></div>
-              <p className="text-2xl font-bold">{satisfactionRate}%</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{satisfactionRate}%</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1"><FileText className="w-4 h-4 text-accent" /><span className="text-xs text-muted-foreground">Audit Entries</span></div>
-              <p className="text-2xl font-bold">{auditItems.length}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{auditItems.length}</p>
             </CardContent>
           </Card>
         </div>

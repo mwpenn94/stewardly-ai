@@ -1,6 +1,6 @@
 # Stewardly AI — Comprehensive Platform Guide
 
-**Version:** 3.0 | **Date:** April 3, 2026 | **Status:** Production  
+**Version:** 3.1 | **Date:** April 5, 2026 | **Status:** Production  
 **Domains:** stewardly.manus.space, wealthai-gakeferp.manus.space
 
 ---
@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with 197,000+ lines of code across 893 source files, 270 database tables, 51 tRPC API routers (860 procedures), and 2,162 automated tests. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with 210,000+ lines of code across 960+ source files, 314 database tables, 68 tRPC API routers (920+ procedures), and 2,440 automated tests across 98 test files. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -40,16 +40,16 @@ The system is built on a modern TypeScript full-stack architecture with 197,000+
 |--------|-------|
 | Total lines of code | 210,000+ |
 | Source files (non-test) | 960+ |
-| Test files | 94 |
-| Total tests | 2,343 (2,231 passing) |
-| Database tables | 309 |
-| tRPC routers | 65 (920+ procedures) |
-| Frontend pages | 76 |
-| Custom components | 43 (+ AccessibleChart) |
+| Test files | 98 |
+| Total tests | 2,440 (all passing) |
+| Database tables | 314 |
+| tRPC routers | 68 (920+ procedures) |
+| Frontend pages | 105 |
+| Custom components | 109 |
 | UI primitives (shadcn) | 53 |
 | Custom hooks | 17 |
-| Server services | 151 |
-| Router modules | 65 (+ main routers.ts) |
+| Server services | 204 |
+| Router modules | 68 (+ main routers.ts) |
 | Shared modules | 12 (intelligence, config, streaming, engine, guardrails, telemetry, events, tenant, MCP) |
 | Business domains | 15 (PII, verification, CRM, propensity, lead engine, import, enrichment, scraping, reporting, planning, premium finance, SMS-iT, SEO, email, monitoring) |
 | NPM dependencies | 88 |

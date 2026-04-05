@@ -44,7 +44,7 @@ export default function ProductIntelligence() {
 
       <div className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="market" className="gap-1 text-xs sm:text-sm">
               <TrendingUp className="h-3 w-3" /> Market
             </TabsTrigger>
@@ -140,7 +140,7 @@ function MarketIndicesSection() {
                   {data.totalReturn >= 0 ? "+" : ""}{data.totalReturn}%
                 </Badge>
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold font-mono tabular-nums">
                 {data.latestClose.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </div>
               <div className="text-xs text-muted-foreground mt-1">
@@ -439,7 +439,7 @@ function RiskProfileSection() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className={`text-3xl font-bold ${riskColor(profile.riskNumber)}`}>{profile.riskNumber}</span>
+                    <span className={`text-3xl font-bold font-mono tabular-nums ${riskColor(profile.riskNumber)}`}>{profile.riskNumber}</span>
                     <span className="text-xs text-muted-foreground">/ 99</span>
                   </div>
                 </div>
@@ -711,7 +711,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
       <CardContent className="p-4 flex items-center gap-3">
         <Icon className={`h-5 w-5 ${color}`} />
         <div>
-          <div className="text-2xl font-bold">{value}</div>
+          <div className="text-2xl font-bold font-mono tabular-nums">{value}</div>
           <div className="text-xs text-muted-foreground">{label}</div>
         </div>
       </CardContent>

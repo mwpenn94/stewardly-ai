@@ -580,22 +580,22 @@ function ActionItemsList({ items, loading, onUpdate }: {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card className="cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => setFilter("pending")}>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-amber-400">{pending}</p>
+            <p className="text-2xl font-bold font-mono tabular-nums text-amber-400">{pending}</p>
             <p className="text-xs text-muted-foreground">Pending</p>
           </CardContent>
         </Card>
         <Card className="cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => setFilter("in_progress")}>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-blue-400">{inProgress}</p>
+            <p className="text-2xl font-bold font-mono tabular-nums text-blue-400">{inProgress}</p>
             <p className="text-xs text-muted-foreground">In Progress</p>
           </CardContent>
         </Card>
         <Card className="cursor-pointer hover:bg-accent/30 transition-colors" onClick={() => setFilter("completed")}>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-emerald-400">{completed}</p>
+            <p className="text-2xl font-bold font-mono tabular-nums text-emerald-400">{completed}</p>
             <p className="text-xs text-muted-foreground">Completed</p>
           </CardContent>
         </Card>

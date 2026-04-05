@@ -46,7 +46,7 @@ export default function IntelligenceHub() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="overview" className="gap-1">
               <Activity className="h-3 w-3" /> Overview
             </TabsTrigger>
@@ -101,7 +101,7 @@ function QuickStat({ icon: Icon, label, value, color }: { icon: any; label: stri
       <CardContent className="p-3 flex items-center gap-3">
         <Icon className={`h-5 w-5 ${color}`} />
         <div>
-          <div className="text-lg font-bold">{value}</div>
+          <div className="text-lg font-bold font-mono tabular-nums">{value}</div>
           <div className="text-xs text-muted-foreground">{label}</div>
         </div>
       </CardContent>
@@ -287,7 +287,7 @@ function DataSection() {
           <CardDescription>AI-curated knowledge articles and training data</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="text-center p-3 rounded-lg bg-muted/30">
               <div className="text-lg font-bold">—</div>
               <div className="text-xs text-muted-foreground">Articles</div>
@@ -308,51 +308,142 @@ function DataSection() {
 }
 
 function AnalyticsSection() {
+  const [days, setDays] = useState(30);
+  const { data: usageStats, isLoading: loadingUsage } = trpc.multiModel.usageStats.useQuery({ days });
+  const { data: ratings, isLoading: loadingRatings } = trpc.multiModel.ratingSummary.useQuery({ days });
+  const { data: opBreakdown, isLoading: loadingOps } = trpc.multiModel.operationBreakdown.useQuery({ days });
+
+  const totalQueries = Array.isArray(usageStats) ? usageStats.reduce((s, m) => s + Number(m.totalQueries || 0), 0) : 0;
+  const totalCost = Array.isArray(usageStats) ? usageStats.reduce((s, m) => s + Number(m.totalCost || 0), 0) : 0;
+  const totalRatings = Array.isArray(ratings) ? ratings.reduce((s, r) => s + Number(r.total || 0), 0) : 0;
+  const totalThumbsUp = Array.isArray(ratings) ? ratings.reduce((s, r) => s + Number(r.thumbsUp || 0), 0) : 0;
+  const satisfactionPct = totalRatings > 0 ? Math.round((totalThumbsUp / totalRatings) * 100) : 0;
+
+  const isLoading = loadingUsage || loadingRatings || loadingOps;
+
   return (
     <div className="space-y-4">
+      {/* Time range selector */}
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold">Platform Analytics</h3>
+        <div className="flex gap-1">
+          {[7, 30, 90].map((d) => (
+            <Button key={d} size="sm" variant={days === d ? "default" : "outline"} className="h-7 text-xs" onClick={() => setDays(d)}>
+              {d}d
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary cards */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Platform Analytics</CardTitle>
-          <CardDescription>Usage patterns and AI performance metrics</CardDescription>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Usage Summary</CardTitle>
+          <CardDescription>Last {days} days across all models</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="text-center p-3 rounded-lg bg-muted/30">
-              <div className="text-lg font-bold">—</div>
-              <div className="text-xs text-muted-foreground">Conversations</div>
+          {isLoading ? (
+            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="text-center p-3 rounded-lg bg-muted/30">
+                <div className="text-lg font-bold">{totalQueries.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">AI Queries</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/30">
+                <div className="text-lg font-bold">{Array.isArray(usageStats) ? usageStats.length : 0}</div>
+                <div className="text-xs text-muted-foreground">Models Used</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/30">
+                <div className="text-lg font-bold">${totalCost.toFixed(2)}</div>
+                <div className="text-xs text-muted-foreground">Est. Cost</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/30">
+                <div className="text-lg font-bold">{satisfactionPct > 0 ? `${satisfactionPct}%` : "—"}</div>
+                <div className="text-xs text-muted-foreground">Satisfaction</div>
+              </div>
             </div>
-            <div className="text-center p-3 rounded-lg bg-muted/30">
-              <div className="text-lg font-bold">—</div>
-              <div className="text-xs text-muted-foreground">AI Responses</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-muted/30">
-              <div className="text-lg font-bold">—</div>
-              <div className="text-xs text-muted-foreground">Tools Used</div>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-muted/30">
-              <div className="text-lg font-bold">—</div>
-              <div className="text-xs text-muted-foreground">Satisfaction</div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Per-model breakdown */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="text-base">Model Performance</CardTitle>
-          <CardDescription>Accuracy and usage across all AI models</CardDescription>
+          <CardDescription>Usage and quality per model</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            Analytics will populate as you use the platform.
-            <br />
-            <Button variant="link" size="sm" className="mt-1 text-xs" onClick={() => navigateToChat("Show me detailed analytics on AI model performance, response accuracy, and usage patterns across the platform")}>
-              Ask the AI for detailed analytics reports →
-            </Button>
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          ) : !Array.isArray(usageStats) || usageStats.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              Analytics will populate as you use the platform.
+              <br />
+              <Button variant="link" size="sm" className="mt-1 text-xs" onClick={() => navigateToChat("Show me detailed analytics on AI model performance")}>
+                Ask the AI for analytics →
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {usageStats.map((m) => {
+                const modelRating = Array.isArray(ratings) ? ratings.find((r) => r.model === m.model) : null;
+                const up = Number(modelRating?.thumbsUp || 0);
+                const tot = Number(modelRating?.total || 0);
+                const pct = tot > 0 ? Math.round((up / tot) * 100) : null;
+                const queries = Number(m.totalQueries || 0);
+                const maxQ = Math.max(...usageStats.map((s) => Number(s.totalQueries || 1)));
+                return (
+                  <div key={m.model} className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-sm font-medium">{m.model || "Unknown"}</span>
+                        <span className="text-xs text-muted-foreground ml-2">{queries.toLocaleString()} queries</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {pct !== null && (
+                          <Badge variant={pct >= 80 ? "default" : pct >= 50 ? "secondary" : "destructive"} className="text-xs">
+                            {pct}% satisfaction
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground">${Number(m.totalCost || 0).toFixed(3)}</span>
+                      </div>
+                    </div>
+                    <Progress value={maxQ > 0 ? (queries / maxQ) * 100 : 0} className="h-1.5" />
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Operation type breakdown */}
+      {Array.isArray(opBreakdown) && opBreakdown.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Operation Types</CardTitle>
+            <CardDescription>What the AI is being used for</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {opBreakdown.map((op) => (
+                <div key={op.operationType} className="flex justify-between items-center py-1">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-3 w-3 text-primary" />
+                    <span className="text-sm capitalize">{(op.operationType || "other").replace(/_/g, " ")}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">{Number(op.count).toLocaleString()} calls</span>
+                    <span className="text-xs font-medium">${Number(op.totalCost || 0).toFixed(3)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

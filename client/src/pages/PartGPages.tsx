@@ -68,7 +68,7 @@ export function LicensedReview() {
             <Card key={s.label} className="bg-card/50 border-border/50">
               <CardContent className="p-4 flex items-center gap-3">
                 <s.icon className={`h-8 w-8 ${s.color}`} />
-                <div><p className="text-2xl font-bold text-foreground">{s.val}</p><p className="text-xs text-muted-foreground">{s.label}</p></div>
+                <div><p className="text-2xl font-bold font-mono tabular-nums text-foreground">{s.val}</p><p className="text-xs text-muted-foreground">{s.label}</p></div>
               </CardContent>
             </Card>
           ))}
@@ -171,7 +171,7 @@ export function AgentOperations() {
             <Card key={s.label} className="bg-card/50 border-border/50">
               <CardContent className="p-4 flex items-center gap-3">
                 <s.icon className={`h-8 w-8 ${s.color}`} />
-                <div><p className="text-2xl font-bold text-foreground">{s.val}</p><p className="text-xs text-muted-foreground">{s.label}</p></div>
+                <div><p className="text-2xl font-bold font-mono tabular-nums text-foreground">{s.val}</p><p className="text-xs text-muted-foreground">{s.label}</p></div>
               </CardContent>
             </Card>
           ))}

@@ -116,7 +116,7 @@ export default function FairnessTestDashboard() {
               <Users className="w-4 h-4" />
               <span className="text-xs">Test Prompts</span>
             </div>
-            <p className="text-2xl font-bold">{prompts.length}</p>
+            <p className="text-2xl font-bold font-mono tabular-nums">{prompts.length}</p>
             <p className="text-[10px] text-muted-foreground">Across age, gender, income, race, education, family, disability, geography</p>
           </div>
           <div className="p-4 rounded-lg border border-border bg-card">
@@ -124,7 +124,7 @@ export default function FairnessTestDashboard() {
               <BarChart3 className="w-4 h-4" />
               <span className="text-xs">Total Runs</span>
             </div>
-            <p className="text-2xl font-bold">{runs.length}</p>
+            <p className="text-2xl font-bold font-mono tabular-nums">{runs.length}</p>
             <p className="text-[10px] text-muted-foreground">
               {runs.filter((r: any) => r.status === "completed").length} completed
             </p>
@@ -134,7 +134,7 @@ export default function FairnessTestDashboard() {
               <Shield className="w-4 h-4" />
               <span className="text-xs">Latest Score</span>
             </div>
-            <p className={`text-2xl font-bold ${runs.length > 0 && runs[0].overallScore ? scoreColor(runs[0].overallScore / 100) : "text-muted-foreground"}`}>
+            <p className={`text-2xl font-bold font-mono tabular-nums ${runs.length > 0 && runs[0].overallScore ? scoreColor(runs[0].overallScore / 100) : "text-muted-foreground"}`}>
               {runs.length > 0 && runs[0].overallScore ? `${runs[0].overallScore.toFixed(1)}%` : "N/A"}
             </p>
             <p className="text-[10px] text-muted-foreground">Combined tone + quality score</p>

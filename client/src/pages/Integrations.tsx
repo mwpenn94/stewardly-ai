@@ -904,19 +904,19 @@ function CRMSyncPanel() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <div className="rounded-lg border p-3 text-center">
                 <div className="text-xs text-muted-foreground">Total</div>
-                <div className="text-2xl font-bold">{stats.totalConnections}</div>
+                <div className="text-2xl font-bold font-mono tabular-nums">{stats.totalConnections}</div>
               </div>
               <div className="rounded-lg border p-3 text-center">
                 <div className="text-xs text-muted-foreground">Active</div>
-                <div className="text-2xl font-bold text-green-600">{stats.activeConnections}</div>
+                <div className="text-2xl font-bold font-mono tabular-nums text-green-600">{stats.activeConnections}</div>
               </div>
               <div className="rounded-lg border p-3 text-center">
                 <div className="text-xs text-muted-foreground">Records Synced</div>
-                <div className="text-2xl font-bold">{stats.totalRecordsSynced.toLocaleString()}</div>
+                <div className="text-2xl font-bold font-mono tabular-nums">{stats.totalRecordsSynced.toLocaleString()}</div>
               </div>
               <div className="rounded-lg border p-3 text-center">
                 <div className="text-xs text-muted-foreground">Errors</div>
-                <div className={`text-2xl font-bold ${stats.totalErrors > 0 ? "text-red-500" : ""}`}>{stats.totalErrors}</div>
+                <div className={`text-2xl font-bold font-mono tabular-nums ${stats.totalErrors > 0 ? "text-red-500" : ""}`}>{stats.totalErrors}</div>
               </div>
             </div>
             <div className="space-y-2">
@@ -1289,19 +1289,19 @@ export default function Integrations() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className="text-2xl font-bold">{providers?.length || 0}</div>
+            <div className="text-2xl font-bold font-mono tabular-nums">{providers?.length || 0}</div>
             <div className="text-xs text-muted-foreground">Available Providers</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className="text-2xl font-bold text-emerald-500">{connectedCount}</div>
+            <div className="text-2xl font-bold font-mono tabular-nums text-emerald-500">{connectedCount}</div>
             <div className="text-xs text-muted-foreground">Active Connections</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className="text-2xl font-bold">{totalRecords.toLocaleString()}</div>
+            <div className="text-2xl font-bold font-mono tabular-nums">{totalRecords.toLocaleString()}</div>
             <div className="text-xs text-muted-foreground">Records Synced</div>
           </CardContent>
         </Card>

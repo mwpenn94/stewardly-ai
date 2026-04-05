@@ -182,7 +182,7 @@ export default function StudentLoans() {
                 <span className="text-sm font-medium">Total Balance</span>
                 <DollarSign className="w-4 h-4 text-red-400" />
               </div>
-              <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
+              <div className="text-2xl font-bold font-mono tabular-nums">{formatCurrency(totalBalance)}</div>
               <p className="text-xs text-muted-foreground">{loans.length} loan{loans.length !== 1 ? "s" : ""}</p>
             </CardContent>
           </Card>
@@ -192,7 +192,7 @@ export default function StudentLoans() {
                 <span className="text-sm font-medium">Avg Interest Rate</span>
                 <TrendingDown className="w-4 h-4 text-amber-500" />
               </div>
-              <div className="text-2xl font-bold">{avgRate.toFixed(2)}%</div>
+              <div className="text-2xl font-bold font-mono tabular-nums">{avgRate.toFixed(2)}%</div>
               <p className="text-xs text-muted-foreground">weighted average</p>
             </CardContent>
           </Card>
@@ -202,7 +202,7 @@ export default function StudentLoans() {
                 <span className="text-sm font-medium">PSLF Eligible</span>
                 {loans.some((l: any) => l.pslfEligible) ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <AlertCircle className="w-4 h-4 text-muted-foreground" />}
               </div>
-              <div className="text-2xl font-bold">{loans.filter((l: any) => l.pslfEligible).length}</div>
+              <div className="text-2xl font-bold font-mono tabular-nums">{loans.filter((l: any) => l.pslfEligible).length}</div>
               <p className="text-xs text-muted-foreground">qualifying loans</p>
             </CardContent>
           </Card>

@@ -67,7 +67,7 @@ export function EmbedCodeGenerator({
         <CardDescription>Add this widget to your website</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="space-y-1">
             <Label className="text-xs">Width</Label>
             <Input value={width} onChange={e => setWidth(e.target.value)} placeholder="100%" className="h-8 text-xs" />

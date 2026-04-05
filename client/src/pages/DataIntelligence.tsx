@@ -827,7 +827,7 @@ export default function DataIntelligence() {
                         {Number(score.overallScore).toFixed(0)}% overall
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {[
                         { label: "Completeness", value: score.completeness },
                         { label: "Accuracy", value: score.accuracy },
@@ -1100,19 +1100,19 @@ export default function DataIntelligence() {
           {/* Action Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card><CardContent className="py-3 text-center">
-              <p className="text-2xl font-bold text-amber-500">{actionStats.data?.pending || 0}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums text-amber-500">{actionStats.data?.pending || 0}</p>
               <p className="text-xs text-muted-foreground">Pending</p>
             </CardContent></Card>
             <Card><CardContent className="py-3 text-center">
-              <p className="text-2xl font-bold text-red-500">{actionStats.data?.overdue || 0}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums text-red-500">{actionStats.data?.overdue || 0}</p>
               <p className="text-xs text-muted-foreground">Overdue</p>
             </CardContent></Card>
             <Card><CardContent className="py-3 text-center">
-              <p className="text-2xl font-bold text-emerald-500">{actionStats.data?.completed || 0}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums text-emerald-500">{actionStats.data?.completed || 0}</p>
               <p className="text-xs text-muted-foreground">Completed</p>
             </CardContent></Card>
             <Card><CardContent className="py-3 text-center">
-              <p className="text-2xl font-bold text-zinc-400">{actionStats.data?.dismissed || 0}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums text-zinc-400">{actionStats.data?.dismissed || 0}</p>
               <p className="text-xs text-muted-foreground">Dismissed</p>
             </CardContent></Card>
           </div>

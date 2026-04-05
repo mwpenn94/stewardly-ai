@@ -583,7 +583,7 @@ function SSOptimizerPanel() {
           <CardContent className="pt-6 space-y-3">
             <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
               <p className="text-[10px] text-muted-foreground">Optimal Claiming Age</p>
-              <p className="text-2xl font-bold text-cyan-400">{ssCalc.data.optimalAge}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums text-cyan-400">{ssCalc.data.optimalAge}</p>
               <p className="text-xs text-muted-foreground mt-1">{ssCalc.data.optimalReason}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">

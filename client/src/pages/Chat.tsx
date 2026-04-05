@@ -75,59 +75,86 @@ const MODE_OPTIONS: { value: AdvisoryMode; label: string; desc: string; minRole:
 // ─── ROLE-AWARE PROMPT SYSTEM ─────────────────────────────────
 // 3 of 4 prompts map to audit directions based on user role.
 // The 4th prompt is always a general financial question.
-type PromptEntry = { text: string; icon: string; category: FocusMode; tier: "new" | "returning" | "any" };
+type PromptEntry = { text: string; icon: React.ReactNode; category: FocusMode; tier: "new" | "returning" | "any" };
+
+// Icon components for prompt suggestions (consistent Lucide icons instead of emoji)
+const PI = { size: "w-4 h-4" } as const;
+const promptIcons = {
+  people: <Users className={PI.size} />,
+  clipboard: <ClipboardList className={PI.size} />,
+  chart: <BarChart3 className={PI.size} />,
+  wrench: <Wrench className={PI.size} />,
+  shield: <Shield className={PI.size} />,
+  gear: <Settings className={PI.size} />,
+  bulb: <Lightbulb className={PI.size} />,
+  trending: <TrendingUp className={PI.size} />,
+  target: <Fingerprint className={PI.size} />,
+  home: <Building2 className={PI.size} />,
+  life: <HeartPulse className={PI.size} />,
+  briefcase: <Briefcase className={PI.size} />,
+  scale: <Scale className={PI.size} />,
+  refresh: <RefreshCw className={PI.size} />,
+  dollar: <DollarSign className={PI.size} />,
+  bank: <Calculator className={PI.size} />,
+  scroll: <FileText className={PI.size} />,
+  book: <BookOpen className={PI.size} />,
+  pencil: <Pencil className={PI.size} />,
+  question: <HelpCircle className={PI.size} />,
+  search: <Search className={PI.size} />,
+  sparkle: <Sparkles className={PI.size} />,
+};
 
 // Audit-direction prompts per role tier
 const AUDIT_PROMPTS: Record<string, { people: PromptEntry[]; system: PromptEntry[]; usage: PromptEntry[] }> = {
   admin: {
     people: [
-      { text: "How well are our advisors serving their clients this month?", icon: "👥", category: "financial", tier: "any" },
-      { text: "Which professionals need coaching based on client feedback?", icon: "📋", category: "financial", tier: "returning" },
-      { text: "Show me team performance across all tiers", icon: "📊", category: "financial", tier: "any" },
+      { text: "How well are our advisors serving their clients this month?", icon: promptIcons.people, category: "financial", tier: "any" },
+      { text: "Which professionals need coaching based on client feedback?", icon: promptIcons.clipboard, category: "financial", tier: "returning" },
+      { text: "Show me team performance across all tiers", icon: promptIcons.chart, category: "financial", tier: "any" },
     ],
     system: [
-      { text: "Audit our platform configuration — what needs attention?", icon: "🔧", category: "financial", tier: "any" },
-      { text: "Are our compliance rules and AI settings optimized?", icon: "🛡️", category: "financial", tier: "returning" },
-      { text: "What infrastructure improvements would most impact user experience?", icon: "⚙️", category: "financial", tier: "any" },
+      { text: "Audit our platform configuration — what needs attention?", icon: promptIcons.wrench, category: "financial", tier: "any" },
+      { text: "Are our compliance rules and AI settings optimized?", icon: promptIcons.shield, category: "financial", tier: "returning" },
+      { text: "What infrastructure improvements would most impact user experience?", icon: promptIcons.gear, category: "financial", tier: "any" },
     ],
     usage: [
-      { text: "What admin tools am I underutilizing?", icon: "💡", category: "general", tier: "any" },
-      { text: "Help me set up better monitoring and alerts", icon: "📈", category: "general", tier: "returning" },
-      { text: "What best practices should I adopt as a platform admin?", icon: "🎯", category: "general", tier: "any" },
+      { text: "What admin tools am I underutilizing?", icon: promptIcons.bulb, category: "general", tier: "any" },
+      { text: "Help me set up better monitoring and alerts", icon: promptIcons.trending, category: "general", tier: "returning" },
+      { text: "What best practices should I adopt as a platform admin?", icon: promptIcons.target, category: "general", tier: "any" },
     ],
   },
   manager: {
     people: [
-      { text: "How is my team performing with their client book?", icon: "👥", category: "financial", tier: "any" },
-      { text: "Which team members need support based on recent activity?", icon: "📋", category: "financial", tier: "returning" },
-      { text: "Show me coaching opportunities across my team", icon: "📊", category: "financial", tier: "any" },
+      { text: "How is my team performing with their client book?", icon: promptIcons.people, category: "financial", tier: "any" },
+      { text: "Which team members need support based on recent activity?", icon: promptIcons.clipboard, category: "financial", tier: "returning" },
+      { text: "Show me coaching opportunities across my team", icon: promptIcons.chart, category: "financial", tier: "any" },
     ],
     system: [
-      { text: "Is my team's configuration helping or hindering them?", icon: "🔧", category: "financial", tier: "any" },
-      { text: "What compliance or workflow settings should I adjust?", icon: "🛡️", category: "financial", tier: "returning" },
-      { text: "Audit my team's tool setup — what's missing?", icon: "⚙️", category: "financial", tier: "any" },
+      { text: "Is my team's configuration helping or hindering them?", icon: promptIcons.wrench, category: "financial", tier: "any" },
+      { text: "What compliance or workflow settings should I adjust?", icon: promptIcons.shield, category: "financial", tier: "returning" },
+      { text: "Audit my team's tool setup — what's missing?", icon: promptIcons.gear, category: "financial", tier: "any" },
     ],
     usage: [
-      { text: "What management features am I not using effectively?", icon: "💡", category: "general", tier: "any" },
-      { text: "Help me build better team reports and dashboards", icon: "📈", category: "general", tier: "returning" },
-      { text: "What best practices should I adopt as a team manager?", icon: "🎯", category: "general", tier: "any" },
+      { text: "What management features am I not using effectively?", icon: promptIcons.bulb, category: "general", tier: "any" },
+      { text: "Help me build better team reports and dashboards", icon: promptIcons.trending, category: "general", tier: "returning" },
+      { text: "What best practices should I adopt as a team manager?", icon: promptIcons.target, category: "general", tier: "any" },
     ],
   },
   advisor: {
     people: [
-      { text: "How well am I serving my clients? Show me feedback trends", icon: "👥", category: "financial", tier: "any" },
-      { text: "Which clients need attention based on recent interactions?", icon: "📋", category: "financial", tier: "returning" },
-      { text: "Help me improve my client communication approach", icon: "📊", category: "financial", tier: "any" },
+      { text: "How well am I serving my clients? Show me feedback trends", icon: promptIcons.people, category: "financial", tier: "any" },
+      { text: "Which clients need attention based on recent interactions?", icon: promptIcons.clipboard, category: "financial", tier: "returning" },
+      { text: "Help me improve my client communication approach", icon: promptIcons.chart, category: "financial", tier: "any" },
     ],
     system: [
-      { text: "Is my practice setup optimized? Audit my configuration", icon: "🔧", category: "financial", tier: "any" },
-      { text: "What tools and integrations should I enable?", icon: "🛡️", category: "financial", tier: "returning" },
-      { text: "Review my AI settings — am I getting the best results?", icon: "⚙️", category: "financial", tier: "any" },
+      { text: "Is my practice setup optimized? Audit my configuration", icon: promptIcons.wrench, category: "financial", tier: "any" },
+      { text: "What tools and integrations should I enable?", icon: promptIcons.shield, category: "financial", tier: "returning" },
+      { text: "Review my AI settings — am I getting the best results?", icon: promptIcons.gear, category: "financial", tier: "any" },
     ],
     usage: [
-      { text: "What advisory features am I underutilizing?", icon: "💡", category: "general", tier: "any" },
-      { text: "Help me build a more efficient client workflow", icon: "📈", category: "general", tier: "returning" },
-      { text: "What best practices should I adopt as a financial professional?", icon: "🎯", category: "general", tier: "any" },
+      { text: "What advisory features am I underutilizing?", icon: promptIcons.bulb, category: "general", tier: "any" },
+      { text: "Help me build a more efficient client workflow", icon: promptIcons.trending, category: "general", tier: "returning" },
+      { text: "What best practices should I adopt as a financial professional?", icon: promptIcons.target, category: "general", tier: "any" },
     ],
   },
 };
@@ -135,34 +162,34 @@ const AUDIT_PROMPTS: Record<string, { people: PromptEntry[]; system: PromptEntry
 // Standard prompts for all users (the 4th slot + user/client prompts)
 const STANDARD_PROMPTS: PromptEntry[] = [
   // General prompts — practical life decisions
-  { text: "Walk me through a major life decision I'm facing", icon: "💡", category: "general", tier: "any" },
-  { text: "Help me evaluate the financial impact of a career change", icon: "🎯", category: "general", tier: "any" },
-  { text: "What should I consider before buying vs renting a home?", icon: "🏠", category: "general", tier: "any" },
-  { text: "Help me create a plan for paying off debt faster", icon: "📋", category: "general", tier: "any" },
-  { text: "What's the smartest way to build an emergency fund?", icon: "🛟", category: "general", tier: "new" },
-  { text: "Help me negotiate a raise — what data do I need?", icon: "💼", category: "general", tier: "returning" },
+  { text: "Walk me through a major life decision I'm facing", icon: promptIcons.bulb, category: "general", tier: "any" },
+  { text: "Help me evaluate the financial impact of a career change", icon: promptIcons.target, category: "general", tier: "any" },
+  { text: "What should I consider before buying vs renting a home?", icon: promptIcons.home, category: "general", tier: "any" },
+  { text: "Help me create a plan for paying off debt faster", icon: promptIcons.clipboard, category: "general", tier: "any" },
+  { text: "What's the smartest way to build an emergency fund?", icon: promptIcons.life, category: "general", tier: "new" },
+  { text: "Help me negotiate a raise — what data do I need?", icon: promptIcons.briefcase, category: "general", tier: "returning" },
   // Financial prompts — insurance, planning, investing
-  { text: "Am I on track for retirement? Let's run the numbers", icon: "📊", category: "financial", tier: "returning" },
-  { text: "Compare term vs whole life insurance for my situation", icon: "⚖️", category: "financial", tier: "any" },
-  { text: "What's an IUL and is it right for someone like me?", icon: "🛡️", category: "financial", tier: "any" },
-  { text: "Help me build a tax-efficient investment strategy", icon: "📈", category: "financial", tier: "returning" },
-  { text: "Walk me through Roth conversion strategies", icon: "🔄", category: "financial", tier: "any" },
-  { text: "How much life insurance coverage do I actually need?", icon: "💰", category: "financial", tier: "new" },
-  { text: "Explain premium financing and when it makes sense", icon: "🏦", category: "financial", tier: "any" },
-  { text: "What estate planning steps should I take this year?", icon: "📜", category: "financial", tier: "returning" },
+  { text: "Am I on track for retirement? Let's run the numbers", icon: promptIcons.chart, category: "financial", tier: "returning" },
+  { text: "Compare term vs whole life insurance for my situation", icon: promptIcons.scale, category: "financial", tier: "any" },
+  { text: "What's an IUL and is it right for someone like me?", icon: promptIcons.shield, category: "financial", tier: "any" },
+  { text: "Help me build a tax-efficient investment strategy", icon: promptIcons.trending, category: "financial", tier: "returning" },
+  { text: "Walk me through Roth conversion strategies", icon: promptIcons.refresh, category: "financial", tier: "any" },
+  { text: "How much life insurance coverage do I actually need?", icon: promptIcons.dollar, category: "financial", tier: "new" },
+  { text: "Explain premium financing and when it makes sense", icon: promptIcons.bank, category: "financial", tier: "any" },
+  { text: "What estate planning steps should I take this year?", icon: promptIcons.scroll, category: "financial", tier: "returning" },
   // Study prompts
-  { text: "Summarize this document and highlight key takeaways", icon: "📖", category: "study", tier: "any" },
-  { text: "Create study notes and flashcards from my materials", icon: "📝", category: "study", tier: "any" },
-  { text: "Quiz me on what I've uploaded so far", icon: "❓", category: "study", tier: "returning" },
-  { text: "Compare these two documents side by side", icon: "🔍", category: "study", tier: "any" },
+  { text: "Summarize this document and highlight key takeaways", icon: promptIcons.book, category: "study", tier: "any" },
+  { text: "Create study notes and flashcards from my materials", icon: promptIcons.pencil, category: "study", tier: "any" },
+  { text: "Quiz me on what I've uploaded so far", icon: promptIcons.question, category: "study", tier: "returning" },
+  { text: "Compare these two documents side by side", icon: promptIcons.search, category: "study", tier: "any" },
 ];
 
 // Usage optimization prompts for regular users/clients
 const USER_USAGE_PROMPTS: PromptEntry[] = [
-  { text: "What features should I explore to get more from this platform?", icon: "💡", category: "general", tier: "any" },
-  { text: "Help me set up my financial profile for better recommendations", icon: "🎯", category: "financial", tier: "new" },
-  { text: "What tools am I not using that could help my financial planning?", icon: "🔍", category: "financial", tier: "returning" },
-  { text: "How can I get more personalized advice from the AI?", icon: "⚙️", category: "general", tier: "any" },
+  { text: "What features should I explore to get more from this platform?", icon: promptIcons.bulb, category: "general", tier: "any" },
+  { text: "Help me set up my financial profile for better recommendations", icon: promptIcons.target, category: "financial", tier: "new" },
+  { text: "What tools am I not using that could help my financial planning?", icon: promptIcons.search, category: "financial", tier: "returning" },
+  { text: "How can I get more personalized advice from the AI?", icon: promptIcons.gear, category: "general", tier: "any" },
 ];
 
 function getDynamicPrompts(focus: FocusMode[], hasConversations: boolean, role: string): PromptEntry[] {
@@ -1245,7 +1272,7 @@ export default function Chat() {
             <div className="flex flex-col gap-1 items-center">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleNewConversation}>
+                  <Button variant="ghost" size="icon" onClick={handleNewConversation} aria-label="New conversation">
                     <Plus className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
@@ -1253,7 +1280,7 @@ export default function Chat() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => { setSidebarCollapsed(false); setSearchOpen(true); }}>
+                  <Button variant="ghost" size="icon" onClick={() => { setSidebarCollapsed(false); setSearchOpen(true); }} aria-label="Search conversations">
                     <Search className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
@@ -1266,10 +1293,10 @@ export default function Chat() {
                 <Plus className="w-3.5 h-3.5" /> New Conversation
               </Button>
               <div className="flex items-center gap-0.5">
-                <Button variant="ghost" size="icon-sm" onClick={() => setSearchOpen(!searchOpen)}>
+                <Button variant="ghost" size="icon-sm" onClick={() => setSearchOpen(!searchOpen)} aria-label="Search conversations">
                   <Search className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
+                <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
                   <X className="w-4 h-4" />
                 </Button>
               </div>
@@ -1360,7 +1387,7 @@ export default function Chat() {
                       {conv.pinned ? <Pin className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{conv.pinned ? "📌 " : ""}{conv.title || "New Conversation"}</TooltipContent>
+                  <TooltipContent side="right">{conv.pinned ? <><Pin className="w-3 h-3 inline mr-1" /></> : null}{conv.title || "New Conversation"}</TooltipContent>
                 </Tooltip>
               ))
             ) : (
@@ -1699,7 +1726,7 @@ export default function Chat() {
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile-only sidebar toggle + escalation + guest sign-in */}
         <div className="lg:hidden flex items-center h-12 px-3 shrink-0 justify-between">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
             <Menu className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-1.5">

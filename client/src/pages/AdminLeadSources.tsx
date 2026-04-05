@@ -57,10 +57,10 @@ export default function AdminLeadSources() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card><CardContent className="pt-4"><p className="text-2xl font-bold">{totalLeads.toLocaleString()}</p><p className="text-xs text-muted-foreground">Total Leads</p></CardContent></Card>
-          <Card><CardContent className="pt-4"><p className="text-2xl font-bold">{totalConverted}</p><p className="text-xs text-muted-foreground">Converted</p></CardContent></Card>
-          <Card><CardContent className="pt-4"><p className="text-2xl font-bold">{((totalConverted / totalLeads) * 100).toFixed(1)}%</p><p className="text-xs text-muted-foreground">Conversion Rate</p></CardContent></Card>
-          <Card><CardContent className="pt-4"><p className="text-2xl font-bold">${(totalRevenue / 1000).toFixed(0)}K</p><p className="text-xs text-muted-foreground">Total Revenue</p></CardContent></Card>
+          <Card><CardContent className="pt-4"><p className="text-2xl font-bold font-mono tabular-nums">{totalLeads.toLocaleString()}</p><p className="text-xs text-muted-foreground">Total Leads</p></CardContent></Card>
+          <Card><CardContent className="pt-4"><p className="text-2xl font-bold font-mono tabular-nums">{totalConverted}</p><p className="text-xs text-muted-foreground">Converted</p></CardContent></Card>
+          <Card><CardContent className="pt-4"><p className="text-2xl font-bold font-mono tabular-nums">{((totalConverted / totalLeads) * 100).toFixed(1)}%</p><p className="text-xs text-muted-foreground">Conversion Rate</p></CardContent></Card>
+          <Card><CardContent className="pt-4"><p className="text-2xl font-bold font-mono tabular-nums">${(totalRevenue / 1000).toFixed(0)}K</p><p className="text-xs text-muted-foreground">Total Revenue</p></CardContent></Card>
         </div>
 
         <Card>

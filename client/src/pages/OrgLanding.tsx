@@ -223,14 +223,14 @@ export default function OrgLanding() {
 
           {/* Social proof / stats */}
           <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div className="grid grid-cols-3 gap-8 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
               {[
                 { value: "24/7", label: "AI availability" },
                 { value: "100%", label: "Data privacy" },
                 { value: "5 min", label: "To get started" },
               ].map((stat, i) => (
                 <div key={i}>
-                  <div className="text-2xl sm:text-3xl font-bold" style={{ color: primaryColor }}>
+                  <div className="text-2xl sm:text-3xl font-bold font-mono tabular-nums" style={{ color: primaryColor }}>
                     {stat.value}
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>

@@ -71,7 +71,7 @@ export default function BillingPage() {
                 {plan.current && <Badge className="text-[10px]">Current</Badge>}
               </div>
               <div>
-                <span className="text-2xl font-bold">{plan.price}</span>
+                <span className="text-2xl font-bold font-mono tabular-nums">{plan.price}</span>
                 <span className="text-sm text-muted-foreground">{plan.period}</span>
               </div>
               <ul className="space-y-1.5">

@@ -95,7 +95,7 @@ function StatsOverview() {
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-blue-500/10"><Activity className="h-4 w-4 text-blue-500" /></div>
             <div>
-              <p className="text-2xl font-bold">{data.totalProbes}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{data.totalProbes}</p>
               <p className="text-xs text-muted-foreground">Rate Probes</p>
             </div>
           </div>
@@ -106,7 +106,7 @@ function StatsOverview() {
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-amber-500/10"><AlertTriangle className="h-4 w-4 text-amber-500" /></div>
             <div>
-              <p className="text-2xl font-bold">{data.pendingRecommendations}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{data.pendingRecommendations}</p>
               <p className="text-xs text-muted-foreground">Pending Reviews</p>
             </div>
           </div>
@@ -117,7 +117,7 @@ function StatsOverview() {
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-green-500/10"><Zap className="h-4 w-4 text-green-500" /></div>
             <div>
-              <p className="text-2xl font-bold">{data.activePlans}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{data.activePlans}</p>
               <p className="text-xs text-muted-foreground">Active Plans</p>
             </div>
           </div>
@@ -128,7 +128,7 @@ function StatsOverview() {
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-purple-500/10"><Target className="h-4 w-4 text-purple-500" /></div>
             <div>
-              <p className="text-2xl font-bold">{data.highValueRecords}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{data.highValueRecords}</p>
               <p className="text-xs text-muted-foreground">High-Value Records</p>
             </div>
           </div>
@@ -558,7 +558,7 @@ function SOFRTab() {
                 <div className="flex items-center gap-4 p-4 rounded-lg bg-primary/5 border">
                   <DollarSign className="h-8 w-8 text-primary" />
                   <div>
-                    <p className="text-3xl font-bold">{(sofrData.data as any)?.[0]?.rate || "N/A"}%</p>
+                    <p className="text-3xl font-bold font-mono tabular-nums">{(sofrData.data as any)?.[0]?.rate || "N/A"}%</p>
                     <p className="text-sm text-muted-foreground">
                       Current SOFR as of {(sofrData.data as any)?.[0]?.date || "N/A"}
                     </p>

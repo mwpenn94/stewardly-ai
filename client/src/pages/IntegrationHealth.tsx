@@ -166,7 +166,7 @@ export default function IntegrationHealth() {
                 <Wifi className="h-4 w-4 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground font-medium">Total</span>
               </div>
-              <p className="text-2xl font-bold">{data?.summary.totalConnections ?? "—"}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{data?.summary.totalConnections ?? "—"}</p>
               <p className="text-xs text-muted-foreground">Connections</p>
             </CardContent>
           </Card>
@@ -176,7 +176,7 @@ export default function IntegrationHealth() {
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                 <span className="text-xs text-muted-foreground font-medium">Active</span>
               </div>
-              <p className="text-2xl font-bold text-emerald-500">{data?.summary.activeConnections ?? "—"}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums text-emerald-500">{data?.summary.activeConnections ?? "—"}</p>
               <p className="text-xs text-muted-foreground">Connected</p>
             </CardContent>
           </Card>
@@ -186,7 +186,7 @@ export default function IntegrationHealth() {
                 <Shield className="h-4 w-4 text-blue-500" />
                 <span className="text-xs text-muted-foreground font-medium">Health</span>
               </div>
-              <p className="text-2xl font-bold text-blue-500">{data?.summary.healthyPercent ?? 0}%</p>
+              <p className="text-2xl font-bold font-mono tabular-nums text-blue-500">{data?.summary.healthyPercent ?? 0}%</p>
               <p className="text-xs text-muted-foreground">Healthy</p>
             </CardContent>
           </Card>
@@ -196,7 +196,7 @@ export default function IntegrationHealth() {
                 <Zap className="h-4 w-4 text-amber-500" />
                 <span className="text-xs text-muted-foreground font-medium">Latency</span>
               </div>
-              <p className="text-2xl font-bold">{data?.summary.avgLatencyMs ?? 0}<span className="text-sm font-normal text-muted-foreground">ms</span></p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{data?.summary.avgLatencyMs ?? 0}<span className="text-sm font-normal text-muted-foreground">ms</span></p>
               <p className="text-xs text-muted-foreground">Avg Response</p>
             </CardContent>
           </Card>
@@ -206,7 +206,7 @@ export default function IntegrationHealth() {
                 <BarChart3 className="h-4 w-4 text-purple-500" />
                 <span className="text-xs text-muted-foreground font-medium">Checks</span>
               </div>
-              <p className="text-2xl font-bold">{data?.summary.totalChecks ?? 0}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{data?.summary.totalChecks ?? 0}</p>
               <p className="text-xs text-muted-foreground">Total Runs</p>
             </CardContent>
           </Card>

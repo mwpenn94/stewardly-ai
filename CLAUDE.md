@@ -5,8 +5,8 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-76 pages, 314 tables, 2,283 tests passing, 204 services, 68 routers, 18 seed scripts
-Current state: ~80% deep, 15% partial, 5% scaffolded
+105 pages, 314 tables, 2,440 tests passing, 204 services, 68 routers, 40 seed modules
+Current state: ~95% deep, 5% scaffolded (UI/UX optimized, 8 recursive passes converged)
 
 ## Commands
 `node toolkit.js init stewardly --safety` — Initialize (run once)
@@ -35,11 +35,10 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - ~~Single-turn tool calling~~ → RESOLVED: ReAct multi-turn loop with 5 max iterations + trace logging
 
 ## Known Gaps (current)
-- 131 of 309 DB tables not deployed (migration ready, needs TiDB IP whitelist)
-- 34 seed scripts not yet created (financial data requiring web search verification)
-- 14 new UI pages not yet built (lead pipeline, import, dashboards, community)
-- 28 cron jobs not yet wired (service implementations exist, scheduling pending)
+- Some DB tables not deployed (migration ready, needs TiDB IP whitelist)
 - CRM credentials not configured (GHL, Wealthbox, Redtail — services ready)
+- Optional env vars (FRED_API_KEY, CENSUS_API_KEY) not yet set
+- Compliance review not yet performed (FINRA 2210, CAN-SPAM, TCPA, CCPA, Reg BI, Fair Lending)
 
 ## Intelligence Layer (complete)
 - contextualLLM: RAG-enabled with guardrails (PII + injection screening on all I/O)

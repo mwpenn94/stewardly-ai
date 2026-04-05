@@ -81,7 +81,7 @@ export default function GuestPreferencesTab() {
           <CardDescription className="text-xs">How detailed should AI responses be?</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {(["brief", "balanced", "detailed"] as const).map((depth) => (
               <button
                 key={depth}
@@ -116,7 +116,7 @@ export default function GuestPreferencesTab() {
           <CardDescription className="text-xs">How should the AI communicate with you?</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {(["professional", "friendly", "casual"] as const).map((tone) => (
               <button
                 key={tone}

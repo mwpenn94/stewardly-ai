@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, Sparkles, ChevronRight, Trophy } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, Sparkles, ChevronRight, Trophy, DollarSign, TrendingUp, Shield, Landmark, FileText, Umbrella, CreditCard, BarChart3 } from "lucide-react";
 import { useLocation } from "wouter";
 import { Streamdown } from "streamdown";
 
@@ -44,16 +44,16 @@ export default function EducationCenter() {
   const startedIds = new Set(progress.map((p: any) => p.moduleId));
   const completionRate = modules.length > 0 ? Math.round((completedIds.size / modules.length) * 100) : 0;
 
-  const categories = [
-    { id: undefined, label: "All", icon: "📚" },
-    { id: "budgeting", label: "Budgeting", icon: "💰" },
-    { id: "investing", label: "Investing", icon: "📈" },
-    { id: "insurance", label: "Insurance", icon: "🛡️" },
-    { id: "tax", label: "Tax", icon: "🏛️" },
-    { id: "estate", label: "Estate", icon: "📜" },
-    { id: "retirement", label: "Retirement", icon: "🏖️" },
-    { id: "debt", label: "Debt", icon: "💳" },
-    { id: "credit", label: "Credit", icon: "📊" },
+  const categories: { id: string | undefined; label: string; icon: React.ReactNode }[] = [
+    { id: undefined, label: "All", icon: <BookOpen className="w-4 h-4" /> },
+    { id: "budgeting", label: "Budgeting", icon: <DollarSign className="w-4 h-4" /> },
+    { id: "investing", label: "Investing", icon: <TrendingUp className="w-4 h-4" /> },
+    { id: "insurance", label: "Insurance", icon: <Shield className="w-4 h-4" /> },
+    { id: "tax", label: "Tax", icon: <Landmark className="w-4 h-4" /> },
+    { id: "estate", label: "Estate", icon: <FileText className="w-4 h-4" /> },
+    { id: "retirement", label: "Retirement", icon: <Umbrella className="w-4 h-4" /> },
+    { id: "debt", label: "Debt", icon: <CreditCard className="w-4 h-4" /> },
+    { id: "credit", label: "Credit", icon: <BarChart3 className="w-4 h-4" /> },
   ];
 
   const difficultyColor = (d: string) => {
@@ -143,7 +143,7 @@ export default function EducationCenter() {
                 <span className="text-sm font-medium">Overall Progress</span>
                 <Trophy className="w-4 h-4 text-accent" />
               </div>
-              <div className="text-2xl font-bold">{completionRate}%</div>
+              <div className="text-2xl font-bold font-mono tabular-nums">{completionRate}%</div>
               <Progress value={completionRate} className="mt-2 h-1.5" />
               <p className="text-xs text-muted-foreground mt-1">{completedIds.size} of {modules.length} modules</p>
             </CardContent>
@@ -154,7 +154,7 @@ export default function EducationCenter() {
                 <span className="text-sm font-medium">In Progress</span>
                 <BookOpen className="w-4 h-4 text-blue-500" />
               </div>
-              <div className="text-2xl font-bold">{startedIds.size - completedIds.size}</div>
+              <div className="text-2xl font-bold font-mono tabular-nums">{startedIds.size - completedIds.size}</div>
               <p className="text-xs text-muted-foreground mt-1">modules started</p>
             </CardContent>
           </Card>
@@ -164,7 +164,7 @@ export default function EducationCenter() {
                 <span className="text-sm font-medium">Available</span>
                 <Sparkles className="w-4 h-4 text-amber-500" />
               </div>
-              <div className="text-2xl font-bold">{modules.length - startedIds.size}</div>
+              <div className="text-2xl font-bold font-mono tabular-nums">{modules.length - startedIds.size}</div>
               <p className="text-xs text-muted-foreground mt-1">new modules to explore</p>
             </CardContent>
           </Card>

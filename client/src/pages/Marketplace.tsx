@@ -283,7 +283,7 @@ function AdvisorMatching() {
                   {/* Match score + actions */}
                   <div className="flex flex-col items-center gap-3 shrink-0">
                     <div className="text-center">
-                      <div className={`text-2xl font-bold ${getScoreColor(advisor.matchScore)}`}>
+                      <div className={`text-2xl font-bold font-mono tabular-nums ${getScoreColor(advisor.matchScore)}`}>
                         {advisor.matchScore}%
                       </div>
                       <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Match</div>

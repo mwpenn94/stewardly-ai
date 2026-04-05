@@ -255,10 +255,10 @@ export default function Workflows() {
             </div>
 
             {/* Progress Summary */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Card className="bg-card/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold text-accent">
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">
                     {activeWorkflow.stepStatuses.filter(s => s === "completed").length}/{activeTemplate.steps.length}
                   </p>
                   <p className="text-xs text-muted-foreground">Steps Done</p>
@@ -266,7 +266,7 @@ export default function Workflows() {
               </Card>
               <Card className="bg-card/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-2xl font-bold font-mono tabular-nums text-foreground">
                     {activeTemplate.steps[activeWorkflow.currentStep]?.label || "Done"}
                   </p>
                   <p className="text-xs text-muted-foreground">Current Step</p>
@@ -274,7 +274,7 @@ export default function Workflows() {
               </Card>
               <Card className="bg-card/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold text-muted-foreground">
+                  <p className="text-2xl font-bold font-mono tabular-nums text-muted-foreground">
                     {Object.keys(activeWorkflow.confirmationNumbers).length}
                   </p>
                   <p className="text-xs text-muted-foreground">Confirmations</p>

@@ -100,21 +100,26 @@ async function startServer() {
   });
 
   // ─── Helmet Security Headers ───────────────────────────────────────────
+  const isDev = process.env.NODE_ENV === 'development';
   app.use(
     helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", (_req: any, res: any) => `'nonce-${res.locals.cspNonce}'`],
-          styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://api.fontshare.com", (_req: any, res: any) => `'nonce-${res.locals.cspNonce}'`],
-          fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://cdn.fontshare.com"],
-          imgSrc: ["'self'", "data:", "https:", "blob:"],
-          connectSrc: ["'self'", "https:", "wss:"],
-          frameAncestors: ["'none'"],
-          baseUri: ["'self'"],
-          formAction: ["'self'"],
-        },
-      },
+      // Disable CSP in dev — Vite's inline React Refresh preamble requires 'unsafe-inline'
+      // which conflicts with nonce-based CSP. Full CSP is enforced in production.
+      contentSecurityPolicy: isDev
+        ? false
+        : {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'", "https://cdnjs.cloudflare.com", (_req: any, res: any) => `'nonce-${res.locals.cspNonce}'`],
+              styleSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com", "https://api.fontshare.com", (_req: any, res: any) => `'nonce-${res.locals.cspNonce}'`],
+              fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "https://cdn.fontshare.com"],
+              imgSrc: ["'self'", "data:", "https:", "blob:"],
+              connectSrc: ["'self'", "https:", "wss:"],
+              frameAncestors: ["'none'"],
+              baseUri: ["'self'"],
+              formAction: ["'self'"],
+            },
+          },
       crossOriginEmbedderPolicy: false, // Allow CDN resources
     })
   );

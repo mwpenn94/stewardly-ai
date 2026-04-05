@@ -114,25 +114,25 @@ export default function Insights() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold">{stats.data.total}</p>
+                <p className="text-2xl font-bold font-mono tabular-nums">{stats.data.total}</p>
                 <p className="text-xs text-muted-foreground">Total Active</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-amber-400">{stats.data.newCount}</p>
+                <p className="text-2xl font-bold font-mono tabular-nums text-amber-400">{stats.data.newCount}</p>
                 <p className="text-xs text-muted-foreground">New</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-red-400">{stats.data.byPriority?.critical || 0}</p>
+                <p className="text-2xl font-bold font-mono tabular-nums text-red-400">{stats.data.byPriority?.critical || 0}</p>
                 <p className="text-xs text-muted-foreground">Critical</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-emerald-400">{stats.data.byPriority?.high || 0}</p>
+                <p className="text-2xl font-bold font-mono tabular-nums text-emerald-400">{stats.data.byPriority?.high || 0}</p>
                 <p className="text-xs text-muted-foreground">High Priority</p>
               </CardContent>
             </Card>

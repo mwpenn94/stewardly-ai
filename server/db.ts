@@ -894,3 +894,134 @@ export async function getAiResponseQualityStats(userId: number, days = 30) {
     avgDisclaimers: Math.round(avgDisclaimers * 100) / 100,
   };
 }
+
+// ─── MODEL PRESET CRUD ──────────────────────────────────────────────────────
+export async function listUserModelPresets(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const { aiConfigLayers } = await import("../drizzle/schema");
+  return db.select().from(aiConfigLayers)
+    .where(and(eq(aiConfigLayers.layerType, "client"), eq(aiConfigLayers.entityId, userId)))
+    .orderBy(desc(aiConfigLayers.updatedAt));
+}
+
+export async function createModelPreset(userId: number, preset: {
+  name: string;
+  description?: string;
+  perspectives: string[];
+  weights: Record<string, number>;
+  modelPreferences?: { primary?: string; fallback?: string; synthesis?: string };
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const { aiConfigLayers } = await import("../drizzle/schema");
+  const config = { type: "model_preset", ...preset, createdAt: Date.now() };
+  const [result] = await db.insert(aiConfigLayers).values({
+    layerType: "client",
+    entityId: userId,
+    config,
+  }).$returningId();
+  return { id: result.id, ...config };
+}
+
+export async function updateModelPreset(id: number, userId: number, updates: {
+  name?: string;
+  description?: string;
+  perspectives?: string[];
+  weights?: Record<string, number>;
+  modelPreferences?: { primary?: string; fallback?: string; synthesis?: string };
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const { aiConfigLayers } = await import("../drizzle/schema");
+  const [existing] = await db.select().from(aiConfigLayers)
+    .where(and(eq(aiConfigLayers.id, id), eq(aiConfigLayers.entityId, userId)))
+    .limit(1);
+  if (!existing) throw new Error("Preset not found");
+  const currentConfig = (existing.config as any) || {};
+  const merged = { ...currentConfig, ...updates, updatedAt: Date.now() };
+  await db.update(aiConfigLayers).set({ config: merged }).where(eq(aiConfigLayers.id, id));
+  return { id, ...merged };
+}
+
+export async function deleteModelPreset(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return { success: false };
+  const { aiConfigLayers } = await import("../drizzle/schema");
+  await db.delete(aiConfigLayers)
+    .where(and(eq(aiConfigLayers.id, id), eq(aiConfigLayers.entityId, userId)));
+  return { success: true };
+}
+
+// ─── MODEL ANALYTICS QUERIES ────────────────────────────────────────────────
+export async function getModelUsageStats(userId?: number, days: number = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const { usageTracking } = await import("../drizzle/schema");
+  const since = new Date(Date.now() - days * 86400000);
+  const conditions: any[] = [gte(usageTracking.createdAt, since)];
+  if (userId) conditions.push(eq(usageTracking.userId, userId));
+  return db.select({
+    model: usageTracking.model,
+    totalQueries: sql<number>`COUNT(*)`.as("totalQueries"),
+    totalInputTokens: sql<number>`COALESCE(SUM(${usageTracking.inputTokens}), 0)`.as("totalInputTokens"),
+    totalOutputTokens: sql<number>`COALESCE(SUM(${usageTracking.outputTokens}), 0)`.as("totalOutputTokens"),
+    totalCost: sql<string>`COALESCE(SUM(${usageTracking.estimatedCost}), 0)`.as("totalCost"),
+    avgInputTokens: sql<number>`COALESCE(AVG(${usageTracking.inputTokens}), 0)`.as("avgInputTokens"),
+    avgOutputTokens: sql<number>`COALESCE(AVG(${usageTracking.outputTokens}), 0)`.as("avgOutputTokens"),
+  }).from(usageTracking)
+    .where(and(...conditions))
+    .groupBy(usageTracking.model);
+}
+
+export async function getModelUsageTimeline(userId?: number, days: number = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const { usageTracking } = await import("../drizzle/schema");
+  const since = new Date(Date.now() - days * 86400000);
+  const conditions: any[] = [gte(usageTracking.createdAt, since)];
+  if (userId) conditions.push(eq(usageTracking.userId, userId));
+  return db.select({
+    date: sql<string>`DATE(${usageTracking.createdAt})`.as("date"),
+    model: usageTracking.model,
+    queries: sql<number>`COUNT(*)`.as("queries"),
+    cost: sql<string>`COALESCE(SUM(${usageTracking.estimatedCost}), 0)`.as("cost"),
+  }).from(usageTracking)
+    .where(and(...conditions))
+    .groupBy(sql`DATE(${usageTracking.createdAt})`, usageTracking.model)
+    .orderBy(sql`DATE(${usageTracking.createdAt})`);
+}
+
+export async function getModelRatingSummary(userId?: number, days: number = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const { responseRatings } = await import("../drizzle/schema");
+  const since = new Date(Date.now() - days * 86400000);
+  const conditions: any[] = [gte(responseRatings.createdAt, since)];
+  if (userId) conditions.push(eq(responseRatings.userId, userId));
+  return db.select({
+    model: responseRatings.model,
+    thumbsUp: sql<number>`SUM(CASE WHEN ${responseRatings.rating} = 'thumbs_up' THEN 1 ELSE 0 END)`.as("thumbsUp"),
+    thumbsDown: sql<number>`SUM(CASE WHEN ${responseRatings.rating} = 'thumbs_down' THEN 1 ELSE 0 END)`.as("thumbsDown"),
+    total: sql<number>`COUNT(*)`.as("total"),
+  }).from(responseRatings)
+    .where(and(...conditions))
+    .groupBy(responseRatings.model);
+}
+
+export async function getOperationTypeBreakdown(userId?: number, days: number = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const { usageTracking } = await import("../drizzle/schema");
+  const since = new Date(Date.now() - days * 86400000);
+  const conditions: any[] = [gte(usageTracking.createdAt, since)];
+  if (userId) conditions.push(eq(usageTracking.userId, userId));
+  return db.select({
+    operationType: usageTracking.operationType,
+    count: sql<number>`COUNT(*)`.as("count"),
+    totalCost: sql<string>`COALESCE(SUM(${usageTracking.estimatedCost}), 0)`.as("totalCost"),
+  }).from(usageTracking)
+    .where(and(...conditions))
+    .groupBy(usageTracking.operationType)
+    .orderBy(sql`COUNT(*) DESC`);
+}

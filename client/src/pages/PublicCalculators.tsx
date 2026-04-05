@@ -45,7 +45,7 @@ function RetirementCalculator() {
         {result !== null && (
           <div className="p-3 bg-muted/30 rounded-lg text-center">
             <p className="text-xs text-muted-foreground">Projected Retirement Savings</p>
-            <p className="text-2xl font-bold text-primary">${result.toLocaleString()}</p>
+            <p className="text-2xl font-bold font-mono tabular-nums text-primary">${result.toLocaleString()}</p>
             <p className="text-xs text-muted-foreground mt-1">Assuming 7% average annual return</p>
           </div>
         )}
@@ -89,7 +89,7 @@ function TaxBracketCalculator() {
         <div><Label className="text-xs">Taxable Income (MFJ)</Label><Input type="number" value={income} onChange={e => setIncome(+e.target.value)} /></div>
         <Button onClick={calculate} className="w-full"><Calculator className="h-4 w-4 mr-1" /> Calculate</Button>
         {result && (
-          <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
             <div className="p-2 bg-muted/30 rounded-lg">
               <p className="text-xs text-muted-foreground">Federal Tax</p>
               <p className="text-lg font-bold">${result.tax.toLocaleString()}</p>

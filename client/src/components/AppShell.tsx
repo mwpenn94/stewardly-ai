@@ -425,7 +425,7 @@ export default function AppShell({ children, title }: AppShellProps) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Mobile header bar */}
         <div className="lg:hidden flex items-center h-12 px-3 shrink-0 border-b border-border/50 bg-card/30 backdrop-blur-sm">
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setMobileOpen(true)}>
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
             <Menu className="w-5 h-5" />
           </Button>
           {title && <span className="text-sm font-medium truncate ml-2">{title}</span>}

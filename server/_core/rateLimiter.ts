@@ -20,7 +20,7 @@ function skipStatic(req: { path: string }): boolean {
  */
 export const generalLimiter = rateLimit({
   windowMs: 900_000, // 15 minutes
-  max: 100,
+  max: process.env.NODE_ENV === "development" ? 1000 : 300,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   skip: skipStatic,
@@ -40,7 +40,7 @@ export const generalLimiter = rateLimit({
  */
 export const sensitiveTrpcLimiter = rateLimit({
   windowMs: 900_000,
-  max: 20,
+  max: process.env.NODE_ENV === "development" ? 200 : 60,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   validate: { xForwardedForHeader: false, default: true },
@@ -59,7 +59,7 @@ export const sensitiveTrpcLimiter = rateLimit({
  */
 export const authLimiter = rateLimit({
   windowMs: 900_000,
-  max: 5,
+  max: process.env.NODE_ENV === "development" ? 50 : 15,
   standardHeaders: "draft-7",
   legacyHeaders: false,
   validate: { xForwardedForHeader: false, default: true },

@@ -223,6 +223,7 @@ export default function Organizations() {
                   <p className="text-sm">No members yet. Invite someone to get started.</p>
                 </div>
               ) : (
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -273,6 +274,7 @@ export default function Organizations() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>

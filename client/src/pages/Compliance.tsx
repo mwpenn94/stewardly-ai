@@ -91,31 +91,31 @@ export default function Compliance() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <Card>
               <CardContent className="p-3 text-center">
-                <p className="text-2xl font-bold">{stats.data.totalReviews}</p>
+                <p className="text-2xl font-bold font-mono tabular-nums">{stats.data.totalReviews}</p>
                 <p className="text-xs text-muted-foreground">Total Reviews</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-3 text-center">
-                <p className="text-2xl font-bold text-emerald-400">{stats.data.cleanReviews}</p>
+                <p className="text-2xl font-bold font-mono tabular-nums text-emerald-400">{stats.data.cleanReviews}</p>
                 <p className="text-xs text-muted-foreground">Clean</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-3 text-center">
-                <p className="text-2xl font-bold text-amber-400">{stats.data.flaggedReviews}</p>
+                <p className="text-2xl font-bold font-mono tabular-nums text-amber-400">{stats.data.flaggedReviews}</p>
                 <p className="text-xs text-muted-foreground">Flagged</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-3 text-center">
-                <p className="text-2xl font-bold text-red-400">{stats.data.criticalIssues}</p>
+                <p className="text-2xl font-bold font-mono tabular-nums text-red-400">{stats.data.criticalIssues}</p>
                 <p className="text-xs text-muted-foreground">Critical</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-3 text-center">
-                <p className="text-2xl font-bold text-blue-400">{stats.data.complianceRate}%</p>
+                <p className="text-2xl font-bold font-mono tabular-nums text-blue-400">{stats.data.complianceRate}%</p>
                 <p className="text-xs text-muted-foreground">Compliance Rate</p>
               </CardContent>
             </Card>

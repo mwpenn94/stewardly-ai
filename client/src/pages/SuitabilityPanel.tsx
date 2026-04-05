@@ -68,7 +68,7 @@ export default function SuitabilityPanel() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-3">
-                    <span className={`text-3xl font-bold ${riskColor}`}>{riskScore}</span>
+                    <span className={`text-3xl font-bold font-mono tabular-nums ${riskColor}`}>{riskScore}</span>
                     <Badge variant="outline" className={riskColor}>{riskLabel}</Badge>
                   </div>
                   <Progress value={riskScore} className="mt-3" />
@@ -80,7 +80,7 @@ export default function SuitabilityPanel() {
                   <CardTitle className="text-sm text-muted-foreground">Investment Horizon</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <span className="text-3xl font-bold">{profile.investmentHorizon || "N/A"}</span>
+                  <span className="text-3xl font-bold font-mono tabular-nums">{profile.investmentHorizon || "N/A"}</span>
                   <p className="text-xs text-muted-foreground mt-1">investment horizon</p>
                 </CardContent>
               </Card>
@@ -91,7 +91,7 @@ export default function SuitabilityPanel() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
-                    <span className="text-3xl font-bold text-green-600">85</span>
+                    <span className="text-3xl font-bold font-mono tabular-nums text-green-600">85</span>
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">overall suitability score</p>

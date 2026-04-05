@@ -294,25 +294,25 @@ export default function EmailCampaigns() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <Card>
                     <CardContent className="py-3 text-center">
-                      <p className="text-2xl font-bold">{analytics.data.deliveryRate}%</p>
+                      <p className="text-2xl font-bold font-mono tabular-nums">{analytics.data.deliveryRate}%</p>
                       <p className="text-xs text-muted-foreground">Delivery Rate</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="py-3 text-center">
-                      <p className="text-2xl font-bold">{analytics.data.openRate}%</p>
+                      <p className="text-2xl font-bold font-mono tabular-nums">{analytics.data.openRate}%</p>
                       <p className="text-xs text-muted-foreground">Open Rate</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="py-3 text-center">
-                      <p className="text-2xl font-bold">{analytics.data.clickRate}%</p>
+                      <p className="text-2xl font-bold font-mono tabular-nums">{analytics.data.clickRate}%</p>
                       <p className="text-xs text-muted-foreground">Click Rate</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="py-3 text-center">
-                      <p className="text-2xl font-bold">{analytics.data.bounceRate}%</p>
+                      <p className="text-2xl font-bold font-mono tabular-nums">{analytics.data.bounceRate}%</p>
                       <p className="text-xs text-muted-foreground">Bounce Rate</p>
                     </CardContent>
                   </Card>

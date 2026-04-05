@@ -137,7 +137,7 @@ export default function GlobalAdmin() {
                 <Building2 className="w-4 h-4 text-blue-400" />
                 <span className="text-xs text-muted-foreground">Organizations</span>
               </div>
-              <p className="text-2xl font-bold">{orgs.length}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{orgs.length}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
@@ -146,7 +146,7 @@ export default function GlobalAdmin() {
                 <Users className="w-4 h-4 text-emerald-400" />
                 <span className="text-xs text-muted-foreground">Total Users</span>
               </div>
-              <p className="text-2xl font-bold">{totalUsers}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{totalUsers}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
@@ -155,7 +155,7 @@ export default function GlobalAdmin() {
                 <AlertTriangle className="w-4 h-4 text-amber-400" />
                 <span className="text-xs text-muted-foreground">Pending Reviews</span>
               </div>
-              <p className="text-2xl font-bold">{pendingCount}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{pendingCount}</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
@@ -164,7 +164,7 @@ export default function GlobalAdmin() {
                 <TrendingUp className="w-4 h-4 text-purple-400" />
                 <span className="text-xs text-muted-foreground">Satisfaction</span>
               </div>
-              <p className="text-2xl font-bold">{stats.total > 0 ? Math.round((stats.up / stats.total) * 100) : 0}%</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{stats.total > 0 ? Math.round((stats.up / stats.total) * 100) : 0}%</p>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
@@ -173,7 +173,7 @@ export default function GlobalAdmin() {
                 <Activity className="w-4 h-4 text-accent" />
                 <span className="text-xs text-muted-foreground">Total Feedback</span>
               </div>
-              <p className="text-2xl font-bold">{stats.total}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums">{stats.total}</p>
             </CardContent>
           </Card>
         </div>
@@ -435,7 +435,7 @@ export default function GlobalAdmin() {
                   ].map((metric, i) => (
                     <div key={i} className="text-center p-4 rounded-lg border border-border bg-secondary/20">
                       <div className={`mx-auto mb-2 ${metric.color}`}>{metric.icon}</div>
-                      <p className="text-2xl font-bold">{metric.value}</p>
+                      <p className="text-2xl font-bold font-mono tabular-nums">{metric.value}</p>
                       <p className="text-xs text-muted-foreground mt-1">{metric.label}</p>
                     </div>
                   ))}

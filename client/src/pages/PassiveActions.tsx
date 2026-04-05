@@ -158,7 +158,7 @@ export default function PassiveActions() {
                 <Activity className="h-4 w-4 text-emerald-500" />
                 <span className="text-sm text-muted-foreground">Active</span>
               </div>
-              <p className="text-2xl font-bold mt-1">{stats.enabled}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums mt-1">{stats.enabled}</p>
               <p className="text-xs text-muted-foreground">{stats.coverage}% coverage</p>
             </CardContent>
           </Card>
@@ -168,7 +168,7 @@ export default function PassiveActions() {
                 <Settings2 className="h-4 w-4 text-blue-500" />
                 <span className="text-sm text-muted-foreground">Available</span>
               </div>
-              <p className="text-2xl font-bold mt-1">{stats.totalPossible}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums mt-1">{stats.totalPossible}</p>
               <p className="text-xs text-muted-foreground">across {sourceData?.sources.length || 0} sources</p>
             </CardContent>
           </Card>
@@ -178,7 +178,7 @@ export default function PassiveActions() {
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                 <span className="text-sm text-muted-foreground">Successes</span>
               </div>
-              <p className="text-2xl font-bold mt-1">{stats.recentSuccesses}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums mt-1">{stats.recentSuccesses}</p>
               <p className="text-xs text-muted-foreground">recent executions</p>
             </CardContent>
           </Card>

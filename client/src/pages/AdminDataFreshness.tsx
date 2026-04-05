@@ -76,22 +76,22 @@ export default function AdminDataFreshness() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-4 text-center">
-              <p className="text-3xl font-bold text-emerald-500">{freshCount}</p>
+              <p className="text-3xl font-bold font-mono tabular-nums text-emerald-500">{freshCount}</p>
               <p className="text-xs text-muted-foreground">Fresh</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 text-center">
-              <p className="text-3xl font-bold text-amber-500">{staleCount}</p>
+              <p className="text-3xl font-bold font-mono tabular-nums text-amber-500">{staleCount}</p>
               <p className="text-xs text-muted-foreground">Stale</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 text-center">
-              <p className="text-3xl font-bold">{PROVIDERS.length}</p>
+              <p className="text-3xl font-bold font-mono tabular-nums">{PROVIDERS.length}</p>
               <p className="text-xs text-muted-foreground">Total Providers</p>
             </CardContent>
           </Card>

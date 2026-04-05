@@ -199,7 +199,7 @@ export default function BehavioralCoach() {
                         <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full ${config.bg} mb-2`}>
                           <Icon className={`w-5 h-5 ${config.color}`} />
                         </div>
-                        <p className={`text-2xl font-bold ${sc.color}`}>{score}</p>
+                        <p className={`text-2xl font-bold font-mono tabular-nums ${sc.color}`}>{score}</p>
                         <p className="text-xs text-muted-foreground">{config.label}</p>
                       </CardContent>
                     </Card>
@@ -345,17 +345,17 @@ export default function BehavioralCoach() {
                   <CardTitle className="text-sm">Streak Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                     <div>
-                      <p className="text-2xl font-bold text-amber-400">{Math.max(...habits.map(h => h.streak))}</p>
+                      <p className="text-2xl font-bold font-mono tabular-nums text-amber-400">{Math.max(...habits.map(h => h.streak))}</p>
                       <p className="text-xs text-muted-foreground">Best Streak</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-blue-400">{habits.filter(h => h.completedToday).length}</p>
+                      <p className="text-2xl font-bold font-mono tabular-nums text-blue-400">{habits.filter(h => h.completedToday).length}</p>
                       <p className="text-xs text-muted-foreground">Done Today</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-emerald-400">{Math.round((habits.filter(h => h.streak > 0).length / habits.length) * 100)}%</p>
+                      <p className="text-2xl font-bold font-mono tabular-nums text-emerald-400">{Math.round((habits.filter(h => h.streak > 0).length / habits.length) * 100)}%</p>
                       <p className="text-xs text-muted-foreground">Active Rate</p>
                     </div>
                   </div>

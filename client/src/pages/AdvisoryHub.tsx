@@ -96,7 +96,7 @@ function QuickStat({ icon: Icon, label, value, color }: { icon: any; label: stri
       <CardContent className="p-3 flex items-center gap-3">
         <Icon className={`h-5 w-5 ${color}`} />
         <div>
-          <div className="text-lg font-bold">{value}</div>
+          <div className="text-lg font-bold font-mono tabular-nums">{value}</div>
           <div className="text-xs text-muted-foreground">{label}</div>
         </div>
       </CardContent>

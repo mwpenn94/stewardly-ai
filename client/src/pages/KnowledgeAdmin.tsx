@@ -78,7 +78,7 @@ export default function KnowledgeAdmin() {
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-blue-500" />
                 <div>
-                  <p className="text-2xl font-bold">{allArticlesQ.data?.length ?? "—"}</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">{allArticlesQ.data?.length ?? "—"}</p>
                   <p className="text-xs text-muted-foreground">Articles</p>
                 </div>
               </div>
@@ -89,7 +89,7 @@ export default function KnowledgeAdmin() {
               <div className="flex items-center gap-3">
                 <AlertTriangle className="w-5 h-5 text-amber-500" />
                 <div>
-                  <p className="text-2xl font-bold">{gapsQ.data?.length ?? "—"}</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">{gapsQ.data?.length ?? "—"}</p>
                   <p className="text-xs text-muted-foreground">Knowledge Gaps</p>
                 </div>
               </div>
@@ -100,7 +100,7 @@ export default function KnowledgeAdmin() {
               <div className="flex items-center gap-3">
                 <Zap className="w-5 h-5 text-purple-500" />
                 <div>
-                  <p className="text-2xl font-bold">{toolsQ.data?.length ?? "—"}</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">{toolsQ.data?.length ?? "—"}</p>
                   <p className="text-xs text-muted-foreground">AI Tools</p>
                 </div>
               </div>
@@ -111,7 +111,7 @@ export default function KnowledgeAdmin() {
               <div className="flex items-center gap-3">
                 <Brain className="w-5 h-5 text-green-500" />
                 <div>
-                  <p className="text-2xl font-bold">{modesQ.data?.length ?? "—"}</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">{modesQ.data?.length ?? "—"}</p>
                   <p className="text-xs text-muted-foreground">Capability Modes</p>
                 </div>
               </div>
@@ -351,7 +351,7 @@ export default function KnowledgeAdmin() {
                               strokeLinecap="round" />
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className={`text-2xl font-bold ${healthColor}`}>{healthScore}</span>
+                            <span className={`text-2xl font-bold font-mono tabular-nums ${healthColor}`}>{healthScore}</span>
                             <span className="text-[9px] text-muted-foreground">/ 100</span>
                           </div>
                         </div>

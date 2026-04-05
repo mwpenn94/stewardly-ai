@@ -96,7 +96,7 @@ export default function EquityComp() {
                       <Input type="number" step="0.01" placeholder="50.00" value={form.currentFMV} onChange={e => setForm(p => ({ ...p, currentFMV: e.target.value }))} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs text-muted-foreground">Shares Granted</label>
                       <Input type="number" placeholder="1000" value={form.sharesGranted} onChange={e => setForm(p => ({ ...p, sharesGranted: e.target.value }))} />
@@ -136,7 +136,7 @@ export default function EquityComp() {
                 <span className="text-sm font-medium">Total Vested Value</span>
                 <DollarSign className="w-4 h-4 text-accent" />
               </div>
-              <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
+              <div className="text-2xl font-bold font-mono tabular-nums">{formatCurrency(totalValue)}</div>
               <p className="text-xs text-muted-foreground">{grants.length} grant{grants.length !== 1 ? "s" : ""}</p>
             </CardContent>
           </Card>
@@ -146,7 +146,7 @@ export default function EquityComp() {
                 <span className="text-sm font-medium">Companies</span>
                 <Building2 className="w-4 h-4 text-blue-500" />
               </div>
-              <div className="text-2xl font-bold">{new Set(grants.map((g: any) => g.company)).size}</div>
+              <div className="text-2xl font-bold font-mono tabular-nums">{new Set(grants.map((g: any) => g.company)).size}</div>
             </CardContent>
           </Card>
           <Card>

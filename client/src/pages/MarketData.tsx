@@ -108,7 +108,7 @@ export default function MarketData() {
               {detailQuery.data?.price != null ? (
                 <div className="space-y-4">
                   <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-bold">${detailQuery.data.price.toFixed(2)}</span>
+                    <span className="text-3xl font-bold font-mono tabular-nums">${detailQuery.data.price.toFixed(2)}</span>
                     {detailQuery.data.change != null && (
                       <span className={`flex items-center gap-1 text-lg font-medium ${detailQuery.data.change >= 0 ? "text-green-400" : "text-red-400"}`}>
                         {detailQuery.data.change >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}

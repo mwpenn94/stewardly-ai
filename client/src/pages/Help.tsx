@@ -543,7 +543,7 @@ export default function Help() {
 
         {/* Tabs: Guide / FAQ / Architecture / Contact */}
         <Tabs defaultValue="guide" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 max-w-lg mx-auto">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 max-w-lg mx-auto">
             <TabsTrigger value="guide" className="text-xs gap-1"><BookOpen className="w-3 h-3" /> Guide</TabsTrigger>
             <TabsTrigger value="faq" className="text-xs gap-1"><HelpCircle className="w-3 h-3" /> FAQ</TabsTrigger>
             <TabsTrigger value="architecture" className="text-xs gap-1"><Layers className="w-3 h-3" /> Architecture</TabsTrigger>
@@ -605,25 +605,25 @@ export default function Help() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold text-accent">62</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">62</p>
                   <p className="text-[10px] text-muted-foreground">Pages</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold text-accent">102</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">102</p>
                   <p className="text-[10px] text-muted-foreground">Services</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold text-accent">53</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">53</p>
                   <p className="text-[10px] text-muted-foreground">API Routers</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold text-accent">1,627+</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">1,627+</p>
                   <p className="text-[10px] text-muted-foreground">Tests Passing</p>
                 </CardContent>
               </Card>

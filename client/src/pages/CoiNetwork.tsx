@@ -121,7 +121,7 @@ export default function CoiNetwork() {
                   <span className="text-sm font-medium">Total Contacts</span>
                   <Users className="w-4 h-4 text-accent" />
                 </div>
-                <div className="text-2xl font-bold">{analytics.totalContacts}</div>
+                <div className="text-2xl font-bold font-mono tabular-nums">{analytics.totalContacts}</div>
               </CardContent>
             </Card>
             <Card>
@@ -130,7 +130,7 @@ export default function CoiNetwork() {
                   <span className="text-sm font-medium">Referrals Sent</span>
                   <ArrowRightLeft className="w-4 h-4 text-blue-500" />
                 </div>
-                <div className="text-2xl font-bold">{analytics.totalReferralsSent}</div>
+                <div className="text-2xl font-bold font-mono tabular-nums">{analytics.totalReferralsSent}</div>
               </CardContent>
             </Card>
             <Card>
@@ -139,7 +139,7 @@ export default function CoiNetwork() {
                   <span className="text-sm font-medium">Reciprocity Score</span>
                   <BarChart3 className="w-4 h-4 text-emerald-500" />
                 </div>
-                <div className="text-2xl font-bold">{analytics.reciprocityScore}%</div>
+                <div className="text-2xl font-bold font-mono tabular-nums">{analytics.reciprocityScore}%</div>
               </CardContent>
             </Card>
             <Card>
@@ -148,7 +148,7 @@ export default function CoiNetwork() {
                   <span className="text-sm font-medium">Dormant</span>
                   <Phone className="w-4 h-4 text-amber-500" />
                 </div>
-                <div className="text-2xl font-bold">{analytics.dormantContacts}</div>
+                <div className="text-2xl font-bold font-mono tabular-nums">{analytics.dormantContacts}</div>
                 <p className="text-xs text-muted-foreground">90+ days inactive</p>
               </CardContent>
             </Card>
