@@ -139,6 +139,9 @@ export default function AppShell({ children, title }: AppShellProps) {
   }, [handleTouchStart, handleTouchEnd]);
 
   // G-then-X keyboard navigation — uses custom shortcuts from Settings
+  // Default navigation targets: "/chat", "/operations", "/intelligence-hub",
+  // "/advisory", "/relationships", "/market-data", "/documents",
+  // "/integrations", "/settings/profile", "/help"
   const { shortcutMap } = useCustomShortcuts();
   const gPressedRef = useRef(false);
   const gTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

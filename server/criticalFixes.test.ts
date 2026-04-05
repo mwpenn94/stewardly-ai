@@ -235,7 +235,7 @@ describe("Improvement A — Tool Invocation Guidelines", () => {
       userRole: "user",
       suitabilityCompleted: false,
     });
-    expect(prompt).toContain("User-stated > Integration > Enrichment > Pipeline");
+    expect(prompt).toContain("User-stated > Integration > Web Search > Enrichment > Pipeline");
   });
 });
 

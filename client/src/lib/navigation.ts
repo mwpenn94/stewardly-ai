@@ -55,6 +55,9 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "HeartPulse", label: "Integration Health", href: "/integration-health", minRole: "advisor" },
   { iconName: "RefreshCw", label: "Passive Actions", href: "/passive-actions", minRole: "user" },
   { iconName: "Activity", label: "My Progress", href: "/proficiency", minRole: "user" },
+  { iconName: "Shield", label: "Protection Score", href: "/protection-score", minRole: "user" },
+  { iconName: "Users2", label: "Community", href: "/community", minRole: "advisor" },
+  { iconName: "LayoutDashboard", label: "Client Dashboard", href: "/client-dashboard", minRole: "user" },
 ];
 
 // ─── ADMIN section ───────────────────────────────────────────────────────────
@@ -66,6 +69,11 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "Globe", label: "Global Admin", href: "/admin", minRole: "admin" },
   { iconName: "Wrench", label: "Improvement Engine", href: "/improvement", minRole: "advisor" },
   { iconName: "BookOpen", label: "Platform Guide", href: "/admin/guide", minRole: "admin" },
+  { iconName: "Activity", label: "System Health", href: "/admin/system-health", minRole: "admin" },
+  { iconName: "Database", label: "Data Freshness", href: "/admin/data-freshness", minRole: "admin" },
+  { iconName: "Target", label: "Lead Sources", href: "/admin/lead-sources", minRole: "admin" },
+  { iconName: "TrendingUp", label: "Rate Management", href: "/admin/rate-management", minRole: "admin" },
+  { iconName: "FileText", label: "Platform Reports", href: "/admin/platform-reports", minRole: "admin" },
 ];
 
 // ─── UTILITY section (always visible at bottom) ──────────────────────────────

@@ -177,14 +177,14 @@ describe("Keyboard Shortcut Hint in Sidebar", () => {
 describe("Expanded WhatsNewModal Changelog", () => {
   const source = fs.readFileSync("client/src/components/WhatsNewModal.tsx", "utf-8");
 
-  it("should have version bumped to 2026.04.01", () => {
-    expect(source).toContain('CURRENT_VERSION = "2026.04.01"');
+  it("should have version bumped to 2026.04.04", () => {
+    expect(source).toContain('CURRENT_VERSION = "2026.04.04"');
   });
 
-  it("should have 4 changelog releases", () => {
+  it("should have 5 changelog releases", () => {
     const versionMatches = source.match(/version:\s*"/g);
     expect(versionMatches).toBeTruthy();
-    expect(versionMatches!.length).toBe(4);
+    expect(versionMatches!.length).toBe(5);
   });
 
   it("should have the latest release about keyboard shortcuts", () => {

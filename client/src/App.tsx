@@ -79,6 +79,35 @@ const DataIntelligence = lazy(() => import("./pages/DataIntelligence"));
 const AgenticHub = lazy(() => import("./pages/AgenticHub"));
 const EmailCampaigns = lazy(() => import("./pages/EmailCampaigns"));
 const Changelog = lazy(() => import("./pages/Changelog"));
+const ImportData = lazy(() => import("./pages/ImportData"));
+const LeadPipeline = lazy(() => import("./pages/LeadPipeline"));
+const LeadDetail = lazy(() => import("./pages/LeadDetail"));
+const CRMSync = lazy(() => import("./pages/CRMSync"));
+const ComplianceAudit = lazy(() => import("./pages/ComplianceAudit"));
+const TaxPlanning = lazy(() => import("./pages/TaxPlanning"));
+const InsuranceAnalysis = lazy(() => import("./pages/InsuranceAnalysis"));
+const EstatePlanning = lazy(() => import("./pages/EstatePlanning"));
+const SocialSecurity = lazy(() => import("./pages/SocialSecurity"));
+const MedicareAnalysis = lazy(() => import("./pages/MedicareAnalysis"));
+const RiskAssessment = lazy(() => import("./pages/RiskAssessment"));
+const IncomeProjection = lazy(() => import("./pages/IncomeProjection"));
+const PublicCalculators = lazy(() => import("./pages/PublicCalculators"));
+const EmbedWidget = lazy(() => import("./pages/EmbedWidget"));
+const AdvisorProfile = lazy(() => import("./pages/AdvisorProfile"));
+const TeamManagement = lazy(() => import("./pages/TeamManagement"));
+const BillingPage = lazy(() => import("./pages/BillingPage"));
+const APIKeys = lazy(() => import("./pages/APIKeys"));
+const WebhookManager = lazy(() => import("./pages/WebhookManager"));
+const ClientOnboarding = lazy(() => import("./pages/ClientOnboarding"));
+const FinancialProtectionScore = lazy(() => import("./pages/FinancialProtectionScore"));
+const Community = lazy(() => import("./pages/Community"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const AdminSystemHealth = lazy(() => import("./pages/AdminSystemHealth"));
+const AdminDataFreshness = lazy(() => import("./pages/AdminDataFreshness"));
+const AdminLeadSources = lazy(() => import("./pages/AdminLeadSources"));
+const AdminRateManagement = lazy(() => import("./pages/AdminRateManagement"));
+const AdminPlatformReports = lazy(() => import("./pages/AdminPlatformReports"));
+const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 
 function Router() {
   return (
@@ -122,6 +151,37 @@ function Router() {
         <Route path={"/admin/guide"} component={PlatformGuide} />
         <Route path={"/passive-actions"} component={PassiveActions} />
         <Route path={"/market-data"} component={MarketData} />
+
+        {/* New feature pages */}
+        <Route path="/import" component={ImportData} />
+        <Route path="/leads" component={LeadPipeline} />
+        <Route path="/leads/:id" component={LeadDetail} />
+        <Route path="/crm-sync" component={CRMSync} />
+        <Route path="/compliance-audit" component={ComplianceAudit} />
+        <Route path="/tax-planning" component={TaxPlanning} />
+        <Route path="/insurance-analysis" component={InsuranceAnalysis} />
+        <Route path="/estate" component={EstatePlanning} />
+        <Route path="/social-security" component={SocialSecurity} />
+        <Route path="/medicare" component={MedicareAnalysis} />
+        <Route path="/risk-assessment" component={RiskAssessment} />
+        <Route path="/income-projection" component={IncomeProjection} />
+        <Route path="/public-calculators" component={PublicCalculators} />
+        <Route path="/embed" component={EmbedWidget} />
+        <Route path="/advisor/:id" component={AdvisorProfile} />
+        <Route path="/admin/team" component={TeamManagement} />
+        <Route path="/admin/billing" component={BillingPage} />
+        <Route path="/admin/api-keys" component={APIKeys} />
+        <Route path="/admin/webhooks" component={WebhookManager} />
+        <Route path="/client-onboarding" component={ClientOnboarding} />
+        <Route path="/protection-score" component={FinancialProtectionScore} />
+        <Route path="/community" component={Community} />
+        <Route path="/unsubscribe" component={Unsubscribe} />
+        <Route path="/admin/system-health" component={AdminSystemHealth} />
+        <Route path="/admin/data-freshness" component={AdminDataFreshness} />
+        <Route path="/admin/lead-sources" component={AdminLeadSources} />
+        <Route path="/admin/rate-management" component={AdminRateManagement} />
+        <Route path="/admin/platform-reports" component={AdminPlatformReports} />
+        <Route path="/client-dashboard" component={ClientDashboard} />
 
         {/* Consolidated Hub Pages */}
         <Route path={"/operations"} component={OperationsHub} />

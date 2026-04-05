@@ -1,5 +1,6 @@
 import { ENV } from "./env";
 import { isRequestAllowed, recordSuccess, recordFailure } from "./circuitBreaker";
+import { getDefaultModelId } from "../shared/config/modelRegistry";
 
 export type Role = "system" | "user" | "assistant" | "tool" | "function";
 
@@ -58,6 +59,8 @@ export type ToolChoice =
 
 export type InvokeParams = {
   messages: Message[];
+  /** Model ID from the Model Registry. Defaults to registry default if not specified. */
+  model?: string;
   tools?: Tool[];
   toolChoice?: ToolChoice;
   tool_choice?: ToolChoice;
@@ -284,6 +287,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   const {
     messages,
+    model,
     tools,
     toolChoice,
     tool_choice,
@@ -294,7 +298,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model: model || getDefaultModelId(),
     messages: messages.map(normalizeMessage),
   };
 
