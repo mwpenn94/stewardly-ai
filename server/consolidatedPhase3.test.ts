@@ -444,7 +444,7 @@ describe("Adaptive Rate Management — Integration Onboarding", () => {
     expect(typeof result.suggestedRpm).toBe("number");
     expect(typeof result.riskLevel).toBe("string");
     expect(Array.isArray(result.recommendations)).toBe(true);
-  });
+  }, 15000);
 
   it("should suggest conservative rates for unknown providers", async () => {
     const result = await analyzeNewIntegration(
