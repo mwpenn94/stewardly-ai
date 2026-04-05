@@ -58,6 +58,9 @@ import { getDb } from "./db";
 import { aiLayersRouter } from "./routers/aiLayers";
 import { esignatureRouter, pdfRouter, creditBureauRouter, crmRouter } from "./routers/serviceRouters";
 import { leadPipelineRouter } from "./routers/leadPipeline";
+import { premiumFinanceRouter as pfRatesRouter } from "./routers/premiumFinanceRouter";
+import { reportsBusinessRouter } from "./routers/reportsRouter";
+import { contentRouter as contentCmsRouter } from "./routers/contentRouter";
 import { propensityRouter } from "./routers/propensity";
 import { importRouter } from "./routers/importRouter";
 import { planningRouter } from "./routers/planning";
@@ -2023,6 +2026,9 @@ export const appRouter = router({
   dataImport: importRouter,
   businessPlanning: planningRouter,
   communityForum: communityForumRouter,
+  premiumFinanceRates: pfRatesRouter,
+  businessReports: reportsBusinessRouter,
+  contentCms: contentCmsRouter,
 });
 
 export type AppRouter = typeof appRouter;
