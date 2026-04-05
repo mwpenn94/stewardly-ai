@@ -61,6 +61,9 @@ import { leadPipelineRouter } from "./routers/leadPipeline";
 import { premiumFinanceRouter as pfRatesRouter } from "./routers/premiumFinanceRouter";
 import { reportsBusinessRouter } from "./routers/reportsRouter";
 import { contentRouter as contentCmsRouter } from "./routers/contentRouter";
+import { leadCaptureRouter } from "./routers/leadCapture";
+import { referralsRouter } from "./routers/referrals";
+import { embedsRouter } from "./routers/embeds";
 import { propensityRouter } from "./routers/propensity";
 import { importRouter } from "./routers/importRouter";
 import { planningRouter } from "./routers/planning";
@@ -2029,6 +2032,9 @@ export const appRouter = router({
   premiumFinanceRates: pfRatesRouter,
   businessReports: reportsBusinessRouter,
   contentCms: contentCmsRouter,
+  leadCapture: leadCaptureRouter,
+  referrals: referralsRouter,
+  embeds: embedsRouter,
 });
 
 export type AppRouter = typeof appRouter;
