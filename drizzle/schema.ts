@@ -5204,3 +5204,561 @@ export const reasoningTraces = mysqlTable("reasoning_traces", {
   }));
 export type ReasoningTrace = typeof reasoningTraces.$inferSelect;
 export type InsertReasoningTrace = typeof reasoningTraces.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STEWARDLY BUILD-OUT — NEW BUSINESS TABLES (41 tables)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Domain 1: Verification (2 new) ──────────────────────────────────────
+export const professionalDocuments = mysqlTable("professional_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  professionalId: int("professional_id").notNull(),
+  documentType: varchar("document_type", { length: 100 }),
+  fileUrl: varchar("file_url", { length: 500 }),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+  verified: mysqlBoolean("verified").default(false),
+});
+
+export const providerHealthChecks = mysqlTable("provider_health_checks", {
+  id: int("id").autoincrement().primaryKey(),
+  providerName: varchar("provider_name", { length: 100 }).notNull(),
+  checkType: mysqlEnum("check_type", ["known_good_query", "availability_check", "response_validation"]).notNull(),
+  knownGoodInput: json("known_good_input"),
+  expectedResultPattern: varchar("expected_result_pattern", { length: 500 }),
+  status: mysqlEnum("status", ["healthy", "degraded", "down", "blocked"]).default("healthy"),
+  responseTimeMs: int("response_time_ms"),
+  lastCheckedAt: timestamp("last_checked_at"),
+  lastHealthyAt: timestamp("last_healthy_at"),
+  consecutiveFailures: int("consecutive_failures").default(0),
+  alertSent: mysqlBoolean("alert_sent").default(false),
+});
+
+// ─── Domain 4: Lead Gen & Propensity (9 new) ────────────────────────────
+export const leadSources = mysqlTable("lead_sources", {
+  id: int("id").autoincrement().primaryKey(),
+  sourceName: varchar("source_name", { length: 200 }).notNull(),
+  sourceType: mysqlEnum("source_type", ["organic", "paid", "referral", "event", "directory", "partnership"]).notNull(),
+  segment: varchar("segment", { length: 100 }),
+  provider: varchar("provider", { length: 200 }),
+  costModel: mysqlEnum("cost_model", ["free", "per_lead", "per_click", "subscription", "revenue_share"]).default("free"),
+  avgCost: decimal("avg_cost", { precision: 10, scale: 2 }),
+  estVolumeMonthly: int("est_volume_monthly"),
+  qualityScore: decimal("quality_score", { precision: 3, scale: 2 }),
+  enabled: mysqlBoolean("enabled").default(false),
+});
+
+export const leadPipeline = mysqlTable("lead_pipeline", {
+  id: int("id").autoincrement().primaryKey(),
+  leadSourceId: int("lead_source_id"),
+  firstName: varchar("first_name", { length: 100 }),
+  lastName: varchar("last_name", { length: 100 }),
+  emailHash: varchar("email_hash", { length: 64 }).notNull(),
+  phoneHash: varchar("phone_hash", { length: 64 }),
+  linkedinUrl: varchar("linkedin_url", { length: 500 }),
+  company: varchar("company", { length: 200 }),
+  title: varchar("title", { length: 200 }),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 50 }),
+  zip: varchar("zip", { length: 20 }),
+  targetSegment: varchar("target_segment", { length: 100 }),
+  segmentData: json("segment_data"),
+  enrichmentData: json("enrichment_data"),
+  propensityScore: decimal("propensity_score", { precision: 5, scale: 4 }),
+  propensityTier: mysqlEnum("propensity_tier", ["hot", "warm", "cool", "cold"]),
+  status: mysqlEnum("status", ["new", "enriched", "scored", "qualified", "assigned", "contacted", "meeting", "proposal", "converted", "disqualified", "dormant"]).default("new"),
+  assignedAdvisorId: int("assigned_advisor_id"),
+  assignedAt: timestamp("assigned_at"),
+  isControlGroup: mysqlBoolean("is_control_group").default(false),
+  emailConsentGranted: mysqlBoolean("email_consent_granted").default(false),
+  unsubscribed: mysqlBoolean("unsubscribed").default(false),
+  piiDeletionRequested: mysqlBoolean("pii_deletion_requested").default(false),
+  ghlContactId: varchar("ghl_contact_id", { length: 200 }),
+  ghlOpportunityId: varchar("ghl_opportunity_id", { length: 200 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  emailHashIdx: index("idx_lead_pipeline_email_hash").on(table.emailHash),
+  statusIdx: index("idx_lead_pipeline_status").on(table.status),
+  advisorIdx: index("idx_lead_pipeline_advisor").on(table.assignedAdvisorId),
+}));
+
+export const leadSourcePerformance = mysqlTable("lead_source_performance", {
+  id: int("id").autoincrement().primaryKey(),
+  leadSourceId: int("lead_source_id").notNull(),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  leadsGenerated: int("leads_generated").default(0),
+  leadsQualified: int("leads_qualified").default(0),
+  leadsConverted: int("leads_converted").default(0),
+  revenueAttributed: decimal("revenue_attributed", { precision: 12, scale: 2 }),
+  cost: decimal("cost", { precision: 12, scale: 2 }),
+  cpl: decimal("cpl", { precision: 10, scale: 2 }),
+  roi: decimal("roi", { precision: 8, scale: 2 }),
+});
+
+export const propensityModels = mysqlTable("propensity_models", {
+  id: int("id").autoincrement().primaryKey(),
+  modelName: varchar("model_name", { length: 200 }).notNull(),
+  modelType: mysqlEnum("model_type", ["expert_weights", "logistic", "gradient_boosting"]).default("expert_weights"),
+  targetSegment: varchar("target_segment", { length: 100 }),
+  version: int("version").default(1),
+  features: json("features"),
+  weights: json("weights"),
+  performanceMetrics: json("performance_metrics"),
+  active: mysqlBoolean("active").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const propensityFeatures = mysqlTable("propensity_features", {
+  id: int("id").autoincrement().primaryKey(),
+  featureName: varchar("feature_name", { length: 200 }).notNull(),
+  featureSource: varchar("feature_source", { length: 100 }),
+  dataType: mysqlEnum("data_type", ["numeric", "categorical", "boolean"]).notNull(),
+  description: text("description"),
+  importanceRank: int("importance_rank"),
+});
+
+export const propensityScores = mysqlTable("propensity_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  leadId: int("lead_id").notNull(),
+  modelId: int("model_id").notNull(),
+  score: decimal("score", { precision: 5, scale: 4 }).notNull(),
+  featuresUsed: json("features_used"),
+  scoredAt: timestamp("scored_at").defaultNow(),
+});
+
+export const propensityBiasAudits = mysqlTable("propensity_bias_audits", {
+  id: int("id").autoincrement().primaryKey(),
+  modelId: int("model_id").notNull(),
+  auditType: varchar("audit_type", { length: 100 }),
+  protectedClass: varchar("protected_class", { length: 100 }),
+  disparityRatio: decimal("disparity_ratio", { precision: 5, scale: 3 }),
+  passes: mysqlBoolean("passes"),
+  details: json("details"),
+  auditedAt: timestamp("audited_at").defaultNow(),
+});
+
+export const complianceRules = mysqlTable("compliance_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  ruleType: mysqlEnum("rule_type", ["tcpa", "can_spam", "finra", "sec", "state", "fcra", "ccpa", "aml"]).notNull(),
+  ruleName: varchar("rule_name", { length: 200 }).notNull(),
+  description: text("description"),
+  checkFunction: varchar("check_function", { length: 200 }),
+  appliesTo: json("applies_to"),
+  penaltyDescription: text("penalty_description"),
+  enabled: mysqlBoolean("enabled").default(true),
+});
+
+export const integrationOptimizationCycles = mysqlTable("integration_optimization_cycles", {
+  id: int("id").autoincrement().primaryKey(),
+  cycleType: varchar("cycle_type", { length: 100 }),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  improvements: json("improvements"),
+  scoreBefore: decimal("score_before", { precision: 5, scale: 2 }),
+  scoreAfter: decimal("score_after", { precision: 5, scale: 2 }),
+});
+
+// ─── Domain 5: In-House Lead Engine (9 new) ──────────────────────────────
+export const leadCaptureConfig = mysqlTable("lead_capture_config", {
+  id: int("id").autoincrement().primaryKey(),
+  calculatorType: varchar("calculator_type", { length: 100 }).unique(),
+  gateType: mysqlEnum("gate_type", ["none", "results_summary", "personalized_analysis", "save_and_compare", "full_report_pdf", "advisor_match"]).default("personalized_analysis"),
+  gateTriggerPoint: varchar("gate_trigger_point", { length: 200 }),
+  requiredFields: json("required_fields"),
+  valueProposition: text("value_proposition"),
+  enabled: mysqlBoolean("enabled").default(true),
+  conversionRate: decimal("conversion_rate", { precision: 5, scale: 4 }),
+});
+
+export const leadProfileAccumulator = mysqlTable("lead_profile_accumulator", {
+  id: int("id").autoincrement().primaryKey(),
+  identifierType: mysqlEnum("identifier_type", ["email_hash", "session_id", "user_id"]).notNull(),
+  identifierValue: varchar("identifier_value", { length: 200 }).notNull(),
+  dataPointName: varchar("data_point_name", { length: 100 }).notNull(),
+  dataPointValue: text("data_point_value"),
+  dataPointSource: varchar("data_point_source", { length: 100 }),
+  confidence: decimal("confidence", { precision: 3, scale: 2 }),
+  conflicted: mysqlBoolean("conflicted").default(false),
+  supersededBy: int("superseded_by"),
+  collectedAt: timestamp("collected_at").defaultNow(),
+}, (table) => ({
+  identIdx: index("idx_lead_profile_ident").on(table.identifierType, table.identifierValue),
+}));
+
+export const financialProtectionScores = mysqlTable("financial_protection_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  sessionId: varchar("session_id", { length: 100 }),
+  emailHash: varchar("email_hash", { length: 64 }),
+  firstName: varchar("first_name", { length: 100 }),
+  overallScore: int("overall_score"),
+  dimensionScores: json("dimension_scores"),
+  improvementPriorities: json("improvement_priorities"),
+  productRecommendations: json("product_recommendations"),
+  advisorMatched: mysqlBoolean("advisor_matched").default(false),
+  advisorId: int("advisor_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const embedConfigurations = mysqlTable("embed_configurations", {
+  id: int("id").autoincrement().primaryKey(),
+  advisorId: int("advisor_id").notNull(),
+  calculatorType: varchar("calculator_type", { length: 100 }).notNull(),
+  embedDomain: varchar("embed_domain", { length: 200 }),
+  theme: varchar("theme", { length: 20 }).default("dark"),
+  customCta: text("custom_cta"),
+  leadsGenerated: int("leads_generated").default(0),
+  embedComplianceApproved: mysqlBoolean("embed_compliance_approved").default(false),
+  enabled: mysqlBoolean("enabled").default(true),
+});
+
+export const contentArticles = mysqlTable("content_articles", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 200 }).unique(),
+  title: varchar("title", { length: 200 }).notNull(),
+  content: text("content"),
+  excerpt: text("excerpt"),
+  authorName: varchar("author_name", { length: 100 }),
+  authorCredentials: varchar("author_credentials", { length: 200 }),
+  category: mysqlEnum("category", ["insurance", "retirement", "estate", "tax", "investing", "business", "education", "general", "calculator_faq"]).default("general"),
+  tags: json("tags"),
+  seoTitle: varchar("seo_title", { length: 70 }),
+  seoDescription: varchar("seo_description", { length: 160 }),
+  publishedAt: timestamp("published_at"),
+  views: int("views").default(0),
+  leadsGenerated: int("leads_generated").default(0),
+  status: mysqlEnum("article_status", ["draft", "review", "published", "archived"]).default("draft"),
+});
+
+export const referralTracking = mysqlTable("referral_tracking", {
+  id: int("id").autoincrement().primaryKey(),
+  referrerType: mysqlEnum("referrer_type", ["client", "professional", "coi_contact"]).notNull(),
+  referrerId: int("referrer_id").notNull(),
+  referredEmail: varchar("referred_email", { length: 200 }),
+  referredName: varchar("referred_name", { length: 200 }),
+  referralChannel: mysqlEnum("referral_channel", ["tool_share", "event_invite", "direct_referral", "widget_lead", "content_share"]).default("direct_referral"),
+  referralStatus: mysqlEnum("referral_status", ["sent", "clicked", "registered", "qualified", "converted"]).default("sent"),
+  complianceDisclosed: mysqlBoolean("compliance_disclosed").default(false),
+  monetaryCompensation: mysqlBoolean("monetary_compensation").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  convertedAt: timestamp("converted_at"),
+});
+
+export const communityPosts = mysqlTable("community_posts", {
+  id: int("id").autoincrement().primaryKey(),
+  authorId: int("author_id").notNull(),
+  communityType: mysqlEnum("community_type", ["advisor_forum", "product_discussion", "practice_mgmt", "market_commentary", "new_advisor_support"]).notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  content: text("content"),
+  repliesCount: int("replies_count").default(0),
+  likesCount: int("likes_count").default(0),
+  pinned: mysqlBoolean("pinned").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const communityReplies = mysqlTable("community_replies", {
+  id: int("id").autoincrement().primaryKey(),
+  postId: int("post_id").notNull(),
+  authorId: int("author_id").notNull(),
+  content: text("content"),
+  likesCount: int("likes_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const communicationArchive = mysqlTable("communication_archive", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  sessionId: varchar("session_id", { length: 100 }),
+  contentType: mysqlEnum("content_type", ["calculator_insight", "chat_response", "protection_score_analysis", "pre_meeting_brief", "plan_analysis"]).notNull(),
+  contentText: text("content_text"),
+  calculatorType: varchar("calculator_type", { length: 100 }),
+  leadId: int("lead_id"),
+  generatedAt: timestamp("generated_at").defaultNow(),
+  reviewedBy: int("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  retentionExpiresAt: timestamp("retention_expires_at"),
+});
+
+// ─── Domain 6: Data Pipelines & Import (4 new) ──────────────────────────
+export const importJobs = mysqlTable("import_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  importSource: mysqlEnum("import_source", ["dripify_webhook", "dripify_csv", "linkedin_csv", "linkedin_sales_nav", "smsit_api", "smsit_csv", "ghl_sync", "manual_csv", "manual_xlsx", "manual_json", "manual_xml", "manual_vcf", "bulk_zip", "other"]).notNull(),
+  fileName: varchar("file_name", { length: 500 }),
+  fileSizeBytes: bigint("file_size_bytes", { mode: "number" }),
+  totalRecords: int("total_records").default(0),
+  recordsImported: int("records_imported").default(0),
+  recordsSkipped: int("records_skipped").default(0),
+  recordsFailed: int("records_failed").default(0),
+  recordsUpdated: int("records_updated").default(0),
+  status: mysqlEnum("import_status", ["pending", "parsing", "validating", "importing", "enriching", "scoring", "complete", "failed", "cancelled"]).default("pending"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  importedBy: int("imported_by"),
+  errorLog: json("error_log"),
+  fieldMapping: json("field_mapping"),
+  importConfig: json("import_config"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const importFieldMappings = mysqlTable("import_field_mappings", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  importSource: varchar("import_source", { length: 100 }),
+  columnMappings: json("column_mappings"),
+  defaultValues: json("default_values"),
+  createdBy: int("created_by"),
+  isSystem: mysqlBoolean("is_system").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const dripifyWebhookEvents = mysqlTable("dripify_webhook_events", {
+  id: int("id").autoincrement().primaryKey(),
+  eventType: varchar("event_type", { length: 100 }),
+  payload: json("payload"),
+  processed: mysqlBoolean("processed").default(false),
+  leadPipelineId: int("lead_pipeline_id"),
+  receivedAt: timestamp("received_at").defaultNow(),
+  processedAt: timestamp("processed_at"),
+});
+
+export const smsitSyncLog = mysqlTable("smsit_sync_log", {
+  id: int("id").autoincrement().primaryKey(),
+  syncDirection: mysqlEnum("sync_direction", ["inbound", "outbound"]).notNull(),
+  smsitContactId: varchar("smsit_contact_id", { length: 200 }),
+  leadPipelineId: int("lead_pipeline_id"),
+  syncType: mysqlEnum("sync_type", ["create", "update", "delete", "opt_out"]).notNull(),
+  fieldsSynced: json("fields_synced"),
+  status: mysqlEnum("smsit_status", ["success", "failed", "skipped"]).default("success"),
+  errorMessage: text("error_message"),
+  syncedAt: timestamp("synced_at").defaultNow(),
+});
+
+// ─── Domain 7: Planning, Reporting & Tracking (8 new) ───────────────────
+export const businessPlans = mysqlTable("business_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  planYear: int("plan_year").notNull(),
+  planQuarter: int("plan_quarter"),
+  roleSegment: mysqlEnum("role_segment", ["new_associate", "experienced_professional", "managing_director", "rvp", "affiliate_a", "affiliate_b", "affiliate_c", "affiliate_d", "strategic_partner"]),
+  incomeTarget: decimal("income_target", { precision: 12, scale: 2 }),
+  gdcTarget: decimal("gdc_target", { precision: 12, scale: 2 }),
+  gdcBracket: decimal("gdc_bracket", { precision: 5, scale: 2 }),
+  productMix: json("product_mix"),
+  funnelTargets: json("funnel_targets"),
+  channelBudget: json("channel_budget"),
+  aumExisting: decimal("aum_existing", { precision: 14, scale: 2 }),
+  aumNewTarget: decimal("aum_new_target", { precision: 14, scale: 2 }),
+  teamSizeTarget: int("team_size_target").default(0),
+  backPlanMode: varchar("back_plan_mode", { length: 50 }),
+  backPlanTarget: decimal("back_plan_target", { precision: 14, scale: 2 }),
+  source: mysqlEnum("plan_source", ["manual", "calculator_import", "ai_generated"]).default("manual"),
+  status: mysqlEnum("plan_status", ["draft", "active", "archived"]).default("draft"),
+  approvedBy: int("approved_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const productionActuals = mysqlTable("production_actuals", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  periodType: mysqlEnum("period_type", ["daily", "weekly", "monthly", "quarterly", "annual"]).notNull(),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  gdcActual: decimal("gdc_actual", { precision: 12, scale: 2 }),
+  casesPlaced: int("cases_placed"),
+  casesSubmitted: int("cases_submitted"),
+  premiumVolume: decimal("premium_volume", { precision: 14, scale: 2 }),
+  productBreakdown: json("product_breakdown"),
+  funnelActuals: json("funnel_actuals"),
+  channelActuals: json("channel_actuals"),
+  aumAdded: decimal("aum_added", { precision: 14, scale: 2 }),
+  teamRecruited: int("team_recruited"),
+  dataSource: mysqlEnum("data_source", ["manual", "ghl_sync", "carrier_import", "calculated"]).default("manual"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const planActualInsights = mysqlTable("plan_actual_insights", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  planId: int("plan_id"),
+  analysisPeriodStart: date("analysis_period_start"),
+  analysisPeriodEnd: date("analysis_period_end"),
+  overallStatus: mysqlEnum("overall_status", ["ahead", "on_track", "behind", "at_risk"]),
+  gdcVariancePct: decimal("gdc_variance_pct", { precision: 6, scale: 2 }),
+  keyFindings: json("key_findings"),
+  recommendations: json("recommendations"),
+  benchmarkComparison: json("benchmark_comparison"),
+  generatedAt: timestamp("generated_at").defaultNow(),
+});
+
+export const coaCampaigns = mysqlTable("coa_campaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignName: varchar("campaign_name", { length: 200 }).notNull(),
+  campaignType: mysqlEnum("campaign_type", ["wealthbridge", "wta", "regional", "individual"]).default("individual"),
+  region: varchar("region", { length: 100 }),
+  targetSegment: varchar("target_segment", { length: 100 }),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  budgetTotal: decimal("budget_total", { precision: 12, scale: 2 }),
+  channelAllocation: json("channel_allocation"),
+  targetMetrics: json("target_metrics"),
+  status: mysqlEnum("campaign_status", ["planning", "active", "paused", "completed", "archived"]).default("planning"),
+  createdBy: int("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const coaActuals = mysqlTable("coa_actuals", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaign_id").notNull(),
+  periodStart: date("period_start").notNull(),
+  periodEnd: date("period_end").notNull(),
+  spendActual: decimal("spend_actual", { precision: 12, scale: 2 }),
+  channelPerformance: json("channel_performance"),
+  leadsGenerated: int("leads_generated"),
+  appointmentsSet: int("appointments_set"),
+  casesFromCampaign: int("cases_from_campaign"),
+  gdcFromCampaign: decimal("gdc_from_campaign", { precision: 12, scale: 2 }),
+  roiCalculated: decimal("roi_calculated", { precision: 8, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const clientPlanOutcomes = mysqlTable("client_plan_outcomes", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  advisorId: int("advisor_id"),
+  planArea: mysqlEnum("plan_area", ["protection", "retirement", "estate", "tax", "education", "debt", "growth", "business", "cash_flow", "premium_finance", "ilit", "exec_comp", "charitable"]).notNull(),
+  planDate: date("plan_date"),
+  targetMetric: varchar("target_metric", { length: 200 }),
+  targetValue: decimal("target_value", { precision: 14, scale: 2 }),
+  currentValue: decimal("current_value", { precision: 14, scale: 2 }),
+  gapValue: decimal("gap_value", { precision: 14, scale: 2 }),
+  backPlanMode: varchar("back_plan_mode", { length: 100 }),
+  recommendedProducts: json("recommended_products"),
+  implementationStatus: mysqlEnum("implementation_status", ["recommended", "in_progress", "partial", "complete", "declined", "deferred"]).default("recommended"),
+  reviewDate: date("review_date"),
+  source: mysqlEnum("outcome_source", ["manual", "calculator_backplan", "ai_generated", "suitability_assessment"]).default("manual"),
+});
+
+export const reportSnapshots = mysqlTable("report_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  reportType: mysqlEnum("report_type", ["individual_performance", "team_performance", "regional_comparison", "campaign_roi", "client_outcomes", "industry_benchmark", "pipeline_health", "recruiting_tracker"]).notNull(),
+  scopeType: mysqlEnum("scope_type", ["platform", "region", "team", "individual"]).notNull(),
+  scopeId: int("scope_id"),
+  periodStart: date("period_start"),
+  periodEnd: date("period_end"),
+  reportData: json("report_data"),
+  generatedAt: timestamp("generated_at").defaultNow(),
+});
+
+export const compensationBrackets = mysqlTable("compensation_brackets", {
+  id: int("id").autoincrement().primaryKey(),
+  bracketName: varchar("bracket_name", { length: 100 }).notNull(),
+  gdcMin: decimal("gdc_min", { precision: 12, scale: 2 }),
+  gdcMax: decimal("gdc_max", { precision: 12, scale: 2 }),
+  commissionRate: decimal("commission_rate", { precision: 5, scale: 2 }),
+  roleSegment: varchar("role_segment", { length: 100 }),
+  effectiveDate: date("effective_date"),
+});
+
+// ─── Domain 8: Geographic & Reference (3 new) ───────────────────────────
+export const zipCodeDemographics = mysqlTable("zip_code_demographics", {
+  zip: varchar("zip", { length: 10 }).primaryKey(),
+  city: varchar("city", { length: 100 }),
+  county: varchar("county", { length: 100 }),
+  state: varchar("state", { length: 2 }),
+  latitude: decimal("latitude", { precision: 9, scale: 6 }),
+  longitude: decimal("longitude", { precision: 9, scale: 6 }),
+  numReturns: int("num_returns"),
+  avgAgi: decimal("avg_agi", { precision: 12, scale: 2 }),
+  pctReturnsOver200k: decimal("pct_returns_over_200k", { precision: 5, scale: 2 }),
+  totalPopulation: int("total_population"),
+  medianHouseholdIncome: decimal("median_household_income", { precision: 12, scale: 2 }),
+  medianAge: decimal("median_age", { precision: 4, scale: 1 }),
+  homeownershipRate: decimal("homeownership_rate", { precision: 5, scale: 2 }),
+  wealthIndex: decimal("wealth_index", { precision: 5, scale: 2 }),
+}, (table) => ({
+  countyIdx: index("idx_zip_demographics_county").on(table.county),
+  wealthIdx: index("idx_zip_demographics_wealth").on(table.wealthIndex),
+}));
+
+export const glossaryTerms = mysqlTable("glossary_terms", {
+  id: int("id").autoincrement().primaryKey(),
+  term: varchar("term", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 200 }).unique(),
+  definition: text("definition"),
+  category: mysqlEnum("glossary_category", ["insurance", "retirement", "estate", "tax", "investment", "business", "general"]).default("general"),
+  relatedCalculator: varchar("related_calculator", { length: 100 }),
+});
+
+export const systemHealthEvents = mysqlTable("system_health_events", {
+  id: int("id").autoincrement().primaryKey(),
+  eventType: mysqlEnum("health_event_type", ["cron_success", "cron_failure", "cron_timeout", "service_error", "service_degraded", "api_rate_exceeded", "api_auth_failure", "seed_data_stale", "pii_access", "compliance_flag"]).notNull(),
+  sourceName: varchar("source_name", { length: 100 }),
+  severity: mysqlEnum("health_severity", ["info", "warning", "error", "critical"]).notNull(),
+  message: text("message"),
+  metadata: json("metadata"),
+  acknowledged: mysqlBoolean("acknowledged").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  typeIdx: index("idx_health_events_type").on(table.eventType, table.severity),
+  sourceIdx: index("idx_health_events_source").on(table.sourceName),
+}));
+
+// ─── Domain 9: Calculator Cache (1 new) ─────────────────────────────────
+export const calculatorResultCache = mysqlTable("calculator_result_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("session_id", { length: 100 }),
+  userId: int("user_id"),
+  calculatorType: varchar("calculator_type", { length: 100 }),
+  inputsHash: varchar("inputs_hash", { length: 64 }),
+  inputs: json("inputs"),
+  results: json("results"),
+  insightText: text("insight_text"),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+}, (table) => ({
+  sessionCalcIdx: index("idx_calc_cache_session").on(table.sessionId, table.calculatorType),
+  hashIdx: index("idx_calc_cache_hash").on(table.inputsHash),
+}));
+
+// ─── Intelligence: user_memories + ai_config_layers + escalation + capabilities ─
+export const userMemories = mysqlTable("user_memories", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  category: mysqlEnum("memory_category", ["fact", "preference", "episodic", "amp_engagement", "ho_domain_trajectory"]).notNull(),
+  content: text("content"),
+  confidence: decimal("confidence", { precision: 3, scale: 2 }),
+  source: varchar("source", { length: 100 }),
+  sessionId: varchar("session_id", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userCatIdx: index("idx_user_memories_user_cat").on(table.userId, table.category),
+}));
+
+export const aiConfigLayers = mysqlTable("ai_config_layers", {
+  id: int("id").autoincrement().primaryKey(),
+  layerType: mysqlEnum("layer_type", ["platform", "organization", "manager", "professional", "client"]).notNull(),
+  entityId: int("entity_id").notNull(),
+  config: json("config"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const userCapabilities = mysqlTable("user_capabilities", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  capability: varchar("capability", { length: 100 }).notNull(),
+  granted: mysqlBoolean("granted").default(false),
+  grantedBy: int("granted_by"),
+  grantedAt: timestamp("granted_at").defaultNow(),
+});
+
+export const escalationHistory = mysqlTable("escalation_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  fromLevel: int("from_level").notNull(),
+  toLevel: int("to_level").notNull(),
+  reason: text("reason"),
+  decidedBy: varchar("decided_by", { length: 50 }),
+  decidedAt: timestamp("decided_at").defaultNow(),
+});
