@@ -57,6 +57,11 @@ import { integrationConnections, integrationProviders } from "../drizzle/schema"
 import { getDb } from "./db";
 import { aiLayersRouter } from "./routers/aiLayers";
 import { esignatureRouter, pdfRouter, creditBureauRouter, crmRouter } from "./routers/serviceRouters";
+import { leadPipelineRouter } from "./routers/leadPipeline";
+import { propensityRouter } from "./routers/propensity";
+import { importRouter } from "./routers/importRouter";
+import { planningRouter } from "./routers/planning";
+import { communityRouter as communityForumRouter } from "./routers/community";
 import AdmZip from "adm-zip";
 import { exportsRouter } from "./routers/exports";
 import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
@@ -2013,6 +2018,11 @@ export const appRouter = router({
   pdf: pdfRouter,
   creditBureau: creditBureauRouter,
   crm: crmRouter,
+  leadPipeline: leadPipelineRouter,
+  propensityScoring: propensityRouter,
+  dataImport: importRouter,
+  businessPlanning: planningRouter,
+  communityForum: communityForumRouter,
 });
 
 export type AppRouter = typeof appRouter;
