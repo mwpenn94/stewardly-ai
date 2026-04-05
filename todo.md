@@ -3078,3 +3078,6 @@
 
 ## Bug Fix — Sidebar Tooltips Behind Panels (2026-04-04)
 - [x] FIX: Added transparent backdrop overlay (z-9998) to both ChangelogBell and NotificationBell portals — blocks sidebar tooltips and hover interactions while panels are open
+
+## Deployment Fix — Lockfile Mismatch (2026-04-05)
+- [x] FIX: Regenerated pnpm-lock.yaml — jose specifier now matches package.json (^6.1.0)
