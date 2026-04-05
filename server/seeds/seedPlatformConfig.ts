@@ -192,7 +192,7 @@ export async function seedCompensationBrackets(): Promise<number> {
         gdcMax: cb.gdcMax,
         commissionRate: cb.commissionRate,
         roleSegment: cb.roleSegment,
-        effectiveDate: "2025-01-01",
+        effectiveDate: new Date("2025-01-01"),
       });
       inserted++;
     } catch (e: any) {
