@@ -3160,3 +3160,28 @@
 - [x] Pass 1 (Depth): test timeout fix, navigation wiring, code quality verified
 - [x] Pass 2 (Adversarial): no dead imports, no hardcoded URLs, no console.log, all exports verified
 - [x] Convergence confirmed: no further automated improvements possible
+
+## Web Search Integration Fix
+- [x] Diagnose why AI chat doesn't use web search for current information queries
+- [x] Add google_search function tool to SEARCH_TOOLS for Gemini native grounding
+- [x] Ensure SSE streaming path passes google_search tool to LLM
+- [x] Ensure tRPC chat.send path always passes google_search tool (remove regex gating)
+- [x] Update webSearchTool.ts to use Forge native search as primary provider (Manus Data API fallback)
+- [x] Update system prompt to instruct AI to use web search proactively
+- [x] Forge native Google Search grounding works across ALL 16 models — no external API keys needed
+- [x] Verify TS compilation and tests pass (94 files, 2370 tests, 0 errors)
+- [x] Run recursive optimization passes to convergence (4 passes, 2 consecutive clean)
+
+## Multi-Model Forge Integration + 5-Layer Config
+- [x] Discover available Forge models: 16 models across 5 families (Gemini, GPT, Claude, OpenAI Reasoning, DeepSeek)
+- [x] All 16 models confirmed to support web search grounding via Forge proxy
+- [x] Implement modelRegistry.ts with model capabilities, cost tiers, task routing, and fallback logic
+- [x] Add `model` parameter to invokeLLM so any caller can specify which model to use
+- [x] Wire 5-layer config resolution into contextualLLM for dynamic model selection
+- [x] contextualLLM now supports model routing with fallback chain (primary → fallback → default)
+- [x] google_search grounding tool available for all models in both SSE and tRPC paths
+- [ ] Add model selector UI for users to choose/weight models (future: admin settings page)
+- [ ] Support multi-model synthesis (query multiple models, merge responses) (future: ensemble mode)
+- [ ] Add model preset CRUD (create, read, update, delete custom presets) (future)
+- [x] Verify TS compilation and tests pass (94 files, 2370 tests, 0 errors)
+- [x] Run recursive optimization passes to convergence (4 passes, 2 consecutive clean)

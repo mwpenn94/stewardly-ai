@@ -1,17 +1,21 @@
 /**
  * Web Search Tool — Cascading search provider
  * 
- * Priority: 1) Tavily (TAVILY_API_KEY) → 2) Brave (BRAVE_SEARCH_API_KEY) → 3) graceful fallback
- * Default includeDomains: irs.gov, sec.gov, finra.org, ssa.gov, treasury.gov, investopedia.com, kitces.com
+ * Priority: 1) Tavily (TAVILY_API_KEY) → 2) Brave (BRAVE_SEARCH_API_KEY) → 3) Manus Data API (Google) → 4) LLM-powered fallback
+ * Default includeDomains: empty (search all domains for general queries)
  * Returns formatted search results as string (max 2000 chars)
  */
 import { logger } from "../_core/logger";
+import { callDataApi } from "../_core/dataApi";
+import { contextualLLM } from "../shared/stewardlyWiring";
 
 const log = logger.child({ module: "webSearchTool" });
 
-const DEFAULT_DOMAINS = [
+// Financial-specific domains used when the query is clearly financial
+const FINANCIAL_DOMAINS = [
   "irs.gov", "sec.gov", "finra.org", "ssa.gov",
   "treasury.gov", "investopedia.com", "kitces.com",
+  "bankrate.com", "nerdwallet.com",
 ];
 
 interface SearchOptions {
@@ -31,16 +35,22 @@ async function searchTavily(query: string, options: SearchOptions): Promise<Sear
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) throw new Error("TAVILY_API_KEY not set");
 
+  const body: Record<string, unknown> = {
+    api_key: apiKey,
+    query,
+    max_results: options.maxResults ?? 5,
+    search_depth: "basic",
+  };
+
+  // Only include domain filter if explicitly provided
+  if (options.includeDomains && options.includeDomains.length > 0) {
+    body.include_domains = options.includeDomains;
+  }
+
   const res = await fetch("https://api.tavily.com/search", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      api_key: apiKey,
-      query,
-      include_domains: options.includeDomains ?? DEFAULT_DOMAINS,
-      max_results: options.maxResults ?? 5,
-      search_depth: "basic",
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) throw new Error(`Tavily HTTP ${res.status}: ${await res.text()}`);
@@ -57,7 +67,7 @@ async function searchBrave(query: string, options: SearchOptions): Promise<Searc
   const apiKey = process.env.BRAVE_SEARCH_API_KEY;
   if (!apiKey) throw new Error("BRAVE_SEARCH_API_KEY not set");
 
-  const domains = (options.includeDomains ?? DEFAULT_DOMAINS);
+  const domains = options.includeDomains ?? [];
   const siteQuery = domains.length > 0
     ? `${query} (${domains.map(d => `site:${d}`).join(" OR ")})`
     : query;
@@ -83,6 +93,57 @@ async function searchBrave(query: string, options: SearchOptions): Promise<Searc
   }));
 }
 
+// ─── Manus Data API (Google Search) ─────────────────────────────────
+async function searchManusDataApi(query: string, options: SearchOptions): Promise<SearchResult[]> {
+  try {
+    const data: any = await callDataApi("GoogleSearch/search", {
+      query: {
+        q: query,
+        num: options.maxResults ?? 5,
+      },
+    });
+
+    // Google Search API returns items array
+    const items = data?.items ?? data?.organic_results ?? data?.results ?? [];
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new Error("No results from Google Search API");
+    }
+
+    return items.map((r: any) => ({
+      title: r.title ?? r.name ?? "",
+      url: r.link ?? r.url ?? "",
+      snippet: r.snippet ?? r.description ?? r.content ?? "",
+    }));
+  } catch (err: any) {
+    throw new Error(`Manus Data API search failed: ${err.message}`);
+  }
+}
+
+// ─── LLM-Powered Fallback Search ────────────────────────────────────
+async function searchWithLLM(query: string): Promise<string> {
+  try {
+    const result = await contextualLLM({
+      userId: null,
+      contextType: "chat",
+      messages: [
+        {
+          role: "system",
+          content: `You are a research assistant. The user needs current information that may be beyond your training data. Do your best to provide accurate, helpful information based on what you know. Be transparent about the limitations of your knowledge and clearly state when information may be outdated. Include specific details, numbers, and comparisons where possible.`,
+        },
+        {
+          role: "user",
+          content: `Research the following topic and provide detailed, factual information:\n\n${query}\n\nProvide specific details including names, rates, features, comparisons, and any relevant programs or alternatives. If you're not certain about current details, note that and provide the most recent information you have.`,
+        },
+      ],
+    });
+
+    const content = result.choices?.[0]?.message?.content;
+    return typeof content === "string" ? content : "No information available.";
+  } catch (err: any) {
+    return `Research unavailable: ${err.message}`;
+  }
+}
+
 // ─── Format Results ─────────────────────────────────────────────────
 function formatResults(results: SearchResult[], maxChars: number): string {
   if (results.length === 0) return "No results found.";
@@ -102,7 +163,8 @@ export async function executeWebSearch(
   options?: SearchOptions,
 ): Promise<string> {
   const opts: SearchOptions = {
-    includeDomains: options?.includeDomains ?? DEFAULT_DOMAINS,
+    // Don't default to financial domains — let the LLM's query be the filter
+    includeDomains: options?.includeDomains,
     maxResults: options?.maxResults ?? 5,
     maxChars: options?.maxChars ?? 2000,
   };
@@ -129,14 +191,25 @@ export async function executeWebSearch(
     }
   }
 
-  // Graceful fallback
-  log.info({ query }, "Web search unavailable — no API keys configured");
-  return "Web search unavailable — using training data only";
+  // Try Manus Data API (Google Search) third
+  try {
+    const results = await searchManusDataApi(query, opts);
+    log.info({ provider: "manus-google", query, resultCount: results.length }, "Web search completed via Manus Data API");
+    return formatResults(results, opts.maxChars!);
+  } catch (err: any) {
+    log.warn({ provider: "manus-google", error: err.message }, "Manus Data API search failed, falling back to LLM");
+  }
+
+  // Final fallback: use the LLM itself to provide the best answer it can
+  log.info({ query }, "All search providers unavailable — using LLM-powered research fallback");
+  return await searchWithLLM(query);
 }
 
 /** Check which search provider is available */
-export function getSearchProvider(): "tavily" | "brave" | "none" {
+export function getSearchProvider(): "tavily" | "brave" | "manus-google" | "llm-fallback" {
   if (process.env.TAVILY_API_KEY) return "tavily";
   if (process.env.BRAVE_SEARCH_API_KEY) return "brave";
-  return "none";
+  // Manus Data API is always available if BUILT_IN_FORGE_API_KEY is set
+  if (process.env.BUILT_IN_FORGE_API_KEY) return "manus-google";
+  return "llm-fallback";
 }

@@ -10,8 +10,11 @@
  *    chunked into ~5-token segments emitted with 20ms delays to simulate a
  *    streaming UX. Uses contextualLLM which handles its own context injection.
  *
- * Wire this into an Express POST endpoint; the handler manages the full SSE
- * lifecycle including headers, heartbeat, disconnect cleanup, and error framing.
+ * Tool Calling:
+ * When tools are provided, the fallback path implements a multi-turn ReAct loop:
+ * the LLM can call tools (web search, stock lookup, etc.), receive results, and
+ * continue reasoning before producing a final text response. Tool status events
+ * are sent to the client so the UI can show "Searching the web..." indicators.
  *
  * IMPORTANT: extractQuery and injectContext are imported from the canonical
  * shared/intelligence/contextualLLM.ts to prevent behavioral drift between
@@ -45,6 +48,8 @@ export interface SSEStreamConfig {
   tools?: Array<Record<string, unknown>>;
   /** Optional tool_choice */
   tool_choice?: string | Record<string, unknown>;
+  /** Optional function to execute search tools during streaming */
+  executeSearchTool?: (toolName: string, args: Record<string, any>) => Promise<string>;
 }
 
 export interface SSEEvent {
@@ -61,6 +66,7 @@ export interface SSEEvent {
 const FALLBACK_CHUNK_SIZE = 5; // words per simulated chunk
 const FALLBACK_DELAY_MS = 20; // ms between simulated chunks
 const HEARTBEAT_INTERVAL_MS = 15_000; // keep-alive every 15s
+const MAX_TOOL_ITERATIONS = 5; // max tool-calling rounds before forcing final answer
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -117,7 +123,7 @@ export async function createSSEStreamHandler(
   res: Response,
   config: SSEStreamConfig,
 ): Promise<void> {
-  const { contextualLLM, userId, sessionId, contextType = "chat", messages, tools, tool_choice } = config;
+  const { contextualLLM, userId, sessionId, contextType = "chat", messages, tools, tool_choice, executeSearchTool } = config;
 
   // ── Set SSE headers ─────────────────────────────────────────────
   setSSEHeaders(res);
@@ -199,20 +205,110 @@ export async function createSSEStreamHandler(
       }
     }
 
-    // ── Fallback: call contextualLLM normally, simulate streaming ──
-    // Note: contextualLLM will inject context again, but since the
-    // enrichedMessages already have context, contextualLLM's injection
-    // is additive. For the fallback path, we pass the ORIGINAL messages
-    // to avoid double injection (contextualLLM handles its own context).
+    // ── Fallback: call contextualLLM with tool-calling loop ──────
+    // Implements a multi-turn ReAct loop: the LLM can call tools,
+    // receive results, and continue reasoning before producing a
+    // final text response. For the fallback path, we pass the ORIGINAL
+    // messages to avoid double injection (contextualLLM handles its own context).
     if (!streamed && !disconnected) {
-      const result = await contextualLLM({
-        userId,
-        contextType,
-        messages,
-        ...(tools && tools.length > 0 ? { tools, tool_choice: tool_choice || "auto" } : {}),
-      });
+      let content = "";
 
-      const content = result.choices?.[0]?.message?.content || "";
+      if (tools && tools.length > 0 && executeSearchTool) {
+        // ── Tool-calling ReAct loop ──────────────────────────────
+        const workingMessages: Array<{ role: string; content: string | null; tool_calls?: any[]; tool_call_id?: string; name?: string }> = [...messages];
+        let iteration = 0;
+
+        while (iteration < MAX_TOOL_ITERATIONS && !disconnected) {
+          iteration++;
+
+          const result = await contextualLLM({
+            userId,
+            contextType,
+            messages: workingMessages,
+            tools,
+            tool_choice: iteration === 1 ? (tool_choice || "auto") : "auto",
+          });
+
+          const choice = result.choices?.[0]?.message;
+          const toolCalls = choice?.tool_calls ?? [];
+
+          if (toolCalls.length === 0) {
+            // No tool calls — this is the final text response
+            content = typeof choice?.content === "string" ? choice.content : "";
+            break;
+          }
+
+          // Add assistant message with tool_calls to working messages
+          workingMessages.push({
+            role: "assistant",
+            content: typeof choice?.content === "string" ? choice.content : "",
+            tool_calls: toolCalls,
+          });
+
+          // Execute each tool call and send status updates to client
+          for (const toolCall of toolCalls) {
+            const toolName = toolCall.function?.name || "unknown";
+            let observation: string;
+
+            // Send tool status to client
+            writeSSE(res, {
+              type: "tool_status",
+              toolName,
+              content: getToolStatusMessage(toolName),
+            });
+
+            try {
+              const args = JSON.parse(toolCall.function.arguments);
+              observation = await Promise.race([
+                executeSearchTool(toolName, args),
+                new Promise<string>((_, reject) =>
+                  setTimeout(() => reject(new Error(`Tool '${toolName}' timed out`)), 30_000),
+                ),
+              ]);
+            } catch (err: any) {
+              observation = JSON.stringify({ error: err.message });
+              logger.warn(
+                { toolName, error: err.message },
+                "[SSE] Tool execution failed",
+              );
+            }
+
+            // Add tool result to working messages
+            workingMessages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              name: toolName,
+              content: observation,
+            });
+          }
+        }
+
+        // If we exhausted iterations without a final answer, make one more call without tools
+        if (!content && !disconnected) {
+          const finalResult = await contextualLLM({
+            userId,
+            contextType,
+            messages: [
+              ...workingMessages,
+              { role: "user", content: "Please provide your final response based on all the information gathered above." },
+            ],
+          });
+          content = typeof finalResult.choices?.[0]?.message?.content === "string"
+            ? finalResult.choices[0].message.content
+            : "";
+        }
+      } else {
+        // ── Simple path (no tools) ───────────────────────────────
+        const result = await contextualLLM({
+          userId,
+          contextType,
+          messages,
+          ...(tools && tools.length > 0 ? { tools, tool_choice: tool_choice || "auto" } : {}),
+        });
+        content = result.choices?.[0]?.message?.content || "";
+      }
+
+      // Simulate streaming by chunking the response
       const chunks = chunkByWords(content, FALLBACK_CHUNK_SIZE);
 
       for (const chunk of chunks) {
@@ -225,7 +321,7 @@ export async function createSSEStreamHandler(
         writeSSE(res, {
           type: "done",
           sessionId,
-          totalTokens: result.usage?.total_tokens || estimateTokens(content),
+          totalTokens: estimateTokens(content),
         });
       }
     }
@@ -242,6 +338,25 @@ export async function createSSEStreamHandler(
     if (!res.writableEnded) {
       res.end();
     }
+  }
+}
+
+// ── Tool Status Messages ────────────────────────────────────────────────────
+
+function getToolStatusMessage(toolName: string): string {
+  switch (toolName) {
+    case "google_search":
+      return "Searching the web for current information...";
+    case "web_search":
+      return "Searching the web for current information...";
+    case "lookup_stock_data":
+      return "Looking up market data...";
+    case "research_financial_product":
+      return "Researching financial product details...";
+    case "compare_products":
+      return "Comparing products...";
+    default:
+      return `Running ${toolName}...`;
   }
 }
 
@@ -266,8 +381,9 @@ async function attemptNativeStream(
 
   if (!apiKey) return null;
 
-  // Use the same model as the non-streaming path (configurable via env)
-  const model = process.env.DEFAULT_LLM_MODEL || "gemini-2.5-flash";
+  // Use the model registry's default, overridable via env
+  const { getDefaultModelId } = await import("../config/modelRegistry");
+  const model = process.env.DEFAULT_LLM_MODEL || getDefaultModelId();
   const payload: Record<string, unknown> = {
     model,
     messages: enrichedMessages, // Uses context-enriched messages, not raw

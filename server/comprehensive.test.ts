@@ -502,28 +502,41 @@ describe("Functional Tests", () => {
   describe("Web Search Tools", () => {
     it("defines correct search tool schemas", async () => {
       const { SEARCH_TOOLS } = await import("./webSearch");
-      expect(SEARCH_TOOLS).toHaveLength(3);
-      expect(SEARCH_TOOLS[0].function.name).toBe("lookup_stock_data");
-      expect(SEARCH_TOOLS[1].function.name).toBe("research_financial_product");
-      expect(SEARCH_TOOLS[2].function.name).toBe("compare_products");
+      expect(SEARCH_TOOLS).toHaveLength(5);
+      // google_search (native grounding) + web_search (Tavily/Brave fallback) + 3 specialized tools
+      expect(SEARCH_TOOLS[0].function.name).toBe("google_search");
+      expect(SEARCH_TOOLS[1].function.name).toBe("web_search");
+      expect(SEARCH_TOOLS[2].function.name).toBe("lookup_stock_data");
+      expect(SEARCH_TOOLS[3].function.name).toBe("research_financial_product");
+      expect(SEARCH_TOOLS[4].function.name).toBe("compare_products");
+    });
+
+    it("google_search tool has required parameters", async () => {
+      const { SEARCH_TOOLS } = await import("./webSearch");
+      const googleTool = SEARCH_TOOLS.find(t => t.function.name === "google_search")!;
+      expect(googleTool).toBeDefined();
+      expect(googleTool.function.parameters.required).toContain("query");
     });
 
     it("lookup_stock_data tool has required parameters", async () => {
       const { SEARCH_TOOLS } = await import("./webSearch");
-      const stockTool = SEARCH_TOOLS[0];
+      const stockTool = SEARCH_TOOLS.find(t => t.function.name === "lookup_stock_data")!;
+      expect(stockTool).toBeDefined();
       expect(stockTool.function.parameters.required).toContain("symbol");
     });
 
     it("research_financial_product tool has required parameters", async () => {
       const { SEARCH_TOOLS } = await import("./webSearch");
-      const researchTool = SEARCH_TOOLS[1];
+      const researchTool = SEARCH_TOOLS.find(t => t.function.name === "research_financial_product")!;
+      expect(researchTool).toBeDefined();
       expect(researchTool.function.parameters.required).toContain("query");
       expect(researchTool.function.parameters.required).toContain("category");
     });
 
     it("compare_products tool has required parameters", async () => {
       const { SEARCH_TOOLS } = await import("./webSearch");
-      const compareTool = SEARCH_TOOLS[2];
+      const compareTool = SEARCH_TOOLS.find(t => t.function.name === "compare_products")!;
+      expect(compareTool).toBeDefined();
       expect(compareTool.function.parameters.required).toContain("products");
     });
 

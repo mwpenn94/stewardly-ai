@@ -21,6 +21,7 @@ import { requestIdMiddleware } from "./requestId";
 import { generalLimiter, authLimiter, sensitiveTrpcGuard } from "./rateLimiter";
 import { createSSEStreamHandler } from "../shared/streaming";
 import { contextualLLM } from "../shared/stewardlyWiring";
+import { SEARCH_TOOLS, executeSearchTool } from "../webSearch";
 import { sdk } from "./sdk";
 import { initSentry, captureException } from "./sentry";
 import { initOTel } from "../shared/telemetry/otel";
@@ -221,6 +222,8 @@ async function startServer() {
         sessionId: validSessionId,
         contextType: contextType || "chat",
         messages,
+        tools: SEARCH_TOOLS as Array<Record<string, unknown>>,
+        executeSearchTool,
       });
     } catch (err: any) {
       if (!res.headersSent) {

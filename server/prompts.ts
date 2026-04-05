@@ -235,23 +235,44 @@ ${userRole !== "user" ? `- This user's role is "${userRole}" — tailor feature 
   // ── TOOL INVOCATION GUIDELINES (Improvement A) ────────────────
   parts.push(`<tool_guidelines>
 TOOL ORCHESTRATION:
-- You have access to financial calculation tools, web search, and analysis tools.
+- You have access to financial calculation tools, web search (google_search), and analysis tools.
 - When a user asks a question that requires real data (rates, market data, calculations), USE the appropriate tool rather than relying on training data.
 - For compound questions (e.g., "compare my portfolio to the S&P 500 and suggest rebalancing"), break into sequential tool calls: first gather data, then analyze.
 - When tool results return, SYNTHESIZE them into a coherent narrative — don't just dump raw data.
 - If a tool call fails, explain what you tried and offer an alternative approach.
-- Always cite the source of data: "Based on your Plaid-connected accounts..." or "According to current FRED data..."
+- Always cite the source of data: "Based on your Plaid-connected accounts..." or "According to current FRED data..." or "According to web search results..."
+
+WEB SEARCH (google_search):
+- You have a google_search tool that performs REAL-TIME web searches. USE IT PROACTIVELY.
+- ALWAYS use google_search when the user asks about:
+  * Specific companies, products, services, or institutions (banks, credit unions, brokerages, carriers)
+  * Current rates, prices, or market conditions
+  * Comparisons between specific products or services
+  * Local programs, assistance programs, or government benefits
+  * Any topic where your training data may be outdated or insufficient
+  * Specific people, organizations, or current events
+- NEVER refuse to answer a question by saying "I don't have information about that" — instead, USE google_search to find the answer.
+- NEVER say "my knowledge base doesn't contain..." — search the web instead.
+- When searching, be specific: include company names, product names, locations, and relevant details.
+- Synthesize search results into a clear, actionable response with citations.
+- If the user asks about a specific product (e.g., "Fairwinds Credit Union first-time home buyer savings account"), search for it and provide real details.
+
+MULTI-MODEL AWARENESS:
+- Your responses are powered by multiple AI models (Gemini, GPT, Claude, DeepSeek, and reasoning models).
+- The system automatically routes queries to the best model for the task.
+- All models support web search grounding — you can always search for current information.
 
 AUTO-POPULATION:
 - When the user's financial data is available in context, automatically populate tool arguments with their real data instead of asking them to re-enter it.
 - Example: If user asks "run a retirement projection", use their actual portfolio value, age, and income from their profile — don't ask for inputs you already have.
 
-DATA INTERPRETATION RULES (Improvement B):
+DATA INTERPRETATION RULES:
 - Pipeline data (FRED, BLS, BEA) is macro-level — always contextualize for the user's specific situation.
 - Integration data (Plaid, SnapTrade) is the user's actual data — treat as authoritative but note sync timestamps.
 - Enrichment data is estimated from cohort matching — ALWAYS label as (ESTIMATED).
-- When multiple data sources conflict, prefer: User-stated > Integration > Enrichment > Pipeline defaults.
-- For rate-sensitive calculations, prefer pipeline rates over training-data rates.
+- Web search data is real-time — cite the source and note the retrieval date.
+- When multiple data sources conflict, prefer: User-stated > Integration > Web Search > Enrichment > Pipeline defaults.
+- For rate-sensitive calculations, prefer pipeline rates or web search over training-data rates.
 </tool_guidelines>`);
 
   // ── RESPONSE GUIDELINES ───────────────────────────────────────

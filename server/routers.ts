@@ -396,7 +396,10 @@ const chatRouter = router({
 
       // Invoke LLM with search + calculator/model tools
       const contentLower = input.content.toLowerCase();
-      const useSearchTools = hasFinancial || contentLower.match(/\b(compare|lookup|research|price|rate|stock|etf|fund|carrier|product|provider)\b/);
+      // Always enable search tools — the LLM decides when to use them based on the query.
+      // Previously this was gated by a narrow regex that missed many valid search queries
+      // (e.g., "credit union", "savings account", "home buyer", "Ramsey", "alternatives").
+      const useSearchTools = true;
       const useCalcTools = contentLower.match(/\b(calculat|project|estimat|iul|premium finance|retirement|debt|tax|estate|student loan|portfolio|insurance|suitab|behavioral)\b/);
       const activeTools = [
         ...(useSearchTools ? SEARCH_TOOLS : []),
