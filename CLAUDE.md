@@ -5,7 +5,7 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-76 pages, 309 tables, 2,231 tests passing, 151 services, 65 routers
+76 pages, 314 tables, 2,254 tests passing, 199 services, 68 routers
 Current state: ~80% deep, 15% partial, 5% scaffolded
 
 ## Commands

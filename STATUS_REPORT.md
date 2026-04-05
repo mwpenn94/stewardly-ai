@@ -72,15 +72,17 @@
 
 | Metric | Value |
 |--------|-------|
-| Test files | 94 |
-| Tests passing | 2,231 |
-| Tests failing | 112 (all DB-unavailable — no TiDB access in CI) |
-| Total tests | 2,343 |
+| Test files | 95 |
+| Tests passing | 2,254 |
+| Tests failing | 108 (all DB-unavailable — no TiDB access in CI) |
+| Total tests | 2,362 |
 | Build status | Passing |
 | TypeScript errors | 0 |
-| Database tables | 309 |
-| Server services | 151 |
-| tRPC routers | 65 |
+| Database tables | 314 |
+| Server services | 199 |
+| tRPC routers | 68 |
+| Frontend pages | 105 |
+| UI components | 109 |
 
 ---
 
