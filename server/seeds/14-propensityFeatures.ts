@@ -1,0 +1,36 @@
+export const FEATURES = [
+  { featureName: "has_email", featureSource: "lead_pipeline", dataType: "boolean" },
+  { featureName: "has_phone", featureSource: "lead_pipeline", dataType: "boolean" },
+  { featureName: "has_linkedin", featureSource: "lead_pipeline", dataType: "boolean" },
+  { featureName: "has_company", featureSource: "lead_pipeline", dataType: "boolean" },
+  { featureName: "has_title", featureSource: "enrichment", dataType: "boolean" },
+  { featureName: "income_indicator", featureSource: "enrichment", dataType: "numeric" },
+  { featureName: "age_indicator", featureSource: "enrichment", dataType: "numeric" },
+  { featureName: "homeowner", featureSource: "enrichment", dataType: "boolean" },
+  { featureName: "business_owner", featureSource: "enrichment", dataType: "boolean" },
+  { featureName: "has_dependents", featureSource: "enrichment", dataType: "boolean" },
+  { featureName: "assets_indicator", featureSource: "enrichment", dataType: "numeric" },
+  { featureName: "zip_wealth_index", featureSource: "zip_demographics", dataType: "numeric" },
+  { featureName: "zip_median_income", featureSource: "zip_demographics", dataType: "numeric" },
+  { featureName: "zip_homeownership_rate", featureSource: "zip_demographics", dataType: "numeric" },
+  { featureName: "calculator_usage_count", featureSource: "calculator_cache", dataType: "numeric" },
+  { featureName: "calculator_types_used", featureSource: "calculator_cache", dataType: "numeric" },
+  { featureName: "protection_score", featureSource: "financial_protection_scores", dataType: "numeric" },
+  { featureName: "backplan_completed", featureSource: "calculator_cache", dataType: "boolean" },
+  { featureName: "profile_completeness", featureSource: "lead_profile_accumulator", dataType: "numeric" },
+  { featureName: "engagement_score", featureSource: "calculated", dataType: "numeric" },
+  { featureName: "days_since_first_visit", featureSource: "calculated", dataType: "numeric" },
+  { featureName: "page_views", featureSource: "analytics", dataType: "numeric" },
+  { featureName: "time_on_calculator", featureSource: "analytics", dataType: "numeric" },
+  { featureName: "referral_source", featureSource: "lead_pipeline", dataType: "categorical" },
+  { featureName: "state", featureSource: "lead_pipeline", dataType: "categorical" },
+  { featureName: "company_size_signal", featureSource: "enrichment", dataType: "categorical" },
+  { featureName: "industry", featureSource: "enrichment", dataType: "categorical" },
+  { featureName: "education_level", featureSource: "enrichment", dataType: "categorical" },
+  { featureName: "career_stage", featureSource: "enrichment", dataType: "categorical" },
+  { featureName: "net_worth_estimate", featureSource: "enrichment", dataType: "numeric" },
+];
+export async function seed() {
+  console.log(`[seed:14] Propensity features: ${FEATURES.length} features defined`);
+}
+if (import.meta.url === `file://${process.argv[1]}`) seed();
