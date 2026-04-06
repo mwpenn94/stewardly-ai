@@ -936,6 +936,49 @@ export default function AITuningTab() {
       {activeTab === "organization" && <OrganizationEditor />}
       {activeTab === "platform" && <PlatformEditor />}
       {activeTab === "preview" && user && <PreviewPanel userId={user.id} />}
+
+      {/* ── Autonomy Level ─────────────────────────────────────────── */}
+      <Card className="mt-6">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Shield className="h-4 w-4 text-blue-500" />
+            <span className="font-medium text-sm">AI Autonomy Level</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {[
+              { level: 1, name: "Supervised", desc: "AI suggests, human approves all actions" },
+              { level: 2, name: "Assisted", desc: "AI executes routine tasks, human reviews complex" },
+              { level: 3, name: "Autonomous", desc: "AI handles most tasks, escalates edge cases" },
+              { level: 4, name: "Full Autonomy", desc: "AI operates independently within guardrails" },
+            ].map(l => (
+              <div key={l.level} className="p-2 rounded border text-xs">
+                <div className="font-medium">L{l.level}: {l.name}</div>
+                <div className="text-muted-foreground mt-1">{l.desc}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">Current level is determined by your trust score and interaction history.</p>
+        </CardContent>
+      </Card>
+
+      {/* ── Memory Management ──────────────────────────────────────── */}
+      <Card className="mt-4">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Brain className="h-4 w-4 text-purple-500" />
+            <span className="font-medium text-sm">AI Memory</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {["fact", "preference", "goal", "relationship", "financial", "temporal"].map(cat => (
+              <div key={cat} className="flex items-center justify-between p-2 rounded border text-xs">
+                <span className="capitalize">{cat}</span>
+                <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1">Clear</Button>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">Memory helps the AI personalize responses. Clearing a category removes stored knowledge in that area.</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

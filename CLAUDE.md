@@ -77,10 +77,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - VerificationBadge: component exists, NOT on Professionals page
 - EmbedCodeGenerator: component exists, NOT used in any page
 - AccessibleChart: component exists, NOT replacing any existing Recharts usage
-- Intelligence dashboard widget: NOT implemented (no component)
 - Chat enrichment indicator: NOT implemented (no "Enhanced with N sources" shown)
-- Autonomy Level settings UI: NOT implemented
-- Memory management settings UI: NOT implemented
 - Calculator pages directory: does NOT exist (calculators are in main pages)
 - 34 seed scripts: only 18 exist (16 need web-search-verified financial data)
 

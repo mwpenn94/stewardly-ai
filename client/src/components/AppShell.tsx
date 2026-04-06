@@ -9,6 +9,7 @@
  * `lib/navigation.ts` so items never drift out of sync.
  */
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -66,6 +67,7 @@ export default function AppShell({ children, title }: AppShellProps) {
   const { user, loading, logout } = useAuth();
   const [location, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  useKeyboardShortcuts(); // Global shortcuts: ?, /, g+h, g+s, g+c, g+d, g+l, g+o
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("appshell-collapsed") === "true"; } catch { return false; }
   });

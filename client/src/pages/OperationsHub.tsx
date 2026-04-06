@@ -20,6 +20,7 @@ import {
   Search, Filter, RefreshCw, MoreHorizontal, FileText, Zap,
 } from "lucide-react";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+import { IntelligenceStatusWidget } from "@/components/IntelligenceStatusWidget";
 
 export default function OperationsHub() {
   const utils = trpc.useUtils();
@@ -52,6 +53,11 @@ export default function OperationsHub() {
           <QuickStat icon={Bot} label="Running Agents" value={String(runningAgents)} color="text-green-500" />
           <QuickStat icon={Shield} label="Pending Reviews" value={String(pendingCount)} color="text-amber-500" />
           <QuickStat icon={AlertTriangle} label="Compliance Flags" value="0" color="text-red-500" />
+        </div>
+
+        {/* Intelligence Status */}
+        <div className="mb-6">
+          <IntelligenceStatusWidget />
         </div>
 
         {/* Search */}
