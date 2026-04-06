@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PropensityGauge } from "./PropensityGauge";
 import { VerificationBadge } from "./VerificationBadge";
+import { PiiMaskedField } from "./PiiMaskedField";
 import { User, Mail, Phone, Calendar, MoreHorizontal, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -54,12 +55,12 @@ export function LeadCard({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               {email && (
                 <span className="flex items-center gap-1 truncate">
-                  <Mail className="h-3 w-3 shrink-0" /> {email}
+                  <Mail className="h-3 w-3 shrink-0" /> <PiiMaskedField value={email} visibleChars={4} />
                 </span>
               )}
               {phone && (
                 <span className="flex items-center gap-1">
-                  <Phone className="h-3 w-3 shrink-0" /> {phone}
+                  <Phone className="h-3 w-3 shrink-0" /> <PiiMaskedField value={phone} visibleChars={4} />
                 </span>
               )}
             </div>
