@@ -26,6 +26,11 @@ import { seed as seedPropensityFeatures } from "./14-propensityFeatures";
 import { seed as seedComplianceRules } from "./16-complianceRules";
 import { seed as seedLeadCaptureConfigs } from "./17-leadCaptureConfigs";
 import { seed as seedVerificationBadgeTypes } from "./19-verificationBadgeTypes";
+import { seed as seedPropensityWeights } from "./15-propensityWeights";
+import { seed as seedContentPillarPages } from "./18-contentPillarPages";
+import { seed as seedSofrPublicationCalendar } from "./20-sofrPublicationCalendar";
+import { seed as seedProviderHealthQueries } from "./21-providerHealthQueries";
+import { seed as seedImportFieldMappings } from "./22-importFieldMappings";
 import { seed as seedHolisticSummaryActions } from "./31-holisticSummaryActions";
 import { seed as seedChannelPilotDefaults } from "./32-channelPilotDefaults";
 
@@ -122,6 +127,11 @@ export async function runAllSeeds(): Promise<{ results: SeedResult[]; totalRecor
       { name: "TOS Classifications", fn: seedTosClassifications },
       { name: "Holistic Summary Actions", fn: seedHolisticSummaryActions },
       { name: "Channel Pilot Defaults", fn: seedChannelPilotDefaults },
+      { name: "Propensity Weights", fn: seedPropensityWeights },
+      { name: "Content Pillar Pages", fn: seedContentPillarPages },
+      { name: "SOFR Publication Calendar", fn: seedSofrPublicationCalendar },
+      { name: "Provider Health Queries", fn: seedProviderHealthQueries },
+      { name: "Import Field Mappings", fn: seedImportFieldMappings },
     ],
   ];
 

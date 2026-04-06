@@ -1,6 +1,6 @@
 # Stewardly AI — Comprehensive Platform Guide
 
-**Version:** 3.1 | **Date:** April 5, 2026 | **Status:** Production  
+**Version:** 3.2 | **Date:** April 6, 2026 | **Status:** Production  
 **Domains:** stewardly.manus.space, wealthai-gakeferp.manus.space
 
 ---
@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with 210,000+ lines of code across 960+ source files, 314 database tables, 68 tRPC API routers (920+ procedures), and 2,440 automated tests across 98 test files. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with 220,000+ lines of code across 1,000+ source files, 318 database tables, 71 tRPC API routers (950+ procedures), and 2,442 automated tests across 99 test files. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -38,18 +38,18 @@ The system is built on a modern TypeScript full-stack architecture with 210,000+
 
 | Metric | Count |
 |--------|-------|
-| Total lines of code | 210,000+ |
-| Source files (non-test) | 960+ |
-| Test files | 98 |
-| Total tests | 2,440 (all passing) |
-| Database tables | 314 |
-| tRPC routers | 68 (920+ procedures) |
-| Frontend pages | 105 |
-| Custom components | 109 |
+| Total lines of code | 220,000+ |
+| Source files (non-test) | 1,000+ |
+| Test files | 99 |
+| Total tests | 2,442 (passing) |
+| Database tables | 318 |
+| tRPC routers | 71 (950+ procedures) |
+| Frontend pages | 106 |
+| Custom components | 114 |
 | UI primitives (shadcn) | 53 |
 | Custom hooks | 17 |
-| Server services | 204 |
-| Router modules | 68 (+ main routers.ts) |
+| Server services | 212 |
+| Router modules | 71 (+ main routers.ts) |
 | Shared modules | 12 (intelligence, config, streaming, engine, guardrails, telemetry, events, tenant, MCP) |
 | Business domains | 15 (PII, verification, CRM, propensity, lead engine, import, enrichment, scraping, reporting, planning, premium finance, SMS-iT, SEO, email, monitoring) |
 | NPM dependencies | 88 |
@@ -723,14 +723,20 @@ The validator reports issues in the server log and continues startup (non-blocki
 - **Consent banner** reappears on each page load (localStorage persistence not yet implemented)
 - **Mobile sidebar** requires manual toggle; no swipe gesture support yet
 
-### 14.2 Planned Improvements
+### 14.2 Resolved in Final Session
+- Chrome extension: now fully implemented (LinkedIn capture, Gmail compliance, side panel)
+- Conversation branching: fork button + BranchComparison.tsx now functional
+- Chat Loop/Consensus modes: fully wired to backend services
+- Rich media embeds and contextual ads: components created and integrated
+- Workflow automation UI: /workflows page with 5 templates
 
+### 14.3 Planned Improvements
 - Implement consent banner persistence via localStorage
 - Add swipe gesture for mobile sidebar toggle
 - Implement WebSocket-based real-time notifications
 - Add progressive web app (PWA) offline support
 - Expand test coverage for UI components with React Testing Library
-- Implement A/B testing framework for AI prompt optimization
+- Native Gemini Live Audio integration (currently Edge TTS only)
 
 ---
 
@@ -791,6 +797,52 @@ function FeaturePage() {
 | Tests | camelCase with `.test.ts` | `schemaMigration.test.ts` |
 | DB columns | camelCase in SQL | `createdAt`, `userId` |
 | DB tables | snake_case | `insurance_quotes` |
+
+----
+
+## 16. New Features (April 6, 2026)
+
+The following features were completed in the final build session, bringing the platform to feature-complete status.
+
+### 16.1 Chat Modes
+
+The chat interface now supports three distinct modes, selectable via toggle buttons in the chat header.
+
+| Mode | Description | Backend Integration |
+|------|-------------|--------------------|
+| **Single** | Standard one-shot chat with the selected AI model | contextualLLM via ReAct loop |
+| **Loop** | Autonomous diverge/converge processing with 4 foci (discovery, apply, connect, critique) | autonomousProcessing.start with polling |
+| **Consensus** | Multi-model query showing individual model responses and agreement percentage | advancedIntelligence.consensusQuery |
+
+Loop mode runs budget-capped autonomous processing cycles, polling the server every 2 seconds for status updates. Consensus mode queries genuinely different models (Claude, GPT, Gemini) through the Forge API and displays an expandable panel with per-model responses.
+
+### 16.2 Rich Media and Advertising
+
+The `RichMediaEmbed.tsx` component renders embedded content extracted from AI responses, supporting video (YouTube with timestamps), audio players, images, documents, shopping cards, and charts. The `ContextualAd.tsx` component displays contextual advertising with a "Sponsored" label, dismiss functionality, and respects the 5-layer ad policy configuration (maximum 1 ad per 5 messages, 3 per session cap).
+
+### 16.3 Video Streaming
+
+The video streaming layout provides a 70% video + chat overlay interface that auto-adapts its chat position based on the stream type: overlay-right for screen share, overlay-bottom for camera, and sidebar for co-browse sessions.
+
+### 16.4 Workflow Automation UI
+
+The `/workflows` page provides a visual interface for the 5 predefined multi-step workflows: client onboarding, annual review, compliance audit, lead nurture sequence, and report generation. Each workflow displays its steps, estimated duration, and real-time progress tracking during execution.
+
+### 16.5 Conversation Branching
+
+A fork button (GitBranch icon) appears on assistant messages, allowing users to branch the conversation from any point. The `BranchComparison.tsx` component provides side-by-side comparison of branched conversation paths.
+
+### 16.6 Lead Capture Gate
+
+The `LeadCaptureGate` component wraps calculator results on the EstatePlanning, TaxPlanning, and RiskAssessment pages, requiring contact information before revealing detailed results.
+
+### 16.7 Chrome Extension
+
+The `chrome-extension/` directory contains a complete browser extension with three features: a side panel for quick chat and client search, LinkedIn profile capture ("Add to Stewardly" button), and Gmail compliance screening for email drafts.
+
+### 16.8 Model Registry Expansion
+
+The model registry now includes 23 models across 8 families (Gemini, GPT, Claude, OpenAI Reasoning, DeepSeek, Llama, Mistral, Mixtral/Qwen), with multi-select capability in the chat UI for consensus queries.
 
 ---
 

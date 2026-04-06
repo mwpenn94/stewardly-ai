@@ -1,6 +1,6 @@
 # Stewardly --- Full Setup Guide
 
-**Updated:** April 5, 2026
+**Updated:** April 6, 2026
 **Platform:** Stewardly AI --- Digital Financial Twin
 
 ---
@@ -83,10 +83,10 @@ Also remove from `vite.config.ts`: `vite-plugin-manus-runtime` and `@builder.io/
 ## Current Scale
 
 ```
-314 tables | 204 services | 68 routers | 105 pages | 109 components
-98 test files (2,440 tests) | 16 LLM models | 5 search tools
-34 cron jobs | 40 seed modules | 28 navigation items
-0 TypeScript errors
+318 tables | 212 services | 71 routers | 106 pages | 114 components
+99 test files (2,442 tests) | 23 AI models (8 families) | 5 search tools
+37 cron jobs | 24 seed files (40+ modules) | 28+ navigation items
+Chrome extension | 5 predefined workflows | 0 TypeScript errors
 ```
 
 ---

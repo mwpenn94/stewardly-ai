@@ -46,6 +46,7 @@ export interface NavItemDef {
 export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "MessageSquare", label: "Chat", href: "/chat", minRole: "user" },
   { iconName: "Zap", label: "Operations", href: "/operations", minRole: "user" },
+  { iconName: "GitBranch", label: "Workflows", href: "/workflows", minRole: "user" },
   { iconName: "Brain", label: "Intelligence", href: "/intelligence-hub", minRole: "user" },
   { iconName: "Package", label: "Advisory", href: "/advisory", minRole: "user" },
   { iconName: "Users", label: "Relationships", href: "/relationships", minRole: "user" },

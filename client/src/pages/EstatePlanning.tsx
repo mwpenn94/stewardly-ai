@@ -124,25 +124,31 @@ export default function EstatePlanning() {
         </TabsContent>
 
         <TabsContent value="projections" className="mt-4 space-y-4">
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-sm mb-3">Based on current net estate of $2.8M and 2026 federal exemption of $13.61M:</p>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><p className="text-xs text-muted-foreground">Federal Exemption</p><p className="font-bold">$13.61M</p></div>
-                <div><p className="text-xs text-muted-foreground">Net Estate</p><p className="font-bold">$2.8M</p></div>
-                <div><p className="text-xs text-muted-foreground">Taxable Estate</p><p className="font-bold text-emerald-400">$0</p></div>
-                <div><p className="text-xs text-muted-foreground">Estate Tax</p><p className="font-bold text-emerald-400">$0</p></div>
-              </div>
-            </CardContent>
-          </Card>
-          <CalculatorInsight
-            title="Sunset Risk: 2026 Exemption Reduction"
-            summary="If TCJA provisions sunset, the exemption drops to ~$7M. At projected estate growth of 6%/year, your estate could exceed the reduced exemption by 2032."
-            detail="Consider accelerated gifting strategies, irrevocable life insurance trusts (ILITs), or grantor retained annuity trusts (GRATs) to reduce the taxable estate before a potential sunset."
-            severity="info"
-            actionLabel="Model Sunset Scenarios"
-            onAction={() => navigate("/chat")}
-          />
+          <LeadCaptureGate
+            title="Unlock Estate Tax Projections"
+            description="Enter your email to access detailed estate tax projections, sunset scenario modeling, and personalized planning strategies."
+            onCapture={(email) => toast.success(`Projections sent to ${email}`)}
+          >
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm mb-3">Based on current net estate of $2.8M and 2026 federal exemption of $13.61M:</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><p className="text-xs text-muted-foreground">Federal Exemption</p><p className="font-bold">$13.61M</p></div>
+                  <div><p className="text-xs text-muted-foreground">Net Estate</p><p className="font-bold">$2.8M</p></div>
+                  <div><p className="text-xs text-muted-foreground">Taxable Estate</p><p className="font-bold text-emerald-400">$0</p></div>
+                  <div><p className="text-xs text-muted-foreground">Estate Tax</p><p className="font-bold text-emerald-400">$0</p></div>
+                </div>
+              </CardContent>
+            </Card>
+            <CalculatorInsight
+              title="Sunset Risk: 2026 Exemption Reduction"
+              summary="If TCJA provisions sunset, the exemption drops to ~$7M. At projected estate growth of 6%/year, your estate could exceed the reduced exemption by 2032."
+              detail="Consider accelerated gifting strategies, irrevocable life insurance trusts (ILITs), or grantor retained annuity trusts (GRATs) to reduce the taxable estate before a potential sunset."
+              severity="info"
+              actionLabel="Model Sunset Scenarios"
+              onAction={() => navigate("/chat")}
+            />
+          </LeadCaptureGate>
         </TabsContent>
       </Tabs>
     </div>

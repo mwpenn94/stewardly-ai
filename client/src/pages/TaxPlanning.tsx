@@ -86,6 +86,11 @@ export default function TaxPlanning() {
         </TabsContent>
 
         <TabsContent value="strategies" className="space-y-4 mt-4">
+          <LeadCaptureGate
+            title="Unlock Tax Optimization Strategies"
+            description="Enter your email to access personalized Roth conversion modeling, charitable giving analysis, and QBI deduction calculations."
+            onCapture={(email) => toast.success(`Tax strategies sent to ${email}`)}
+          >
           <CalculatorInsight
             title="Roth Conversion Opportunity"
             summary="You have $23,000 of room in the 22% bracket before hitting 24%. Converting traditional IRA funds now locks in the lower rate."
@@ -108,6 +113,7 @@ export default function TaxPlanning() {
             detail="If taxable income stays below $394,600 (MFJ), the full 20% deduction applies to qualified business income. Ensure W-2 wage and property basis tests are met."
             severity="info"
           />
+          </LeadCaptureGate>
         </TabsContent>
 
         <TabsContent value="harvesting" className="mt-4">

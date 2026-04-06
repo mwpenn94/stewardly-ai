@@ -78,6 +78,21 @@ const WORKFLOW_TEMPLATES = [
       { id: "return", label: "Return", desc: "Onboarding complete — schedule first review meeting" },
     ],
   },
+  {
+    id: "annual_compliance",
+    name: "Annual Compliance Review",
+    description: "Complete annual compliance audit and CE requirements",
+    category: "compliance",
+    steps: [
+      { id: "prepare", label: "Prepare", desc: "Gather CE transcripts, disclosure documents, and compliance checklist" },
+      { id: "brief", label: "Brief", desc: "Review regulatory updates, new rules, and firm policy changes" },
+      { id: "navigate", label: "Navigate", desc: "Access FINRA BrokerCheck, state DOI portals, and CE tracking systems" },
+      { id: "assist", label: "Assist", desc: "Complete required CE hours and update ADV/CRS filings" },
+      { id: "handoff", label: "Hand-off", desc: "Submit annual compliance questionnaire to CCO" },
+      { id: "confirm", label: "Confirm", desc: "Receive compliance clearance and updated registration" },
+      { id: "return", label: "Return", desc: "Compliance review complete — schedule next annual review" },
+    ],
+  },
 ];
 
 const STEP_ICONS: Record<string, React.ReactNode> = {

@@ -3231,3 +3231,15 @@
 - [x] Update all documentation and REMAINING_ITEMS.md
 - [x] Fix: agent_instances table missing from database causing /operations page error (deployed 13 missing tables)
 - [x] Configure env: VITE_FRONTEND_FORGE_API_URL, STRIPE_SECRET_KEY, VITE_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET
+- [x] Task 1: Wire Chat Loop mode to autonomousProcessing.start backend + poll iterations
+- [x] Task 2: Wire Chat Consensus mode to advancedIntelligence.consensusQuery
+- [x] Task 3: Create RichMediaEmbed.tsx (video, audio, image, document, shopping cards)
+- [x] Task 4: Create ContextualAd.tsx (Sponsored label, dismiss, adPolicy from 5-layer config)
+- [x] Task 5: Video Streaming Layout (screen share 70%/chat overlay)
+- [x] Task 6: Workflow UI page (/workflows) with 5 predefined workflows + run + step progress
+- [x] Task 7: Conversation Branching (fork button + BranchComparison.tsx)
+- [x] Task 8: LeadCaptureGate wrapping on EstatePlanning, TaxPlanning, RiskAssessment
+- [x] Task 9: Verify and run seed scripts (wired 5 unimported seeds, fixed agent_instances column names)
+- [x] Comprehensive review recursive optimization Pass 1 (97/99 files pass, 2442/2444 tests, fixed streaming test regression)
+- [x] Comprehensive review recursive optimization Pass 2 (convergence confirmed — 2 consecutive clean passes)
+- [x] Update all documentation (guide, spec, status, REMAINING_ITEMS)

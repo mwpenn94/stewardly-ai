@@ -223,7 +223,7 @@ function Router() {
         <Route path={"/agentic"}><Redirect to="/operations" /></Route>
         <Route path={"/agent-operations"}><Redirect to="/operations" /></Route>
         <Route path={"/licensed-review"}><Redirect to="/operations" /></Route>
-        <Route path={"/workflows"}><Redirect to="/operations" /></Route>
+        <Route path="/workflows"><Workflows /></Route>
         <Route path={"/compliance"}><Redirect to="/operations" /></Route>
         <Route path={"/data-intelligence"}><Redirect to="/intelligence-hub" /></Route>
         <Route path={"/analytics-hub"}><Redirect to="/intelligence-hub" /></Route>

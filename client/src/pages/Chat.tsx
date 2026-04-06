@@ -25,7 +25,7 @@ import {
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
   Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
-  LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2, HeartPulse
+  LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2, HeartPulse, GitBranch
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
@@ -518,6 +518,7 @@ export default function Chat() {
   // Mutex guard: prevents concurrent conversation creation (race condition)
   const creatingConversationRef = useRef(false);
   const streamAbortRef = useRef<AbortController | null>(null);
+  const loopPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ─── GUARD REF ─────────────────────────────────────────────────
   // Blocks voice recognition during TTS playback AND AI processing.
@@ -663,6 +664,9 @@ export default function Chat() {
     onSuccess: () => { utils.conversations.folders.invalidate(); utils.conversations.list.invalidate(); },
   });
   const reorderMutation = trpc.conversations.reorder.useMutation();
+  const autonomousStart = trpc.autonomousProcessing.start.useMutation();
+  const autonomousStop = trpc.autonomousProcessing.stop.useMutation();
+  const consensusQuery = trpc.advancedIntelligence.consensusQuery.useMutation();
 
   // DnD sensors
   const sensors = useSensors(
@@ -905,6 +909,89 @@ export default function Chat() {
         creatingConversationRef.current = false;
       }
 
+      // ─── LOOP MODE: Start autonomous processing session ───
+      if (chatMode === "loop") {
+        try {
+          const firstFocus = loopConfig.foci[0] || "discovery";
+          const result = await autonomousStart.mutateAsync({
+            topic: trimmed,
+            focus: firstFocus as any,
+            mode: "diverge",
+            maxIterations: loopConfig.maxIterations,
+            maxBudget: loopConfig.maxBudget,
+            context: messages.filter(m => m.role === "assistant").slice(-3).map(m => m.content).join("\n").slice(0, 1000),
+          });
+          setActiveSessionId(result.sessionId);
+          toast.success(`Loop started: ${loopConfig.foci.join(", ")} — ${loopConfig.maxIterations === 0 ? "continuous" : loopConfig.maxIterations + " iterations"}`);
+          // Start polling for iterations every 3s
+          if (loopPollRef.current) clearInterval(loopPollRef.current);
+          let lastIterCount = 0;
+          loopPollRef.current = setInterval(async () => {
+            try {
+              const session = await utils.client.autonomousProcessing.getSession.query({ sessionId: result.sessionId });
+              if (!session) { clearInterval(loopPollRef.current!); loopPollRef.current = null; return; }
+              for (const iter of (session.iterations || []).slice(lastIterCount)) {
+                setMessages(prev => [...prev, {
+                  role: "assistant" as const,
+                  content: `**[${(iter.focus || firstFocus).toUpperCase()} — ${iter.mode || "diverge"}] Iteration ${iter.iteration}**\n\n${iter.content}`,
+                  createdAt: new Date(iter.timestamp || Date.now()),
+                }]);
+                lastIterCount++;
+              }
+              if (session.status !== "running") {
+                clearInterval(loopPollRef.current!); loopPollRef.current = null;
+                setActiveSessionId(null);
+                toast.info(`Loop ${session.status}: ${(session.iterations || []).length} iterations, $${(session.totalCost || 0).toFixed(4)} cost`);
+              }
+            } catch { /* polling error — will retry */ }
+          }, 3000);
+        } catch (err: any) {
+          toast.error(err.message || "Failed to start autonomous loop");
+        }
+        setIsStreaming(false);
+        return;
+      }
+      // ─── CONSENSUS MODE: Multi-model consensus query ───
+      if (chatMode === "consensus") {
+        try {
+          setMessages(prev => [...prev, { role: "assistant" as const, content: "Querying multiple models for consensus...", createdAt: new Date() }]);
+          const result = await consensusQuery.mutateAsync({ prompt: trimmed, requireConsensus: true });
+          const content = result.choices?.[0]?.message?.content || "No consensus response";
+          const consensusScore = (result as any)._consensusScore ?? null;
+          const modelsUsed = (result as any)._modelsUsed ?? [];
+          const warning = (result as any)._consensusWarning;
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant" as const,
+              content: warning ? `${content}\n\n> ⚠️ **Consensus Warning:** ${warning}` : content,
+              createdAt: new Date(),
+              metadata: { consensusScore, modelsUsed },
+            };
+            return updated;
+          });
+          const accumulated = content;
+          if (ttsEnabled) tts.speak(accumulated);
+          // Persist to conversation
+          if (activeConvId) {
+            persistStreamedMutation.mutateAsync({
+              conversationId: activeConvId,
+              userContent: trimmed,
+              assistantContent: accumulated,
+              mode,
+              focus: focusSerialized,
+            }).catch(() => {});
+          }
+        } catch (err: any) {
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { role: "assistant" as const, content: `Consensus query failed: ${err.message}`, createdAt: new Date() };
+            return updated;
+          });
+        }
+        setIsStreaming(false);
+        return;
+      }
       // ─── SSE STREAMING PATH ───
       if (useStreaming) {
         setStreamingContent("");
@@ -1990,6 +2077,11 @@ export default function Chat() {
                                   <Palette className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate Infographic</TooltipContent></Tooltip>
+                              <Tooltip><TooltipTrigger asChild>
+                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-teal-400 transition-colors" onClick={() => { const prevUserMsg = messages.slice(0, i).reverse().find(m => m.role === "user"); if (prevUserMsg) { toast.info("Branching conversation..."); handleSendWithText(prevUserMsg.content); } else { toast.info("No previous prompt to branch from"); } }} aria-label="Fork conversation">
+                                  <GitBranch className="w-4 h-4" />
+                                </button>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fork / Branch</TooltipContent></Tooltip>
                             </div>
                           )}
                         </div>
@@ -2358,6 +2450,8 @@ export default function Chat() {
                     <button
                       className="h-7 px-2 text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-lg"
                       onClick={() => {
+                        if (activeSessionId) autonomousStop.mutate({ sessionId: activeSessionId });
+                        if (loopPollRef.current) { clearInterval(loopPollRef.current); loopPollRef.current = null; }
                         setActiveSessionId(null);
                         setChatMode("single");
                         toast.info("Autonomous loop stopped");

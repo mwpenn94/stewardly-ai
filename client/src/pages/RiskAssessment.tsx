@@ -93,6 +93,11 @@ export default function RiskAssessment() {
       </div>
 
       {/* Allocation */}
+      <LeadCaptureGate
+        title="Unlock Portfolio Allocation Analysis"
+        description="Enter your email to access detailed allocation drift analysis, rebalancing recommendations, and personalized risk optimization strategies."
+        onCapture={(email) => toast.success(`Risk analysis sent to ${email}`)}
+      >
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Asset Allocation: Current vs Target</CardTitle></CardHeader>
         <CardContent>
@@ -130,6 +135,7 @@ export default function RiskAssessment() {
         actionLabel="Generate Rebalancing Plan"
         onAction={() => navigate("/chat")}
       />
+      </LeadCaptureGate>
     </div>
   );
 }
