@@ -1036,8 +1036,15 @@ export default function Chat() {
             id: result.id,
             role: "assistant" as const,
             content: result.content,
+            model: result.model,
             confidenceScore: result.confidenceScore,
             complianceStatus: result.complianceStatus,
+            metadata: {
+              ...(result as any)._routingInfo,
+              consensusScore: (result as any)._consensusScore,
+              modelsUsed: (result as any)._modelsUsed,
+              alternatives: (result as any)._alternatives,
+            },
             createdAt: new Date(),
           };
           setMessages(prev => [...prev, assistantMsg]);
@@ -1058,8 +1065,15 @@ export default function Chat() {
           id: result.id,
           role: "assistant" as const,
           content: result.content,
+          model: result.model,
           confidenceScore: result.confidenceScore,
           complianceStatus: result.complianceStatus,
+          metadata: {
+            ...(result as any)._routingInfo,
+            consensusScore: (result as any)._consensusScore,
+            modelsUsed: (result as any)._modelsUsed,
+            alternatives: (result as any)._alternatives,
+          },
           createdAt: new Date(),
         };
         setMessages(prev => [...prev, assistantMsg]);
@@ -1881,6 +1895,39 @@ export default function Chat() {
                             isLatest={i === messages.length - 1}
                             threshold={300}
                           />
+                          {/* Multi-model consensus details — show individual model responses */}
+                          {msg.metadata?.consensusScore != null && (
+                            <div className="mt-2 border border-purple-500/20 rounded-lg overflow-hidden">
+                              <button
+                                className="w-full flex items-center justify-between px-3 py-1.5 bg-purple-500/5 text-[10px] text-purple-400 hover:bg-purple-500/10 transition-colors"
+                                onClick={(e) => {
+                                  const details = (e.currentTarget.nextElementSibling as HTMLElement);
+                                  details.style.display = details.style.display === "none" ? "block" : "none";
+                                }}
+                              >
+                                <span>
+                                  Consensus: {Math.round((msg.metadata.consensusScore || 0) * 100)}% agreement
+                                  {msg.metadata.modelsUsed && ` across ${(msg.metadata.modelsUsed as string[]).join(", ")}`}
+                                </span>
+                                <span>▼</span>
+                              </button>
+                              <div style={{ display: "none" }} className="divide-y divide-purple-500/10">
+                                {(msg.metadata.alternatives || []).map((alt: any, altIdx: number) => (
+                                  <div key={altIdx} className="px-3 py-2">
+                                    <div className="text-[9px] font-semibold text-purple-300 mb-1">
+                                      {alt.model || `Model ${altIdx + 2}`}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                      {typeof alt === "string" ? alt : (alt.choices?.[0]?.message?.content || alt.content || JSON.stringify(alt)).slice(0, 1000)}
+                                    </div>
+                                  </div>
+                                ))}
+                                {(!msg.metadata.alternatives || msg.metadata.alternatives.length === 0) && (
+                                  <div className="px-3 py-2 text-xs text-muted-foreground/50">All models agreed — no alternative responses to show.</div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           {/* Render inline images if present in metadata */}
                           {msg.metadata?.imageUrl && (
                             <div className="mt-3 rounded-xl overflow-hidden border border-border max-w-md">

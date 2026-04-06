@@ -72,6 +72,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - Autonomous processing: user-driven diverge/converge loops with 4 foci (discovery/apply/connect/critique), budget-capped
 - OpenClaw agents: CRUD agent instances, compliance-aware execution, reads/stores/trains on compliance data
 - Multi-model consensus: queries genuinely different models (Claude + GPT + Gemini) through Forge API
+- Consensus UI: expandable panel showing agreement %, individual model responses, unique details per model
 
 ## Not Yet Implemented (honest gaps — do NOT claim these work)
 - Gemini Live Audio: no Gemini-specific voice (Edge TTS only via msedge-tts)
