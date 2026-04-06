@@ -1923,6 +1923,8 @@ import { productIntelligenceRouter } from "./routers/productIntelligence";
 import { adminIntelligenceRouter } from "./routers/adminIntelligence";
 import { passiveActionsRouter } from "./routers/passiveActions";
 import { advancedIntelligenceRouter } from "./routers/advancedIntelligence";
+import { autonomousProcessingRouter } from "./routers/autonomousProcessing";
+import { openClawRouter } from "./routers/openClaw";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2042,6 +2044,8 @@ export const appRouter = router({
   referrals: referralsRouter,
   embeds: embedsRouter,
   advancedIntelligence: advancedIntelligenceRouter,
+  autonomousProcessing: autonomousProcessingRouter,
+  openClaw: openClawRouter,
 });
 
 export type AppRouter = typeof appRouter;

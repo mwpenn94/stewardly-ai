@@ -67,6 +67,9 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - Autonomous analysis: nightly client gap analysis with $0.50/client budget (scheduled)
 - Autonomous training: uses excess free capacity every 4h to run RAG training, template optimization, bias checks
 - RAG trainer: learns from every LLM response (fact extraction → user_memories, tool patterns → episodic)
+- Autonomous processing: user-driven diverge/converge loops with 4 foci (discovery/apply/connect/critique), budget-capped
+- OpenClaw agents: CRUD agent instances, compliance-aware execution, reads/stores/trains on compliance data
+- Multi-model consensus: queries genuinely different models (Claude + GPT + Gemini) through Forge API
 
 ## Not Yet Implemented (honest gaps — do NOT claim these work)
 - Gemini Live Audio: no Gemini-specific voice (Edge TTS only via msedge-tts)
