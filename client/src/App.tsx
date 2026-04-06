@@ -77,6 +77,7 @@ const DigitalAssets = lazy(() => import("./pages/DigitalAssets"));
 const CoiNetwork = lazy(() => import("./pages/CoiNetwork"));
 const DataIntelligence = lazy(() => import("./pages/DataIntelligence"));
 const AgenticHub = lazy(() => import("./pages/AgenticHub"));
+const AgentManager = lazy(() => import("./pages/AgentManager"));
 const EmailCampaigns = lazy(() => import("./pages/EmailCampaigns"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const ImportData = lazy(() => import("./pages/ImportData"));
@@ -185,6 +186,7 @@ function Router() {
 
         {/* Consolidated Hub Pages */}
         <Route path={"/operations"} component={OperationsHub} />
+        <Route path={"/agents"} component={AgentManager} />
         <Route path={"/intelligence-hub"} component={IntelligenceHub} />
         <Route path={"/advisory"} component={AdvisoryHub} />
         <Route path={"/relationships"} component={RelationshipsHub} />

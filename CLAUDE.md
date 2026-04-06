@@ -45,7 +45,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - 5-layer config: platform → organization → manager → professional → user
 - Multi-model: 23 models via model registry (Gemini, GPT, Claude, Reasoning, Llama, Mistral, Mixtral, Qwen), task routing, MODEL SELECTOR in Chat UI with multi-select consensus mode
 - Chat modes: Single (normal) / Loop (autonomous diverge/converge with 4 foci) / Consensus (multi-model)
-- Autonomous processing: user-driven diverge/converge loops with 4 foci (discovery/apply/connect/critique), budget-capped, integrated into Chat UI
+- Autonomous processing: user-driven diverge/converge loops with 4 foci (discovery/apply/connect/critique), budget-capped, integrated into Chat UI, integrated into Chat UI
 - Usage tracking: every LLM call logged with tokens + cost estimation
 - Graduated autonomy: DB-backed via agent_autonomy_levels + write-through cache
 - ReAct loop: multi-turn tool calling with trace logging (5 max iterations)
@@ -69,7 +69,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - Autonomous analysis: nightly client gap analysis with $0.50/client budget (scheduled)
 - Autonomous training: uses excess free capacity every 4h to run RAG training, template optimization, bias checks
 - RAG trainer: learns from every LLM response (fact extraction → user_memories, tool patterns → episodic)
-- Autonomous processing: user-driven diverge/converge loops with 4 foci (discovery/apply/connect/critique), budget-capped
+- Autonomous processing: user-driven diverge/converge loops with 4 foci (discovery/apply/connect/critique), budget-capped, integrated into Chat UI
 - OpenClaw agents: CRUD agent instances, compliance-aware execution, reads/stores/trains on compliance data
 - Multi-model consensus: queries genuinely different models (Claude + GPT + Gemini) through Forge API
 - Consensus UI: expandable panel showing agreement %, individual model responses, unique details per model

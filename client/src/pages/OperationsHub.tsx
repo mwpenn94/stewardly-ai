@@ -228,8 +228,8 @@ function AgentsSection() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Agent Fleet</h3>
-        <Button size="sm" onClick={() => navigateToChat("Help me create a new AI agent for my practice. What types of agents can I set up? I'm interested in automating recurring tasks like client follow-ups, market monitoring, or compliance checks.")}>
-          <Bot className="h-3 w-3 mr-1" /> New Agent
+        <Button size="sm" onClick={() => window.location.href = "/agents"}>
+          <Bot className="h-3 w-3 mr-1" /> Manage Agents
         </Button>
       </div>
 

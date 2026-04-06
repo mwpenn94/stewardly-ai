@@ -416,8 +416,17 @@ export default function Chat() {
   const [selectedModels, setSelectedModels] = useState<string[]>(["auto"]);
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [chatMode, setChatMode] = useState<"single" | "loop" | "consensus">("single");
-  const [loopConfig, setLoopConfig] = useState({ maxIterations: 5, maxBudget: 1.0, focus: "discovery" as const });
+  const [loopConfig, setLoopConfig] = useState({ maxIterations: 0, maxBudget: 1.0, foci: ["discovery"] as string[] });
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
+  const toggleLoopFocus = (focus: string) => {
+    setLoopConfig(p => {
+      const foci = p.foci.includes(focus)
+        ? p.foci.filter(f => f !== focus)
+        : [...p.foci, focus];
+      return { ...p, foci: foci.length === 0 ? ["discovery"] : foci };
+    });
+  };
   const focusSerialized = serializeFocusModes(selectedFocus);
 
   const toggleModel = (modelId: string) => {
@@ -2308,28 +2317,43 @@ export default function Chat() {
                 ))}
               </div>
 
-              {/* Loop config (visible when loop mode active) */}
+              {/* Loop config (visible when loop mode active) — pillbox multi-select */}
               {chatMode === "loop" && (
-                <div className="flex items-center gap-1">
-                  <select
-                    value={loopConfig.focus}
-                    onChange={(e) => setLoopConfig(p => ({ ...p, focus: e.target.value as any }))}
-                    className="h-7 text-[10px] bg-secondary/30 border border-border rounded-lg px-1 text-amber-400"
-                  >
-                    <option value="discovery">Discover</option>
-                    <option value="apply">Apply</option>
-                    <option value="connect">Connect</option>
-                    <option value="critique">Critique</option>
-                  </select>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={loopConfig.maxIterations}
-                    onChange={(e) => setLoopConfig(p => ({ ...p, maxIterations: parseInt(e.target.value) || 5 }))}
-                    className="w-10 h-7 text-[10px] bg-secondary/30 border border-border rounded-lg px-1 text-center text-amber-400"
-                    title="Max iterations"
-                  />
+                <div className="flex items-center gap-1 flex-wrap">
+                  {/* Focus pills — multi-select */}
+                  {(["discovery", "apply", "connect", "critique"] as const).map(f => (
+                    <button
+                      key={f}
+                      className={`h-6 px-2 text-[10px] rounded-full border transition-all ${
+                        loopConfig.foci.includes(f)
+                          ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                          : "text-muted-foreground border-border hover:text-foreground hover:bg-secondary/30"
+                      }`}
+                      onClick={() => toggleLoopFocus(f)}
+                      title={f === "discovery" ? "Explore unknowns" : f === "apply" ? "Generate actions" : f === "connect" ? "Find patterns" : "Challenge assumptions"}
+                    >
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                    </button>
+                  ))}
+                  {/* Iterations: 0 = continuous until stopped */}
+                  <div className="flex items-center h-6 rounded-full border border-border overflow-hidden">
+                    <button
+                      className={`px-2 text-[10px] h-full ${loopConfig.maxIterations === 0 ? "bg-amber-500/15 text-amber-400" : "text-muted-foreground hover:bg-secondary/30"}`}
+                      onClick={() => setLoopConfig(p => ({ ...p, maxIterations: 0 }))}
+                      title="Run continuously until stopped"
+                    >
+                      ∞
+                    </button>
+                    {[3, 5, 10, 25].map(n => (
+                      <button
+                        key={n}
+                        className={`px-1.5 text-[10px] h-full ${loopConfig.maxIterations === n ? "bg-amber-500/15 text-amber-400" : "text-muted-foreground hover:bg-secondary/30"}`}
+                        onClick={() => setLoopConfig(p => ({ ...p, maxIterations: n }))}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
                   {activeSessionId && (
                     <button
                       className="h-7 px-2 text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-lg"
