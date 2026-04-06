@@ -218,6 +218,7 @@ const chatRouter = router({
       content: z.string().min(1).max(50000),
       mode: z.enum(["client", "coach", "manager"]).default("client"),
       focus: z.string().default("general,financial"),
+      model: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const conversation = await getConversation(input.conversationId, ctx.user.id);
@@ -415,6 +416,7 @@ const chatRouter = router({
         sessionId: input.conversationId,
         tools: activeTools.length > 0 ? activeTools : undefined,
         maxIterations: 5,
+        model: input.model,
         contextualLLM,
         executeTool: async (toolName: string, args: any) => {
           return toolName.startsWith("calc_") || toolName.startsWith("model_")

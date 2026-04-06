@@ -208,7 +208,7 @@ async function startServer() {
         return;
       }
 
-      const { messages, sessionId, contextType } = req.body;
+      const { messages, sessionId, contextType, model } = req.body;
       if (!messages || !Array.isArray(messages)) {
         res.status(400).json({ error: "messages array is required" });
         return;
@@ -227,6 +227,7 @@ async function startServer() {
         sessionId: validSessionId,
         contextType: contextType || "chat",
         messages,
+        model: model || undefined,
         tools: SEARCH_TOOLS as Array<Record<string, unknown>>,
         executeSearchTool,
       });

@@ -49,6 +49,7 @@ export interface ReActConfig {
   sessionId?: number;
   tools?: Array<Record<string, unknown>>;
   maxIterations?: number;
+  model?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accepts legacy ContextualLLMParams & InvokeResult
   contextualLLM: (params: any) => Promise<any>;
   executeTool: (toolName: string, args: Record<string, unknown>) => Promise<string>;
@@ -130,6 +131,7 @@ export async function executeReActLoop(config: ReActConfig): Promise<ReActResult
     const response = await contextualLLM({
       userId,
       contextType: "chat",
+      model: config.model,
       messages: workingMessages,
       ...(tools && tools.length > 0 ? { tools, tool_choice: "auto" as const } : {}),
     });

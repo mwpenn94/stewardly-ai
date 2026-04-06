@@ -880,6 +880,7 @@ export default function Chat() {
               ],
               sessionId: activeConvId,
               contextType: "chat",
+              model: selectedModel !== "auto" ? selectedModel : undefined,
             }),
           });
 
@@ -983,6 +984,7 @@ export default function Chat() {
             conversationId: activeConvId,
             mode,
             focus: focusSerialized,
+            model: selectedModel !== "auto" ? selectedModel : undefined,
           });
           const assistantMsg = {
             id: result.id,
@@ -1003,6 +1005,7 @@ export default function Chat() {
           conversationId: activeConvId,
           mode,
           focus: focusSerialized,
+          model: selectedModel !== "auto" ? selectedModel : undefined,
         });
 
         const assistantMsg = {

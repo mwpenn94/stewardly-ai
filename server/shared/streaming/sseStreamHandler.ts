@@ -44,6 +44,8 @@ export interface SSEStreamConfig {
   contextType?: string;
   /** Messages array (OpenAI-compatible format) */
   messages: Array<{ role: string; content: string }>;
+  /** Optional model override (user-selected from Chat UI) */
+  model?: string;
   /** Optional tools for tool calling */
   tools?: Array<Record<string, unknown>>;
   /** Optional tool_choice */
@@ -224,6 +226,7 @@ export async function createSSEStreamHandler(
           const result = await contextualLLM({
             userId,
             contextType,
+            model: config.model,
             messages: workingMessages,
             tools,
             tool_choice: iteration === 1 ? (tool_choice || "auto") : "auto",
@@ -288,6 +291,7 @@ export async function createSSEStreamHandler(
           const finalResult = await contextualLLM({
             userId,
             contextType,
+            model: config.model,
             messages: [
               ...workingMessages,
               { role: "user", content: "Please provide your final response based on all the information gathered above." },
@@ -302,6 +306,7 @@ export async function createSSEStreamHandler(
         const result = await contextualLLM({
           userId,
           contextType,
+          model: config.model,
           messages,
           ...(tools && tools.length > 0 ? { tools, tool_choice: tool_choice || "auto" } : {}),
         });
