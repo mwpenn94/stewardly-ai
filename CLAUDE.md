@@ -43,7 +43,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 ## Intelligence Layer (wired and functional)
 - contextualLLM: RAG-enabled with guardrails (PII + injection screening on all I/O)
 - 5-layer config: platform → organization → manager → professional → user
-- Multi-model: 16 models via model registry, task-based routing, fallback chain, MODEL SELECTOR in Chat UI
+- Multi-model: 23 models via model registry (Gemini, GPT, Claude, Reasoning, Llama, Mistral, Mixtral, Qwen), task routing, MODEL SELECTOR in Chat UI with multi-select consensus mode
 - Usage tracking: every LLM call logged with tokens + cost estimation
 - Graduated autonomy: DB-backed via agent_autonomy_levels + write-through cache
 - ReAct loop: multi-turn tool calling with trace logging (5 max iterations)
@@ -65,6 +65,8 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - Feedback: thumbs up/down ratings wired to advancedIntelligence.rateResponse
 - Template optimizer: monthly model-per-domain testing (scheduled)
 - Autonomous analysis: nightly client gap analysis with $0.50/client budget (scheduled)
+- Autonomous training: uses excess free capacity every 4h to run RAG training, template optimization, bias checks
+- RAG trainer: learns from every LLM response (fact extraction → user_memories, tool patterns → episodic)
 
 ## Not Yet Implemented (honest gaps — do NOT claim these work)
 - Gemini Live Audio: no Gemini-specific voice (Edge TTS only via msedge-tts)

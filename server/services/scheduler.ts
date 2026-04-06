@@ -578,6 +578,16 @@ export function initScheduler(): void {
     });
   });
   
+  // ─── EVERY 4H: Autonomous Training (use spare capacity) ────────────
+  registerJob("autonomous_training", HOURS(4), async () => {
+    const { runMonitoredCron } = await import("./monitoring/healthMonitor");
+    await runMonitoredCron("autonomous_training", async () => {
+      const { runAutonomousImprovements } = await import("./autonomousTraining");
+      const result = await runAutonomousImprovements();
+      logger.info({ operation: "scheduler", ...result }, "Autonomous training completed");
+    });
+  });
+
   // ─── NIGHTLY: Autonomous Client Analysis (2am) ─────────────────────
   registerJob("autonomous_client_analysis", DAYS(1), async () => {
     const { runMonitoredCron } = await import("./monitoring/healthMonitor");

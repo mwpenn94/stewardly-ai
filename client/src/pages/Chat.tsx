@@ -449,6 +449,13 @@ export default function Chat() {
     { id: "o4-mini", label: "o4-mini", family: "Reasoning" },
     { id: "o3", label: "o3", family: "Reasoning" },
     { id: "deepseek-reasoner", label: "DeepSeek Reasoner", family: "Reasoning" },
+    { id: "deepseek-chat", label: "DeepSeek Chat", family: "Open Source" },
+    { id: "llama-3.3-70b", label: "Llama 3.3 70B", family: "Open Source" },
+    { id: "llama-4-scout", label: "Llama 4 Scout", family: "Open Source" },
+    { id: "mistral-large", label: "Mistral Large", family: "Open Source" },
+    { id: "mixtral-8x22b", label: "Mixtral 8x22B", family: "Open Source" },
+    { id: "qwen-2.5-72b", label: "Qwen 2.5 72B", family: "Open Source" },
+    { id: "qwen-2.5-coder-32b", label: "Qwen 2.5 Coder", family: "Open Source" },
   ];
 
   const toggleFocus = (mode: FocusMode) => {

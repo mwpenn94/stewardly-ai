@@ -254,6 +254,16 @@ export async function contextualLLM(params: ContextualLLMParams) {
     );
   }
 
+  // ── RAG Training — fire-and-forget learning from response ─────────
+  if (userId) {
+    const responseContent = result.choices?.[0]?.message?.content || "";
+    if (responseContent.length > 50) {
+      import("./ragTrainer").then(({ learn }) => {
+        learn({ userId, query: userInput, response: responseContent, model: result.model }).catch(() => {});
+      }).catch(() => {});
+    }
+  }
+
   return result;
 }
 
