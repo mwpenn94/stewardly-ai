@@ -69,6 +69,25 @@ export interface ResolvedAIConfig {
 
   // ── NEW: Autonomy Policy ───────────────────────────────────────────────
   autonomyPolicy: AutonomyPolicy;
+
+  // ── NEW: Ad & Monetization Policy ──────────────────────────────────────
+  adPolicy: AdPolicy;
+}
+
+// ─── AD POLICY ──────────────────────────────────────────────────────────────
+export interface AdPolicy {
+  /** Whether ads are enabled at this layer */
+  enabled: boolean;
+  /** Max ads per session (0 = unlimited within UX caps) */
+  maxPerSession: number;
+  /** Allowed ad types */
+  allowedTypes: Array<"contextual_banner" | "sponsored_content" | "product_recommendation" | "inline_cta">;
+  /** Blocked advertiser names */
+  blockedAdvertisers: string[];
+  /** Whether to show ads in professional/client conversations */
+  showInClientConversations: boolean;
+  /** Revenue share percentage for the advisor (if applicable) */
+  advisorRevenueSharePct: number;
 }
 
 // ─── AMP PHASE DEFAULTS ──────────────────────────────────────────────────────

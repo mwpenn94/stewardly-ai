@@ -127,6 +127,14 @@ export const DEFAULT_CONFIG: ResolvedAIConfig = {
   ampPhaseDefaults: DEFAULT_AMP_PHASE_DEFAULTS,
   humanOutputDimensions: DEFAULT_HUMAN_OUTPUT_DIMENSIONS,
   autonomyPolicy: DEFAULT_AUTONOMY_POLICY,
+  adPolicy: {
+    enabled: true,
+    maxPerSession: 3,
+    allowedTypes: ["contextual_banner", "sponsored_content", "product_recommendation", "inline_cta"],
+    blockedAdvertisers: [],
+    showInClientConversations: false,
+    advisorRevenueSharePct: 0,
+  },
 };
 
 // ─── SAFE PARSERS ────────────────────────────────────────────────────────────
