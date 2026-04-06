@@ -43,6 +43,7 @@ export async function compareModels(params: {
       const response = await contextualLLM({
         userId: params.userId,
         contextType: "analysis" as any,
+        model, // Use specific model from Forge for genuine comparison
         messages: [{ role: "user", content: params.prompt }],
       });
       const content = response.choices?.[0]?.message?.content || "";

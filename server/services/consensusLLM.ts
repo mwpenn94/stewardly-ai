@@ -30,29 +30,53 @@ export async function consensusLLM(config: {
   }
 
   try {
-    // Query primary and secondary in parallel
-    const [primary, secondary] = await Promise.all([
-      contextualLLM(config as any),
-      contextualLLM({ ...config, messages: [...config.messages] } as any),
-    ]);
+    // Query genuinely different model families through Forge for real consensus
+    const primaryModel = "claude-sonnet-4-20250514"; // Anthropic
+    const secondaryModel = "gpt-4o";                  // OpenAI
+    const tertiaryModel = "gemini-2.5-pro";            // Google
 
-    const primaryContent = primary.choices?.[0]?.message?.content || "";
-    const secondaryContent = secondary.choices?.[0]?.message?.content || "";
-
-    // Simple agreement check based on content similarity
-    const agreement = calculateAgreement(primaryContent, secondaryContent);
-
-    if (agreement > 0.85) {
-      log.info({ agreement }, "Consensus achieved — models agree");
-      return primary;
+    const models = [primaryModel, secondaryModel];
+    if (config.consensusWeights?.primary === 0.5) {
+      // Equal weight = true consensus, add third model
+      models.push(tertiaryModel);
     }
 
-    log.warn({ agreement }, "Consensus weak — models disagree, flagging for review");
+    const results = await Promise.all(
+      models.map(model =>
+        contextualLLM({ ...config, model, messages: [...config.messages] } as any)
+          .catch(() => null) // Don't fail if one model is unavailable
+      )
+    );
+
+    const validResults = results.filter(r => r != null);
+    if (validResults.length === 0) {
+      throw new Error("All consensus models failed");
+    }
+
+    const primary = validResults[0];
+    const primaryContent = primary.choices?.[0]?.message?.content || "";
+
+    if (validResults.length === 1) {
+      // Only one model responded — return it with warning
+      return { ...primary, _consensusWarning: "Only one model responded — consensus unavailable" };
+    }
+
+    const secondaryContent = validResults[1].choices?.[0]?.message?.content || "";
+    const agreement = calculateAgreement(primaryContent, secondaryContent);
+
+    const modelsUsed = models.slice(0, validResults.length);
+    log.info({ agreement, modelsUsed }, `Consensus: ${modelsUsed.length} models, agreement ${(agreement * 100).toFixed(0)}%`);
+
+    if (agreement > 0.85) {
+      return { ...primary, _consensusScore: agreement, _modelsUsed: modelsUsed };
+    }
+
     return {
       ...primary,
-      _consensusWarning: "Models produced different recommendations — recommend professional review",
+      _consensusWarning: `Models disagree (${(agreement * 100).toFixed(0)}% agreement) — recommend professional review`,
       _consensusScore: agreement,
-      _alternatives: [secondary],
+      _modelsUsed: modelsUsed,
+      _alternatives: validResults.slice(1),
     };
   } catch (e: any) {
     log.error({ error: e.message }, "Consensus failed — falling back to single model");

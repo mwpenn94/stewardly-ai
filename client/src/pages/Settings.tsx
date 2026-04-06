@@ -14,7 +14,7 @@ import { useLocation } from "wouter";
 import {
   ArrowLeft, Sparkles, User, Brain, Trash2, Plus, Loader2,
   Fingerprint, BookOpen, Heart, Target, Users, Clock, DollarSign,
-  Camera, X, ImageIcon, Volume2, Play, Square, Mic, Sliders,
+  Camera, X, ImageIcon, Volume2, Play, Square, Mic, Sliders, Code2,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -109,6 +109,7 @@ export default function Settings() {
             <TabsTrigger value="memories" className="gap-1.5 text-xs"><Brain className="w-3.5 h-3.5" /> Memories</TabsTrigger>
             <TabsTrigger value="profile" className="gap-1.5 text-xs"><User className="w-3.5 h-3.5" /> Profile</TabsTrigger>
             <TabsTrigger value="ai-tuning" className="gap-1.5 text-xs"><Sliders className="w-3.5 h-3.5" /> AI Tuning</TabsTrigger>
+            <TabsTrigger value="embeds" className="gap-1.5 text-xs"><Code2 className="w-3.5 h-3.5" /> Embeds</TabsTrigger>
           </TabsList>
 
           {/* Avatar */}
@@ -345,6 +346,32 @@ export default function Settings() {
           {/* AI Tuning */}
           <TabsContent value="ai-tuning">
             <AITuningSettings />
+          </TabsContent>
+          <TabsContent value="embeds">
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-2">Calculator Embed Codes</h3>
+                <p className="text-sm text-muted-foreground mb-4">Generate embed codes to add Stewardly calculators to your website. Leads generated through embedded calculators are attributed to you.</p>
+                <div className="space-y-4">
+                  {["retirement", "protection", "tax", "estate", "education", "premium-finance"].map(calc => (
+                    <div key={calc} className="flex items-center justify-between p-3 rounded border">
+                      <div>
+                        <div className="font-medium text-sm capitalize">{calc.replace("-", " ")} Calculator</div>
+                        <div className="text-xs text-muted-foreground">Embed on your website</div>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        const code = `<iframe src="${window.location.origin}/embed/${calc}?advisorId=${user?.id}&theme=dark" width="100%" height="800" frameborder="0" style="border:none;border-radius:8px" title="Financial Calculator"></iframe>`;
+                        navigator.clipboard.writeText(code);
+                        toast.success("Embed code copied!");
+                      }}>
+                        <Code2 className="h-3 w-3 mr-1" /> Copy Code
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-4">Footer "Powered by Stewardly | Not investment advice" is automatically included. Compliance approval required before activation.</p>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
