@@ -5831,3 +5831,65 @@ export const sharedLinks = mysqlTable("shared_links", {
   maxViews: int("max_views").default(100),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RICH MEDIA + AD INTEGRATION (4 tables)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const richMediaEmbeds = mysqlTable("rich_media_embeds", {
+  id: int("id").autoincrement().primaryKey(),
+  messageId: int("message_id"),
+  mediaType: mysqlEnum("media_type", ["video", "audio", "image", "document", "shopping", "chart", "link_preview"]).notNull(),
+  source: varchar("source", { length: 500 }).notNull(),
+  title: varchar("title", { length: 300 }),
+  thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
+  startTime: int("start_time"), // seconds — for video/audio bookmarking
+  endTime: int("end_time"),
+  metadata: json("metadata"), // provider-specific data (YouTube ID, Spotify track, etc.)
+  relevanceScore: decimal("relevance_score", { precision: 3, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  messageIdx: index("idx_rich_media_message").on(table.messageId),
+}));
+
+export const adPlacements = mysqlTable("ad_placements", {
+  id: int("id").autoincrement().primaryKey(),
+  placementType: mysqlEnum("placement_type", ["contextual_banner", "sponsored_content", "product_recommendation", "inline_cta"]).notNull(),
+  advertiserName: varchar("advertiser_name", { length: 200 }),
+  targetContext: varchar("target_context", { length: 200 }), // e.g., "insurance", "retirement", "estate"
+  contentHtml: text("content_html"),
+  ctaUrl: varchar("cta_url", { length: 500 }),
+  ctaText: varchar("cta_text", { length: 100 }),
+  impressions: int("impressions").default(0),
+  clicks: int("clicks").default(0),
+  enabled: mysqlBoolean("enabled").default(true),
+  maxImpressions: int("max_impressions"),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const adImpressionLog = mysqlTable("ad_impression_log", {
+  id: int("id").autoincrement().primaryKey(),
+  adId: int("ad_id").notNull(),
+  userId: int("user_id"),
+  sessionId: varchar("session_id", { length: 100 }),
+  eventType: mysqlEnum("event_type", ["impression", "click", "dismiss"]).notNull(),
+  context: varchar("context", { length: 200 }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  adIdx: index("idx_ad_impression_ad").on(table.adId),
+  userIdx: index("idx_ad_impression_user").on(table.userId),
+}));
+
+export const videoStreamingSessions = mysqlTable("video_streaming_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  conversationId: int("conversation_id"),
+  streamType: mysqlEnum("stream_type", ["screen_share", "camera", "co_browse"]).notNull(),
+  status: mysqlEnum("stream_status", ["connecting", "active", "paused", "ended"]).default("connecting"),
+  startedAt: timestamp("started_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+  transcriptText: text("transcript_text"), // AI-generated transcript of video session
+  aiResponsesDuringStream: int("ai_responses_during_stream").default(0),
+});

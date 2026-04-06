@@ -5,7 +5,7 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-105 pages, 314 tables, 2,304 tests passing, 204 services, 69 routers, 40 seed modules
+105 pages, 318 tables, 2,304 tests passing, 213 services, 71 routers, 23 seed files
 Current state: ~95% deep, 5% scaffolded (UI/UX optimized, 8 recursive passes converged)
 
 ## Commands
@@ -73,6 +73,12 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - OpenClaw agents: CRUD agent instances, compliance-aware execution, reads/stores/trains on compliance data
 - Multi-model consensus: queries genuinely different models (Claude + GPT + Gemini) through Forge API
 - Consensus UI: expandable panel showing agreement %, individual model responses, unique details per model
+
+## Rich Media + Video Streaming (backend ready, UI needs Manus)
+- Rich media embeds: video (YouTube w/ timestamp), audio, images, documents, shopping, charts extracted from responses
+- Ad integration: contextual banners, sponsored content, product recommendations (max 1/5 messages, 3/session cap, always labeled)
+- Video streaming: screen share/camera/co-browse with AI overlay chat (Grok pattern — AI responds via text+TTS during stream)
+- Streaming layout: auto-adapts chat position (overlay-right for screen share, overlay-bottom for camera, sidebar for co-browse)
 
 ## Not Yet Implemented (honest gaps — do NOT claim these work)
 - Gemini Live Audio: no Gemini-specific voice (Edge TTS only via msedge-tts)
