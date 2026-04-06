@@ -226,6 +226,17 @@ export async function contextualLLM(params: ContextualLLMParams) {
     outputTokens: result.usage?.completion_tokens,
   });
 
+  // ── Usage Tracking ───────────────────────────────────────────────
+  if (userId) {
+    try {
+      const { trackUsage } = await import("./usageTracker");
+      const inputTokens = result.usage?.prompt_tokens || 0;
+      const outputTokens = result.usage?.completion_tokens || 0;
+      const estimatedCost = (inputTokens * 0.003 + outputTokens * 0.015) / 1000;
+      trackUsage({ userId, operationType: contextType || "chat", model: result.model || selectedModel, inputTokens, outputTokens, estimatedCost }).catch(() => {});
+    } catch { /* non-critical */ }
+  }
+
   // Track model version and routing info for observability
   if (result.model) {
     (result as any).__modelVersion = result.model;

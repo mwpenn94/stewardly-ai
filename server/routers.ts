@@ -1920,6 +1920,7 @@ import { dataSeedRouter } from "./routers/dataSeed";
 import { productIntelligenceRouter } from "./routers/productIntelligence";
 import { adminIntelligenceRouter } from "./routers/adminIntelligence";
 import { passiveActionsRouter } from "./routers/passiveActions";
+import { advancedIntelligenceRouter } from "./routers/advancedIntelligence";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2038,6 +2039,7 @@ export const appRouter = router({
   leadCapture: leadCaptureRouter,
   referrals: referralsRouter,
   embeds: embedsRouter,
+  advancedIntelligence: advancedIntelligenceRouter,
 });
 
 export type AppRouter = typeof appRouter;

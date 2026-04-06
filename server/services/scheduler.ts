@@ -578,6 +578,26 @@ export function initScheduler(): void {
     });
   });
   
+  // ─── NIGHTLY: Autonomous Client Analysis (2am) ─────────────────────
+  registerJob("autonomous_client_analysis", DAYS(1), async () => {
+    const { runMonitoredCron } = await import("./monitoring/healthMonitor");
+    await runMonitoredCron("autonomous_client_analysis", async () => {
+      const { runNightlyAnalysis } = await import("./autonomousClientAnalysis");
+      const result = await runNightlyAnalysis();
+      logger.info({ operation: "scheduler", ...result }, "Autonomous client analysis completed");
+    });
+  });
+
+  // ─── MONTHLY: Template Optimization (1st of month) ─────────────────
+  registerJob("template_optimization", DAYS(30), async () => {
+    const { runMonitoredCron } = await import("./monitoring/healthMonitor");
+    await runMonitoredCron("template_optimization", async () => {
+      const { optimizeTemplates } = await import("./templateOptimizer");
+      const results = await optimizeTemplates();
+      logger.info({ operation: "scheduler", resultCount: results.length }, "Template optimization completed");
+    });
+  });
+
   // Run self-test first, then start jobs with staggered delays
   const INITIAL_DELAY = 90_000; // 90s after boot
   logger.info( { operation: "scheduler" },`[Scheduler] Will run startup self-test in ${INITIAL_DELAY / 1000}s...`);
