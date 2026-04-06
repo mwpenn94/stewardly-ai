@@ -3,6 +3,7 @@
  * Shows risk questionnaire results, portfolio risk metrics, and allocation recommendations.
  */
 import { SEOHead } from "@/components/SEOHead";
+import { LeadCaptureGate } from "@/components/LeadCaptureGate";
 import { FinancialScoreCard } from "@/components/FinancialScoreCard";
 import { PropensityGauge } from "@/components/PropensityGauge";
 import { CalculatorInsight } from "@/components/CalculatorInsight";

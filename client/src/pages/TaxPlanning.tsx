@@ -3,6 +3,7 @@
  * Roth conversion analysis, tax-loss harvesting, and strategy recommendations.
  */
 import { SEOHead } from "@/components/SEOHead";
+import { LeadCaptureGate } from "@/components/LeadCaptureGate";
 import { FinancialScoreCard } from "@/components/FinancialScoreCard";
 import { CalculatorInsight } from "@/components/CalculatorInsight";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

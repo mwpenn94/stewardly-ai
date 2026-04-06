@@ -70,7 +70,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - Gemini Live Audio: no Gemini-specific voice (Edge TTS only via msedge-tts)
 - Chrome extension: spec only, no code
 - Conversation branching: not implemented
-- LeadCaptureGate: component exists, only on 3 pages (not 20+ calculators as claimed)
+- LeadCaptureGate: imported on 6 pages (EstatePlanning, TaxPlanning, RiskAssessment, PublicCalculators + 2 others), not yet wrapping results sections on all
 - AccessibleChart: component exists, NOT replacing Recharts (ModelResults uses PieChart which AccessibleChart doesn't support)
 - Calculator pages directory: does NOT exist (calculators are in main pages)
 - 34 seed scripts: only 18 exist (16 need web-search-verified financial data)
