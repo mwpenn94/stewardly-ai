@@ -413,8 +413,43 @@ export default function Chat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [selectedFocus, setSelectedFocus] = useState<FocusMode[]>(["general", "financial"]);
-  const [selectedModel, setSelectedModel] = useState("auto");
+  const [selectedModels, setSelectedModels] = useState<string[]>(["auto"]);
+  const [showModelMenu, setShowModelMenu] = useState(false);
   const focusSerialized = serializeFocusModes(selectedFocus);
+
+  const toggleModel = (modelId: string) => {
+    setSelectedModels(prev => {
+      if (modelId === "auto") return ["auto"];
+      const without = prev.filter(m => m !== "auto");
+      if (without.includes(modelId)) {
+        const result = without.filter(m => m !== modelId);
+        return result.length === 0 ? ["auto"] : result;
+      }
+      return [...without, modelId];
+    });
+  };
+  const selectedModel = selectedModels.includes("auto") ? undefined : selectedModels[0];
+  const isMultiModel = selectedModels.length > 1 && !selectedModels.includes("auto");
+  const modelLabel = selectedModels.includes("auto")
+    ? "Auto"
+    : selectedModels.length === 1
+      ? selectedModels[0].split("-").slice(0, 2).join("-")
+      : `${selectedModels.length} models`;
+
+  const MODEL_OPTIONS = [
+    { id: "auto", label: "Auto (best for task)", family: "auto" },
+    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", family: "Gemini" },
+    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", family: "Gemini" },
+    { id: "gpt-4o", label: "GPT-4o", family: "GPT" },
+    { id: "gpt-4o-mini", label: "GPT-4o Mini", family: "GPT" },
+    { id: "gpt-4.1", label: "GPT-4.1", family: "GPT" },
+    { id: "claude-sonnet-4-20250514", label: "Claude Sonnet 4", family: "Claude" },
+    { id: "claude-3.5-sonnet", label: "Claude 3.5 Sonnet", family: "Claude" },
+    { id: "claude-3-haiku", label: "Claude 3 Haiku", family: "Claude" },
+    { id: "o4-mini", label: "o4-mini", family: "Reasoning" },
+    { id: "o3", label: "o3", family: "Reasoning" },
+    { id: "deepseek-reasoner", label: "DeepSeek Reasoner", family: "Reasoning" },
+  ];
 
   const toggleFocus = (mode: FocusMode) => {
     setSelectedFocus(prev => {
@@ -880,7 +915,8 @@ export default function Chat() {
               ],
               sessionId: activeConvId,
               contextType: "chat",
-              model: selectedModel !== "auto" ? selectedModel : undefined,
+              model: selectedModel || undefined,
+              models: isMultiModel ? selectedModels : undefined,
             }),
           });
 
@@ -984,7 +1020,7 @@ export default function Chat() {
             conversationId: activeConvId,
             mode,
             focus: focusSerialized,
-            model: selectedModel !== "auto" ? selectedModel : undefined,
+            model: selectedModel || undefined,
           });
           const assistantMsg = {
             id: result.id,
@@ -1005,7 +1041,7 @@ export default function Chat() {
           conversationId: activeConvId,
           mode,
           focus: focusSerialized,
-          model: selectedModel !== "auto" ? selectedModel : undefined,
+          model: selectedModel || undefined,
         });
 
         const assistantMsg = {
@@ -2146,35 +2182,56 @@ export default function Chat() {
                 )}
               </div>
 
-              {/* Model selector */}
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="h-7 text-[10px] bg-secondary/30 border border-border rounded-lg px-1.5 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-1 focus:ring-accent/40"
-                title="Select AI model"
-              >
-                <option value="auto">Auto (best for task)</option>
-                <optgroup label="Gemini">
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                  <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                  <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                </optgroup>
-                <optgroup label="GPT">
-                  <option value="gpt-4o">GPT-4o</option>
-                  <option value="gpt-4o-mini">GPT-4o Mini</option>
-                  <option value="gpt-4.1">GPT-4.1</option>
-                </optgroup>
-                <optgroup label="Claude">
-                  <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
-                  <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
-                  <option value="claude-3-haiku">Claude 3 Haiku</option>
-                </optgroup>
-                <optgroup label="Reasoning">
-                  <option value="o4-mini">o4-mini</option>
-                  <option value="o3">o3</option>
-                  <option value="deepseek-reasoner">DeepSeek Reasoner</option>
-                </optgroup>
-              </select>
+              {/* Model selector — multi-select popup (mirrors focus mode pattern) */}
+              <div className="relative">
+                <button
+                  className={`h-7 text-[10px] rounded-lg px-2 flex items-center gap-1 transition-all ${
+                    isMultiModel
+                      ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                      : selectedModels.includes("auto")
+                        ? "bg-secondary/30 border border-border text-muted-foreground hover:text-foreground"
+                        : "bg-accent/15 text-accent border border-accent/30"
+                  }`}
+                  onClick={() => setShowModelMenu(!showModelMenu)}
+                  title={isMultiModel ? `Consensus mode: ${selectedModels.join(", ")}` : `Model: ${modelLabel}`}
+                >
+                  <Brain className="w-3 h-3" />
+                  {modelLabel}
+                  {isMultiModel && <span className="text-[8px] bg-purple-500/20 px-1 rounded">consensus</span>}
+                </button>
+
+                {showModelMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowModelMenu(false)} />
+                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-56 max-h-72 overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
+                      <div className="px-2 py-1 text-[9px] text-muted-foreground/60 uppercase tracking-wider">Select models (multi = consensus)</div>
+                      {(() => {
+                        let lastFamily = "";
+                        return MODEL_OPTIONS.map(opt => {
+                          const showDivider = opt.family !== lastFamily && opt.family !== "auto";
+                          lastFamily = opt.family;
+                          return (
+                            <div key={opt.id}>
+                              {showDivider && <div className="h-px bg-border my-0.5" />}
+                              {showDivider && <div className="px-2 py-0.5 text-[9px] text-muted-foreground/50 uppercase tracking-wider">{opt.family}</div>}
+                              <button
+                                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-colors ${
+                                  selectedModels.includes(opt.id) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
+                                }`}
+                                onClick={() => toggleModel(opt.id)}
+                              >
+                                {opt.label}
+                                {selectedModels.includes(opt.id) && <Check className="w-3 h-3 ml-auto" />}
+                              </button>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </>
+                )}
+
+              </div>
 
               {/* Spacer pushes right-side buttons to far right */}
               <div className="flex-1" />

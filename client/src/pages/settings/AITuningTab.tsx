@@ -979,6 +979,44 @@ export default function AITuningTab() {
           <p className="text-xs text-muted-foreground mt-2">Memory helps the AI personalize responses. Clearing a category removes stored knowledge in that area.</p>
         </CardContent>
       </Card>
+
+      {/* ── Autonomous Processing ──────────────────────────────────── */}
+      <Card className="mt-4">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              <span className="font-medium text-sm">Autonomous Processing</span>
+            </div>
+            <Switch defaultChecked={true} />
+          </div>
+          <div className="space-y-2 text-xs text-muted-foreground">
+            <p>When enabled, the AI automatically:</p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li>Analyzes client gaps nightly (protection, retirement, estate, tax, education)</li>
+              <li>Generates pre-meeting briefs from accumulated profile data</li>
+              <li>Runs propensity scoring on new leads</li>
+              <li>Tests AI response templates across models monthly</li>
+              <li>Detects improvement signals every 6 hours</li>
+            </ul>
+            <div className="flex items-center gap-3 mt-3 p-2 rounded bg-secondary/30">
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60">Budget</div>
+                <div className="font-medium text-foreground">$0.50/client/night</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60">Schedule</div>
+                <div className="font-medium text-foreground">Nightly 2am + 6h signals</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground/60">Status</div>
+                <div className="font-medium text-green-400">Active</div>
+              </div>
+            </div>
+            <p className="text-[10px] mt-2">All autonomous outputs are archived in communication_archive for FINRA 17a-4 compliance (3yr retention). Budget caps prevent runaway costs.</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
