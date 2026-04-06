@@ -59,7 +59,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - MCP server: 6 financial tools at /mcp/sse + /mcp/call
 - Multi-tenant: tenantId in tRPC context + AsyncLocalStorage middleware
 - Agents: 8-part agentic execution (gate review, quotes, applications, advisory, estate, PF, carrier, compliance)
-- Workflows: onboarding checklist system (5 procedures — not multi-step orchestration engine)
+- Workflows: onboarding checklist system (5 procedures) + workflow automation engine (5 predefined multi-step workflows: onboarding, annual review, compliance, lead nurture, reports)
 - Consensus LLM: multi-model query for high-stakes recommendations (via advancedIntelligence router)
 - Financial planning agent: 5-step orchestration with $2 budget cap (via advancedIntelligence router)
 - Batch pipeline: bulk enrich/score for lead pipeline (via advancedIntelligence router)
