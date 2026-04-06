@@ -43,7 +43,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 ## Intelligence Layer (wired and functional)
 - contextualLLM: RAG-enabled with guardrails (PII + injection screening on all I/O)
 - 5-layer config: platform → organization → manager → professional → user
-- Multi-model: 16 models via model registry, task-based routing, fallback chain
+- Multi-model: 16 models via model registry, task-based routing, fallback chain, MODEL SELECTOR in Chat UI
 - Usage tracking: every LLM call logged with tokens + cost estimation
 - Graduated autonomy: DB-backed via agent_autonomy_levels + write-through cache
 - ReAct loop: multi-turn tool calling with trace logging (5 max iterations)

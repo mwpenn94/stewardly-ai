@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
+import { useSoundCues } from "@/hooks/useSoundCues";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -394,6 +395,7 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
 
 export default function Chat() {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
+  const soundCues = useSoundCues();
   const [location, navigate] = useLocation();
   const [matchChat, paramsChat] = useRoute("/chat/:id");
   const utils = trpc.useUtils();
@@ -411,6 +413,7 @@ export default function Chat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [selectedFocus, setSelectedFocus] = useState<FocusMode[]>(["general", "financial"]);
+  const [selectedModel, setSelectedModel] = useState("auto");
   const focusSerialized = serializeFocusModes(selectedFocus);
 
   const toggleFocus = (mode: FocusMode) => {
@@ -777,6 +780,7 @@ export default function Chat() {
     const userMsg = { role: "user" as const, content: trimmed, createdAt: new Date() };
     setMessages(prev => [...prev, userMsg]);
     setInput("");
+    soundCues.play("sent");
     setFollowUpSuggestions([]);
     setIsStreaming(true);
 
@@ -2138,6 +2142,36 @@ export default function Chat() {
                   </>
                 )}
               </div>
+
+              {/* Model selector */}
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="h-7 text-[10px] bg-secondary/30 border border-border rounded-lg px-1.5 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-1 focus:ring-accent/40"
+                title="Select AI model"
+              >
+                <option value="auto">Auto (best for task)</option>
+                <optgroup label="Gemini">
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                  <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                </optgroup>
+                <optgroup label="GPT">
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="gpt-4o-mini">GPT-4o Mini</option>
+                  <option value="gpt-4.1">GPT-4.1</option>
+                </optgroup>
+                <optgroup label="Claude">
+                  <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                  <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                  <option value="claude-3-haiku">Claude 3 Haiku</option>
+                </optgroup>
+                <optgroup label="Reasoning">
+                  <option value="o4-mini">o4-mini</option>
+                  <option value="o3">o3</option>
+                  <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+                </optgroup>
+              </select>
 
               {/* Spacer pushes right-side buttons to far right */}
               <div className="flex-1" />
