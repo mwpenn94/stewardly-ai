@@ -74,10 +74,8 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - Conversation branching: not implemented
 - Sound design / audio cues: not implemented
 - LeadCaptureGate: component exists, only on 3 pages (not 20+ calculators as claimed)
-- VerificationBadge: component exists, NOT on Professionals page
 - EmbedCodeGenerator: component exists, NOT used in any page
-- AccessibleChart: component exists, NOT replacing any existing Recharts usage
-- Chat enrichment indicator: NOT implemented (no "Enhanced with N sources" shown)
+- AccessibleChart: component exists, NOT replacing Recharts (ModelResults uses PieChart which AccessibleChart doesn't support)
 - Calculator pages directory: does NOT exist (calculators are in main pages)
 - 34 seed scripts: only 18 exist (16 need web-search-verified financial data)
 

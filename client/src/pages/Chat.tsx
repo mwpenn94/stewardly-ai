@@ -1817,6 +1817,10 @@ export default function Chat() {
                             <Sparkles className="w-2.5 h-2.5" /> AI
                           </span>
                           {msg.createdAt && <span className="text-[9px] text-muted-foreground/50">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                          {msg.model && <span className="text-[9px] text-muted-foreground/40 ml-1">{msg.model}</span>}
+                          {msg.contextSources && msg.contextSources > 0 && (
+                            <span className="text-[9px] text-blue-400/60 ml-1">Enhanced with {msg.contextSources} sources</span>
+                          )}
                         </div>
                         <div className="prose-chat text-sm">
                           <ProgressiveMessage
