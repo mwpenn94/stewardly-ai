@@ -3230,3 +3230,4 @@
 - [x] Recursive optimization Pass 2 (convergence confirmed — 2 consecutive clean passes)
 - [x] Update all documentation and REMAINING_ITEMS.md
 - [x] Fix: agent_instances table missing from database causing /operations page error (deployed 13 missing tables)
+- [x] Configure env: VITE_FRONTEND_FORGE_API_URL, STRIPE_SECRET_KEY, VITE_STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET
