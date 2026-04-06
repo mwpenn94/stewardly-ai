@@ -40,18 +40,51 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - Optional env vars (FRED_API_KEY, CENSUS_API_KEY) not yet set
 - Compliance review not yet performed (FINRA 2210, CAN-SPAM, TCPA, CCPA, Reg BI, Fair Lending)
 
-## Intelligence Layer (complete)
+## Intelligence Layer (wired and functional)
 - contextualLLM: RAG-enabled with guardrails (PII + injection screening on all I/O)
 - 5-layer config: platform → organization → manager → professional → user
-- Graduated autonomy: DB-backed with write-through cache, default fallback
-- ReAct loop: multi-turn tool calling with trace logging
+- Multi-model: 16 models via model registry, task-based routing, fallback chain
+- Usage tracking: every LLM call logged with tokens + cost estimation
+- Graduated autonomy: DB-backed via agent_autonomy_levels + write-through cache
+- ReAct loop: multi-turn tool calling with trace logging (5 max iterations)
+- Web search: google_search (Forge native) + web_search (Tavily/Brave fallback)
 - Improvement engine: signal detection on 6h schedule
-- SSE streaming: POST /api/chat/stream
-- Memory engine: 6 categories, episodic summaries
+- SSE streaming: POST /api/chat/stream with real token streaming
+- Voice/TTS: Edge TTS via msedge-tts, 25+ neural voices, voice router in tRPC
+- Memory engine: 6 categories, episodic summaries, context injection
 - Event bus: prompt.scored, compliance.flagged, goal.completed
 - OpenTelemetry: GenAI spans on every contextualLLM call
 - MCP server: 6 financial tools at /mcp/sse + /mcp/call
 - Multi-tenant: tenantId in tRPC context + AsyncLocalStorage middleware
+- Agents: 8-part agentic execution (gate review, quotes, applications, advisory, estate, PF, carrier, compliance)
+- Workflows: onboarding checklist system (5 procedures — not multi-step orchestration engine)
+- Consensus LLM: multi-model query for high-stakes recommendations (via advancedIntelligence router)
+- Financial planning agent: 5-step orchestration with $2 budget cap (via advancedIntelligence router)
+- Batch pipeline: bulk enrich/score for lead pipeline (via advancedIntelligence router)
+- Report export: PDF/markdown with FINRA 17a-4 archiving (via advancedIntelligence router)
+- Feedback: thumbs up/down ratings wired to advancedIntelligence.rateResponse
+- Template optimizer: monthly model-per-domain testing (scheduled)
+- Autonomous analysis: nightly client gap analysis with $0.50/client budget (scheduled)
+
+## Not Yet Implemented (honest gaps — do NOT claim these work)
+- Provider failover: providerRouter.ts exists but NOT wired into invokeLLM (forge handles routing)
+- Gemini Live Audio: no Gemini-specific voice (Edge TTS only via msedge-tts)
+- Multi-model ensemble: consensus queries same provider, not genuinely different providers
+- Chrome extension: spec only, no code
+- Conversation branching: not implemented
+- Sound design / audio cues: not implemented
+- LeadCaptureGate: component exists, only on 3 pages (not 20+ calculators as claimed)
+- VerificationBadge: component exists, NOT on Professionals page
+- PiiMaskedField: component exists, NOT used in LeadPipeline page
+- EmbedCodeGenerator: component exists, NOT used in any page
+- AccessibleChart: component exists, NOT replacing any existing Recharts usage
+- Intelligence dashboard widget: NOT implemented (no component)
+- Chat enrichment indicator: NOT implemented (no "Enhanced with N sources" shown)
+- Autonomy Level settings UI: NOT implemented
+- Memory management settings UI: NOT implemented
+- Keyboard shortcuts hook (useKeyboardShortcuts): file does NOT exist
+- Calculator pages directory: does NOT exist (calculators are in main pages)
+- 34 seed scripts: only 18 exist (16 need web-search-verified financial data)
 
 ## Business Domains (new — April 2026 build-out)
 - Lead pipeline: capture, enrichment, propensity scoring, qualification, distribution
