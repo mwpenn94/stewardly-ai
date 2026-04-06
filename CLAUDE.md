@@ -44,6 +44,8 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - contextualLLM: RAG-enabled with guardrails (PII + injection screening on all I/O)
 - 5-layer config: platform → organization → manager → professional → user
 - Multi-model: 23 models via model registry (Gemini, GPT, Claude, Reasoning, Llama, Mistral, Mixtral, Qwen), task routing, MODEL SELECTOR in Chat UI with multi-select consensus mode
+- Chat modes: Single (normal) / Loop (autonomous diverge/converge with 4 foci) / Consensus (multi-model)
+- Autonomous processing: user-driven diverge/converge loops with 4 foci (discovery/apply/connect/critique), budget-capped, integrated into Chat UI
 - Usage tracking: every LLM call logged with tokens + cost estimation
 - Graduated autonomy: DB-backed via agent_autonomy_levels + write-through cache
 - ReAct loop: multi-turn tool calling with trace logging (5 max iterations)

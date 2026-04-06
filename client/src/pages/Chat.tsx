@@ -415,6 +415,9 @@ export default function Chat() {
   const [selectedFocus, setSelectedFocus] = useState<FocusMode[]>(["general", "financial"]);
   const [selectedModels, setSelectedModels] = useState<string[]>(["auto"]);
   const [showModelMenu, setShowModelMenu] = useState(false);
+  const [chatMode, setChatMode] = useState<"single" | "loop" | "consensus">("single");
+  const [loopConfig, setLoopConfig] = useState({ maxIterations: 5, maxBudget: 1.0, focus: "discovery" as const });
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const focusSerialized = serializeFocusModes(selectedFocus);
 
   const toggleModel = (modelId: string) => {
@@ -2240,7 +2243,61 @@ export default function Chat() {
 
               </div>
 
-              {/* Spacer pushes right-side buttons to far right */}
+              {/* Processing mode toggle — Single / Loop / Consensus */}
+              <div className="flex items-center rounded-lg border border-border overflow-hidden h-7">
+                {(["single", "loop", "consensus"] as const).map(m => (
+                  <button
+                    key={m}
+                    className={`px-2 text-[10px] h-full transition-all ${
+                      chatMode === m
+                        ? m === "loop" ? "bg-amber-500/15 text-amber-400" : m === "consensus" ? "bg-purple-500/15 text-purple-400" : "bg-secondary/50 text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
+                    }`}
+                    onClick={() => setChatMode(m)}
+                    title={m === "single" ? "Normal chat" : m === "loop" ? "Autonomous loop (discovery/apply/connect/critique)" : "Multi-model consensus"}
+                  >
+                    {m === "single" ? "Single" : m === "loop" ? "Loop" : "Consensus"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Loop config (visible when loop mode active) */}
+              {chatMode === "loop" && (
+                <div className="flex items-center gap-1">
+                  <select
+                    value={loopConfig.focus}
+                    onChange={(e) => setLoopConfig(p => ({ ...p, focus: e.target.value as any }))}
+                    className="h-7 text-[10px] bg-secondary/30 border border-border rounded-lg px-1 text-amber-400"
+                  >
+                    <option value="discovery">Discover</option>
+                    <option value="apply">Apply</option>
+                    <option value="connect">Connect</option>
+                    <option value="critique">Critique</option>
+                  </select>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={loopConfig.maxIterations}
+                    onChange={(e) => setLoopConfig(p => ({ ...p, maxIterations: parseInt(e.target.value) || 5 }))}
+                    className="w-10 h-7 text-[10px] bg-secondary/30 border border-border rounded-lg px-1 text-center text-amber-400"
+                    title="Max iterations"
+                  />
+                  {activeSessionId && (
+                    <button
+                      className="h-7 px-2 text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-lg"
+                      onClick={() => {
+                        setActiveSessionId(null);
+                        setChatMode("single");
+                        toast.info("Autonomous loop stopped");
+                      }}
+                    >
+                      Stop
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="flex-1" />
 
               {/* Streaming toggle */}
