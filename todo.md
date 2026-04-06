@@ -3229,3 +3229,4 @@
 - [x] Recursive optimization Pass 1 (3 passes to convergence)
 - [x] Recursive optimization Pass 2 (convergence confirmed — 2 consecutive clean passes)
 - [x] Update all documentation and REMAINING_ITEMS.md
+- [x] Fix: agent_instances table missing from database causing /operations page error (deployed 13 missing tables)
