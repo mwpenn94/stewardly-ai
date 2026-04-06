@@ -80,7 +80,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - LeadCaptureGate: imported on 6 pages (EstatePlanning, TaxPlanning, RiskAssessment, PublicCalculators + 2 others), not yet wrapping results sections on all
 - AccessibleChart: component exists, NOT replacing Recharts (ModelResults uses PieChart which AccessibleChart doesn't support)
 - Calculator pages directory: does NOT exist (calculators are in main pages)
-- 34 seed scripts: only 18 exist (16 need web-search-verified financial data)
+- 34 seed scripts: 23 exist, 11 remaining need web-search-verified financial data (03-12, 24, 27-30)
 
 ## Business Domains (new — April 2026 build-out)
 - Lead pipeline: capture, enrichment, propensity scoring, qualification, distribution
