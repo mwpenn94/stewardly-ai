@@ -3295,3 +3295,11 @@
 - [x] Verify chat page /chat/1140001 loads correctly (SQL error fixed via migration)
 - [x] Recursive optimization pass 19-20: converged (delta=[0,0], 9.4/10, 2506/2506 tests)
 - [x] Update all documentation with final metrics (CLAUDE.md, REMAINING_ITEMS.md, SETUP_GUIDE.md, STEWARDLY_COMPREHENSIVE_GUIDE.md)
+
+## Bug: Server crashes from scheduler overload
+
+- [x] Fix scheduler: reduce log spam — only log first-execution overlap, suppress subsequent
+- [x] Fix scheduler: DEV MODE guard — keep only 3 essential jobs (health_checks, stale_cleanup, role_elevation_revoke), skip 33 heavy jobs
+- [x] Fix scheduler: increased stagger to 30s in dev, 120s initial delay
+- [x] Verify server stability — 2+ minutes stable, 0 crashes, HTTP 200
+- [x] Full test suite: 101 files, 2,506 tests, ALL PASSING

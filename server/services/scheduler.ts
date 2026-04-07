@@ -266,7 +266,10 @@ function registerJob(name: string, intervalMs: number, handler: () => Promise<vo
 
 async function executeJob(job: ScheduledJob): Promise<void> {
   if (job.isRunning) {
-    logger.info( { operation: "scheduler" },`[Scheduler] Job "${job.name}" is already running, skipping`);
+    // Only log at debug level to prevent log flooding
+    if (job.runCount === 0) {
+      logger.info( { operation: "scheduler" },`[Scheduler] Job "${job.name}" is still running its first execution, skipping`);
+    }
     return;
   }
   
@@ -608,8 +611,31 @@ export function initScheduler(): void {
     });
   });
 
+  // ─── DEV MODE: Only run essential jobs to prevent memory exhaustion ────
+  const isDev = process.env.NODE_ENV !== "production";
+  const essentialJobs = new Set([
+    "health_checks",
+    "role_elevation_revoke",
+    "stale_cleanup",
+  ]);
+  
+  if (isDev) {
+    const totalJobs = Object.keys(jobs).length;
+    const skippedJobs: string[] = [];
+    for (const [name] of Object.entries(jobs)) {
+      if (!essentialJobs.has(name)) {
+        skippedJobs.push(name);
+      }
+    }
+    // Remove non-essential jobs in dev mode
+    for (const name of skippedJobs) {
+      delete jobs[name];
+    }
+    logger.info( { operation: "scheduler" },`[Scheduler] DEV MODE: Keeping ${Object.keys(jobs).length}/${totalJobs} essential jobs (skipped ${skippedJobs.length} heavy jobs)`);
+  }
+
   // Run self-test first, then start jobs with staggered delays
-  const INITIAL_DELAY = 90_000; // 90s after boot
+  const INITIAL_DELAY = isDev ? 120_000 : 90_000; // 120s in dev, 90s in prod
   logger.info( { operation: "scheduler" },`[Scheduler] Will run startup self-test in ${INITIAL_DELAY / 1000}s...`);
   
   setTimeout(async () => {
@@ -656,7 +682,7 @@ export function initScheduler(): void {
         executeJob(job);
         job.timerId = setInterval(() => executeJob(job), job.intervalMs);
       }, stagger);
-      stagger += 15_000; // 15s between each job start
+      stagger += isDev ? 30_000 : 15_000; // 30s in dev, 15s in prod
       logger.info( { operation: "scheduler" },`[Scheduler] Registered job "${name}" (interval: ${Math.round(job.intervalMs / 1000)}s)`);
     }
   }, INITIAL_DELAY);
