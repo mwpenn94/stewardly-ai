@@ -8,7 +8,7 @@ export const autonomousProcessingRouter = router({
   start: protectedProcedure
     .input(z.object({
       topic: z.string().min(1).max(2000),
-      focus: z.enum(["discovery", "apply", "connect", "critique"]),
+      focus: z.enum(["discovery", "apply", "connect", "critique", "general"]).default("general"),
       foci: z.array(z.enum(["discovery", "apply", "connect", "critique"])).optional(),
       mode: z.enum(["diverge", "converge"]),
       maxIterations: z.number().min(0).max(100).default(5),

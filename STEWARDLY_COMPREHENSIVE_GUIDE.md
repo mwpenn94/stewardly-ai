@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with 220,000+ lines of code across 1,000+ source files, 318 database tables, 71 tRPC API routers (950+ procedures), and 2,500 automated tests across 101 test files (100% pass rate). It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with 220,000+ lines of code across 1,000+ source files, 318 database tables, 71 tRPC API routers (950+ procedures), and 2,506 automated tests across 101 test files (100% pass rate). It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -41,7 +41,7 @@ The system is built on a modern TypeScript full-stack architecture with 220,000+
 | Total lines of code | 220,000+ |
 | Source files (non-test) | 1,000+ |
 | Test files | 101 |
-| Total tests | 2,500 (100% passing) |
+| Total tests | 2,506 (100% passing) |
 | Database tables | 318 |
 | tRPC routers | 71 (950+ procedures) |
 | Frontend pages | 106 |
@@ -650,10 +650,10 @@ The platform runs automated background jobs via `server/services/scheduler.ts`:
 | Consolidated Phase 3 | 1 | 30+ | SOFR rates, rate management, org providers |
 | Data export & filtering | 1 | 23 | Export ZIP structure, sidebar date grouping, search |
 | Feature routers | 77 | 2,000+ | Individual feature tests |
-| Chat features (pass 13) | 1 | 37 | Loop cycling, loop-by-type, rich media, persistence |
+| Chat features (pass 13+19) | 1 | 43 | Loop cycling, loop-by-type, rich media, persistence, general mode |
 | URL hallucination guardrail | 1 | 19 | Fabricated URL detection, trusted domains, stripping |
 | SSE stream handler | 1 | 11 | Token events, done events, context injection, media embeds |
-| **Total** | **101** | **2,500** | **All passing (100% pass rate)** |
+| **Total** | **101** | **2,506** | **All passing (100% pass rate)** |
 
 ### 12.2 Test Patterns
 
@@ -814,7 +814,7 @@ The chat interface now supports three distinct modes, selectable via toggle butt
 | Mode | Description | Backend Integration |
 |------|-------------|--------------------|
 | **Single** | Standard one-shot chat with the selected AI model | contextualLLM via ReAct loop |
-| **Loop** | Autonomous diverge/converge processing that cycles across any combination of 4 foci (discovery, apply, connect, critique) and optionally tags the run with a prompt type | autonomousProcessing.start with polling |
+| **Loop** | Autonomous diverge/converge processing that cycles across any combination of 5 foci (discovery, apply, connect, critique, general) and optionally tags the run with a prompt type | autonomousProcessing.start with polling |
 | **Consensus** | Multi-model query showing individual model responses and agreement percentage | advancedIntelligence.consensusQuery |
 
 Loop mode runs budget-capped autonomous processing cycles, polling the server every 3 seconds for status updates. When multiple foci are selected, iterations cycle through them round-robin (iteration 1 → foci[0], iteration 2 → foci[1], …). The "↻ Loop previous" button replays the most recent user prompt back through the active loop configuration, and a free-text "Prompt type" field lets users tag the run (e.g. `tax-planning`, `compliance-review`) — the tag is passed into the model prompt as contextual metadata so the loop can be steered by category. Consensus mode queries genuinely different models (Claude, GPT, Gemini) through the Forge API and displays an expandable panel with per-model responses.

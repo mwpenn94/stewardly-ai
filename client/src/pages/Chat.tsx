@@ -447,7 +447,7 @@ export default function Chat() {
   const [selectedModels, setSelectedModels] = useState<string[]>(["auto"]);
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [chatMode, setChatMode] = useState<"single" | "loop" | "consensus">("single");
-  const [loopConfig, setLoopConfig] = useState({ maxIterations: 0, maxBudget: 1.0, foci: ["discovery"] as string[], promptType: "" as string });
+  const [loopConfig, setLoopConfig] = useState({ maxIterations: 0, maxBudget: 1.0, foci: [] as string[], promptType: "" as string });
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   const toggleLoopFocus = (focus: string) => {
@@ -455,7 +455,7 @@ export default function Chat() {
       const foci = p.foci.includes(focus)
         ? p.foci.filter(f => f !== focus)
         : [...p.foci, focus];
-      return { ...p, foci: foci.length === 0 ? ["discovery"] : foci };
+      return { ...p, foci }; // empty foci = general mode (no specific focus cycling)
     });
   };
   const focusSerialized = serializeFocusModes(selectedFocus);
@@ -943,11 +943,12 @@ export default function Chat() {
       // ─── LOOP MODE: Start autonomous processing session ───
       if (chatMode === "loop") {
         try {
-          const firstFocus = loopConfig.foci[0] || "discovery";
+          const hasFoci = loopConfig.foci.length > 0;
+          const primaryFocus = hasFoci ? loopConfig.foci[0] : "general";
           const result = await autonomousStart.mutateAsync({
             topic: trimmed,
-            focus: firstFocus as any,
-            foci: (loopConfig.foci.length > 0 ? loopConfig.foci : [firstFocus]) as any,
+            focus: primaryFocus as any,
+            foci: hasFoci ? loopConfig.foci as any : undefined,
             mode: "diverge",
             maxIterations: loopConfig.maxIterations,
             maxBudget: loopConfig.maxBudget,
@@ -955,7 +956,8 @@ export default function Chat() {
             promptType: loopConfig.promptType || undefined,
           });
           setActiveSessionId(result.sessionId);
-          toast.success(`Loop started: ${loopConfig.foci.join(", ")} — ${loopConfig.maxIterations === 0 ? "continuous" : loopConfig.maxIterations + " iterations"}`);
+          const focusLabel = hasFoci ? loopConfig.foci.join(", ") : "General";
+          toast.success(`Loop started: ${focusLabel} — ${loopConfig.maxIterations === 0 ? "continuous" : loopConfig.maxIterations + " iterations"}`);
           // Start polling for iterations every 3s
           if (loopPollRef.current) clearInterval(loopPollRef.current);
           let lastIterCount = 0;
@@ -966,7 +968,7 @@ export default function Chat() {
               for (const iter of (session.iterations || []).slice(lastIterCount)) {
                 setMessages(prev => [...prev, {
                   role: "assistant" as const,
-                  content: `**[${(iter.focus || firstFocus).toUpperCase()} — ${iter.mode || "diverge"}] Iteration ${iter.iteration}**\n\n${iter.content}`,
+                  content: `**[${(iter.focus || primaryFocus).toUpperCase()} — ${iter.mode || "diverge"}] Iteration ${iter.iteration}**\n\n${iter.content}`,
                   createdAt: new Date(iter.timestamp || Date.now()),
                 }]);
                 lastIterCount++;

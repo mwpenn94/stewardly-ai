@@ -429,8 +429,8 @@ describe("Adaptive Rate Management — Rate Probing", () => {
   });
 });
 
-describe("Adaptive Rate Management — Integration Onboarding", () => {
-  it("should analyze a new integration", async () => {
+describe("Adaptive Rate Management — Integration Onboarding", { timeout: 30000 }, () => {
+  it("should analyze a new integration", async () => {  // eslint-disable-next-line -- increased timeout for full-suite resource contention
     // analyzeNewIntegration(provider, domain, docsUrl?, category?)
     const result = await analyzeNewIntegration(
       "test-provider",

@@ -18,14 +18,14 @@ import { logger } from "../_core/logger";
 
 const log = logger.child({ module: "autonomousProcessing" });
 
-export type ProcessingFocus = "discovery" | "apply" | "connect" | "critique";
+export type ProcessingFocus = "discovery" | "apply" | "connect" | "critique" | "general";
 export type ProcessingMode = "diverge" | "converge";
 
 export interface ProcessingConfig {
   userId: number;
   topic: string;
-  focus: ProcessingFocus; // primary focus (for single-focus runs)
-  foci?: ProcessingFocus[]; // optional: cycle across these foci per iteration
+  focus: ProcessingFocus; // primary focus (for single-focus runs, or 'general' for no specific focus)
+  foci?: ProcessingFocus[]; // optional: cycle across these foci per iteration (empty = general mode)
   mode: ProcessingMode;
   maxIterations: number; // 0 = endless until stopped
   maxBudget: number; // max $ to spend
@@ -64,6 +64,7 @@ const FOCUS_PROMPTS: Record<ProcessingFocus, string> = {
   apply: `Take the findings so far and generate concrete, actionable next steps. What should the user DO with this information? Create specific, implementable recommendations with timelines and expected outcomes.`,
   connect: `Find hidden relationships and patterns between the findings gathered so far. What connects seemingly unrelated data points? What patterns emerge? What does the synthesis reveal that individual findings don't?`,
   critique: `Challenge every assumption. Find weaknesses, blind spots, and potential failures in the current analysis. What could go wrong? What's being overlooked? Where might the reasoning be flawed? Be rigorous and adversarial.`,
+  general: `You are a thorough analyst. Continue exploring this topic in depth. Build on previous findings, go deeper where warranted, and surface any new insights. Balance breadth and depth. Be comprehensive and insightful.`,
 };
 
 const MODE_MODIFIERS: Record<ProcessingMode, string> = {

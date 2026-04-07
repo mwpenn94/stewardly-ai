@@ -516,7 +516,73 @@ describe("Compliance Guardrail — URL Hallucination Prevention", () => {
   });
 });
 
-// ─── 8. ProcessingConfig Type Validation ────────────────────────────────────
+// ─── 8. General (No-Foci) Loop Mode ────────────────────────────────────────
+
+describe("General (No-Foci) Loop Mode", () => {
+  it("uses 'general' focus when foci array is empty", () => {
+    // Mirrors: const fociCycle = (config.foci && config.foci.length > 0) ? config.foci : [config.focus];
+    const config = { focus: "general" as const, foci: [] as string[] };
+    const fociCycle = (config.foci && config.foci.length > 0) ? config.foci : [config.focus];
+
+    expect(fociCycle).toEqual(["general"]);
+    // All iterations use 'general'
+    for (let i = 1; i <= 5; i++) {
+      expect(fociCycle[(i - 1) % fociCycle.length]).toBe("general");
+    }
+  });
+
+  it("uses 'general' focus when foci is undefined", () => {
+    const config = { focus: "general" as const, foci: undefined as string[] | undefined };
+    const fociCycle = (config.foci && config.foci.length > 0) ? config.foci : [config.focus];
+
+    expect(fociCycle).toEqual(["general"]);
+  });
+
+  it("ProcessingConfig accepts 'general' as a focus value", () => {
+    // Type-level test: verify 'general' is a valid ProcessingFocus
+    const config: import("./services/autonomousProcessing").ProcessingConfig = {
+      userId: 1,
+      topic: "test",
+      focus: "general",
+      mode: "diverge",
+      maxIterations: 3,
+      maxBudget: 1.0,
+    };
+    expect(config.focus).toBe("general");
+  });
+
+  it("frontend sends focus='general' when no foci selected", () => {
+    // Mirrors Chat.tsx logic
+    const loopConfig = { foci: [] as string[] };
+    const hasFoci = loopConfig.foci.length > 0;
+    const primaryFocus = hasFoci ? loopConfig.foci[0] : "general";
+    const fociParam = hasFoci ? loopConfig.foci : undefined;
+
+    expect(primaryFocus).toBe("general");
+    expect(fociParam).toBeUndefined();
+  });
+
+  it("frontend sends specific foci when selected", () => {
+    const loopConfig = { foci: ["discovery", "critique"] };
+    const hasFoci = loopConfig.foci.length > 0;
+    const primaryFocus = hasFoci ? loopConfig.foci[0] : "general";
+    const fociParam = hasFoci ? loopConfig.foci : undefined;
+
+    expect(primaryFocus).toBe("discovery");
+    expect(fociParam).toEqual(["discovery", "critique"]);
+  });
+
+  it("toast message shows 'General' when no foci selected", () => {
+    const loopConfig = { foci: [] as string[], maxIterations: 3 };
+    const hasFoci = loopConfig.foci.length > 0;
+    const focusLabel = hasFoci ? loopConfig.foci.join(", ") : "General";
+    const msg = `Loop started: ${focusLabel} — ${loopConfig.maxIterations === 0 ? "continuous" : loopConfig.maxIterations + " iterations"}`;
+
+    expect(msg).toBe("Loop started: General — 3 iterations");
+  });
+});
+
+// ─── 9. ProcessingConfig Type Validation ────────────────────────────────────
 
 describe("ProcessingConfig foci and promptType fields", () => {
   it("ProcessingConfig accepts foci array", () => {

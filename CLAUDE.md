@@ -5,8 +5,8 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-106 pages, 318 tables, 2,500 tests passing (101 files, 100% pass rate), 212 services, 71 routers, 24 seed files, 37 cron jobs
-Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 18 recursive passes converged (9.4/10). 0 TS errors, 0 TODOs.
+106 pages, 318 tables, 2,506 tests passing (101 files, 100% pass rate), 212 services, 71 routers, 24 seed files, 37 cron jobs
+Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 20 recursive passes converged (9.4/10). 0 TS errors, 0 TODOs.
 
 ## Commands
 `node toolkit.js init stewardly --safety` — Initialize (run once)
@@ -46,6 +46,9 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - ~~ragTrainer.ts TODO for episodic aggregation~~ → RESOLVED: implemented via contextualLLM (summarizes 20+ episodic memories, keeps 5 most recent, inserts aggregated summary)
 - ~~CSP nonce tests failing~~ → RESOLVED: comment reword in server/_core/index.ts
 - ~~invokeLLM bypass in ragTrainer~~ → RESOLVED: refactored to use contextualLLM (complies with wiring verification tests)
+- ~~Messages table missing parentMessageId column~~ → RESOLVED: ALTER TABLE migration applied
+- ~~Loop mode required foci selection~~ → RESOLVED: added 'general' focus for plain iteration without cycling
+- ~~Flaky consolidatedPhase3 timeout~~ → RESOLVED: increased describe timeout to 30s for resource contention
 
 ## Known Gaps (current — human action required)
 - CRM credentials not configured (GHL, Wealthbox, Redtail — services ready)
@@ -58,8 +61,8 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - contextualLLM: RAG-enabled with guardrails (PII + injection screening on all I/O)
 - 5-layer config: platform → organization → manager → professional → user
 - Multi-model: 23 models via model registry (Gemini, GPT, Claude, Reasoning, Llama, Mistral, Mixtral, Qwen), task routing, MODEL SELECTOR in Chat UI with multi-select consensus mode
-- Chat modes: Single (normal) / Loop (autonomous diverge/converge with 4 foci) / Consensus (multi-model)
-- Autonomous processing: user-driven diverge/converge loops with 4 foci (discovery/apply/connect/critique), budget-capped, integrated into Chat UI
+- Chat modes: Single (normal) / Loop (autonomous diverge/converge with 5 foci) / Consensus (multi-model)
+- Autonomous processing: user-driven diverge/converge loops with 5 foci (discovery/apply/connect/critique/general), budget-capped, integrated into Chat UI
 - Usage tracking: every LLM call logged with tokens + cost estimation
 - Graduated autonomy: DB-backed via agent_autonomy_levels + write-through cache
 - ReAct loop: multi-turn tool calling with trace logging (5 max iterations)

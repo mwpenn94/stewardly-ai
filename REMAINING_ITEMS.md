@@ -1,8 +1,8 @@
 # Stewardly — Remaining Items & Step-by-Step Completion Guide
 
 **Date:** April 7, 2026 (Final Update)
-**Current State:** 318 tables, 212 services, 71 routers, 106 pages, 114 components, 101 test files (2,500 passing / 2,500 total — 100% pass rate), 23 AI models, 24 seed files, 37 cron jobs, 0 TS errors, 0 TODOs
-**Recursive Optimization:** Converged after 18 passes total (9.4/10, delta=[0,0] for 2 consecutive passes)
+**Current State:** 318 tables, 212 services, 71 routers, 106 pages, 114 components, 101 test files (2,506 passing / 2,506 total — 100% pass rate), 23 AI models, 24 seed files, 37 cron jobs, 0 TS errors, 0 TODOs
+**Recursive Optimization:** Converged after 20 passes total (9.4/10, delta=[0,0] for 2 consecutive passes)
 
 ---
 
@@ -15,7 +15,7 @@
 | tRPC routers | 71 | COMPLETE |
 | UI pages | 106 | COMPLETE (all routed and navigable) |
 | UI components | 114 | COMPLETE |
-| Test files | 101 (2,500 tests passing) | COMPLETE (100% pass rate — all tests passing) |
+| Test files | 101 (2,506 tests passing) | COMPLETE (100% pass rate — all tests passing) |
 | Seed files | 24 (40+ modules across 6 phases) | COMPLETE |
 | Cron jobs | 37 | COMPLETE (monitored via healthMonitor) |
 | AI models | 23 (8 families) | COMPLETE (multi-select consensus mode) |
@@ -252,6 +252,11 @@ Pass 16: Fixed 2 CSP nonce tests (comment reword). Resolved ragTrainer.ts TODO (
 Pass 17: Comprehensive scan. No changes needed. Delta=0.
 Pass 18: Final convergence. Delta=[0,0]. Converged at 9.4/10.
 
+### Session 6: Schema Fix + Loop Mode Improvements (2 passes)
+
+Pass 19: Fixed messages table schema (parentMessageId column via ALTER TABLE). Added general (no-foci) loop mode with FOCUS_PROMPTS entry. Fixed flaky consolidatedPhase3 timeout (30s). Added 6 new tests for general mode. Total: 2,506/2,506 passing. Score: 9.4/10.
+Pass 20: Comprehensive scan. No changes needed. Delta=[0,0]. Converged at 9.4/10.
+
 ---
 
 ## Architecture Summary
@@ -259,11 +264,11 @@ Pass 18: Final convergence. Delta=[0,0]. Converged at 9.4/10.
 ```
 106 pages | 100+ routes | 71 routers | 212 services | 318 tables
 114 components | 24 seed files (40+ modules) | 37 cron jobs
-101 test files (2,500 tests passing, 100%) | 23 AI models (8 families)
+101 test files (2,506 tests passing, 100%) | 23 AI models (8 families)
 5-layer AI config | 6-phase seed orchestrator | 15 context functions
 Chrome extension (LinkedIn capture, Gmail compliance, side panel)
-5 predefined workflows | 4 autonomous processing foci
+5 predefined workflows | 5 autonomous processing foci (incl. general)
 0 TypeScript errors | 28+ navigation items
 ```
 
-**Rating: 9.4/10** --- Expert-level financial advisory platform with comprehensive coverage. All automated code work, UI wiring, and UI/UX optimization is complete. 100% test pass rate (2,500/2,500). The 0.6-point gap is attributable to items requiring human action (env vars, GHL setup, compliance review, Chrome extension loading).
+**Rating: 9.4/10** --- Expert-level financial advisory platform with comprehensive coverage. All automated code work, UI wiring, and UI/UX optimization is complete. 100% test pass rate (2,506/2,506). The 0.6-point gap is attributable to items requiring human action (env vars, GHL setup, compliance review, Chrome extension loading).

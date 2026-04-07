@@ -1,7 +1,7 @@
 {
   "project": "stewardly",
   "created": "2026-04-04T19:48:10.140Z",
-  "last_updated": "2026-04-07T08:56:25.032Z",
+  "last_updated": "2026-04-07T06:16:28.479Z",
   "automation_tier": "manual",
   "safety_sensitive": true,
   "improvements": [
@@ -136,18 +136,6 @@
       "depends_on": [],
       "depended_by": [],
       "created": "2026-04-07T06:11:50.943Z"
-    },
-    {
-      "id": "IMP-012",
-      "pass": "pass-11",
-      "status": "verified",
-      "description": "Pass 19: Fixed messages table schema (parentMessageId), general no-foci loop mode, flaky timeout fix, 6 new tests. 2506/2506 passing.",
-      "files": [],
-      "tests": [],
-      "quality_delta": "",
-      "depends_on": [],
-      "depended_by": [],
-      "created": "2026-04-07T08:55:54.471Z"
     }
   ],
   "failed_approaches": [
@@ -329,40 +317,6 @@
       },
       "novelty_count": 0,
       "timestamp": "2026-04-07T06:16:28.479Z"
-    },
-    {
-      "pass": "pass-19",
-      "type": "unknown",
-      "mode": "divergent",
-      "score": 9.4,
-      "delta": 0,
-      "dimensions": {
-        "completeness": 9.5,
-        "accuracy": 9.5,
-        "depth": 9.6,
-        "novelty": 9,
-        "actionability": 9.4,
-        "regression_safety": 9.5
-      },
-      "novelty_count": 5,
-      "timestamp": "2026-04-07T08:55:20.385Z"
-    },
-    {
-      "pass": "pass-20",
-      "type": "unknown",
-      "mode": "divergent",
-      "score": 9.4,
-      "delta": 0,
-      "dimensions": {
-        "completeness": 9.5,
-        "accuracy": 9.5,
-        "depth": 9.6,
-        "novelty": 9,
-        "actionability": 9.4,
-        "regression_safety": 9.5
-      },
-      "novelty_count": 5,
-      "timestamp": "2026-04-07T08:56:25.032Z"
     }
   ],
   "branches": [],
