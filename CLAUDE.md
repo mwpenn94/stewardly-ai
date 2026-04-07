@@ -5,8 +5,8 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-106 pages, 318 tables, 2,442 tests passing, 212 services, 71 routers, 24 seed files, 37 cron jobs
-Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 12 recursive passes converged.
+106 pages, 318 tables, 2,498 tests passing (101 files), 212 services, 71 routers, 24 seed files, 37 cron jobs
+Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 15 recursive passes converged (9.3/10).
 
 ## Commands
 `node toolkit.js init stewardly --safety` — Initialize (run once)
@@ -42,6 +42,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - ~~Loop mode only used the first selected focus~~ → RESOLVED: autonomousProcessing accepts `foci[]` and cycles round-robin across selected foci per iteration
 - ~~No "loop previous prompt" / loop-by-type~~ → RESOLVED: "↻ Loop previous" button replays last user message through loop config; free-text "Prompt type" field tags the run and is passed into the model prompt as context
 - ~~Workflow UI missing~~ → RESOLVED: /workflows page with 5 templates and run/progress tracking
+- ~~No URL hallucination guardrail~~ → RESOLVED: server/shared/guardrails/urlHallucination.ts detects/strips fabricated URLs; trusted domain allowlist; 19 tests
 
 ## Known Gaps (current — human action required)
 - CRM credentials not configured (GHL, Wealthbox, Redtail — services ready)
@@ -79,6 +80,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - Autonomous analysis: nightly client gap analysis with $0.50/client budget (scheduled)
 - Autonomous training: uses excess free capacity every 4h to run RAG training, template optimization, bias checks
 - RAG trainer: learns from every LLM response (fact extraction → user_memories, tool patterns → episodic)
+- URL hallucination guardrail: detects/strips fabricated URLs in AI responses; allows trusted domains (IRS, SEC, FINRA, YouTube, etc.)
 - OpenClaw agents: CRUD agent instances, compliance-aware execution, reads/stores/trains on compliance data
 - Multi-model consensus: queries genuinely different models (Claude + GPT + Gemini) through Forge API
 - Consensus UI: expandable panel showing agreement %, individual model responses, unique details per model

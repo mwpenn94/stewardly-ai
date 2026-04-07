@@ -1,6 +1,7 @@
 /**
- * Guardrails — Input/Output screening for PII and injection attacks
+ * Guardrails — Input/Output screening for PII, injection attacks, and URL hallucination
  */
+export { detectHallucinatedURLs, stripHallucinatedURLs, extractURLsFromText } from "./urlHallucination";
 
 // ─── PII Patterns ────────────────────────────────────────────────────────
 const PII_PATTERNS: Array<{ name: string; pattern: RegExp; severity: "high" | "medium" }> = [

@@ -3243,3 +3243,21 @@
 - [x] Comprehensive review recursive optimization Pass 1 (97/99 files pass, 2442/2444 tests, fixed streaming test regression)
 - [x] Comprehensive review recursive optimization Pass 2 (convergence confirmed — 2 consecutive clean passes)
 - [x] Update all documentation (guide, spec, status, REMAINING_ITEMS)
+
+## Pass 13 — Chat Feature E2E Tests + Compliance Guardrail (PR #2 merge)
+- [x] Merge PR #2 (feat(chat): wire rich media rendering + loop-previous/by-type prompts)
+- [x] Run toolkit verify + snapshot 13
+- [x] Test: Loop focus cycling — iteration N uses foci[(N-1) % foci.length]
+- [x] Test: Loop-by-type — promptType propagation from router → service → model prompt
+- [x] Test: Loop-previous replay
+- [x] Test: Rich media extraction — extractMediaFromResponse for YouTube/PDF/image URLs
+- [x] Test: Rich media persistence — storeMediaEmbeds + getMediaEmbeds round-trip
+- [x] Test: Rich media hydration — conversations.messages returns mediaEmbeds in metadata
+- [x] Test: SSE done event includes mediaEmbeds
+- [x] Test: Compliance guardrail — URL hallucination prevention (only echoes URLs from tool/RAG/search)
+- [x] Fix SSE stream handler regression (added richMediaService mock for PR #2 dynamic import)
+- [x] Run full test suite — 2,498 passed / 2 failed (pre-existing CSP nonce)
+- [x] Score pass 13: 9.3/10 (C=9.3 A=9.4 D=9.5 N=8.8 Ac=9.2 R=9.4) + check-gaming OK
+- [x] Pass 14: convergence check (delta=0, TS fix + guardrails re-export)
+- [x] Pass 15: convergence confirmed — delta=[0,0] for 2 consecutive passes, 9.3/10
+- [x] Update all documentation (CLAUDE.md, REMAINING_ITEMS.md, SETUP_GUIDE.md, STEWARDLY_COMPREHENSIVE_GUIDE.md)

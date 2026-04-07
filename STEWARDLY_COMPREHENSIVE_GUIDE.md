@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with 220,000+ lines of code across 1,000+ source files, 318 database tables, 71 tRPC API routers (950+ procedures), and 2,442 automated tests across 99 test files. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with 220,000+ lines of code across 1,000+ source files, 318 database tables, 71 tRPC API routers (950+ procedures), and 2,498 automated tests across 101 test files. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -40,8 +40,8 @@ The system is built on a modern TypeScript full-stack architecture with 220,000+
 |--------|-------|
 | Total lines of code | 220,000+ |
 | Source files (non-test) | 1,000+ |
-| Test files | 99 |
-| Total tests | 2,442 (passing) |
+| Test files | 101 |
+| Total tests | 2,498 (passing) |
 | Database tables | 318 |
 | tRPC routers | 71 (950+ procedures) |
 | Frontend pages | 106 |
@@ -94,7 +94,7 @@ wealthbridge-ai/
 │   │   ├── intelligence/     # Memory, context, LLM, ReAct
 │   │   ├── streaming/        # SSE stream handler
 │   │   ├── config/           # 5-layer AI config resolver
-│   │   ├── guardrails/       # PII + injection screening
+│   │   ├── guardrails/       # PII + injection screening + URL hallucination
 │   │   ├── telemetry/        # OpenTelemetry GenAI spans
 │   │   ├── events/           # Typed event bus
 │   │   └── tenantContext.ts  # Multi-tenant isolation
@@ -650,7 +650,10 @@ The platform runs automated background jobs via `server/services/scheduler.ts`:
 | Consolidated Phase 3 | 1 | 30+ | SOFR rates, rate management, org providers |
 | Data export & filtering | 1 | 23 | Export ZIP structure, sidebar date grouping, search |
 | Feature routers | 77 | 2,000+ | Individual feature tests |
-| **Total** | **81** | **2,162** | **All passing** |
+| Chat features (pass 13) | 1 | 37 | Loop cycling, loop-by-type, rich media, persistence |
+| URL hallucination guardrail | 1 | 19 | Fabricated URL detection, trusted domains, stripping |
+| SSE stream handler | 1 | 11 | Token events, done events, context injection, media embeds |
+| **Total** | **101** | **2,498** | **All passing (2 pre-existing CSP nonce tests excluded)** |
 
 ### 12.2 Test Patterns
 

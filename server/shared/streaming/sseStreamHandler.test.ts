@@ -43,6 +43,13 @@ vi.mock("../intelligence/contextualLLM", () => {
   };
 });
 
+// Mock richMediaService (added by PR #2 for media embed extraction in done events)
+vi.mock("../../services/richMediaService", () => ({
+  extractMediaFromResponse: vi.fn().mockReturnValue([]),
+  storeMediaEmbeds: vi.fn().mockResolvedValue(undefined),
+  getMediaEmbeds: vi.fn().mockResolvedValue([]),
+}));
+
 // Mock logger to avoid real logging in tests
 vi.mock("../../_core/logger", () => ({
   logger: {
