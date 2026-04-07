@@ -32,6 +32,7 @@ import { ReasoningChain } from "@/components/ReasoningChain";
 import { LiveSession } from "@/components/LiveSession";
 import { VoiceOrb } from "@/components/VoiceOrb";
 import { ProgressiveMessage } from "@/components/ProgressiveMessage";
+import RichMediaEmbed, { type MediaEmbed } from "@/components/RichMediaEmbed";
 import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
 import { useTTS } from "@/hooks/useTTS";
 import { useAnonymousChat } from "@/hooks/useAnonymousChat";
@@ -58,6 +59,36 @@ import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
 import { ConvItem, SortableConvItem } from "@/components/chat/ConvItem";
 import { parseFocusModes, serializeFocusModes } from "@shared/types";
+
+// ─── RICH MEDIA EXTRACTION (client-side fallback) ─────────────────
+// Mirrors server/services/richMediaService extractMediaFromResponse for the case
+// where the server hasn't attached mediaEmbeds metadata (e.g. older messages
+// persisted before wiring). Kept intentionally simple — server-side extraction
+// is authoritative.
+function extractMediaFromText(content: string): MediaEmbed[] {
+  if (!content) return [];
+  const embeds: MediaEmbed[] = [];
+  const ytRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)(?:[^\s]*?[?&]t=(\d+))?/g;
+  let m: RegExpExecArray | null;
+  while ((m = ytRegex.exec(content)) !== null) {
+    embeds.push({
+      type: "video",
+      source: `https://www.youtube.com/embed/${m[1]}${m[2] ? `?start=${m[2]}` : ""}`,
+      title: "Video",
+      startTime: m[2] ? parseInt(m[2]) : undefined,
+      metadata: { provider: "youtube", videoId: m[1] },
+    });
+  }
+  const imgRegex = /https?:\/\/\S+\.(?:jpg|jpeg|png|gif|webp|svg)(?:\?\S*)?/gi;
+  while ((m = imgRegex.exec(content)) !== null) {
+    embeds.push({ type: "image", source: m[0], title: "Image" });
+  }
+  const docRegex = /https?:\/\/\S+\.(?:pdf|docx?|xlsx?)(?:\?\S*)?/gi;
+  while ((m = docRegex.exec(content)) !== null) {
+    embeds.push({ type: "document", source: m[0], title: "Document" });
+  }
+  return embeds.slice(0, 5);
+}
 
 // ─── CONSTANTS ────────────────────────────────────────────────────
 const FOCUS_OPTIONS: { value: FocusMode; label: string; icon: React.ReactNode; desc: string }[] = [
@@ -416,7 +447,7 @@ export default function Chat() {
   const [selectedModels, setSelectedModels] = useState<string[]>(["auto"]);
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [chatMode, setChatMode] = useState<"single" | "loop" | "consensus">("single");
-  const [loopConfig, setLoopConfig] = useState({ maxIterations: 0, maxBudget: 1.0, foci: ["discovery"] as string[] });
+  const [loopConfig, setLoopConfig] = useState({ maxIterations: 0, maxBudget: 1.0, foci: ["discovery"] as string[], promptType: "" as string });
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   const toggleLoopFocus = (focus: string) => {
@@ -916,10 +947,12 @@ export default function Chat() {
           const result = await autonomousStart.mutateAsync({
             topic: trimmed,
             focus: firstFocus as any,
+            foci: (loopConfig.foci.length > 0 ? loopConfig.foci : [firstFocus]) as any,
             mode: "diverge",
             maxIterations: loopConfig.maxIterations,
             maxBudget: loopConfig.maxBudget,
             context: messages.filter(m => m.role === "assistant").slice(-3).map(m => m.content).join("\n").slice(0, 1000),
+            promptType: loopConfig.promptType || undefined,
           });
           setActiveSessionId(result.sessionId);
           toast.success(`Loop started: ${loopConfig.foci.join(", ")} — ${loopConfig.maxIterations === 0 ? "continuous" : loopConfig.maxIterations + " iterations"}`);
@@ -1061,11 +1094,16 @@ export default function Chat() {
                 } else if (event.type === "done") {
                   // Finalize — persist the streamed content (NOT regenerate)
                   // First update the UI immediately with the accumulated content
+                  const streamedMediaEmbeds = Array.isArray(event.mediaEmbeds) ? event.mediaEmbeds : undefined;
                   setMessages(prev => {
                     const updated = [...prev];
                     const last = updated[updated.length - 1];
                     if (last && last.role === "assistant") {
-                      updated[updated.length - 1] = { ...last, content: accumulated };
+                      updated[updated.length - 1] = {
+                        ...last,
+                        content: accumulated,
+                        metadata: { ...(last.metadata || {}), ...(streamedMediaEmbeds ? { mediaEmbeds: streamedMediaEmbeds } : {}) },
+                      };
                     }
                     return updated;
                   });
@@ -2030,6 +2068,12 @@ export default function Chat() {
                               <img src={msg.metadata.imageUrl} alt="AI generated visual" className="w-full h-auto" />
                             </div>
                           )}
+                          {/* Rich media embeds — server-attached (msg.metadata.mediaEmbeds) with client-side fallback */}
+                          {(() => {
+                            const serverEmbeds = (msg.metadata?.mediaEmbeds as MediaEmbed[] | undefined) || [];
+                            const embeds = serverEmbeds.length > 0 ? serverEmbeds : extractMediaFromText(msg.content || "");
+                            return embeds.length > 0 ? <RichMediaEmbed embeds={embeds} className="max-w-md" /> : null;
+                          })()}
                         </div>
                         {msg.confidenceScore != null && (
                           <ReasoningChain
@@ -2446,6 +2490,27 @@ export default function Chat() {
                       </button>
                     ))}
                   </div>
+                  {/* Prompt type — optional, for loop-by-type runs */}
+                  <input
+                    type="text"
+                    value={loopConfig.promptType}
+                    onChange={e => setLoopConfig(p => ({ ...p, promptType: e.target.value }))}
+                    placeholder="Prompt type (optional)"
+                    className="h-6 px-2 text-[10px] rounded-full border border-border bg-background w-36 placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/40"
+                    title="Optional: categorize this loop (e.g. 'tax-planning', 'lead-gen', 'compliance-review'). Passed to the model as context."
+                  />
+                  {/* Loop previous prompt — re-runs the last user message through the loop */}
+                  <button
+                    className="h-6 px-2 text-[10px] rounded-full border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-colors"
+                    title="Re-run the most recent user prompt through the loop"
+                    onClick={() => {
+                      const lastUser = [...messages].reverse().find(m => m.role === "user");
+                      if (!lastUser) { toast.error("No previous prompt to loop"); return; }
+                      handleSendWithText(lastUser.content);
+                    }}
+                  >
+                    ↻ Loop previous
+                  </button>
                   {activeSessionId && (
                     <button
                       className="h-7 px-2 text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-lg"

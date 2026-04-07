@@ -811,14 +811,19 @@ The chat interface now supports three distinct modes, selectable via toggle butt
 | Mode | Description | Backend Integration |
 |------|-------------|--------------------|
 | **Single** | Standard one-shot chat with the selected AI model | contextualLLM via ReAct loop |
-| **Loop** | Autonomous diverge/converge processing with 4 foci (discovery, apply, connect, critique) | autonomousProcessing.start with polling |
+| **Loop** | Autonomous diverge/converge processing that cycles across any combination of 4 foci (discovery, apply, connect, critique) and optionally tags the run with a prompt type | autonomousProcessing.start with polling |
 | **Consensus** | Multi-model query showing individual model responses and agreement percentage | advancedIntelligence.consensusQuery |
 
-Loop mode runs budget-capped autonomous processing cycles, polling the server every 2 seconds for status updates. Consensus mode queries genuinely different models (Claude, GPT, Gemini) through the Forge API and displays an expandable panel with per-model responses.
+Loop mode runs budget-capped autonomous processing cycles, polling the server every 3 seconds for status updates. When multiple foci are selected, iterations cycle through them round-robin (iteration 1 → foci[0], iteration 2 → foci[1], …). The "↻ Loop previous" button replays the most recent user prompt back through the active loop configuration, and a free-text "Prompt type" field lets users tag the run (e.g. `tax-planning`, `compliance-review`) — the tag is passed into the model prompt as contextual metadata so the loop can be steered by category. Consensus mode queries genuinely different models (Claude, GPT, Gemini) through the Forge API and displays an expandable panel with per-model responses.
 
 ### 16.2 Rich Media and Advertising
 
-The `RichMediaEmbed.tsx` component renders embedded content extracted from AI responses, supporting video (YouTube with timestamps), audio players, images, documents, shopping cards, and charts. The `ContextualAd.tsx` component displays contextual advertising with a "Sponsored" label, dismiss functionality, and respects the 5-layer ad policy configuration (maximum 1 ad per 5 messages, 3 per session cap).
+The `RichMediaEmbed.tsx` component renders embedded content extracted from AI responses directly inside assistant chat messages, supporting video (YouTube with timestamps), audio players, images, documents, shopping cards, and charts. Extraction runs in two places:
+
+1. **Server-side (authoritative):** `server/services/richMediaService.extractMediaFromResponse` scans every LLM response for YouTube links, direct image URLs, and document URLs. The SSE stream handler attaches the extracted embeds to the terminal `done` event so the client can render them mid-stream, and `persistStreamed` / `chat.send` call `storeMediaEmbeds` to persist up to five embeds per message in the `rich_media_embeds` table. When a conversation is reloaded via `conversations.messages`, embeds are rehydrated onto each assistant message's `metadata.mediaEmbeds`.
+2. **Client-side fallback:** `extractMediaFromText` in `Chat.tsx` mirrors the server regex so legacy messages persisted before wiring still render rich media from the raw text.
+
+The system prompt instructs the model to cite trustworthy sources by URL (YouTube, .pdf/.docx, direct images) knowing the UI will automatically render them. The `ContextualAd.tsx` component displays contextual advertising with a "Sponsored" label, dismiss functionality, and respects the 5-layer ad policy configuration (maximum 1 ad per 5 messages, 3 per session cap).
 
 ### 16.3 Video Streaming
 

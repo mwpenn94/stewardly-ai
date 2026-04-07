@@ -54,6 +54,16 @@ export interface SSEStreamConfig {
   executeSearchTool?: (toolName: string, args: Record<string, any>) => Promise<string>;
 }
 
+export interface SSEMediaEmbed {
+  type: "video" | "audio" | "image" | "document" | "shopping" | "chart" | "link_preview";
+  source: string;
+  title: string;
+  thumbnailUrl?: string;
+  startTime?: number;
+  endTime?: number;
+  metadata?: Record<string, unknown>;
+}
+
 export interface SSEEvent {
   type: "token" | "done" | "error" | "heartbeat" | "tool_status";
   content?: string;
@@ -61,6 +71,7 @@ export interface SSEEvent {
   totalTokens?: number;
   message?: string;
   toolName?: string;
+  mediaEmbeds?: SSEMediaEmbed[];
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -190,10 +201,13 @@ export async function createSSEStreamHandler(
           }
         }
         if (!disconnected) {
+          const { extractMediaFromResponse } = await import("../../services/richMediaService");
+          const mediaEmbeds = extractMediaFromResponse(totalContent).slice(0, 5);
           writeSSE(res, {
             type: "done",
             sessionId,
             totalTokens: estimateTokens(totalContent),
+            mediaEmbeds: mediaEmbeds.length > 0 ? mediaEmbeds : undefined,
           });
         }
       }
@@ -323,10 +337,13 @@ export async function createSSEStreamHandler(
       }
 
       if (!disconnected) {
+        const { extractMediaFromResponse } = await import("../../services/richMediaService");
+        const mediaEmbeds = extractMediaFromResponse(content).slice(0, 5);
         writeSSE(res, {
           type: "done",
           sessionId,
           totalTokens: estimateTokens(content),
+          mediaEmbeds: mediaEmbeds.length > 0 ? mediaEmbeds : undefined,
         });
       }
     }

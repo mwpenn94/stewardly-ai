@@ -37,6 +37,10 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - ~~Conversation branching: not implemented~~ → RESOLVED: Fork button + BranchComparison.tsx
 - ~~Chat Loop/Consensus not wired~~ → RESOLVED: Loop wired to autonomousProcessing.start, Consensus to advancedIntelligence.consensusQuery
 - ~~Rich media/ads/video not in UI~~ → RESOLVED: RichMediaEmbed.tsx, ContextualAd.tsx, video streaming layout
+- ~~RichMediaEmbed component existed but was never rendered in chat~~ → RESOLVED: wired into Chat.tsx message rendering from `msg.metadata.mediaEmbeds` with client-side text fallback
+- ~~extractMediaFromResponse/storeMediaEmbeds defined but never called~~ → RESOLVED: invoked from sseStreamHandler `done` events, persistStreamed, chat.send, and rehydrated via conversations.messages on load
+- ~~Loop mode only used the first selected focus~~ → RESOLVED: autonomousProcessing accepts `foci[]` and cycles round-robin across selected foci per iteration
+- ~~No "loop previous prompt" / loop-by-type~~ → RESOLVED: "↻ Loop previous" button replays last user message through loop config; free-text "Prompt type" field tags the run and is passed into the model prompt as context
 - ~~Workflow UI missing~~ → RESOLVED: /workflows page with 5 templates and run/progress tracking
 
 ## Known Gaps (current — human action required)
