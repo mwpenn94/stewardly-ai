@@ -24,12 +24,14 @@ export type ProcessingMode = "diverge" | "converge";
 export interface ProcessingConfig {
   userId: number;
   topic: string;
-  focus: ProcessingFocus;
+  focus: ProcessingFocus; // primary focus (for single-focus runs)
+  foci?: ProcessingFocus[]; // optional: cycle across these foci per iteration
   mode: ProcessingMode;
   maxIterations: number; // 0 = endless until stopped
   maxBudget: number; // max $ to spend
   model?: string;
   context?: string; // additional context from prior iterations
+  promptType?: string; // optional: prompt category/type for loop-by-type runs
 }
 
 export interface ProcessingIteration {
@@ -101,6 +103,7 @@ async function runIterations(sessionId: string, config: ProcessingConfig): Promi
   const { contextualLLM } = await import("../shared/stewardlyWiring");
   let iteration = 0;
   let accumulatedContext = config.context || "";
+  const fociCycle: ProcessingFocus[] = (config.foci && config.foci.length > 0) ? config.foci : [config.focus];
 
   while (session.status === "running") {
     iteration++;
@@ -118,8 +121,12 @@ async function runIterations(sessionId: string, config: ProcessingConfig): Promi
       break;
     }
 
+    // Cycle foci across iterations — iteration 1 uses foci[0], iteration 2 uses foci[1], etc.
+    const currentFocus: ProcessingFocus = fociCycle[(iteration - 1) % fociCycle.length];
+
     try {
-      const prompt = `${FOCUS_PROMPTS[config.focus]}\n\n${MODE_MODIFIERS[config.mode]}\n\nTopic: ${config.topic}\n\n${accumulatedContext ? `Previous findings:\n${accumulatedContext.slice(-2000)}\n\n` : ""}Iteration ${iteration}: Go deeper.`;
+      const typeHint = config.promptType ? `\n\nPrompt type: ${config.promptType}` : "";
+      const prompt = `${FOCUS_PROMPTS[currentFocus]}\n\n${MODE_MODIFIERS[config.mode]}\n\nTopic: ${config.topic}${typeHint}\n\n${accumulatedContext ? `Previous findings:\n${accumulatedContext.slice(-2000)}\n\n` : ""}Iteration ${iteration}: Go deeper.`;
 
       const response = await contextualLLM({
         userId: config.userId,
@@ -134,7 +141,7 @@ async function runIterations(sessionId: string, config: ProcessingConfig): Promi
 
       const iter: ProcessingIteration = {
         iteration,
-        focus: config.focus,
+        focus: currentFocus,
         mode: config.mode,
         content,
         model: response.model || config.model || "auto",
@@ -145,7 +152,7 @@ async function runIterations(sessionId: string, config: ProcessingConfig): Promi
 
       session.iterations.push(iter);
       session.totalCost += cost;
-      accumulatedContext += `\n\n[Iteration ${iteration} - ${config.focus}/${config.mode}]: ${content.slice(0, 500)}`;
+      accumulatedContext += `\n\n[Iteration ${iteration} - ${currentFocus}/${config.mode}]: ${content.slice(0, 500)}`;
 
       // Store in user_memories for RAG
       try {

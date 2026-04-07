@@ -36,6 +36,12 @@
 | 7 | Conversation branching with fork button and BranchComparison.tsx | COMPLETE |
 | 8 | LeadCaptureGate wrapping on EstatePlanning, TaxPlanning, RiskAssessment | COMPLETE |
 | 9 | Seed verification (31 seeds across 6 phases, 5 unimported seeds wired) | COMPLETE |
+| 10 | RichMediaEmbed wired into chat rendering (`Chat.tsx` → `msg.metadata.mediaEmbeds` + client-side text fallback) | COMPLETE |
+| 11 | `extractMediaFromResponse` + `storeMediaEmbeds` invoked from SSE `done` events, `persistStreamed`, and `chat.send`; rehydrated in `conversations.messages` on load | COMPLETE |
+| 12 | Loop mode cycles across all selected foci round-robin (`autonomousProcessing.foci[]`) instead of only using `foci[0]` | COMPLETE |
+| 13 | "↻ Loop previous" button to replay the last user prompt through the active loop | COMPLETE |
+| 14 | Loop-by-type prompt tagging via free-text `promptType` propagated through router → service → model prompt | COMPLETE |
+| 15 | System prompt updated to instruct the model that rich-media URLs (YouTube/.pdf/.docx/direct images) render inline automatically | COMPLETE |
 
 ---
 

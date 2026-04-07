@@ -9,11 +9,13 @@ export const autonomousProcessingRouter = router({
     .input(z.object({
       topic: z.string().min(1).max(2000),
       focus: z.enum(["discovery", "apply", "connect", "critique"]),
+      foci: z.array(z.enum(["discovery", "apply", "connect", "critique"])).optional(),
       mode: z.enum(["diverge", "converge"]),
       maxIterations: z.number().min(0).max(100).default(5),
       maxBudget: z.number().min(0.01).max(50).default(1.0),
       model: z.string().optional(),
       context: z.string().optional(),
+      promptType: z.string().max(100).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const { startSession } = await import("../services/autonomousProcessing");

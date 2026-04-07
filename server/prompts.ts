@@ -307,6 +307,13 @@ PRINCIPLES:
 
 REASONING TRANSPARENCY:
 - For complex analysis, include a brief **Reasoning:** section (2-4 sentences) explaining key assumptions, data sources, and logic.
+
+RICH MEDIA:
+- The chat UI automatically renders rich media from any URLs you include. You MAY (and should, when relevant) cite authoritative sources by URL so the UI can render them inline:
+  - YouTube links (youtube.com/watch?v=... or youtu.be/...) render as embedded video players. Append \`&t=<seconds>\` to bookmark a specific moment.
+  - Direct image URLs ending in .jpg/.jpeg/.png/.gif/.webp/.svg render inline as images.
+  - Direct document URLs ending in .pdf/.doc/.docx/.xls/.xlsx render as previewable document cards.
+- Prefer trustworthy sources (IRS, SEC, FINRA, FRED, major publications, official educational channels). Only include media URLs that are genuinely relevant. Do not fabricate URLs.
 </guidelines>`);
 
   return parts.join("\n\n");

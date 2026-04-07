@@ -128,6 +128,15 @@ const chatRouter = router({
         metadata: { focus: input.focus, mode: input.mode, streamed: true },
       });
 
+      // Extract + persist rich media embeds referenced in the response (non-blocking)
+      (async () => {
+        try {
+          const { extractMediaFromResponse, storeMediaEmbeds } = await import("./services/richMediaService");
+          const embeds = extractMediaFromResponse(input.assistantContent);
+          if (embeds.length > 0) await storeMediaEmbeds(assistantMsg.id, embeds);
+        } catch { /* rich media persistence is optional */ }
+      })();
+
       // Track event (non-blocking)
       trackEvent({
         userId: ctx.user.id,
@@ -471,6 +480,15 @@ const chatRouter = router({
         metadata: { model: response.model, focus: input.focus, mode: input.mode, hasRAG: ragContext.length > 0 },
       });
 
+      // Extract + persist rich media embeds referenced in the response (non-blocking)
+      (async () => {
+        try {
+          const { extractMediaFromResponse, storeMediaEmbeds } = await import("./services/richMediaService");
+          const embeds = extractMediaFromResponse(aiContent);
+          if (embeds.length > 0) await storeMediaEmbeds(assistantMsg.id, embeds);
+        } catch { /* rich media persistence is optional */ }
+      })();
+
       // PII detection for audit
       const piiCheck = detectPII(input.content);
 
@@ -640,7 +658,31 @@ const conversationsRouter = router({
     }),
   messages: protectedProcedure
     .input(z.object({ conversationId: z.number() }))
-    .query(({ input }) => getConversationMessages(input.conversationId)),
+    .query(async ({ input }) => {
+      const msgs = await getConversationMessages(input.conversationId);
+      // Hydrate rich media embeds for assistant messages (non-blocking per-message failures)
+      try {
+        const { getMediaEmbeds } = await import("./services/richMediaService");
+        const assistantIds = msgs.filter(m => m.role === "assistant").map(m => m.id);
+        const embedsById: Record<number, any[]> = {};
+        await Promise.all(
+          assistantIds.map(async (id) => {
+            try {
+              const embeds = await getMediaEmbeds(id);
+              if (embeds.length > 0) embedsById[id] = embeds;
+            } catch { /* per-message optional */ }
+          })
+        );
+        return msgs.map(m => {
+          if (m.role === "assistant" && embedsById[m.id]) {
+            return { ...m, metadata: { ...((m.metadata as any) || {}), mediaEmbeds: embedsById[m.id] } };
+          }
+          return m;
+        });
+      } catch {
+        return msgs;
+      }
+    }),
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(({ ctx, input }) => deleteConversation(input.id, ctx.user.id)),
