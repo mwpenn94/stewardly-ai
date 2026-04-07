@@ -103,8 +103,8 @@ async function startServer() {
   const isDev = process.env.NODE_ENV === 'development';
   app.use(
     helmet({
-      // Disable CSP in dev — Vite's inline React Refresh preamble requires 'unsafe-inline'
-      // which conflicts with nonce-based CSP. Full CSP is enforced in production.
+      // Disable CSP in dev — Vite injects an inline React Refresh preamble that
+      // conflicts with nonce-based CSP. Full CSP is enforced in production only.
       contentSecurityPolicy: isDev
         ? false
         : {

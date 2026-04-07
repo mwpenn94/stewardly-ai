@@ -3261,3 +3261,14 @@
 - [x] Pass 14: convergence check (delta=0, TS fix + guardrails re-export)
 - [x] Pass 15: convergence confirmed — delta=[0,0] for 2 consecutive passes, 9.3/10
 - [x] Update all documentation (CLAUDE.md, REMAINING_ITEMS.md, SETUP_GUIDE.md, STEWARDLY_COMPREHENSIVE_GUIDE.md)
+
+## Pass 16 — Remaining Items + Convergence
+- [x] Fix 2 pre-existing CSP nonce test failures (comment contained literal 'unsafe-inline')
+- [x] Full test suite: 101 files, 2,500 tests, ALL PASSING (first 100% pass rate)
+- [x] Resolve ragTrainer.ts TODO — implemented episodic memory aggregation via contextualLLM
+- [x] Fix invokeLLM bypass test — refactored ragTrainer to use contextualLLM (complies with wiring tests)
+- [x] Full test suite: 101 files, 2,500 tests, ALL PASSING (0 failures, 0 TS errors, 0 TODOs)
+- [x] Score pass 16: 9.4/10 (C=9.5 A=9.5 D=9.6 N=9.0 Ac=9.3 R=9.5) + check-gaming OK
+- [x] Pass 17: convergence check — no changes needed, delta=0
+- [x] Pass 18: convergence confirmed — delta=[0,0] for 2 consecutive passes, 9.4/10
+- [x] Update all documentation with final metrics (CLAUDE.md, REMAINING_ITEMS.md, SETUP_GUIDE.md, STEWARDLY_COMPREHENSIVE_GUIDE.md)

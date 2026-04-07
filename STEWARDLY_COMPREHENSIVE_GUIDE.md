@@ -1,6 +1,6 @@
 # Stewardly AI — Comprehensive Platform Guide
 
-**Version:** 3.2 | **Date:** April 6, 2026 | **Status:** Production  
+**Version:** 3.3 | **Date:** April 7, 2026 | **Status:** Production  
 **Domains:** stewardly.manus.space, wealthai-gakeferp.manus.space
 
 ---
@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with 220,000+ lines of code across 1,000+ source files, 318 database tables, 71 tRPC API routers (950+ procedures), and 2,498 automated tests across 101 test files. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with 220,000+ lines of code across 1,000+ source files, 318 database tables, 71 tRPC API routers (950+ procedures), and 2,500 automated tests across 101 test files (100% pass rate). It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -41,7 +41,7 @@ The system is built on a modern TypeScript full-stack architecture with 220,000+
 | Total lines of code | 220,000+ |
 | Source files (non-test) | 1,000+ |
 | Test files | 101 |
-| Total tests | 2,498 (passing) |
+| Total tests | 2,500 (100% passing) |
 | Database tables | 318 |
 | tRPC routers | 71 (950+ procedures) |
 | Frontend pages | 106 |
@@ -653,7 +653,7 @@ The platform runs automated background jobs via `server/services/scheduler.ts`:
 | Chat features (pass 13) | 1 | 37 | Loop cycling, loop-by-type, rich media, persistence |
 | URL hallucination guardrail | 1 | 19 | Fabricated URL detection, trusted domains, stripping |
 | SSE stream handler | 1 | 11 | Token events, done events, context injection, media embeds |
-| **Total** | **101** | **2,498** | **All passing (2 pre-existing CSP nonce tests excluded)** |
+| **Total** | **101** | **2,500** | **All passing (100% pass rate)** |
 
 ### 12.2 Test Patterns
 

@@ -88,9 +88,45 @@ export async function aggregateEpisodicSummaries(userId: number): Promise<void> 
       .where(and(eq(userMemories.userId, userId), eq(userMemories.category, "episodic")));
 
     if ((result?.count || 0) > 20) {
-      // TODO: In production, use contextualLLM to summarize the episodic memories
-      // into a concise summary, then replace the individual memories
-      log.info({ userId, episodicCount: result?.count }, "Episodic memories ready for aggregation");
+      // Aggregate episodic memories into a concise summary using LLM
+      try {
+        const { desc } = await import("drizzle-orm");
+        const episodic = await db.select().from(userMemories)
+          .where(and(eq(userMemories.userId, userId), eq(userMemories.category, "episodic")))
+          .orderBy(desc(userMemories.createdAt))
+          .limit(30);
+        if (episodic.length < 20) return;
+        const { contextualLLM } = await import("./contextualLLM");
+        const memoryTexts = episodic.map((m: any) => m.content).join("\n- ");
+        const llmResult = await contextualLLM({
+          userId,
+          messages: [
+            { role: "system", content: "You are a memory consolidation assistant. Output only the summary, no preamble." },
+            { role: "user", content: `Summarize these episodic memories into 3-5 concise bullet points capturing the most important patterns and facts:\n- ${memoryTexts}` }
+          ],
+          enableWebSearch: false,
+          taskType: "summarization" as any,
+        });
+        const summary = llmResult?.choices?.[0]?.message?.content;
+        if (summary && summary.length > 10) {
+          // Delete the old episodic memories and insert the summary
+          const idsToDelete = episodic.slice(5).map((m: any) => m.id); // keep 5 most recent
+          if (idsToDelete.length > 0) {
+            const { inArray } = await import("drizzle-orm");
+            await db.delete(userMemories).where(inArray(userMemories.id, idsToDelete));
+          }
+          await db.insert(userMemories).values({
+            userId,
+            category: "episodic" as const,
+            content: `[AGGREGATED SUMMARY]\n${summary}`,
+            source: "rag_trainer_aggregation",
+            confidence: "0.85",
+          });
+          log.info({ userId, aggregated: idsToDelete.length, kept: 5 }, "Episodic memories aggregated");
+        }
+      } catch (llmErr: any) {
+        log.warn({ userId, error: llmErr.message }, "Episodic aggregation LLM call failed — will retry next cycle");
+      }
     }
   } catch (e: any) {
     log.warn({ userId, error: e.message }, "Episodic aggregation check failed");
