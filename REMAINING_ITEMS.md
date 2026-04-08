@@ -1,9 +1,9 @@
 # Stewardly — Remaining Items & Step-by-Step Completion Guide
 
-**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C/D/E complete + EMBA Learning integration + Passes 45-52 optimization)
+**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C/D/E complete + EMBA Learning integration + Passes 45-53 optimization)
 **Current State:** 351 tables (deployed via 0000-0010 migrations), 258 services, 78 routers (75 files + 3 webhook routers), 116 pages, 129 components, 119 test files (3,220 passing tests, 119/119 files, 100% pass rate), 23 AI models, 17 seed files, 37 cron jobs, 33 navigation items, 0 TS errors, 0 TODOs
 **Wealth Engine + Consensus + Code Chat + Parallel Engines:** 656 tests across 12 files (see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md + docs/ENGINES_MIGRATION.md)
-**Recursive Optimization:** Converged after 52 passes (9.5/10). Pass 51 fixed the last failing test (bugfix-streaming-notification TTS ordering), achieving 100% test pass rate. Pass 52 verified convergence with no actionable issues.
+**Recursive Optimization:** Converged after 53 passes (9.5/10). Pass 51 fixed the last failing test (bugfix-streaming-notification TTS ordering), achieving 100% test pass rate. Pass 52 verified convergence. Pass 53 applied weight_presets migration, executed engine dedup (SCUI ported to shared/calculators), created docs/ENV_SETUP.md.
 
 ## Round D — shipped follow-ups (passes 36-38)
 - ✅ Express SSE endpoint at `POST /api/consensus/stream` (server/_core/index.ts) wrapping `streamConsensus(emit)` with `encodeSseEvent` + 15s heartbeat
@@ -13,11 +13,18 @@
 ## Round E — shipped follow-ups (passes 39-41)
 - ✅ Inline trio in Chat.tsx consensus mode — `wealthEngine.consensusStream` result drives `<StreamingResults />` + `<TimingBreakdown />` + `<ComparisonView />` + key agreements + notable differences panels directly in the chat thread, with graceful fallback to the legacy `advancedIntelligence.consensusQuery` on error
 - ✅ LLM-as-judge semantic agreement (`server/services/semanticAgreement.ts`) with `buildAgreementJudgePrompt`, `parseJudgeScore`, 8s timeout, `gemini-2.5-flash` default judge, fall-through to Jaccard on failure; integrated into `runConsensus` so every run gets both scores (+ 19 new tests)
-- ✅ `drizzle/0009_weight_presets.sql` migration file committed — production `pnpm db:push` picks it up on next deploy; service layer degrades to in-memory seed presets until then
+- ✅ `drizzle/0009_weight_presets.sql` migration **applied to production database** (weight_presets table created with 9 columns)
 - ✅ `docs/ENGINES_MIGRATION.md` — mapped the two parallel WealthBridge stacks (this branch's `server/shared/calculators/` + main's `server/engines/`) side-by-side with a 5-step dedup path for a future focused PR
 
-## Still deferred (future focused PR, not a convergence pass)
-- Full two-stack engine dedup per `docs/ENGINES_MIGRATION.md` (touches ~30 files across 2 live UI surfaces; needs a dedicated PR with a rollback plan)
+## Engine Dedup (Pass 53 — completed)
+- ✅ SCUI module ported from `server/engines/scui.ts` to `server/shared/calculators/scui.ts` (canonical location)
+- ✅ `calculatorEngine.ts` now imports SCUI from `shared/calculators/scui`; UWE/BIE/HE remain via `engines/` adapter layer
+- ✅ `engines/` directory retained as thin stateless adapter layer (different API surface from stateful shared/calculators)
+- ✅ `docs/ENV_SETUP.md` created with detailed setup steps for FRED_API_KEY and CENSUS_API_KEY
+- ✅ 0 TS errors, 3,220/3,220 tests passing after dedup
+
+## Still optional (human-dependent)
+- FRED_API_KEY and CENSUS_API_KEY — see `docs/ENV_SETUP.md` for setup steps (graceful degradation when absent)
 
 ---
 

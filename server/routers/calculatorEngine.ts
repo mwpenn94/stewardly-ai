@@ -3,6 +3,9 @@
  *
  * Exposes UWE, BIE, HE, SCUI as typed RPC endpoints.
  * Each procedure validates input with Zod and returns typed results.
+ *
+ * Imports from the engines/ adapter layer which provides stateless
+ * convenience wrappers around the canonical shared/calculators modules.
  */
 
 import { z } from "zod";
@@ -10,7 +13,7 @@ import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { UWE } from "../engines/uwe";
 import { BIE } from "../engines/bie";
 import { HE } from "../engines/he";
-import { SCUI } from "../engines/scui";
+import { SCUI } from "../shared/calculators/scui";
 import type {
   CompanyKey, RoleKey, SeasonalityKey, FrequencyKey,
   ClientProfile, StrategyConfig, BIEStrategy,
@@ -313,7 +316,7 @@ export const calculatorEngineRouter = router({
       return HE.getChartSeries(strats, input.metric as any, input.maxYear);
     }),
 
-  /** Back-plan holistic: target value → required income */
+  /** Back-plan holistic: target value → required inputs */
   heBackPlan: protectedProcedure
     .input(z.object({
       targetValue: z.number().min(1),

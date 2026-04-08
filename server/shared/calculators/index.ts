@@ -59,6 +59,12 @@ export type {
   IndustryBenchmark,
   GuardrailRule,
   GuardrailCheck,
+  // SCUI
+  StressScenario,
+  BacktestResult,
+  BacktestSummary,
+  MethodologyDisclosure,
+  GuardrailWarning,
 } from "./types";
 
 // UWE
@@ -177,3 +183,14 @@ export {
   INDUSTRY_BENCHMARKS,
   METHODOLOGY_DISCLOSURE,
 } from "./benchmarks";
+
+// SCUI — Stress Testing, Compliance, Historical Data
+export * as SCUIModule from "./scui";
+export {
+  SCUI,
+  SP500_HISTORY,
+  STRESS_SCENARIOS,
+  historicalBacktest,
+  stressTest,
+  checkGuardrails,
+} from "./scui";

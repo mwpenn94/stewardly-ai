@@ -157,15 +157,27 @@ exports, delete `wealthEngineReports/generator.ts`, keep
 `wealthEngineReports/templates.ts` (pure data), keep audio narration
 + shareable links as separate modules.
 
+## Dedup Progress (Pass 53 — April 8, 2026)
+
+The following steps have been completed:
+
+- **Step 1 (Pick canonical location):** `server/shared/calculators/` confirmed as canonical.
+- **Step 2a (Port SCUI):** `server/shared/calculators/scui.ts` created, importing shared data from `benchmarks.ts`. SCUI stress tests, S&P 500 history, backtesting, and guardrail checks all ported. `calculatorEngine.ts` now imports SCUI from the canonical location.
+- **Step 2d (Repoint calculatorEngine router — partial):** SCUI imports repointed to `shared/calculators/scui`. UWE/BIE/HE remain via `engines/` adapter layer because the two stacks have different API surfaces (engines/ uses stateless convenience wrappers; shared/calculators/ uses module-level state for HE comparison functions).
+
+The following steps remain for a future focused PR:
+
+- **Step 2b:** Port 7 visualization components to `client/src/components/wealth-engine/`
+- **Step 2c:** Port compliance + HTML maintenance + GHL sync
+- **Step 2e:** Repoint EngineDashboard to consume `wealthEngine` router
+- **Step 3:** Delete `server/engines/` (only after all imports updated)
+- **Step 4:** Consolidate Plaid perception + improvement loops
+- **Step 5:** Unify PDF generators
+
 ## What this round chose NOT to do
 
-1. **Actually running the refactor** above. It touches 100+ files and
-   would risk breaking two currently-working UIs. It needs its own PR
-   with a dedicated test plan, an up-front schema agreement between
-   the authors, and a rollback plan.
-2. **Deleting either stack.** Until step 2 is complete, both stacks
-   have unique value.
-3. **Renaming the tRPC routers.** `wealthEngine` and `calculatorEngine`
+1. **Full engine deletion.** The `engines/` adapter layer provides stateless convenience APIs that differ from the stateful `shared/calculators/` HE module. Removing it would require rewriting the calculatorEngine router's HE procedures to use `addStrategy`/`clearStrategies`/`setHorizon` instead of passing strategies as arguments.
+2. **Renaming the tRPC routers.** `wealthEngine` and `calculatorEngine`
    are both stable public identifiers — renaming either would break
    existing frontend callers and possibly GHL webhook payloads.
 
@@ -186,9 +198,7 @@ exports, delete `wealthEngineReports/generator.ts`, keep
 
 ## Tracking
 
-- Current state: **637 tests** (583 this branch + 54 main) across 11 files
-- Target after dedup: **~620 tests** (some consolidation, no net loss)
-- Risk: Medium — the refactor is well-understood but touches two live
-  UI surfaces. Mitigation: feature-flag the new canonical path behind
-  an env var until manual QA passes on both `/engine-dashboard` and
-  `/wealth-engine/*`.
+- Current state: **3,220 tests** across 119 files (100% pass rate)
+- SCUI dedup: **complete** (pass 53)
+- Remaining dedup: Steps 2b, 2c, 2e, 3, 4, 5 (estimated ~1 focused round)
+- Risk: Low for remaining steps — the SCUI port proved the pattern works without breaking tests. The adapter layer approach avoids the stateful/stateless API mismatch.

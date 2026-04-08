@@ -559,3 +559,47 @@ export interface GuardrailCheck {
   type: "error" | "warn";
   msg: string;
 }
+
+
+// ─── SCUI types (stress testing, backtesting, methodology) ───
+
+export interface StressScenario {
+  name: string;
+  years: number[];
+  returns: number[];
+  description: string;
+}
+
+export interface BacktestResult {
+  startYear: number;
+  finalBalance: number;
+  minBalance: number;
+  path: number[];
+}
+
+export interface BacktestSummary {
+  survivalRate: number;
+  survived: number;
+  total: number;
+  worst: { year: number; final: number; min: number };
+  best: { year: number; final: number };
+  medianFinal: number;
+  allPaths: BacktestResult[];
+}
+
+export interface MethodologyDisclosure {
+  uwe: string;
+  bie: string;
+  he: string;
+  mc: string;
+  pf: string;
+  disclaimer: string;
+}
+
+export interface GuardrailWarning {
+  field: string;
+  value: number;
+  threshold: number;
+  message: string;
+  severity: "info" | "warning" | "error";
+}

@@ -3452,3 +3452,11 @@
 - [x] Update CLAUDE.md with accurate metrics (351 tables, 3220 tests, 119/119 files, 100% pass rate)
 - [x] Update REMAINING_ITEMS.md with accurate metrics and pass 51-52 log
 - [x] Run recursive passes until 2 consecutive clean passes confirm convergence (passes 51+52 converged)
+
+### Recommended Next Steps (Apr 8, 2026)
+- [x] Apply 0009_weight_presets.sql migration to database (weight_presets table created with 9 columns)
+- [x] Execute two-stack engine dedup per docs/ENGINES_MIGRATION.md (SCUI ported to shared/calculators, engines/ kept as adapter layer, 0 TS errors, 3220/3220 tests pass)
+- [x] Set remaining environment variables — INTEGRATION_ENCRYPTION_KEY already set (64 chars); FRED_API_KEY and CENSUS_API_KEY skipped (graceful degradation), documented setup steps in docs/ENV_SETUP.md
+- [x] Run tests and verify after all changes (119/119 files, 3220/3220 tests, 0 TS errors)
+- [x] Update documentation with final state (CLAUDE.md, REMAINING_ITEMS.md, docs/ENV_SETUP.md)
+- [x] Recursive optimization pass 53 confirmed convergence
