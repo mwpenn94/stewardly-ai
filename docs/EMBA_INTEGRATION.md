@@ -38,12 +38,13 @@ server/services/learning/
 ├── mastery.ts              Task 5C        # SRS + scheduleNextReview (+ tests)
 ├── licenses.ts             Task 1/5A      # licensure + CE + alert derivation (+ tests)
 ├── content.ts              Task 7A/7F     # content CRUD + search + audit
-├── seed.ts                 Task 7E        # idempotent content seed
+├── seed.ts                 Task 7E        # idempotent skeleton seed (disciplines + tracks)
+├── embaImport.ts           Task 8 pass 54 # pulls full content from github.com/mwpenn94/emba_modules (+ tests)
 ├── freshness.ts            Task 3A-C      # regulatory pipeline (+ tests)
 ├── recommendations.ts      Task 5B/5C     # fused study recommendations (+ tests)
 ├── agentTools.ts           Task 2B/5D/7D  # ReAct tool registration
-└── bootstrap.ts                           # server startup hook
-server/routers/learning.ts   Task 2A/7C    # tRPC router (mastery, licenses, content, freshness, recs, seed)
+└── bootstrap.ts                           # server startup hook (seed + optional github import + tools)
+server/routers/learning.ts   Task 2A/7C/8  # tRPC router (mastery, licenses, content, freshness, recs, seed, importFromGitHub)
 client/src/pages/learning/
 ├── LearningHome.tsx        Task 4B/6D     # unified dashboard (role-aware)
 ├── LicenseTracker.tsx      Task 6D        # license grid + alerts + CE progress
@@ -82,8 +83,9 @@ client/src/App.tsx                          # 7 new routes under /learning/*
 | 7B | Permission model | `services/learning/permissions.ts` — canEditContent / canPublish / canSeedContent / canSeeContent |
 | 7C | Content CRUD procedures | `learning.content.*` subrouter (list/get/create/update/archive/history) |
 | 7D | AI authoring tools | `draft_definition`, `generate_flashcards`, `generate_practice_questions`, `suggest_content_improvements` |
-| 7E | Initial seed | `services/learning/seed.ts` + `learning.seed` admin mutation |
+| 7E | Initial skeleton seed | `services/learning/seed.ts` + `learning.seed` admin mutation — inserts 8 disciplines + 12 tracks (no definitions/chapters/questions; see Task 8) |
 | 7F | DB-backed content service | `services/learning/content.ts` — search + history + explain |
+| 8 (pass 54) | EMBA content import | `services/learning/embaImport.ts` — fetches `emba_data.json` + `tracks_data.json` from the public `mwpenn94/emba_modules` repo and hydrates definitions (366+), chapters, subsections, practice questions, and flashcards. Exposed as `learning.importFromGitHub` admin mutation + an "Import from GitHub" button in Content Studio. Optional `EMBA_IMPORT_ON_BOOT=true` pulls content on every server boot. Idempotent via slug/term/title dedup. 5 unit tests in `embaImport.test.ts`. |
 
 ## Database schema — new tables
 

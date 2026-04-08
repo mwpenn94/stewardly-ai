@@ -122,3 +122,28 @@ DAILY_API_KEY=
 
 # [OPTIONAL] Deepgram API key for speech-to-text transcription
 DEEPGRAM_API_KEY=
+
+# ─── GitHub Self-Update (admin Code Chat integration) ───────────────────────
+
+# [OPTIONAL] GitHub Personal Access Token for the admin Code Chat UI.
+# Classic PAT needs `repo` scope; fine-grained needs Contents + Pull requests.
+# When set, Code Chat > GitHub tab shows integration status and open PRs.
+# See docs/ENV_SETUP.md for the full setup walkthrough.
+GITHUB_TOKEN=
+
+# [OPTIONAL] owner/repo string for Code Chat self-update target.
+# Defaults to mwpenn94/stewardly-ai if unset.
+GITHUB_REPO=mwpenn94/stewardly-ai
+
+# ─── EMBA Learning Content Import (optional) ────────────────────────────────
+
+# [OPTIONAL] Set to "true" to import the full EMBA content payload
+# (definitions + chapters + questions + flashcards) from the public
+# mwpenn94/emba_modules repo on every server boot. Idempotent. When
+# unset, admins can trigger the same import from /learning/studio.
+EMBA_IMPORT_ON_BOOT=
+
+# [OPTIONAL] Overrides for the emba_modules raw JSON URLs. Only needed
+# if you fork the content repo or point at a specific branch.
+EMBA_DATA_URL=
+EMBA_TRACKS_URL=

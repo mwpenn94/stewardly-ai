@@ -1,7 +1,7 @@
 {
   "project": "stewardly",
   "created": "2026-04-04T19:48:10.140Z",
-  "last_updated": "2026-04-08T21:04:57.021Z",
+  "last_updated": "2026-04-08T20:25:47.330Z",
   "automation_tier": "manual",
   "safety_sensitive": true,
   "improvements": [
@@ -1113,23 +1113,6 @@
       },
       "novelty_count": 5,
       "timestamp": "2026-04-08T20:25:47.330Z"
-    },
-    {
-      "pass": "pass-54",
-      "type": "technical",
-      "mode": "divergent",
-      "score": 9.6,
-      "delta": -0.1,
-      "dimensions": {
-        "completeness": 9.6,
-        "accuracy": 9.6,
-        "depth": 9.6,
-        "novelty": 9.6,
-        "actionability": 9.6,
-        "regression_safety": 9.6
-      },
-      "novelty_count": null,
-      "timestamp": "2026-04-08T21:04:57.021Z"
     }
   ],
   "branches": [],

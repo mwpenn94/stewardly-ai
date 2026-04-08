@@ -25,7 +25,8 @@ import {
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
   Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
-  LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2, HeartPulse, GitBranch
+  LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2, HeartPulse, GitBranch,
+  Terminal
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
@@ -308,6 +309,8 @@ const NAV_ICON_MAP: Record<string, React.ReactNode> = {
   HelpCircle: <HelpCircle className="w-3.5 h-3.5" />,
   Settings: <Settings className="w-3.5 h-3.5" />,
   Fingerprint: <Fingerprint className="w-3.5 h-3.5" />,
+  Bot: <Bot className="w-3.5 h-3.5" />,
+  Terminal: <Terminal className="w-3.5 h-3.5" />,
 };
 function getNavIcon(name: string): React.ReactNode {
   return NAV_ICON_MAP[name] ?? <Zap className="w-3.5 h-3.5" />;

@@ -43,6 +43,14 @@ import {
   estimateCost,
   guessTaskType,
 } from "../services/synthesizer/costEstimator";
+import {
+  loadGitHubCredentialsFromEnv,
+  getDefaultRepo,
+  getRepoInfo,
+  listOpenPullRequests,
+  GitHubError,
+} from "../services/codeChat/githubClient";
+import { logger } from "../_core/logger";
 
 // In-memory roadmap singleton for the running process. The full
 // implementation will persist this in modelRuns (slug=roadmap), but
@@ -254,4 +262,66 @@ export const codeChatRouter = router({
   classifyLatency: protectedProcedure
     .input(z.object({ ms: z.number() }))
     .query(({ input }) => ({ rating: classifyLatency(input.ms) })),
+
+  // ─── GitHub self-update surface ────────────────────────────────
+  // Exposes the read-side of server/services/codeChat/githubClient.ts
+  // to the admin Code Chat UI. Credentials are loaded from the
+  // GITHUB_TOKEN env var (PAT fallback); OAuth-per-user can still be
+  // layered on via integration_connections without touching this
+  // router. See docs/ENV_SETUP.md for token setup.
+
+  /** Is the GitHub integration reachable right now? Returns config state without leaking the token. */
+  githubStatus: adminProcedure.query(async () => {
+    const creds = loadGitHubCredentialsFromEnv();
+    const { owner, repo } = getDefaultRepo();
+    if (!creds) {
+      return {
+        configured: false as const,
+        source: null,
+        owner,
+        repo,
+        error: "GITHUB_TOKEN env var not set — see docs/ENV_SETUP.md",
+      };
+    }
+    try {
+      const info = await getRepoInfo(creds, owner, repo);
+      return {
+        configured: true as const,
+        source: "env" as const,
+        owner,
+        repo,
+        defaultBranch: info.defaultBranch,
+        description: info.description,
+        isPrivate: info.isPrivate,
+      };
+    } catch (err) {
+      const status = err instanceof GitHubError ? err.status : 0;
+      logger.warn({ owner, repo, err, status }, "github status probe failed");
+      return {
+        configured: false as const,
+        source: "env" as const,
+        owner,
+        repo,
+        error: `GitHub API returned ${status || "network error"}. Check token scope (needs repo).`,
+      };
+    }
+  }),
+
+  /** List open PRs on the configured repo. Admin only. */
+  githubListOpenPRs: adminProcedure.query(async () => {
+    const creds = loadGitHubCredentialsFromEnv();
+    if (!creds) return { prs: [], error: "GITHUB_TOKEN not configured" };
+    const { owner, repo } = getDefaultRepo();
+    try {
+      const prs = await listOpenPullRequests(creds, owner, repo);
+      return { prs, error: null };
+    } catch (err) {
+      const status = err instanceof GitHubError ? err.status : 0;
+      logger.warn({ owner, repo, err, status }, "github listOpenPullRequests failed");
+      return {
+        prs: [],
+        error: `GitHub API returned ${status || "network error"}`,
+      };
+    }
+  }),
 });
