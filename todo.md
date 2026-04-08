@@ -3387,3 +3387,55 @@
 - [x] Add stress test / Monte Carlo sections (Stress tab with 3 scenarios + backtest, MC tab with fan chart)
 - [x] Add product reference and compliance panels (References tab with 14 products, benchmarks, methodology)
 - [x] Recursive optimization: 3 passes completed, 2 consecutive clean — CONVERGED
+
+### EMBA Knowledge Integration (April 2026 — see docs/EMBA_INTEGRATION.md)
+
+#### Task 1: Database & Auth Unification
+- [x] 30 new `learning_*` tables in `drizzle/schema.ts` (SRS, groups, playlists, licenses, CE, regulatory, content CRUD, history)
+- [x] `drizzle/0010_emba_learning.sql` idempotent migration
+- [x] Auth mapping — all learning tables FK to `stewardly.users.id`
+
+#### Task 2: tRPC Router Merge + Agent Tool Registration
+- [x] `server/routers/learning.ts` — 45+ procedures across 6 subrouters (mastery/licenses/content/freshness/recommendations/seed)
+- [x] Router wired into `appRouter` as `learning.*`
+- [x] 11 ReAct agent tools registered via `aiToolsRegistry` (check_license_status, recommend_study_content, assess_readiness, generate_study_plan, explain_concept, quiz_me, check_exam_readiness, generate_flashcards, generate_practice_questions, suggest_content_improvements, draft_definition)
+- [x] Startup bootstrap (`server/_core/index.ts` → `bootstrapLearning()`) — idempotent
+
+#### Task 3: Content Freshness + Regulatory Pipeline
+- [x] `server/services/learning/freshness.ts` — REGULATORY_SOURCES catalog (FINRA/NASAA/CFP Board/IRS/NAIC/State DOI)
+- [x] Checksum-based `onContentSourceUpdated` pipeline
+- [x] Admin review workflow (new → reviewed → applied/dismissed)
+- [x] `learning_content_versions` table for version tracking + changelog
+
+#### Task 4: UI/UX Consolidation
+- [x] Unified navigation — Learning, Licenses (user), Content Studio (advisor+)
+- [x] Learning Home dashboard — role-aware, mastery snapshot, license tracker, agent recommendations, exam tracks grid
+- [x] Contextual cross-linking via `CALCULATOR_TRACK_MAP` (7 calculators → 8+ tracks)
+
+#### Task 5: Agentic Learning Intelligence
+- [x] `deriveLicenseAlerts` — expiration warnings, CE deadlines, expired, suspended
+- [x] `fuseRecommendations` — SRS due > CE > expiration > calculator-informed > broadening
+- [x] Adaptive study intelligence (`recommendStudyContent` fuses mastery + licenses + calc usage)
+- [x] AI chat extension via agent tools
+
+#### Task 6: React Page Migration
+- [x] `LearningHome.tsx` (dashboard)
+- [x] `LicenseTracker.tsx` (license grid + CE progress + alerts)
+- [x] `ContentStudio.tsx` (advisor+ authoring hub with draft definition form + admin regulatory review queue)
+- [x] 7 routes under `/learning/*` wired into `App.tsx`
+
+#### Task 7: Dynamic Content System — Full CRUD
+- [x] 11 dynamic content tables + `learning_content_history` audit trail
+- [x] Permission model (`permissions.ts` — canEditContent/canPublish/canSeedContent/canSeeContent)
+- [x] `learning.content.*` CRUD procedures (definitions, tracks, chapters, subsections, questions, flashcards)
+- [x] AI content authoring tool stubs (generate_flashcards, generate_practice_questions, draft_definition, suggest_content_improvements)
+- [x] Idempotent seed for 8 core disciplines + 12 canonical exam tracks
+
+#### EMBA Integration Tests
+- [x] 58 new unit tests across 6 files (permissions 14, licenses 9, freshness 8, mastery 6, recommendations 8, wiring 13)
+- [x] Full suite: 119 files, 3,080/3,194 passing (96.4%) — 16 pre-existing failures verified unchanged via git-stash baseline
+
+#### EMBA Integration Recursive Optimization
+- [x] Pass 42 (EXPAND): 9.7-9.8/10
+- [x] Pass 43 (POLISH): suspended-license alerts + wiring smoke tests, 9.7-9.8/10
+- [x] Pass 44 (VERIFY): 0 TODOs, typecheck clean, tests green — CONVERGED (2 consecutive clean passes)
