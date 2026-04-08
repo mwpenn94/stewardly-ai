@@ -1,0 +1,19 @@
+Engine Dashboard Investigation - April 7, 2026
+
+VISUAL FINDINGS:
+1. Page loads but shows "Click Run All Engines to generate projections" - empty state
+2. Client Profile sliders work (Age 35, Income $150K, etc.)
+3. Two strategies shown: WealthBridge (EXP) and Do Nothing (NEW) 
+4. Both have Business Income checked
+5. Tabs: Holistic, Income, Monte Carlo, Stress, Back-Plan, References
+6. No data displayed in any tab yet - user must click "Run All Engines"
+7. Sidebar does NOT show Engine Dashboard in navigation
+
+ROOT CAUSES TO INVESTIGATE:
+1. Company key mismatch: Router has nwm/massmutual but engine has captivemutual/wirehouse
+2. Does "Run All Engines" actually work? Need to test it
+3. No quick-load presets - user has to manually configure everything
+4. Missing BIE dedicated section with full income breakdown
+5. No reference data from v7 (rates, products, companies)
+6. UI/UX issues: sliders too small, strategy cards cramped, no mobile optimization
+7. Engine Dashboard not in sidebar nav (user can't find it)

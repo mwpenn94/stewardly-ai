@@ -57,6 +57,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "RefreshCw", label: "Passive Actions", href: "/passive-actions", minRole: "user" },
   { iconName: "Activity", label: "My Progress", href: "/proficiency", minRole: "user" },
   { iconName: "Shield", label: "Protection Score", href: "/protection-score", minRole: "user" },
+  { iconName: "Calculator", label: "Engine Dashboard", href: "/engine-dashboard", minRole: "user" },
   { iconName: "Users2", label: "Community", href: "/community", minRole: "advisor" },
   { iconName: "LayoutDashboard", label: "Client Dashboard", href: "/client-dashboard", minRole: "user" },
 ];
