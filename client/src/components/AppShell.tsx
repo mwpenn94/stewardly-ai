@@ -28,6 +28,7 @@ import {
   Link2, HeartPulse, RefreshCw, Activity, Briefcase, Building2,
   BarChart3, Globe, Wrench, HelpCircle, Settings, LogIn, LogOut,
   Menu, X, ChevronDown, Keyboard, BookOpen,
+  GraduationCap, Sparkles, Shield,
 } from "lucide-react";
 
 // ─── Icon lookup ─────────────────────────────────────────────────────────────
@@ -51,6 +52,9 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   BookOpen: <BookOpen className="w-4 h-4" />,
   HelpCircle: <HelpCircle className="w-4 h-4" />,
   Settings: <Settings className="w-4 h-4" />,
+  GraduationCap: <GraduationCap className="w-4 h-4" />,
+  Sparkles: <Sparkles className="w-4 h-4" />,
+  Shield: <Shield className="w-4 h-4" />,
 };
 
 function getIcon(name: string): React.ReactNode {

@@ -14,6 +14,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { initWebSocket } from "../services/websocketNotifications";
 import { initScheduler } from "../services/scheduler";
+import { bootstrapLearning } from "../services/learning/bootstrap";
 import { validateRequiredEnvVars } from "./envValidation";
 import { validateDatabaseSchema } from "./schemaValidation";
 import { logger } from "./logger";
@@ -371,6 +372,10 @@ async function startServer() {
     logger.info({ operation: "startServer", port }, `Server running on http://localhost:${port}/`);
     // Initialize background scheduler for health checks and data pipelines
     initScheduler();
+    // Bootstrap EMBA Learning: seed catalog + register ReAct agent tools (idempotent, non-blocking)
+    bootstrapLearning().catch((err) =>
+      logger.warn({ operation: "bootstrapLearning", err: String(err) }, "bootstrapLearning failed"),
+    );
   });
 
   // ── Graceful shutdown ─────────────────────────────────────────────

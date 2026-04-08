@@ -71,6 +71,7 @@ import { communityRouter as communityForumRouter } from "./routers/community";
 import AdmZip from "adm-zip";
 import { exportsRouter } from "./routers/exports";
 import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
+import { learningRouter } from "./routers/learning";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -2094,6 +2095,7 @@ export const appRouter = router({
   wealthEngine: wealthEngineRouter,
   codeChat: codeChatRouter,
   calculatorEngine: calculatorEngineRouter,
+  learning: learningRouter,
 });
 
 export type AppRouter = typeof appRouter;

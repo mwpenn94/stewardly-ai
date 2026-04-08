@@ -120,6 +120,10 @@ const AdminLeadSources = lazy(() => import("./pages/AdminLeadSources"));
 const AdminRateManagement = lazy(() => import("./pages/AdminRateManagement"));
 const AdminPlatformReports = lazy(() => import("./pages/AdminPlatformReports"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
+// EMBA Learning integration (April 2026)
+const LearningHome = lazy(() => import("./pages/learning/LearningHome"));
+const LicenseTracker = lazy(() => import("./pages/learning/LicenseTracker"));
+const ContentStudio = lazy(() => import("./pages/learning/ContentStudio"));
 
 function Router() {
   return (
@@ -205,6 +209,15 @@ function Router() {
         <Route path="/admin/rate-management" component={AdminRateManagement} />
         <Route path="/admin/platform-reports" component={AdminPlatformReports} />
         <Route path="/client-dashboard" component={ClientDashboard} />
+
+        {/* EMBA Learning & Licensing (April 2026) */}
+        <Route path="/learning" component={LearningHome} />
+        <Route path="/learning/licenses" component={LicenseTracker} />
+        <Route path="/learning/studio" component={ContentStudio} />
+        <Route path="/learning/studio/:tab" component={ContentStudio} />
+        <Route path="/learning/tracks/:slug" component={LearningHome} />
+        <Route path="/learning/study" component={LearningHome} />
+        <Route path="/learning/quiz" component={LearningHome} />
 
         {/* Consolidated Hub Pages */}
         <Route path={"/operations"} component={OperationsHub} />
