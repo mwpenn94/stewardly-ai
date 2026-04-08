@@ -190,6 +190,20 @@ download trigger. Use it on any wealth-engine page that has data ready:
 />
 ```
 
+Currently mounted on:
+
+- `client/src/pages/wealth-engine/StrategyComparison.tsx` — comparison-first `complete_plan`
+- `client/src/pages/wealth-engine/Retirement.tsx` — retirement lens
+- `client/src/pages/EngineDashboard.tsx` (pass 49) — cross-stack wire from main's
+  `calculatorEngine`-driven dashboard into this branch's 4-template PDF stack.
+  The button sits next to "Run All Engines" in the header and is hidden
+  until the first engine run populates `heResults`. Payload derivation
+  lives in the page's `reportPayload` `useMemo` — it consumes the first
+  strategy's HE snapshots as `projection`, the final-year Monte Carlo
+  percentiles as `monteCarloFinal`, and the page's derived
+  `comparisonData` as `comparison` + `winners`. `HolisticSnapshot` is
+  field-compatible across both engine stacks, so no shim was required.
+
 ---
 
 ## 6. Audio narration

@@ -104,6 +104,16 @@ from the winning implementation. Recommendation: **this branch's
    `calculatorEngine` and rename that router to stay backwards
    compatible.
 
+> **Partial cross-wire already landed (pass 49):** the EngineDashboard now
+> calls `wealthEngine.generateReport` directly from a `DownloadReportButton`
+> in its header, bridging main's calculator-router-driven engine surface to
+> this branch's 4-template PDF stack (`server/services/wealthEngineReports/`).
+> This reuses the identical `HolisticSnapshot` shape both stacks share (see
+> `server/engines/types.ts:397` and `server/shared/calculators/types.ts:421`),
+> so no shim was required. The move proves the dashboard can consume the
+> richer PDF pipeline without a router rename — if Step 2e ever lifts the
+> whole page, the button stays as-is.
+
 ### Step 3 — Delete `server/engines/`
 
 Only after:

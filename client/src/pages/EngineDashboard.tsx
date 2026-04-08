@@ -28,6 +28,7 @@ import StressTestPanel from "@/components/StressTestPanel";
 import MonteCarloFan from "@/components/MonteCarloFan";
 import BackPlanFunnel from "@/components/BackPlanFunnel";
 import ProductReferencePanel from "@/components/ProductReferencePanel";
+import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
 
 // ─── CONSTANTS ─────────────────────────────────────────────────────
 const COMPANY_OPTIONS = [
@@ -357,6 +358,48 @@ export default function EngineDashboard() {
     return { comparison, winners };
   }, [heResults]);
 
+  // ─── REPORT PAYLOAD (for Download Report PDF) ────────────────
+  // Builds the `complete_plan` payload consumed by
+  // wealthEngine.generateReport → generateWealthEngineReport →
+  // buildCompletePlan in server/services/wealthEngineReports.
+  // Enabled only after engines have produced heResults.
+  const reportPayload = useMemo(() => {
+    if (heResults.length === 0) return null;
+    const primary = heResults[0];
+    const projection = primary.snapshots;
+    if (!projection || projection.length === 0) return null;
+
+    // Final-year Monte Carlo percentiles (if mcResults is present).
+    // mcResults entries are MonteCarloPercentile objects (year-by-year).
+    const mcFinal =
+      mcResults && mcResults.length > 0
+        ? mcResults[mcResults.length - 1]
+        : null;
+
+    // Reuse the derived comparison rows. Template only reads a subset
+    // of ComparisonRow, so the partial shape is safe behind the `never`
+    // cast on the tRPC boundary.
+    return {
+      kind: "complete_plan" as const,
+      input: {
+        clientName: user?.name || "WealthBridge Client",
+        horizon: years,
+        projection,
+        monteCarloFinal: mcFinal
+          ? {
+              p10: mcFinal.p10,
+              p25: mcFinal.p25,
+              p50: mcFinal.p50,
+              p75: mcFinal.p75,
+              p90: mcFinal.p90,
+            }
+          : undefined,
+        comparison: comparisonData.comparison,
+        winners: comparisonData.winners,
+      },
+    };
+  }, [heResults, mcResults, comparisonData, years, user]);
+
   // ─── STRATEGY MANAGEMENT ──────────────────────────────────────
   const addStrategy = () => {
     if (strategies.length >= 6) { toast.error("Maximum 6 strategies"); return; }
@@ -406,14 +449,26 @@ export default function EngineDashboard() {
               v7 Holistic Financial Twin — UWE + BIE + HE + SCUI
             </p>
           </div>
-          <Button
-            onClick={runSimulations}
-            disabled={isRunning}
-            className="bg-[#C9A84C] hover:bg-[#B8973B] text-black font-semibold"
-          >
-            {isRunning ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-            {isRunning ? "Running Engines..." : "Run All Engines"}
-          </Button>
+          <div className="flex items-center gap-2">
+            {reportPayload && (
+              <DownloadReportButton
+                template="complete_plan"
+                clientName={user?.name || "WealthBridge Client"}
+                advisorName={user?.name || undefined}
+                payload={reportPayload}
+                disabled={isRunning}
+                label="Download Report"
+              />
+            )}
+            <Button
+              onClick={runSimulations}
+              disabled={isRunning}
+              className="bg-[#C9A84C] hover:bg-[#B8973B] text-black font-semibold"
+            >
+              {isRunning ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+              {isRunning ? "Running Engines..." : "Run All Engines"}
+            </Button>
+          </div>
         </div>
 
         {/* Quick-Load Presets */}

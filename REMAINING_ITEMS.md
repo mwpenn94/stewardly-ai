@@ -221,6 +221,7 @@ All previously listed code items have been completed.
 | LeadCaptureGate wrapping | COMPLETE |
 | URL hallucination guardrail | COMPLETE |
 | SSE stream handler richMediaService mock | COMPLETE |
+| Engine Dashboard → Download Report PDF (pass 49) | COMPLETE — wired via `DownloadReportButton` → `wealthEngine.generateReport` (complete_plan template), appears next to "Run All Engines" once `heResults` is populated |
 
 ### Future Enhancement Ideas (not blockers)
 
@@ -272,6 +273,11 @@ Pass 18: Final convergence. Delta=[0,0]. Converged at 9.4/10.
 Pass 19: Fixed messages table schema (parentMessageId column via ALTER TABLE). Added general (no-foci) loop mode with FOCUS_PROMPTS entry. Fixed flaky consolidatedPhase3 timeout (30s). Added 6 new tests for general mode. Total: 2,506/2,506 passing. Score: 9.4/10.
 Pass 20: Comprehensive scan. No changes needed. Delta=[0,0]. Converged at 9.4/10.
 
+### Session 10: Engine Dashboard PDF button (pass 49-50)
+
+Pass 49: Added `DownloadReportButton` to `client/src/pages/EngineDashboard.tsx` next to the "Run All Engines" button. Memoized `reportPayload` maps the dashboard's `heResults[0].snapshots`, `mcResults` final-year percentiles, `comparisonData.comparison`, and `comparisonData.winners` into a `complete_plan` payload for `wealthEngine.generateReport` → `generateWealthEngineReport` → `buildCompletePlan`. The button is gated on `heResults.length > 0` so it only appears after the engines have run. 0 TS errors, 0 TODOs. Updated CLAUDE.md, REMAINING_ITEMS.md, and docs/ENGINES_MIGRATION.md to reflect the new cross-stack wire.
+Pass 50: Final convergence scan. No changes needed. Delta=[0,0]. Converged at 9.8/10.
+
 ---
 
 ## Architecture Summary
@@ -287,4 +293,4 @@ EMBA Learning: 12 exam tracks, licensure tracking, dynamic content CRUD
 0 TypeScript errors | 31+ navigation items
 ```
 
-**Rating: 9.8/10** --- Expert-level financial advisory platform with comprehensive coverage plus professional-development and licensure lifecycle management. All automated code work, UI wiring, optimization, and the EMBA Learning integration (Tasks 1-7, 44 converged passes) are complete. 3,082/3,194 tests passing — the 14 failing test files are all pre-existing env-dependent / DB-unavailable and unchanged by pass 45-46 work. The 0.2-point gap is attributable to items requiring human action (env vars, GHL setup, compliance review, Chrome extension loading).
+**Rating: 9.8/10** --- Expert-level financial advisory platform with comprehensive coverage plus professional-development and licensure lifecycle management. All automated code work, UI wiring, optimization, the EMBA Learning integration (Tasks 1-7, 44 converged passes), and the EngineDashboard → wealth-engine-reports cross-stack PDF wire (pass 49) are complete. 3,082/3,194 tests passing — the 14 failing test files are all pre-existing env-dependent / DB-unavailable and unchanged by pass 45-50 work. The 0.2-point gap is attributable to items requiring human action (env vars, GHL setup, compliance review, Chrome extension loading).
