@@ -3388,6 +3388,7 @@
 - [x] Add product reference and compliance panels (References tab with 14 products, benchmarks, methodology)
 - [x] Recursive optimization: 3 passes completed, 2 consecutive clean — CONVERGED
 
+<<<<<<< Updated upstream
 ### EMBA Knowledge Integration (April 2026 — see docs/EMBA_INTEGRATION.md)
 
 #### Task 1: Database & Auth Unification
@@ -3439,3 +3440,9 @@
 - [x] Pass 42 (EXPAND): 9.7-9.8/10
 - [x] Pass 43 (POLISH): suspended-license alerts + wiring smoke tests, 9.7-9.8/10
 - [x] Pass 44 (VERIFY): 0 TODOs, typecheck clean, tests green — CONVERGED (2 consecutive clean passes)
+=======
+### Vite HMR Errors (User Report - Apr 8)
+- [x] Fix index.css failed to reload error (transient: server shutdown during HMR, resolved after restart)
+- [x] Fix Chat.tsx failed to reload error (transient: server shutdown during HMR, resolved after restart)
+- [x] Fix App.tsx failed to reload error (transient: server shutdown during HMR, resolved after restart)
+>>>>>>> Stashed changes
