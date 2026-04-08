@@ -6,7 +6,7 @@
  * as a structured report suitable for client delivery.
  */
 import { logger } from "../_core/logger";
-import { invokeLLM } from "../_core/llm";
+import { contextualLLM } from "../shared/stewardlyWiring";
 import { storagePut } from "../storage";
 
 const log = logger.child({ module: "pdf-report" });
@@ -96,10 +96,14 @@ export async function generateReport(input: ReportInput): Promise<ReportOutput> 
     `| ${s.name} | ${fmt(s.totalValue)} | ${fmt(s.netValue)} | ${pct(s.roi)} | ${fmt(s.liquidWealth)} | ${fmt(s.protection)} | ${fmt(s.taxSavings)} |`
   ).join("\n");
 
-  // Generate narrative summary via LLM
+  // Generate narrative summary via LLM (routed through contextualLLM so it
+  // honors the 5-layer config, guardrails, routing, and usage tracking).
   let narrative = "";
   try {
-    const llmResponse = await invokeLLM({
+    const llmResponse = await contextualLLM({
+      contextType: "analysis",
+      taskType: "chat",
+      enableWebSearch: false,
       messages: [
         {
           role: "system",

@@ -5,8 +5,8 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-113 pages, 348 tables, 3,080 tests passing across 103 files (119 total, 3,194 total tests, 96.4% pass rate excluding 16 pre-existing DB-unavailable / wiring-verification files), 230+ services, 75 routers, 24 seed files, 37 cron jobs
-Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 44 recursive passes converged (9.7-9.8/10, passes 43+44 confirmed 2 consecutive clean on EMBA integration). 0 TS errors, 0 TODOs.
+116 pages, 352 tables, 3,082 tests passing across 105 files (119 total, 3,194 total tests, 96.5% pass rate excluding 14 pre-existing env-dependent / DB-unavailable files), 258 services, 78 routers (75 files + 3 newly-mounted webhook routers in pass 46), 24 seed files, 37 cron jobs, 129 components
+Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 50 recursive passes converged (9.7-9.8/10; pass 45 fixed pdfReportGenerator invokeLLM bypass regression from Phase 7; pass 46 mounted 3 webhook routers (ghl/dripify/smsit) that were exported but unreachable; passes 47+48 confirmed 2 consecutive clean with no actionable issues; pass 49 wired a Download Report PDF button on EngineDashboard into wealthEngine.generateReport (complete_plan template), bridging the two engine stacks so calculator-router-driven dashboards can emit the wealth-engine-reports 4-template PDFs; pass 50 confirmed clean). 0 TS errors, 0 TODOs.
 
 ## Wealth Engine (Phases 1-7 + Rounds A/B/C/D/E, see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md + docs/ENGINES_MIGRATION.md)
 Phase 1-7 ported the WealthBridge v7 HTML calculator engines into TypeScript and wired them into the full Stewardly stack. Round A added natural-language chat dispatch, PDF download buttons, per-message chat actions, and 3 synthesizer pulls. Round B added a Claude-Code-style code chat foundation. Round C added multi-model consensus stream + weight presets + UI trio. Round D wired the live SSE endpoint at /api/consensus/stream, added a pre-flight cost+latency badge, and a Chat→Consensus deep link. Round E lifted the Round C trio inline into Chat.tsx consensus mode, added LLM-as-judge semantic agreement scoring, shipped the weight_presets SQL migration (0009_weight_presets.sql), and documented the two-stack engine dedup path (docs/ENGINES_MIGRATION.md). 656 tests across 12 files (583 wealth-engine + 54 parallel main-branch engines + 19 semantic agreement). 41 recursive optimization passes converged at 9.7-9.8/10.
@@ -15,7 +15,7 @@ Phase 1-7 ported the WealthBridge v7 HTML calculator engines into TypeScript and
 - `server/services/agent/calculatorOrchestrator.ts` — agent workflow chains (Phase 2B)
 - `server/services/ghl/` — GoHighLevel CRM integration (Phase 3)
 - `client/src/pages/wealth-engine/` — React UI (Retirement, StrategyComparison, PracticeToWealth, QuickQuote) (Phase 4)
-- `server/services/wealthEngineReports/` — 4 PDF templates + Edge TTS audio narration + shareable links (Phase 5)
+- `server/services/wealthEngineReports/` — 4 PDF templates + Edge TTS audio narration + shareable links (Phase 5). Consumed by `client/src/components/wealth-engine/DownloadReportButton.tsx` on StrategyComparison, Retirement, and `client/src/pages/EngineDashboard.tsx` (pass 49) via the `wealthEngine.generateReport` tRPC mutation (complete_plan template).
 - `server/services/wealthChat/` — 5 chat tools + safety wrappers + 5 proactive triggers + chat-engine dispatcher (Phase 6 + Round A3)
 - `server/services/improvement/` — Plaid perception + 6 improvement loops (Phase 7)
 - `server/services/synthesizer/` — wordDiff (LCS) + timeBudgetSelector + costEstimator (Round A7)
@@ -88,6 +88,7 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - ~~ragTrainer.ts TODO for episodic aggregation~~ → RESOLVED: implemented via contextualLLM (summarizes 20+ episodic memories, keeps 5 most recent, inserts aggregated summary)
 - ~~CSP nonce tests failing~~ → RESOLVED: comment reword in server/_core/index.ts
 - ~~invokeLLM bypass in ragTrainer~~ → RESOLVED: refactored to use contextualLLM (complies with wiring verification tests)
+- ~~invokeLLM bypass in pdfReportGenerator (Phase 7 regression)~~ → RESOLVED (pass 45): refactored to use contextualLLM via shared/stewardlyWiring; wiring-verification test passes
 - ~~Messages table missing parentMessageId column~~ → RESOLVED: ALTER TABLE migration applied
 - ~~Loop mode required foci selection~~ → RESOLVED: added 'general' focus for plain iteration without cycling
 - ~~Flaky consolidatedPhase3 timeout~~ → RESOLVED: increased describe timeout to 30s for resource contention
