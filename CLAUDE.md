@@ -8,8 +8,8 @@ TypeScript, tRPC, Drizzle ORM, TiDB, React 19
 110 pages, 318 tables, 2,822 tests passing (108 files, 96% pass rate excluding 14 pre-existing DB-unavailable test files), 220+ services, 72 routers, 24 seed files, 37 cron jobs
 Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 29 recursive passes converged (9.7/10). 0 TS errors, 0 TODOs.
 
-## Wealth Engine (Phases 1-7 + Rounds A/B/C, see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md)
-Phase 1-7 ported the WealthBridge v7 HTML calculator engines into TypeScript and wired them into the full Stewardly stack. Round A added natural-language chat dispatch, PDF download buttons, per-message chat actions, and 3 synthesizer pulls. Round B added a Claude-Code-style code chat foundation. Round C added multi-model consensus stream + weight presets + UI trio. 583 new tests across 10 files, 32 recursive optimization passes converged at 9.7-9.8/10.
+## Wealth Engine (Phases 1-7 + Rounds A/B/C/D, see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md)
+Phase 1-7 ported the WealthBridge v7 HTML calculator engines into TypeScript and wired them into the full Stewardly stack. Round A added natural-language chat dispatch, PDF download buttons, per-message chat actions, and 3 synthesizer pulls. Round B added a Claude-Code-style code chat foundation. Round C added multi-model consensus stream + weight presets + UI trio. Round D wired the live SSE endpoint at /api/consensus/stream, added a pre-flight cost+latency badge, and a Chat→Consensus deep link. 583 tests across 10 files, 38 recursive optimization passes converged at 9.7-9.8/10.
 - `server/shared/calculators/` — UWE/BIE/HE/Monte Carlo/benchmarks (Phase 1)
 - `server/routers/wealthEngine.ts` — 30+ tRPC procedures (Phase 2A + Round A6 + Round C2/C4)
 - `server/services/agent/calculatorOrchestrator.ts` — agent workflow chains (Phase 2B)

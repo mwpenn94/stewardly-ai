@@ -1,7 +1,7 @@
 {
   "project": "stewardly",
   "created": "2026-04-04T19:48:10.140Z",
-  "last_updated": "2026-04-08T07:44:07.012Z",
+  "last_updated": "2026-04-08T07:43:53.548Z",
   "automation_tier": "manual",
   "safety_sensitive": true,
   "improvements": [
@@ -771,40 +771,6 @@
       },
       "novelty_count": null,
       "timestamp": "2026-04-08T07:43:53.548Z"
-    },
-    {
-      "pass": "pass-37",
-      "type": "technical",
-      "mode": "divergent",
-      "score": 9.8,
-      "delta": 0,
-      "dimensions": {
-        "completeness": 9.8,
-        "accuracy": 9.8,
-        "depth": 9.7,
-        "novelty": 9.7,
-        "actionability": 9.7,
-        "regression_safety": 9.8
-      },
-      "novelty_count": null,
-      "timestamp": "2026-04-08T07:44:02.132Z"
-    },
-    {
-      "pass": "pass-38",
-      "type": "technical",
-      "mode": "divergent",
-      "score": 9.8,
-      "delta": 0,
-      "dimensions": {
-        "completeness": 9.8,
-        "accuracy": 9.8,
-        "depth": 9.7,
-        "novelty": 9.7,
-        "actionability": 9.7,
-        "regression_safety": 9.8
-      },
-      "novelty_count": null,
-      "timestamp": "2026-04-08T07:44:07.012Z"
     }
   ],
   "branches": [],

@@ -1,14 +1,17 @@
 # Stewardly — Remaining Items & Step-by-Step Completion Guide
 
-**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C complete)
-**Current State:** 319 tables (1 new: weight_presets), 225+ services, 73 routers, 112 pages, 122+ components, 110 test files (2,871 passing / pre-existing DB-unavailable failures unchanged), 23 AI models, 24 seed files, 37 cron jobs, 0 TS errors, 0 TODOs
+**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C/D complete)
+**Current State:** 319 tables (weight_presets added), 225+ services, 73 routers, 112 pages, 122+ components, 110 test files (583 wealth-engine + consensus + code chat tests, 2,871 total passing / pre-existing DB-unavailable failures unchanged), 23 AI models, 24 seed files, 37 cron jobs, 0 TS errors, 0 TODOs
 **Wealth Engine + Consensus + Code Chat:** 583 tests across 10 files (see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md)
-**Recursive Optimization:** Converged after 32+ passes (9.7-9.8/10, delta=[0,0] for 2 consecutive passes per phase). Round C in progress.
+**Recursive Optimization:** Converged after 38 passes (9.8/10, delta=[0,0] for 2 consecutive passes per phase).
 
-## Round C deferred items (intentional)
-- Express SSE endpoint at `/api/consensus/stream` (the `streamConsensus` core is ready, just needs the Express handler)
-- Chat.tsx integration of the Round C3 trio (lives on `/consensus` standalone first)
-- Pre-flight cost estimator UI badge on the Consensus page
+## Round D — shipped follow-ups (passes 36-38)
+- ✅ Express SSE endpoint at `POST /api/consensus/stream` (server/_core/index.ts) wrapping `streamConsensus(emit)` with the canonical `encodeSseEvent` wire format + 15s heartbeat
+- ✅ Pre-flight cost+latency badge on the Consensus page via `wealthEngine.estimateConsensusCost` tRPC query
+- ✅ Deep link from Chat consensus mode to `/consensus?q=<draft>` with auto-prefill on landing
+
+## Still deferred (future rounds)
+- Lifting the Round C3 trio fully into `Chat.tsx` consensus mode (2500-line file, needs to reconcile with message persistence path)
 - Embedding-based agreement metric (current: word-overlap Jaccard)
 - `pnpm db:push` to apply the `weight_presets` schema migration (DB layer falls back to built-ins until then)
 

@@ -2455,6 +2455,23 @@ export default function Chat() {
                 ))}
               </div>
 
+              {/* Round D3 — Deep link to the dedicated Consensus page when
+                  consensus mode is active. The standalone page exposes the
+                  Round C3 trio (StreamingResults / TimingBreakdown /
+                  ComparisonView) plus the cost-estimate badge and weight
+                  preset picker. */}
+              {chatMode === "consensus" && (
+                <a
+                  href={`/consensus${input ? `?q=${encodeURIComponent(input)}` : ""}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-1 px-2 h-7 text-[10px] inline-flex items-center rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-all"
+                  title="Open the multi-model consensus panel with timing breakdown + diff view"
+                >
+                  Open panel →
+                </a>
+              )}
+
               {/* Loop config (visible when loop mode active) — pillbox multi-select */}
               {chatMode === "loop" && (
                 <div className="flex items-center gap-1 flex-wrap">

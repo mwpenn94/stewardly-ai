@@ -15,7 +15,7 @@
  * branch.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,9 +38,37 @@ const DEFAULT_MODELS = [
 ];
 
 export default function ConsensusPage() {
+  // Round D3 — Honor `?q=...` query string from the Chat deep link so the
+  // user can hand off a draft question without retyping. Also strips the
+  // param from the URL after read so refreshes don't double-prefill.
+  const initialQuestion = useMemo(() => {
+    if (typeof window === "undefined") return undefined;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("q");
+      if (q) {
+        // Clean the URL so subsequent refreshes don't re-apply
+        const next = window.location.pathname;
+        window.history.replaceState({}, "", next);
+        return q;
+      }
+    } catch {
+      /* ignore */
+    }
+    return undefined;
+  }, []);
+
   const [question, setQuestion] = useState(
-    "Compare a Roth IRA conversion strategy versus traditional contributions for a 45-year-old in the 24% federal bracket with $200K of pre-tax retirement assets.",
+    initialQuestion ??
+      "Compare a Roth IRA conversion strategy versus traditional contributions for a 45-year-old in the 24% federal bracket with $200K of pre-tax retirement assets.",
   );
+
+  // Auto-focus + scroll to top when arriving with a deep link
+  useEffect(() => {
+    if (initialQuestion && typeof window !== "undefined") {
+      window.scrollTo({ top: 0 });
+    }
+  }, [initialQuestion]);
   const [domain, setDomain] = useState("retirement planning");
   const [timeBudgetSec, setTimeBudgetSec] = useState(20);
   const [maxModels, setMaxModels] = useState(3);
@@ -51,6 +79,19 @@ export default function ConsensusPage() {
 
   const consensusStream = trpc.wealthEngine.consensusStream.useMutation();
   const presets = trpc.wealthEngine.listWeightPresets.useQuery();
+
+  // Round D2 — pre-flight cost estimate
+  const costEstimate = trpc.wealthEngine.estimateConsensusCost.useQuery(
+    {
+      question,
+      selectedModels: selectedModelIds,
+      domain: domain.trim() || undefined,
+    },
+    {
+      enabled: question.trim().length > 0 && selectedModelIds.length > 0,
+      staleTime: 30_000,
+    },
+  );
 
   const onRun = async () => {
     if (!question.trim()) return;
@@ -203,7 +244,29 @@ export default function ConsensusPage() {
               </div>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between gap-3">
+              {costEstimate.data ? (
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <Badge variant="outline" className="tabular-nums">
+                    ~${costEstimate.data.totalUSD.toFixed(4)} estimated
+                  </Badge>
+                  <Badge variant="outline" className="tabular-nums">
+                    ~{(costEstimate.data.estimatedDurationMs / 1000).toFixed(1)}s
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    {costEstimate.data.taskType} · {costEstimate.data.promptTokens}→{costEstimate.data.promptTokensAdjusted} tok
+                  </Badge>
+                  {costEstimate.data.warnings.length > 0 && (
+                    <span className="text-amber-600 dark:text-amber-400 text-[11px]">
+                      {costEstimate.data.warnings[0]}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Cost estimate appears once a question is entered.
+                </span>
+              )}
               <Button
                 onClick={onRun}
                 disabled={

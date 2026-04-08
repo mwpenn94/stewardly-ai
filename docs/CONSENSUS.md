@@ -213,25 +213,41 @@ pnpm vitest run server/services/consensusStream.test.ts
 
 Total wealth-engine + consensus + code chat test count: **583** across 10 files.
 
-## 10. Known follow-ups
+## 10. Round D — shipped follow-ups (passes 36-38)
 
-These were intentionally deferred from Round C to keep the diff
-reviewable:
+The first three Round C deferred items shipped in Round D:
 
-1. **Express SSE endpoint** for true streaming. The `streamConsensus`
-   function is ready (it accepts an `emit` callback); a small Express
-   POST handler at `/api/consensus/stream` is the only missing wire.
-2. **Chat.tsx integration**. The trio components live on `/consensus`
-   today; lifting them into the existing chat consensus mode requires
-   touching `Chat.tsx` (2500 lines) which is out of scope for the
-   recursive convergence pass.
-3. **Pre-flight cost estimator UI**. The `costEstimator.ts` module
-   from Round A7 already exists; the Consensus page could surface a
-   "$X estimated" badge before the user clicks Run.
-4. **Semantic agreement** instead of word-overlap Jaccard. The current
+1. **Express SSE endpoint** ✅ — `POST /api/consensus/stream` in
+   `server/_core/index.ts:248`. Same auth + rate limiter as the chat
+   stream endpoint. Drives `streamConsensus(input, emit)` and writes
+   each `ConsensusEvent` to the response with `encodeSseEvent`.
+   Includes 15s heartbeat to keep proxies alive. The React UI can
+   either consume this directly with `EventSource` or keep using the
+   tRPC mutation that returns the full event log — both code paths
+   share the exact same event shape.
+2. **Pre-flight cost + latency badge** ✅ — New tRPC query
+   `wealthEngine.estimateConsensusCost`. Combines the synthesizer's
+   `costEstimator.ts` task multipliers with `getModelEstimatedResponseMs`
+   from the model registry. Surfaces "~$0.0042 · ~6.4s · chat · 320→320 tok"
+   on the Consensus page next to the Run button. Includes per-model
+   pricing fallback table for the audit's reference rates (April 2026)
+   so the badge is never zero for known models.
+3. **Chat → Consensus deep link** ✅ — When `chatMode === "consensus"`
+   in `Chat.tsx`, an "Open panel →" pill appears next to the mode
+   toggle and opens `/consensus?q=<encoded draft>` in a new tab. The
+   Consensus page reads the query string on mount, pre-fills the
+   question, and strips the param so refreshes don't double-prefill.
+
+## 11. Still deferred (will land in a future round)
+
+1. **Lifting the trio fully into Chat.tsx** so consensus mode renders
+   the per-model cards inline instead of via a deep-link tab. Requires
+   touching the 2500-line `Chat.tsx` consensus branch and reconciling
+   with the message persistence path.
+2. **Semantic agreement** instead of word-overlap Jaccard. The current
    metric is fast and good enough for a relative score, but a future
    round could add embedding-based agreement for stronger signals.
-5. **Database migration**. The `weight_presets` table is added to
+3. **Database migration**. The `weight_presets` table is added to
    `drizzle/schema.ts` but `pnpm db:push` has not been run during the
    session. The DB layer degrades gracefully to built-in seed presets
    until the migration is applied in production.

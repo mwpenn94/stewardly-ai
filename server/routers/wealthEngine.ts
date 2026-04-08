@@ -853,6 +853,79 @@ export const wealthEngineRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => deleteWeightPreset(ctx.user.id, input.id)),
 
+  // ── Round D2 — pre-flight cost estimate for a consensus run ────────
+  // Combines the synthesizer/costEstimator pricing table with the
+  // model registry latency estimates so the UI can show a single
+  // "$X estimated · ~Ys" badge BEFORE running an expensive consensus.
+  estimateConsensusCost: protectedProcedure
+    .input(
+      z.object({
+        question: z.string().min(1).max(8000),
+        selectedModels: z.array(z.string()).min(1),
+        domain: z.string().optional(),
+        expectedOutputTokens: z.number().min(1).max(50_000).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { estimateCost, guessTaskType } = await import(
+        "../services/synthesizer/costEstimator"
+      );
+      const { getModelEstimatedResponseMs, SYNTHESIS_OVERHEAD_MS } = await import(
+        "../shared/config/modelRegistry"
+      );
+
+      // Pricing table — populated from the audit's reference numbers
+      // (April 2026 published rates). When a model isn't listed we use
+      // a conservative middle-of-pack estimate so the badge is never zero.
+      const PRICING: Record<string, { input: number; output: number; medianOutputTokens: number }> = {
+        "claude-sonnet-4-20250514": { input: 3, output: 15, medianOutputTokens: 800 },
+        "claude-opus-4-20250514": { input: 15, output: 75, medianOutputTokens: 1200 },
+        "gpt-4o": { input: 2.5, output: 10, medianOutputTokens: 800 },
+        "gpt-4.1": { input: 2, output: 8, medianOutputTokens: 800 },
+        "gemini-2.5-pro": { input: 1.25, output: 5, medianOutputTokens: 800 },
+        "gemini-2.5-flash": { input: 0.075, output: 0.3, medianOutputTokens: 600 },
+        "gemini-2.0-flash": { input: 0.075, output: 0.3, medianOutputTokens: 600 },
+      };
+
+      const promptTokens = Math.max(64, Math.ceil(input.question.length / 4));
+      const taskType = guessTaskType(
+        input.domain ? `${input.question} (${input.domain})` : input.question,
+      );
+
+      const models = input.selectedModels.map((id) => ({
+        id,
+        inputPer1M: PRICING[id]?.input ?? 5,
+        outputPer1M: PRICING[id]?.output ?? 20,
+        medianOutputTokens: PRICING[id]?.medianOutputTokens ?? 800,
+      }));
+
+      const cost = estimateCost({
+        models,
+        promptTokens,
+        taskType,
+        expectedOutputTokens: input.expectedOutputTokens,
+      });
+
+      // Latency estimate: max of per-model latencies (parallel) + synthesis
+      const perModelMs = input.selectedModels.map((id) =>
+        getModelEstimatedResponseMs(id),
+      );
+      const slowestMs = perModelMs.length > 0 ? Math.max(...perModelMs) : 0;
+      const estimatedDurationMs = slowestMs + SYNTHESIS_OVERHEAD_MS;
+
+      return {
+        promptTokens,
+        promptTokensAdjusted: cost.promptTokensAdjusted,
+        taskType,
+        taskMultiplier: cost.taskMultiplier,
+        lines: cost.lines,
+        totalUSD: cost.totalUSD,
+        warnings: cost.warnings,
+        estimatedDurationMs,
+        synthesisOverheadMs: SYNTHESIS_OVERHEAD_MS,
+      };
+    }),
+
   // Single-shot extract + dispatch path. Returns the full
   // ChatEngineResponse the UI can render with inline charts +
   // per-message actions.
