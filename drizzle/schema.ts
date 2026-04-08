@@ -5916,3 +5916,466 @@ export const videoStreamingSessions = mysqlTable("video_streaming_sessions", {
   transcriptText: text("transcript_text"), // AI-generated transcript of video session
   aiResponsesDuringStream: int("ai_responses_during_stream").default(0),
 });
+
+// ─── EMBA LEARNING INTEGRATION ──────────────────────────────────────────────
+// Port of the EMBA Knowledge Explorer (12 exam tracks, 2,000+ definitions,
+// SRS, groups, playlists, licensure tracking) into Stewardly under the
+// `learning_` table prefix. All user FKs reference stewardly.users.id.
+// See docs/EMBA_INTEGRATION.md for the full integration plan.
+
+// ── SRS / study ───────────────────────────────────────────────────────────
+export const learningMasteryProgress = mysqlTable("learning_mastery_progress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  itemKey: varchar("item_key", { length: 255 }).notNull(),   // e.g. "definition:roth_ira", "flashcard:42"
+  itemType: varchar("item_type", { length: 64 }).notNull(), // definition | formula | flashcard | question
+  seen: int("seen").default(0).notNull(),
+  mastered: mysqlBoolean("mastered").default(false).notNull(),
+  confidence: int("confidence").default(0).notNull(),        // 0-5
+  reviewCount: int("review_count").default(0).notNull(),
+  lastReviewed: timestamp("last_reviewed"),
+  nextDue: timestamp("next_due"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  userIdx: index("idx_learning_mastery_user").on(t.userId),
+  itemIdx: index("idx_learning_mastery_item").on(t.itemKey),
+}));
+
+export const learningStudySessions = mysqlTable("learning_study_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  discipline: varchar("discipline", { length: 128 }),
+  trackKey: varchar("track_key", { length: 128 }),
+  durationMinutes: int("duration_minutes").default(0).notNull(),
+  itemsStudied: int("items_studied").default(0).notNull(),
+  itemsMastered: int("items_mastered").default(0).notNull(),
+  quizScore: decimal("quiz_score", { precision: 5, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  userIdx: index("idx_learning_sessions_user").on(t.userId),
+}));
+
+export const learningAchievements = mysqlTable("learning_achievements", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  achievementKey: varchar("achievement_key", { length: 128 }).notNull(),
+  unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
+}, (t) => ({
+  userIdx: index("idx_learning_achievements_user").on(t.userId),
+}));
+
+export const learningSettings = mysqlTable("learning_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  settingKey: varchar("setting_key", { length: 128 }).notNull(),
+  settingValue: json("setting_value"),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  userKeyIdx: index("idx_learning_settings_user_key").on(t.userId, t.settingKey),
+}));
+
+export const learningAiQuizQuestions = mysqlTable("learning_ai_quiz_questions", {
+  id: int("id").autoincrement().primaryKey(),
+  discipline: varchar("discipline", { length: 128 }),
+  topic: varchar("topic", { length: 255 }),
+  difficulty: mysqlEnum("difficulty", ["easy", "medium", "hard"]).default("medium"),
+  questionType: mysqlEnum("question_type", ["multiple_choice", "free_response", "cloze"]).default("multiple_choice"),
+  prompt: text("prompt").notNull(),
+  options: json("options"),
+  correctAnswer: text("correct_answer"),
+  explanation: text("explanation"),
+  usageCount: int("usage_count").default(0).notNull(),
+  qualityScore: decimal("quality_score", { precision: 4, scale: 3 }).default("0.5"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  disciplineIdx: index("idx_learning_aiq_discipline").on(t.discipline),
+}));
+
+// ── Groups & challenges ────────────────────────────────────────────────────
+export const learningStudyGroups = mysqlTable("learning_study_groups", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  inviteCode: varchar("invite_code", { length: 32 }).notNull().unique(),
+  ownerUserId: int("owner_user_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const learningGroupMembers = mysqlTable("learning_group_members", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("group_id").notNull(),
+  userId: int("user_id").notNull(),
+  role: mysqlEnum("role", ["owner", "admin", "member"]).default("member").notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+}, (t) => ({
+  groupIdx: index("idx_learning_group_members_group").on(t.groupId),
+  userIdx: index("idx_learning_group_members_user").on(t.userId),
+}));
+
+export const learningSharedQuizzes = mysqlTable("learning_shared_quizzes", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("group_id").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  questionIds: json("question_ids"),
+  createdBy: int("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const learningQuizChallenges = mysqlTable("learning_quiz_challenges", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("group_id").notNull(),
+  sharedQuizId: int("shared_quiz_id"),
+  title: varchar("title", { length: 255 }).notNull(),
+  timeLimitSeconds: int("time_limit_seconds"),
+  startsAt: timestamp("starts_at"),
+  endsAt: timestamp("ends_at"),
+  createdBy: int("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const learningChallengeResults = mysqlTable("learning_challenge_results", {
+  id: int("id").autoincrement().primaryKey(),
+  challengeId: int("challenge_id").notNull(),
+  userId: int("user_id").notNull(),
+  score: decimal("score", { precision: 5, scale: 2 }).default("0"),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+}, (t) => ({
+  challengeIdx: index("idx_learning_challenge_results_challenge").on(t.challengeId),
+}));
+
+// ── Bookmarks, playlists, discovery ───────────────────────────────────────
+export const learningBookmarks = mysqlTable("learning_bookmarks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  contentType: varchar("content_type", { length: 64 }).notNull(), // definition | formula | case | track | flashcard | question | calculator
+  contentId: varchar("content_id", { length: 255 }).notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  userIdx: index("idx_learning_bookmarks_user").on(t.userId),
+}));
+
+export const learningPlaylists = mysqlTable("learning_playlists", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerUserId: int("owner_user_id").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  isPublic: mysqlBoolean("is_public").default(false).notNull(),
+  shareToken: varchar("share_token", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export const learningPlaylistItems = mysqlTable("learning_playlist_items", {
+  id: int("id").autoincrement().primaryKey(),
+  playlistId: int("playlist_id").notNull(),
+  contentType: varchar("content_type", { length: 64 }).notNull(),
+  contentId: varchar("content_id", { length: 255 }).notNull(),
+  sortOrder: int("sort_order").default(0).notNull(),
+}, (t) => ({
+  playlistIdx: index("idx_learning_playlist_items_playlist").on(t.playlistId),
+}));
+
+export const learningPlaylistShares = mysqlTable("learning_playlist_shares", {
+  id: int("id").autoincrement().primaryKey(),
+  playlistId: int("playlist_id").notNull(),
+  sharedWithUserId: int("shared_with_user_id").notNull(),
+  permission: mysqlEnum("permission", ["view", "edit"]).default("view"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const learningPendingInvites = mysqlTable("learning_pending_invites", {
+  id: int("id").autoincrement().primaryKey(),
+  playlistId: int("playlist_id").notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  permission: mysqlEnum("permission", ["view", "edit"]).default("view"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const learningDiscoveryHistory = mysqlTable("learning_discovery_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  seedQuery: text("seed_query"),
+  followUps: json("follow_ups"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  userIdx: index("idx_learning_discovery_user").on(t.userId),
+}));
+
+// ── NEW: Licensure & CE tracking ───────────────────────────────────────────
+export const learningLicenses = mysqlTable("learning_licenses", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  licenseType: varchar("license_type", { length: 128 }).notNull(), // series7 | life_health | cfp | ...
+  licenseState: varchar("license_state", { length: 64 }),           // NULL for federal (FINRA/CFP)
+  licenseNumber: varchar("license_number", { length: 128 }),
+  issueDate: date("issue_date"),
+  expirationDate: date("expiration_date"),
+  status: mysqlEnum("status", ["active", "expired", "pending", "suspended"]).default("active").notNull(),
+  ceCreditsRequired: int("ce_credits_required").default(0),
+  ceCreditsCompleted: int("ce_credits_completed").default(0),
+  ceDeadline: date("ce_deadline"),
+  lastVerified: timestamp("last_verified"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  userIdx: index("idx_learning_licenses_user").on(t.userId),
+  typeIdx: index("idx_learning_licenses_type").on(t.licenseType),
+}));
+
+export const learningCeCredits = mysqlTable("learning_ce_credits", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  licenseId: int("license_id").notNull(),
+  creditType: varchar("credit_type", { length: 128 }), // ethics | general | product-specific
+  creditHours: decimal("credit_hours", { precision: 5, scale: 2 }).default("0"),
+  completedDate: date("completed_date"),
+  providerName: varchar("provider_name", { length: 255 }),
+  courseTitle: varchar("course_title", { length: 512 }),
+  certificateUrl: text("certificate_url"),
+  verified: mysqlBoolean("verified").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  userIdx: index("idx_learning_ce_credits_user").on(t.userId),
+  licenseIdx: index("idx_learning_ce_credits_license").on(t.licenseId),
+}));
+
+// ── Content freshness & regulatory pipeline ────────────────────────────────
+export const learningContentVersions = mysqlTable("learning_content_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  contentSource: varchar("content_source", { length: 128 }).notNull(), // emba_data | tracks_data | html_module
+  contentKey: varchar("content_key", { length: 255 }).notNull(),
+  version: int("version").default(1).notNull(),
+  checksum: varchar("checksum", { length: 64 }),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  updateSource: varchar("update_source", { length: 128 }), // manual | pipeline | regulatory_feed
+  changelog: text("changelog"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  sourceKeyIdx: index("idx_learning_cv_source_key").on(t.contentSource, t.contentKey),
+}));
+
+export const learningRegulatoryUpdates = mysqlTable("learning_regulatory_updates", {
+  id: int("id").autoincrement().primaryKey(),
+  source: varchar("source", { length: 128 }).notNull(),   // FINRA | NASAA | CFP_Board | IRS | NAIC | State_DOI
+  category: varchar("category", { length: 128 }),         // rule_change | exam_update | ce_requirement
+  title: varchar("title", { length: 512 }).notNull(),
+  summary: text("summary"),
+  effectiveDate: date("effective_date"),
+  affectedLicenses: json("affected_licenses"),            // ["series7","series66"]
+  affectedContent: json("affected_content"),              // content keys
+  status: mysqlEnum("reg_status", ["new", "reviewed", "applied", "dismissed"]).default("new").notNull(),
+  reviewedBy: int("reviewed_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  statusIdx: index("idx_learning_reg_status").on(t.status),
+}));
+
+// ── Dynamic content system (Task 7): tracks/chapters/definitions CRUD ─────
+export const learningDisciplines = mysqlTable("learning_disciplines", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 128 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 32 }),
+  icon: varchar("icon", { length: 32 }),
+  sortOrder: int("sort_order").default(0).notNull(),
+  isCore: mysqlBoolean("is_core").default(true).notNull(),
+  createdBy: int("created_by"), // NULL = system/seed
+  visibility: mysqlEnum("visibility", ["public", "team", "private"]).default("public").notNull(),
+  status: mysqlEnum("status", ["active", "draft", "archived"]).default("active").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export const learningDefinitions = mysqlTable("learning_definitions", {
+  id: int("id").autoincrement().primaryKey(),
+  disciplineId: int("discipline_id"),
+  term: varchar("term", { length: 512 }).notNull(),
+  definition: text("definition").notNull(),
+  createdBy: int("created_by"),
+  visibility: mysqlEnum("visibility", ["public", "team", "private"]).default("public").notNull(),
+  status: mysqlEnum("status", ["published", "draft", "review", "archived"]).default("published").notNull(),
+  version: int("version").default(1).notNull(),
+  sourceRef: text("source_ref"),
+  tags: json("tags"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  disciplineIdx: index("idx_learning_def_discipline").on(t.disciplineId),
+  termIdx: index("idx_learning_def_term").on(t.term),
+}));
+
+export const learningFormulas = mysqlTable("learning_formulas", {
+  id: int("id").autoincrement().primaryKey(),
+  disciplineId: int("discipline_id"),
+  name: varchar("name", { length: 255 }).notNull(),
+  formula: text("formula").notNull(),
+  variables: json("variables"),
+  createdBy: int("created_by"),
+  visibility: mysqlEnum("visibility", ["public", "team", "private"]).default("public").notNull(),
+  status: mysqlEnum("status", ["published", "draft", "review", "archived"]).default("published").notNull(),
+  version: int("version").default(1).notNull(),
+  sourceRef: text("source_ref"),
+  tags: json("tags"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export const learningCases = mysqlTable("learning_cases", {
+  id: int("id").autoincrement().primaryKey(),
+  disciplineId: int("discipline_id"),
+  title: varchar("title", { length: 512 }).notNull(),
+  content: text("content").notNull(),
+  createdBy: int("created_by"),
+  visibility: mysqlEnum("visibility", ["public", "team", "private"]).default("public").notNull(),
+  status: mysqlEnum("status", ["published", "draft", "review", "archived"]).default("published").notNull(),
+  version: int("version").default(1).notNull(),
+  sourceRef: text("source_ref"),
+  tags: json("tags"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export const learningFsApplications = mysqlTable("learning_fs_applications", {
+  id: int("id").autoincrement().primaryKey(),
+  disciplineId: int("discipline_id"),
+  title: varchar("title", { length: 512 }).notNull(),
+  content: text("content").notNull(),
+  createdBy: int("created_by"),
+  visibility: mysqlEnum("visibility", ["public", "team", "private"]).default("public").notNull(),
+  status: mysqlEnum("status", ["published", "draft", "review", "archived"]).default("published").notNull(),
+  version: int("version").default(1).notNull(),
+  sourceRef: text("source_ref"),
+  tags: json("tags"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export const learningConnections = mysqlTable("learning_connections", {
+  id: int("id").autoincrement().primaryKey(),
+  fromDefinitionId: int("from_definition_id").notNull(),
+  toDefinitionId: int("to_definition_id").notNull(),
+  relationship: varchar("relationship", { length: 255 }),
+  createdBy: int("created_by"),
+  visibility: mysqlEnum("visibility", ["public", "team", "private"]).default("public").notNull(),
+  status: mysqlEnum("status", ["published", "draft", "archived"]).default("published").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const learningTracks = mysqlTable("learning_tracks", {
+  id: int("id").autoincrement().primaryKey(),
+  slug: varchar("slug", { length: 128 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: mysqlEnum("category", ["securities", "planning", "insurance", "custom"]).default("custom").notNull(),
+  title: varchar("title", { length: 512 }),
+  subtitle: text("subtitle"),
+  description: text("description"),
+  color: varchar("color", { length: 32 }),
+  emoji: varchar("emoji", { length: 8 }),
+  tagline: text("tagline"),
+  examOverview: json("exam_overview"),
+  createdBy: int("created_by"),
+  visibility: mysqlEnum("visibility", ["public", "team", "private"]).default("public").notNull(),
+  status: mysqlEnum("status", ["published", "draft", "review", "archived"]).default("published").notNull(),
+  version: int("version").default(1).notNull(),
+  sortOrder: int("sort_order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  categoryIdx: index("idx_learning_tracks_category").on(t.category),
+}));
+
+export const learningChapters = mysqlTable("learning_chapters", {
+  id: int("id").autoincrement().primaryKey(),
+  trackId: int("track_id").notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  intro: text("intro"),
+  isPractice: mysqlBoolean("is_practice").default(false).notNull(),
+  sortOrder: int("sort_order").default(0).notNull(),
+  createdBy: int("created_by"),
+  status: mysqlEnum("status", ["published", "draft", "review", "archived"]).default("published").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  trackIdx: index("idx_learning_chapters_track").on(t.trackId),
+}));
+
+export const learningSubsections = mysqlTable("learning_subsections", {
+  id: int("id").autoincrement().primaryKey(),
+  chapterId: int("chapter_id").notNull(),
+  title: varchar("title", { length: 512 }),
+  level: int("level").default(2).notNull(),
+  paragraphs: json("paragraphs"),
+  tables: json("tables"),
+  isQuestion: mysqlBoolean("is_question").default(false).notNull(),
+  sortOrder: int("sort_order").default(0).notNull(),
+  createdBy: int("created_by"),
+  status: mysqlEnum("status", ["published", "draft", "review", "archived"]).default("published").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  chapterIdx: index("idx_learning_subsections_chapter").on(t.chapterId),
+}));
+
+export const learningPracticeQuestions = mysqlTable("learning_practice_questions", {
+  id: int("id").autoincrement().primaryKey(),
+  trackId: int("track_id"),
+  chapterId: int("chapter_id"),
+  prompt: text("prompt").notNull(),
+  options: json("options"),
+  correctIndex: int("correct_index"),
+  explanation: text("explanation"),
+  difficulty: mysqlEnum("difficulty", ["easy", "medium", "hard"]).default("medium").notNull(),
+  tags: json("tags"),
+  createdBy: int("created_by"),
+  source: mysqlEnum("source", ["manual", "ai_generated", "user_authored"]).default("manual").notNull(),
+  status: mysqlEnum("status", ["published", "draft", "review", "retired"]).default("published").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  trackIdx: index("idx_learning_pq_track").on(t.trackId),
+  chapterIdx: index("idx_learning_pq_chapter").on(t.chapterId),
+}));
+
+export const learningFlashcards = mysqlTable("learning_flashcards", {
+  id: int("id").autoincrement().primaryKey(),
+  trackId: int("track_id"),
+  chapterId: int("chapter_id"),
+  term: varchar("term", { length: 512 }).notNull(),
+  definition: text("definition").notNull(),
+  sourceLabel: varchar("source_label", { length: 255 }),
+  createdBy: int("created_by"),
+  source: mysqlEnum("source", ["manual", "ai_generated", "user_authored"]).default("manual").notNull(),
+  status: mysqlEnum("status", ["published", "draft", "review", "archived"]).default("published").notNull(),
+  tags: json("tags"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  trackIdx: index("idx_learning_fc_track").on(t.trackId),
+}));
+
+export const learningContentHistory = mysqlTable("learning_content_history", {
+  id: int("id").autoincrement().primaryKey(),
+  contentTable: varchar("content_table", { length: 128 }).notNull(),
+  contentId: int("content_id").notNull(),
+  action: mysqlEnum("action", ["create", "update", "delete", "restore", "publish", "archive"]).notNull(),
+  previousData: json("previous_data"),
+  newData: json("new_data"),
+  changedBy: int("changed_by"),
+  changeReason: text("change_reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  contentIdx: index("idx_learning_ch_content").on(t.contentTable, t.contentId),
+}));
+
+// Type exports for the learning tables — keep at end for convenience
+export type LearningLicense = typeof learningLicenses.$inferSelect;
+export type InsertLearningLicense = typeof learningLicenses.$inferInsert;
+export type LearningTrack = typeof learningTracks.$inferSelect;
+export type InsertLearningTrack = typeof learningTracks.$inferInsert;
+export type LearningDefinition = typeof learningDefinitions.$inferSelect;
+export type InsertLearningDefinition = typeof learningDefinitions.$inferInsert;
+export type LearningMastery = typeof learningMasteryProgress.$inferSelect;
+export type InsertLearningMastery = typeof learningMasteryProgress.$inferInsert;

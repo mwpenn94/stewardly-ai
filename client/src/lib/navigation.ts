@@ -60,6 +60,9 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Calculator", label: "Engine Dashboard", href: "/engine-dashboard", minRole: "user" },
   { iconName: "Users2", label: "Community", href: "/community", minRole: "advisor" },
   { iconName: "LayoutDashboard", label: "Client Dashboard", href: "/client-dashboard", minRole: "user" },
+  { iconName: "GraduationCap", label: "Learning", href: "/learning", minRole: "user" },
+  { iconName: "Shield", label: "Licenses", href: "/learning/licenses", minRole: "user" },
+  { iconName: "Sparkles", label: "Content Studio", href: "/learning/studio", minRole: "advisor" },
 ];
 
 // ─── ADMIN section ───────────────────────────────────────────────────────────

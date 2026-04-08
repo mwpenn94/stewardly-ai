@@ -1,0 +1,221 @@
+/**
+ * EMBA Learning — Learning Home dashboard (Task 4B + 6D).
+ *
+ * Primary entry point for the Learning & Licensing section. Shows:
+ *   - Mastery snapshot (overall pct, due now, streak)
+ *   - License tracker summary (active, expiring)
+ *   - Personalized study recommendations
+ *   - Quick links to exam tracks, AI Quiz, Content Studio (advisor+)
+ *
+ * The dashboard is role-aware: users see recommendations, advisors
+ * additionally see the Content Studio entry, admins see the
+ * regulatory review queue.
+ */
+
+import AppShell from "@/components/AppShell";
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp } from "lucide-react";
+import { Link } from "wouter";
+
+export default function LearningHome() {
+  const meQ = trpc.auth.me.useQuery();
+  const summaryQ = trpc.learning.mastery.summary.useQuery();
+  const licensesQ = trpc.learning.licenses.list.useQuery();
+  const alertsQ = trpc.learning.licenses.alerts.useQuery();
+  const recsQ = trpc.learning.recommendations.forMe.useQuery(undefined);
+  const tracksQ = trpc.learning.content.listTracks.useQuery(undefined);
+
+  const role = meQ.data?.role ?? "user";
+  const isAdvisorPlus = role === "advisor" || role === "manager" || role === "admin";
+  const isAdmin = role === "admin";
+
+  const summary = summaryQ.data;
+  const licenses = licensesQ.data ?? [];
+  const alerts = alertsQ.data ?? [];
+  const recs = recsQ.data ?? [];
+  const tracks = tracksQ.data ?? [];
+
+  const activeLicenses = licenses.filter((l: any) => l.status === "active").length;
+  const expiringSoon = alerts.filter((a: any) => a.alertType === "expiration_warning").length;
+
+  return (
+    <AppShell>
+      <div className="mx-auto max-w-6xl p-6 space-y-6">
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
+              <GraduationCap className="h-8 w-8 text-primary" />
+              Learning &amp; Licensing
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Track your progress across {tracks.length} exam tracks and {licenses.length} licenses.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Link href="/learning/licenses">
+              <Button variant="outline" size="sm">
+                <Shield className="h-4 w-4 mr-2" />
+                License Tracker
+              </Button>
+            </Link>
+            {isAdvisorPlus && (
+              <Link href="/learning/studio">
+                <Button size="sm">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Content Studio
+                </Button>
+              </Link>
+            )}
+          </div>
+        </header>
+
+        {/* Snapshot row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Mastery</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold">{summary?.masteryPct ?? 0}%</div>
+              <Progress value={summary?.masteryPct ?? 0} className="mt-2" />
+              <div className="text-xs text-muted-foreground mt-2">
+                {summary?.mastered ?? 0} mastered / {summary?.total ?? 0} tracked
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Due Now</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold">{summary?.dueNow ?? 0}</div>
+              <div className="text-xs text-muted-foreground mt-2">items ready for review</div>
+              <Link href="/learning/study">
+                <Button variant="link" size="sm" className="px-0 mt-1">
+                  Start review →
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Licenses</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold">{activeLicenses}</div>
+              <div className="text-xs text-muted-foreground mt-2">
+                {expiringSoon > 0 ? (
+                  <span className="text-amber-600 dark:text-amber-400">{expiringSoon} expiring soon</span>
+                ) : (
+                  "all healthy"
+                )}
+              </div>
+              <Link href="/learning/licenses">
+                <Button variant="link" size="sm" className="px-0 mt-1">
+                  View tracker →
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Agent recommendations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Agent Recommendations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recs.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                You're all caught up. The agent will surface recommendations here as your mastery,
+                calculator usage, and licensure state evolve.
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {recs.map((r, idx) => (
+                  <li key={idx} className="flex items-start gap-3 p-3 rounded-md border">
+                    <Badge variant="outline">P{r.priority}</Badge>
+                    <div className="flex-1">
+                      <div className="font-medium">{r.reason}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {r.action}
+                        {r.estimatedMinutes ? ` · ${r.estimatedMinutes} min` : ""}
+                        {r.trackSlug ? ` · track: ${r.trackSlug}` : ""}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Exam tracks grid */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Exam Tracks
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {tracksQ.isLoading ? (
+              <div className="text-sm text-muted-foreground">Loading tracks…</div>
+            ) : tracks.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                No tracks seeded yet. {isAdmin && "Run the admin seed from the Learning Studio."}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {tracks.map((t: any) => (
+                  <Link key={t.id} href={`/learning/tracks/${t.slug}`}>
+                    <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+                      <CardContent className="p-4">
+                        <div className="text-2xl">{t.emoji ?? "📘"}</div>
+                        <div className="font-semibold mt-2">{t.name}</div>
+                        <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {t.subtitle ?? t.description ?? ""}
+                        </div>
+                        <Badge variant="outline" className="mt-2 text-[10px]">
+                          {t.category}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Admin: regulatory review queue link */}
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Regulatory Pipeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Link href="/learning/studio/review">
+                <Button variant="outline" size="sm">
+                  Review pending regulatory updates
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </AppShell>
+  );
+}

@@ -5,8 +5,8 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-110 pages, 318 tables, 2,822 tests passing (108 files, 96% pass rate excluding 14 pre-existing DB-unavailable test files), 220+ services, 72 routers, 24 seed files, 37 cron jobs
-Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 29 recursive passes converged (9.7/10). 0 TS errors, 0 TODOs.
+113 pages, 348 tables, 3,066 tests passing across 102 files (118 total, 3,180 total tests, 96.4% pass rate excluding 16 pre-existing DB-unavailable / wiring-verification files), 230+ services, 75 routers, 24 seed files, 37 cron jobs
+Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 42 recursive passes converged (9.7-9.8/10). 0 TS errors, 0 TODOs.
 
 ## Wealth Engine (Phases 1-7 + Rounds A/B/C/D/E, see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md + docs/ENGINES_MIGRATION.md)
 Phase 1-7 ported the WealthBridge v7 HTML calculator engines into TypeScript and wired them into the full Stewardly stack. Round A added natural-language chat dispatch, PDF download buttons, per-message chat actions, and 3 synthesizer pulls. Round B added a Claude-Code-style code chat foundation. Round C added multi-model consensus stream + weight presets + UI trio. Round D wired the live SSE endpoint at /api/consensus/stream, added a pre-flight cost+latency badge, and a Chat→Consensus deep link. Round E lifted the Round C trio inline into Chat.tsx consensus mode, added LLM-as-judge semantic agreement scoring, shipped the weight_presets SQL migration (0009_weight_presets.sql), and documented the two-stack engine dedup path (docs/ENGINES_MIGRATION.md). 656 tests across 12 files (583 wealth-engine + 54 parallel main-branch engines + 19 semantic agreement). 41 recursive optimization passes converged at 9.7-9.8/10.
@@ -28,6 +28,27 @@ Phase 1-7 ported the WealthBridge v7 HTML calculator engines into TypeScript and
 - `client/src/pages/Consensus.tsx` — multi-model consensus demo page (Round C3)
 - `client/src/pages/Chat.tsx` — consensus mode inlines the Round C3 trio via wealthEngine.consensusStream (Round E1), with graceful fallback to legacy advancedIntelligence.consensusQuery
 - `drizzle/0009_weight_presets.sql` — SQL migration for the weight_presets table (Round E3), applied on next `pnpm db:push`
+
+## EMBA Learning Integration (April 2026, see docs/EMBA_INTEGRATION.md)
+Merged the EMBA Knowledge Explorer (12 exam tracks, 2,000+ definitions, SRS, 27 pages, licensure tracking) into Stewardly under the `learning.*` namespace. 30 new `learning_*` tables, one tRPC router with 6 subrouters (mastery / licenses / content / freshness / recommendations / seed), 11 new ReAct agent tools, 3 new React pages (Learning Home, License Tracker, Content Studio), and a full dynamic content CRUD system with versioning + audit trail. 44 new unit tests across 5 files, all passing. Task coverage: 1 (schema+auth), 2 (router+agent), 3 (regulatory pipeline), 4 (UI consolidation+nav), 5 (agentic licensure), 6 (page migration skeleton), 7 (dynamic content CRUD+permissions+seed).
+- `drizzle/schema.ts` — 30 new learning_* tables (mastery, sessions, licenses, CE credits, regulatory, tracks, definitions, formulas, cases, fs_applications, connections, chapters, subsections, questions, flashcards, content_history, ai_quiz_questions, playlists, groups, bookmarks, discovery, ...)
+- `drizzle/0010_emba_learning.sql` — idempotent SQL migration (CREATE TABLE IF NOT EXISTS)
+- `server/services/learning/permissions.ts` — RBAC model (canEditContent/canPublish/canSeedContent/canSeeContent) + 14 tests
+- `server/services/learning/mastery.ts` — SRS with pure scheduleNextReview (0-5 confidence ladder) + 6 tests
+- `server/services/learning/licenses.ts` — licensure CRUD + CE credits + deriveLicenseAlerts (expiration_warning / ce_credits_needed / expired) + 8 tests
+- `server/services/learning/content.ts` — full CRUD on definitions/tracks/chapters/subsections/questions/flashcards + audit trail + unified search + explainConcept
+- `server/services/learning/seed.ts` — idempotent seed for 8 core disciplines + 12 canonical exam tracks (SIE/Series7/Series66/CFP/Financial Planning/Investment Advisory/Estate Planning/Premium Financing/Life&Health/General Insurance/P&C/Surplus Lines)
+- `server/services/learning/freshness.ts` — REGULATORY_SOURCES catalog (FINRA/NASAA/CFP Board/IRS/NAIC/State DOI) + checksum-based onContentSourceUpdated + recordRegulatoryUpdate + admin review workflow + 8 tests
+- `server/services/learning/recommendations.ts` — pure fuseRecommendations algorithm (SRS due > CE > expiration > calculator-informed > broadening) + CALCULATOR_TRACK_MAP + 8 tests
+- `server/services/learning/agentTools.ts` — registers 11 ReAct tools: check_license_status, recommend_study_content, assess_readiness, generate_study_plan, explain_concept, quiz_me, check_exam_readiness, generate_flashcards, generate_practice_questions, suggest_content_improvements, draft_definition
+- `server/services/learning/bootstrap.ts` — startup hook wiring (seed + tool registration, idempotent)
+- `server/routers/learning.ts` — 45+ tRPC procedures organized as learning.mastery.* / licenses.* / content.* / freshness.* / recommendations.* / seed
+- `client/src/pages/learning/LearningHome.tsx` — role-aware dashboard: mastery snapshot, license tracker summary, agent recommendations, exam tracks grid
+- `client/src/pages/learning/LicenseTracker.tsx` — license grid + add form + CE progress bars + alerts panel
+- `client/src/pages/learning/ContentStudio.tsx` — advisor+ authoring hub: draft definition form, recent drafts list, admin-only regulatory review queue + seed button
+- `client/src/lib/navigation.ts` — added Learning / Licenses (user) and Content Studio (advisor) nav entries
+- `client/src/App.tsx` — 7 new routes under `/learning/*`
+- `server/_core/index.ts` — server startup calls `bootstrapLearning()` after `initScheduler()`
 
 ## Commands
 `node toolkit.js init stewardly --safety` — Initialize (run once)
