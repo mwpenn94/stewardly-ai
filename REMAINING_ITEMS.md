@@ -1,9 +1,16 @@
 # Stewardly — Remaining Items & Step-by-Step Completion Guide
 
-**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Round A complete)
-**Current State:** 318 tables, 220+ services, 72 routers, 110 pages, 117+ components, 108 test files (2,822 passing / 2,934 total — 14 pre-existing DB-unavailable test files), 23 AI models, 24 seed files, 37 cron jobs, 0 TS errors, 0 TODOs
-**Wealth Engine:** 484 tests across UWE/BIE/HE/Monte Carlo/benchmarks/ghl/reports/chat/improvement (see docs/WEALTH_ENGINE.md)
-**Recursive Optimization:** Converged after 29 passes total (9.7/10, delta=[0,0] for 2 consecutive passes through Phase 7). Round A in progress.
+**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C complete)
+**Current State:** 319 tables (1 new: weight_presets), 225+ services, 73 routers, 112 pages, 122+ components, 110 test files (2,871 passing / pre-existing DB-unavailable failures unchanged), 23 AI models, 24 seed files, 37 cron jobs, 0 TS errors, 0 TODOs
+**Wealth Engine + Consensus + Code Chat:** 583 tests across 10 files (see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md)
+**Recursive Optimization:** Converged after 32+ passes (9.7-9.8/10, delta=[0,0] for 2 consecutive passes per phase). Round C in progress.
+
+## Round C deferred items (intentional)
+- Express SSE endpoint at `/api/consensus/stream` (the `streamConsensus` core is ready, just needs the Express handler)
+- Chat.tsx integration of the Round C3 trio (lives on `/consensus` standalone first)
+- Pre-flight cost estimator UI badge on the Consensus page
+- Embedding-based agreement metric (current: word-overlap Jaccard)
+- `pnpm db:push` to apply the `weight_presets` schema migration (DB layer falls back to built-ins until then)
 
 ---
 

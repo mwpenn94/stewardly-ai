@@ -72,6 +72,16 @@ import {
   extractIntent,
   dispatchToEngine,
 } from "../services/wealthChat/chatEngineDispatcher";
+import { runConsensus } from "../services/consensusStream";
+import {
+  listPresets as listWeightPresets,
+  createPreset as createWeightPreset,
+  updatePreset as updateWeightPreset,
+  deletePreset as deleteWeightPreset,
+  mergePresetWithSelection,
+  BUILT_IN_PRESETS,
+  type WeightPresetData,
+} from "../services/weightPresets";
 
 // ─── SHARED ZOD SCHEMAS ─────────────────────────────────────────────────────
 
@@ -761,6 +771,87 @@ export const wealthEngineRouter = router({
   chatExtractIntent: protectedProcedure
     .input(z.object({ text: z.string().min(1).max(2000) }))
     .query(({ input }) => extractIntent(input.text)),
+
+  // ── Round C2 — multi-model consensus stream ─────────────────────────
+  // Runs the full consensus stream synchronously and returns the entire
+  // event log + final synthesis. The React UI replays the events to
+  // render `StreamingResults` / `TimingBreakdown` / `ComparisonView`
+  // exactly as if they had streamed live. A future Express SSE endpoint
+  // can drive the same `streamConsensus` core for true incremental
+  // delivery; this procedure is the convergent baseline.
+  consensusStream: protectedProcedure
+    .input(
+      z.object({
+        question: z.string().min(1).max(8000),
+        selectedModels: z.array(z.string()).optional(),
+        modelWeights: z.record(z.string(), z.number().min(1).max(100)).optional(),
+        /** Optional preset id to apply (overrides modelWeights when set) */
+        presetId: z.number().optional(),
+        timeBudgetMs: z.number().min(2000).max(120_000).optional(),
+        maxModels: z.number().min(1).max(8).optional(),
+        domain: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      // Resolve preset → modelWeights (preset wins when both are set)
+      let weights = input.modelWeights;
+      if (input.presetId !== undefined) {
+        const presets = await listWeightPresets(ctx.user.id);
+        const preset = presets.find((p) => p.id === input.presetId) ?? null;
+        if (preset) {
+          weights = mergePresetWithSelection(
+            preset,
+            input.selectedModels ?? Object.keys(preset.weights),
+          );
+        }
+      }
+      return runConsensus({
+        question: input.question,
+        selectedModels: input.selectedModels,
+        modelWeights: weights,
+        timeBudgetMs: input.timeBudgetMs,
+        maxModels: input.maxModels,
+        domain: input.domain,
+        userId: ctx.user.id,
+      });
+    }),
+
+  // ── Round C4 — weight preset CRUD ───────────────────────────────────
+  listWeightPresets: protectedProcedure.query(async ({ ctx }) => {
+    const presets = await listWeightPresets(ctx.user.id);
+    return { presets, builtInCount: BUILT_IN_PRESETS.length };
+  }),
+
+  createWeightPreset: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(100),
+        description: z.string().max(500).optional(),
+        weights: z.record(z.string(), z.number().min(1).max(100)),
+        optimizedFor: z.array(z.string()).optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => createWeightPreset(ctx.user.id, input as WeightPresetData)),
+
+  updateWeightPreset: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        patch: z.object({
+          name: z.string().min(1).max(100).optional(),
+          description: z.string().max(500).optional(),
+          weights: z.record(z.string(), z.number().min(1).max(100)).optional(),
+          optimizedFor: z.array(z.string()).optional(),
+        }),
+      }),
+    )
+    .mutation(async ({ input, ctx }) =>
+      updateWeightPreset(ctx.user.id, input.id, input.patch),
+    ),
+
+  deleteWeightPreset: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => deleteWeightPreset(ctx.user.id, input.id)),
 
   // Single-shot extract + dispatch path. Returns the full
   // ChatEngineResponse the UI can render with inline charts +

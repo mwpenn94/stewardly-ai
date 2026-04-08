@@ -80,6 +80,61 @@ export interface ModelEntry {
   enabledByDefault: boolean;
   /** Optional description for UI display */
   description?: string;
+  // ─── Round C1: latency + speed + cost (additive, all optional) ──────────
+  /** Estimated wall-clock response time in ms (TTFT + median completion).
+   *  Used by selectModelsWithinTimeBudget to enforce client-facing SLAs. */
+  estimatedResponseMs?: number;
+  /** Coarse speed bucket used for UI color-coding */
+  speedRating?: "fast" | "moderate" | "slow";
+  /** Per-1M-token cost in USD ({input, output}) — used by the cost
+   *  estimator for pre-flight budget warnings. */
+  costPer1M?: { input: number; output: number };
+  /** Median output tokens per completion (used by costEstimator) */
+  medianOutputTokens?: number;
+}
+
+// ─── Round C1: synthesis overhead constant ─────────────────────────────────
+// When running a multi-model consensus, the synthesis call after the
+// parallel fan-out adds a fixed overhead. We bake this in as a single
+// constant so the time-budget selector and cost estimator stay consistent.
+// 4 seconds is the audit's recommended baseline (matches the synthesizer
+// repo's `synthesisBaseOverheadMs`).
+export const SYNTHESIS_OVERHEAD_MS = 4000;
+
+// ─── Default speed rating heuristic ────────────────────────────────────────
+// When a model entry doesn't ship an explicit speedRating, derive it from
+// the cost tier as a sensible fallback.
+export function defaultSpeedRating(tier: CostTier): "fast" | "moderate" | "slow" {
+  switch (tier) {
+    case "economy":
+      return "fast";
+    case "standard":
+      return "moderate";
+    case "premium":
+    case "reasoning":
+      return "slow";
+    default:
+      return "moderate";
+  }
+}
+
+// ─── Default estimated response time heuristic ─────────────────────────────
+// Used when a model entry doesn't ship an explicit estimatedResponseMs.
+// These are conservative averages from the audit's reference benchmarks
+// and should be overridden per-model when real telemetry is available.
+export function defaultEstimatedResponseMs(tier: CostTier): number {
+  switch (tier) {
+    case "economy":
+      return 1500;
+    case "standard":
+      return 3500;
+    case "premium":
+      return 6000;
+    case "reasoning":
+      return 12_000;
+    default:
+      return 4000;
+  }
 }
 
 // ─── MODEL REGISTRY ─────────────────────────────────────────────────────────
@@ -538,6 +593,115 @@ export function routeModel(
 // All 16 Forge models support web search grounding via the google_search
 // function tool. When passed, the Forge proxy intercepts the tool call and
 // performs a real Google Search, injecting results into the model's context.
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Round C1 — Latency-aware model selection helpers
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Get the effective response time for a model, falling back to the
+ * cost-tier heuristic when the entry doesn't ship explicit telemetry.
+ */
+export function getModelEstimatedResponseMs(modelId: string): number {
+  const m = MODEL_REGISTRY.find((e) => e.id === modelId);
+  if (!m) return 4000;
+  if (m.estimatedResponseMs !== undefined) return m.estimatedResponseMs;
+  return defaultEstimatedResponseMs(m.costTier);
+}
+
+/**
+ * Get the effective speed rating for a model, falling back to the
+ * cost-tier heuristic.
+ */
+export function getModelSpeedRating(
+  modelId: string,
+): "fast" | "moderate" | "slow" {
+  const m = MODEL_REGISTRY.find((e) => e.id === modelId);
+  if (!m) return "moderate";
+  if (m.speedRating) return m.speedRating;
+  return defaultSpeedRating(m.costTier);
+}
+
+/**
+ * Select the largest set of models from a candidate list whose summed
+ * estimated response time + SYNTHESIS_OVERHEAD_MS fits within budgetMs.
+ *
+ * Greedy fastest-first because consensus quality scales with model
+ * COUNT before it scales with individual model quality (per the audit
+ * findings). Tie-breaks favor models with higher costTier rank
+ * (premium > reasoning > standard > economy) so we get a diverse mix.
+ *
+ * Returns an array of model IDs sorted in execution order plus the
+ * computed total estimated time + per-model exclusion reasons.
+ */
+export interface ModelTimeBudgetResult {
+  selected: string[];
+  excluded: Record<string, string>;
+  totalEstimatedMs: number;
+  budgetMs: number;
+  fits: boolean;
+}
+
+export function selectModelsWithinTimeBudget(
+  candidateIds: string[],
+  budgetMs: number,
+  options?: { maxModels?: number; minModels?: number },
+): ModelTimeBudgetResult {
+  const maxModels = options?.maxModels ?? 5;
+  const minModels = options?.minModels ?? 1;
+
+  // Hydrate + sort fastest-first; unknown ids fall to the back
+  const candidates = candidateIds
+    .map((id) => ({
+      id,
+      ms: getModelEstimatedResponseMs(id),
+      entry: MODEL_REGISTRY.find((e) => e.id === id),
+    }))
+    .sort((a, b) => {
+      if (a.ms !== b.ms) return a.ms - b.ms;
+      // Same speed → premium > reasoning > standard > economy
+      const tierRank = (t?: CostTier): number =>
+        t === "premium" ? 3 : t === "reasoning" ? 2 : t === "standard" ? 1 : 0;
+      return tierRank(b.entry?.costTier) - tierRank(a.entry?.costTier);
+    });
+
+  const selected: string[] = [];
+  const excluded: Record<string, string> = {};
+  let runningTotal = SYNTHESIS_OVERHEAD_MS;
+
+  for (const c of candidates) {
+    if (selected.length >= maxModels) {
+      excluded[c.id] = "max_models_reached";
+      continue;
+    }
+    if (runningTotal + c.ms > budgetMs) {
+      excluded[c.id] = `exceeds_budget (would be ${runningTotal + c.ms}ms > ${budgetMs}ms)`;
+      continue;
+    }
+    selected.push(c.id);
+    runningTotal += c.ms;
+  }
+
+  if (selected.length < minModels) {
+    return {
+      selected: candidates.slice(0, minModels).map((c) => c.id),
+      excluded,
+      totalEstimatedMs:
+        candidates.slice(0, minModels).reduce((s, c) => s + c.ms, 0) +
+        SYNTHESIS_OVERHEAD_MS,
+      budgetMs,
+      fits: false,
+    };
+  }
+
+  return {
+    selected,
+    excluded,
+    totalEstimatedMs: runningTotal,
+    budgetMs,
+    fits: true,
+  };
+}
 
 export const GOOGLE_SEARCH_TOOL = {
   type: "function" as const,

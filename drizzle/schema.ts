@@ -340,6 +340,29 @@ export const userPreferences = mysqlTable("user_preferences", {
 
 export type UserPreference = typeof userPreferences.$inferSelect;
 
+// ─── WEIGHT PRESETS (Round C4 — multi-model consensus weight profiles) ────
+// Stores named per-model weight profiles for multi-model consensus runs.
+// Each preset maps model IDs (e.g. "claude-sonnet-4-20250514", "gpt-4o")
+// to a 1-100 weight that biases the synthesis merge prompt. Built-in
+// presets seeded by the platform are user_id NULL.
+export const weightPresets = mysqlTable("weight_presets", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: varchar("description", { length: 500 }),
+  /** JSON: { [modelId]: number 1-100 }. Models not listed default to 50. */
+  weights: json("weights").notNull(),
+  /** Optional list of domain tags this preset is optimized for */
+  optimizedFor: json("optimized_for"),
+  isBuiltIn: mysqlBoolean("is_built_in").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+    userIdIdx: index("idx_weight_presets_user_id").on(table.userId),
+  }));
+
+export type WeightPreset = typeof weightPresets.$inferSelect;
+
 // ─── VIEW-AS AUDIT LOG ────────────────────────────────────────────────────
 export const viewAsAuditLog = mysqlTable("view_as_audit_log", {
   id: int("id").autoincrement().primaryKey(),
