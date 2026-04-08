@@ -5,8 +5,8 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-113 pages, 348 tables, 3,066 tests passing across 102 files (118 total, 3,180 total tests, 96.4% pass rate excluding 16 pre-existing DB-unavailable / wiring-verification files), 230+ services, 75 routers, 24 seed files, 37 cron jobs
-Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 42 recursive passes converged (9.7-9.8/10). 0 TS errors, 0 TODOs.
+113 pages, 348 tables, 3,080 tests passing across 103 files (119 total, 3,194 total tests, 96.4% pass rate excluding 16 pre-existing DB-unavailable / wiring-verification files), 230+ services, 75 routers, 24 seed files, 37 cron jobs
+Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 44 recursive passes converged (9.7-9.8/10, passes 43+44 confirmed 2 consecutive clean on EMBA integration). 0 TS errors, 0 TODOs.
 
 ## Wealth Engine (Phases 1-7 + Rounds A/B/C/D/E, see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md + docs/ENGINES_MIGRATION.md)
 Phase 1-7 ported the WealthBridge v7 HTML calculator engines into TypeScript and wired them into the full Stewardly stack. Round A added natural-language chat dispatch, PDF download buttons, per-message chat actions, and 3 synthesizer pulls. Round B added a Claude-Code-style code chat foundation. Round C added multi-model consensus stream + weight presets + UI trio. Round D wired the live SSE endpoint at /api/consensus/stream, added a pre-flight cost+latency badge, and a Chat→Consensus deep link. Round E lifted the Round C trio inline into Chat.tsx consensus mode, added LLM-as-judge semantic agreement scoring, shipped the weight_presets SQL migration (0009_weight_presets.sql), and documented the two-stack engine dedup path (docs/ENGINES_MIGRATION.md). 656 tests across 12 files (583 wealth-engine + 54 parallel main-branch engines + 19 semantic agreement). 41 recursive optimization passes converged at 9.7-9.8/10.

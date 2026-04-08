@@ -26,7 +26,7 @@ const log = logger.child({ module: "learning/licenses" });
 export interface LicenseAlert {
   licenseId: number;
   licenseType: string;
-  alertType: "expiration_warning" | "ce_credits_needed" | "expired";
+  alertType: "expiration_warning" | "ce_credits_needed" | "expired" | "suspended";
   daysOut: number | null;
   message: string;
 }
@@ -59,6 +59,18 @@ export function deriveLicenseAlerts(
         alertType: "expired",
         daysOut: null,
         message: `${lic.licenseType} is expired — renewal required.`,
+      });
+      continue;
+    }
+
+    // Suspended — immediate attention
+    if (lic.status === "suspended") {
+      alerts.push({
+        licenseId: lic.id,
+        licenseType: lic.licenseType,
+        alertType: "suspended",
+        daysOut: null,
+        message: `${lic.licenseType} is suspended — contact the issuing authority.`,
       });
       continue;
     }

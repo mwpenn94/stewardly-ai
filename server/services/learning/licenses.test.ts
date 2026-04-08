@@ -107,5 +107,25 @@ describe("learning/licenses — pure helpers", () => {
       expect(alerts.length).toBe(2);
       expect(alerts.map((a) => a.alertType).sort()).toEqual(["ce_credits_needed", "expiration_warning"]);
     });
+
+    it("emits suspended alert for suspended license", () => {
+      const alerts = deriveLicenseAlerts(
+        [
+          {
+            id: 6,
+            licenseType: "series7",
+            status: "suspended",
+            expirationDate: null,
+            ceDeadline: null,
+            ceCreditsRequired: 0,
+            ceCreditsCompleted: 0,
+          } as any,
+        ],
+        now,
+      );
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0].alertType).toBe("suspended");
+      expect(alerts[0].message).toContain("suspended");
+    });
   });
 });
