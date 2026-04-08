@@ -229,25 +229,50 @@ The first three Round C deferred items shipped in Round D:
    `wealthEngine.estimateConsensusCost`. Combines the synthesizer's
    `costEstimator.ts` task multipliers with `getModelEstimatedResponseMs`
    from the model registry. Surfaces "~$0.0042 · ~6.4s · chat · 320→320 tok"
-   on the Consensus page next to the Run button. Includes per-model
-   pricing fallback table for the audit's reference rates (April 2026)
-   so the badge is never zero for known models.
-3. **Chat → Consensus deep link** ✅ — When `chatMode === "consensus"`
-   in `Chat.tsx`, an "Open panel →" pill appears next to the mode
-   toggle and opens `/consensus?q=<encoded draft>` in a new tab. The
-   Consensus page reads the query string on mount, pre-fills the
-   question, and strips the param so refreshes don't double-prefill.
+   on the Consensus page next to the Run button.
+3. **Chat → Consensus deep link** ✅ — `chatMode === "consensus"` in
+   `Chat.tsx` exposes an "Open panel →" pill that opens
+   `/consensus?q=<encoded draft>` in a new tab.
 
-## 11. Still deferred (will land in a future round)
+## 11. Round E — final deferred items shipped (passes 39-41)
 
-1. **Lifting the trio fully into Chat.tsx** so consensus mode renders
-   the per-model cards inline instead of via a deep-link tab. Requires
-   touching the 2500-line `Chat.tsx` consensus branch and reconciling
-   with the message persistence path.
-2. **Semantic agreement** instead of word-overlap Jaccard. The current
-   metric is fast and good enough for a relative score, but a future
-   round could add embedding-based agreement for stronger signals.
-3. **Database migration**. The `weight_presets` table is added to
-   `drizzle/schema.ts` but `pnpm db:push` has not been run during the
-   session. The DB layer degrades gracefully to built-in seed presets
-   until the migration is applied in production.
+1. **Inline trio in Chat.tsx consensus mode** ✅ — `Chat.tsx` now
+   calls `wealthEngine.consensusStream` in consensus mode and stores
+   the full consensus result under `msg.metadata.wealthConsensus`.
+   When rendering the message, the existing consensus badge is
+   followed by the full Round C3 trio (`<StreamingResults />`,
+   `<TimingBreakdown />`, `<ComparisonView />`) plus the key
+   agreements + notable differences callout panels. The deep-link
+   pill from Round D still works for users who want the dedicated
+   `/consensus` page with the full preset picker and cost estimator.
+   Graceful fallback: if the new procedure fails, we fall through
+   to the legacy `advancedIntelligence.consensusQuery` mutation so
+   the feature never breaks during partial deploys.
+2. **LLM-as-judge semantic agreement** ✅ —
+   `server/services/semanticAgreement.ts` with `buildAgreementJudgePrompt`,
+   `parseJudgeScore`, `semanticAgreement`, and `combinedAgreement`.
+   The judge prompt asks a fast model (defaults to `gemini-2.5-flash`)
+   to score substantive alignment 0-100 on a `SCORE: N` line. 8-second
+   timeout race; on any failure returns `null` so `runConsensus` falls
+   back to the existing word-overlap Jaccard score. `RunConsensusResult`
+   now carries both `agreementScore` (best-of) + `semanticAgreementScore`
+   (the raw LLM score) + `agreementScorerSource` (`"jaccard"` or
+   `"semantic"`). 19 new tests cover the pure helpers.
+3. **`weight_presets` migration file** ✅ —
+   `drizzle/0009_weight_presets.sql` is committed. Production picks it
+   up on the next `pnpm db:push` run; the service layer still
+   degrades to in-memory seed presets until then, so the migration
+   is strictly non-blocking.
+4. **Engine dedup analysis doc** ✅ — `docs/ENGINES_MIGRATION.md` maps
+   the two parallel WealthBridge engine stacks side-by-side and
+   lays out a 5-step dedup path. Not executed in this round — the
+   refactor needs its own dedicated PR with an agreed canonical
+   namespace + rollback plan.
+
+## 12. Still deferred
+
+The only remaining item is the **full two-stack engine dedup** from
+`docs/ENGINES_MIGRATION.md`. It's a focused ~30-file refactor that
+touches two live UI surfaces (`/engine-dashboard` + `/wealth-engine/*`)
+and should land as a deliberate follow-up PR rather than being
+squeezed into a convergence pass.

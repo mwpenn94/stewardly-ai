@@ -30,6 +30,10 @@ import {
 import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
 import { LiveSession } from "@/components/LiveSession";
+// Round C3 / Round E1 — inline multi-model consensus panel
+import { StreamingResults, type StreamEvent } from "@/components/consensus/StreamingResults";
+import { TimingBreakdown } from "@/components/consensus/TimingBreakdown";
+import { ComparisonView } from "@/components/consensus/ComparisonView";
 import { VoiceOrb } from "@/components/VoiceOrb";
 import { ProgressiveMessage } from "@/components/ProgressiveMessage";
 import RichMediaEmbed, { type MediaEmbed } from "@/components/RichMediaEmbed";
@@ -698,6 +702,8 @@ export default function Chat() {
   const autonomousStart = trpc.autonomousProcessing.start.useMutation();
   const autonomousStop = trpc.autonomousProcessing.stop.useMutation();
   const consensusQuery = trpc.advancedIntelligence.consensusQuery.useMutation();
+  // Round E1 — multi-model consensus stream (Phase C2 backend, trio UI)
+  const consensusStreamMutation = trpc.wealthEngine.consensusStream.useMutation();
 
   // DnD sensors
   const sensors = useSensors(
@@ -986,43 +992,92 @@ export default function Chat() {
         setIsStreaming(false);
         return;
       }
-      // ─── CONSENSUS MODE: Multi-model consensus query ───
+      // ─── CONSENSUS MODE: Multi-model consensus stream (Round E1) ───
+      // Uses wealthEngine.consensusStream which returns the full event
+      // log + per-model responses + synthesis so the inline
+      // StreamingResults / TimingBreakdown / ComparisonView trio can
+      // render without a second round-trip. Falls back to the legacy
+      // advancedIntelligence.consensusQuery on error.
       if (chatMode === "consensus") {
         try {
           setMessages(prev => [...prev, { role: "assistant" as const, content: "Querying multiple models for consensus...", createdAt: new Date() }]);
-          const result = await consensusQuery.mutateAsync({ prompt: trimmed, requireConsensus: true });
-          const content = result.choices?.[0]?.message?.content || "No consensus response";
-          const consensusScore = (result as any)._consensusScore ?? null;
-          const modelsUsed = (result as any)._modelsUsed ?? [];
-          const warning = (result as any)._consensusWarning;
+          const result = await consensusStreamMutation.mutateAsync({
+            question: trimmed,
+            // Default trio; user can customize via /consensus page
+            selectedModels: ["claude-sonnet-4-20250514", "gpt-4o", "gemini-2.5-pro"],
+            maxModels: 3,
+          });
+          const content = result.unifiedAnswer || result.synthesisContent || "No consensus response";
+          const agreementScore = result.agreementScore;
+          const modelsUsed = result.modelsUsed;
           setMessages(prev => {
             const updated = [...prev];
             updated[updated.length - 1] = {
               role: "assistant" as const,
-              content: warning ? `${content}\n\n> ⚠️ **Consensus Warning:** ${warning}` : content,
+              content,
               createdAt: new Date(),
-              metadata: { consensusScore, modelsUsed },
+              metadata: {
+                // Legacy fields (kept for the existing expandable panel)
+                consensusScore: agreementScore,
+                modelsUsed,
+                // Round E1 — full wealth-engine consensus result for the
+                // inline trio components. We strip the event log down
+                // to what the UI actually needs (it's large).
+                wealthConsensus: {
+                  events: result.events,
+                  perModelResponses: result.perModelResponses,
+                  unifiedAnswer: result.unifiedAnswer,
+                  keyAgreements: result.keyAgreements,
+                  notableDifferences: result.notableDifferences,
+                  synthesisTimeMs: result.synthesisTimeMs,
+                  totalDurationMs: result.totalDurationMs,
+                  confidenceScore: result.confidenceScore,
+                  agreementScore: result.agreementScore,
+                  rationale: result.rationale,
+                },
+              },
             };
             return updated;
           });
-          const accumulated = content;
-          if (ttsEnabled) tts.speak(accumulated);
+          if (ttsEnabled) tts.speak(content);
           // Persist to conversation
           if (activeConvId) {
             persistStreamedMutation.mutateAsync({
               conversationId: activeConvId,
               userContent: trimmed,
-              assistantContent: accumulated,
+              assistantContent: content,
               mode,
               focus: focusSerialized,
             }).catch(() => {});
           }
         } catch (err: any) {
-          setMessages(prev => {
-            const updated = [...prev];
-            updated[updated.length - 1] = { role: "assistant" as const, content: `Consensus query failed: ${err.message}`, createdAt: new Date() };
-            return updated;
-          });
+          // Fallback to legacy consensus path so the feature still works
+          // if the new stream procedure is unavailable (e.g. during a
+          // partial deploy).
+          try {
+            const result = await consensusQuery.mutateAsync({ prompt: trimmed, requireConsensus: true });
+            const content = result.choices?.[0]?.message?.content || "No consensus response";
+            const consensusScore = (result as any)._consensusScore ?? null;
+            const modelsUsed = (result as any)._modelsUsed ?? [];
+            const warning = (result as any)._consensusWarning;
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                role: "assistant" as const,
+                content: warning ? `${content}\n\n> ⚠️ **Consensus Warning:** ${warning}` : content,
+                createdAt: new Date(),
+                metadata: { consensusScore, modelsUsed },
+              };
+              return updated;
+            });
+            if (ttsEnabled) tts.speak(content);
+          } catch (fallbackErr: any) {
+            setMessages(prev => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { role: "assistant" as const, content: `Consensus query failed: ${err.message}`, createdAt: new Date() };
+              return updated;
+            });
+          }
         }
         setIsStreaming(false);
         return;
@@ -2062,6 +2117,57 @@ export default function Chat() {
                                   <div className="px-3 py-2 text-xs text-muted-foreground/50">All models agreed — no alternative responses to show.</div>
                                 )}
                               </div>
+                            </div>
+                          )}
+                          {/* Round E1 — inline trio (StreamingResults + TimingBreakdown + ComparisonView)
+                              when the message came from wealthEngine.consensusStream. Renders under the
+                              legacy consensus badge so users get both the expandable summary AND the
+                              full per-model cards + timing chart + side-by-side diff. */}
+                          {msg.metadata?.wealthConsensus && (
+                            <div className="mt-3 space-y-3">
+                              <StreamingResults
+                                modelsRequested={(msg.metadata.wealthConsensus.perModelResponses as Array<{ modelId: string }>).map((r) => r.modelId)}
+                                events={(msg.metadata.wealthConsensus.events as StreamEvent[]) || []}
+                              />
+                              {msg.metadata.wealthConsensus.perModelResponses && (msg.metadata.wealthConsensus.perModelResponses as Array<unknown>).length > 0 && (
+                                <TimingBreakdown
+                                  perModel={(msg.metadata.wealthConsensus.perModelResponses as Array<{ modelId: string; content: string; durationMs: number; error?: string }>)
+                                    .filter((r) => !r.error)
+                                    .map((r) => ({ modelId: r.modelId, durationMs: r.durationMs }))}
+                                  synthesisMs={msg.metadata.wealthConsensus.synthesisTimeMs as number}
+                                  totalMs={msg.metadata.wealthConsensus.totalDurationMs as number}
+                                />
+                              )}
+                              {Array.isArray(msg.metadata.wealthConsensus.keyAgreements) && (msg.metadata.wealthConsensus.keyAgreements as string[]).length > 0 && (
+                                <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
+                                  <div className="text-[10px] uppercase text-emerald-400 font-semibold tracking-wide mb-1">
+                                    Key Agreements
+                                  </div>
+                                  <ul className="text-xs space-y-0.5 list-disc list-inside">
+                                    {(msg.metadata.wealthConsensus.keyAgreements as string[]).map((agreement: string, i: number) => (
+                                      <li key={i}>{agreement}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {Array.isArray(msg.metadata.wealthConsensus.notableDifferences) && (msg.metadata.wealthConsensus.notableDifferences as string[]).length > 0 && (
+                                <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+                                  <div className="text-[10px] uppercase text-amber-400 font-semibold tracking-wide mb-1">
+                                    Notable Differences
+                                  </div>
+                                  <ul className="text-xs space-y-0.5 list-disc list-inside">
+                                    {(msg.metadata.wealthConsensus.notableDifferences as string[]).map((diff: string, i: number) => (
+                                      <li key={i}>{diff}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {msg.metadata.wealthConsensus.perModelResponses && (msg.metadata.wealthConsensus.perModelResponses as Array<unknown>).length > 0 && (
+                                <ComparisonView
+                                  responses={msg.metadata.wealthConsensus.perModelResponses as Array<{ modelId: string; content: string; durationMs: number; error?: string }>}
+                                  unifiedAnswer={msg.metadata.wealthConsensus.unifiedAnswer as string}
+                                />
+                              )}
                             </div>
                           )}
                           {/* Render inline images if present in metadata */}
