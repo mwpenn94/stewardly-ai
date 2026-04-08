@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { GuardrailsGauge } from "@/components/wealth-engine/GuardrailsGauge";
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
+import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { Loader2, Target, Sliders, ShieldCheck } from "lucide-react";
@@ -129,11 +130,27 @@ export default function RetirementPage() {
 
           {/* GOAL */}
           <TabsContent value="goal" className="space-y-4">
-            <div>
+            <div className="flex items-center gap-2">
               <Button onClick={onRunGoal} disabled={runPreset.isPending}>
                 {runPreset.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Target className="mr-2 h-4 w-4" />}
                 Run Goal Projection ({horizon} yrs)
               </Button>
+              {finalSnap && (
+                <DownloadReportButton
+                  template="executive_summary"
+                  clientName="WealthBridge Client"
+                  payload={{
+                    kind: "executive_summary",
+                    input: {
+                      clientName: "WealthBridge Client",
+                      horizon,
+                      finalSnapshot: finalSnap,
+                      winners: {},
+                      topStrategies: [],
+                    },
+                  }}
+                />
+              )}
             </div>
             {projection.length > 0 && (
               <Card>

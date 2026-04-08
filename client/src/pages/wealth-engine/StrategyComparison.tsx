@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { StrategyCard } from "@/components/wealth-engine/StrategyCard";
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
+import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { Loader2, PlayCircle, Award } from "lucide-react";
@@ -132,18 +133,36 @@ export default function StrategyComparisonPage() {
               per metric.
             </p>
           </div>
-          <Button
-            onClick={onRunCompare}
-            disabled={compare.isPending}
-            size="lg"
-          >
-            {compare.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <PlayCircle className="mr-2 h-4 w-4" />
+          <div className="flex items-center gap-2">
+            {rows.length > 0 && (
+              <DownloadReportButton
+                template="complete_plan"
+                clientName="WealthBridge Client"
+                payload={{
+                  kind: "complete_plan",
+                  input: {
+                    clientName: "WealthBridge Client",
+                    horizon,
+                    projection: [],
+                    comparison: rows,
+                    winners,
+                  },
+                }}
+              />
             )}
-            Run Comparison
-          </Button>
+            <Button
+              onClick={onRunCompare}
+              disabled={compare.isPending}
+              size="lg"
+            >
+              {compare.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <PlayCircle className="mr-2 h-4 w-4" />
+              )}
+              Run Comparison
+            </Button>
+          </div>
         </div>
 
         {/* Inputs */}

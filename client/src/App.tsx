@@ -32,6 +32,8 @@ const WeStrategyComparison = lazy(() => import("./pages/wealth-engine/StrategyCo
 const WeRetirement = lazy(() => import("./pages/wealth-engine/Retirement"));
 const WePracticeToWealth = lazy(() => import("./pages/wealth-engine/PracticeToWealth"));
 const WeQuickQuote = lazy(() => import("./pages/wealth-engine/QuickQuoteFlow"));
+// Code Chat (Round B5 admin UI)
+const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 const Products = lazy(() => import("./pages/Products"));
 const ManagerDashboard = lazy(() => import("./pages/ManagerDashboard"));
 const SettingsHub = lazy(() => import("./pages/SettingsHub"));
@@ -136,6 +138,8 @@ function Router() {
         <Route path={"/wealth-engine/retirement"} component={WeRetirement} />
         <Route path={"/wealth-engine/practice-to-wealth"} component={WePracticeToWealth} />
         <Route path={"/wealth-engine/quick-quote"} component={WeQuickQuote} />
+        {/* Code Chat (admin foundation) */}
+        <Route path={"/code-chat"} component={CodeChatPage} />
         <Route path={"/products"} component={Products} />
         <Route path={"/manager"} component={ManagerDashboard} />
         <Route path={"/org-branding"} component={OrgBrandingEditor} />

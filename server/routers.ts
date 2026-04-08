@@ -1968,6 +1968,7 @@ import { advancedIntelligenceRouter } from "./routers/advancedIntelligence";
 import { autonomousProcessingRouter } from "./routers/autonomousProcessing";
 import { openClawRouter } from "./routers/openClaw";
 import { wealthEngineRouter } from "./routers/wealthEngine";
+import { codeChatRouter } from "./routers/codeChat";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2090,6 +2091,7 @@ export const appRouter = router({
   autonomousProcessing: autonomousProcessingRouter,
   openClaw: openClawRouter,
   wealthEngine: wealthEngineRouter,
+  codeChat: codeChatRouter,
 });
 
 export type AppRouter = typeof appRouter;

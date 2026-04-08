@@ -68,6 +68,10 @@ import {
   createShareLink,
   resolveShareLink,
 } from "../services/wealthEngineReports/shareableLinks";
+import {
+  extractIntent,
+  dispatchToEngine,
+} from "../services/wealthChat/chatEngineDispatcher";
 
 // ─── SHARED ZOD SCHEMAS ─────────────────────────────────────────────────────
 
@@ -748,4 +752,39 @@ export const wealthEngineRouter = router({
       }),
     )
     .query(async ({ input }) => resolveShareLink(input.token, input.password)),
+
+  // ── Round A3 — chat → engine natural language dispatch ──────────────
+  // The chat UI calls this when a user types a message that might be
+  // an engine intent. Returns the extracted intent + slots so the UI
+  // can either run `chatDispatch` immediately or ask the user to
+  // confirm before running the engine.
+  chatExtractIntent: protectedProcedure
+    .input(z.object({ text: z.string().min(1).max(2000) }))
+    .query(({ input }) => extractIntent(input.text)),
+
+  // Single-shot extract + dispatch path. Returns the full
+  // ChatEngineResponse the UI can render with inline charts +
+  // per-message actions.
+  chatDispatch: protectedProcedure
+    .input(z.object({ text: z.string().min(1).max(2000) }))
+    .mutation(async ({ input, ctx }) => {
+      const intent = extractIntent(input.text);
+      const response = await dispatchToEngine(intent);
+      // Persist the run via the mirror so it shows up in the user's
+      // saved scenarios list. Fire-and-forget — UI gets the response
+      // immediately.
+      if (response.tool !== "none" && response.tool !== "bie.backPlan") {
+        const { fireAndForgetMirror } = await import(
+          "../services/agent/calculatorScenariosMirror"
+        );
+        fireAndForgetMirror({
+          userId: ctx.user.id,
+          tool: response.tool,
+          scenarioName: `Chat: ${input.text.slice(0, 60)}`,
+          input: { extractedSlots: intent.slots },
+          result: response.data,
+        });
+      }
+      return response;
+    }),
 });

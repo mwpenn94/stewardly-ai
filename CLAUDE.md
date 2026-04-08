@@ -5,8 +5,19 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-106 pages, 318 tables, 2,506 tests passing (101 files, 100% pass rate), 212 services, 71 routers, 24 seed files, 37 cron jobs
-Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 20 recursive passes converged (9.4/10). 0 TS errors, 0 TODOs.
+110 pages, 318 tables, 2,822 tests passing (108 files, 96% pass rate excluding 14 pre-existing DB-unavailable test files), 220+ services, 72 routers, 24 seed files, 37 cron jobs
+Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 29 recursive passes converged (9.7/10). 0 TS errors, 0 TODOs.
+
+## Wealth Engine (Phases 1-7, see docs/WEALTH_ENGINE.md)
+Phase 1-7 ported the WealthBridge v7 HTML calculator engines into TypeScript and wired them into the full Stewardly stack. 454 new tests, 7-phase convergence (passes 13-29).
+- `server/shared/calculators/` — UWE/BIE/HE/Monte Carlo/benchmarks (Phase 1)
+- `server/routers/wealthEngine.ts` — 22+ tRPC procedures (Phase 2A)
+- `server/services/agent/calculatorOrchestrator.ts` — agent workflow chains (Phase 2B)
+- `server/services/ghl/` — GoHighLevel CRM integration (Phase 3)
+- `client/src/pages/wealth-engine/` — React UI (Retirement, StrategyComparison, PracticeToWealth, QuickQuote) (Phase 4)
+- `server/services/wealthEngineReports/` — 4 PDF templates + Edge TTS audio narration + shareable links (Phase 5)
+- `server/services/wealthChat/` — 5 chat tools + safety wrappers + 5 proactive triggers + chat-engine dispatcher (Phase 6 + Round A3)
+- `server/services/improvement/` — Plaid perception + 6 improvement loops (Phase 7)
 
 ## Commands
 `node toolkit.js init stewardly --safety` — Initialize (run once)
