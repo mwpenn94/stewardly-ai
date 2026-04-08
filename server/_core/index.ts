@@ -243,6 +243,106 @@ async function startServer() {
     }
   });
 
+  // ─── Round D1 — Multi-model consensus SSE endpoint ───────────────────
+  // True streaming version of wealthEngine.consensusStream. Drives the
+  // streamConsensus core (server/services/consensusStream.ts) and writes
+  // each ConsensusEvent to the response with the canonical encodeSseEvent
+  // wire format. Same auth + rate limiter as the chat stream endpoint.
+  app.post("/api/consensus/stream", generalLimiter, async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const {
+        question,
+        selectedModels,
+        modelWeights,
+        timeBudgetMs,
+        maxModels,
+        domain,
+      } = req.body ?? {};
+      if (!question || typeof question !== "string") {
+        res.status(400).json({ error: "question (string) is required" });
+        return;
+      }
+
+      // Lazy-import so we don't pull the consensus core into the cold-start path
+      const { streamConsensus, encodeSseEvent } = await import(
+        "../services/consensusStream"
+      );
+
+      // SSE headers — match the chat stream handler
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+      res.flushHeaders?.();
+
+      // Heartbeat every 15s so the connection stays open through proxies
+      const heartbeat = setInterval(() => {
+        try {
+          res.write(": heartbeat\n\n");
+        } catch {
+          /* ignore */
+        }
+      }, 15_000);
+
+      const cleanup = () => clearInterval(heartbeat);
+
+      try {
+        await streamConsensus(
+          {
+            question,
+            selectedModels: Array.isArray(selectedModels) ? selectedModels : undefined,
+            modelWeights: typeof modelWeights === "object" && modelWeights !== null ? modelWeights : undefined,
+            timeBudgetMs: typeof timeBudgetMs === "number" ? timeBudgetMs : undefined,
+            maxModels: typeof maxModels === "number" ? maxModels : undefined,
+            domain: typeof domain === "string" ? domain : undefined,
+            userId: user.id,
+          },
+          (event) => {
+            try {
+              res.write(encodeSseEvent(event));
+            } catch (writeErr) {
+              logger.warn({ writeErr }, "[ConsensusSSE] write failed");
+            }
+          },
+        );
+      } catch (streamErr) {
+        const message = streamErr instanceof Error ? streamErr.message : "stream failed";
+        try {
+          res.write(
+            encodeSseEvent({ type: "error", ts: Date.now(), error: message }),
+          );
+        } catch {
+          /* ignore */
+        }
+      } finally {
+        cleanup();
+        try {
+          res.end();
+        } catch {
+          /* ignore */
+        }
+      }
+    } catch (err: any) {
+      if (!res.headersSent) {
+        if (err.message?.includes("session") || err.message?.includes("Forbidden")) {
+          res.status(401).json({ error: "Unauthorized" });
+        } else {
+          logger.error(
+            { operation: "consensusSSE.routeError", error: err.message },
+            "[ConsensusSSE] Route error",
+          );
+          res.status(500).json({ error: "Internal server error" });
+        }
+      }
+    }
+  });
+
   // ─── tRPC API with sensitive route rate limiting ─────────────────────
   app.use("/api/trpc", sensitiveTrpcGuard);
   app.use(

@@ -5,8 +5,26 @@
 
 ## Stack
 TypeScript, tRPC, Drizzle ORM, TiDB, React 19
-106 pages, 318 tables, 2,506 tests passing (101 files, 100% pass rate), 212 services, 71 routers, 24 seed files, 37 cron jobs
-Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 20 recursive passes converged (9.4/10). 0 TS errors, 0 TODOs.
+110 pages, 318 tables, 2,822 tests passing (108 files, 96% pass rate excluding 14 pre-existing DB-unavailable test files), 220+ services, 72 routers, 24 seed files, 37 cron jobs
+Current state: ~97% deep, 3% human-dependent (env vars, GHL, compliance). 29 recursive passes converged (9.7/10). 0 TS errors, 0 TODOs.
+
+## Wealth Engine (Phases 1-7 + Rounds A/B/C/D, see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md)
+Phase 1-7 ported the WealthBridge v7 HTML calculator engines into TypeScript and wired them into the full Stewardly stack. Round A added natural-language chat dispatch, PDF download buttons, per-message chat actions, and 3 synthesizer pulls. Round B added a Claude-Code-style code chat foundation. Round C added multi-model consensus stream + weight presets + UI trio. Round D wired the live SSE endpoint at /api/consensus/stream, added a pre-flight cost+latency badge, and a Chat→Consensus deep link. 583 tests across 10 files, 38 recursive optimization passes converged at 9.7-9.8/10.
+- `server/shared/calculators/` — UWE/BIE/HE/Monte Carlo/benchmarks (Phase 1)
+- `server/routers/wealthEngine.ts` — 30+ tRPC procedures (Phase 2A + Round A6 + Round C2/C4)
+- `server/services/agent/calculatorOrchestrator.ts` — agent workflow chains (Phase 2B)
+- `server/services/ghl/` — GoHighLevel CRM integration (Phase 3)
+- `client/src/pages/wealth-engine/` — React UI (Retirement, StrategyComparison, PracticeToWealth, QuickQuote) (Phase 4)
+- `server/services/wealthEngineReports/` — 4 PDF templates + Edge TTS audio narration + shareable links (Phase 5)
+- `server/services/wealthChat/` — 5 chat tools + safety wrappers + 5 proactive triggers + chat-engine dispatcher (Phase 6 + Round A3)
+- `server/services/improvement/` — Plaid perception + 6 improvement loops (Phase 7)
+- `server/services/synthesizer/` — wordDiff (LCS) + timeBudgetSelector + costEstimator (Round A7)
+- `server/services/codeChat/` — fileTools + executor + autonomousCoding + roadmapPlanner + githubClient (Round B)
+- `server/routers/codeChat.ts` + `client/src/pages/CodeChat.tsx` — admin file browser + roadmap CRUD + word-diff visualizer (Round B5)
+- `server/services/consensusStream.ts` — runConsensus + streamConsensus + buildSynthesisPrompt + parseSynthesisOutput (Round C2)
+- `server/services/weightPresets.ts` — per-model weight CRUD with 5 built-in presets (Round C4)
+- `client/src/components/consensus/` — StreamingResults + TimingBreakdown + ComparisonView (Round C3)
+- `client/src/pages/Consensus.tsx` — multi-model consensus demo page (Round C3)
 
 ## Commands
 `node toolkit.js init stewardly --safety` — Initialize (run once)

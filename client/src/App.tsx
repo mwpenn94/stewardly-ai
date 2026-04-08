@@ -27,6 +27,16 @@ import Welcome from "./pages/Welcome";
 
 // ── Lazy loaded (code-split — loaded on demand) ──────────────────────
 const Calculators = lazy(() => import("./pages/Calculators"));
+// Wealth-engine pages (Phase 4 — UWE/BIE/HE React UI)
+const WeStrategyComparison = lazy(() => import("./pages/wealth-engine/StrategyComparison"));
+const WeRetirement = lazy(() => import("./pages/wealth-engine/Retirement"));
+const WePracticeToWealth = lazy(() => import("./pages/wealth-engine/PracticeToWealth"));
+const WeQuickQuote = lazy(() => import("./pages/wealth-engine/QuickQuoteFlow"));
+// Code Chat (Round B5 admin UI)
+const CodeChatPage = lazy(() => import("./pages/CodeChat"));
+// Consensus (Round C3 — multi-model consensus stream UI)
+const ConsensusPage = lazy(() => import("./pages/Consensus"));
+// Engine Dashboard (parallel main-branch effort: UWE/BIE/HE visualization at /engine-dashboard)
 const EngineDashboard = lazy(() => import("./pages/EngineDashboard"));
 const Products = lazy(() => import("./pages/Products"));
 const ManagerDashboard = lazy(() => import("./pages/ManagerDashboard"));
@@ -127,6 +137,16 @@ function Router() {
         <Route path={"/chat"} component={Chat} />
         <Route path={"/chat/:id"} component={Chat} />
         <Route path={"/calculators"} component={Calculators} />
+        {/* ── Wealth Engine (Phase 4) ──────────────────────────────────── */}
+        <Route path={"/wealth-engine/strategy-comparison"} component={WeStrategyComparison} />
+        <Route path={"/wealth-engine/retirement"} component={WeRetirement} />
+        <Route path={"/wealth-engine/practice-to-wealth"} component={WePracticeToWealth} />
+        <Route path={"/wealth-engine/quick-quote"} component={WeQuickQuote} />
+        {/* Code Chat (admin foundation) */}
+        <Route path={"/code-chat"} component={CodeChatPage} />
+        {/* Consensus (Round C — multi-model consensus stream) */}
+        <Route path={"/consensus"} component={ConsensusPage} />
+        {/* Engine Dashboard (parallel main-branch UWE/BIE/HE visualization) */}
         <Route path={"/engine-dashboard"} component={EngineDashboard} />
         <Route path={"/products"} component={Products} />
         <Route path={"/manager"} component={ManagerDashboard} />
