@@ -126,7 +126,7 @@ existing Stewardly tables. User FKs reference `stewardly.users.id`.
   `learning_practice_questions`, `learning_flashcards`
 - `learning_content_history` — full audit trail (action, previousData, newData, changedBy)
 
-**Total: 30 new tables** (Stewardly now ships 348 tables total.)
+**Total: 30 new tables** (Stewardly now ships 352 tables total — 351 schema definitions + `workflow_instances` added in pass 61.)
 
 ## Permission matrix (Task 7B)
 

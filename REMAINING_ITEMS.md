@@ -1,9 +1,9 @@
 # Stewardly — Remaining Items & Step-by-Step Completion Guide
 
-**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C/D/E complete + EMBA Learning integration + Passes 45-59 optimization)
-**Current State:** 351 tables, 259 services, 78 routers (75 files + 3 webhook routers), 119 pages (116 + 3 new Learning consumer UIs), 129 components, 122 test files (3,208 total tests; 3,096 passing in local dev with 14 pre-existing env-dependent failures that clear in deployed env), 23 AI models, 17 seed files, 37 cron jobs, 35 navigation items, 0 TS errors, 0 TODOs
+**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C/D/E complete + EMBA Learning integration + Passes 45-66 optimization)
+**Current State:** 352 tables (351 + `workflow_instances` from pass 61), 259 services, 78 routers (75 files + 3 webhook routers), 119 pages (116 + 3 new Learning consumer UIs), 129 components, 123 test files (3,213 total tests; 3,101 passing in local dev across 109 files, 14 pre-existing env-dependent failing files that clear in deployed env), 23 AI models, 17 seed files, 37 cron jobs, 35 navigation items, 0 TS errors, 0 TODOs
 **Wealth Engine + Consensus + Code Chat + Parallel Engines:** 656 tests across 12 files (see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md + docs/ENGINES_MIGRATION.md)
-**Recursive Optimization:** Converged after 59 passes (9.5/10). Pass 51 achieved 100% deployed-env pass rate. Passes 52-53 applied the weight_presets migration, executed SCUI engine dedup, and created docs/ENV_SETUP.md. **Pass 54 closed the "reachability gap"** (AI Agents + Code Chat in admin nav, GitHub status tab + EMBA content importer + 11 regression tests). Passes 55-56 confirmed 2 consecutive clean. **Pass 58 closed the "usability gap"** raised when the user pointed out that reachable features weren't actually *usable* end-to-end: built the three missing Learning consumer UIs (LearningTrackDetail + LearningFlashcardStudy + LearningQuizRunner — the imported EMBA content can now actually be studied and scored through the SRS), fixed the AgentManager permanent-zero counter (every run now writes to `agent_actions` + increments instance totals, and a `<AgentRecentRuns />` expansion panel on each card shows the live action log), and persisted the Code Chat roadmap to `.stewardly/roadmap.json` so admin edits survive server restarts. Pass 59 verification sweep — 0 TS errors, 3,096 passing, 0 regressions, committed + pushed (`fefcfc1`). Pass 60 running in the current session updates all related documentation.
+**Recursive Optimization:** Converged after 66 passes (9.7/10). Pass 51 achieved 100% deployed-env pass rate. Passes 52-53 applied the weight_presets migration, executed SCUI engine dedup, and created docs/ENV_SETUP.md. **Pass 54 closed the "reachability gap"** (AI Agents + Code Chat in admin nav, GitHub status tab + EMBA content importer + 11 regression tests). Passes 55-56 confirmed 2 consecutive clean. **Pass 58 closed the "usability gap"** raised when the user pointed out that reachable features weren't actually *usable* end-to-end: built the three missing Learning consumer UIs (LearningTrackDetail + LearningFlashcardStudy + LearningQuizRunner — the imported EMBA content can now actually be studied and scored through the SRS), fixed the AgentManager permanent-zero counter (every run now writes to `agent_actions` + increments instance totals, and a `<AgentRecentRuns />` expansion panel on each card shows the live action log), and persisted the Code Chat roadmap to `.stewardly/roadmap.json` so admin edits survive server restarts. Pass 59 verification sweep — 0 TS errors, 0 regressions, committed + pushed (`fefcfc1`). **Pass 61 added the `workflow_instances` table + migration + 3 tRPC procs + Workflows.tsx cross-session persistence + 5 regression tests** so a 30-minute FINRA registration run no longer vaporizes on browser refresh (pushed `0fb57b9`). Passes 62-63 confirmed 2 consecutive clean (pushed `5966518`). **Pass 64 refreshed 6 stale docs** (SETUP_GUIDE + STEWARDLY_COMPREHENSIVE_GUIDE + stewardly-platform-report + INTELLIGENCE_ARCHITECTURE + CONSENSUS + MASTER_OPTIMIZATION_GUIDE) with current pass-63 metrics. Pass 66 caught an internal contradiction (122 files in CLAUDE/REMAINING_ITEMS vs 123 in STEWARDLY_COMPREHENSIVE_GUIDE) and unified every doc on the authoritative `pnpm test` output: **3,101 passing across 109 files in local dev; 123 files / 3,213 tests total, with 14 pre-existing env-dependent failing files that clear in deployed env.**
 
 ## Round D — shipped follow-ups (passes 36-38)
 - ✅ Express SSE endpoint at `POST /api/consensus/stream` (server/_core/index.ts) wrapping `streamConsensus(emit)` with `encodeSseEvent` + 15s heartbeat
@@ -104,7 +104,7 @@ openssl rand -hex 32
 
 ### Phase 2: Database Deployment (5 minutes)
 
-All 351 tables (including the 30-table EMBA Learning integration) have been deployed in the current environment. If you are deploying to a new environment, the migration SQL is already generated (latest: `drizzle/0010_emba_learning.sql`).
+All 352 tables (including the 30-table EMBA Learning integration and the `workflow_instances` table added in pass 61) have been deployed in the current environment. If you are deploying to a new environment, the migration SQL is already generated (latest: `drizzle/0011_workflow_instances.sql`).
 
 ```bash
 cd /home/ubuntu/wealthbridge-ai
@@ -290,9 +290,9 @@ Pass 50: Final convergence scan. No changes needed. Delta=[0,0]. Converged at 9.
 ## Architecture Summary
 
 ```
-116 pages | 100+ routes | 78 routers | 258 services | 352 tables
-129 components | 24 seed files (40+ modules) | 37 cron jobs
-105 test files (3,082 passing, 96.5%) | 23 AI models (8 families)
+119 pages | 100+ routes | 78 routers | 259 services | 352 tables
+129 components | 17 seed files (40+ modules) | 37 cron jobs
+123 test files / 3,213 total tests — 3,101 passing in local dev, 14 pre-existing env-dependent files clear in deployed env | 23 AI models (8 families)
 5-layer AI config | 6-phase seed orchestrator | 15 context functions
 Chrome extension (LinkedIn capture, Gmail compliance, side panel)
 5 predefined workflows | 5 autonomous processing foci (incl. general)
@@ -300,7 +300,7 @@ EMBA Learning: 12 exam tracks, licensure tracking, dynamic content CRUD
 0 TypeScript errors | 31+ navigation items
 ```
 
-**Rating: 9.8/10** --- Expert-level financial advisory platform with comprehensive coverage plus professional-development and licensure lifecycle management. All automated code work, UI wiring, optimization, the EMBA Learning integration (Tasks 1-8, pass 58 added the three consumer study pages), the EngineDashboard → wealth-engine-reports cross-stack PDF wire (pass 49), the reachability fix (pass 54), and the usability fix (pass 58) are complete. 3,096/3,208 tests passing in local dev — the 14 failing test files are all pre-existing env-dependent and clear in the deployed environment. The 0.2-point gap is attributable to items requiring human action (env vars, GHL setup, compliance review, Chrome extension loading).
+**Rating: 9.8/10** --- Expert-level financial advisory platform with comprehensive coverage plus professional-development and licensure lifecycle management. All automated code work, UI wiring, optimization, the EMBA Learning integration (Tasks 1-9, pass 58 added the three consumer study pages), the EngineDashboard → wealth-engine-reports cross-stack PDF wire (pass 49), the reachability fix (pass 54), the usability fix (pass 58), and the Workflows cross-session persistence (pass 61) are complete. 3,101/3,213 tests passing in local dev across 109/123 files — the 14 pre-existing env-dependent failing files clear in the deployed environment. The 0.2-point gap is attributable to items requiring human action (env vars, GHL setup, compliance review, Chrome extension loading).
 
 ### Session 11: 100% Test Pass Rate + Documentation Update (pass 51-52)
 
@@ -367,6 +367,6 @@ Pass 56: Second consecutive clean scan. Delta=[0,0]. Converged.
 **Pass 59:** Verification sweep.
 - `pnpm tsc --noEmit` — 0 errors.
 - `pnpm build` — success.
-- `pnpm test` — 3,096 passing across 108 files in local dev (was 3,093 / 107 before pass 58). Same 14 pre-existing env-dependent failures unchanged. 0 regressions.
+- `pnpm test` — 3,096 passing across 108 files in local dev (was 3,093 / 107 before pass 58). Same 14 pre-existing env-dependent failures unchanged. 0 regressions. *(Pass 61 later added 5 more tests via `workflow-instances.test.ts`, bringing the final local-dev count to 3,101 / 109.)*
 - 81 targeted tests (learning + nav + wiring + roadmap) — all green.
 - Committed `fefcfc1` and pushed.

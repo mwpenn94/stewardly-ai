@@ -1,8 +1,21 @@
 # Stewardly Platform — Comprehensive Status Report & Guide
 
-**Date:** March 22, 2026  
-**Author:** Manus AI  
+**Date:** March 22, 2026
+**Author:** Manus AI
 **Version:** Post-Audit (checkpoint 962b024a+)
+
+> ⚠️ **HISTORICAL SNAPSHOT — DO NOT USE FOR CURRENT METRICS.** This report
+> captures the state of Stewardly as of the March 22, 2026 audit. The
+> architecture section and executive summary metrics below reflect a
+> much earlier baseline (262 tables, 62 pages, 1,746 tests, 53 routers,
+> 104 services). Since then, passes 1-63 have added the Wealth Engine
+> (Phases 1-7 + Rounds A–E), EMBA Learning integration, reachability
+> fixes (pass 54), and end-to-end usability fixes (passes 58-61). For
+> the **current** source of truth on counts, test state, and feature
+> coverage, consult `CLAUDE.md`, `REMAINING_ITEMS.md`, and `SETUP_GUIDE.md`.
+> As of pass 63 (2026-04-08): 352 tables, 78 routers, 259 services,
+> 119 pages, 129 components, 3,213 total tests (3,101 passing in local
+> dev, 14 pre-existing env-dependent files clear in the deployed env).
 
 ---
 
@@ -10,7 +23,7 @@
 
 Stewardly is a full-stack AI-powered financial advisory platform built on React 19, Tailwind 4, Express 4, and tRPC 11 with Manus OAuth, a TiDB database layer, and S3 storage. The platform serves as a **digital financial twin** — an intelligent, continuously improving system that combines conversational AI, financial planning tools, compliance infrastructure, and multi-role advisory capabilities into a single unified experience.
 
-The codebase currently spans **128,728 lines** of TypeScript across **473 files**, with **62 page components**, **89 reusable UI components**, **104 server service modules**, **53 tRPC router files**, and **262 database tables**. The test suite contains **63 test files** with **1,746 passing tests** (zero failures).
+_(Metrics below reflect the March 22, 2026 audit baseline. See the note at the top of this file for the current pass-63 counts.)_ The codebase spanned **128,728 lines** of TypeScript across **473 files** at the time of this audit, with **62 page components**, **89 reusable UI components**, **104 server service modules**, **53 tRPC router files**, and **262 database tables**. The test suite contained **63 test files** with **1,746 passing tests** (zero failures).
 
 This report documents the results of a comprehensive platform audit covering UI/UX quality, virtual user flow validation, code efficiency, test coverage, and a complete capability gap analysis with specific owner action items.
 

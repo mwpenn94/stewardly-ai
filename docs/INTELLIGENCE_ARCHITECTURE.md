@@ -1,6 +1,17 @@
 # Stewardly Intelligence Architecture
 
-> Last updated: 2026-04-01 | Pass 16 (Adversarial — DRY Consolidation + Silent Failure Fix)
+> Last updated: 2026-04-08 | Pass 63 (2 consecutive clean convergence scans after the usability-gap fix session)
+>
+> **Change log since pass 16:** passes 17-50 iteratively hardened the
+> intelligence layer and shipped the Wealth Engine phases + EMBA
+> integration. Pass 54 closed a reachability gap (AI Agents + Code Chat
+> added to admin nav, Code Chat GitHub tab, EMBA content importer).
+> Passes 58-61 closed an end-to-end usability gap (three Learning
+> consumer UIs wired to the SRS, AgentManager Recent Runs panel backed
+> by `agent_actions`, Code Chat roadmap persistence, Workflows
+> cross-session persistence via `workflow_instances`). The wiring-layer
+> contract described below is unchanged by all of this — every new LLM
+> call still flows through `shared/stewardlyWiring → contextualLLM`.
 
 ## Overview
 

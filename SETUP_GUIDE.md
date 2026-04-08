@@ -83,12 +83,19 @@ Also remove from `vite.config.ts`: `vite-plugin-manus-runtime` and `@builder.io/
 ## Current Scale
 
 ```
-348 tables | 230+ services | 75 routers | 113 pages | 117 components
-103 test files (3,080 passing, 96.4%) | 23 AI models (8 families) | 5 search tools
-37 cron jobs | 24 seed files (40+ modules) | 31+ navigation items
+352 tables (351 schema defs + workflow_instances) | 259 services | 78 routers | 119 pages | 129 components
+123 test files / 3,213 total tests — 3,101 passing across 109 files in local dev;
+14 pre-existing env-dependent files (112 tests) clear in the deployed environment
+with DB + env vars present
+23 AI models (8 families) | 5 search tools
+37 cron jobs | 17 seed files (40+ modules) | 35 navigation items
 Chrome extension | 5 predefined workflows | 5 processing foci | 0 TypeScript errors
 EMBA Learning Integration: 12 exam tracks | licensure tracking | dynamic content CRUD
++ full consumer UIs (TrackDetail + FlashcardStudy + QuizRunner — pass 58)
+Code Chat GitHub tab | AI Agents CRUD in nav | Workflow cross-session persistence
 ```
+
+_Last verified: pass 63 (2026-04-08). Counts reflect the state after passes 45-63._
 
 ---
 
