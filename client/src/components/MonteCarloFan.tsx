@@ -28,7 +28,7 @@ function fmt(n: number): string {
   return `$${n.toFixed(0)}`;
 }
 
-export default function MonteCarloFan({ data, title = "Monte Carlo Simulation", height = 280 }: Props) {
+export default function MonteCarloFan({ data, title = "Monte Carlo Simulation", height = 240 }: Props) {
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
 
   const { bands, medianLine, yTicks, xTicks, padL, padT, chartW, chartH } = useMemo(() => {

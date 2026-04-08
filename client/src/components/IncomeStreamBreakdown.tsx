@@ -118,7 +118,7 @@ export default function IncomeStreamBreakdown({ results, title = "Income Stream 
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Summary stats */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           <div className="bg-secondary/50 rounded-lg p-2.5">
             <p className="text-[10px] text-muted-foreground uppercase">Total Income</p>
             <p className="text-lg font-semibold text-emerald-400 tabular-nums">{fmt(yearData.totalIncome)}</p>

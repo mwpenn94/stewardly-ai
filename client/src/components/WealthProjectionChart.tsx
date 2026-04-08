@@ -58,7 +58,7 @@ export default function WealthProjectionChart({
   subtitle,
   yLabel,
   formatY = fmt,
-  height = 320,
+  height = 260,
   showLegend = true,
   milestoneYears,
 }: Props) {

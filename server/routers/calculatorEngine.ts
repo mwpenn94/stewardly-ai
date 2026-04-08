@@ -30,7 +30,7 @@ const clientProfileSchema = z.object({
 }).partial();
 
 const companyKeySchema = z.enum([
-  "wealthbridge", "nwm", "massmutual", "guardian", "nyl", "prudential", "pacific", "transamerica", "donothing",
+  "wealthbridge", "captivemutual", "wirehouse", "ria", "communitybd", "diy", "donothing", "bestoverall",
 ]);
 
 const roleKeySchema = z.enum([

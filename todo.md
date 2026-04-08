@@ -3374,3 +3374,16 @@
 - [x] Pass 2: Depth pass (defensive guards added, 5 test fixes, all clean)
 - [x] Convergence: 10/10 score, temperature COLD, 2 consecutive clean passes
 - [x] Documentation update + convergence (MASTER_OPTIMIZATION_GUIDE.md written)
+
+### Engine Dashboard Fixes (User Report)
+- [x] Fix zero/blank values in UWE simulation results (company key mismatch + data mapping fixed)
+- [x] Add complete BIE (Business Income Engine) section to dashboard (Income tab with stream breakdown)
+- [x] Add quick-load strategy presets from v7 source (4 presets: Conservative, WB Pro, Young Professional, Retirement)
+- [x] Add reference data, logic context, and citations from v7 (References tab with products, benchmarks, methodology)
+- [x] Fix data flow: tRPC endpoints must return real computed data (all 6 endpoints verified working)
+- [x] Optimize UI/UX for desktop responsiveness (comparison table above chart, reduced chart height)
+- [x] Optimize UI/UX for mobile responsiveness (responsive grids, overflow scroll, touch-friendly)
+- [x] Add HE (Holistic Engine) section to dashboard (Holistic tab with multi-strategy comparison)
+- [x] Add stress test / Monte Carlo sections (Stress tab with 3 scenarios + backtest, MC tab with fan chart)
+- [x] Add product reference and compliance panels (References tab with 14 products, benchmarks, methodology)
+- [x] Recursive optimization: 3 passes completed, 2 consecutive clean — CONVERGED

@@ -1,0 +1,18 @@
+Dashboard Verification Round 3 - With BIE Enabled
+==================================================
+Date: 2026-04-07
+
+CONFIRMED WORKING:
+1. WealthBridge Pro preset loads correctly (Age 35, Income $200K, etc.)
+2. Both strategies have BIE enabled (green checkmarks)
+3. Run All Engines returns data - WB Professional: $37.1M, Captive Mutual: $20.1M
+4. Chart renders with 30-year projection, both lines visible
+5. Chart Metric dropdown (Total Value) with strategy badges
+6. Quick-Load collapses to "Presets" button after running
+7. All 6 tabs visible and switching
+
+REMAINING ISSUES:
+1. Comparison table not visible below chart - need to scroll further or it may not be rendering
+2. Need to verify Income tab shows BIE data with these BIE-enabled strategies
+3. Mobile responsiveness not yet tested
+4. The chart is cutting off at bottom - may need more space
