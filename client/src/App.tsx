@@ -27,6 +27,11 @@ import Welcome from "./pages/Welcome";
 
 // ── Lazy loaded (code-split — loaded on demand) ──────────────────────
 const Calculators = lazy(() => import("./pages/Calculators"));
+// Wealth-engine pages (Phase 4 — UWE/BIE/HE React UI)
+const WeStrategyComparison = lazy(() => import("./pages/wealth-engine/StrategyComparison"));
+const WeRetirement = lazy(() => import("./pages/wealth-engine/Retirement"));
+const WePracticeToWealth = lazy(() => import("./pages/wealth-engine/PracticeToWealth"));
+const WeQuickQuote = lazy(() => import("./pages/wealth-engine/QuickQuoteFlow"));
 const Products = lazy(() => import("./pages/Products"));
 const ManagerDashboard = lazy(() => import("./pages/ManagerDashboard"));
 const SettingsHub = lazy(() => import("./pages/SettingsHub"));
@@ -126,6 +131,11 @@ function Router() {
         <Route path={"/chat"} component={Chat} />
         <Route path={"/chat/:id"} component={Chat} />
         <Route path={"/calculators"} component={Calculators} />
+        {/* ── Wealth Engine (Phase 4) ──────────────────────────────────── */}
+        <Route path={"/wealth-engine/strategy-comparison"} component={WeStrategyComparison} />
+        <Route path={"/wealth-engine/retirement"} component={WeRetirement} />
+        <Route path={"/wealth-engine/practice-to-wealth"} component={WePracticeToWealth} />
+        <Route path={"/wealth-engine/quick-quote"} component={WeQuickQuote} />
         <Route path={"/products"} component={Products} />
         <Route path={"/manager"} component={ManagerDashboard} />
         <Route path={"/org-branding"} component={OrgBrandingEditor} />

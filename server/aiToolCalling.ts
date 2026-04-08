@@ -376,7 +376,327 @@ export const MODEL_TOOLS: Tool[] = [
 ];
 
 // ─── All Tools Combined ──────────────────────────────────────────
-export const ALL_AI_TOOLS: Tool[] = [...CALCULATOR_TOOLS, ...MODEL_TOOLS];
+// ─── Wealth Engine Tools (UWE + BIE + HE + Monte Carlo) ─────────
+// Phase 2C: expose the sophisticated Phase 1 engines to the ReAct
+// agent. Distinct `we_` prefix keeps them separate from the simple
+// `calc_` tools above so the agent can pick the right level of
+// sophistication per query.
+export const WEALTH_ENGINE_TOOLS: Tool[] = [
+  {
+    type: "function",
+    function: {
+      name: "we_holistic_simulate",
+      description:
+        "Run the Holistic Engine (HE) year-by-year simulation for a client. Combines UWE wealth products with optional BIE business income. Returns total value, liquid wealth, death benefit, tax savings, and net value over time. Use this when the user asks 'how much will I have' or 'run my plan'.",
+      parameters: {
+        type: "object",
+        properties: {
+          preset: {
+            type: "string",
+            enum: [
+              "wealthbridgeClient",
+              "doNothing",
+              "diy",
+              "wirehouse",
+              "ria",
+              "captivemutual",
+              "communitybd",
+              "wbPremFinance",
+            ],
+            description: "Holistic preset to simulate.",
+          },
+          age: { type: "number" },
+          income: { type: "number" },
+          netWorth: { type: "number" },
+          savings: { type: "number" },
+          dependents: { type: "number" },
+          mortgage: { type: "number" },
+          debts: { type: "number" },
+          years: { type: "number", description: "Planning horizon (default 30)." },
+        },
+        required: ["preset"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "we_compare_strategies",
+      description:
+        "Compare multiple HE strategies side by side at a chosen horizon. Returns the winner across totalValue, netValue, ROI, totalLiquidWealth, totalProtection, totalTaxSavings. Use this when the user asks 'which is better' or 'which company' or 'compare WealthBridge vs'.",
+      parameters: {
+        type: "object",
+        properties: {
+          presets: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: [
+                "wealthbridgeClient",
+                "doNothing",
+                "diy",
+                "wirehouse",
+                "ria",
+                "captivemutual",
+                "communitybd",
+                "wbPremFinance",
+              ],
+            },
+            description: "Preset list to compare (minimum 2).",
+          },
+          age: { type: "number" },
+          income: { type: "number" },
+          netWorth: { type: "number" },
+          savings: { type: "number" },
+          dependents: { type: "number" },
+          years: { type: "number", description: "Comparison horizon (default 30)." },
+        },
+        required: ["presets"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "we_project_biz_income",
+      description:
+        "Run the Business Income Engine (BIE) forward projection for a given role and stream mix. Returns year-by-year income with cumulative totals. Use this when the user (an advisor or recruit) asks about practice income, production, or hierarchy impact.",
+      parameters: {
+        type: "object",
+        properties: {
+          role: {
+            type: "string",
+            enum: ["new", "exp", "sa", "dir", "md", "rvp", "affB", "affC"],
+            description: "Role key (producer levels + active affiliate tracks).",
+          },
+          years: { type: "number", description: "Projection horizon (default 10)." },
+          personalGDC: {
+            type: "number",
+            description: "Override role default GDC (optional).",
+          },
+        },
+        required: ["role"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "we_backplan_income",
+      description:
+        "BIE back-plan: given a target annual income, returns required GDC, bracket rate, and a full sales funnel broken down by daily / weekly / monthly / annual cadence. Use this when the user asks 'what do I need to do to earn $X' or 'what's the path to $250K'.",
+      parameters: {
+        type: "object",
+        properties: {
+          targetIncome: {
+            type: "number",
+            description: "Desired annual income in dollars.",
+          },
+          role: {
+            type: "string",
+            enum: ["new", "exp", "sa", "dir", "md", "rvp"],
+            description: "Role context for the bracket calculation.",
+          },
+        },
+        required: ["targetIncome", "role"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "we_monte_carlo",
+      description:
+        "Run a 500-trial Monte Carlo simulation with Box-Muller normal returns. Returns p10/p25/p50/p75/p90 percentile bands by year. Use this when the user asks 'what's the worst case' or 'success rate' or 'Monte Carlo'.",
+      parameters: {
+        type: "object",
+        properties: {
+          investReturn: {
+            type: "number",
+            description: "Expected annual return (default 0.07).",
+          },
+          volatility: {
+            type: "number",
+            description: "Annual return std dev (default 0.15).",
+          },
+          years: { type: "number", description: "Horizon (default 30)." },
+          trials: { type: "number", description: "Number of trials (default 500)." },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "we_detect_opportunities",
+      description:
+        "Scan a client for Roth conversion windows, hierarchy advancement proximity, and guardrail-crossing risk. Returns a list of actionable opportunities with narratives and metrics. Use this when asked 'anything I should act on' or 'any opportunities'.",
+      parameters: {
+        type: "object",
+        properties: {
+          clientId: {
+            type: "string",
+            description: "Client identifier (will be loaded via loadClientProfile).",
+          },
+        },
+        required: ["clientId"],
+        additionalProperties: false,
+      },
+    },
+  },
+];
+
+// ─── Chat-level Wealth Tools (Phase 6A) ───────────────────────────
+// Higher-level conversational tools that wrap the engine. The agent
+// uses these when a user is in chat ("explain why my retirement total
+// is X", "what if I bumped savings to 20%?").
+export const WEALTH_CHAT_TOOLS: Tool[] = [
+  {
+    type: "function",
+    function: {
+      name: "chat_explain_number",
+      description:
+        "Explain a financial number from the wealth engine output by tracing the underlying assumption chain. Returns drivers + a plain-language narrative.",
+      parameters: {
+        type: "object",
+        properties: {
+          metric: {
+            type: "string",
+            description: "Metric key like totalValue, totalLiquidWealth, roi.",
+          },
+          value: { type: "number" },
+          context: { type: "string", description: "Optional context (year, scenario name)." },
+        },
+        required: ["metric", "value"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "chat_modify_and_rerun",
+      description:
+        "Change one assumption in the user's plan and re-run HE.simulate to show the delta. Use when a user asks 'what if I saved more' or 'what if I retired later'.",
+      parameters: {
+        type: "object",
+        properties: {
+          age: { type: "number" },
+          income: { type: "number" },
+          netWorth: { type: "number" },
+          savings: { type: "number" },
+          dependents: { type: "number" },
+          assumption: {
+            type: "string",
+            enum: ["age", "income", "netWorth", "savings", "monthlySavings", "marginalRate"],
+          },
+          newValue: { type: "number" },
+          years: { type: "number", description: "Horizon (default 30)." },
+        },
+        required: ["assumption", "newValue"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "chat_compare_scenarios",
+      description:
+        "Run two named scenarios end-to-end and return a side-by-side delta. Use when a user wants to compare 'what I'm doing now' vs 'WealthBridge plan'.",
+      parameters: {
+        type: "object",
+        properties: {
+          scenario1Name: { type: "string" },
+          scenario1Preset: {
+            type: "string",
+            enum: [
+              "wealthbridgeClient",
+              "doNothing",
+              "diy",
+              "wirehouse",
+              "ria",
+              "captivemutual",
+              "communitybd",
+              "wbPremFinance",
+            ],
+          },
+          scenario2Name: { type: "string" },
+          scenario2Preset: {
+            type: "string",
+            enum: [
+              "wealthbridgeClient",
+              "doNothing",
+              "diy",
+              "wirehouse",
+              "ria",
+              "captivemutual",
+              "communitybd",
+              "wbPremFinance",
+            ],
+          },
+          age: { type: "number" },
+          income: { type: "number" },
+          netWorth: { type: "number" },
+          savings: { type: "number" },
+          years: { type: "number" },
+        },
+        required: ["scenario1Name", "scenario1Preset", "scenario2Name", "scenario2Preset"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "chat_show_visualization",
+      description:
+        "Return a React component descriptor (component name + props) that the chat UI should render inline. Use when the user asks 'show me a chart' or when a chart improves the explanation.",
+      parameters: {
+        type: "object",
+        properties: {
+          chartType: {
+            type: "string",
+            enum: ["projection", "guardrails", "bracket", "hierarchy", "sankey"],
+          },
+          data: { type: "object", additionalProperties: true },
+        },
+        required: ["chartType"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "chat_project_recruit_impact",
+      description:
+        "Project how adding N recruits would shift personal wealth at retirement. Heuristic 5% per recruit until Phase 7 wires in the full BIE team-add simulation.",
+      parameters: {
+        type: "object",
+        properties: {
+          clientId: { type: "string" },
+          additionalRecruits: { type: "number", minimum: 1, maximum: 50 },
+        },
+        required: ["clientId", "additionalRecruits"],
+        additionalProperties: false,
+      },
+    },
+  },
+];
+
+export const ALL_AI_TOOLS: Tool[] = [
+  ...CALCULATOR_TOOLS,
+  ...MODEL_TOOLS,
+  ...WEALTH_ENGINE_TOOLS,
+  ...WEALTH_CHAT_TOOLS,
+];
 
 // ─── Tool Execution (inline calculator logic) ────────────────────
 export async function executeAITool(name: string, args: Record<string, any>): Promise<string> {
@@ -872,6 +1192,273 @@ export async function executeAITool(name: string, args: Record<string, any>): Pr
             !hasDisability ? "Disability insurance protects your income — your most valuable asset" : null,
             !diversified ? "Diversify investments across asset classes to reduce risk" : null,
           ].filter(Boolean),
+        });
+      }
+
+      // ─── Wealth Engine dispatch (Phase 2C) ─────────────────────
+      case "we_holistic_simulate": {
+        const mod = await import("./shared/calculators");
+        const preset = args.preset as keyof typeof mod.HE_PRESETS;
+        const profile = {
+          age: args.age ?? 40,
+          income: args.income ?? 120000,
+          netWorth: args.netWorth ?? 350000,
+          savings: args.savings ?? 180000,
+          dependents: args.dependents ?? 2,
+          mortgage: args.mortgage ?? 250000,
+          debts: args.debts ?? 30000,
+        };
+        const years = args.years ?? 30;
+        const fn = mod.HE_PRESETS[preset] as
+          | ((profile: Parameters<typeof mod.HE_PRESETS.doNothing>[0]) => ReturnType<typeof mod.HE_PRESETS.doNothing>)
+          | undefined;
+        if (!fn) {
+          return JSON.stringify({ error: `Unknown preset: ${preset}` });
+        }
+        const strategy = fn(profile);
+        const results = mod.heSimulate(strategy, years);
+        const final = results[results.length - 1];
+        return JSON.stringify({
+          preset,
+          years,
+          snapshots: results.map((r) => ({
+            year: r.year,
+            age: r.age,
+            totalValue: r.totalValue,
+            totalLiquidWealth: r.totalLiquidWealth,
+            netValue: r.netValue,
+          })),
+          final: {
+            totalValue: final.totalValue,
+            totalLiquidWealth: final.totalLiquidWealth,
+            totalProtection: final.totalProtection,
+            totalTaxSavings: final.totalTaxSavings,
+            netValue: final.netValue,
+            roi: final.roi,
+          },
+        });
+      }
+      case "we_compare_strategies": {
+        const mod = await import("./shared/calculators");
+        const presets = (args.presets || []) as Array<
+          keyof typeof mod.HE_PRESETS
+        >;
+        if (presets.length < 2) {
+          return JSON.stringify({
+            error: "we_compare_strategies requires at least 2 presets",
+          });
+        }
+        const profile = {
+          age: args.age ?? 40,
+          income: args.income ?? 120000,
+          netWorth: args.netWorth ?? 350000,
+          savings: args.savings ?? 180000,
+          dependents: args.dependents ?? 2,
+        };
+        const horizon = args.years ?? 30;
+        mod.clearStrategies();
+        mod.setHorizon(horizon);
+        presets.forEach((p) => {
+          const fn = mod.HE_PRESETS[p] as
+            | ((profile: Parameters<typeof mod.HE_PRESETS.doNothing>[0]) => ReturnType<typeof mod.HE_PRESETS.doNothing>)
+            | undefined;
+          if (fn) mod.addStrategy(fn(profile));
+        });
+        const rows = mod.compareAt(horizon);
+        const winners = mod.findWinners(horizon);
+        return JSON.stringify({
+          horizon,
+          presetsCompared: presets,
+          rows: rows.map((r) => ({
+            name: r.name,
+            totalValue: r.totalValue,
+            netValue: r.netValue,
+            roi: r.roi,
+            totalLiquidWealth: r.totalLiquidWealth,
+            totalProtection: r.totalProtection,
+          })),
+          winners,
+        });
+      }
+      case "we_project_biz_income": {
+        const mod = await import("./shared/calculators");
+        const role = args.role as
+          | "new"
+          | "exp"
+          | "sa"
+          | "dir"
+          | "md"
+          | "rvp"
+          | "affB"
+          | "affC";
+        const years = args.years ?? 10;
+        const strategy = mod.bieCreateStrategy("ReAct projection", {
+          role,
+          streams: { personal: true, expanded: true },
+          personalGDC: args.personalGDC ?? undefined,
+        });
+        const results = mod.bieSimulate(strategy, years);
+        return JSON.stringify({
+          role,
+          years,
+          summary: results.map((y) => ({
+            year: y.year,
+            totalIncome: y.totalIncome,
+            cumulativeIncome: y.cumulativeIncome,
+          })),
+          final: results[results.length - 1]
+            ? {
+                totalIncome: results[results.length - 1].totalIncome,
+                cumulativeIncome: results[results.length - 1].cumulativeIncome,
+              }
+            : null,
+        });
+      }
+      case "we_backplan_income": {
+        const mod = await import("./shared/calculators");
+        const targetIncome = Number(args.targetIncome);
+        const role = args.role as
+          | "new"
+          | "exp"
+          | "sa"
+          | "dir"
+          | "md"
+          | "rvp";
+        const strategy = mod.bieCreateStrategy("back-plan", {
+          role,
+          streams: { personal: true },
+        });
+        const plan = mod.backPlan(targetIncome, strategy);
+        return JSON.stringify({
+          targetIncome,
+          role,
+          neededGDC: plan.neededGDC,
+          bracketRate: plan.bracketRate,
+          bracketLabel: plan.bracketLabel,
+          funnel: plan.funnel,
+          teamNeeded: plan.teamNeeded,
+        });
+      }
+      case "we_monte_carlo": {
+        const mod = await import("./shared/calculators");
+        const years = args.years ?? 30;
+        const trials = args.trials ?? 500;
+        const bands = mod.monteCarloSimulate(
+          {
+            investReturn: args.investReturn ?? 0.07,
+            volatility: args.volatility ?? 0.15,
+          },
+          years,
+          trials,
+        );
+        // Return the last 5 years only to keep the tool output compact
+        const tail = bands.slice(-5);
+        return JSON.stringify({
+          trials,
+          years,
+          tailPercentiles: tail,
+          final: bands[bands.length - 1],
+        });
+      }
+      case "we_detect_opportunities": {
+        const orch = await import("./services/agent/calculatorOrchestrator");
+        const opps = await orch.detectOpportunities(async () => [
+          String(args.clientId),
+        ]);
+        return JSON.stringify({
+          clientId: args.clientId,
+          opportunities: opps,
+          count: opps.length,
+        });
+      }
+
+      // ─── Wealth Chat dispatch (Phase 6A) ───────────────────────
+      case "chat_explain_number": {
+        const chat = await import("./services/wealthChat/chatTools");
+        const safety = await import("./services/wealthChat/safety");
+        const result = chat.explainNumber({
+          metric: String(args.metric),
+          value: Number(args.value),
+          context: args.context as string | undefined,
+        });
+        return JSON.stringify({
+          ...result,
+          narrative: safety.safetyWrap(result.narrative),
+        });
+      }
+      case "chat_modify_and_rerun": {
+        const chat = await import("./services/wealthChat/chatTools");
+        const safety = await import("./services/wealthChat/safety");
+        const baseProfile = {
+          age: args.age ?? 40,
+          income: args.income ?? 120000,
+          netWorth: args.netWorth ?? 350000,
+          savings: args.savings ?? 180000,
+          dependents: args.dependents ?? 2,
+          mortgage: 250000,
+          debts: 30000,
+          marginalRate: 0.25,
+        };
+        const result = chat.modifyAndRerun({
+          baseProfile,
+          assumption: args.assumption as never,
+          newValue: Number(args.newValue),
+          years: args.years as number | undefined,
+        });
+        return JSON.stringify({
+          ...result,
+          narrative: safety.safetyWrap(result.narrative),
+        });
+      }
+      case "chat_compare_scenarios": {
+        const chat = await import("./services/wealthChat/chatTools");
+        const safety = await import("./services/wealthChat/safety");
+        const profile = {
+          age: args.age ?? 40,
+          income: args.income ?? 120000,
+          netWorth: args.netWorth ?? 350000,
+          savings: args.savings ?? 180000,
+          dependents: 2,
+          mortgage: 250000,
+          debts: 30000,
+          marginalRate: 0.25,
+        };
+        const result = chat.compareScenarios({
+          scenario1: {
+            name: String(args.scenario1Name),
+            profile,
+            preset: args.scenario1Preset as never,
+          },
+          scenario2: {
+            name: String(args.scenario2Name),
+            profile,
+            preset: args.scenario2Preset as never,
+          },
+          years: args.years as number | undefined,
+        });
+        return JSON.stringify({
+          ...result,
+          narrative: safety.safetyWrap(result.narrative),
+        });
+      }
+      case "chat_show_visualization": {
+        const chat = await import("./services/wealthChat/chatTools");
+        const result = chat.showVisualization({
+          chartType: args.chartType as never,
+          data: (args.data as Record<string, unknown>) ?? {},
+        });
+        return JSON.stringify(result);
+      }
+      case "chat_project_recruit_impact": {
+        const chat = await import("./services/wealthChat/chatTools");
+        const safety = await import("./services/wealthChat/safety");
+        const result = await chat.projectRecruitImpact({
+          clientId: String(args.clientId),
+          additionalRecruits: Number(args.additionalRecruits),
+        });
+        return JSON.stringify({
+          ...result,
+          narrative: safety.safetyWrap(result.narrative),
         });
       }
 
