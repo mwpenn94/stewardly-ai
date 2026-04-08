@@ -46,9 +46,12 @@ server/services/learning/
 └── bootstrap.ts                           # server startup hook (seed + optional github import + tools)
 server/routers/learning.ts   Task 2A/7C/8  # tRPC router (mastery, licenses, content, freshness, recs, seed, importFromGitHub)
 client/src/pages/learning/
-├── LearningHome.tsx        Task 4B/6D     # unified dashboard (role-aware)
-├── LicenseTracker.tsx      Task 6D        # license grid + alerts + CE progress
-└── ContentStudio.tsx       Task 6D-E/7    # advisor+ authoring hub
+├── LearningHome.tsx             Task 4B/6D     # unified dashboard (role-aware)
+├── LicenseTracker.tsx           Task 6D        # license grid + alerts + CE progress
+├── ContentStudio.tsx            Task 6D-E/7    # advisor+ authoring hub + Import from GitHub
+├── LearningTrackDetail.tsx      Task 9 pass 58 # track reader: chapters + subsections + counts
+├── LearningFlashcardStudy.tsx   Task 9 pass 58 # flip-card study UI with SRS wiring
+└── LearningQuizRunner.tsx       Task 9 pass 58 # multi-choice quiz with explanations + SRS
 client/src/lib/navigation.ts                # 3 new nav entries (Learning/Licenses/Studio)
 client/src/App.tsx                          # 7 new routes under /learning/*
 ```
@@ -86,6 +89,7 @@ client/src/App.tsx                          # 7 new routes under /learning/*
 | 7E | Initial skeleton seed | `services/learning/seed.ts` + `learning.seed` admin mutation — inserts 8 disciplines + 12 tracks (no definitions/chapters/questions; see Task 8) |
 | 7F | DB-backed content service | `services/learning/content.ts` — search + history + explain |
 | 8 (pass 54) | EMBA content import | `services/learning/embaImport.ts` — fetches `emba_data.json` + `tracks_data.json` from the public `mwpenn94/emba_modules` repo and hydrates definitions (366+), chapters, subsections, practice questions, and flashcards. Exposed as `learning.importFromGitHub` admin mutation + an "Import from GitHub" button in Content Studio. Optional `EMBA_IMPORT_ON_BOOT=true` pulls content on every server boot. Idempotent via slug/term/title dedup. 5 unit tests in `embaImport.test.ts`. |
+| 9 (pass 58) | Learning consumer UIs | Three new pages under `client/src/pages/learning/` that finally give imported content a user-reachable home: **LearningTrackDetail** (chapter + subsection reader with lazy-loaded `content.listSubsections`), **LearningFlashcardStudy** (flip-card deck that wires correct/incorrect into `learning.mastery.recordReview` so the SRS 0-5 confidence ladder actually advances), and **LearningQuizRunner** (multiple-choice runner with answer highlight + explanation panel, same SRS wiring for `itemType: "question"`). Routes updated in `App.tsx`: `/learning/tracks/:slug`, `/learning/tracks/:slug/study`, `/learning/tracks/:slug/quiz`. |
 
 ## Database schema — new tables
 

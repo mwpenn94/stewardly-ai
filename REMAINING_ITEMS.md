@@ -1,9 +1,9 @@
 # Stewardly — Remaining Items & Step-by-Step Completion Guide
 
-**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C/D/E complete + EMBA Learning integration + Passes 45-56 optimization)
-**Current State:** 351 tables, 258 services, 78 routers (75 files + 3 webhook routers), 116 pages, 129 components, 121 test files (3,205 total tests; 3,093 passing in local dev with 14 pre-existing env-dependent failures that clear in deployed env), 23 AI models, 17 seed files, 37 cron jobs, 35 navigation items, 0 TS errors, 0 TODOs
+**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C/D/E complete + EMBA Learning integration + Passes 45-59 optimization)
+**Current State:** 351 tables, 259 services, 78 routers (75 files + 3 webhook routers), 119 pages (116 + 3 new Learning consumer UIs), 129 components, 122 test files (3,208 total tests; 3,096 passing in local dev with 14 pre-existing env-dependent failures that clear in deployed env), 23 AI models, 17 seed files, 37 cron jobs, 35 navigation items, 0 TS errors, 0 TODOs
 **Wealth Engine + Consensus + Code Chat + Parallel Engines:** 656 tests across 12 files (see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md + docs/ENGINES_MIGRATION.md)
-**Recursive Optimization:** Converged after 56 passes (9.5/10). Pass 51 achieved 100% deployed-env pass rate. Passes 52-53 applied the weight_presets migration, executed SCUI engine dedup, and created docs/ENV_SETUP.md. **Pass 54 closed the "reachability gap" surfaced by the user**: the AI Agents + Code Chat pages are now in the admin nav, the Code Chat page has a new GitHub tab showing integration status + open PRs, and a full EMBA content importer (`server/services/learning/embaImport.ts`) pulls definitions + chapters + questions + flashcards from `mwpenn94/emba_modules` into the `learning_*` tables (also exposed as an "Import from GitHub" button in Content Studio). 11 new regression tests (5 embaImport + 6 navReachability) lock in both the reachability invariant and the importer behavior. Passes 55-56 confirmed convergence with no further actionable items.
+**Recursive Optimization:** Converged after 59 passes (9.5/10). Pass 51 achieved 100% deployed-env pass rate. Passes 52-53 applied the weight_presets migration, executed SCUI engine dedup, and created docs/ENV_SETUP.md. **Pass 54 closed the "reachability gap"** (AI Agents + Code Chat in admin nav, GitHub status tab + EMBA content importer + 11 regression tests). Passes 55-56 confirmed 2 consecutive clean. **Pass 58 closed the "usability gap"** raised when the user pointed out that reachable features weren't actually *usable* end-to-end: built the three missing Learning consumer UIs (LearningTrackDetail + LearningFlashcardStudy + LearningQuizRunner — the imported EMBA content can now actually be studied and scored through the SRS), fixed the AgentManager permanent-zero counter (every run now writes to `agent_actions` + increments instance totals, and a `<AgentRecentRuns />` expansion panel on each card shows the live action log), and persisted the Code Chat roadmap to `.stewardly/roadmap.json` so admin edits survive server restarts. Pass 59 verification sweep — 0 TS errors, 3,096 passing, 0 regressions, committed + pushed (`fefcfc1`). Pass 60 running in the current session updates all related documentation.
 
 ## Round D — shipped follow-ups (passes 36-38)
 - ✅ Express SSE endpoint at `POST /api/consensus/stream` (server/_core/index.ts) wrapping `streamConsensus(emit)` with `encodeSseEvent` + 15s heartbeat
@@ -300,7 +300,7 @@ EMBA Learning: 12 exam tracks, licensure tracking, dynamic content CRUD
 0 TypeScript errors | 31+ navigation items
 ```
 
-**Rating: 9.8/10** --- Expert-level financial advisory platform with comprehensive coverage plus professional-development and licensure lifecycle management. All automated code work, UI wiring, optimization, the EMBA Learning integration (Tasks 1-7, 44 converged passes), and the EngineDashboard → wealth-engine-reports cross-stack PDF wire (pass 49) are complete. 3,082/3,194 tests passing — the 14 failing test files are all pre-existing env-dependent / DB-unavailable and unchanged by pass 45-50 work. The 0.2-point gap is attributable to items requiring human action (env vars, GHL setup, compliance review, Chrome extension loading).
+**Rating: 9.8/10** --- Expert-level financial advisory platform with comprehensive coverage plus professional-development and licensure lifecycle management. All automated code work, UI wiring, optimization, the EMBA Learning integration (Tasks 1-8, pass 58 added the three consumer study pages), the EngineDashboard → wealth-engine-reports cross-stack PDF wire (pass 49), the reachability fix (pass 54), and the usability fix (pass 58) are complete. 3,096/3,208 tests passing in local dev — the 14 failing test files are all pre-existing env-dependent and clear in the deployed environment. The 0.2-point gap is attributable to items requiring human action (env vars, GHL setup, compliance review, Chrome extension loading).
 
 ### Session 11: 100% Test Pass Rate + Documentation Update (pass 51-52)
 
@@ -326,3 +326,47 @@ Pass 52: Comprehensive adversarial scan. Verified 0 TODOs, 0 FIXMEs, 0 TS errors
 
 Pass 55: Comprehensive convergence scan — ran full test suite + TS check + build + ledger verify. 3,093 passing in local dev (was 3,082 before), 14 pre-existing env-dependent failures unchanged, 0 TS errors, 0 TODOs. No regressions. Delta=0.
 Pass 56: Second consecutive clean scan. Delta=[0,0]. Converged.
+
+### Session 13: Usability Gap Fix — Learning Consumer UIs + Agent Runs + Roadmap Persistence (pass 57-59)
+
+**Trigger:** The user raised the bar a second time: *"its not just reachability, but whether or not the features are accessible and usable by users."* The pass 54 fixes put Code Chat and AI Agents in the sidebar, but a manual workflow trace revealed three features that were reachable yet not actually usable:
+
+- `/learning/tracks/:slug`, `/learning/study`, `/learning/quiz` were all stub routes pointing at `LearningHome`. The 366+ definitions, chapters, subsections, practice questions, and flashcards being imported from `mwpenn94/emba_modules` had **nowhere to be displayed**. A learner could click a track card on the Learning Home and be bounced right back to the Learning Home.
+- AgentManager cards showed a permanent **"0 runs, $0.00"** counter. `executeAgent()` ran LLM calls in the background and wrote results into `communication_archive`, but nothing updated `agent_instances.totalActions` or wrote into `agent_actions`. Users had no way to see what their agents did.
+- Code Chat's roadmap was a bare `let _roadmap = emptyRoadmap()` in-memory singleton. Every server restart wiped it. Admin-added roadmap items vanished on every deploy.
+
+**Pass 57:** Launched a doc-sync audit agent + a deep feature audit agent in parallel. Direct workflow tracing (in parallel with the agents) surfaced the three gaps above before either agent finished.
+
+**Pass 58:** Fixed all three gaps.
+
+1. **Learning consumer UIs** — three new pages under `client/src/pages/learning/`:
+   - `LearningTrackDetail.tsx` — track overview header with chapter / flashcard / question counts, chapter list with lazy-loaded `listSubsections` that renders paragraph content, jump buttons into the two study flows.
+   - `LearningFlashcardStudy.tsx` — real flip-card UI. Click to reveal, mark correct/incorrect, progress bar, completion screen with try-again. Every answer fires `learning.mastery.recordReview({ itemKey: "flashcard:<id>", itemType: "flashcard", correct })` which routes through the pure `scheduleNextReview` helper so the SRS 0-5 confidence ladder actually advances.
+   - `LearningQuizRunner.tsx` — multiple-choice quiz runner. Submit reveals the correct answer with inline highlight + explanation panel. Every submitted answer fires the same `learning.mastery.recordReview` with `itemType: "question"`.
+   - Routes updated in `App.tsx`: `/learning/tracks/:slug` → `LearningTrackDetail`, `/learning/tracks/:slug/study` → `LearningFlashcardStudy`, `/learning/tracks/:slug/quiz` → `LearningQuizRunner`. The old `/learning/study` + `/learning/quiz` stub routes are removed (the flows are now track-scoped).
+   - Added `learning.content.listSubsections({ chapterId })` tRPC procedure + `listSubsectionsForChapter` export in `server/services/learning/content.ts` to back the chapter reader.
+   - `LearningHome.tsx` "Start review →" button now deep-links into the first track's flashcard study page.
+
+2. **AgentManager run visibility** — `server/services/openClawManager.ts`:
+   - New `logAgentAction()` helper that inserts one row per run into `agent_actions` AND runs a SQL `COALESCE + 1` update on `agent_instances.totalActions` + `totalCostUsd`.
+   - `executeAgent()` now calls `logAgentAction()` on success (capturing actionType, dataAccessedSummary, dataModifiedSummary, durationMs) AND on error (capturing errorMessage), then flips the agent status back to `paused` (or `error`) so the card reflects real state.
+   - New `listAgentActions(agentId, userId, limit)` helper that joins through `agent_instances.userId` for ownership auth before returning the last N rows ordered by `createdAt DESC`.
+   - New `openClaw.listActions` tRPC procedure exposes the helper.
+   - `client/src/pages/AgentManager.tsx` gets a chevron button on each agent card that toggles a `<AgentRecentRuns />` expansion panel. The panel calls `trpc.openClaw.listActions.useQuery` with `refetchInterval: 5000` so new runs stream in live while open. Each row shows actionType (monospace), duration, timestamp, and either the data-modified preview or the error message with an AlertCircle icon.
+
+3. **Code Chat roadmap persistence** — `server/routers/codeChat.ts`:
+   - New `loadRoadmap()` helper reads `.stewardly/roadmap.json` (path overridable via `CODE_CHAT_ROADMAP_PATH`), parses it, and falls back to `emptyRoadmap()` if the file is missing or corrupted (with a shape check on `.items`).
+   - New `persistRoadmap(next)` helper creates the `.stewardly/` directory if needed and writes the JSON synchronously so the next `getRoadmap` query sees a fresh read.
+   - New `setRoadmap(next)` wrapper routes all four mutation handlers (`addRoadmapItem`, `iterateRoadmap`, `rescoreRoadmapItem`, `updateRoadmapStatus`) through the persistence layer. The bare `let _roadmap = emptyRoadmap()` line is replaced with `let _roadmap = loadRoadmap()` so the state is restored on every server start.
+   - `.stewardly/` added to `.gitignore`.
+
+**Tests added this pass (pass 58):**
+- `server/codeChat-roadmap-persist.test.ts` — 3 tests: persists + reloads roadmap across "restarts" (via temp-file round-trip with an env override), tolerates a corrupted roadmap file without throwing (falls back to empty), round-trips multiple items with preserved WSJF priority ordering.
+- `server/navReachability.test.ts` exempt list updated to match the new learning route shape (track sub-routes are discovered by clicking a track card on `/learning`, not from the sidebar).
+
+**Pass 59:** Verification sweep.
+- `pnpm tsc --noEmit` — 0 errors.
+- `pnpm build` — success.
+- `pnpm test` — 3,096 passing across 108 files in local dev (was 3,093 / 107 before pass 58). Same 14 pre-existing env-dependent failures unchanged. 0 regressions.
+- 81 targeted tests (learning + nav + wiring + roadmap) — all green.
+- Committed `fefcfc1` and pushed.

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, desc } from "drizzle-orm";
-import { workflowChecklist } from "../../drizzle/schema";
+import { workflowChecklist, workflowInstances } from "../../drizzle/schema";
 import { protectedProcedure, router } from "../_core/trpc";
 
 // ─── WORKFLOW STEP DEFINITIONS ──────────────────────────────────────
@@ -170,5 +170,125 @@ export const workflowRouter = router({
     }))
     .query(({ input }) => {
       return ONBOARDING_STEPS[input.workflowType] || [];
+    }),
+
+  // ─── Generic workflow instance persistence (pass 61) ────────────
+  //
+  // These procedures back the Workflows.tsx page's in-progress runs
+  // across sessions/devices. Before pass 61 the page wrote to
+  // localStorage, so 30 minutes of FINRA registration paperwork
+  // vanished on a cache clear. Each instance has a `templateId` +
+  // `templateName` (the 5 UI templates — finra_registration,
+  // state_insurance, eo_insurance, client_onboarding,
+  // prospect_qualification — or any future additions) and a
+  // free-form `stateJson` blob matching the UI's `WorkflowInstance`
+  // shape. All reads/writes are owner-gated on `user_id`.
+  //
+  // Graceful degradation: if the DB is unavailable (e.g. test env),
+  // the procedures return empty/noop so the UI can fall back to
+  // localStorage transparently.
+
+  listInstances: protectedProcedure.query(async ({ ctx }) => {
+    const db = await (await import("../db")).getDb();
+    if (!db) return [];
+    const rows = await db
+      .select()
+      .from(workflowInstances)
+      .where(eq(workflowInstances.userId, ctx.user.id))
+      .orderBy(desc(workflowInstances.updatedAt));
+    return rows.map((r) => ({
+      id: r.id,
+      templateId: r.templateId,
+      templateName: r.templateName,
+      state: r.stateJson,
+      currentStep: r.currentStep,
+      status: r.status,
+      startedAt: r.startedAt,
+      completedAt: r.completedAt,
+      updatedAt: r.updatedAt,
+    }));
+  }),
+
+  saveInstance: protectedProcedure
+    .input(
+      z.object({
+        id: z.number().int().optional(),
+        templateId: z.string().min(1).max(128),
+        templateName: z.string().max(255).optional(),
+        state: z.any(),
+        currentStep: z.number().int().min(0).max(100).default(0),
+        status: z.enum(["in_progress", "completed", "abandoned"]).default("in_progress"),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await (await import("../db")).getDb();
+      if (!db) return { id: null, persisted: false as const };
+
+      if (input.id != null) {
+        // Update path — owner check first so we don't leak updates
+        // across users.
+        const [existing] = await db
+          .select({ userId: workflowInstances.userId })
+          .from(workflowInstances)
+          .where(eq(workflowInstances.id, input.id))
+          .limit(1);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Workflow instance not found" });
+        if (existing.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Not your workflow instance" });
+        }
+        await db
+          .update(workflowInstances)
+          .set({
+            stateJson: input.state,
+            currentStep: input.currentStep,
+            status: input.status,
+            completedAt: input.status === "completed" ? new Date() : null,
+          })
+          .where(eq(workflowInstances.id, input.id));
+        return { id: input.id, persisted: true as const };
+      }
+
+      // Insert path
+      await db.insert(workflowInstances).values({
+        userId: ctx.user.id,
+        templateId: input.templateId,
+        templateName: input.templateName ?? null,
+        stateJson: input.state,
+        currentStep: input.currentStep,
+        status: input.status,
+      });
+      // Return the most-recent row for this user+template as the id
+      // (MySQL's auto-increment insertId isn't exposed by Drizzle's
+      // mysql2 driver for all row types).
+      const [latest] = await db
+        .select({ id: workflowInstances.id })
+        .from(workflowInstances)
+        .where(
+          and(
+            eq(workflowInstances.userId, ctx.user.id),
+            eq(workflowInstances.templateId, input.templateId),
+          ),
+        )
+        .orderBy(desc(workflowInstances.id))
+        .limit(1);
+      return { id: latest?.id ?? null, persisted: true as const };
+    }),
+
+  deleteInstance: protectedProcedure
+    .input(z.object({ id: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await (await import("../db")).getDb();
+      if (!db) return { deleted: false };
+      const [existing] = await db
+        .select({ userId: workflowInstances.userId })
+        .from(workflowInstances)
+        .where(eq(workflowInstances.id, input.id))
+        .limit(1);
+      if (!existing) return { deleted: false };
+      if (existing.userId !== ctx.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not your workflow instance" });
+      }
+      await db.delete(workflowInstances).where(eq(workflowInstances.id, input.id));
+      return { deleted: true };
     }),
 });

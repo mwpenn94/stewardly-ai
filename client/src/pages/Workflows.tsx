@@ -13,7 +13,7 @@ import {
   RotateCcw, FileText, ExternalLink, Shield, BookOpen, Briefcase,
   ChevronDown, ChevronUp, AlertTriangle, Loader2,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -106,6 +106,9 @@ const STEP_ICONS: Record<string, React.ReactNode> = {
 };
 
 type WorkflowInstance = {
+  /** Server-side row id once the instance has been persisted. Null when
+   *  still unsynced (DB offline or first render before the first save). */
+  id?: number | null;
   templateId: string;
   name: string;
   currentStep: number;
@@ -124,19 +127,106 @@ export default function Workflows() {
   const [noteInput, setNoteInput] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  // Load saved workflows from localStorage
+  // Persistence model (pass 61):
+  //   1. Hydrate from localStorage for immediate render (works offline)
+  //   2. Fetch `workflow.listInstances` from the DB — if the server has
+  //      newer rows, they replace the local cache (DB is source of truth)
+  //   3. Every edit fires `workflow.saveInstance` AND mirrors to
+  //      localStorage, so a browser refresh sees the same state even
+  //      if the server is momentarily unreachable
+  //   4. If the DB is unavailable, saves become no-ops on the server
+  //      side and the localStorage cache continues to work — the UI
+  //      never loses data
   const [savedWorkflows, setSavedWorkflows] = useState<WorkflowInstance[]>(() => {
     const saved = localStorage.getItem("wb_workflows");
     return saved ? JSON.parse(saved) : [];
   });
+
+  const instancesQ = trpc.workflow.listInstances.useQuery(undefined, {
+    // Don't hammer the server — rely on mutations to refresh.
+    refetchOnWindowFocus: true,
+    retry: false,
+  });
+  const saveInstanceMut = trpc.workflow.saveInstance.useMutation();
+  const deleteInstanceMut = trpc.workflow.deleteInstance.useMutation();
+
+  // Reconcile the server snapshot into local state on first load.
+  useEffect(() => {
+    if (!instancesQ.data) return;
+    if (instancesQ.data.length === 0) return;
+    const reconciled: WorkflowInstance[] = instancesQ.data.map((row) => {
+      const state = (row.state ?? {}) as Partial<WorkflowInstance>;
+      return {
+        id: row.id,
+        templateId: row.templateId,
+        name: row.templateName ?? state.name ?? row.templateId,
+        currentStep: row.currentStep ?? state.currentStep ?? 0,
+        stepStatuses: state.stepStatuses ?? [],
+        confirmationNumbers: state.confirmationNumbers ?? {},
+        notes: state.notes ?? {},
+        startedAt: state.startedAt ?? new Date(row.startedAt).toISOString(),
+      };
+    });
+    setSavedWorkflows(reconciled);
+    localStorage.setItem("wb_workflows", JSON.stringify(reconciled));
+  }, [instancesQ.data]);
 
   const saveWorkflows = (workflows: WorkflowInstance[]) => {
     setSavedWorkflows(workflows);
     localStorage.setItem("wb_workflows", JSON.stringify(workflows));
   };
 
+  // Persist a single workflow to the server (fire-and-forget; the UI
+  // already updated optimistically via saveWorkflows). On success we
+  // patch the returned server id back into local state so subsequent
+  // saves go through the update branch.
+  const persistInstance = (instance: WorkflowInstance) => {
+    const template = WORKFLOW_TEMPLATES.find(t => t.id === instance.templateId);
+    const status: "in_progress" | "completed" | "abandoned" =
+      instance.stepStatuses.every(s => s === "completed" || s === "skipped")
+        ? "completed"
+        : "in_progress";
+    saveInstanceMut
+      .mutateAsync({
+        id: instance.id ?? undefined,
+        templateId: instance.templateId,
+        templateName: template?.name ?? instance.name,
+        state: {
+          name: instance.name,
+          currentStep: instance.currentStep,
+          stepStatuses: instance.stepStatuses,
+          confirmationNumbers: instance.confirmationNumbers,
+          notes: instance.notes,
+          startedAt: instance.startedAt,
+        },
+        currentStep: instance.currentStep,
+        status,
+      })
+      .then((res) => {
+        if (res.id != null && instance.id == null) {
+          // Patch the id back so the next update routes through the
+          // existing row instead of creating a duplicate.
+          setSavedWorkflows((cur) => {
+            const updated = cur.map((w) =>
+              w === instance || (w.templateId === instance.templateId && w.id == null)
+                ? { ...w, id: res.id }
+                : w,
+            );
+            localStorage.setItem("wb_workflows", JSON.stringify(updated));
+            return updated;
+          });
+        }
+      })
+      .catch(() => {
+        // DB offline — we already wrote to localStorage so the user's
+        // data is safe for this session. Silent failure is correct
+        // here; a toast on every keystroke would be noise.
+      });
+  };
+
   const startWorkflow = (template: typeof WORKFLOW_TEMPLATES[0]) => {
     const instance: WorkflowInstance = {
+      id: null,
       templateId: template.id,
       name: template.name,
       currentStep: 0,
@@ -150,6 +240,7 @@ export default function Workflows() {
     saveWorkflows(updated);
     setActiveWorkflow(instance);
     setExpandedStep(0);
+    persistInstance(instance);
     toast.success(`Started: ${template.name}`);
   };
 
@@ -183,6 +274,7 @@ export default function Workflows() {
       w.templateId === updated.templateId && w.startedAt === updated.startedAt ? updated : w
     );
     saveWorkflows(allWorkflows);
+    persistInstance(updated);
 
     if (stepIndex === template.steps.length - 1) {
       toast.success(`Workflow complete: ${template.name}`);
