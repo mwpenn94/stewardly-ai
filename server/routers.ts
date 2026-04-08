@@ -72,6 +72,9 @@ import AdmZip from "adm-zip";
 import { exportsRouter } from "./routers/exports";
 import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
 import { learningRouter } from "./routers/learning";
+import { ghlWebhookRouter } from "./routers/ghlWebhook";
+import { dripifyWebhookRouter } from "./routers/dripifyWebhook";
+import { smsitWebhookRouter } from "./routers/smsitWebhook";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -2096,6 +2099,9 @@ export const appRouter = router({
   codeChat: codeChatRouter,
   calculatorEngine: calculatorEngineRouter,
   learning: learningRouter,
+  ghlWebhook: ghlWebhookRouter,
+  dripifyWebhook: dripifyWebhookRouter,
+  smsitWebhook: smsitWebhookRouter,
 });
 
 export type AppRouter = typeof appRouter;
