@@ -311,6 +311,11 @@ export interface RunConsensusResult {
   keyAgreements: string[];
   notableDifferences: string[];
   agreementScore: number;
+  /** Round E2 — semantic agreement (LLM-as-judge). null when the judge
+   *  call failed or was skipped; callers should fall back to agreementScore. */
+  semanticAgreementScore: number | null;
+  /** Which scorer was used for the displayed agreement */
+  agreementScorerSource: "jaccard" | "semantic";
   confidenceScore: number;
   totalDurationMs: number;
   modelQueryTimeMs: number;
@@ -473,6 +478,26 @@ export async function streamConsensus(
     notableDifferences: parsed.notableDifferences,
   });
 
+  // Round E2 — compute semantic agreement via LLM-as-judge. Runs in
+  // parallel with the done event so it doesn't add to the critical path
+  // most of the time. Falls back to Jaccard when the judge fails.
+  let semanticAgreementScore: number | null = null;
+  let agreementScorerSource: "jaccard" | "semantic" = "jaccard";
+  if (successfulResponses.length >= 2) {
+    try {
+      const { semanticAgreement } = await import("./semanticAgreement");
+      semanticAgreementScore = await semanticAgreement(
+        successfulResponses.map((r) => ({ modelId: r.modelId, content: r.content })),
+        { userId: input.userId },
+      );
+      if (semanticAgreementScore !== null) {
+        agreementScorerSource = "semantic";
+      }
+    } catch (err) {
+      log.warn({ err }, "semantic agreement scorer unavailable");
+    }
+  }
+
   const totalDurationMs = Date.now() - overallStart;
   emit({
     type: "done",
@@ -490,7 +515,9 @@ export async function streamConsensus(
     unifiedAnswer: parsed.unifiedAnswer,
     keyAgreements: parsed.keyAgreements,
     notableDifferences: parsed.notableDifferences,
-    agreementScore,
+    agreementScore: semanticAgreementScore ?? agreementScore,
+    semanticAgreementScore,
+    agreementScorerSource,
     confidenceScore: parsed.confidenceScore,
     totalDurationMs,
     modelQueryTimeMs,
