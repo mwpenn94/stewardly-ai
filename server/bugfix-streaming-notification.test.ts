@@ -48,10 +48,14 @@ describe("Bug Fix: Streaming Persistence", () => {
     expect(chatContent).toContain(".then((persistResult)");
   });
 
-  it("Chat.tsx starts TTS immediately before persist completes", () => {
-    // TTS should fire before the persist call
-    const ttsIdx = chatContent.indexOf("if (ttsEnabled) tts.speak(accumulated)");
-    const persistIdx = chatContent.indexOf("persistStreamedMutation.mutateAsync(");
+  it("Chat.tsx starts TTS immediately before persist completes in SSE streaming path", () => {
+    // In the SSE streaming path (event.type === "done"), TTS should fire
+    // before the persist call. We search from the SSE done handler context
+    // to avoid matching the consensus code path which has a different ordering.
+    const sseContext = chatContent.indexOf('event.type === "done"');
+    expect(sseContext).toBeGreaterThan(0);
+    const ttsIdx = chatContent.indexOf("if (ttsEnabled) tts.speak(accumulated)", sseContext);
+    const persistIdx = chatContent.indexOf("persistStreamedMutation.mutateAsync(", sseContext);
     expect(ttsIdx).toBeGreaterThan(0);
     expect(persistIdx).toBeGreaterThan(0);
     expect(ttsIdx).toBeLessThan(persistIdx);

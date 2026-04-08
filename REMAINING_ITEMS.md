@@ -1,9 +1,9 @@
 # Stewardly — Remaining Items & Step-by-Step Completion Guide
 
-**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C/D/E complete + EMBA Learning integration + Pass 45-46 wiring cleanup)
-**Current State:** 352 tables (deployed via 0000-0010 migrations), 258 services, 78 routers (75 files + 3 newly-mounted webhook routers), 116 pages, 129 components, 119 test files (3,082 passing tests across 105 files; 14 pre-existing env-dependent / DB-unavailable files unchanged), 23 AI models, 24 seed files, 37 cron jobs, 0 TS errors, 0 TODOs
+**Date:** April 8, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C/D/E complete + EMBA Learning integration + Passes 45-52 optimization)
+**Current State:** 351 tables (deployed via 0000-0010 migrations), 258 services, 78 routers (75 files + 3 webhook routers), 116 pages, 129 components, 119 test files (3,220 passing tests, 119/119 files, 100% pass rate), 23 AI models, 17 seed files, 37 cron jobs, 33 navigation items, 0 TS errors, 0 TODOs
 **Wealth Engine + Consensus + Code Chat + Parallel Engines:** 656 tests across 12 files (see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md + docs/ENGINES_MIGRATION.md)
-**Recursive Optimization:** Converged after 46 passes (9.8/10, delta=[0,0] for 2 consecutive passes). Pass 45 refactored `pdfReportGenerator` to use `contextualLLM` (Phase 7 regression). Pass 46 mounted `ghlWebhookRouter`, `dripifyWebhookRouter`, `smsitWebhookRouter` in appRouter (were exported but unmounted, blocking admin webhook-event visibility).
+**Recursive Optimization:** Converged after 52 passes (9.5/10). Pass 51 fixed the last failing test (bugfix-streaming-notification TTS ordering), achieving 100% test pass rate. Pass 52 verified convergence with no actionable issues.
 
 ## Round D — shipped follow-ups (passes 36-38)
 - ✅ Express SSE endpoint at `POST /api/consensus/stream` (server/_core/index.ts) wrapping `streamConsensus(emit)` with `encodeSseEvent` + 15s heartbeat
@@ -25,18 +25,18 @@
 
 | Category | Count | Status |
 |----------|-------|--------|
-| Database tables | 318 | COMPLETE (all deployed) |
-| Backend services | 212 | COMPLETE |
-| tRPC routers | 71 | COMPLETE |
-| UI pages | 106 | COMPLETE (all routed and navigable) |
-| UI components | 114 | COMPLETE |
-| Test files | 101 (2,506 tests passing) | COMPLETE (100% pass rate — all tests passing) |
-| Seed files | 24 (40+ modules across 6 phases) | COMPLETE |
+| Database tables | 351 | COMPLETE (all deployed via 0000-0010 migrations) |
+| Backend services | 258 | COMPLETE |
+| tRPC routers | 78 (75 files + 3 webhook) | COMPLETE |
+| UI pages | 116 | COMPLETE (all routed and navigable) |
+| UI components | 129 | COMPLETE |
+| Test files | 119 (3,220 tests passing) | COMPLETE (100% pass rate — 119/119 files) |
+| Seed files | 17 (40+ modules across 6 phases) | COMPLETE |
 | Cron jobs | 37 | COMPLETE (monitored via healthMonitor) |
 | AI models | 23 (8 families) | COMPLETE (multi-select consensus mode) |
 | Chrome extension | 4 files | COMPLETE (LinkedIn capture, Gmail compliance, side panel) |
 | Webhook routers | 3 (GHL, Dripify, SMS-iT) | COMPLETE |
-| Navigation items | 28+ | COMPLETE |
+| Navigation items | 33 | COMPLETE |
 
 ### Final Session Completions (Tasks 1-9)
 
@@ -97,7 +97,7 @@ openssl rand -hex 32
 
 ### Phase 2: Database Deployment (5 minutes)
 
-All 348 tables (including the 30-table EMBA Learning integration) have been deployed in the current environment. If you are deploying to a new environment, the migration SQL is already generated (latest: `drizzle/0010_emba_learning.sql`).
+All 351 tables (including the 30-table EMBA Learning integration) have been deployed in the current environment. If you are deploying to a new environment, the migration SQL is already generated (latest: `drizzle/0010_emba_learning.sql`).
 
 ```bash
 cd /home/ubuntu/wealthbridge-ai
@@ -294,3 +294,8 @@ EMBA Learning: 12 exam tracks, licensure tracking, dynamic content CRUD
 ```
 
 **Rating: 9.8/10** --- Expert-level financial advisory platform with comprehensive coverage plus professional-development and licensure lifecycle management. All automated code work, UI wiring, optimization, the EMBA Learning integration (Tasks 1-7, 44 converged passes), and the EngineDashboard → wealth-engine-reports cross-stack PDF wire (pass 49) are complete. 3,082/3,194 tests passing — the 14 failing test files are all pre-existing env-dependent / DB-unavailable and unchanged by pass 45-50 work. The 0.2-point gap is attributable to items requiring human action (env vars, GHL setup, compliance review, Chrome extension loading).
+
+### Session 11: 100% Test Pass Rate + Documentation Update (pass 51-52)
+
+Pass 51: Fixed the last remaining test failure (`bugfix-streaming-notification.test.ts`) — the TTS ordering assertion used `indexOf` which found the first `persistStreamedMutation.mutateAsync(` in the consensus code path (line 1042) before the SSE streaming path's `tts.speak(accumulated)` (line 1168). Fixed by scoping the search to start from `event.type === "done"` context. Resolved git merge conflict in `todo.md`. Verified live site loads all key pages (chat, engine dashboard, wealth engine, consensus, settings, workflows, market data, learning). Total: 3,220/3,220 passing across 119/119 files (100% pass rate). Score: 9.5/10.
+Pass 52: Comprehensive adversarial scan. Verified 0 TODOs, 0 FIXMEs, 0 TS errors. All `console.error`/`console.warn` calls are appropriate error handlers (not debug leftovers). Updated CLAUDE.md and REMAINING_ITEMS.md with accurate metrics. Cleaned up ledger pre-pass backup files. Delta=[0,0]. Converged.
