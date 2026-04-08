@@ -418,6 +418,21 @@ export async function listChaptersForTrack(trackId: number) {
   }
 }
 
+export async function listSubsectionsForChapter(chapterId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db
+      .select()
+      .from(learningSubsections)
+      .where(eq(learningSubsections.chapterId, chapterId))
+      .orderBy(learningSubsections.sortOrder);
+  } catch (err) {
+    log.warn({ err: String(err) }, "listSubsectionsForChapter failed");
+    return [];
+  }
+}
+
 export async function createChapter(data: {
   trackId: number;
   title: string;

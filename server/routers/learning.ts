@@ -53,6 +53,7 @@ import {
   createTrack,
   updateTrack,
   listChaptersForTrack,
+  listSubsectionsForChapter,
   createChapter,
   createSubsection,
   listQuestionsForTrack,
@@ -367,6 +368,10 @@ const contentRouter = router({
   listChapters: protectedProcedure
     .input(z.object({ trackId: z.number().int() }))
     .query(async ({ input }) => listChaptersForTrack(input.trackId)),
+
+  listSubsections: protectedProcedure
+    .input(z.object({ chapterId: z.number().int() }))
+    .query(async ({ input }) => listSubsectionsForChapter(input.chapterId)),
 
   createChapter: protectedProcedure
     .input(

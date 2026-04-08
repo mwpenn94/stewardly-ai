@@ -81,9 +81,9 @@ const EXEMPT_ROUTES = new Set<string>([
   "/settings/:tab",
   "/learning/studio/:tab",
   "/learning/tracks/:slug",
-  // Feature sub-pages whose parent IS in nav
-  "/learning/study",
-  "/learning/quiz",
+  // Feature sub-pages whose parent IS in nav (learning track detail + its
+  // flashcard / quiz sub-routes are reached by clicking a track on
+  // /learning, so they don't need their own sidebar entries)
   "/calculators",
   "/consensus",
   "/products",

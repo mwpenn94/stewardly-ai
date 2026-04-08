@@ -95,11 +95,13 @@ export default function LearningHome() {
             <CardContent>
               <div className="text-3xl font-semibold">{summary?.dueNow ?? 0}</div>
               <div className="text-xs text-muted-foreground mt-2">items ready for review</div>
-              <Link href="/learning/study">
-                <Button variant="link" size="sm" className="px-0 mt-1">
-                  Start review →
-                </Button>
-              </Link>
+              {tracks.length > 0 && (
+                <Link href={`/learning/tracks/${tracks[0].slug}/study`}>
+                  <Button variant="link" size="sm" className="px-0 mt-1">
+                    Start review →
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
 
