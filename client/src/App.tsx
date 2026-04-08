@@ -27,6 +27,7 @@ import Welcome from "./pages/Welcome";
 
 // ── Lazy loaded (code-split — loaded on demand) ──────────────────────
 const Calculators = lazy(() => import("./pages/Calculators"));
+const EngineDashboard = lazy(() => import("./pages/EngineDashboard"));
 const Products = lazy(() => import("./pages/Products"));
 const ManagerDashboard = lazy(() => import("./pages/ManagerDashboard"));
 const SettingsHub = lazy(() => import("./pages/SettingsHub"));
@@ -126,6 +127,7 @@ function Router() {
         <Route path={"/chat"} component={Chat} />
         <Route path={"/chat/:id"} component={Chat} />
         <Route path={"/calculators"} component={Calculators} />
+        <Route path={"/engine-dashboard"} component={EngineDashboard} />
         <Route path={"/products"} component={Products} />
         <Route path={"/manager"} component={ManagerDashboard} />
         <Route path={"/org-branding"} component={OrgBrandingEditor} />
