@@ -42,74 +42,79 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-heading: "Satoshi", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "DM Serif Display", "Satoshi", ui-serif, Georgia, serif;
 }
 
 /*
-  Stewardly — Deep navy + sky blue accent
-  Professional financial intelligence aesthetic
-  Fonts: Satoshi (headings), DM Sans (body)
-  Palette: #0F172A navy, #0EA5E9 sky blue, #10B981 emerald, #F43F5E rose
+  Stewardly — Stewardship Gold (Pass 98 v11.0 "delight is the mandate")
+  Deep navy base + warm gold accent — authoritative, trustworthy, distinctive.
+  The gold ("#D4A843") matches the brand name's stewardship semantic:
+  trust, care, and long-term value. Replaces the prior sky-blue primary
+  that looked like every other SaaS dashboard.
+  Fonts: DM Serif Display (headings — editorial gravitas), Plus Jakarta
+  Sans (body — warmer + more refined than DM Sans), JetBrains Mono (code).
 */
 :root {
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-heading: "Satoshi", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "DM Serif Display", "Satoshi", ui-serif, Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --radius: 0.625rem;
 
-  /* Deep navy base */
-  --background: oklch(0.13 0.025 255);
-  --foreground: oklch(0.93 0.008 255);
+  /* Deep navy base (slightly warmer than the pre-pass-98 cold blue-navy) */
+  --background: oklch(0.14 0.022 255);
+  --foreground: oklch(0.95 0.006 80);
 
-  /* Card: slightly lighter navy */
-  --card: oklch(0.17 0.028 255);
-  --card-foreground: oklch(0.93 0.008 255);
+  /* Card: slightly lighter navy with a touch of warmth */
+  --card: oklch(0.18 0.024 255);
+  --card-foreground: oklch(0.95 0.006 80);
 
   /* Popover */
-  --popover: oklch(0.17 0.028 255);
-  --popover-foreground: oklch(0.93 0.008 255);
+  --popover: oklch(0.18 0.024 255);
+  --popover-foreground: oklch(0.95 0.006 80);
 
-  /* Primary: sky blue (#0EA5E9) */
-  --primary: oklch(0.68 0.16 230);
-  --primary-foreground: oklch(0.13 0.025 255);
+  /* Primary: Stewardship Gold (#D4A843) — warm, authoritative, trustworthy */
+  --primary: oklch(0.76 0.14 80);
+  --primary-foreground: oklch(0.14 0.022 255);
 
-  /* Secondary: muted navy */
-  --secondary: oklch(0.21 0.028 255);
-  --secondary-foreground: oklch(0.88 0.008 255);
+  /* Secondary: muted navy (unchanged — still the resting background shade) */
+  --secondary: oklch(0.22 0.024 255);
+  --secondary-foreground: oklch(0.9 0.006 80);
 
   /* Muted */
-  --muted: oklch(0.21 0.022 255);
-  --muted-foreground: oklch(0.6 0.015 255);
+  --muted: oklch(0.22 0.02 255);
+  --muted-foreground: oklch(0.62 0.014 80);
 
-  /* Accent: sky blue (same as primary for consistency) */
-  --accent: oklch(0.68 0.16 230);
-  --accent-foreground: oklch(0.13 0.025 255);
+  /* Accent: Stewardship Gold (same as primary so `bg-accent`/`text-accent`
+     across the codebase automatically picks up the new identity) */
+  --accent: oklch(0.76 0.14 80);
+  --accent-foreground: oklch(0.14 0.022 255);
 
-  /* Destructive: rose (#F43F5E) */
+  /* Destructive: rose (unchanged — still the universal "danger" signal) */
   --destructive: oklch(0.62 0.22 15);
   --destructive-foreground: oklch(0.95 0.005 255);
 
-  /* Borders & inputs */
-  --border: oklch(0.26 0.028 255);
-  --input: oklch(0.23 0.028 255);
-  --ring: oklch(0.68 0.16 230);
+  /* Borders & inputs — slightly warmer with a tiny hint of gold */
+  --border: oklch(0.27 0.025 255);
+  --input: oklch(0.24 0.024 255);
+  --ring: oklch(0.76 0.14 80);
 
-  /* Charts: sky blue, emerald, amber, rose, purple */
-  --chart-1: oklch(0.68 0.16 230);
-  --chart-2: oklch(0.65 0.17 160);
-  --chart-3: oklch(0.72 0.15 85);
-  --chart-4: oklch(0.62 0.22 15);
-  --chart-5: oklch(0.6 0.15 300);
+  /* Charts: gold leads the palette so chart-1 matches --primary.
+     Emerald / sky / rose / purple keep data variety for multi-series charts. */
+  --chart-1: oklch(0.76 0.14 80);   /* Stewardship gold */
+  --chart-2: oklch(0.65 0.17 160);  /* Emerald */
+  --chart-3: oklch(0.68 0.16 230);  /* Sky (moved down from primary) */
+  --chart-4: oklch(0.62 0.22 15);   /* Rose */
+  --chart-5: oklch(0.6 0.15 300);   /* Purple */
 
   /* Sidebar: deepest navy */
-  --sidebar: oklch(0.11 0.022 255);
-  --sidebar-foreground: oklch(0.88 0.008 255);
-  --sidebar-primary: oklch(0.68 0.16 230);
-  --sidebar-primary-foreground: oklch(0.11 0.022 255);
-  --sidebar-accent: oklch(0.19 0.028 255);
-  --sidebar-accent-foreground: oklch(0.88 0.008 255);
-  --sidebar-border: oklch(0.23 0.028 255);
-  --sidebar-ring: oklch(0.68 0.16 230);
+  --sidebar: oklch(0.11 0.02 255);
+  --sidebar-foreground: oklch(0.9 0.006 80);
+  --sidebar-primary: oklch(0.76 0.14 80);
+  --sidebar-primary-foreground: oklch(0.11 0.02 255);
+  --sidebar-accent: oklch(0.2 0.024 255);
+  --sidebar-accent-foreground: oklch(0.9 0.006 80);
+  --sidebar-border: oklch(0.24 0.024 255);
+  --sidebar-ring: oklch(0.76 0.14 80);
 }
 
 .dark {
@@ -173,7 +178,7 @@
   }
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling — slightly warmer to match the gold palette */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -182,11 +187,58 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.4 0.02 255 / 0.4);
+  background: oklch(0.42 0.02 255 / 0.4);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0.02 255 / 0.6);
+  background: oklch(0.76 0.14 80 / 0.5); /* gold on hover */
+}
+
+/* Pass 98: delightful keyboard focus ring — Stewardship Gold with offset
+   + subtle glow. Replaces the browser's ugly blue outline. Applied to
+   every focusable element via :focus-visible so mouse clicks don't
+   flash the ring. */
+@layer base {
+  :focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px oklch(0.76 0.14 80 / 0.55),
+      0 0 12px 2px oklch(0.76 0.14 80 / 0.15);
+    border-radius: calc(var(--radius) - 2px);
+    transition: box-shadow 120ms ease-out;
+  }
+}
+
+/* Pass 98: respect prefers-reduced-motion. Users who opt out of
+   animation at the OS level should see instant transitions everywhere
+   — no hover lifts, no pulse glows, no shimmer. This is a WCAG 2.3.3
+   requirement, not a nice-to-have. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-pulse-glow,
+  .animate-message-in,
+  .avatar-talking,
+  .typing-dot {
+    animation: none !important;
+  }
+}
+
+/* Pass 98: gentle card lift on hover — applied as a utility class so
+   consumers opt in. Respects prefers-reduced-motion automatically via
+   the override above. */
+.card-lift {
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px oklch(0.76 0.14 80 / 0.18);
+  border-color: oklch(0.76 0.14 80 / 0.35);
 }
 
 /* Chat message animations */
@@ -198,10 +250,10 @@
   animation: message-in 0.3s ease-out;
 }
 
-/* Pulse glow for sky blue accent */
+/* Pulse glow — Stewardship Gold */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.68 0.16 230 / 0.4); }
-  50% { box-shadow: 0 0 0 6px oklch(0.68 0.16 230 / 0); }
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.76 0.14 80 / 0.4); }
+  50% { box-shadow: 0 0 0 6px oklch(0.76 0.14 80 / 0); }
 }
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
@@ -231,18 +283,18 @@
 .prose-chat blockquote { @apply my-2 border-l-2 border-accent pl-3 italic text-muted-foreground; }
 .prose-chat a { @apply text-accent underline; }
 
-/* Talking avatar animation */
+/* Talking avatar animation — Stewardship Gold */
 @keyframes avatar-talk {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.68 0.16 230 / 0.4); }
-  15% { transform: scale(1.04); box-shadow: 0 0 0 3px oklch(0.68 0.16 230 / 0.3); }
-  30% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.68 0.16 230 / 0); }
-  45% { transform: scale(1.06); box-shadow: 0 0 0 4px oklch(0.68 0.16 230 / 0.35); }
-  60% { transform: scale(1.02); box-shadow: 0 0 0 2px oklch(0.68 0.16 230 / 0.2); }
-  75% { transform: scale(1.05); box-shadow: 0 0 0 3px oklch(0.68 0.16 230 / 0.3); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.76 0.14 80 / 0.4); }
+  15% { transform: scale(1.04); box-shadow: 0 0 0 3px oklch(0.76 0.14 80 / 0.3); }
+  30% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.76 0.14 80 / 0); }
+  45% { transform: scale(1.06); box-shadow: 0 0 0 4px oklch(0.76 0.14 80 / 0.35); }
+  60% { transform: scale(1.02); box-shadow: 0 0 0 2px oklch(0.76 0.14 80 / 0.2); }
+  75% { transform: scale(1.05); box-shadow: 0 0 0 3px oklch(0.76 0.14 80 / 0.3); }
 }
 .avatar-talking {
   animation: avatar-talk 1.2s ease-in-out infinite;
-  border: 2px solid oklch(0.68 0.16 230 / 0.5);
+  border: 2px solid oklch(0.76 0.14 80 / 0.5);
   border-radius: 0.5rem;
 }
 

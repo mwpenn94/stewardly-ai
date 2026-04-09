@@ -2229,6 +2229,13 @@ export default function Chat() {
 
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
       <main id="chat-main" tabIndex={-1} className="flex-1 flex flex-col min-w-0">
+        {/* Pass 99 (Target 7 delightful accessibility): aria-live region
+            so screen reader users get spoken feedback when the AI starts
+            thinking and when a response finishes streaming. polite so
+            it doesn't interrupt whatever they're currently reading. */}
+        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {isStreaming ? "AI is responding…" : ""}
+        </div>
         {/* Mobile-only sidebar toggle + escalation + guest sign-in */}
         <div className="lg:hidden flex items-center h-12 px-3 shrink-0 justify-between">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} aria-label="Open menu">

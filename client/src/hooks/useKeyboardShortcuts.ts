@@ -20,10 +20,13 @@ export function useKeyboardShortcuts() {
   const shortcuts: ShortcutDef[] = [
     { key: "?", label: "Show help", action: () => { /* toggle help modal via event */ document.dispatchEvent(new CustomEvent("toggle-help")); } },
     { key: "/", label: "Focus search", action: () => { document.dispatchEvent(new CustomEvent("focus-search")); } },
-    { key: "h", chord: "g", label: "Go to Home", action: () => navigate("/") },
+    { key: "h", chord: "g", label: "Go to Home (Chat)", action: () => navigate("/chat") },
     { key: "s", chord: "g", label: "Go to Settings", action: () => navigate("/settings") },
     { key: "c", chord: "g", label: "Go to Chat", action: () => navigate("/chat") },
-    { key: "d", chord: "g", label: "Go to Dashboard", action: () => navigate("/dashboard") },
+    // Pass 98: dropped `g+d → /dashboard` (Dashboard.tsx was deleted
+    // in pass 85 per v10.0). `g+i` → Intelligence Hub is the closest
+    // substitute for the dashboard-style "overview" page.
+    { key: "i", chord: "g", label: "Go to Intelligence Hub", action: () => navigate("/intelligence-hub") },
     { key: "l", chord: "g", label: "Go to Lead Pipeline", action: () => navigate("/leads") },
     { key: "o", chord: "g", label: "Go to Operations", action: () => navigate("/operations") },
   ];
