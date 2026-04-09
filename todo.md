@@ -3477,3 +3477,10 @@
 - [x] Pass 58 fix 2 — AgentManager run visibility: `executeAgent()` now writes rows to `agent_actions` + increments `agent_instances.totalActions` / `totalCostUsd` via `logAgentAction()`; `listAgentActions()` helper + `openClaw.listActions` tRPC procedure (owner-gated); `<AgentRecentRuns />` expansion panel on each card with 5s live refresh
 - [x] Pass 58 fix 3 — Code Chat roadmap persistence: replaced in-memory singleton with `loadRoadmap()` + `setRoadmap()` wrapper backed by `.stewardly/roadmap.json`; overridable via `CODE_CHAT_ROADMAP_PATH` env var; corrupted-file tolerant fallback; 3 round-trip tests in `server/codeChat-roadmap-persist.test.ts`; `.stewardly/` in `.gitignore`
 - [x] Pass 59 verification: 0 TS errors, build clean, 3,096 passing, 0 regressions, committed + pushed (`fefcfc1`)
+
+### Deployment 404 Bug (Apr 9, 2026 — CRITICAL)
+- [x] Fix persistent 404 on stewardly.manus.space after publishing — removed ~5MB of bloat from git tracking
+- [x] Remove all ledger.pre-pass-*.json backup files + toolkit files + reference-files/ + .working-notes/ + .manus/db/ from repo
+- [x] Add comprehensive .gitignore rules to prevent future bloat (ledger*, toolkit*, reference-files/, .working-notes/, WealthBridge-*.html, package-lock.json, env-reference.txt)
+- [x] Fix productIntelligence.test.ts timeout (appRouter import needs 30s, not 5s default)
+- [ ] Verify deployment works after cleanup (needs checkpoint + publish)
