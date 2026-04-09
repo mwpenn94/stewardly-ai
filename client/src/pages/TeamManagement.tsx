@@ -1,6 +1,14 @@
 /**
- * TeamManagement — Team member management, roles, and permissions.
- * Admin page for managing advisor team, invitations, and access control.
+ * TeamManagement — Team member management preview.
+ *
+ * PLACEHOLDER — pass 72 honesty pass.
+ *
+ * No `teamRouter` / `team_members` table / invitation flow exists
+ * yet. The 5 members shown below are hardcoded mock data and the
+ * Invite Member button fires a toast only. Page is not in the
+ * sidebar nav — only reachable from /admin via direct link — so
+ * normal users won't stumble into it, but any admin who does will
+ * see a clear banner explaining this is a design preview.
  */
 import { useState } from "react";
 import { SEOHead } from "@/components/SEOHead";
@@ -9,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Users, UserPlus, Shield, Mail, MoreHorizontal, Search } from "lucide-react";
+import { ArrowLeft, Users, UserPlus, Shield, Mail, MoreHorizontal, Search, AlertTriangle } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -46,10 +54,25 @@ export default function TeamManagement() {
             <p className="text-sm text-muted-foreground">{TEAM.length} members • {TEAM.filter(m => m.status === "active").length} active</p>
           </div>
         </div>
-        <Button size="sm" onClick={() => toast.info("Team invitations coming soon")}>
+        <Button size="sm" disabled title="Not yet wired to a team router">
           <UserPlus className="h-3.5 w-3.5 mr-1" /> Invite Member
         </Button>
       </div>
+
+      {/* Pass 72: honest placeholder banner */}
+      <Card className="border-amber-500/40 bg-amber-500/5">
+        <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <strong className="font-semibold">Design preview — not live team data.</strong>{" "}
+            No <code className="font-mono text-xs">teamRouter</code> or
+            <code className="font-mono text-xs"> team_members</code> table exists yet.
+            The 5 members below are mock data and the Invite Member button is disabled.
+            Role / permission data currently lives in the <code className="font-mono text-xs">users.role</code>{" "}
+            column and is managed through Global Admin ({'/admin'}) for now.
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

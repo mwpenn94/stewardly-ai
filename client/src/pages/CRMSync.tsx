@@ -1,6 +1,13 @@
 /**
- * CRMSync — CRM integration dashboard showing sync status, field mappings,
- * conflict resolution, and sync history for Wealthbox/Redtail.
+ * CRMSync — CRM integration dashboard (pass 72 partial wire).
+ *
+ * Pass 72: the `crm.sync` tRPC mutation exists and calls `syncCRM()`
+ * from `server/services/crmAdapter.ts` — so the "Sync Now" button is
+ * fully wired to real Wealthbox / Salesforce / Redtail sync. The
+ * provider status cards + field mappings + sync history panels
+ * still render mock data because no backend for sync history /
+ * connection status exists yet. A single honest banner explains
+ * which parts of the page are live vs mock.
  */
 import { useState } from "react";
 import { SEOHead } from "@/components/SEOHead";
@@ -10,10 +17,14 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, Clock, Database, ArrowLeftRight, Settings2, History } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, Clock, Database, ArrowLeftRight, Settings2, History, Info } from "lucide-react";
 import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
+// Sync history remains a design preview until a sync_history table
+// exists — the backend only has a pull/push trigger at the moment.
 const SYNC_HISTORY = [
   { id: 1, time: "2026-04-05 09:30", direction: "pull", records: 45, errors: 0, duration: "12s" },
   { id: 2, time: "2026-04-05 08:00", direction: "push", records: 12, errors: 1, duration: "8s" },
@@ -24,11 +35,26 @@ const SYNC_HISTORY = [
 export default function CRMSync() {
   const [, navigate] = useLocation();
   const [autoSync, setAutoSync] = useState(true);
-  const [syncing, setSyncing] = useState(false);
+  const [provider, setProvider] = useState<"wealthbox" | "salesforce" | "redtail">("wealthbox");
+  const [direction, setDirection] = useState<"pull" | "push" | "bidirectional">("pull");
+
+  // Pass 72: real sync call.
+  const syncMut = trpc.crm.sync.useMutation({
+    onSuccess: (r) => {
+      const contacts = r?.contactsSynced ?? 0;
+      const activities = r?.activitiesSynced ?? 0;
+      const errorCount = r?.errors?.length ?? 0;
+      toast.success(
+        `Sync completed — ${contacts} contact${contacts === 1 ? "" : "s"} + ` +
+          `${activities} activit${activities === 1 ? "y" : "ies"}` +
+          (errorCount > 0 ? `, ${errorCount} error${errorCount === 1 ? "" : "s"}` : ""),
+      );
+    },
+    onError: (e) => toast.error(`Sync failed: ${e.message}`),
+  });
 
   const handleSync = () => {
-    setSyncing(true);
-    setTimeout(() => { setSyncing(false); toast.success("Sync completed — 45 records updated"); }, 3000);
+    syncMut.mutate({ provider, direction });
   };
 
   return (
@@ -42,14 +68,47 @@ export default function CRMSync() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">CRM Sync</h1>
-            <p className="text-sm text-muted-foreground">Wealthbox & Redtail integration management</p>
+            <p className="text-sm text-muted-foreground">Wealthbox, Salesforce, and Redtail integration management</p>
           </div>
         </div>
-        <Button onClick={handleSync} disabled={syncing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? "Syncing..." : "Sync Now"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Select value={provider} onValueChange={(v) => setProvider(v as any)}>
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="wealthbox">Wealthbox</SelectItem>
+              <SelectItem value="salesforce">Salesforce</SelectItem>
+              <SelectItem value="redtail">Redtail</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={direction} onValueChange={(v) => setDirection(v as any)}>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pull">Pull</SelectItem>
+              <SelectItem value="push">Push</SelectItem>
+              <SelectItem value="bidirectional">Both</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={handleSync} disabled={syncMut.isPending}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncMut.isPending ? "animate-spin" : ""}`} />
+            {syncMut.isPending ? "Syncing..." : "Sync Now"}
+          </Button>
+        </div>
       </div>
+
+      {/* Pass 72: banner clarifying live vs mock surfaces on this page */}
+      <Card className="border-sky-500/40 bg-sky-500/5">
+        <CardContent className="py-3 flex items-start gap-2 text-sky-600 dark:text-sky-400 text-sm">
+          <Info className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <strong className="font-semibold">Sync Now is live</strong> — it calls the real{" "}
+            <code className="font-mono text-xs">crm.sync</code> tRPC mutation which invokes{" "}
+            <code className="font-mono text-xs">syncCRM()</code> against the selected provider.
+            <br />
+            <strong className="font-semibold">Provider status cards and sync history below are mock data</strong>{" "}
+            — no <code className="font-mono text-xs">sync_history</code> table exists yet.
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Status cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

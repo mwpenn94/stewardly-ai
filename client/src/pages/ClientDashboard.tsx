@@ -1,6 +1,15 @@
 /**
- * ClientDashboard — Holistic plan scorecard (9 domains), per-domain action steps,
- * implementation timeline.
+ * ClientDashboard — Holistic plan scorecard preview.
+ *
+ * PLACEHOLDER — pass 72 honesty pass.
+ *
+ * The 9-domain scorecard requires a `holisticPlan` backend (per-domain
+ * scoring + action recommendation engine) that doesn't exist yet.
+ * For now the DOMAINS array ships as mock data so the design is
+ * visible, but a banner at the top clearly labels it as a preview.
+ * Users who want live data should use `/protection-score` (fully
+ * wired via `financialProtectionScore.*`), the wealth engines
+ * (`/engine-dashboard`), or the advisory hub (`/advisory`).
  */
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
@@ -10,12 +19,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
 import {
-  Loader2, Shield, TrendingUp, Heart, Home, FileText,
+  Loader2, Shield, TrendingUp, Heart, FileText,
   DollarSign, Users, Umbrella, GraduationCap, Clock,
-  CheckCircle2, AlertTriangle, ChevronRight,
+  CheckCircle2, ChevronRight, AlertTriangle,
 } from "lucide-react";
+import { Link } from "wouter";
 
 interface PlanDomain {
   id: string;
@@ -79,6 +88,22 @@ export default function ClientDashboard() {
   return (
     <AppShell>
       <div className="container max-w-4xl py-8 space-y-6">
+        {/* Pass 72: honest placeholder banner */}
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
+            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+            <div>
+              <strong className="font-semibold">Design preview — not your live plan.</strong>{" "}
+              The 9-domain scorecard below requires a <code className="font-mono text-xs">holisticPlan</code> backend
+              (per-domain scoring + action recommendation engine) that doesn't exist yet.
+              For live data try{" "}
+              <Link href="/protection-score"><a className="underline">Protection Score</a></Link>,{" "}
+              <Link href="/engine-dashboard"><a className="underline">Engine Dashboard</a></Link>, or{" "}
+              <Link href="/advisory"><a className="underline">Advisory Hub</a></Link>.
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Overall score */}
         <div className="text-center space-y-4">
           <div className="mx-auto w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
