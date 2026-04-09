@@ -1,4 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import TypingIndicator from "@/components/TypingIndicator";
+import { EmptyConversations } from "@/components/EmptyStates";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { useSoundCues } from "@/hooks/useSoundCues";
 import { Button } from "@/components/ui/button";
@@ -2036,6 +2038,9 @@ export default function Chat() {
                 {[1,2,3].map(i => <Skeleton key={i} className="h-8 w-full" />)}
               </div>
             )}
+            {!conversationsQuery.isLoading && !searchOpen && groupedConversations.dateGroups.length === 0 && groupedConversations.pinned.length === 0 && (
+              <EmptyConversations />
+            )}
           </div>
           )}
         </div>
@@ -2591,16 +2596,7 @@ export default function Chat() {
               ))}
 
               {isStreaming && !streamingContent && (
-                <div className="flex gap-3">
-                  <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${avatarUrl ? "" : "bg-accent/10"}`}>
-                    {avatarUrl ? <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent typing-dot" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent typing-dot" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent typing-dot" />
-                  </div>
-                </div>
+                <TypingIndicator focusMode={selectedFocus?.[0] ?? "general"} />
               )}
               {/* Upgrade prompt for anonymous users */}
               {isAnonymous && anonChat.shouldPromptUpgrade && (

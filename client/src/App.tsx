@@ -17,6 +17,9 @@ import { usePageTracking } from "./hooks/useExponentialTracking";
 import PageSuspenseFallback from "./components/PageSuspenseFallback";
 import { lazy, Suspense } from "react";
 
+import { AudioCompanionProvider } from "./components/AudioCompanion";
+import { PILProvider } from "./components/PlatformIntelligence";
+
 // ── Eagerly loaded (critical path — instant navigation) ──────────────
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
@@ -327,10 +330,14 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <NotificationProvider>
-            <Toaster />
-            <KeyboardShortcuts />
-            <CommandPalette />
-            <AppContent />
+            <AudioCompanionProvider>
+              <PILProvider>
+                <Toaster />
+                <KeyboardShortcuts />
+                <CommandPalette />
+                <AppContent />
+              </PILProvider>
+            </AudioCompanionProvider>
           </NotificationProvider>
         </TooltipProvider>
       </ThemeProvider>
