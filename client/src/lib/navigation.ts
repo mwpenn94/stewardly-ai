@@ -84,11 +84,13 @@ export interface NavItemDef {
 // Consumers can filter by href if needed.
 
 export const TOOLS_NAV: NavItemDef[] = [
-  // ── HOME — the entry points a user returns to most often
-  // Dashboard (added pass 84) is listed first so it's the first row
-  // a freshly-logged-in user sees. Post-login redirects now target
-  // /dashboard instead of /chat.
-  { iconName: "LayoutDashboard", label: "Dashboard", href: "/dashboard", minRole: "user", section: "home" },
+  // ── HOME — the entry points a user returns to most often.
+  // Per prompt v10.0 (Pass 85 revert): Chat IS the landing page and
+  // the feature gateway. There is NO /dashboard route — the chat
+  // empty state surfaces activity, insights, and feature discovery.
+  // This matches the pattern every conversational AI product uses
+  // (ChatGPT, Claude, Gemini) and saves the user a click on every
+  // login.
   { iconName: "MessageSquare", label: "Chat", href: "/chat", minRole: "user", section: "home" },
   { iconName: "Activity", label: "My Progress", href: "/proficiency", minRole: "user", section: "home" },
 

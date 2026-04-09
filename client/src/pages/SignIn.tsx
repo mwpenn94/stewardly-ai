@@ -19,10 +19,11 @@ export default function SignIn() {
 
   const signInMutation = trpc.emailAuth.signIn.useMutation({
     onSuccess: () => {
-      // Pass 84: post-login users land on /dashboard (activity hub)
-      // instead of /chat, so they see recent conversations + proactive
-      // insights + quick actions before jumping into a conversation.
-      window.location.href = "/dashboard";
+      // Pass 85 (v10.0 revert): Chat IS the landing page and the
+      // feature gateway. Post-login lands directly in Chat — no
+      // extra /dashboard hop. Feature discoverability lives INSIDE
+      // the Chat empty state (Pass 86 builds that).
+      window.location.href = "/chat";
     },
     onError: (err) => {
       setError(err.message);
@@ -31,7 +32,7 @@ export default function SignIn() {
 
   const signUpMutation = trpc.emailAuth.signUp.useMutation({
     onSuccess: () => {
-      window.location.href = "/dashboard";
+      window.location.href = "/chat";
     },
     onError: (err) => {
       setError(err.message);
@@ -40,10 +41,10 @@ export default function SignIn() {
 
   const isLoading = signInMutation.isPending || signUpMutation.isPending;
 
-  // If already authenticated, redirect to the dashboard
+  // If already authenticated, redirect to chat
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/dashboard");
+      navigate("/chat");
     }
   }, [isAuthenticated, navigate]);
 

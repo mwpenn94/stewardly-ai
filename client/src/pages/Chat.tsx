@@ -338,7 +338,35 @@ function useTypingAnimation(text: string, speed = 40) {
 }
 
 // ─── WELCOME SCREEN COMPONENT ─────────────────────────────────
-function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, ttsEnabled, onPromptClick, isAuthenticated, userRole, isGuest }: {
+//
+// Pass 86 (v10.0 "Chat IS the dashboard"): the empty state surfaces
+// activity + insights + feature discovery before the first message.
+// Flow:
+//   1. Typed greeting + compact stat strip (authenticated only)
+//   2. Proactive insights banner (if any new high-priority insight)
+//   3. Existing suggestion chip grid (static/dynamic prompts)
+//   4. Guest sign-in banner (existing)
+//   5. Feature discovery cards (role-gated, navigate to feature pages
+//      or seed a contextual prompt)
+//   6. Onboarding checklist (existing, unchanged)
+// Everything is rendering-only. The Chat state machine, SSE pipeline,
+// mode controls, and compliance disclaimer paths are untouched.
+function WelcomeScreen({
+  avatarUrl,
+  userName,
+  selectedFocus,
+  hasConversations,
+  ttsEnabled,
+  onPromptClick,
+  isAuthenticated,
+  userRole,
+  isGuest,
+  // Pass 86 additions — optional so tests + guest flow tolerate undefined
+  conversationCount,
+  insightStats,
+  insights,
+  mastery,
+}: {
   avatarUrl?: string | null;
   userName?: string | null;
   selectedFocus: FocusMode[];
@@ -348,11 +376,74 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
   isAuthenticated: boolean;
   userRole: string;
   isGuest: boolean;
+  conversationCount?: number;
+  insightStats?: { total?: number; newCount?: number } | null;
+  insights?: Array<{
+    id: number;
+    title?: string | null;
+    priority?: string | null;
+    category?: string | null;
+    suggestedAction?: string | null;
+  }>;
+  mastery?: { masteryPct?: number; dueNow?: number } | null;
 }) {
   const displayName = userName && !isGuest && userName !== "Guest User" && userName !== "Guest" ? userName.split(" ")[0] : null;
   const greeting = `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${displayName ? `, ${displayName}` : ""}`;
   const { displayed: typedGreeting, done: greetingDone } = useTypingAnimation(greeting, 35);
   const [prompts] = useState(() => getDynamicPrompts(selectedFocus, hasConversations, userRole));
+
+  // Pick the single highest-priority insight to surface as a banner.
+  // If none, the banner is skipped entirely.
+  const topInsight = (insights ?? []).find(
+    (i) => i.priority === "critical" || i.priority === "high",
+  ) ?? (insights ?? [])[0];
+
+  // Feature discovery cards — role-gated. Each card either seeds a
+  // contextual prompt (stays in chat) or navigates to the feature
+  // page. Mirrors the Hub architecture from STEWARDLY_COMPREHENSIVE_GUIDE §5.
+  const showProfessionalCards = userRole === "advisor" || userRole === "manager" || userRole === "admin";
+  const featureCards: Array<{
+    label: string;
+    desc: string;
+    icon: string;
+    onClick: () => void;
+  }> = [
+    {
+      label: "Run Intelligence analysis",
+      desc: "Portfolio risks, retirement gaps, product matches.",
+      icon: "🧠",
+      onClick: () => window.location.assign("/intelligence-hub"),
+    },
+    {
+      label: "Open Engine Dashboard",
+      desc: "UWE + BIE + HE + Monte Carlo + strategy compare.",
+      icon: "📊",
+      onClick: () => window.location.assign("/engine-dashboard"),
+    },
+    {
+      label: "Study a certification track",
+      desc: "SIE, Series 7, Series 66, CFP — flashcards + quizzes.",
+      icon: "🎓",
+      onClick: () => window.location.assign("/learning"),
+    },
+    ...(showProfessionalCards
+      ? [
+          {
+            label: "Review lead pipeline",
+            desc: "7-stage Kanban with AI propensity scoring.",
+            icon: "👥",
+            onClick: () => window.location.assign("/leads"),
+          },
+        ]
+      : [
+          {
+            label: "Use a financial calculator",
+            desc: "10 calculators: retirement, tax, SS, HSA, estate.",
+            icon: "🧮",
+            onClick: () => window.location.assign("/calculators"),
+          },
+        ]),
+  ];
 
   return (
     <div className="h-full flex flex-col items-center justify-center px-4 pb-16 sm:pb-32">
@@ -361,9 +452,59 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
           {typedGreeting}
           {!greetingDone && <span className="inline-block w-0.5 h-6 bg-accent ml-0.5 animate-pulse" />}
         </h1>
-        <p className={`text-muted-foreground text-sm mb-4 sm:mb-8 max-w-md mx-auto transition-opacity duration-700 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
+        <p className={`text-muted-foreground text-sm mb-4 sm:mb-6 max-w-md mx-auto transition-opacity duration-700 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
           What can I help you with?
         </p>
+
+        {/* Pass 86: compact stat strip — authenticated users only,
+            hidden for guests since they have no data. Four tiles
+            map to the most common returning-user questions:
+            "Did I save conversations? Any new insights? Am I
+            making progress? What's due today?" */}
+        {isAuthenticated && !isGuest && greetingDone && (
+          <div
+            aria-label="Your activity summary"
+            className="grid grid-cols-4 gap-2 max-w-md mx-auto mb-4 sm:mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
+          >
+            <WelcomeStat label="Chats" value={conversationCount != null ? String(conversationCount) : "—"} />
+            <WelcomeStat label="Insights" value={insightStats?.newCount != null ? String(insightStats.newCount) : "—"} />
+            <WelcomeStat label="Mastery" value={mastery?.masteryPct != null ? `${mastery.masteryPct}%` : "—"} />
+            <WelcomeStat label="Due" value={mastery?.dueNow != null ? String(mastery.dueNow) : "—"} />
+          </div>
+        )}
+
+        {/* Pass 86: proactive insight banner — clicking seeds a
+            contextual prompt so the user keeps the conversation in
+            chat instead of bouncing to another page. Only shows for
+            authenticated users with at least one active insight. */}
+        {isAuthenticated && !isGuest && greetingDone && topInsight && (
+          <button
+            onClick={() =>
+              onPromptClick(
+                topInsight.suggestedAction
+                  ? `Help me with this: ${topInsight.title ?? "Insight"}. ${topInsight.suggestedAction}`
+                  : `Tell me more about: ${topInsight.title ?? "this insight"}`,
+              )
+            }
+            className="block w-full max-w-md mx-auto mb-4 sm:mb-6 text-left rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all p-3 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            aria-label={`Proactive insight: ${topInsight.title ?? "New insight"}`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-500">
+                {topInsight.priority ?? "Insight"}
+                {topInsight.category ? ` · ${topInsight.category}` : ""}
+              </span>
+            </div>
+            <p className="text-sm font-medium text-foreground line-clamp-1">
+              {topInsight.title ?? "New insight"}
+            </p>
+            {topInsight.suggestedAction && (
+              <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                {topInsight.suggestedAction}
+              </p>
+            )}
+          </button>
+        )}
 
         <div data-tour="suggested-prompts" className={`grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto transition-all duration-700 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
           {prompts.map((prompt, i) => (
@@ -378,6 +519,38 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
             </button>
           ))}
         </div>
+
+        {/* Pass 86: feature discovery cards — role-gated. Cards take
+            users directly to their Hub so the platform's depth is
+            visible from the first screen, not buried behind sidebar
+            scrolling. Rendered below the suggestion chips so casual
+            users can still just type a question and ignore them. */}
+        {greetingDone && (
+          <div className="mt-4 sm:mt-6 max-w-lg mx-auto animate-in fade-in slide-in-from-bottom-2 duration-700 delay-200">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold mb-2 text-left">
+              Or explore a workspace
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {featureCards.map((card, i) => (
+                <button
+                  key={i}
+                  onClick={card.onClick}
+                  className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl border border-border/60 bg-card/40 hover:bg-secondary/40 hover:border-accent/30 transition-all text-left group"
+                >
+                  <span className="text-lg leading-none shrink-0 mt-0.5" aria-hidden="true">
+                    {card.icon}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-medium text-foreground">{card.label}</span>
+                    <span className="block text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
+                      {card.desc}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Guest sign-in prompt — hidden on mobile where header already has sign-in */}
         {isGuest && greetingDone && (
@@ -427,6 +600,18 @@ function WelcomeScreen({ avatarUrl, userName, selectedFocus, hasConversations, t
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Pass 86: tiny stat tile — used by the WelcomeScreen activity strip.
+// Dash fallback when value is missing/loading so the grid never
+// collapses and users see a consistent shape every visit.
+function WelcomeStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/40 px-2 py-1.5 text-center">
+      <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60">{label}</p>
+      <p className="text-sm font-semibold tabular-nums text-foreground">{value}</p>
     </div>
   );
 }
@@ -668,6 +853,25 @@ export default function Chat() {
   );
   const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: isAuthenticated });
   const avatarUrl = settingsQuery.data?.avatarUrl;
+
+  // Pass 86: WelcomeScreen data — surfaces activity + insights +
+  // mastery on the chat empty state so Chat doubles as a feature
+  // gateway (per v10.0 "Chat IS the dashboard"). All three are
+  // against existing tRPC procedures verified in Pass 82. retry:
+  // false so a transient error shows a 0 instead of blocking the
+  // whole empty state.
+  const welcomeInsightsQuery = trpc.insights.list.useQuery(
+    { limit: 3 },
+    { enabled: isAuthenticated && !conversationId, retry: false },
+  );
+  const welcomeInsightStatsQuery = trpc.insights.stats.useQuery(undefined, {
+    enabled: isAuthenticated && !conversationId,
+    retry: false,
+  });
+  const welcomeMasteryQuery = trpc.learning.mastery.summary.useQuery(undefined, {
+    enabled: isAuthenticated && !conversationId,
+    retry: false,
+  });
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -2116,6 +2320,10 @@ export default function Chat() {
               isAuthenticated={isAuthenticated}
               userRole={userRole}
               isGuest={user?.authTier === "anonymous"}
+              conversationCount={conversationsQuery.data?.length ?? 0}
+              insightStats={welcomeInsightStatsQuery.data ?? null}
+              insights={welcomeInsightsQuery.data ?? []}
+              mastery={welcomeMasteryQuery.data ?? null}
             />
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
