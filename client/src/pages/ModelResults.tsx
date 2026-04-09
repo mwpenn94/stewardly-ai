@@ -577,7 +577,7 @@ function RiskResults({ data }: { data: any }) {
       {(data.behavioralInsights || []).length > 0 && (
         <Card className="bg-card/50">
           <CardContent className="p-3 space-y-1">
-            <p className="text-xs font-semibold text-sky-400">Behavioral Insights</p>
+            <p className="text-xs font-semibold text-accent">Behavioral Insights</p>
             {data.behavioralInsights.map((b: string, i: number) => <p key={i} className="text-xs text-muted-foreground">{b}</p>)}
           </CardContent>
         </Card>

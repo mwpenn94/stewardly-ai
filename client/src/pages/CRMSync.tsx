@@ -96,8 +96,8 @@ export default function CRMSync() {
       </div>
 
       {/* Pass 72: banner clarifying live vs mock surfaces on this page */}
-      <Card className="border-sky-500/40 bg-sky-500/5">
-        <CardContent className="py-3 flex items-start gap-2 text-sky-600 dark:text-sky-400 text-sm">
+      <Card className="border-accent/40 bg-accent/5">
+        <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-accent text-sm">
           <Info className="w-4 h-4 mt-0.5 shrink-0" />
           <div>
             <strong className="font-semibold">Sync Now is live</strong> — it calls the real{" "}

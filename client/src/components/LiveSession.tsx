@@ -376,7 +376,7 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
 
   // ─── Status indicator color ───────────────────────────────────
   const statusColor = isSpeaking
-    ? "bg-sky-500 animate-pulse"
+    ? "bg-accent animate-pulse"
     : isListening
     ? "bg-red-400 animate-pulse"
     : isProcessing

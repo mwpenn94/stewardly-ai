@@ -245,7 +245,7 @@ export default function AdminSystemHealth() {
             tone="emerald"
           />
           <SummaryCard
-            icon={<Zap className="w-5 h-5 text-sky-500" />}
+            icon={<Zap className="w-5 h-5 text-accent" />}
             label="Currently Running"
             value={aggregate.active}
             loading={status.isLoading}
@@ -340,7 +340,7 @@ function SummaryCard({
     tone === "emerald"
       ? "bg-emerald-500/10"
       : tone === "sky"
-        ? "bg-sky-500/10"
+        ? "bg-accent/10"
         : tone === "amber"
           ? "bg-amber-500/10"
           : "bg-red-500/10";

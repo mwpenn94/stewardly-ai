@@ -368,7 +368,7 @@ const BADGE_CONFIG: Record<string, { icon: any; color: string; bg: string; label
   cfp_certified: { icon: Award, color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/30", label: "CFP Certified" },
   cpa_active: { icon: FileCheck, color: "text-indigo-400", bg: "bg-indigo-400/10 border-indigo-400/30", label: "CPA Active" },
   bar_good_standing: { icon: ScaleIcon, color: "text-purple-400", bg: "bg-purple-400/10 border-purple-400/30", label: "Bar Good Standing" },
-  nmls_authorized: { icon: Shield, color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/30", label: "NMLS Authorized" },
+  nmls_authorized: { icon: Shield, color: "text-accent", bg: "bg-accent/10 border-accent/30", label: "NMLS Authorized" },
   nipr_licensed: { icon: ShieldCheck, color: "text-teal-400", bg: "bg-teal-400/10 border-teal-400/30", label: "NIPR Licensed" },
   no_disclosures: { icon: CheckCircle, color: "text-green-400", bg: "bg-green-400/10 border-green-400/30", label: "No Disclosures" },
   fiduciary: { icon: Heart, color: "text-rose-400", bg: "bg-rose-400/10 border-rose-400/30", label: "Fiduciary" },
