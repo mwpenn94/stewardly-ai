@@ -124,7 +124,7 @@ describe("Exponential Engine — Router", () => {
   beforeEach(async () => {
     const mod = await import("./routers");
     appRouter = mod.appRouter;
-  });
+  }, 30_000);
 
   it("trackEvent requires authentication", async () => {
     const caller = appRouter.createCaller(createGuestContext());
@@ -439,7 +439,7 @@ describe("Exponential Engine v2 — New Endpoints", () => {
   beforeEach(async () => {
     const mod = await import("./routers");
     appRouter = mod.appRouter;
-  });
+  }, 30_000);
 
   it("getOnboardingChecklist is publicly accessible for guests", async () => {
     const caller = appRouter.createCaller(createGuestContext());

@@ -3516,3 +3516,10 @@
 - [x] Fix tRPC query returning HTML instead of JSON on /chat page — root cause: server restart during git pull returns HTML fallback; added isTransientServerRestart() detection + smart retry (5 attempts, 2s→20s backoff) + suppressed user-facing toasts for transient errors
 - [x] Fix Vite HMR index.css reload failures — transient from server restart during git pull, no code fix needed (self-resolving)
 - [x] Re-remove bloat files from git tracking (previous git rm --cached didn't persist through checkpoint pull)
+
+### Pending Migrations & Imports (Apr 9, 2026)
+- [x] Inventory all pending SQL migrations (0006 multitenant, 0010 EMBA learning, 0011 workflow instances)
+- [x] Apply all pending SQL migrations to database (317 tables total: +10 firm, +32 learning, +1 workflow_instances)
+- [x] Created 41 additional missing tables to fully sync schema.ts with database (317→358 tables)
+- [x] Execute all pending data imports — 45/45 seed modules passed (2,280 records), EMBA import complete (1,908 definitions, 760 flashcards, 218 questions, 54 chapters, 256 subsections)
+- [x] Recursive verification until 2 consecutive clean passes — CONVERGED (passes 2+3 both clean, 0 actions needed)

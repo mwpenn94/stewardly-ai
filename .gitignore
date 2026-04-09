@@ -144,3 +144,13 @@ package-lock.json
 
 # Env reference (development-only)
 env-reference.txt
+
+# One-off migration/seed scripts (development-only)
+apply_all_migrations.mjs
+create_missing_tables.mjs
+find_missing_tables.mjs
+reseed_failed.mjs
+run_all_seeds.mjs
+generate-migration.mjs
+migrate-messages.mjs
+optimization_pass_log.md
