@@ -199,6 +199,10 @@ async function startServer() {
   // ─── MCP Server (Model Context Protocol) ────────────────────────────
   await registerMCPEndpoint(app);
 
+  // ─── TTS Audio endpoint (Edge TTS for AudioCompanion) ──────────────
+  const ttsRouter = (await import("../routes/tts")).default;
+  app.use(ttsRouter);
+
   // ─── SSE Streaming endpoint ──────────────────────────────────────────
   app.post("/api/chat/stream", generalLimiter, async (req, res) => {
     try {
