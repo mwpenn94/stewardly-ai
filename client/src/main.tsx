@@ -9,11 +9,34 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
+/** Detect transient "server restarting" errors where the HTML fallback is returned instead of JSON */
+const isTransientServerRestart = (error: unknown): boolean => {
+  if (error instanceof TRPCClientError) {
+    const msg = error.message;
+    // Server restart returns HTML page instead of JSON
+    if (msg.includes("is not valid JSON") || msg.includes("Unexpected token '<'") || msg.includes("Unexpected token '\u003c'")) return true;
+    // Network failures during restart
+    if (msg.includes("Failed to fetch") || msg.includes("Load failed") || msg.includes("NetworkError")) return true;
+  }
+  return false;
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 3,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 15000),
+      retry: (failureCount, error) => {
+        // Always retry transient server-restart errors (up to 5 times with longer delays)
+        if (isTransientServerRestart(error)) return failureCount < 5;
+        // Don't retry auth errors
+        if (error instanceof TRPCClientError && error.message === UNAUTHED_ERR_MSG) return false;
+        // Default: retry up to 3 times
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex, error) => {
+        // Longer delays for server-restart errors (give server time to come back)
+        if (isTransientServerRestart(error)) return Math.min(2000 * 2 ** attemptIndex, 20000);
+        return Math.min(1000 * 2 ** attemptIndex, 15000);
+      },
       staleTime: 30_000,
       refetchOnWindowFocus: false,
     },
@@ -62,6 +85,13 @@ queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
+
+    // Suppress transient server-restart errors from user-facing toasts — they auto-retry
+    if (isTransientServerRestart(error)) {
+      // Only log at debug level; the retry mechanism will handle recovery
+      console.debug("[API] Transient error (server restarting), retrying...", error.message);
+      return;
+    }
 
     // Show toast only when retries are exhausted (fetchFailureCount >= retry count)
     const retryCount = event.query.options.retry;

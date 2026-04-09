@@ -3511,3 +3511,8 @@
 - [x] Add comprehensive .gitignore rules to prevent future bloat (ledger*, toolkit*, reference-files/, .working-notes/, WealthBridge-*.html, package-lock.json, env-reference.txt)
 - [x] Fix productIntelligence.test.ts timeout (appRouter import needs 30s, not 5s default)
 - [ ] Verify deployment works after cleanup (needs checkpoint + publish)
+
+### Chat Page Errors (Apr 9, 2026)
+- [x] Fix tRPC query returning HTML instead of JSON on /chat page — root cause: server restart during git pull returns HTML fallback; added isTransientServerRestart() detection + smart retry (5 attempts, 2s→20s backoff) + suppressed user-facing toasts for transient errors
+- [x] Fix Vite HMR index.css reload failures — transient from server restart during git pull, no code fix needed (self-resolving)
+- [x] Re-remove bloat files from git tracking (previous git rm --cached didn't persist through checkpoint pull)
