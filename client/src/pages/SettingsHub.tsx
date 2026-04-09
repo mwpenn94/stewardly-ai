@@ -132,7 +132,7 @@ export default function SettingsHub() {
                     activeTab === tab.id
                       ? "bg-accent/10 text-accent border border-accent/20"
                       : tabRequiresAuth
-                        ? "text-muted-foreground/40 hover:text-muted-foreground/60 hover:bg-card/30"
+                        ? "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-card/30"
                         : "text-muted-foreground hover:text-foreground hover:bg-card/50"
                   }`}
                 >

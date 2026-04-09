@@ -100,12 +100,10 @@ export default function CRMSync() {
         <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-accent text-sm">
           <Info className="w-4 h-4 mt-0.5 shrink-0" />
           <div>
-            <strong className="font-semibold">Sync Now is live</strong> — it calls the real{" "}
-            <code className="font-mono text-xs">crm.sync</code> tRPC mutation which invokes{" "}
-            <code className="font-mono text-xs">syncCRM()</code> against the selected provider.
+            <strong className="font-semibold">Sync Now is live</strong> — it will trigger a real sync with your selected CRM provider.
             <br />
-            <strong className="font-semibold">Provider status cards and sync history below are mock data</strong>{" "}
-            — no <code className="font-mono text-xs">sync_history</code> table exists yet.
+            <strong className="font-semibold">Provider status cards and sync history below are preview data</strong>{" "}
+            — live sync history tracking is coming soon.
           </div>
         </CardContent>
       </Card>

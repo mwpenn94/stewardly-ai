@@ -1077,7 +1077,7 @@ export default function Chat() {
             } catch { /* polling error — will retry */ }
           }, 3000);
         } catch (err: any) {
-          toast.error(err.message || "Failed to start autonomous loop");
+          toast.error(err.message || "Couldn't start the analysis loop — please try again in a moment");
         }
         setIsStreaming(false);
         return;
@@ -1426,7 +1426,7 @@ export default function Chat() {
         }
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to send message");
+      toast.error(err.message || "Your message couldn't be sent — check your connection and try again");
     } finally {
       setIsStreaming(false);
       setAttachments([]);
@@ -2047,7 +2047,7 @@ export default function Chat() {
                       out.push(
                         <div
                           key={`hdr-${section}`}
-                          className="px-2.5 pt-2 pb-0.5 text-[9px] uppercase tracking-wider text-muted-foreground/50 font-semibold"
+                          className="px-2.5 pt-2 pb-0.5 text-[9px] uppercase tracking-wider text-muted-foreground/60 font-semibold"
                         >
                           {NAV_SECTION_LABELS[section as NavSection]}
                         </div>,
@@ -2329,8 +2329,8 @@ export default function Chat() {
                           <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-accent/70 bg-accent/8 px-1.5 py-0.5 rounded">
                             <Sparkles className="w-2.5 h-2.5" /> AI
                           </span>
-                          {msg.createdAt && <span className="text-[9px] text-muted-foreground/50">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
-                          {msg.model && <span className="text-[9px] text-muted-foreground/40 ml-1">{msg.model}</span>}
+                          {msg.createdAt && <span className="text-[9px] text-muted-foreground/60">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                          {msg.model && <span className="text-[9px] text-muted-foreground/60 ml-1">{msg.model}</span>}
                           {msg.contextSources && msg.contextSources > 0 && (
                             <span className="text-[9px] text-blue-400/60 ml-1">Enhanced with {msg.contextSources} sources</span>
                           )}
@@ -2369,7 +2369,7 @@ export default function Chat() {
                                   </div>
                                 ))}
                                 {(!msg.metadata.alternatives || msg.metadata.alternatives.length === 0) && (
-                                  <div className="px-3 py-2 text-xs text-muted-foreground/50">All models agreed — no alternative responses to show.</div>
+                                  <div className="px-3 py-2 text-xs text-muted-foreground/60">All models agreed — no alternative responses to show.</div>
                                 )}
                               </div>
                             </div>
@@ -2480,7 +2480,7 @@ export default function Chat() {
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Regenerate</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-purple-400 transition-colors" onClick={async () => { toast.info("Generating infographic..."); try { const result = await visualMutation.mutateAsync({ prompt: `Create a professional infographic summarizing: ${msg.content.slice(0, 500)}` }); if (result.url) { setMessages(prev => [...prev, { role: "assistant" as const, content: `Here's the infographic:`, metadata: { imageUrl: result.url }, createdAt: new Date() }]); } } catch (e: any) { toast.error(e.message || "Failed to generate infographic"); } }} title="Generate Infographic">
+                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-purple-400 transition-colors" onClick={async () => { toast.info("Generating infographic..."); try { const result = await visualMutation.mutateAsync({ prompt: `Create a professional infographic summarizing: ${msg.content.slice(0, 500)}` }); if (result.url) { setMessages(prev => [...prev, { role: "assistant" as const, content: `Here's the infographic:`, metadata: { imageUrl: result.url }, createdAt: new Date() }]); } } catch (e: any) { toast.error(e.message || "The infographic couldn't be created right now — try again shortly"); } }} title="Generate Infographic">
                                   <Palette className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate Infographic</TooltipContent></Tooltip>
@@ -2665,7 +2665,7 @@ export default function Chat() {
                               setMessages(prev => [...prev, { role: "user" as const, content: `Generate visual: ${prompt}`, createdAt: new Date() }, imgMsg]);
                               setInput("");
                             }
-                          } catch (e: any) { toast.error(e.message || "Failed to generate visual"); }
+                          } catch (e: any) { toast.error(e.message || "The visual couldn't be generated right now — try again shortly"); }
                         }}
                       >
                         <Palette className="w-3.5 h-3.5 text-muted-foreground" />
@@ -2825,7 +2825,7 @@ export default function Chat() {
                           return (
                             <div key={opt.id}>
                               {showDivider && <div className="h-px bg-border my-0.5" />}
-                              {showDivider && <div className="px-2 py-0.5 text-[9px] text-muted-foreground/50 uppercase tracking-wider">{opt.family}</div>}
+                              {showDivider && <div className="px-2 py-0.5 text-[9px] text-muted-foreground/60 uppercase tracking-wider">{opt.family}</div>}
                               <button
                                 className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-colors ${
                                   selectedModels.includes(opt.id) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
@@ -2993,7 +2993,7 @@ export default function Chat() {
                     title="Re-run the most recent user prompt through the loop"
                     onClick={() => {
                       const lastUser = [...messages].reverse().find(m => m.role === "user");
-                      if (!lastUser) { toast.error("No previous prompt to loop"); return; }
+                      if (!lastUser) { toast.error("Send a message first, then use the loop to iterate on it"); return; }
                       handleSendWithText(lastUser.content);
                     }}
                   >

@@ -112,8 +112,7 @@ export default function ComplianceAudit() {
               <Shield className="h-6 w-6" /> Compliance Audit
             </h1>
             <p className="text-sm text-muted-foreground">
-              Live review queue from{" "}
-              <code className="font-mono text-xs">compliance.getReviews</code>
+              Live review queue for all AI-generated financial guidance
             </p>
           </div>
         </div>
@@ -195,8 +194,8 @@ export default function ComplianceAudit() {
                 : "No reviews match your search."}
             </p>
             <p className="text-xs">
-              Reviews are created automatically when AI responses flow through the
-              <code className="font-mono text-xs"> guardrails.screenOutput</code> layer.
+              Reviews are created automatically as you use the AI assistant.
+              The compliance engine monitors every response for regulatory accuracy.
             </p>
           </CardContent>
         </Card>

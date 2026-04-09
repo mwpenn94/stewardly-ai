@@ -149,9 +149,7 @@ export default function AdminDataFreshness() {
               <Database className="w-6 h-6" /> Data Freshness
             </h1>
             <p className="text-muted-foreground">
-              Live `data_sources` freshness from{" "}
-              <code className="font-mono text-xs">dataIngestion.listSources</code>{" "}
-              — refreshes every 30 seconds.
+              Monitor the freshness of all connected data feeds — auto-refreshes every 30 seconds.
             </p>
           </div>
           <Button
@@ -204,8 +202,8 @@ export default function AdminDataFreshness() {
             <CardContent className="py-12 text-center text-muted-foreground text-sm space-y-2">
               <p>No data sources configured yet.</p>
               <p className="text-xs">
-                Data sources are created via <code className="font-mono">dataIngestion.createSource</code>
-                {" "}or imported through the data ingestion pipeline.
+                Data sources are created through the Data Intelligence page
+                or imported through the ingestion pipeline.
               </p>
             </CardContent>
           </Card>

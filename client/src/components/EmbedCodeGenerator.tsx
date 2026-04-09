@@ -54,7 +54,7 @@ export function EmbedCodeGenerator({
       toast.success("Embed code copied!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Failed to copy");
+      toast.error("Couldn't copy to clipboard — try selecting and copying manually");
     }
   };
 

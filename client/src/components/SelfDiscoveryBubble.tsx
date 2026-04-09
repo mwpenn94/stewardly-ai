@@ -123,7 +123,7 @@ export function SelfDiscoveryBubble({
                 )}
                 {relatedFeatures.length > 0 && (
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] text-muted-foreground/40">Related:</span>
+                    <span className="text-[10px] text-muted-foreground/60">Related:</span>
                     {relatedFeatures.map((f) => (
                       <span
                         key={f}

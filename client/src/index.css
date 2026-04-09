@@ -322,3 +322,22 @@
     font-size: 0.7rem;
   }
 }
+
+/* Pass 103: Subtle page-enter fade for lazy-loaded routes */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-page-enter {
+  animation: page-enter 0.25s ease-out;
+}
+
+/* Pass 103: Success flash — brief green border pulse on save/submit */
+@keyframes success-flash {
+  0% { box-shadow: 0 0 0 0 oklch(0.65 0.17 160 / 0.5); }
+  50% { box-shadow: 0 0 0 4px oklch(0.65 0.17 160 / 0.2); }
+  100% { box-shadow: 0 0 0 0 oklch(0.65 0.17 160 / 0); }
+}
+.animate-success-flash {
+  animation: success-flash 0.6s ease-out;
+}

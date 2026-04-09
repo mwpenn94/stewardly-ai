@@ -123,8 +123,7 @@ export default function AdminRateManagement() {
               <TrendingUp className="w-6 h-6" /> Rate Management
             </h1>
             <p className="text-muted-foreground">
-              Live rate profiles + AI recommendations from{" "}
-              <code className="font-mono text-xs">adminIntelligence.*</code>.
+              Live rate profiles and AI-powered optimization recommendations.
             </p>
           </div>
           <Button
@@ -288,9 +287,8 @@ export default function AdminRateManagement() {
               <CardContent className="pt-4 space-y-3">
                 <p className="text-sm font-medium">Generate a new rate recommendation</p>
                 <p className="text-xs text-muted-foreground">
-                  Runs <code className="font-mono">generateRateRecommendation(provider)</code> against
-                  the live rate telemetry for that provider and writes a row to{" "}
-                  <code className="font-mono">rate_recommendations</code> for review.
+                  Analyzes live rate telemetry for the selected provider and generates
+                  an AI-powered recommendation for your review.
                 </p>
                 <div className="flex gap-2">
                   <Input

@@ -57,14 +57,18 @@ describe("Social Auth & Integration Secrets", () => {
 
   it("SnapTrade API is reachable with client ID", async () => {
     const clientId = process.env.SNAPTRADE_CLIENT_ID!;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
     const res = await fetch("https://api.snaptrade.com/api/v1/snapTrade/listUsers", {
+      signal: controller.signal,
       headers: {
         "clientId": clientId,
         "Content-Type": "application/json",
       },
     });
+    clearTimeout(timer);
     // We expect 400 or 401 (missing signature), NOT a network error
     // This confirms the API is reachable and the clientId format is accepted
     expect([400, 401, 403, 200]).toContain(res.status);
-  });
+  }, 15000);
 });

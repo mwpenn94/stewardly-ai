@@ -84,9 +84,9 @@ export function DownloadReportButton({
         description: `${result.filename} (${(result.sizeBytes / 1024).toFixed(0)} KB)`,
       });
     } catch (err) {
-      toast.error("Report generation failed", {
+      toast.error("The report couldn't be generated right now", {
         description:
-          err instanceof Error ? err.message : "Unknown error",
+          err instanceof Error ? err.message : "Please try again in a moment",
       });
     } finally {
       setIsPending(false);

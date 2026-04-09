@@ -171,7 +171,11 @@ export default function LearningHome() {
           </CardHeader>
           <CardContent>
             {tracksQ.isLoading ? (
-              <div className="text-sm text-muted-foreground">Loading tracks…</div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="h-32 rounded-lg bg-card/50 animate-pulse" />
+                ))}
+              </div>
             ) : tracks.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 No tracks seeded yet. {isAdmin && "Run the admin seed from the Learning Studio."}
@@ -180,7 +184,7 @@ export default function LearningHome() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {tracks.map((t: any) => (
                   <Link key={t.id} href={`/learning/tracks/${t.slug}`}>
-                    <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+                    <Card className="card-lift cursor-pointer h-full">
                       <CardContent className="p-4">
                         <div className="text-2xl">{t.emoji ?? "📘"}</div>
                         <div className="font-semibold mt-2">{t.name}</div>

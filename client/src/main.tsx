@@ -69,7 +69,7 @@ function showRetryExhaustedToast(error: unknown, queryKey: unknown) {
   // Truncate long error messages
   const shortMsg = message.length > 120 ? message.slice(0, 117) + "..." : message;
 
-  toast.error("Request failed after retries", {
+  toast.error("Something didn't work — let's try again", {
     description: shortMsg,
     action: {
       label: "Retry",
@@ -115,7 +115,7 @@ queryClient.getMutationCache().subscribe(event => {
       // Only show if the mutation doesn't have its own onError handler that already toasts
       // We check by looking at the mutation options — if onError exists, skip global toast
       if (!event.mutation.options.onError) {
-        toast.error("Action failed", {
+        toast.error("That didn't go through", {
           description: message,
           duration: 6000,
         });

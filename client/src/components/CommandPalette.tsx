@@ -282,7 +282,7 @@ export function CommandPalette() {
                 <CommandShortcut>
                   {page.shortcut.split(" ").map((k, i) => (
                     <span key={i}>
-                      {i > 0 && <span className="mx-0.5 text-muted-foreground/40">then</span>}
+                      {i > 0 && <span className="mx-0.5 text-muted-foreground/60">then</span>}
                       <kbd className="px-1 py-0.5 rounded bg-secondary/80 border border-border/60 text-[10px] font-mono">
                         {k}
                       </kbd>

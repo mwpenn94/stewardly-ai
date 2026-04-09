@@ -49,7 +49,7 @@ export default function Community() {
       setNewBody("");
       utils.communityForum.listPosts.invalidate();
     },
-    onError: () => toast.error("Failed to create post"),
+    onError: () => toast.error("Your post couldn't be published — please try again"),
   });
 
   if (authLoading) {

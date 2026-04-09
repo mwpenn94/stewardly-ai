@@ -26,7 +26,7 @@ describe("Toast notifications on retry exhaustion", () => {
   });
 
   it("shows toast.error with retry action when retries exhausted", () => {
-    expect(mainTsx).toContain('toast.error("Request failed after retries"');
+    expect(mainTsx).toContain('toast.error("Something didn\'t work \u2014 let\'s try again"');
     expect(mainTsx).toContain('label: "Retry"');
   });
 
@@ -50,7 +50,7 @@ describe("Toast notifications on retry exhaustion", () => {
 
   it("shows mutation failure toasts only when no custom onError handler exists", () => {
     expect(mainTsx).toContain("event.mutation.options.onError");
-    expect(mainTsx).toContain('toast.error("Action failed"');
+    expect(mainTsx).toContain('toast.error("That didn\'t go through"');
   });
 
   it("truncates long error messages to 120 chars", () => {

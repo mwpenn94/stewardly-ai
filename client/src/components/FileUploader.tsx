@@ -66,7 +66,7 @@ export function FileUploader({
       toast.success(`${files.length} file(s) uploaded successfully`);
     } catch {
       setState("error");
-      toast.error("Upload failed. Please try again.");
+      toast.error("The upload didn't go through — please check your file and try again.");
     }
   }, [onUpload, validateFiles]);
 

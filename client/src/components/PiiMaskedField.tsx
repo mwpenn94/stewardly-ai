@@ -46,7 +46,7 @@ export function PiiMaskedField({
       toast.success("Copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Failed to copy");
+      toast.error("Couldn't copy to clipboard — try selecting and copying manually");
     }
   };
 

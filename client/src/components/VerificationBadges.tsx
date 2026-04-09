@@ -80,7 +80,7 @@ export function VerificationBadges({ professionalId, compact = false, showAction
       setRunningSource(null);
     },
     onError: (err) => {
-      toast.error(`Verification Failed: ${err.message}`);
+      toast.error(`Verification couldn't complete: ${err.message}`);
       setRunningSource(null);
     },
   });

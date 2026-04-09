@@ -512,7 +512,7 @@ export default function Help() {
       setSent(true);
       toast.success("Message sent! We'll get back to you soon.");
     } catch {
-      toast.error("Failed to send message. Please try again.");
+      toast.error("Your message couldn't be sent — please check your connection and try again.");
     } finally {
       setSending(false);
     }

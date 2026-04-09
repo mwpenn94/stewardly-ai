@@ -39,7 +39,7 @@ export default function GlobalFooter() {
               Help & Support
             </a>
           </div>
-          <p className="text-[10px] text-muted-foreground/40">
+          <p className="text-[10px] text-muted-foreground/60">
             &copy; {new Date().getFullYear()} Stewardly. AI-assisted advisory platform.
           </p>
         </div>

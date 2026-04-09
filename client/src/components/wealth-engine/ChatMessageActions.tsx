@@ -92,7 +92,7 @@ export function ChatMessageActions({
       setCopied(true);
       toast.success("Copied to clipboard");
     } catch {
-      toast.error("Copy failed");
+      toast.error("Couldn't copy — try selecting and copying manually");
     }
   };
 
@@ -126,8 +126,8 @@ export function ChatMessageActions({
       setPlayingAudio(true);
       await audio.play();
     } catch (err) {
-      toast.error("Audio generation failed", {
-        description: err instanceof Error ? err.message : "Unknown error",
+      toast.error("Audio playback isn't available right now", {
+        description: err instanceof Error ? err.message : "Please try again in a moment",
       });
       setPlayingAudio(false);
     }
@@ -135,7 +135,7 @@ export function ChatMessageActions({
 
   const handleShare = async () => {
     if (!messageId) {
-      toast.error("Message has no shareable id yet");
+      toast.error("This message can't be shared yet — wait for it to finish sending");
       return;
     }
     const url = `${window.location.origin}/chat?message=${messageId}`;
@@ -143,7 +143,7 @@ export function ChatMessageActions({
       await navigator.clipboard.writeText(url);
       toast.success("Share link copied");
     } catch {
-      toast.error("Share link copy failed");
+      toast.error("Couldn't copy the share link — try again");
     }
   };
 
