@@ -453,8 +453,12 @@ export default function Chat() {
   const [selectedFocus, setSelectedFocus] = useState<FocusMode[]>(["general", "financial"]);
   const [selectedModels, setSelectedModels] = useState<string[]>(["auto"]);
   const [showModelMenu, setShowModelMenu] = useState(false);
-  const [chatMode, setChatMode] = useState<"single" | "loop" | "consensus">("single");
+  const [chatMode, setChatMode] = useState<"single" | "loop" | "consensus" | "codechat">("single");
   const [loopConfig, setLoopConfig] = useState({ maxIterations: 0, maxBudget: 1.0, foci: [] as string[], promptType: "" as string });
+  // Pass 78: Code Chat mode config. `allowMutations` only takes effect
+  // when the current user is an admin — the server enforces the gate.
+  const [codeChatConfig, setCodeChatConfig] = useState({ allowMutations: false, maxIterations: 5 });
+  const codeChatMut = trpc.codeChat.chat.useMutation();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   const toggleLoopFocus = (focus: string) => {
@@ -1081,6 +1085,63 @@ export default function Chat() {
               return updated;
             });
           }
+        }
+        setIsStreaming(false);
+        return;
+      }
+      // ─── CODE CHAT MODE: Claude-Code-style multi-turn tool calling (pass 78) ───
+      // Runs the server-side `codeChat.chat` ReAct loop which has
+      // `list_directory` / `read_file` / `grep_search` (and the write
+      // tools when the caller is an admin + opted-in). The final
+      // response is appended as a single assistant message with a
+      // `traces` metadata array so the UI can render tool calls
+      // inline — reusing the existing reasoning-chain component
+      // would be a natural follow-up.
+      if (chatMode === "codechat") {
+        try {
+          setMessages(prev => [...prev, {
+            role: "assistant" as const,
+            content: "🔧 Code Chat is exploring the codebase...",
+            createdAt: new Date(),
+          }]);
+          const result = await codeChatMut.mutateAsync({
+            message: trimmed,
+            model: selectedModels[0] && selectedModels[0] !== "auto" ? selectedModels[0] : undefined,
+            allowMutations: codeChatConfig.allowMutations,
+            maxIterations: codeChatConfig.maxIterations,
+          });
+          const traceSummary = result.traces.length > 0
+            ? "\n\n---\n\n**Tool calls (" + result.traces.length + "):** " +
+              result.traces
+                .map((t) => `\`${t.toolName ?? "?"}\` (${(t.durationMs / 1000).toFixed(1)}s)`)
+                .join(", ")
+            : "";
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant" as const,
+              content: result.response + traceSummary,
+              createdAt: new Date(),
+              metadata: {
+                codeChatTraces: result.traces,
+                codeChatModel: result.model,
+                codeChatIterations: result.iterations,
+                codeChatToolCallCount: result.toolCallCount,
+              } as any,
+            };
+            return updated;
+          });
+          if (ttsEnabled) tts.speak(result.response);
+        } catch (err: any) {
+          setMessages(prev => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant" as const,
+              content: `Code Chat error: ${err.message ?? "unknown"}`,
+              createdAt: new Date(),
+            };
+            return updated;
+          });
         }
         setIsStreaming(false);
         return;
@@ -2546,20 +2607,34 @@ export default function Chat() {
 
               </div>
 
-              {/* Processing mode toggle — Single / Loop / Consensus */}
+              {/* Processing mode toggle — Single / Loop / Consensus / CodeChat */}
               <div className="flex items-center rounded-lg border border-border overflow-hidden h-7">
-                {(["single", "loop", "consensus"] as const).map(m => (
+                {(["single", "loop", "consensus", "codechat"] as const).map(m => (
                   <button
                     key={m}
                     className={`px-2 text-[10px] h-full transition-all ${
                       chatMode === m
-                        ? m === "loop" ? "bg-amber-500/15 text-amber-400" : m === "consensus" ? "bg-purple-500/15 text-purple-400" : "bg-secondary/50 text-foreground"
+                        ? m === "loop"
+                          ? "bg-amber-500/15 text-amber-400"
+                          : m === "consensus"
+                            ? "bg-purple-500/15 text-purple-400"
+                            : m === "codechat"
+                              ? "bg-emerald-500/15 text-emerald-400"
+                              : "bg-secondary/50 text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
                     }`}
                     onClick={() => setChatMode(m)}
-                    title={m === "single" ? "Normal chat" : m === "loop" ? "Autonomous loop (discovery/apply/connect/critique)" : "Multi-model consensus"}
+                    title={
+                      m === "single"
+                        ? "Normal chat"
+                        : m === "loop"
+                          ? "Autonomous loop (discovery/apply/connect/critique)"
+                          : m === "consensus"
+                            ? "Multi-model consensus"
+                            : "Claude-Code-style coding assistant with file browser, grep, and optional write tools"
+                    }
                   >
-                    {m === "single" ? "Single" : m === "loop" ? "Loop" : "Consensus"}
+                    {m === "single" ? "Single" : m === "loop" ? "Loop" : m === "consensus" ? "Consensus" : "CodeChat"}
                   </button>
                 ))}
               </div>
@@ -2579,6 +2654,53 @@ export default function Chat() {
                 >
                   Open panel →
                 </a>
+              )}
+
+              {/* Pass 78 — Code Chat mode config (admin write toggle + iterations) */}
+              {chatMode === "codechat" && (
+                <div className="flex items-center gap-2 text-[10px]">
+                  {user?.role === "admin" && (
+                    <label
+                      className="flex items-center gap-1 text-emerald-400 cursor-pointer"
+                      title="Allow write_file / edit_file / run_bash in this session (admin only, server-gated)"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={codeChatConfig.allowMutations}
+                        onChange={(e) =>
+                          setCodeChatConfig((p) => ({ ...p, allowMutations: e.target.checked }))
+                        }
+                        className="h-3 w-3"
+                      />
+                      Write mode
+                    </label>
+                  )}
+                  <label className="flex items-center gap-1 text-muted-foreground">
+                    iters
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={codeChatConfig.maxIterations}
+                      onChange={(e) =>
+                        setCodeChatConfig((p) => ({
+                          ...p,
+                          maxIterations: Math.max(1, Math.min(10, parseInt(e.target.value) || 5)),
+                        }))
+                      }
+                      className="w-10 h-6 text-[10px] bg-transparent border border-border rounded px-1 text-center"
+                    />
+                  </label>
+                  <a
+                    href="/code-chat"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 h-6 text-[10px] inline-flex items-center rounded border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                    title="Open the full Code Chat admin panel (file browser + roadmap + GitHub)"
+                  >
+                    Full panel →
+                  </a>
+                </div>
               )}
 
               {/* Loop config (visible when loop mode active) — pillbox multi-select */}

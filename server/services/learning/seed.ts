@@ -13,7 +13,6 @@
  * before inserting so re-running never duplicates rows.
  */
 
-import { upsertDiscipline, createTrack, getTrackBySlug } from "./content";
 import { logger } from "../../_core/logger";
 
 const log = logger.child({ module: "learning/seed" });
@@ -66,45 +65,116 @@ export const CORE_TRACKS: Array<{
   { slug: "surplus_lines", name: "Surplus Lines", category: "insurance", title: "State Surplus Lines Broker License", subtitle: "Non-admitted carriers", description: "Placement with non-admitted insurers for hard-to-place risks.", color: "#be123c", emoji: "📜", tagline: "Non-admitted market expertise", sortOrder: 12 },
 ];
 
-export async function seedLearningContent(): Promise<{
+import { getDb } from "../../db";
+import {
+  learningDisciplines as learningDisciplinesTable,
+  learningTracks as learningTracksTable,
+} from "../../../drizzle/schema";
+import { eq } from "drizzle-orm";
+
+export interface SeedResult {
+  /** Disciplines actually inserted on this run. */
   disciplines: number;
+  /** Tracks actually inserted on this run. */
   tracks: number;
+  /** Rows that already existed and were left alone. */
   skipped: number;
-}> {
-  let disciplinesInserted = 0;
-  let tracksInserted = 0;
-  let skipped = 0;
+  /**
+   * Any error that bubbled up from `upsertDiscipline` / `createTrack`,
+   * with enough context for an operator to fix it. If non-empty the
+   * Content Studio toast shows the first one. Pass 76.
+   */
+  errors: string[];
+}
 
+/**
+ * Seed the 8 core disciplines + 12 canonical exam tracks.
+ *
+ * Pass 76 rewrite: the original implementation called `upsertDiscipline`
+ * + `createTrack` from `content.ts` and silently swallowed every error
+ * inside their try/catch blocks. If the DB was missing the
+ * `learning_*` tables (which happened on a fresh deploy before the
+ * 0010_emba_learning migration ran), the toast would show
+ * "Seeded 0 disciplines, 0 tracks (0 skipped)" with no indication of
+ * why. Users had no way to diagnose it.
+ *
+ * The rewrite talks to drizzle directly so every error propagates
+ * with its real message into `result.errors`. It also correctly
+ * distinguishes "already existed" (skipped) from "just inserted"
+ * for disciplines — the old code lumped both into `disciplinesInserted`.
+ */
+export async function seedLearningContent(): Promise<SeedResult> {
+  const result: SeedResult = { disciplines: 0, tracks: 0, skipped: 0, errors: [] };
+  const db = await getDb();
+  if (!db) {
+    result.errors.push("Database not available — getDb() returned null");
+    log.warn("seedLearningContent: db unavailable");
+    return result;
+  }
+
+  // ── Disciplines ───────────────────────────────────────────────────
   for (const d of CORE_DISCIPLINES) {
-    const r = await upsertDiscipline({ ...d, createdBy: null });
-    if (r) disciplinesInserted += 1;
-  }
-
-  for (const t of CORE_TRACKS) {
-    const existing = await getTrackBySlug(t.slug);
-    if (existing) {
-      skipped += 1;
-      continue;
+    try {
+      const existing = await db
+        .select({ id: learningDisciplinesTable.id })
+        .from(learningDisciplinesTable)
+        .where(eq(learningDisciplinesTable.slug, d.slug))
+        .limit(1);
+      if (existing.length > 0) {
+        result.skipped += 1;
+        continue;
+      }
+      await db.insert(learningDisciplinesTable).values({
+        slug: d.slug,
+        name: d.name,
+        description: d.description ?? null,
+        color: d.color ?? null,
+        icon: d.icon ?? null,
+        sortOrder: d.sortOrder ?? 0,
+        isCore: true,
+        createdBy: null,
+      });
+      result.disciplines += 1;
+    } catch (err) {
+      const msg = `upsert discipline ${d.slug} failed: ${String((err as Error).message ?? err)}`;
+      log.warn({ err, slug: d.slug }, msg);
+      result.errors.push(msg);
     }
-    const r = await createTrack({
-      slug: t.slug,
-      name: t.name,
-      category: t.category,
-      title: t.title,
-      subtitle: t.subtitle,
-      description: t.description,
-      color: t.color,
-      emoji: t.emoji,
-      tagline: t.tagline,
-      createdBy: null,
-      sortOrder: t.sortOrder,
-    });
-    if (r) tracksInserted += 1;
   }
 
-  log.info(
-    { disciplines: disciplinesInserted, tracks: tracksInserted, skipped },
-    "seedLearningContent complete",
-  );
-  return { disciplines: disciplinesInserted, tracks: tracksInserted, skipped };
+  // ── Tracks ────────────────────────────────────────────────────────
+  for (const t of CORE_TRACKS) {
+    try {
+      const existing = await db
+        .select({ id: learningTracksTable.id })
+        .from(learningTracksTable)
+        .where(eq(learningTracksTable.slug, t.slug))
+        .limit(1);
+      if (existing.length > 0) {
+        result.skipped += 1;
+        continue;
+      }
+      await db.insert(learningTracksTable).values({
+        slug: t.slug,
+        name: t.name,
+        category: t.category,
+        title: t.title,
+        subtitle: t.subtitle,
+        description: t.description,
+        color: t.color,
+        emoji: t.emoji,
+        tagline: t.tagline,
+        createdBy: null,
+        sortOrder: t.sortOrder,
+      });
+      result.tracks += 1;
+    } catch (err) {
+      const msg = `insert track ${t.slug} failed: ${String((err as Error).message ?? err)}`;
+      log.warn({ err, slug: t.slug }, msg);
+      result.errors.push(msg);
+    }
+  }
+
+  log.info(result, "seedLearningContent complete");
+  return result;
 }

@@ -47,7 +47,18 @@ export default function ContentStudio() {
 
   const seedMut = trpc.learning.seed.useMutation({
     onSuccess: (r) => {
-      toast.success(`Seeded ${r.disciplines} disciplines, ${r.tracks} tracks (${r.skipped} skipped)`);
+      const errors = (r as any).errors as string[] | undefined;
+      const added = r.disciplines + r.tracks;
+      if (added === 0 && errors && errors.length > 0) {
+        // Bubble up the first real error so operators can diagnose
+        // the DB/schema/migration issue instead of seeing "0 inserted".
+        toast.error(`Seed failed: ${errors[0]}`);
+      } else {
+        toast.success(
+          `Seeded ${r.disciplines} disciplines, ${r.tracks} tracks (${r.skipped} skipped)` +
+            (errors && errors.length ? ` · ${errors.length} non-fatal errors` : ""),
+        );
+      }
       utils.learning.content.listTracks.invalidate();
     },
     onError: (e) => toast.error(e.message),
