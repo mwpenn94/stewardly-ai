@@ -211,7 +211,7 @@ Run the suite with:
 pnpm vitest run server/services/consensusStream.test.ts
 ```
 
-Total wealth-engine + consensus + code chat test count: **656** across 12 files (583 wealth-engine + 54 parallel main-branch engines + 19 semantic agreement — unchanged since Round E). Site-wide test totals (see `CLAUDE.md`) reach **3,213 tests across 123 files** after passes 54-63 added EMBA importer + navReachability + codeChat-roadmap-persist + workflow-instances regression suites.
+Total wealth-engine + consensus + code chat test count: **656** across 12 files (583 wealth-engine + 54 parallel main-branch engines + 19 semantic agreement — unchanged since Round E). Site-wide test totals (see `CLAUDE.md`) reach **3,215 tests across 123 files** after passes 54-80 added EMBA importer + navReachability + codeChat-roadmap-persist + workflow-instances + embaImport shape-regression suites.
 
 ## 10. Round D — shipped follow-ups (passes 36-38)
 

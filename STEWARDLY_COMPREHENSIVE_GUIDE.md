@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with 220,000+ lines of code across 1,000+ source files, 352 database tables (351 schema defs + the new `workflow_instances` from pass 61), 78 tRPC API routers, and 3,213 automated tests across 123 test files (3,101 passing in local dev; 14 pre-existing env-dependent files clear in the deployed environment with DB + env vars present). It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with 220,000+ lines of code across 1,000+ source files, 352 database tables (351 schema defs + the new `workflow_instances` from pass 61), 78 tRPC API routers, and 3,215 automated tests across 123 test files (3,103 passing in local dev; 14 pre-existing env-dependent files clear in the deployed environment with DB + env vars present). It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -41,7 +41,7 @@ The system is built on a modern TypeScript full-stack architecture with 220,000+
 | Total lines of code | 220,000+ |
 | Source files (non-test) | 1,000+ |
 | Test files | 123 |
-| Total tests | 3,213 (3,101 passing in local dev; 14 pre-existing env-dependent files clear in deployed env) |
+| Total tests | 3,215 (3,103 passing in local dev; 14 pre-existing env-dependent files clear in deployed env) |
 | Database tables | 352 (351 + `workflow_instances` from pass 61) |
 | tRPC routers | 78 (75 files + 3 mounted webhook routers from pass 46) |
 | Frontend pages | 119 (116 + 3 Learning consumer UIs from pass 58) |
@@ -657,7 +657,7 @@ The platform runs automated background jobs via `server/services/scheduler.ts`:
 | Nav reachability (pass 54) | 1 | 6 | App.tsx routes ↔ navigation.ts hrefs invariant enforcement |
 | CodeChat roadmap persist (pass 58) | 1 | 3 | JSON round-trip, corrupted-file tolerance, priority ordering |
 | Workflow instances (pass 61) | 1 | 5 | Drizzle shape, router procedure surface, template ID zod coverage |
-| **Total** | **123** | **3,213** (3,101 local, 14 pre-existing env files clear in deployed env) | **100% pass rate in deployed env** |
+| **Total** | **123** | **3,215** (3,103 local, 14 pre-existing env files clear in deployed env) | **100% pass rate in deployed env** |
 
 ### 12.2 Test Patterns
 

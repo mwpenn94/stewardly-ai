@@ -1,6 +1,6 @@
 # Stewardly Intelligence Architecture
 
-> Last updated: 2026-04-09 | Pass 74 (2 consecutive clean convergence scans after the third-wave stub-page audit)
+> Last updated: 2026-04-09 | Pass 80 (2 consecutive clean convergence scans after pass 76-78 bug fixes + GitHub-via-integrations + Code Chat as Chat mode)
 >
 > **Change log since pass 16:** passes 17-50 iteratively hardened the
 > intelligence layer and shipped the Wealth Engine phases + EMBA
@@ -12,12 +12,26 @@
 > cross-session persistence via `workflow_instances`). Passes 64-66
 > swept stale docs + unified test counts. Passes 67-69 wired the first
 > batch of admin stub pages (AdminSystemHealth, AdminDataFreshness).
-> **Passes 70-74** wired a second batch (AdminRateManagement,
+> Passes 70-74 wired a second batch (AdminRateManagement,
 > LeadPipeline, ComplianceAudit, CRMSync) and added honest
-> "Design preview" banners to TeamManagement + ClientDashboard where
-> no backend exists yet. The wiring-layer contract described below is
-> unchanged by all of this — every new LLM call still flows through
-> `shared/stewardlyWiring → contextualLLM`.
+> "Design preview" banners to TeamManagement + ClientDashboard.
+> **Passes 76-78** (a) fixed the `0/0/0` Content Studio seed bug and
+> the `object is not iterable` embaImport bug captured in user
+> screenshots, (b) migrated GitHub credentials into the standard
+> `integration_connections` flow so users can connect their own PAT
+> via `/integrations` instead of a shared `GITHUB_TOKEN` env var, and
+> (c) integrated Code Chat as a first-class mode inside the main `/chat`
+> page via a new `codeChat.chat` tRPC procedure that runs
+> `executeReActLoop` over the code tools, with read-only tools for
+> everyone + write tools gated on `admin + allowMutations`, and the
+> existing Chat.tsx model picker passed through as the ReAct loop's
+> `model` override so any Forge / Claude / OpenAI / Gemini model works
+> for single-model or multi-model orchestration. Passes 79-80 confirmed
+> convergence. The wiring-layer contract described below is unchanged
+> by all of this — every new LLM call still flows through
+> `shared/stewardlyWiring → contextualLLM`, and the new Code Chat ReAct
+> entrypoint uses the same `executeReActLoop` primitive the main chat
+> has used since pass 16.
 
 ## Overview
 
