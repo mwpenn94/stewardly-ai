@@ -102,6 +102,9 @@ export default function SignIn() {
               ? "Sign in to your Stewardly account"
               : "Get started with personalized financial intelligence"}
           </p>
+          <a href="/welcome-landing" className="text-xs text-accent hover:text-accent/80 transition-colors">
+            Learn what Stewardly can do →
+          </a>
         </div>
 
         {/* Sign-in card */}

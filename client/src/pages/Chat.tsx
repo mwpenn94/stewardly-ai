@@ -1,4 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import TypingIndicator from "@/components/TypingIndicator";
+import { EmptyConversations } from "@/components/EmptyStates";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { useSoundCues } from "@/hooks/useSoundCues";
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,8 @@ import {
   Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
   LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2, HeartPulse, GitBranch,
-  Terminal, Flame, Target, Compass, Award, LayoutGrid
+  Terminal, Flame, Target, Compass, Award, LayoutGrid,
+  LayoutDashboard, Users2,
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
@@ -311,6 +314,16 @@ const NAV_ICON_MAP: Record<string, React.ReactNode> = {
   Fingerprint: <Fingerprint className="w-3.5 h-3.5" />,
   Bot: <Bot className="w-3.5 h-3.5" />,
   Terminal: <Terminal className="w-3.5 h-3.5" />,
+  GraduationCap: <GraduationCap className="w-3.5 h-3.5" />,
+  Shield: <Shield className="w-3.5 h-3.5" />,
+  Sparkles: <Sparkles className="w-3.5 h-3.5" />,
+  Calculator: <Calculator className="w-3.5 h-3.5" />,
+  LayoutDashboard: <LayoutDashboard className="w-3.5 h-3.5" />,
+  Users2: <Users2 className="w-3.5 h-3.5" />,
+  Database: <Database className="w-3.5 h-3.5" />,
+  Target: <Target className="w-3.5 h-3.5" />,
+  Award: <Award className="w-3.5 h-3.5" />,
+  GitBranch: <GitBranch className="w-3.5 h-3.5" />,
 };
 function getNavIcon(name: string): React.ReactNode {
   return NAV_ICON_MAP[name] ?? <Zap className="w-3.5 h-3.5" />;
@@ -2036,6 +2049,9 @@ export default function Chat() {
                 {[1,2,3].map(i => <Skeleton key={i} className="h-8 w-full" />)}
               </div>
             )}
+            {!conversationsQuery.isLoading && !searchOpen && groupedConversations.dateGroups.length === 0 && groupedConversations.pinned.length === 0 && (
+              <EmptyConversations />
+            )}
           </div>
           )}
         </div>
@@ -2591,16 +2607,7 @@ export default function Chat() {
               ))}
 
               {isStreaming && !streamingContent && (
-                <div className="flex gap-3">
-                  <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${avatarUrl ? "" : "bg-accent/10"}`}>
-                    {avatarUrl ? <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent typing-dot" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent typing-dot" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent typing-dot" />
-                  </div>
-                </div>
+                <TypingIndicator focusMode={selectedFocus?.[0] ?? "general"} />
               )}
               {/* Upgrade prompt for anonymous users */}
               {isAnonymous && anonChat.shouldPromptUpgrade && (

@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp } from "lucide-react";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase } from "lucide-react";
 import { Link } from "wouter";
 
 export default function LearningHome() {
@@ -200,6 +200,60 @@ export default function LearningHome() {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Learning tools — links to pass 120 sub-pages */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5" />
+              Learning Tools
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {tracks.length > 0 && (
+                <Link href={`/learning/exam/${tracks[0].slug}`}>
+                  <Card className="card-lift cursor-pointer h-full">
+                    <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                      <ClipboardCheck className="h-6 w-6 text-primary" />
+                      <div className="text-sm font-medium">Practice Exam</div>
+                      <div className="text-[10px] text-muted-foreground">Timed, adaptive, or audio mode</div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
+              {tracks.length > 0 && (
+                <Link href={`/learning/discipline/${tracks[0].slug}`}>
+                  <Card className="card-lift cursor-pointer h-full">
+                    <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                      <BookOpen className="h-6 w-6 text-primary" />
+                      <div className="text-sm font-medium">Deep Dive</div>
+                      <div className="text-[10px] text-muted-foreground">Definitions, formulas, cases</div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
+              <Link href="/learning/connections">
+                <Card className="card-lift cursor-pointer h-full">
+                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                    <Brain className="h-6 w-6 text-primary" />
+                    <div className="text-sm font-medium">Concept Map</div>
+                    <div className="text-[10px] text-muted-foreground">Visual concept graph</div>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/learning/achievements">
+                <Card className="card-lift cursor-pointer h-full">
+                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                    <Award className="h-6 w-6 text-primary" />
+                    <div className="text-sm font-medium">Achievements</div>
+                    <div className="text-[10px] text-muted-foreground">Streaks, goals, milestones</div>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 

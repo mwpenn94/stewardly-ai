@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean, bigint, decimal, date, index } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean, bigint, decimal, date, index, uniqueIndex } from "drizzle-orm/mysql-core";
 
 // ─── ORGANIZATIONS (Multi-Tenant Organizational Units) ─────────────────────
 // DB table: organizations
@@ -6398,6 +6398,56 @@ export const learningContentHistory = mysqlTable("learning_content_history", {
   contentIdx: index("idx_learning_ch_content").on(t.contentTable, t.contentId),
 }));
 
+// ═══ AUDIO SCRIPTS (Pass 121) ═══
+export const audioScripts = mysqlTable("audio_scripts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  contentType: varchar("content_type", { length: 50 }).notNull(),
+  contentId: varchar("content_id", { length: 255 }).notNull(),
+  defaultScript: text("default_script").notNull(),
+  defaultScriptSsml: text("default_script_ssml"),
+  generatedBy: varchar("generated_by", { length: 50 }),
+  generatedAt: timestamp("generated_at"),
+  listenCount: int("listen_count").default(0),
+  avgCompletionRate: decimal("avg_completion_rate", { precision: 5, scale: 2 }),
+  clarityScore: decimal("clarity_score", { precision: 3, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (t) => ({
+  contentIdx: index("idx_audio_content").on(t.contentType, t.contentId),
+}));
+
+export const userAudioPreferences = mysqlTable("user_audio_preferences", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  voiceId: varchar("voice_id", { length: 100 }).default("en-US-GuyNeural"),
+  speed: decimal("speed", { precision: 3, scale: 2 }).default("1.00"),
+  pitch: varchar("pitch", { length: 20 }).default("default"),
+  expandAcronyms: mysqlBoolean("expand_acronyms").default(true),
+  simplifyLanguage: mysqlBoolean("simplify_language").default(false),
+  includeExamples: mysqlBoolean("include_examples").default(true),
+  verbosityLevel: varchar("verbosity_level", { length: 20 }).default("standard"),
+  enableNavigationAudio: mysqlBoolean("enable_navigation_audio").default(true),
+  enableActionFeedback: mysqlBoolean("enable_action_feedback").default(true),
+  enableSoundEffects: mysqlBoolean("enable_sound_effects").default(true),
+  autoRefineScripts: mysqlBoolean("auto_refine_scripts").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (t) => ({
+  userIdx: uniqueIndex("idx_audio_prefs_user").on(t.userId),
+}));
+
+export const userAudioOverrides = mysqlTable("user_audio_overrides", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
+  audioScriptId: varchar("audio_script_id", { length: 36 }).notNull(),
+  personalizedScript: text("personalized_script").notNull(),
+  personalizedSsml: text("personalized_ssml"),
+  userInstruction: text("user_instruction"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  userScriptIdx: index("idx_audio_overrides_user_script").on(t.userId, t.audioScriptId),
+}));
+
 // Type exports for the learning tables — keep at end for convenience
 export type LearningLicense = typeof learningLicenses.$inferSelect;
 export type InsertLearningLicense = typeof learningLicenses.$inferInsert;
@@ -6407,3 +6457,9 @@ export type LearningDefinition = typeof learningDefinitions.$inferSelect;
 export type InsertLearningDefinition = typeof learningDefinitions.$inferInsert;
 export type LearningMastery = typeof learningMasteryProgress.$inferSelect;
 export type InsertLearningMastery = typeof learningMasteryProgress.$inferInsert;
+
+// Audio system type exports
+export type AudioScript = typeof audioScripts.$inferSelect;
+export type InsertAudioScript = typeof audioScripts.$inferInsert;
+export type UserAudioPreference = typeof userAudioPreferences.$inferSelect;
+export type InsertUserAudioPreference = typeof userAudioPreferences.$inferInsert;

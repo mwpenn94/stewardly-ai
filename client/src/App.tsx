@@ -17,6 +17,9 @@ import { usePageTracking } from "./hooks/useExponentialTracking";
 import PageSuspenseFallback from "./components/PageSuspenseFallback";
 import { lazy, Suspense } from "react";
 
+import { AudioCompanionProvider } from "./components/AudioCompanion";
+import { PILProvider } from "./components/PlatformIntelligence";
+
 // ── Eagerly loaded (critical path — instant navigation) ──────────────
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
@@ -127,6 +130,16 @@ const ContentStudio = lazy(() => import("./pages/learning/ContentStudio"));
 const LearningTrackDetail = lazy(() => import("./pages/learning/LearningTrackDetail"));
 const LearningFlashcardStudy = lazy(() => import("./pages/learning/LearningFlashcardStudy"));
 const LearningQuizRunner = lazy(() => import("./pages/learning/LearningQuizRunner"));
+// Pass 120+ new components
+const NewLanding = lazy(() => import("./pages/NewLanding"));
+const MyWork = lazy(() => import("./pages/MyWork"));
+const MyFinancialTwin = lazy(() => import("./pages/MyFinancialTwin"));
+const ExamSimulator = lazy(() => import("./pages/learning/ExamSimulator"));
+const DisciplineDeepDive = lazy(() => import("./pages/learning/DisciplineDeepDive"));
+const CaseStudySimulator = lazy(() => import("./pages/learning/CaseStudySimulator"));
+const AchievementSystem = lazy(() => import("./pages/learning/AchievementSystem"));
+const ConnectionMap = lazy(() => import("./pages/learning/ConnectionMap"));
+const AudioPreferences = lazy(() => import("./pages/settings/AudioPreferences"));
 
 function Router() {
   return (
@@ -213,6 +226,12 @@ function Router() {
         <Route path="/admin/platform-reports" component={AdminPlatformReports} />
         <Route path="/client-dashboard" component={ClientDashboard} />
 
+        {/* Pass 120+ new persona routes */}
+        <Route path="/my-work">{() => <MyWork />}</Route>
+        <Route path="/financial-twin">{() => <MyFinancialTwin />}</Route>
+        <Route path="/welcome-landing" component={NewLanding} />
+        <Route path="/settings/audio">{() => <AudioPreferences />}</Route>
+
         {/* EMBA Learning & Licensing (April 2026) */}
         <Route path="/learning" component={LearningHome} />
         <Route path="/learning/licenses" component={LicenseTracker} />
@@ -221,6 +240,12 @@ function Router() {
         <Route path="/learning/tracks/:slug" component={LearningTrackDetail} />
         <Route path="/learning/tracks/:slug/study" component={LearningFlashcardStudy} />
         <Route path="/learning/tracks/:slug/quiz" component={LearningQuizRunner} />
+        {/* Pass 120+ learning extensions */}
+        <Route path="/learning/exam/:moduleSlug">{() => <ExamSimulator />}</Route>
+        <Route path="/learning/discipline/:slug">{() => <DisciplineDeepDive />}</Route>
+        <Route path="/learning/case/:caseId">{() => <CaseStudySimulator />}</Route>
+        <Route path="/learning/connections">{() => <ConnectionMap />}</Route>
+        <Route path="/learning/achievements">{() => <AchievementSystem />}</Route>
 
         {/* Consolidated Hub Pages */}
         <Route path={"/operations"} component={OperationsHub} />
@@ -305,10 +330,14 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <NotificationProvider>
-            <Toaster />
-            <KeyboardShortcuts />
-            <CommandPalette />
-            <AppContent />
+            <AudioCompanionProvider>
+              <PILProvider>
+                <Toaster />
+                <KeyboardShortcuts />
+                <CommandPalette />
+                <AppContent />
+              </PILProvider>
+            </AudioCompanionProvider>
           </NotificationProvider>
         </TooltipProvider>
       </ThemeProvider>

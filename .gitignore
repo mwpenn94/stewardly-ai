@@ -154,3 +154,14 @@ run_all_seeds.mjs
 generate-migration.mjs
 migrate-messages.mjs
 optimization_pass_log.md
+
+# Scratch/debug files (development-only)
+tatus
+context-audit.txt
+debug-notes.txt
+docs-structure-notes.txt
+part-g-summary.txt
+schema-issues.json
+truly-missing.json
+optimization-config.json
+orchestrate.js

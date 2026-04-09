@@ -153,6 +153,12 @@ const EXEMPT_ROUTES = new Set<string>([
   "/coi-network",
   "/email-campaigns",
   "/professionals",
+  // Pass 120+ routes not in nav (sub-pages reached from parent, or public marketing)
+  "/welcome-landing",
+  "/settings/audio",
+  "/learning/exam/:moduleSlug",
+  "/learning/discipline/:slug",
+  "/learning/case/:caseId",
 ]);
 
 describe("Navigation reachability", () => {
