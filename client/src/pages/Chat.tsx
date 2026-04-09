@@ -338,6 +338,15 @@ function useTypingAnimation(text: string, speed = 40) {
 }
 
 // ─── WELCOME SCREEN COMPONENT ─────────────────────────────────
+//
+// Pass 93 (Target 2 done right): the empty state stays clean by default.
+// The only conditional content is a single proactive insight banner
+// that ONLY renders when the user has at least one `proactive_insights`
+// row with `status='new'`. No permanent stat tiles, no feature cards,
+// no "explore a workspace" grid — those were the clutter the user
+// flagged in pass 86. The banner is tappable and seeds a contextual
+// prompt so the user keeps the conversation in chat instead of
+// bouncing to another page.
 function WelcomeScreen({
   avatarUrl,
   userName,
@@ -348,6 +357,7 @@ function WelcomeScreen({
   isAuthenticated,
   userRole,
   isGuest,
+  topInsight,
 }: {
   avatarUrl?: string | null;
   userName?: string | null;
@@ -358,6 +368,13 @@ function WelcomeScreen({
   isAuthenticated: boolean;
   userRole: string;
   isGuest: boolean;
+  topInsight?: {
+    id: number;
+    title?: string | null;
+    priority?: string | null;
+    category?: string | null;
+    suggestedAction?: string | null;
+  } | null;
 }) {
   const displayName = userName && !isGuest && userName !== "Guest User" && userName !== "Guest" ? userName.split(" ")[0] : null;
   const greeting = `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${displayName ? `, ${displayName}` : ""}`;
@@ -374,6 +391,40 @@ function WelcomeScreen({
         <p className={`text-muted-foreground text-sm mb-4 sm:mb-6 max-w-md mx-auto transition-opacity duration-700 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
           What can I help you with?
         </p>
+
+        {/* Pass 93: ONE proactive insight banner — only renders when there
+            is at least one new high-priority insight in proactive_insights.
+            For users with no data: this whole block is omitted, the empty
+            state stays clean. */}
+        {isAuthenticated && !isGuest && greetingDone && topInsight && (
+          <button
+            type="button"
+            onClick={() =>
+              onPromptClick(
+                topInsight.suggestedAction
+                  ? `Help me with this: ${topInsight.title ?? "Insight"}. ${topInsight.suggestedAction}`
+                  : `Tell me more about: ${topInsight.title ?? "this insight"}`,
+              )
+            }
+            className="block w-full max-w-md mx-auto mb-4 sm:mb-6 text-left rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all p-3 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            aria-label={`Insight: ${topInsight.title ?? "New insight"}. Click to discuss.`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-500">
+                {(topInsight.priority ?? "Insight").toString()}
+                {topInsight.category ? ` · ${topInsight.category}` : ""}
+              </span>
+            </div>
+            <p className="text-sm font-medium text-foreground line-clamp-2">
+              {topInsight.title ?? "New insight"}
+            </p>
+            {topInsight.suggestedAction && (
+              <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                {topInsight.suggestedAction}
+              </p>
+            )}
+          </button>
+        )}
 
         <div data-tour="suggested-prompts" className={`grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto transition-all duration-700 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
           {prompts.map((prompt, i) => (
@@ -682,6 +733,24 @@ export default function Chat() {
   );
   const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: isAuthenticated });
   const avatarUrl = settingsQuery.data?.avatarUrl;
+
+  // Pass 93: single proactive insight for the welcome banner. Only fires
+  // on the empty state (no conversationId), and only for authenticated
+  // non-guest users. retry:false so a transient failure shows nothing
+  // instead of blocking the welcome render. The query is cheap (3 rows,
+  // already-indexed by user_id + status).
+  const welcomeInsightsQuery = trpc.insights.list.useQuery(
+    { limit: 3 },
+    { enabled: isAuthenticated && !conversationId && user?.authTier !== "anonymous", retry: false },
+  );
+  const topInsight = (() => {
+    const list = welcomeInsightsQuery.data ?? [];
+    return (
+      list.find((i: any) => i.priority === "critical" || i.priority === "high") ??
+      list[0] ??
+      null
+    );
+  })();
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -2230,6 +2299,7 @@ export default function Chat() {
               isAuthenticated={isAuthenticated}
               userRole={userRole}
               isGuest={user?.authTier === "anonymous"}
+              topInsight={topInsight}
             />
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">

@@ -544,10 +544,54 @@ export default function AppShell({ children, title }: AppShellProps) {
           {title && <span className="text-sm font-medium truncate ml-2">{title}</span>}
         </div>
 
-        {/* Page content — scrollable */}
-        <main id="main-content" className="flex-1 overflow-y-auto" tabIndex={-1}>
+        {/* Page content — scrollable. pb-16 lg:pb-0 reserves space for the
+            mobile bottom tab bar so the last row of content isn't covered. */}
+        <main id="main-content" className="flex-1 overflow-y-auto pb-16 lg:pb-0" tabIndex={-1}>
           {children}
         </main>
+
+        {/* Pass 92 (Target 8): mobile bottom tab bar — 5 tabs max per the
+            v10.0 prompt. Hidden on lg+ where the persistent sidebar is
+            visible. Always-visible "Menu" tab opens the full sidebar
+            sheet so every other nav item is still reachable. Touch
+            targets are 44px+ tall (WCAG 2.5.5). */}
+        <nav
+          aria-label="Primary mobile navigation"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-16 bg-card/95 backdrop-blur-sm border-t border-border flex items-stretch"
+        >
+          {[
+            { href: "/chat", label: "Chat", icon: <MessageSquare className="w-5 h-5" /> },
+            { href: "/calculators", label: "Tools", icon: <Calculator className="w-5 h-5" /> },
+            { href: "/intelligence-hub", label: "Insights", icon: <Brain className="w-5 h-5" /> },
+            { href: "/learning", label: "Learn", icon: <GraduationCap className="w-5 h-5" /> },
+          ].map((tab) => {
+            const active = location.startsWith(tab.href);
+            return (
+              <button
+                key={tab.href}
+                onClick={() => navigate(tab.href)}
+                aria-label={tab.label}
+                aria-current={active ? "page" : undefined}
+                className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 transition-colors ${
+                  active
+                    ? "text-accent"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.icon}
+                <span className="text-[10px] font-medium truncate">{tab.label}</span>
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open full menu"
+            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+            <span className="text-[10px] font-medium truncate">Menu</span>
+          </button>
+        </nav>
       </div>
     </div>
   );
