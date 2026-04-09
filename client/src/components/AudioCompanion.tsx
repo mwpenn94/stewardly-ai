@@ -84,8 +84,10 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
   });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const generationRef = useRef(0);
 
   const speakItem = useCallback(async (item: AudioItem, speed: number) => {
+    const thisGen = ++generationRef.current;
     window.speechSynthesis?.cancel();
     if (audioRef.current) {
       audioRef.current.pause();
@@ -101,6 +103,7 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
       });
 
       if (res.ok) {
+        if (generationRef.current !== thisGen) return; // stale, discard
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);

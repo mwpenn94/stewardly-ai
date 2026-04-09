@@ -204,11 +204,13 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
   const processIntent = useCallback(async (source: IntentSource, input: string) => {
     const normalized = input.toLowerCase().trim();
 
-    // Level 1: Navigation intent
-    const navPatterns = [
+    // Level 1: Navigation intent (bare words only match in voice/hands-free mode)
+    const navPatterns: RegExp[] = [
       /^(?:go to|open|show me|navigate to|show)\s+(.+)$/i,
-      /^(.+)$/i,
     ];
+    if (source === "voice" || state.handsFreeActive) {
+      navPatterns.push(/^(.+)$/i);
+    }
 
     for (const pattern of navPatterns) {
       const match = normalized.match(pattern);
