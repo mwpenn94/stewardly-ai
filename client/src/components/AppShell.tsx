@@ -90,12 +90,17 @@ export default function AppShell({ children, title }: AppShellProps) {
     try { return localStorage.getItem("appshell-collapsed") === "true"; } catch { return false; }
   });
 
-  // Collapsible nav sections — matching Chat sidebar pattern
+  // Collapsible nav sections — Pass 90: default to EXPANDED so first-time
+  // users actually see the sectioned navigation. Previously these defaulted
+  // to `false`, which meant new visitors saw "Navigate ▶ / Admin ▶" with
+  // zero items visible — the worst of both worlds. Power users who want
+  // a tighter sidebar can still collapse it; the choice persists in
+  // localStorage.
   const [navExpanded, setNavExpanded] = useState(() => {
-    try { const v = localStorage.getItem("appshell-nav-expanded"); return v === "true"; } catch { return false; }
+    try { const v = localStorage.getItem("appshell-nav-expanded"); return v === null ? true : v === "true"; } catch { return true; }
   });
   const [adminExpanded, setAdminExpanded] = useState(() => {
-    try { const v = localStorage.getItem("appshell-admin-expanded"); return v === "true"; } catch { return false; }
+    try { const v = localStorage.getItem("appshell-admin-expanded"); return v === null ? true : v === "true"; } catch { return true; }
   });
 
   useEffect(() => {

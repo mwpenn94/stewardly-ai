@@ -44,7 +44,7 @@ import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
-import { TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole as sharedHasMinRole, type NavItemDef } from "@/lib/navigation";
+import { TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole as sharedHasMinRole, NAV_SECTION_ORDER, NAV_SECTION_LABELS, type NavItemDef, type NavSection } from "@/lib/navigation";
 import { useOnboardingNotifications } from "@/components/OnboardingNotifications";
 import ChangelogBell from "@/components/ChangelogBell";
 import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
@@ -1516,8 +1516,34 @@ export default function Chat() {
   const showModes = availableModes.length > 0;
 
   // ─── SIDEBAR NAV STATE (must be before auth gate to maintain hook order) ─
-  const [toolsExpanded, setToolsExpanded] = useState(false);
-  const [adminExpanded, setAdminExpanded] = useState(false);
+  // Pass 90: Navigate defaults to OPEN so first-time visitors actually see
+  // the 5 nav sections. Previously both defaulted to `false`, which meant
+  // a brand-new chat user saw "Navigate ▶ / Admin ▶" with zero links
+  // visible. Power users can still collapse; choice persists in localStorage.
+  const [toolsExpanded, setToolsExpanded] = useState(() => {
+    try { const v = localStorage.getItem("chat-tools-expanded"); return v === null ? true : v === "true"; } catch { return true; }
+  });
+  const [adminExpanded, setAdminExpanded] = useState(() => {
+    try { const v = localStorage.getItem("chat-admin-expanded"); return v === null ? true : v === "true"; } catch { return true; }
+  });
+  useEffect(() => { try { localStorage.setItem("chat-tools-expanded", String(toolsExpanded)); } catch {} }, [toolsExpanded]);
+  useEffect(() => { try { localStorage.setItem("chat-admin-expanded", String(adminExpanded)); } catch {} }, [adminExpanded]);
+
+  // Pass 90: chat input "advanced controls" toggle. Default = collapsed.
+  // The model picker, chat mode segment, and per-mode config (loop pills,
+  // codechat config, etc.) used to be ALL visible at once, turning the
+  // input into a cockpit. Now they live behind a single "..." button so
+  // first-time users see just [+] [Focus] [audio] [send]. Choice persists
+  // in localStorage so power users keep their toolbar open. Auto-expand
+  // when chatMode is non-default so loop/consensus/codechat users can see
+  // their config without an extra click.
+  const [advancedOpen, setAdvancedOpen] = useState(() => {
+    try { const v = localStorage.getItem("chat-advanced-open"); return v === null ? false : v === "true"; } catch { return false; }
+  });
+  useEffect(() => { try { localStorage.setItem("chat-advanced-open", String(advancedOpen)); } catch {} }, [advancedOpen]);
+  // Auto-expand the advanced toolbar whenever the user activates a non-default
+  // chat mode — they need to see the per-mode config they just enabled.
+  useEffect(() => { if (chatMode !== "single") setAdvancedOpen(true); }, [chatMode]);
 
   // ─── MOBILE SWIPE GESTURE for sidebar open/close ──────────────
   const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -1570,12 +1596,16 @@ export default function Chat() {
     : selectedFocus.map(f => FOCUS_OPTIONS.find(o => o.value === f)?.label).filter(Boolean).join(" + ");
 
   // ─── SIDEBAR NAV ITEMS (from shared config, role-aware) ────────
-  // Chat page filters out "/chat" from tools since we ARE the chat page
+  // Chat page filters out "/chat" from tools since we ARE the chat page.
+  // Pass 90: preserve `section` so the Chat sidebar can render the same
+  // 5-section grouping AppShell uses (Home / Work / Intelligence /
+  // Relationships / Learning).
   const toolsNav = TOOLS_NAV.filter(i => i.href !== "/chat").map(i => ({
     icon: getNavIcon(i.iconName),
     label: i.label,
     href: i.href,
     minRole: i.minRole,
+    section: i.section,
   }));
 
   const adminNav = ADMIN_NAV.map(i => ({
@@ -1635,6 +1665,40 @@ export default function Chat() {
             </>
           )}
         </div>
+
+        {/* Pass 90: Global Command Palette trigger — opens the platform-wide
+            Cmd+K palette (which navigates between pages + runs actions),
+            distinct from the conversation search above which only filters
+            chat history. The palette is mounted in App.tsx and listens for
+            the `toggle-command-palette` event. */}
+        {!sidebarCollapsed ? (
+          <div className="px-2 py-1.5 border-b border-border/40 shrink-0">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
+              aria-label="Open Command Palette"
+              className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors text-[12px]"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="flex-1 text-left">Search pages…</span>
+              <kbd className="font-mono text-[10px] text-muted-foreground/70 bg-background/60 border border-border/60 rounded px-1 py-0.5">⌘K</kbd>
+            </button>
+          </div>
+        ) : (
+          <div className="p-1 border-b border-border/40 shrink-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
+                  aria-label="Open Command Palette"
+                  className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Search pages (⌘K)</TooltipContent>
+            </Tooltip>
+          </div>
+        )}
 
         {/* Search bar */}
         {searchOpen && !sidebarCollapsed && (
@@ -1868,21 +1932,46 @@ export default function Chat() {
               </button>
               {toolsExpanded && (
                 <div data-tour="sidebar-nav" className="px-2 pb-1 space-y-0.5">
-                  {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
-                    <button
-                      key={item.href}
-                      onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                      onMouseEnter={() => prefetchRoute(item.href)}
-                      onFocus={() => prefetchRoute(item.href)}
-                      className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
-                        location.startsWith(item.href)
-                          ? "bg-accent/15 text-accent font-medium"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                      }`}
-                    >
-                      {item.icon} <span className="truncate">{item.label}</span>
-                    </button>
-                  ))}
+                  {/* Pass 90: render the same 5 sections AppShell uses
+                      (Home / Work / Intelligence / Relationships / Learning).
+                      Previously the Chat sidebar dumped all 18 nav items as
+                      one flat list, ignoring the section grouping that pass
+                      83 added to navigation.ts. */}
+                  {(() => {
+                    const visible = toolsNav.filter((item) => hasMinRole(userRole, item.minRole));
+                    const out: React.ReactNode[] = [];
+                    const renderItem = (item: typeof visible[number]) => (
+                      <button
+                        key={item.href}
+                        onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+                        onMouseEnter={() => prefetchRoute(item.href)}
+                        onFocus={() => prefetchRoute(item.href)}
+                        className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
+                          location.startsWith(item.href)
+                            ? "bg-accent/15 text-accent font-medium"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                        }`}
+                      >
+                        {item.icon} <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                    const unsectioned = visible.filter((i) => !i.section);
+                    out.push(...unsectioned.map(renderItem));
+                    for (const section of NAV_SECTION_ORDER) {
+                      const inSection = visible.filter((i) => i.section === section);
+                      if (inSection.length === 0) continue;
+                      out.push(
+                        <div
+                          key={`hdr-${section}`}
+                          className="px-2.5 pt-2 pb-0.5 text-[9px] uppercase tracking-wider text-muted-foreground/50 font-semibold"
+                        >
+                          {NAV_SECTION_LABELS[section as NavSection]}
+                        </div>,
+                      );
+                      out.push(...inSection.map(renderItem));
+                    }
+                    return out;
+                  })()}
                 </div>
               )}
               {adminNav.filter(item => hasMinRole(userRole, item.minRole)).length > 0 && (
@@ -2566,6 +2655,53 @@ export default function Chat() {
                 )}
               </div>
 
+              {/* Pass 90: collapsible "advanced" toolbar — model picker, chat
+                  mode segment, and per-mode config (loop pills, codechat
+                  config, consensus deep link) all live behind a single
+                  "More" button. Default = collapsed so the input bar shows
+                  just [+] [Focus] ... [audio] [send]. Auto-hides cockpit
+                  for casual users while preserving every existing control
+                  for power users (one click to reveal). When a non-default
+                  chat mode is active, a small badge replaces the toggle so
+                  the user can see at a glance what mode they're in. */}
+              {!advancedOpen && chatMode !== "single" && (
+                <button
+                  type="button"
+                  onClick={() => setAdvancedOpen(true)}
+                  className={`h-7 px-2 text-[10px] rounded-full border transition-colors ${
+                    chatMode === "loop"
+                      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                      : chatMode === "consensus"
+                        ? "bg-purple-500/15 text-purple-400 border-purple-500/30"
+                        : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                  }`}
+                  title="Click to show mode controls"
+                >
+                  {chatMode === "loop" ? "Loop" : chatMode === "consensus" ? "Consensus" : "CodeChat"}
+                </button>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setAdvancedOpen((p) => !p)}
+                    aria-label={advancedOpen ? "Hide advanced controls" : "Show advanced controls"}
+                    aria-expanded={advancedOpen}
+                    className={`h-7 px-2 text-[10px] rounded-full border border-border transition-colors flex items-center gap-1 ${
+                      advancedOpen
+                        ? "bg-secondary/60 text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                    }`}
+                  >
+                    <ChevronUp className={`w-3 h-3 transition-transform ${advancedOpen ? "" : "rotate-180"}`} />
+                    {advancedOpen ? "Less" : "More"}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{advancedOpen ? "Hide model + mode controls" : "Show model + mode controls"}</TooltipContent>
+              </Tooltip>
+
+              {advancedOpen && (
+              <>
               {/* Model selector — multi-select popup (mirrors focus mode pattern) */}
               <div className="relative">
                 <button
@@ -2786,6 +2922,8 @@ export default function Chat() {
                     </button>
                   )}
                 </div>
+              )}
+              </>
               )}
 
               <div className="flex-1" />
