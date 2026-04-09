@@ -174,9 +174,8 @@ describe("PageSuspenseFallback component", () => {
     expect(fallback).toContain("export default function PageSuspenseFallback");
   });
 
-  it("uses Skeleton components for loading state", () => {
-    expect(fallback).toContain("Skeleton");
-    expect(fallback).toContain('@/components/ui/skeleton');
+  it("uses skeleton loading indicators for loading state", () => {
+    expect(fallback).toContain("skeleton-gold");
   });
 
   it("renders a grid of placeholder cards", () => {

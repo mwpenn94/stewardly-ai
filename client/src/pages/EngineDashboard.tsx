@@ -73,7 +73,7 @@ function SliderInput({ label, value, onChange, min, max, step = 1, suffix = "", 
   return (
     <div className="relative space-y-1">
       {/* Warm gold radial glow */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
       <div className="flex justify-between items-center">
         <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</Label>
         <span className="text-xs font-medium tabular-nums">{format ? format(value) : `${value}${suffix}`}</span>

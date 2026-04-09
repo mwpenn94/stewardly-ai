@@ -119,7 +119,7 @@ function ProductsSection({ searchQuery }: { searchQuery: string }) {
   return (
     <div className="relative space-y-4">
       {/* Warm gold radial glow */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
       {/* Category Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {categories.map((cat) => (

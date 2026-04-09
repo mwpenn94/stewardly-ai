@@ -421,16 +421,16 @@ function WelcomeScreen({
   return (
     <div className="h-full flex flex-col items-center px-4 pt-8 sm:pt-16 pb-16 sm:pb-24 overflow-y-auto relative">
       {/* Warm gold radial glow behind greeting — creates the "premium" first impression */}
-      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] opacity-[0.18]" style={{ background: 'radial-gradient(ellipse at center, oklch(0.76 0.14 80) 0%, transparent 60%)' }} />
+      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px]" style={{ background: 'radial-gradient(ellipse at center, oklch(0.76 0.14 80 / 0.22) 0%, oklch(0.76 0.14 80 / 0.08) 30%, transparent 65%)' }} />
       <div className="max-w-2xl w-full relative z-10 stagger-reveal">
         {/* ─── GREETING ─── */}
         <div className="text-center mb-6" style={{ animationDelay: '0ms' }}>
-          <h1 className="text-2xl sm:text-4xl font-semibold mb-2 sm:mb-3 tracking-tight">
+          <h1 className="text-3xl sm:text-5xl font-bold mb-3 sm:mb-4 tracking-tight">
             {typedGreeting}
             {!greetingDone && <span className="inline-block w-0.5 h-7 bg-accent ml-0.5 animate-pulse" />}
           </h1>
           {/* Decorative gold accent line */}
-          <div className={`mx-auto w-16 h-[2px] rounded-full bg-gradient-to-r from-transparent via-accent/60 to-transparent mb-3 transition-all duration-700 ${greetingDone ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`} />
+          <div className={`mx-auto w-32 h-[3px] rounded-full bg-gradient-to-r from-transparent via-accent to-transparent mb-4 transition-all duration-700 shadow-[0_0_12px_2px_oklch(0.76_0.14_80_/_0.4)] ${greetingDone ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`} />
           <p className={`text-muted-foreground text-sm transition-opacity duration-700 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
             {topInsight?.title
               ? "I've been looking at your financial picture. Here's what I noticed."
@@ -2689,7 +2689,7 @@ export default function Chat() {
             <input ref={imageInputRef} type="file" className="hidden" multiple accept="image/*" onChange={handleFileSelect} />
 
             {/* Textarea — full width, rounded pill */}
-            <div data-tour="chat-input" className="relative bg-secondary/30 rounded-2xl border border-border/50 focus-within:border-accent/50 focus-within:shadow-[0_0_20px_-4px_oklch(0.76_0.14_80_/_0.2)] transition-all duration-300 px-3 py-1.5">
+            <div data-tour="chat-input" className="relative bg-secondary/30 rounded-2xl border border-accent/20 shadow-[0_0_8px_-3px_oklch(0.76_0.14_80_/_0.08)] focus-within:border-accent/50 focus-within:shadow-[0_0_24px_-4px_oklch(0.76_0.14_80_/_0.25)] transition-all duration-300 px-3 py-1.5">
               <Textarea
                 ref={textareaRef}
                 value={input}

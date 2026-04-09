@@ -294,10 +294,10 @@ export default function AppShell({ children, title }: AppShellProps) {
           key={`hdr-${section}`}
           className="px-2.5 pt-3.5 pb-1 flex items-center gap-2"
         >
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
+          <span className="text-[9px] uppercase tracking-wider text-accent/50 font-semibold">
             {NAV_SECTION_LABELS[section as NavSection]}
           </span>
-          <span className="flex-1 h-px bg-gradient-to-r from-accent/20 to-transparent" />
+          <span className="flex-1 h-px bg-gradient-to-r from-accent/30 via-accent/10 to-transparent" />
         </div>,
       );
       out.push(...inSection.map(renderNavItem));

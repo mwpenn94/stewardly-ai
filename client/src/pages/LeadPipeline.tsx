@@ -122,7 +122,7 @@ export default function LeadPipeline() {
   return (
     <div className="relative container py-8 space-y-6">
       {/* Warm gold radial glow */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
       <SEOHead title="Lead Pipeline" description="Manage and track your leads through the sales pipeline" />
 
       <div className="flex items-center justify-between flex-wrap gap-3">

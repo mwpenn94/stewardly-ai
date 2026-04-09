@@ -6,7 +6,7 @@ import { useState, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, File, X, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { Upload, File, X, CheckCircle2, AlertTriangle, Loader2, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -102,6 +102,7 @@ export function FileUploader({
               <p className="text-xs text-muted-foreground/70">
                 {accept.join(", ")} • Max {maxSizeMB}MB
               </p>
+              <p className="text-[10px] text-muted-foreground/50 flex items-center gap-1 mt-1"><Shield className="w-3 h-3" /> Encrypted at rest & in transit</p>
             </>
           ) : state === "uploading" ? (
             <>

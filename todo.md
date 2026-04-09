@@ -3596,8 +3596,15 @@
 - [x] Compliance disclaimers warm and clear (GlobalFooter with amber-tinted container, ReasoningChain with compliance badges)
 
 #### Trust & Intelligence
-- [ ] Data visibility indicators on sensitive content (PiiMaskedField exists for PII)
-- [ ] Encryption indicator on document uploads
+- [x] Data visibility indicators on sensitive content (visibility label + icon on document rows, tooltip with access level)
+- [x] Encryption indicator on document uploads (Shield icon on upload zone, upload dialog, FileUploader component)
 - [x] At least one delight moment: flashcard/quiz completion celebration with warm messaging, animated confetti-style celebration cards
 - [x] Code references removed from 4 admin pages (ComplianceAudit, AdminDataFreshness, AdminRateManagement, CRMSync)
 - [x] Developer jargon removed from Help page tech stack, BCP page
+
+## Optimization Pass — Visual Warmth & UX Polish
+- [x] Gold glow opacity fix — removed double-opacity (container opacity × gradient opacity) on 42 page headers for 3× stronger warmth
+- [x] Curtain-lift transitions — new CSS keyframe animation + applied to 9 data-loaded pages
+- [x] Skeleton-gold shimmer — warm gold shimmer CSS class + upgraded PageSuspenseFallback with card grid skeleton
+- [x] Test fix — updated uxResilience test to match new skeleton-gold pattern (123/123 tests pass, 3241/3241 assertions)
+- [x] Convergence check — all 7 Transformations and 6 Invisible Dimensions verified CONVERGED (temperature 0.15, δ < 0.2)

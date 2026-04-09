@@ -96,7 +96,7 @@ export default function ProficiencyDashboard() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-card/80 backdrop-blur-xl border-b border-border relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 relative">
           <Button variant="ghost" size="icon" onClick={() => navigate("/chat")}>
             <ArrowLeft className="w-4 h-4" />
@@ -458,7 +458,7 @@ function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 bg-card/80 backdrop-blur-xl border-b border-border relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 relative">
           <Skeleton className="w-8 h-8 rounded" />
           <div className="flex-1">

@@ -417,7 +417,7 @@ function SortableDocRow({
       </div>
 
       <div className="flex items-center gap-1.5">
-        {visIcon(doc.visibility)}
+        <span className="flex items-center gap-0.5" title={`Visible to: ${visLabel(doc.visibility)}`}>{visIcon(doc.visibility)}<span className="text-[9px] text-muted-foreground/60 hidden sm:inline">{visLabel(doc.visibility)}</span></span>
         <span className="text-[10px] text-muted-foreground hidden sm:inline">{formatDate(doc.createdAt)}</span>
         {doc.chunkCount > 0 && <Badge variant="secondary" className="text-[9px]">{doc.chunkCount} chunks</Badge>}
       </div>
@@ -801,7 +801,7 @@ export default function Documents() {
 
       {/* Sticky header */}
       <div className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3 relative">
           <Button variant="ghost" size="icon-sm" onClick={() => navigate("/")}><ArrowLeft className="w-4 h-4" /></Button>
           <Sparkles className="w-4 h-4 text-accent" />
@@ -966,6 +966,7 @@ export default function Documents() {
                   <CloudUpload className="w-14 h-14 mx-auto mb-4 opacity-30" />
                   <p className="text-base font-medium">Drop files here or click to upload</p>
                   <p className="text-xs mt-1.5 max-w-md mx-auto">Supports 30+ file types: PDF, DOCX, XLSX, PPTX, RTF, EPUB, CSV, JSON, code files, ZIP archives, and more.</p>
+                  <p className="text-[10px] mt-2 flex items-center justify-center gap-1 text-muted-foreground/60"><Shield className="w-3 h-3" /> Encrypted at rest & in transit</p>
                   <div className="flex items-center justify-center gap-2 mt-4">
                     <Button className="bg-accent text-accent-foreground hover:bg-accent/90 text-sm gap-1.5" onClick={(e) => { e.stopPropagation(); setShowUploadDialog(true); }}>
                       <Upload className="w-4 h-4" /> Upload Files
@@ -989,6 +990,7 @@ export default function Documents() {
             <DialogDescription className="text-xs">
               Supports 30+ file types including PDF, DOCX, XLSX, PPTX, RTF, EPUB, CSV, JSON, code files, and ZIP archives. Max 31MB per file (100MB for ZIP). AI auto-classifies category if left as default.
             </DialogDescription>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70 mt-1"><Shield className="w-3 h-3 text-accent/50" /> Files are encrypted at rest and in transit</div>
           </DialogHeader>
           <div className="space-y-4">
             <div>
