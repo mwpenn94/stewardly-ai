@@ -410,11 +410,15 @@ function WelcomeScreen({
           </div>
         )}
 
-        {/* Onboarding Checklist — hidden on mobile for guests to reduce crowding */}
+        {/* Onboarding Checklist — hidden for guests. Pass 91: pick the
+            workflow per role so a casual `user` sees "Getting Started"
+            (client_onboarding) instead of "Professional Setup", which
+            was confusing for non-advisors. Advisors+ keep the
+            professional setup flow. */}
         {!hasConversations && !isGuest && (
           <div className={`mt-4 sm:mt-8 max-w-lg mx-auto transition-all duration-700 delay-500 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             <OnboardingChecklist
-              workflowType="professional_onboarding"
+              workflowType={userRole === "user" ? "client_onboarding" : "professional_onboarding"}
               compact
               enabled={isAuthenticated}
               onStepAction={(key) => {
@@ -1617,6 +1621,17 @@ export default function Chat() {
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
+      {/* Pass 91 (Target 7 / WCAG 2.4.1): skip-to-content link.
+          Hidden until focused — first focusable element on the Chat
+          page so keyboard users can jump past the conversation
+          sidebar nav directly to the chat. */}
+      <a
+        href="#chat-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40"
+      >
+        Skip to chat
+      </a>
+
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
@@ -2144,7 +2159,7 @@ export default function Chat() {
       </aside>
 
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main id="chat-main" tabIndex={-1} className="flex-1 flex flex-col min-w-0">
         {/* Mobile-only sidebar toggle + escalation + guest sign-in */}
         <div className="lg:hidden flex items-center h-12 px-3 shrink-0 justify-between">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} aria-label="Open menu">

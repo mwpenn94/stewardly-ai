@@ -17,7 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CreditCard, Receipt, TrendingUp, Zap, Check, AlertTriangle } from "lucide-react";
+import { ArrowLeft, CreditCard, Receipt, TrendingUp, Zap, Check } from "lucide-react";
+import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -51,19 +52,11 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* Pass 67: honest placeholder banner */}
-      <Card className="border-amber-500/40 bg-amber-500/5">
-        <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          <div>
-            <strong className="font-semibold">Design preview — not live billing.</strong>{" "}
-            The plans, usage bars, and invoices below are mock data. No
-            Stripe or billing integration is wired to this page yet. Clicking
-            Upgrade / Change Plan / Download Invoice will show a toast, not
-            perform a real action.
-          </div>
-        </CardContent>
-      </Card>
+      <HonestPlaceholder
+        willDo="Manage subscription tier, see usage against monthly limits, and download invoices."
+        needed="Wire a Stripe (or equivalent) billing provider, add a `billing_subscriptions` table, and create a `billing` tRPC router. The Upgrade / Change Plan / Download Invoice buttons currently fire toasts only."
+        workingAlternative={{ href: "/admin", label: "Global Admin (manage users, models, system health)" }}
+      />
 
       {/* Usage */}
       <Card>

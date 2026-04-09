@@ -24,6 +24,7 @@ import {
   DollarSign, Users, Umbrella, GraduationCap, Clock,
   CheckCircle2, ChevronRight, AlertTriangle,
 } from "lucide-react";
+import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { Link } from "wouter";
 
 interface PlanDomain {
@@ -88,21 +89,11 @@ export default function ClientDashboard() {
   return (
     <AppShell>
       <div className="container max-w-4xl py-8 space-y-6">
-        {/* Pass 72: honest placeholder banner */}
-        <Card className="border-amber-500/40 bg-amber-500/5">
-          <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
-            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-            <div>
-              <strong className="font-semibold">Design preview — not your live plan.</strong>{" "}
-              The 9-domain scorecard below requires a <code className="font-mono text-xs">holisticPlan</code> backend
-              (per-domain scoring + action recommendation engine) that doesn't exist yet.
-              For live data try{" "}
-              <Link href="/protection-score"><a className="underline">Protection Score</a></Link>,{" "}
-              <Link href="/engine-dashboard"><a className="underline">Engine Dashboard</a></Link>, or{" "}
-              <Link href="/advisory"><a className="underline">Advisory Hub</a></Link>.
-            </div>
-          </CardContent>
-        </Card>
+        <HonestPlaceholder
+          willDo="Show a 9-domain holistic financial plan scorecard with per-domain scores and AI action recommendations."
+          needed="Build a `holisticPlan` backend that scores Cash Flow / Debt / Investments / Insurance / Tax / Estate / Retirement / Education / Charitable. The scorecard below is mock data."
+          workingAlternative={{ href: "/protection-score", label: "Protection Score (live 12-dimension scorecard)" }}
+        />
 
         {/* Overall score */}
         <div className="text-center space-y-4">

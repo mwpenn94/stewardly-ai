@@ -17,7 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Users, UserPlus, Shield, Mail, MoreHorizontal, Search, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Users, UserPlus, Shield, Mail, MoreHorizontal, Search } from "lucide-react";
+import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -59,20 +60,11 @@ export default function TeamManagement() {
         </Button>
       </div>
 
-      {/* Pass 72: honest placeholder banner */}
-      <Card className="border-amber-500/40 bg-amber-500/5">
-        <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          <div>
-            <strong className="font-semibold">Design preview — not live team data.</strong>{" "}
-            No <code className="font-mono text-xs">teamRouter</code> or
-            <code className="font-mono text-xs"> team_members</code> table exists yet.
-            The 5 members below are mock data and the Invite Member button is disabled.
-            Role / permission data currently lives in the <code className="font-mono text-xs">users.role</code>{" "}
-            column and is managed through Global Admin ({'/admin'}) for now.
-          </div>
-        </CardContent>
-      </Card>
+      <HonestPlaceholder
+        willDo="Invite team members, assign roles, and manage org-level permissions through a dedicated UI."
+        needed="Add a `team_members` table + `team` tRPC router (invite / role-update / remove). Today, role / permission data lives in `users.role` and is editable via Global Admin."
+        workingAlternative={{ href: "/admin", label: "Global Admin (manage user roles directly)" }}
+      />
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

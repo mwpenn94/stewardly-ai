@@ -15,7 +15,8 @@ import { PiiMaskedField } from "@/components/PiiMaskedField";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Key, Plus, Copy, Trash2, Clock, Activity, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Key, Plus, Copy, Trash2, Clock, Activity } from "lucide-react";
+import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -47,18 +48,11 @@ export default function APIKeys() {
         </Button>
       </div>
 
-      {/* Pass 67: honest placeholder banner */}
-      <Card className="border-amber-500/40 bg-amber-500/5">
-        <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-          <div>
-            <strong className="font-semibold">Design preview — not live API keys.</strong>{" "}
-            No backend `api_keys` table or tRPC router exists yet. The keys
-            below are mock data and the Create / Copy / Revoke buttons fire
-            toasts only. Do not rely on the values shown here.
-          </div>
-        </CardContent>
-      </Card>
+      <HonestPlaceholder
+        willDo="Issue, rotate, and revoke API keys for programmatic access to the platform."
+        needed="Add an `api_keys` table + `apiKeys` tRPC router with create / list / revoke procedures and a server-side hash-then-verify flow. The keys below are mock data."
+        workingAlternative={{ href: "/integrations", label: "Integrations (connect external services with OAuth)" }}
+      />
 
       <Card>
         <CardContent className="p-0">

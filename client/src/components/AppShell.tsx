@@ -501,6 +501,17 @@ export default function AppShell({ children, title }: AppShellProps) {
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
+      {/* Pass 91 (Target 7 / WCAG 2.4.1): skip-to-content link.
+          Hidden visually until it receives focus, then jumps over the
+          sidebar nav directly to the main content. First focusable
+          element on every AppShell-wrapped page. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40"
+      >
+        Skip to main content
+      </a>
+
       {/* Mobile sidebar overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
@@ -534,7 +545,7 @@ export default function AppShell({ children, title }: AppShellProps) {
         </div>
 
         {/* Page content — scrollable */}
-        <main className="flex-1 overflow-y-auto">
+        <main id="main-content" className="flex-1 overflow-y-auto" tabIndex={-1}>
           {children}
         </main>
       </div>
