@@ -1,6 +1,6 @@
 # Stewardly Intelligence Architecture
 
-> Last updated: 2026-04-08 | Pass 63 (2 consecutive clean convergence scans after the usability-gap fix session)
+> Last updated: 2026-04-09 | Pass 74 (2 consecutive clean convergence scans after the third-wave stub-page audit)
 >
 > **Change log since pass 16:** passes 17-50 iteratively hardened the
 > intelligence layer and shipped the Wealth Engine phases + EMBA
@@ -9,9 +9,15 @@
 > Passes 58-61 closed an end-to-end usability gap (three Learning
 > consumer UIs wired to the SRS, AgentManager Recent Runs panel backed
 > by `agent_actions`, Code Chat roadmap persistence, Workflows
-> cross-session persistence via `workflow_instances`). The wiring-layer
-> contract described below is unchanged by all of this — every new LLM
-> call still flows through `shared/stewardlyWiring → contextualLLM`.
+> cross-session persistence via `workflow_instances`). Passes 64-66
+> swept stale docs + unified test counts. Passes 67-69 wired the first
+> batch of admin stub pages (AdminSystemHealth, AdminDataFreshness).
+> **Passes 70-74** wired a second batch (AdminRateManagement,
+> LeadPipeline, ComplianceAudit, CRMSync) and added honest
+> "Design preview" banners to TeamManagement + ClientDashboard where
+> no backend exists yet. The wiring-layer contract described below is
+> unchanged by all of this — every new LLM call still flows through
+> `shared/stewardlyWiring → contextualLLM`.
 
 ## Overview
 
