@@ -153,6 +153,17 @@ const EXEMPT_ROUTES = new Set<string>([
   "/coi-network",
   "/email-campaigns",
   "/professionals",
+  // Pass 120+ persona routes (accessible via PersonaSidebar5, not legacy navigation.ts)
+  "/my-work",
+  "/financial-twin",
+  "/welcome-landing",
+  "/settings/audio",
+  // Pass 120+ learning sub-routes (reached from /learning parent)
+  "/learning/exam/:moduleSlug",
+  "/learning/discipline/:slug",
+  "/learning/case/:caseId",
+  "/learning/connections",
+  "/learning/achievements",
 ]);
 
 describe("Navigation reachability", () => {
