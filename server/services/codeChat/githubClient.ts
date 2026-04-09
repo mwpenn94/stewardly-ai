@@ -20,9 +20,10 @@
  */
 
 import { getDb } from "../../db";
-import { integrationConnections } from "../../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { integrationConnections, integrationProviders } from "../../../drizzle/schema";
+import { and, eq } from "drizzle-orm";
 import { logger } from "../../_core/logger";
+import { decryptCredentials } from "../encryption";
 
 // ─── Credentials ──────────────────────────────────────────────────────────
 
@@ -78,6 +79,105 @@ export function loadGitHubCredentialsFromEnv(): GitHubCredentials | null {
   const token = process.env.GITHUB_TOKEN;
   if (!token) return null;
   return { kind: "pat", token };
+}
+
+/**
+ * Resolve GitHub credentials for a specific user, preferring a
+ * user-scoped `integration_connections` row over the process-wide
+ * `GITHUB_TOKEN` env var.
+ *
+ * Pass 77: before this helper existed, the admin Code Chat → GitHub
+ * tab only knew about the env var. That meant only one GitHub
+ * identity could be used per deployment, and the "connect via the
+ * Integrations page" button couldn't actually do anything. This
+ * function unifies the two paths: it first looks up the `github`
+ * provider row, finds an ACTIVE `integration_connections` row owned
+ * by the caller, decrypts the credentials, and returns them. On any
+ * miss it falls through to the env PAT (if set), and finally null.
+ *
+ * The returned tuple includes the `source` so the UI can show the
+ * user whether they're on the "your connected account" path or the
+ * "shared deployment token" path — those have very different blast
+ * radius properties for self-update commits.
+ */
+export interface ResolvedGitHubCredentials {
+  credentials: GitHubCredentials;
+  source: "user_connection" | "env";
+  connectionId?: string;
+}
+
+export async function loadGitHubCredentialsForUser(
+  userId: number,
+): Promise<ResolvedGitHubCredentials | null> {
+  const db = await getDb();
+  if (db) {
+    try {
+      // 1. Look up the `github` provider row.
+      const providerRows = await db
+        .select({ id: integrationProviders.id })
+        .from(integrationProviders)
+        .where(eq(integrationProviders.slug, "github"))
+        .limit(1);
+      const provider = providerRows[0];
+      if (provider) {
+        // 2. Find the user's active connection for this provider.
+        const connRows = await db
+          .select()
+          .from(integrationConnections)
+          .where(
+            and(
+              eq(integrationConnections.providerId, provider.id),
+              eq(integrationConnections.userId, userId),
+            ),
+          )
+          .limit(1);
+        const conn = connRows[0];
+        if (conn && conn.credentialsEncrypted && conn.status !== "disconnected") {
+          // 3. Decrypt. encryptCredentials / decryptCredentials are
+          //    the same helpers used by the Integrations page, so we
+          //    inherit their key rotation + format handling.
+          try {
+            const raw = decryptCredentials(conn.credentialsEncrypted) as
+              | Record<string, unknown>
+              | null;
+            if (raw && typeof raw.token === "string" && raw.token.length > 0) {
+              return {
+                credentials: {
+                  kind: "pat",
+                  token: raw.token,
+                  username: typeof raw.username === "string" ? raw.username : undefined,
+                },
+                source: "user_connection",
+                connectionId: conn.id,
+              };
+            }
+            if (raw && typeof (raw as any).access_token === "string") {
+              return {
+                credentials: {
+                  kind: "oauth2",
+                  accessToken: (raw as any).access_token,
+                  refreshToken: (raw as any).refresh_token,
+                  expiresAt: (raw as any).expires_at,
+                  scope: (raw as any).scope,
+                },
+                source: "user_connection",
+                connectionId: conn.id,
+              };
+            }
+          } catch (err) {
+            logger.warn({ userId, err: String(err) }, "github decryptCredentials failed — falling through to env");
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn({ userId, err: String(err) }, "loadGitHubCredentialsForUser: DB lookup failed — falling through to env");
+    }
+  }
+
+  // 4. Env fallback — same token for every caller.
+  const envCreds = loadGitHubCredentialsFromEnv();
+  if (envCreds) return { credentials: envCreds, source: "env" };
+  return null;
 }
 
 /** Default owner/repo for the Stewardly self-update workflow, overridable via env. */

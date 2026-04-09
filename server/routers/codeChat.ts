@@ -45,12 +45,13 @@ import {
   guessTaskType,
 } from "../services/synthesizer/costEstimator";
 import {
-  loadGitHubCredentialsFromEnv,
+  loadGitHubCredentialsForUser,
   getDefaultRepo,
   getRepoInfo,
   listOpenPullRequests,
   GitHubError,
 } from "../services/codeChat/githubClient";
+import { contextualLLM, executeReActLoop } from "../shared/stewardlyWiring";
 import { logger } from "../_core/logger";
 
 const WORKSPACE_ROOT =
@@ -314,31 +315,165 @@ export const codeChatRouter = router({
     .input(z.object({ ms: z.number() }))
     .query(({ input }) => ({ rating: classifyLatency(input.ms) })),
 
+  // ─── Claude-Code-style chat with multi-turn tool calling (pass 78) ──
+  //
+  // Runs a ReAct loop over the existing code chat tools
+  // (`read_file`, `list_directory`, `grep_search`, and — for admins
+  // who opt in via `allowMutations` — `write_file`, `edit_file`,
+  // `run_bash`). Reuses the project's canonical `executeReActLoop`
+  // primitive so tracing, escape hatches, and empty-response guards
+  // all Just Work the same as the main Chat flow.
+  //
+  // Integration point: `client/src/pages/Chat.tsx` now has a
+  // "CodeChat" mode button. When the user's mode is `codechat`,
+  // sending a message hits this procedure instead of the normal
+  // `chat.send`. The `model` field is passed through to contextualLLM
+  // so the existing model picker works unmodified (single model or
+  // multi-model via comma-separated IDs — multi-model is handled by
+  // running the ReAct loop once per model and returning an array
+  // of results the UI can render side-by-side).
+  //
+  // This is "Claude Code as a mode in your chat", not a separate page.
+  chat: protectedProcedure
+    .input(
+      z.object({
+        message: z.string().min(1).max(8_000),
+        model: z.string().optional(),
+        allowMutations: z.boolean().optional().default(false),
+        maxIterations: z.number().min(1).max(10).optional().default(5),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Gate dangerous tools on admin role — same contract as
+      // `dispatch`. If the caller isn't an admin we only expose the
+      // read-side tools to the model.
+      const isAdmin = ctx.user.role === "admin";
+      const allowMutations = isAdmin && input.allowMutations;
+
+      const READ_ONLY_TOOLS = new Set([
+        "read_file",
+        "list_directory",
+        "grep_search",
+      ]);
+
+      // Shape the code chat tool definitions into the OpenAI
+      // function-calling envelope the ReAct loop expects. Every
+      // tool gets a `code_` prefix on its name so it never collides
+      // with the main chat's calculator / model tool namespaces.
+      const toolDefs = CODE_CHAT_TOOL_DEFINITIONS
+        .filter((t) => allowMutations || READ_ONLY_TOOLS.has(t.name))
+        .map((t) => ({
+          type: "function" as const,
+          function: {
+            name: `code_${t.name}`,
+            description: t.description,
+            parameters: t.parameters,
+          },
+        }));
+
+      const systemPrompt = [
+        "You are Claude-Code-style coding assistant running inside the Stewardly admin console.",
+        "Work step-by-step. Use the `code_list_directory` and `code_read_file` tools to explore the codebase",
+        "before answering questions about it. Use `code_grep_search` to find specific symbols or strings.",
+        allowMutations
+          ? "You also have `code_write_file`, `code_edit_file`, and `code_run_bash` available — use them sparingly and explain every change."
+          : "Write/edit/bash tools are disabled for this session. Return diffs as code blocks instead of attempting to apply them.",
+        "Keep responses concise and surface your reasoning + tool calls to the user.",
+      ].join("\n");
+
+      try {
+        const result = await executeReActLoop({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: input.message },
+          ] as any,
+          userId: ctx.user.id,
+          tools: toolDefs.length > 0 ? (toolDefs as any) : undefined,
+          maxIterations: input.maxIterations,
+          model: input.model,
+          contextualLLM,
+          executeTool: async (toolName: string, args: Record<string, unknown>) => {
+            // Strip the `code_` prefix before handing off to the
+            // existing dispatchCodeTool — it expects the raw tool
+            // name matching CODE_CHAT_TOOL_DEFINITIONS.
+            const rawName = toolName.replace(/^code_/, "");
+            const mutation = ["write_file", "edit_file", "run_bash"].includes(rawName);
+            if (mutation && !allowMutations) {
+              return JSON.stringify({
+                error: `${rawName} requires admin + allowMutations=true`,
+              });
+            }
+            const dispatchResult = await dispatchCodeTool(
+              { name: rawName as any, args } as CodeToolCall,
+              {
+                workspaceRoot: WORKSPACE_ROOT,
+                allowMutations,
+              },
+            );
+            return JSON.stringify(dispatchResult);
+          },
+        });
+
+        return {
+          response: result.response,
+          traces: result.traces.map((t) => ({
+            step: t.stepNumber,
+            thought: t.thought,
+            toolName: t.toolName?.replace(/^code_/, ""),
+            observation: t.observation,
+            durationMs: t.durationMs,
+          })),
+          iterations: result.iterations,
+          toolCallCount: result.toolCallCount,
+          model: result.model,
+        };
+      } catch (err) {
+        logger.error(
+          { userId: ctx.user.id, err: String((err as Error).message ?? err) },
+          "codeChat.chat failed",
+        );
+        return {
+          response: `Code Chat error: ${String((err as Error).message ?? err)}`,
+          traces: [],
+          iterations: 0,
+          toolCallCount: 0,
+          model: input.model,
+        };
+      }
+    }),
+
   // ─── GitHub self-update surface ────────────────────────────────
   // Exposes the read-side of server/services/codeChat/githubClient.ts
-  // to the admin Code Chat UI. Credentials are loaded from the
-  // GITHUB_TOKEN env var (PAT fallback); OAuth-per-user can still be
-  // layered on via integration_connections without touching this
-  // router. See docs/ENV_SETUP.md for token setup.
+  // to the admin Code Chat UI. Pass 77: credentials are resolved
+  // via `loadGitHubCredentialsForUser()` which prefers a user-scoped
+  // `integration_connections` row (created through the Integrations
+  // page) and falls back to the `GITHUB_TOKEN` env var. The UI now
+  // surfaces which path was used via the `source` field so admins
+  // can tell whether they're using their personal connected account
+  // or a shared deployment token.
 
   /** Is the GitHub integration reachable right now? Returns config state without leaking the token. */
-  githubStatus: adminProcedure.query(async () => {
-    const creds = loadGitHubCredentialsFromEnv();
+  githubStatus: adminProcedure.query(async ({ ctx }) => {
+    const resolved = await loadGitHubCredentialsForUser(ctx.user.id);
     const { owner, repo } = getDefaultRepo();
-    if (!creds) {
+    if (!resolved) {
       return {
         configured: false as const,
         source: null,
         owner,
         repo,
-        error: "GITHUB_TOKEN env var not set — see docs/ENV_SETUP.md",
+        error:
+          "No GitHub credentials found. Connect a GitHub account in /integrations " +
+          "(provider slug: `github`), or set the `GITHUB_TOKEN` env var as a fallback. " +
+          "See docs/ENV_SETUP.md.",
       };
     }
     try {
-      const info = await getRepoInfo(creds, owner, repo);
+      const info = await getRepoInfo(resolved.credentials, owner, repo);
       return {
         configured: true as const,
-        source: "env" as const,
+        source: resolved.source,
+        connectionId: resolved.connectionId,
         owner,
         repo,
         defaultBranch: info.defaultBranch,
@@ -350,7 +485,7 @@ export const codeChatRouter = router({
       logger.warn({ owner, repo, err, status }, "github status probe failed");
       return {
         configured: false as const,
-        source: "env" as const,
+        source: resolved.source,
         owner,
         repo,
         error: `GitHub API returned ${status || "network error"}. Check token scope (needs repo).`,
@@ -359,12 +494,18 @@ export const codeChatRouter = router({
   }),
 
   /** List open PRs on the configured repo. Admin only. */
-  githubListOpenPRs: adminProcedure.query(async () => {
-    const creds = loadGitHubCredentialsFromEnv();
-    if (!creds) return { prs: [], error: "GITHUB_TOKEN not configured" };
+  githubListOpenPRs: adminProcedure.query(async ({ ctx }) => {
+    const resolved = await loadGitHubCredentialsForUser(ctx.user.id);
+    if (!resolved) {
+      return {
+        prs: [],
+        error:
+          "No GitHub credentials found. Connect a GitHub account in /integrations or set GITHUB_TOKEN.",
+      };
+    }
     const { owner, repo } = getDefaultRepo();
     try {
-      const prs = await listOpenPullRequests(creds, owner, repo);
+      const prs = await listOpenPullRequests(resolved.credentials, owner, repo);
       return { prs, error: null };
     } catch (err) {
       const status = err instanceof GitHubError ? err.status : 0;

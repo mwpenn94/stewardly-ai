@@ -174,6 +174,23 @@ const PROVIDERS = [
     freeTierDescription: "Self-hosted is completely free. Unlimited workflow automation.",
     freeTierLimit: "Unlimited (self-hosted)",
   },
+  {
+    // Pass 77: GitHub is the first "developer tool" integration and
+    // underpins the Code Chat self-update flow. It lives in the
+    // `middleware` category alongside n8n because the enum doesn't
+    // have a dedicated VCS slot and extending it would require a
+    // migration. Users connect a personal access token through the
+    // Integrations page and the codeChat router looks up the
+    // credential from `integration_connections` before falling back
+    // to the GITHUB_TOKEN env var.
+    id: uuid(), slug: "github", name: "GitHub", description: "Connect a GitHub personal access token (PAT) to power the admin Code Chat self-update flow — status, pull requests, and future commit/PR automation.", category: "middleware" as const,
+    ownershipTier: "professional" as const, authMethod: "bearer_token" as const,
+    baseUrl: "https://api.github.com",
+    docsUrl: "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens",
+    signupUrl: "https://github.com/settings/tokens",
+    freeTierDescription: "Free for all GitHub accounts. Fine-grained PATs recommended with Contents + Pull requests read/write.",
+    freeTierLimit: "Unlimited",
+  },
 ];
 
 const CARRIER_TEMPLATES = [

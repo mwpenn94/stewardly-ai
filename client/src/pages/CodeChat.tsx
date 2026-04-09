@@ -487,8 +487,24 @@ function GitHubPanel() {
                   {status.data.description}
                 </p>
               )}
+              {/* Pass 77: show which credential path was used. */}
               <p className="text-[11px] text-muted-foreground">
-                Credential source: env (<code className="font-mono">GITHUB_TOKEN</code>)
+                Credential source:{" "}
+                {status.data.source === "user_connection" ? (
+                  <>
+                    your connected account (
+                    <a href="/integrations" className="underline">
+                      /integrations
+                    </a>
+                    )
+                  </>
+                ) : status.data.source === "env" ? (
+                  <>
+                    deployment env var (<code className="font-mono">GITHUB_TOKEN</code>)
+                  </>
+                ) : (
+                  "unknown"
+                )}
               </p>
             </>
           ) : (
@@ -499,12 +515,14 @@ function GitHubPanel() {
               </div>
               <p className="text-xs text-muted-foreground">
                 {status.data?.error ??
-                  "Set the GITHUB_TOKEN environment variable (a Personal Access Token with repo scope) to enable the GitHub integration."}
+                  "Connect a GitHub account in /integrations (provider slug: `github`) or set the GITHUB_TOKEN env var as a deployment-wide fallback."}
               </p>
               <p className="text-[11px] text-muted-foreground">
-                See{" "}
-                <code className="font-mono">docs/ENV_SETUP.md</code> for
-                step-by-step setup.
+                <a href="/integrations" className="underline">
+                  Open Integrations →
+                </a>{" "}
+                · see{" "}
+                <code className="font-mono">docs/ENV_SETUP.md</code> for the env fallback path.
               </p>
             </>
           )}

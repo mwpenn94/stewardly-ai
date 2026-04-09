@@ -98,34 +98,59 @@ CENSUS_API_KEY not set — returning empty demographics
 
 ---
 
-## Optional: GitHub Personal Access Token (admin Code Chat)
+## GitHub (admin Code Chat + self-update)
 
 **Purpose:** Enables the "GitHub" tab on the admin **Code Chat** page (`/code-chat`) so operators can see integration status, list open pull requests on the configured repo, and — as follow-on iterations ship — trigger self-update commits and PRs from within the running app.
 
-**Impact when missing:** The GitHub tab shows a "Not configured" notice with a link back to this doc. All other Code Chat tabs (Files, Roadmap, Diff) keep working. No server endpoints fail; reads and writes simply degrade to disabled.
+**Impact when missing:** The GitHub tab shows a "Not configured" notice with direct links to both `/integrations` (for the preferred user-scoped flow) and this doc (for the env fallback). All other Code Chat tabs (Files, Roadmap, Diff) keep working. No server endpoints fail; reads and writes simply degrade to disabled.
 
 **Used by:**
 - `server/services/codeChat/githubClient.ts` — REST wrapper around api.github.com
 - `server/routers/codeChat.ts` — `githubStatus` and `githubListOpenPRs` admin procedures
 - `client/src/pages/CodeChat.tsx` — "GitHub" tab
 
-**Setup:**
+### Pass 77: two credential paths
 
-1. Create a GitHub Personal Access Token at [https://github.com/settings/tokens](https://github.com/settings/tokens) (or a fine-grained token scoped to your repo):
+Pass 77 split the GitHub credential loader into two paths that the Code Chat UI resolves in order:
+
+**Path A — User-connected account (preferred)** ✅
+The `github` provider is seeded into `integration_providers` (category: `middleware`, ownership tier: `professional`, auth method: `bearer_token`). Any authenticated user — including admins — can visit `/integrations`, find **GitHub** in the provider list, and paste a Personal Access Token. The credential is encrypted through the same `encryptCredentials()` helper that protects every other integration in the table, and `loadGitHubCredentialsForUser(userId)` reads it back with `decryptCredentials()` on every `codeChat.githubStatus` query.
+
+**Pros:** per-user identities (self-update commits land under the admin's GitHub identity, not a shared bot), can be rotated from the UI, encrypted at rest, survives restarts.
+
+**Path B — Deployment env var (fallback)** 🛠
+If no user-connected account exists, the resolver falls through to the `GITHUB_TOKEN` process env var. This is the right choice for single-operator deployments where the same account drives every admin action.
+
+**Pros:** zero-setup for solo deployments, works in tests / CI.
+**Cons:** one identity for all admins; no UI rotation; requires server restart to change.
+
+The Code Chat → GitHub tab now displays which path was resolved under the "Credential source" line so admins know whether they're acting as themselves or as the shared deployment bot.
+
+### Setup (Path A — user-connected, recommended)
+
+1. Create a GitHub Personal Access Token at [https://github.com/settings/tokens](https://github.com/settings/tokens):
    - **Classic PAT:** check the `repo` scope (grants full repo access).
    - **Fine-grained PAT:** give it Contents (read/write) + Pull requests (read/write) on the target repo only.
-2. Copy the token value (starts with `ghp_…` for classic, `github_pat_…` for fine-grained).
-3. **Add to Stewardly secrets:**
-   - Open the Manus Management UI → **Settings > Secrets**
-   - Add a secret `GITHUB_TOKEN` with your token as the value.
-   - (Optional) Add `GITHUB_REPO` with the target repo, e.g. `mwpenn94/stewardly-ai`. Defaults to `mwpenn94/stewardly-ai` if unset.
-4. **Restart the server.**
+2. Copy the token value.
+3. Sign in to Stewardly and visit `/integrations`.
+4. Find **GitHub** in the provider list (category: Middleware) and click **Connect**.
+5. Paste your PAT in the `token` field and save.
+6. Visit `/code-chat` → GitHub tab. You should see a green check with the repo metadata and `Credential source: your connected account`.
+
+### Setup (Path B — env var fallback)
+
+1. Create a PAT as above.
+2. Add the secret `GITHUB_TOKEN` via the Manus Management UI → **Settings > Secrets**.
+3. (Optional) Add `GITHUB_REPO` with the target repo, e.g. `mwpenn94/stewardly-ai`. Defaults to `mwpenn94/stewardly-ai` if unset.
+4. Restart the server.
+5. Visit `/code-chat` → GitHub tab. You should see `Credential source: deployment env var`.
 
 ### Verification
 
-After setting the token, sign in as an admin and visit `/code-chat`. The **GitHub** tab should show:
+The **GitHub** tab should show:
 - A green check with `<owner>/<repo>`
 - Default branch name, visibility (public/private), description
+- A "Credential source" line telling you whether you're on Path A or Path B
 - Any open pull requests on that repo
 
 If the probe fails you'll see an inline error explaining whether the token is missing, lacks scope, or the API returned a non-2xx status.
