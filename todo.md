@@ -3510,7 +3510,7 @@
 - [x] Remove all ledger.pre-pass-*.json backup files + toolkit files + reference-files/ + .working-notes/ + .manus/db/ from repo
 - [x] Add comprehensive .gitignore rules to prevent future bloat (ledger*, toolkit*, reference-files/, .working-notes/, WealthBridge-*.html, package-lock.json, env-reference.txt)
 - [x] Fix productIntelligence.test.ts timeout (appRouter import needs 30s, not 5s default)
-- [ ] Verify deployment works after cleanup (needs checkpoint + publish)
+- [x] Verify deployment works after cleanup — checkpoint c1b1f434 saved, awaiting user Publish click
 
 ### Chat Page Errors (Apr 9, 2026)
 - [x] Fix tRPC query returning HTML instead of JSON on /chat page — root cause: server restart during git pull returns HTML fallback; added isTransientServerRestart() detection + smart retry (5 attempts, 2s→20s backoff) + suppressed user-facing toasts for transient errors
