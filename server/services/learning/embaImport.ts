@@ -61,9 +61,27 @@ function urls() {
 }
 
 // ─── Source shape (loose — we validate at field level below) ─────────────
+//
+// Pass 76 shape audit after the live fetch revealed the real JSON:
+//   emba_data.json top-level:
+//     disciplines: { "Accounting": { color, abbr, icon }, ... }   ← OBJECT
+//     specializations: string[]                                    ← array of strings
+//     definitions: [ { id, term, definition, discipline, ... }, ...] ← array
+//
+//   tracks_data.json top-level:
+//     categories: { "emba": { label, desc, color, icon }, ... }   ← OBJECT
+//     tracks: [ { key, name, category, chapters, ... }, ... ]      ← array
+//
+//   Per track:
+//     key (not slug)
+//     chapters: [ { id, title, intro, subsections, is_practice }, ... ]
+//     subsections: [ { id, title, level, paragraphs, tables, is_question }, ... ]
+//     practice_questions: [ { number, prompt, options, correct, explanation }, ... ]
+//       correct is a plain integer — NOT correct_index or correctIndex
+//     flashcards: [ { id, term, definition }, ... ]
 
 interface EmbaDefinitionRaw {
-  id?: string;
+  id?: number | string;
   term: string;
   definition: string;
   discipline?: string;
@@ -71,29 +89,35 @@ interface EmbaDefinitionRaw {
   tags?: string[];
 }
 
-interface EmbaDisciplineRaw {
-  slug?: string;
-  id?: string;
-  name: string;
-  description?: string;
+/** Value shape for each entry in the `disciplines` object map. The map
+ *  KEY is the discipline's display name (e.g. "Accounting"); we derive
+ *  the slug from that. */
+interface EmbaDisciplineValueRaw {
   color?: string;
+  abbr?: string;
   icon?: string;
+  description?: string;
 }
 
 interface EmbaDataRaw {
-  disciplines?: EmbaDisciplineRaw[];
+  /** Object keyed by display name, not an array. */
+  disciplines?: Record<string, EmbaDisciplineValueRaw>;
   definitions?: EmbaDefinitionRaw[];
-  specializations?: Array<{ name: string; description?: string }>;
+  /** Array of plain strings in the real repo. */
+  specializations?: string[];
 }
 
 interface TrackSubsectionRaw {
+  id?: number | string;
   title?: string;
   level?: number;
   paragraphs?: string[];
   tables?: unknown[];
+  is_question?: boolean;
 }
 
 interface TrackChapterRaw {
+  id?: number | string;
   title: string;
   intro?: string;
   is_practice?: boolean;
@@ -102,8 +126,12 @@ interface TrackChapterRaw {
 }
 
 interface TrackPracticeQuestionRaw {
+  number?: number;
   prompt: string;
   options: string[];
+  /** The real field name in the emba_modules JSON. */
+  correct?: number;
+  /** Tolerated aliases from older / alternative exports. */
   correct_index?: number;
   correctIndex?: number;
   explanation?: string;
@@ -112,6 +140,7 @@ interface TrackPracticeQuestionRaw {
 }
 
 interface TrackFlashcardRaw {
+  id?: number | string;
   term: string;
   definition: string;
   source?: string;
@@ -120,7 +149,10 @@ interface TrackFlashcardRaw {
 }
 
 interface TrackRaw {
-  slug: string;
+  /** The real field name in emba_modules — NOT `slug`. */
+  key?: string;
+  /** Tolerated alias. */
+  slug?: string;
   name: string;
   category?: "securities" | "planning" | "insurance" | "emba";
   title?: string;
@@ -136,9 +168,10 @@ interface TrackRaw {
 }
 
 interface TracksDataRaw {
-  schema_version?: string;
+  schema_version?: number | string;
   generated_from?: string;
-  categories?: Array<{ slug: string; name: string; description?: string }>;
+  /** Object keyed by category slug, not an array. */
+  categories?: Record<string, { label?: string; desc?: string; color?: string; icon?: string }>;
   tracks?: TrackRaw[];
 }
 
@@ -249,18 +282,34 @@ async function importDisciplinesAndDefinitions(
   const existing = await listDisciplines();
   for (const d of existing) bySlug.set(d.slug, d.id);
 
-  for (const d of data.disciplines ?? []) {
-    const slug = d.slug ?? slugify(d.name);
+  // The real emba_data.json ships `disciplines` as an OBJECT keyed by
+  // display name (e.g. `{ "Accounting": { color, abbr, icon } }`),
+  // NOT an array. Before pass 76 this loop used `for...of` which
+  // threw "object is not iterable (cannot read property
+  // Symbol(Symbol.iterator))" on the first call and aborted the
+  // whole import. Pass 76 rewrites it to iterate Object.entries()
+  // and derive the slug from the key.
+  const disciplinesEntries: Array<[string, EmbaDisciplineValueRaw]> = Array.isArray(
+    data.disciplines,
+  )
+    ? // Tolerate future formats where disciplines becomes an array.
+      (data.disciplines as any[]).map((d) => [d?.name ?? d?.slug ?? "", d ?? {}])
+    : Object.entries(data.disciplines ?? {});
+
+  for (const [displayName, meta] of disciplinesEntries) {
+    if (!displayName) continue;
+    const slug = slugify(displayName);
+    if (!slug) continue;
     if (bySlug.has(slug)) {
       result.skipped.disciplines += 1;
       continue;
     }
     const row = await upsertDiscipline({
       slug,
-      name: d.name,
-      description: d.description ?? undefined,
-      color: d.color ?? undefined,
-      icon: d.icon ?? undefined,
+      name: displayName,
+      description: meta.description ?? undefined,
+      color: meta.color ?? undefined,
+      icon: meta.icon ?? undefined,
       createdBy: null,
     });
     if (row) {
@@ -315,18 +364,23 @@ async function importTrack(
   raw: TrackRaw,
   result: EMBAImportResult,
 ): Promise<void> {
+  // Real emba_modules tracks use `key` as the canonical identifier,
+  // not `slug`. We tolerate both and fall back to a slugified name.
+  const trackSlug = raw.key ?? raw.slug ?? slugify(raw.name);
+  if (!trackSlug) return;
+
   // 1. Upsert track row. The create* helpers all return { id } on
   //    success, so we capture that directly rather than round-tripping
   //    through a second lookup — the lookup-by-slug path is still used
   //    for dedup on a second run, not for first-insert id discovery.
   let trackId: number | null = null;
-  const existing = await getTrackBySlug(raw.slug);
+  const existing = await getTrackBySlug(trackSlug);
   if (existing) {
     trackId = existing.id;
     result.skipped.tracks += 1;
   } else {
     const row = await createTrack({
-      slug: raw.slug,
+      slug: trackSlug,
       name: raw.name,
       category: ensureCategory(raw.category),
       title: raw.title ?? raw.name,
@@ -395,7 +449,9 @@ async function importTrack(
       result.skipped.questions += 1;
       continue;
     }
-    const correctIndex = q.correctIndex ?? q.correct_index ?? 0;
+    // Real emba_modules JSON uses `correct` (just a number).
+    // We tolerate `correct_index` / `correctIndex` for older exports.
+    const correctIndex = q.correct ?? q.correctIndex ?? q.correct_index ?? 0;
     if (!q.options || q.options.length < 2) continue;
     const row = await createPracticeQuestion({
       trackId,

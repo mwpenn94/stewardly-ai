@@ -41,48 +41,66 @@ vi.mock("./content", () => {
 import { importEMBAFromGitHub } from "./embaImport";
 import * as content from "./content";
 
+// Pass 76: fixtures rewritten to match the REAL emba_modules JSON
+// shape. Before pass 76 the importer assumed `disciplines` was an
+// array of objects, but the live JSON ships it as an object keyed
+// by display name. Tracks use `key` (not `slug`) and practice
+// questions use `correct` (not `correct_index` / `correctIndex`).
+// This test suite now locks in the authoritative shape so the
+// "object is not iterable" bug can never reappear.
 const FAKE_EMBA_DATA = {
-  disciplines: [
-    { slug: "finance", name: "Finance", description: "TVM + capital" },
-  ],
+  disciplines: {
+    // Object keyed by display name — matches live mwpenn94/emba_modules
+    Finance: { color: "#145A32", abbr: "FIN", icon: "trending-up" },
+    "Markets & Economies": { color: "#1B4F72", abbr: "MKT", icon: "bar-chart" },
+  },
   definitions: [
-    { term: "NPV", definition: "Net present value", discipline: "finance" },
-    { term: "IRR", definition: "Internal rate of return", discipline: "finance" },
-    { term: "WACC", definition: "Weighted average cost of capital", discipline: "finance" },
+    { id: 1, term: "NPV", definition: "Net present value", discipline: "Finance", difficulty: "foundation" },
+    { id: 2, term: "IRR", definition: "Internal rate of return", discipline: "Finance", difficulty: "foundation" },
+    { id: 3, term: "WACC", definition: "Weighted average cost of capital", discipline: "Finance", difficulty: "intermediate" },
   ],
-  specializations: [],
+  // Real repo ships plain strings, not objects.
+  specializations: ["Advanced Corporate-Level Strategy", "Advanced Finance"],
 };
 
 const FAKE_TRACKS_DATA = {
-  schema_version: "1.0",
+  schema_version: 2,
+  // Real repo ships categories as an object keyed by slug.
+  categories: {
+    securities: { label: "Securities Licenses", color: "#3B82F6", icon: "shield-check" },
+  },
   tracks: [
     {
-      slug: "sie",
-      name: "SIE",
+      // Real repo uses `key`, not `slug`
+      key: "sie",
+      name: "Securities Industry Essentials (SIE)",
       category: "securities",
-      title: "Securities Industry Essentials",
+      title: "SIE",
+      subtitle: "Foundation exam for all FINRA registrations",
       chapters: [
         {
+          id: "1",
           title: "Chapter 1",
           intro: "Overview",
+          is_practice: false,
           subsections: [
-            { title: "1.1", paragraphs: ["p1", "p2"], level: 2 },
-            { title: "1.2", paragraphs: ["p3"], level: 2 },
+            { id: "1", title: "1.1", paragraphs: ["p1", "p2"], level: 2, is_question: false },
+            { id: "2", title: "1.2", paragraphs: ["p3"], level: 2, is_question: false },
           ],
         },
       ],
       practice_questions: [
         {
+          number: 1,
           prompt: "What is SIE?",
           options: ["A", "B", "C", "D"],
-          correct_index: 0,
+          correct: 0, // Real field name — NOT correct_index
           explanation: "FINRA co-req",
-          difficulty: "easy",
         },
       ],
       flashcards: [
-        { term: "ADR", definition: "American Depositary Receipt" },
-        { term: "IPO", definition: "Initial public offering" },
+        { id: 1, term: "ADR", definition: "American Depositary Receipt" },
+        { id: 2, term: "IPO", definition: "Initial public offering" },
       ],
     },
   ],
@@ -121,7 +139,8 @@ describe("learning/embaImport", () => {
 
     expect(result.ok).toBe(true);
     expect(result.errors).toEqual([]);
-    expect(result.counts.disciplines).toBe(1);
+    // FAKE_EMBA_DATA.disciplines has 2 entries now (Finance + Markets)
+    expect(result.counts.disciplines).toBe(2);
     expect(result.counts.definitions).toBe(3);
     expect(result.counts.tracks).toBe(1);
     expect(result.counts.chapters).toBe(1);
@@ -134,9 +153,8 @@ describe("learning/embaImport", () => {
     expect(createQ).toHaveBeenCalledTimes(1);
     expect(createQ.mock.calls[0][0]).toMatchObject({
       prompt: "What is SIE?",
-      correctIndex: 0, // correct_index → correctIndex
+      correctIndex: 0, // question.correct → correctIndex on the create call
       options: ["A", "B", "C", "D"],
-      difficulty: "easy",
     });
 
     const createFC = content.createFlashcard as any;
@@ -145,11 +163,12 @@ describe("learning/embaImport", () => {
 
   it("coerces unknown difficulty values to 'medium' and unknown category to 'planning'", async () => {
     stubFetch({
-      emba_data: { disciplines: [], definitions: [] },
+      emba_data: { disciplines: {}, definitions: [] },
       tracks_data: {
         tracks: [
           {
-            slug: "odd",
+            // Real repo uses `key` not `slug` — exercise that path here
+            key: "odd",
             name: "Odd",
             category: "emba", // not in the 3-bucket schema enum
             chapters: [],
@@ -157,7 +176,7 @@ describe("learning/embaImport", () => {
               {
                 prompt: "Q?",
                 options: ["a", "b"],
-                correctIndex: 1,
+                correct: 1, // real field name, but test also tolerates aliases
                 difficulty: "galaxy-brain", // bogus
               },
             ],
@@ -171,8 +190,40 @@ describe("learning/embaImport", () => {
 
     const createTrack = content.createTrack as any;
     expect(createTrack.mock.calls[0][0].category).toBe("planning");
+    expect(createTrack.mock.calls[0][0].slug).toBe("odd"); // slug derived from raw.key
     const createQ = content.createPracticeQuestion as any;
     expect(createQ.mock.calls[0][0].difficulty).toBe("medium");
+    expect(createQ.mock.calls[0][0].correctIndex).toBe(1);
+  });
+
+  it("handles the real emba_modules shape where `disciplines` is an object keyed by display name", async () => {
+    // This is the exact regression that broke the Import button in
+    // production — `for...of` on an object throws "object is not
+    // iterable". Locking it in so it can never come back.
+    stubFetch({
+      emba_data: {
+        disciplines: {
+          Accounting: { color: "#1B4F72", abbr: "ACC", icon: "calculator" },
+          "Markets & Economies": { color: "#145A32", abbr: "MKT" },
+        },
+        definitions: [
+          { id: 1, term: "GAAP", definition: "Generally Accepted Accounting Principles", discipline: "Accounting" },
+        ],
+      },
+      tracks_data: { tracks: [] },
+    });
+
+    const result = await importEMBAFromGitHub();
+
+    expect(result.ok).toBe(true);
+    expect(result.errors).toEqual([]);
+    // Slug must be derived from the object KEY (the display name).
+    const upsertD = content.upsertDiscipline as any;
+    const slugs = upsertD.mock.calls.map((c: any) => c[0].slug);
+    expect(slugs).toContain("accounting");
+    expect(slugs).toContain("markets_economies");
+    expect(result.counts.disciplines).toBe(2);
+    expect(result.counts.definitions).toBe(1);
   });
 
   it("records errors without throwing when a source file is unreachable", async () => {
@@ -208,7 +259,7 @@ describe("learning/embaImport", () => {
 
   it("reports zero-counts when both files succeed but carry no content", async () => {
     stubFetch({
-      emba_data: { disciplines: [], definitions: [] },
+      emba_data: { disciplines: {}, definitions: [] },
       tracks_data: { tracks: [] },
     });
 
@@ -218,5 +269,24 @@ describe("learning/embaImport", () => {
     expect(result.counts.definitions).toBe(0);
     expect(result.counts.tracks).toBe(0);
     expect(result.errors).toEqual([]);
+  });
+
+  it("tolerates legacy array-shaped disciplines without throwing", async () => {
+    // If a future emba_modules release ships `disciplines` as an array
+    // again (or a fork uses a different shape), the importer should
+    // fall through gracefully — it shouldn't regress on the new shape.
+    stubFetch({
+      emba_data: {
+        disciplines: [{ name: "Finance", color: "#145A32" }] as any,
+        definitions: [],
+      },
+      tracks_data: { tracks: [] },
+    });
+
+    const result = await importEMBAFromGitHub();
+
+    expect(result.ok).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.counts.disciplines).toBe(1);
   });
 });
