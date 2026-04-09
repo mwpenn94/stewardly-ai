@@ -165,3 +165,6 @@ schema-issues.json
 truly-missing.json
 optimization-config.json
 orchestrate.js
+qa-findings.md
+qa-live-findings.md
+qa-reconciliation-pass136.md

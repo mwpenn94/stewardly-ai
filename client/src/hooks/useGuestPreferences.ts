@@ -15,7 +15,7 @@ export interface GuestPreferences {
   responseFormat: "conversational" | "structured" | "bullet-points";
 }
 
-const STORAGE_KEY = "stewardry_guest_preferences";
+const STORAGE_KEY = "stewardly_guest_preferences";
 
 const DEFAULT_PREFERENCES: GuestPreferences = {
   responseDepth: "balanced",

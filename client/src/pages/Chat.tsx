@@ -66,6 +66,8 @@ import { prefetchRoute } from "@/lib/routePrefetch";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
 import { ConvItem, SortableConvItem } from "@/components/chat/ConvItem";
+import ChatGreetingV2 from "@/components/ChatGreeting";
+import MobileChatLayout from "@/components/MobileChatLayout";
 import { parseFocusModes, serializeFocusModes } from "@shared/types";
 
 // ─── RICH MEDIA EXTRACTION (client-side fallback) ─────────────────
@@ -2396,20 +2398,12 @@ export default function Chat() {
         {/* ─── MESSAGES AREA ──────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
           {isWelcome ? (
-            <WelcomeScreen
-              avatarUrl={avatarUrl}
-              userName={user?.name}
-              selectedFocus={selectedFocus}
-              hasConversations={!!conversationsQuery.data?.length}
-              ttsEnabled={ttsEnabled}
-              onPromptClick={(text) => { setInput(text); textareaRef.current?.focus(); }}
+            <ChatGreetingV2
+              userName={user?.name ?? undefined}
               isAuthenticated={isAuthenticated}
-              userRole={userRole}
-              isGuest={user?.authTier === "anonymous"}
-              topInsight={topInsight}
-              proficiency={proficiencyQuery.data ?? undefined}
-              conversationCount={conversationsQuery.data?.length ?? 0}
-              lastConversationTitle={conversationsQuery.data?.find((c: any) => c.title && c.title !== "New Conversation" && !c.title.startsWith("I cannot") && !c.title.startsWith("I apologize") && !c.title.startsWith("You can implement") && !c.title.startsWith("Based on"))?.title ?? undefined}
+              onSuggestionClick={(text) => { setInput(text); textareaRef.current?.focus(); }}
+              userRole={userRole as any}
+              aiHealthy={true}
             />
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">

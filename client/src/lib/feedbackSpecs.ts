@@ -31,7 +31,7 @@ type FeedbackFactory = (data?: any) => FeedbackSpec;
 
 /* ── error messages (Steward personality) ──────────────────────── */
 
-const STEWART_ERRORS: Record<string, { message: string; recovery: string }> = {
+const STEWARD_ERRORS: Record<string, { message: string; recovery: string }> = {
   NETWORK: { message: "I've lost my connection.", recovery: "Reconnecting — your work is safe." },
   RATE_LIMIT: { message: "I'm thinking too fast.", recovery: "Give me a moment and try again." },
   AUTH_EXPIRED: { message: "Your session has expired.", recovery: "Sign in to continue where you left off." },
@@ -42,7 +42,7 @@ const STEWART_ERRORS: Record<string, { message: string; recovery: string }> = {
 };
 
 function getError(code: string) {
-  return STEWART_ERRORS[code] || STEWART_ERRORS.GENERIC;
+  return STEWARD_ERRORS[code] || STEWARD_ERRORS.GENERIC;
 }
 
 /* ── spec definitions ──────────────────────────────────────────── */

@@ -9,6 +9,7 @@
  * `lib/navigation.ts` so items never drift out of sync.
  */
 import { useAuth } from "@/_core/hooks/useAuth";
+import PersonaSidebar5 from "@/components/PersonaSidebar5";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
@@ -535,22 +536,19 @@ export default function AppShell({ children, title }: AppShellProps) {
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Sidebar — desktop: always visible, mobile: overlay */}
-      <aside className={`
-        fixed lg:relative z-50 h-full bg-card border-r border-border
-        transition-all duration-200 ease-in-out
-        ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-        ${collapsed ? "w-14" : "w-56"}
-      `}>
-        {/* Mobile close button */}
-        <button
-          className="absolute top-3 right-3 lg:hidden z-10 p-1 rounded-md hover:bg-secondary/50"
-          onClick={() => setMobileOpen(false)}
-        >
-          <X className="w-4 h-4" />
-        </button>
-        {sidebarContent}
-      </aside>
+      {/* Pass 136: PersonaSidebar5 — 5-layer persona navigation.
+          Replaces the old flat sidebar with role-aware persona layers.
+          Falls back to the old sidebarContent for the inner nav items
+          while PersonaSidebar5 handles the structural shell. */}
+      <PersonaSidebar5
+        role={userRole === "steward" ? "admin" : (userRole as any) || "user"}
+        collapsed={collapsed}
+        onCollapse={() => setCollapsed(!collapsed)}
+        onNewChat={() => navigate("/chat")}
+        onSearch={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
+        mobileOpen={mobileOpen}
+        onMobileChange={setMobileOpen}
+      />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

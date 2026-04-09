@@ -11,6 +11,6 @@ export const STEWARD_ERRORS: Record<string, { message: string; recovery: string 
   PERMISSION: { message: "You don't have access to that.", recovery: "Contact your administrator if you need it." },
 };
 
-export function getStewartError(code?: string) {
+export function getStewardError(code?: string) {
   return STEWARD_ERRORS[code ?? "GENERIC"] ?? STEWARD_ERRORS.GENERIC;
 }

@@ -75,6 +75,8 @@ import { learningRouter } from "./routers/learning";
 import { ghlWebhookRouter } from "./routers/ghlWebhook";
 import { dripifyWebhookRouter } from "./routers/dripifyWebhook";
 import { smsitWebhookRouter } from "./routers/smsitWebhook";
+import { audioRouter } from "./routers/audio";
+import { clientRouter } from "./routers/client";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -2102,6 +2104,8 @@ export const appRouter = router({
   ghlWebhook: ghlWebhookRouter,
   dripifyWebhook: dripifyWebhookRouter,
   smsitWebhook: smsitWebhookRouter,
+  audio: audioRouter,
+  client: clientRouter,
 });
 
 export type AppRouter = typeof appRouter;

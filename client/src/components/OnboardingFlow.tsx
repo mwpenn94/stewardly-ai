@@ -229,6 +229,8 @@ export function getPersonaSteps(persona: Persona): OnboardingStep[] {
           icon: Settings,
         },
       ];
+    default:
+      return getPersonaSteps("person");
   }
 }
 
