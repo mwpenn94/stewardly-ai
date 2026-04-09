@@ -84,7 +84,7 @@ Also remove from `vite.config.ts`: `vite-plugin-manus-runtime` and `@builder.io/
 
 ```
 352 tables (351 schema defs + workflow_instances) | 259 services | 78 routers | 119 pages | 129 components
-123 test files / 3,213 total tests — 3,101 passing across 109 files in local dev;
+123 test files / 3,215 total tests — 3,103 passing across 109 files in local dev;
 14 pre-existing env-dependent files (112 tests) clear in the deployed environment
 with DB + env vars present
 23 AI models (8 families) | 5 search tools
@@ -92,10 +92,11 @@ with DB + env vars present
 Chrome extension | 5 predefined workflows | 5 processing foci | 0 TypeScript errors
 EMBA Learning Integration: 12 exam tracks | licensure tracking | dynamic content CRUD
 + full consumer UIs (TrackDetail + FlashcardStudy + QuizRunner — pass 58)
-Code Chat GitHub tab | AI Agents CRUD in nav | Workflow cross-session persistence
+Code Chat GitHub tab (via integrations) | Code Chat mode inside /chat (pass 78)
+AI Agents CRUD in nav | Workflow cross-session persistence
 ```
 
-_Last verified: pass 74 (2026-04-09). Counts reflect the state after passes 45-74 (three waves of reachability + usability + admin stub-page audits). See `REMAINING_ITEMS.md` Sessions 12-15 for the full change log._
+_Last verified: pass 80 (2026-04-09). Counts reflect the state after passes 45-80 (five waves: reachability, usability, doc sync, two admin stub-page audits, seed/import bug fixes + GitHub-via-integrations + Code Chat as Chat mode). See `REMAINING_ITEMS.md` Sessions 12-16 for the full change log._
 
 ---
 
