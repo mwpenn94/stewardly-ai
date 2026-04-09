@@ -96,7 +96,7 @@ Code Chat GitHub tab (via integrations) | Code Chat mode inside /chat (pass 78)
 AI Agents CRUD in nav | Workflow cross-session persistence
 ```
 
-_Last verified: pass 80 (2026-04-09). Counts reflect the state after passes 45-80 (five waves: reachability, usability, doc sync, two admin stub-page audits, seed/import bug fixes + GitHub-via-integrations + Code Chat as Chat mode). See `REMAINING_ITEMS.md` Sessions 12-16 for the full change log._
+_Last verified: pass 88 (2026-04-09). Counts reflect the state after passes 45-88 (six waves: reachability, usability, doc sync, two admin stub-page audits, seed/import + GitHub-via-integrations + Code Chat mode, **UI/UX nav sectioning + Chat empty state as feature gateway per v10.0**). See `REMAINING_ITEMS.md` Sessions 12-17 for the full change log._
 
 ---
 
