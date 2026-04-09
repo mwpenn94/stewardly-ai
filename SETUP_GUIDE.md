@@ -83,7 +83,7 @@ Also remove from `vite.config.ts`: `vite-plugin-manus-runtime` and `@builder.io/
 ## Current Scale
 
 ```
-352 tables (351 schema defs + workflow_instances) | 259 services | 78 routers | 119 pages | 129 components
+352 tables (351 schema defs + workflow_instances) | 259 services | 78 routers | 119 pages | 130 components
 123 test files / 3,215 total tests — 3,103 passing across 109 files in local dev;
 14 pre-existing env-dependent files (112 tests) clear in the deployed environment
 with DB + env vars present
@@ -96,7 +96,7 @@ Code Chat GitHub tab (via integrations) | Code Chat mode inside /chat (pass 78)
 AI Agents CRUD in nav | Workflow cross-session persistence
 ```
 
-_Last verified: pass 88 (2026-04-09). Counts reflect the state after passes 45-88 (six waves: reachability, usability, doc sync, two admin stub-page audits, seed/import + GitHub-via-integrations + Code Chat mode, **UI/UX nav sectioning + Chat empty state as feature gateway per v10.0**). See `REMAINING_ITEMS.md` Sessions 12-17 for the full change log._
+_Last verified: pass 95 (2026-04-09). Counts reflect the state after passes 45-95 (seven waves: reachability, usability, doc sync, two admin stub-page audits, seed/import + GitHub-via-integrations + Code Chat mode, UI/UX nav sectioning + cockpit collapse, **second UI/UX recursion after user feedback — Learning content auto-import + Chat sidebar sectioning + cockpit collapse + HonestPlaceholder + skip-to-content + mobile bottom tab bar + adaptive insight banner**). See `REMAINING_ITEMS.md` Sessions 12-18 for the full change log._
 
 ---
 

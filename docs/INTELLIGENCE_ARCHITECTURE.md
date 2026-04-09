@@ -1,6 +1,6 @@
 # Stewardly Intelligence Architecture
 
-> Last updated: 2026-04-09 | Pass 88 (2 consecutive clean convergence scans after pass 82-86 UI/UX recursion: nav sectioning + Chat empty state as feature gateway per prompt v10.0)
+> Last updated: 2026-04-09 | Pass 95 (2 consecutive clean convergence after pass 89-93 second UI/UX recursion: Learning auto-import + Chat sidebar sectioning + cockpit collapse + HonestPlaceholder + skip-to-content + mobile bottom tab bar + adaptive insight banner)
 >
 > **Change log since pass 16:** passes 17-50 iteratively hardened the
 > intelligence layer and shipped the Wealth Engine phases + EMBA
