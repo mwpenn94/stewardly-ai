@@ -95,7 +95,7 @@ EMBA Learning Integration: 12 exam tracks | licensure tracking | dynamic content
 Code Chat GitHub tab | AI Agents CRUD in nav | Workflow cross-session persistence
 ```
 
-_Last verified: pass 63 (2026-04-08). Counts reflect the state after passes 45-63._
+_Last verified: pass 74 (2026-04-09). Counts reflect the state after passes 45-74 (three waves of reachability + usability + admin stub-page audits). See `REMAINING_ITEMS.md` Sessions 12-15 for the full change log._
 
 ---
 

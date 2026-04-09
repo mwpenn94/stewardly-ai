@@ -3478,7 +3478,34 @@
 - [x] Pass 58 fix 3 — Code Chat roadmap persistence: replaced in-memory singleton with `loadRoadmap()` + `setRoadmap()` wrapper backed by `.stewardly/roadmap.json`; overridable via `CODE_CHAT_ROADMAP_PATH` env var; corrupted-file tolerant fallback; 3 round-trip tests in `server/codeChat-roadmap-persist.test.ts`; `.stewardly/` in `.gitignore`
 - [x] Pass 59 verification: 0 TS errors, build clean, 3,096 passing, 0 regressions, committed + pushed (`fefcfc1`)
 
-### Deployment 404 Bug (Apr 9, 2026 — CRITICAL)
+### Recursive Optimization Pass 60-63: Workflows persistence + convergence (Apr 8, 2026)
+- [x] Pass 60: synced CLAUDE + REMAINING_ITEMS + SETUP_GUIDE + STEWARDLY_COMPREHENSIVE_GUIDE + docs/EMBA_INTEGRATION + docs/stewardly-env-variables with session 13 state
+- [x] Pass 61: new `workflow_instances` table (drizzle migration `0011_workflow_instances.sql`) + 3 tRPC procs (`workflow.listInstances` + `saveInstance` + `deleteInstance`) + wired `Workflows.tsx` to persist + hydrate across sessions (localStorage cache kept as offline fallback) + 5 new tests in `server/workflow-instances.test.ts`
+- [x] Pass 62-63: 2 consecutive clean convergence scans — committed + pushed `5966518`
+
+### Recursive Optimization Pass 64-66: Doc sync sweep + test count unification (Apr 8, 2026)
+- [x] Pass 64: refreshed 6 stale docs (SETUP_GUIDE, STEWARDLY_COMPREHENSIVE_GUIDE, stewardly-platform-report, INTELLIGENCE_ARCHITECTURE, CONSENSUS, MASTER_OPTIMIZATION_GUIDE) with current pass-63 metrics
+- [x] Pass 65-66: coherence scan caught + fixed `122 test files` vs `123 test files` split between CLAUDE / REMAINING_ITEMS vs STEWARDLY_COMPREHENSIVE_GUIDE; unified all docs on the authoritative `pnpm test` output (123 files / 3,213 total tests / 3,101 passing in local dev / 109 files); committed + pushed `569a37a`
+
+### Recursive Optimization Pass 67-69: First admin stub-page audit (Apr 8, 2026)
+- [x] Pass 67: AdminSystemHealth fully wired to `integrations.getSchedulerStatus` (10s live refresh) + "Run now" button via `integrations.triggerSchedulerJob` — real per-job lastRun/lastError/runCount/errorCount/isRunning/nextRun telemetry instead of a hardcoded 34-entry CRON_JOBS array
+- [x] Pass 67: AdminDataFreshness fully wired to `dataIngestion.listSources` (30s refresh) + `runIngestion` + `updateSource` (pause/resume) with freshness-window traffic lights derived from real `lastRunAt` timestamps
+- [x] Pass 67: AdminLeadSources + BillingPage + APIKeys got honest "Design preview — not live data" amber banners where no backend exists yet (revenue attribution, Stripe integration, api_keys table)
+- [x] Pass 68-69: 2 consecutive clean convergence scans — committed + pushed `9e0d523` — merged via PR #7 (`caa16ad`)
+
+### Recursive Optimization Pass 70-74: Third-wave stub-page audit (Apr 8-9, 2026)
+- [x] Pass 70: pulled main back into branch after PR #7 merge
+- [x] Pass 71: fresh deep audit surfaced 6 more stub pages by direct grep of every page for `trpc\.\w+\.\w+\.(useQuery|useMutation)` — 4 with existing backends that just weren't being called, 2 without backends yet
+- [x] Pass 72 fix 1 — AdminRateManagement fully wired to `adminIntelligence.getRateProfiles` + `getRecommendations` + `generateRecommendation` + `applyRecommendation` + `dismissRecommendation` (30s refetch, 3 tabs: Profiles / Recommendations / Generate)
+- [x] Pass 72 fix 2 — LeadPipeline fully wired to `leadPipeline.getPipeline` with 7-column Kanban folding the 11 schema statuses; "Mark contacted" quick-action fires `leadPipeline.updateStatus`; dynamic source filter from `targetSegment`; empty state points users at `/import`
+- [x] Pass 72 fix 3 — ComplianceAudit fully wired to `compliance.getDashboardStats` (4 live tiles) + `compliance.getReviews` (real review list with `flaggedIssues` parsed from JSON column)
+- [x] Pass 72 fix 4 — CRMSync: Sync Now button fully wired to real `crm.sync` mutation with provider + direction pickers; provider status cards + sync history still mock but clearly labeled via info banner
+- [x] Pass 72 fix 5 — TeamManagement: honest banner (no teamRouter exists); Invite Member button disabled with tooltip
+- [x] Pass 72 fix 6 — ClientDashboard: honest banner pointing users at `/protection-score`, `/engine-dashboard`, `/advisory` for real data
+- [x] Pass 73-74: 2 consecutive clean convergence scans — committed + pushed `fd333ea` — merged via PR #8 (`367033e`)
+- [x] Pass 75 (PR #9): refreshed INTELLIGENCE_ARCHITECTURE + MASTER_OPTIMIZATION_GUIDE + SETUP_GUIDE "Last verified" footers from pass 63 → pass 74
+
+### Deployment 404 Bug (Apr 9, 2026 — CRITICAL, landed on main between PR #8 and PR #9)
 - [x] Fix persistent 404 on stewardly.manus.space after publishing — removed ~5MB of bloat from git tracking
 - [x] Remove all ledger.pre-pass-*.json backup files + toolkit files + reference-files/ + .working-notes/ + .manus/db/ from repo
 - [x] Add comprehensive .gitignore rules to prevent future bloat (ledger*, toolkit*, reference-files/, .working-notes/, WealthBridge-*.html, package-lock.json, env-reference.txt)
