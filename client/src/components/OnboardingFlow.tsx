@@ -251,7 +251,7 @@ export default function OnboardingFlow({
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === steps.length - 1;
   const StepIcon = step.icon;
-  const PersonaIcon = PERSONA_ICONS[persona];
+  const PersonaIcon = PERSONA_ICONS[persona] ?? User;
 
   const goNext = useCallback(() => {
     if (isLast) {

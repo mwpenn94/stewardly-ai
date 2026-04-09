@@ -351,7 +351,10 @@ function DefinitionsTab({
       {current && (
         <Card
           className="min-h-[240px] cursor-pointer select-none"
+          role="button"
+          tabIndex={0}
           onClick={() => setFlipped((f) => !f)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFlipped((f) => !f); } }}
         >
           <CardContent className="p-8 flex flex-col items-center justify-center min-h-[240px] text-center">
             {flipped ? (
