@@ -151,8 +151,16 @@ export function CommandPalette() {
         setOpen((prev) => !prev);
       }
     };
+    // Pass 83: custom event so a visible sidebar trigger can open the palette
+    // without having to import / lift the `open` state. Any component that
+    // wants to surface the palette can dispatch `toggle-command-palette`.
+    const toggleHandler = () => setOpen((prev) => !prev);
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener("toggle-command-palette", toggleHandler as EventListener);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener("toggle-command-palette", toggleHandler as EventListener);
+    };
   }, []);
 
   // Reset query when closing

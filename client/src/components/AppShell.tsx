@@ -21,7 +21,8 @@ import { prefetchRoute } from "@/lib/routePrefetch";
 import { recordPageVisit } from "@/hooks/useRecentPages";
 import {
   TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole,
-  type NavItemDef, type UserRole,
+  NAV_SECTION_ORDER, NAV_SECTION_LABELS,
+  type NavItemDef, type UserRole, type NavSection,
 } from "@/lib/navigation";
 import {
   MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
@@ -29,9 +30,15 @@ import {
   BarChart3, Globe, Wrench, HelpCircle, Settings, LogIn, LogOut,
   Menu, X, ChevronDown, Keyboard, BookOpen,
   GraduationCap, Sparkles, Shield, Bot, Terminal,
+  Calculator, LayoutDashboard, Users2, Database, Target, Search,
 } from "lucide-react";
 
 // ─── Icon lookup ─────────────────────────────────────────────────────────────
+// Pass 83: added Calculator, LayoutDashboard, Users2, Database, Target,
+// Search (used by the new Command Palette trigger at the top of the sidebar).
+// Previously these fell back to the default Zap icon, which made Engine
+// Dashboard / Client Dashboard / Community / Data Freshness / Lead Sources
+// all show the same generic icon in the sidebar — a silent rendering bug.
 const ICON_MAP: Record<string, React.ReactNode> = {
   MessageSquare: <MessageSquare className="w-4 h-4" />,
   Zap: <Zap className="w-4 h-4" />,
@@ -57,6 +64,11 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Shield: <Shield className="w-4 h-4" />,
   Bot: <Bot className="w-4 h-4" />,
   Terminal: <Terminal className="w-4 h-4" />,
+  Calculator: <Calculator className="w-4 h-4" />,
+  LayoutDashboard: <LayoutDashboard className="w-4 h-4" />,
+  Users2: <Users2 className="w-4 h-4" />,
+  Database: <Database className="w-4 h-4" />,
+  Target: <Target className="w-4 h-4" />,
 };
 
 function getIcon(name: string): React.ReactNode {
@@ -237,6 +249,48 @@ export default function AppShell({ children, title }: AppShellProps) {
     );
   }
 
+  /**
+   * Pass 83: render the 19-item TOOLS_NAV as 5 semantic sections
+   * (Home / Work / Intelligence / Relationships / Learning). Items
+   * without a section are still rendered at the top so nothing gets
+   * dropped if a new nav entry is added without a section field.
+   * When the sidebar is collapsed, section headers are replaced with
+   * a thin divider so the icon rail stays compact.
+   */
+  function renderSectionedTools(items: NavItemDef[]) {
+    if (collapsed) {
+      // Collapsed rail: group items by section but show dividers not headers
+      const out: React.ReactNode[] = [];
+      const unsectioned = items.filter((i) => !i.section);
+      out.push(...unsectioned.map(renderNavItem));
+      for (const section of NAV_SECTION_ORDER) {
+        const inSection = items.filter((i) => i.section === section);
+        if (inSection.length === 0) continue;
+        if (out.length > 0) out.push(<div key={`div-${section}`} className="my-1 border-t border-border/40" />);
+        out.push(...inSection.map(renderNavItem));
+      }
+      return out;
+    }
+    // Expanded: render section headers between groups
+    const out: React.ReactNode[] = [];
+    const unsectioned = items.filter((i) => !i.section);
+    out.push(...unsectioned.map(renderNavItem));
+    for (const section of NAV_SECTION_ORDER) {
+      const inSection = items.filter((i) => i.section === section);
+      if (inSection.length === 0) continue;
+      out.push(
+        <div
+          key={`hdr-${section}`}
+          className="px-2.5 pt-3 pb-1 text-[9px] uppercase tracking-wider text-muted-foreground/50 font-semibold"
+        >
+          {NAV_SECTION_LABELS[section as NavSection]}
+        </div>,
+      );
+      out.push(...inSection.map(renderNavItem));
+    }
+    return out;
+  }
+
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Logo / Brand */}
@@ -257,6 +311,41 @@ export default function AppShell({ children, title }: AppShellProps) {
         )}
       </div>
 
+      {/* Pass 83: visible Command Palette trigger — the Ctrl+K shortcut
+          already opens it, but discoverable affordance is missing. Clicking
+          dispatches the same `toggle-command-palette` CustomEvent the
+          keyboard shortcut handler uses. Collapsed state shows just a
+          search icon with tooltip; expanded state shows a button styled
+          like a search field with the ⌘K hint. */}
+      {collapsed ? (
+        <div className="p-1 pt-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
+                aria-label="Open Command Palette"
+                className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Search (⌘K)</TooltipContent>
+          </Tooltip>
+        </div>
+      ) : (
+        <div className="px-2 pt-2">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
+            aria-label="Open Command Palette"
+            className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors text-[12px]"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span className="flex-1 text-left">Search…</span>
+            <kbd className="font-mono text-[10px] text-muted-foreground/70 bg-background/60 border border-border/60 rounded px-1 py-0.5">⌘K</kbd>
+          </button>
+        </div>
+      )}
+
       {/* Navigation — collapsible sections */}
       <ScrollArea className="flex-1">
         <div className={collapsed ? "p-1 space-y-0.5" : "p-2 space-y-0.5"}>
@@ -272,7 +361,7 @@ export default function AppShell({ children, title }: AppShellProps) {
               <ChevronDown className={`w-3 h-3 text-muted-foreground/40 transition-transform duration-200 ${navExpanded ? "" : "-rotate-90"}`} />
             </button>
           ) : null}
-          {(collapsed || navExpanded) && visibleTools.map(renderNavItem)}
+          {(collapsed || navExpanded) && renderSectionedTools(visibleTools)}
 
           {/* ADMIN section — collapsible */}
           {visibleAdmin.length > 0 && (

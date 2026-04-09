@@ -19,7 +19,10 @@ export default function SignIn() {
 
   const signInMutation = trpc.emailAuth.signIn.useMutation({
     onSuccess: () => {
-      // Reload to pick up the new session cookie
+      // Pass 85 (v10.0 revert): Chat IS the landing page and the
+      // feature gateway. Post-login lands directly in Chat — no
+      // extra /dashboard hop. Feature discoverability lives INSIDE
+      // the Chat empty state (Pass 86 builds that).
       window.location.href = "/chat";
     },
     onError: (err) => {
@@ -29,7 +32,6 @@ export default function SignIn() {
 
   const signUpMutation = trpc.emailAuth.signUp.useMutation({
     onSuccess: () => {
-      // Reload to pick up the new session cookie
       window.location.href = "/chat";
     },
     onError: (err) => {

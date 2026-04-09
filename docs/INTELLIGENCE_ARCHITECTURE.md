@@ -1,6 +1,6 @@
 # Stewardly Intelligence Architecture
 
-> Last updated: 2026-04-09 | Pass 80 (2 consecutive clean convergence scans after pass 76-78 bug fixes + GitHub-via-integrations + Code Chat as Chat mode)
+> Last updated: 2026-04-09 | Pass 88 (2 consecutive clean convergence scans after pass 82-86 UI/UX recursion: nav sectioning + Chat empty state as feature gateway per prompt v10.0)
 >
 > **Change log since pass 16:** passes 17-50 iteratively hardened the
 > intelligence layer and shipped the Wealth Engine phases + EMBA
@@ -27,7 +27,16 @@
 > existing Chat.tsx model picker passed through as the ReAct loop's
 > `model` override so any Forge / Claude / OpenAI / Gemini model works
 > for single-model or multi-model orchestration. Passes 79-80 confirmed
-> convergence. The wiring-layer contract described below is unchanged
+> convergence. **Passes 82-88 ran a UI/UX recursion**: landscape audit +
+> nav sectioning (19-item TOOLS_NAV grouped into 5 semantic sections) +
+> Command Palette sidebar trigger + icon-fallback fix + Dashboard.tsx
+> created at pass 84 then fully reverted at pass 85 per prompt v10.0
+> ("Chat IS the landing page — do NOT create Dashboard.tsx") + pass 86
+> built the feature-gateway UX inside the Chat empty state (compact
+> activity stat strip + proactive insight banner + role-gated feature
+> discovery cards via insights.list + insights.stats + learning.mastery
+> .summary queries — all rendering-only, zero state-machine changes).
+> Passes 87-88 confirmed 2 consecutive clean. The wiring-layer contract described below is unchanged
 > by all of this — every new LLM call still flows through
 > `shared/stewardlyWiring → contextualLLM`, and the new Code Chat ReAct
 > entrypoint uses the same `executeReActLoop` primitive the main chat

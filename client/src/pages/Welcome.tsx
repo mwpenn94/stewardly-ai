@@ -13,7 +13,12 @@ export default function Welcome() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
 
-  // If already authenticated, offer to go to chat
+  // Pass 85 (v10.0 revert): Chat IS the landing page and feature
+  // gateway — no /dashboard route. Both authenticated users and
+  // guests land on /chat. Feature discoverability lives INSIDE the
+  // Chat empty state (Pass 86). This matches the pattern every
+  // conversational AI product uses and saves the user a click
+  // on every login.
   const handleGetStarted = () => {
     if (isAuthenticated) {
       navigate("/chat");

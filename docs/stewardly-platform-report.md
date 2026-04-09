@@ -13,8 +13,8 @@
 > fixes (pass 54), and end-to-end usability fixes (passes 58-61). For
 > the **current** source of truth on counts, test state, and feature
 > coverage, consult `CLAUDE.md`, `REMAINING_ITEMS.md`, and `SETUP_GUIDE.md`.
-> As of pass 63 (2026-04-08): 352 tables, 78 routers, 259 services,
-> 119 pages, 129 components, 3,213 total tests (3,101 passing in local
+> As of pass 88 (2026-04-09): 352 tables, 78 routers, 259 services,
+> 119 pages, 129 components, 3,215 total tests (3,103 passing in local
 > dev, 14 pre-existing env-dependent files clear in the deployed env).
 
 ---
