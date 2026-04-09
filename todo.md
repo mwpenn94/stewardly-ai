@@ -3503,4 +3503,11 @@
 - [x] Pass 72 fix 5 — TeamManagement: honest banner (no teamRouter exists); Invite Member button disabled with tooltip
 - [x] Pass 72 fix 6 — ClientDashboard: honest banner pointing users at `/protection-score`, `/engine-dashboard`, `/advisory` for real data
 - [x] Pass 73-74: 2 consecutive clean convergence scans — committed + pushed `fd333ea` — merged via PR #8 (`367033e`)
-- [x] Pass 75 (this commit): refreshed INTELLIGENCE_ARCHITECTURE + MASTER_OPTIMIZATION_GUIDE + SETUP_GUIDE "Last verified" footers from pass 63 → pass 74
+- [x] Pass 75 (PR #9): refreshed INTELLIGENCE_ARCHITECTURE + MASTER_OPTIMIZATION_GUIDE + SETUP_GUIDE "Last verified" footers from pass 63 → pass 74
+
+### Deployment 404 Bug (Apr 9, 2026 — CRITICAL, landed on main between PR #8 and PR #9)
+- [x] Fix persistent 404 on stewardly.manus.space after publishing — removed ~5MB of bloat from git tracking
+- [x] Remove all ledger.pre-pass-*.json backup files + toolkit files + reference-files/ + .working-notes/ + .manus/db/ from repo
+- [x] Add comprehensive .gitignore rules to prevent future bloat (ledger*, toolkit*, reference-files/, .working-notes/, WealthBridge-*.html, package-lock.json, env-reference.txt)
+- [x] Fix productIntelligence.test.ts timeout (appRouter import needs 30s, not 5s default)
+- [ ] Verify deployment works after cleanup (needs checkpoint + publish)

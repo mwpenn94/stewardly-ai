@@ -338,7 +338,7 @@ describe("appRouter integration", () => {
     expect(p["productIntelligence.creditingHistory"]).toBeDefined();
     expect(p["productIntelligence.riskProfile"]).toBeDefined();
     expect(p["productIntelligence.createEnvelope"]).toBeDefined();
-  });
+  }, 30_000);
 
   it("appRouter includes dataSeed namespace", async () => {
     const mod = await import("./routers");
@@ -346,7 +346,7 @@ describe("appRouter integration", () => {
     expect(p["dataSeed.taxBrackets"]).toBeDefined();
     expect(p["dataSeed.calculatePIA"]).toBeDefined();
     expect(p["dataSeed.irmaaCalculator"]).toBeDefined();
-  });
+  }, 30_000);
 });
 
 // ─── IUL Strategy Crediting Logic Tests ─────────────────────────────────────

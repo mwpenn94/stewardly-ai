@@ -120,3 +120,27 @@ client/public/__manus__/version.json
 
 # Stewardly runtime data (Code Chat roadmap persistence, etc.)
 .stewardly/
+
+# Optimization toolkit and ledger (development-only, never deploy)
+ledger.json
+ledger.pre-pass-*.json
+optimization_ledger.json
+toolkit.js
+recursive_optimization_toolkit.js
+recursive_optimization_toolkit.cjs
+
+# Reference files (original HTML calculators, specs — development-only)
+reference-files/
+WealthBridge-*.html
+
+# Working notes (AI session scratch files — development-only)
+.working-notes/
+
+# Manus internal logs and state
+.manus-logs/
+
+# Redundant lockfile (pnpm-lock.yaml is canonical)
+package-lock.json
+
+# Env reference (development-only)
+env-reference.txt
