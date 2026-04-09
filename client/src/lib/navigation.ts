@@ -93,8 +93,10 @@ export const TOOLS_NAV: NavItemDef[] = [
   // login.
   { iconName: "MessageSquare", label: "Chat", href: "/chat", minRole: "user", section: "home" },
   { iconName: "Activity", label: "My Progress", href: "/proficiency", minRole: "user", section: "home" },
+  { iconName: "Fingerprint", label: "Financial Twin", href: "/financial-twin", minRole: "user", section: "home" },
 
   // ── WORK — the Hub architecture from STEWARDLY_COMPREHENSIVE_GUIDE §5
+  { iconName: "Briefcase", label: "My Work", href: "/my-work", minRole: "advisor", section: "work" },
   { iconName: "Zap", label: "Operations", href: "/operations", minRole: "user", section: "work" },
   { iconName: "Package", label: "Advisory", href: "/advisory", minRole: "user", section: "work" },
   { iconName: "GitBranch", label: "Workflows", href: "/workflows", minRole: "user", section: "work" },
@@ -117,6 +119,8 @@ export const TOOLS_NAV: NavItemDef[] = [
   // ── LEARNING — EMBA tracks, licenses, content authoring
   { iconName: "GraduationCap", label: "Learning", href: "/learning", minRole: "user", section: "learning" },
   { iconName: "Shield", label: "Licenses", href: "/learning/licenses", minRole: "user", section: "learning" },
+  { iconName: "Award", label: "Achievements", href: "/learning/achievements", minRole: "user", section: "learning" },
+  { iconName: "Brain", label: "Concept Map", href: "/learning/connections", minRole: "user", section: "learning" },
   { iconName: "Sparkles", label: "Content Studio", href: "/learning/studio", minRole: "advisor", section: "learning" },
 ];
 

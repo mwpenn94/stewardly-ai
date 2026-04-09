@@ -28,7 +28,8 @@ import {
   Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
   LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2, HeartPulse, GitBranch,
-  Terminal, Flame, Target, Compass, Award, LayoutGrid
+  Terminal, Flame, Target, Compass, Award, LayoutGrid,
+  LayoutDashboard, Users2,
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
@@ -313,6 +314,16 @@ const NAV_ICON_MAP: Record<string, React.ReactNode> = {
   Fingerprint: <Fingerprint className="w-3.5 h-3.5" />,
   Bot: <Bot className="w-3.5 h-3.5" />,
   Terminal: <Terminal className="w-3.5 h-3.5" />,
+  GraduationCap: <GraduationCap className="w-3.5 h-3.5" />,
+  Shield: <Shield className="w-3.5 h-3.5" />,
+  Sparkles: <Sparkles className="w-3.5 h-3.5" />,
+  Calculator: <Calculator className="w-3.5 h-3.5" />,
+  LayoutDashboard: <LayoutDashboard className="w-3.5 h-3.5" />,
+  Users2: <Users2 className="w-3.5 h-3.5" />,
+  Database: <Database className="w-3.5 h-3.5" />,
+  Target: <Target className="w-3.5 h-3.5" />,
+  Award: <Award className="w-3.5 h-3.5" />,
+  GitBranch: <GitBranch className="w-3.5 h-3.5" />,
 };
 function getNavIcon(name: string): React.ReactNode {
   return NAV_ICON_MAP[name] ?? <Zap className="w-3.5 h-3.5" />;
