@@ -138,7 +138,8 @@ export default function StudyBuddy() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30">
+      <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
           <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => navigate("/chat")}>
             <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Chat</span>

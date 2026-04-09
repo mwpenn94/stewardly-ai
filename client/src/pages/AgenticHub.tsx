@@ -78,7 +78,9 @@ export default function AgenticHub() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      {/* Warm gold radial glow */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
       <div>
         <Link href="/chat" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-2">
           <ArrowLeft className="h-4 w-4" /> Back to Chat

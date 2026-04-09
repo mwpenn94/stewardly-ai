@@ -174,7 +174,9 @@ function AgentRecentRuns({ agentId }: { agentId: number }) {
   );
   const rows = q.data ?? [];
   return (
-    <div className="mt-3 border-t pt-3 space-y-2">
+    <div className="relative mt-3 border-t pt-3 space-y-2">
+      {/* Warm gold radial glow */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Recent runs

@@ -111,7 +111,8 @@ export default function GlobalAdmin() {
     <AppShell title="Global Admin">
     <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
           <Button variant="ghost" size="icon-sm" onClick={() => navigate("/chat")}>
             <ArrowLeft className="w-4 h-4" />

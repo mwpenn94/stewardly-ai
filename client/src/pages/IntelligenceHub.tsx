@@ -27,11 +27,12 @@ export default function IntelligenceHub() {
     <AppShell title="Intelligence">
     <div className="min-h-screen">
       {/* Header */}
-      <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container py-4">
+      <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
+        <div className="container py-4 relative">
           <div>
             <h1 className="text-xl font-bold">Intelligence</h1>
-            <p className="text-sm text-muted-foreground">Models, data insights, and analytics</p>
+            <p className="text-sm text-muted-foreground">Your AI-powered financial insights and analytics</p>
           </div>
         </div>
       </div>

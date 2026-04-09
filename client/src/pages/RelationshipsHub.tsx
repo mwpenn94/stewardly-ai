@@ -111,7 +111,9 @@ function NetworkSection({ searchQuery }: { searchQuery: string }) {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-4">
+      {/* Warm gold radial glow */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Professional Network</h3>
         <Button size="sm" onClick={() => navigateToChat("Help me add a new professional contact to my network. I need to record their name, firm, role, specialty, and how we're connected.")}>

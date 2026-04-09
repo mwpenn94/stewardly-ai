@@ -149,7 +149,8 @@ export default function BCP() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
         <div className="container max-w-6xl py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
@@ -273,7 +274,7 @@ export default function BCP() {
               <Card>
                 <CardContent className="p-6 text-center">
                   <AlertTriangle className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Health check endpoint not available. This is expected if the system.getHealth procedure has not been implemented yet.</p>
+                  <p className="text-sm text-muted-foreground">System health monitoring is not yet configured. This will become available once the health check service is set up.</p>
                   <p className="text-xs text-muted-foreground mt-2">Error: {healthQuery.error.message}</p>
                 </CardContent>
               </Card>
@@ -332,7 +333,7 @@ export default function BCP() {
               <Card>
                 <CardContent className="p-6 text-center">
                   <AlertTriangle className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Error log endpoint not available. The server_errors table may need to be created.</p>
+                  <p className="text-sm text-muted-foreground">Error logging is not yet configured. This will become available once the error tracking service is set up.</p>
                   <p className="text-xs text-muted-foreground mt-2">Error: {errorsQuery.error.message}</p>
                 </CardContent>
               </Card>

@@ -124,7 +124,9 @@ export default function AnalyticsHub() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="relative flex items-center justify-center min-h-[60vh]">
+      {/* Warm gold radial glow */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
             <BarChart3 className="w-12 h-12 mx-auto mb-4 text-accent" />

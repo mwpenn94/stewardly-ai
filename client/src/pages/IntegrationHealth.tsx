@@ -123,7 +123,8 @@ export default function IntegrationHealth() {
     <AppShell title="Integration Health">
     <div className="min-h-screen">
       {/* Header */}
-      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
         <div className="container py-4">
           <div className="flex items-center gap-3 mb-4">
             <Link href="/integrations">

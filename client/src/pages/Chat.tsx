@@ -26,7 +26,7 @@ import {
   Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
   LogIn, UserPlus, Lightbulb, Wrench, Activity, Link2, HeartPulse, GitBranch,
-  Terminal
+  Terminal, Flame, Target, Compass, Award, LayoutGrid
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
@@ -57,7 +57,7 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { useLocation, useRoute } from "wouter";
+import { useLocation, useRoute, Link } from "wouter";
 import { consumePendingPrompt } from "@/lib/navigateToChat";
 import { prefetchRoute } from "@/lib/routePrefetch";
 import { toast } from "sonner";
@@ -338,15 +338,10 @@ function useTypingAnimation(text: string, speed = 40) {
 }
 
 // ─── WELCOME SCREEN COMPONENT ─────────────────────────────────
-//
-// Pass 93 (Target 2 done right): the empty state stays clean by default.
-// The only conditional content is a single proactive insight banner
-// that ONLY renders when the user has at least one `proactive_insights`
-// row with `status='new'`. No permanent stat tiles, no feature cards,
-// no "explore a workspace" grid — those were the clutter the user
-// flagged in pass 86. The banner is tappable and seeds a contextual
-// prompt so the user keeps the conversation in chat instead of
-// bouncing to another page.
+// Transformation 2: The empty state is now a personalized gateway.
+// Shows greeting + quick stats (when available) + proactive insight
+// banner + smart suggestion chips + feature discovery cards for
+// undiscovered tools. Collapses gracefully for guests/new users.
 function WelcomeScreen({
   avatarUrl,
   userName,
@@ -358,6 +353,9 @@ function WelcomeScreen({
   userRole,
   isGuest,
   topInsight,
+  proficiency,
+  conversationCount,
+  lastConversationTitle,
 }: {
   avatarUrl?: string | null;
   userName?: string | null;
@@ -375,27 +373,76 @@ function WelcomeScreen({
     category?: string | null;
     suggestedAction?: string | null;
   } | null;
+  proficiency?: {
+    overallProficiency: number | string;
+    totalInteractions: number;
+    featuresExplored: number;
+    featuresTotal: number;
+    undiscoveredFeatures: Array<string | { key: string; label?: string }>;
+    streak: number;
+    userLayer: any;
+    isGuest?: boolean;
+    [key: string]: any;
+  };
+  conversationCount: number;
+  lastConversationTitle?: string;
 }) {
+  const [, nav] = useLocation();
   const displayName = userName && !isGuest && userName !== "Guest User" && userName !== "Guest" ? userName.split(" ")[0] : null;
   const greeting = `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${displayName ? `, ${displayName}` : ""}`;
   const { displayed: typedGreeting, done: greetingDone } = useTypingAnimation(greeting, 35);
   const [prompts] = useState(() => getDynamicPrompts(selectedFocus, hasConversations, userRole));
 
-  return (
-    <div className="h-full flex flex-col items-center justify-center px-4 pb-16 sm:pb-32">
-      <div className="max-w-2xl w-full text-center">
-        <h1 className="text-xl sm:text-3xl font-semibold mb-2 sm:mb-3">
-          {typedGreeting}
-          {!greetingDone && <span className="inline-block w-0.5 h-6 bg-accent ml-0.5 animate-pulse" />}
-        </h1>
-        <p className={`text-muted-foreground text-sm mb-4 sm:mb-6 max-w-md mx-auto transition-opacity duration-700 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
-          What can I help you with?
-        </p>
+  // Feature discovery: map undiscovered features to actionable cards
+  const discoveryCards = useMemo(() => {
+    if (!proficiency?.undiscoveredFeatures?.length) return [];
+    const featureMap: Record<string, { title: string; desc: string; icon: React.ReactNode; action: string; href?: string }> = {
+      intelligence_hub: { title: "Intelligence Hub", desc: "AI-generated insights about your financial picture", icon: <Brain className="w-4 h-4" />, action: "Explore your insights", href: "/intelligence-hub" },
+      calculators: { title: "Financial Calculators", desc: "Run retirement, IUL, tax, and 7 more projections", icon: <Calculator className="w-4 h-4" />, action: "Run a calculation", href: "/calculators" },
+      market_data: { title: "Market Data", desc: "Real-time government data from BLS, FRED, SEC & more", icon: <TrendingUp className="w-4 h-4" />, action: "View market data", href: "/market-data" },
+      learning: { title: "Learning Center", desc: "Study for SIE, Series 7, CFP with spaced repetition", icon: <GraduationCap className="w-4 h-4" />, action: "Start learning", href: "/learning" },
+      protection_score: { title: "Protection Score", desc: "See how well-protected your family's finances are", icon: <Shield className="w-4 h-4" />, action: "Check your score", href: "/protection-score" },
+      documents: { title: "Document Vault", desc: "Upload and analyze financial documents with AI", icon: <FileText className="w-4 h-4" />, action: "Upload a document", href: "/documents" },
+      workflows: { title: "Workflows", desc: "Automate compliance checks and financial reviews", icon: <GitBranch className="w-4 h-4" />, action: "Set up a workflow", href: "/workflows" },
+      advisory: { title: "Advisory Hub", desc: "Browse products, manage cases, get AI recommendations", icon: <Package className="w-4 h-4" />, action: "Explore advisory", href: "/advisory" },
+      consensus: { title: "Multi-Model Consensus", desc: "Get answers from multiple AI models simultaneously", icon: <Users className="w-4 h-4" />, action: "Try consensus mode" },
+    };
+    return proficiency.undiscoveredFeatures
+      .map(f => {
+        const key = typeof f === "string" ? f : f.key;
+        return featureMap[key];
+      })
+      .filter(Boolean)
+      .slice(0, 3);
+  }, [proficiency?.undiscoveredFeatures]);
 
-        {/* Pass 93: ONE proactive insight banner — only renders when there
-            is at least one new high-priority insight in proactive_insights.
-            For users with no data: this whole block is omitted, the empty
-            state stays clean. */}
+  const hasStats = proficiency && proficiency.totalInteractions > 0;
+
+  return (
+    <div className="h-full flex flex-col items-center px-4 pt-8 sm:pt-16 pb-16 sm:pb-24 overflow-y-auto relative">
+      {/* Warm gold radial glow behind greeting — creates the "premium" first impression */}
+      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] opacity-[0.18]" style={{ background: 'radial-gradient(ellipse at center, oklch(0.76 0.14 80) 0%, transparent 60%)' }} />
+      <div className="max-w-2xl w-full relative z-10 stagger-reveal">
+        {/* ─── GREETING ─── */}
+        <div className="text-center mb-6" style={{ animationDelay: '0ms' }}>
+          <h1 className="text-2xl sm:text-4xl font-semibold mb-2 sm:mb-3 tracking-tight">
+            {typedGreeting}
+            {!greetingDone && <span className="inline-block w-0.5 h-7 bg-accent ml-0.5 animate-pulse" />}
+          </h1>
+          {/* Decorative gold accent line */}
+          <div className={`mx-auto w-16 h-[2px] rounded-full bg-gradient-to-r from-transparent via-accent/60 to-transparent mb-3 transition-all duration-700 ${greetingDone ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`} />
+          <p className={`text-muted-foreground text-sm transition-opacity duration-700 ${greetingDone ? "opacity-100" : "opacity-0"}`}>
+            {topInsight?.title
+              ? "I've been looking at your financial picture. Here's what I noticed."
+              : hasConversations && lastConversationTitle && lastConversationTitle !== "New Conversation" && !lastConversationTitle.startsWith("I cannot") && !lastConversationTitle.startsWith("I apologize")
+                ? `Last time we discussed "${lastConversationTitle.length > 50 ? lastConversationTitle.slice(0, 50) + '…' : lastConversationTitle}". Ready to continue or start fresh.`
+                : hasConversations
+                  ? "Ready to pick up where we left off, or start something new."
+                  : "I'm your AI financial advisor. Ask me anything \u2014 retirement, taxes, insurance, or just where to start."}
+          </p>
+        </div>
+
+        {/* ─── PROACTIVE INSIGHT BANNER ─── */}
         {isAuthenticated && !isGuest && greetingDone && topInsight && (
           <button
             type="button"
@@ -406,31 +453,40 @@ function WelcomeScreen({
                   : `Tell me more about: ${topInsight.title ?? "this insight"}`,
               )
             }
-            className="block w-full max-w-md mx-auto mb-4 sm:mb-6 text-left rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all p-3 animate-in fade-in slide-in-from-bottom-2 duration-500"
+            className="block w-full max-w-lg mx-auto mb-5 text-left rounded-xl border border-accent/30 bg-accent/5 hover:bg-accent/10 hover:border-accent/50 transition-all p-3.5 animate-in fade-in slide-in-from-bottom-2 duration-500"
             aria-label={`Insight: ${topInsight.title ?? "New insight"}. Click to discuss.`}
           >
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-500">
-                {(topInsight.priority ?? "Insight").toString()}
-                {topInsight.category ? ` · ${topInsight.category}` : ""}
-              </span>
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15 shrink-0 mt-0.5">
+                <Sparkles className="w-4 h-4 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[10px] uppercase tracking-wider font-semibold text-accent">
+                    {(topInsight.priority ?? "Insight").toString()}
+                    {topInsight.category ? ` · ${topInsight.category}` : ""}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-foreground line-clamp-2">
+                  {topInsight.title ?? "New insight"}
+                </p>
+                {topInsight.suggestedAction && (
+                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                    {topInsight.suggestedAction}
+                  </p>
+                )}
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-1" />
             </div>
-            <p className="text-sm font-medium text-foreground line-clamp-2">
-              {topInsight.title ?? "New insight"}
-            </p>
-            {topInsight.suggestedAction && (
-              <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                {topInsight.suggestedAction}
-              </p>
-            )}
           </button>
         )}
 
-        <div data-tour="suggested-prompts" className={`grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto transition-all duration-700 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+        {/* ─── SUGGESTION CHIPS ─── */}
+        <div data-tour="suggested-prompts" className={`grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto mb-5 transition-all duration-700 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`} style={{ transitionDelay: '100ms' }}>
           {prompts.map((prompt, i) => (
             <button
               key={i}
-              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border bg-card hover:bg-secondary/50 hover:border-accent/30 transition-all text-left text-sm group"
+              className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border border-border/40 bg-card/40 hover:bg-accent/5 hover:border-accent/40 hover:shadow-[0_0_12px_-4px_oklch(0.76_0.14_80_/_0.12)] transition-all text-left text-sm group card-lift"
               onClick={() => onPromptClick(prompt.text)}
               style={{ animationDelay: `${i * 80}ms` }}
             >
@@ -440,16 +496,42 @@ function WelcomeScreen({
           ))}
         </div>
 
-        {/* Guest sign-in prompt — hidden on mobile where header already has sign-in */}
+        {/* ─── FEATURE DISCOVERY CARDS (undiscovered tools) ─── */}
+        {greetingDone && discoveryCards.length >= 2 && (
+          <div className="max-w-lg mx-auto mb-5 animate-in fade-in slide-in-from-bottom-3 duration-700 delay-300">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold mb-2 px-1">
+              You might find these useful
+            </p>
+            <div className={`grid grid-cols-1 ${discoveryCards.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-2`} style={{ transitionDelay: '200ms' }}>
+              {discoveryCards.map((card, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => card.href ? nav(card.href) : onPromptClick(card.action)}
+                  className="group text-left p-3 rounded-xl border border-border/40 bg-card/30 hover:bg-accent/5 hover:border-accent/40 hover:shadow-[0_0_12px_-4px_oklch(0.76_0.14_80_/_0.12)] transition-all card-lift"
+                  style={{ animationDelay: `${(i + 4) * 80}ms` }}
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10 mb-2 group-hover:scale-110 transition-transform">
+                    <span className="text-accent">{card.icon}</span>
+                  </div>
+                  <p className="text-xs font-medium text-foreground mb-0.5">{card.title}</p>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2">{card.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── GUEST SIGN-IN PROMPT ─── */}
         {isGuest && greetingDone && (
-          <div className="hidden sm:block mt-6 max-w-lg mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+          <div className="hidden sm:block max-w-lg mx-auto mb-5 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
               <div className="w-8 h-8 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
                 <LogIn className="w-4 h-4 text-emerald-400" />
               </div>
               <div className="flex-1 text-left">
                 <p className="text-xs text-emerald-300 font-medium">You're exploring as a guest</p>
-                <p className="text-[10px] text-muted-foreground">Sign in to save conversations, unlock all features, and enrich your profile with LinkedIn, Google, or email.</p>
+                <p className="text-[10px] text-muted-foreground">Sign in to save conversations, unlock all features, and build your financial profile.</p>
               </div>
               <button
                 onClick={() => window.location.href = getLoginUrl()}
@@ -461,13 +543,9 @@ function WelcomeScreen({
           </div>
         )}
 
-        {/* Onboarding Checklist — hidden for guests. Pass 91: pick the
-            workflow per role so a casual `user` sees "Getting Started"
-            (client_onboarding) instead of "Professional Setup", which
-            was confusing for non-advisors. Advisors+ keep the
-            professional setup flow. */}
+        {/* ─── ONBOARDING CHECKLIST ─── */}
         {!hasConversations && !isGuest && (
-          <div className={`mt-4 sm:mt-8 max-w-lg mx-auto transition-all duration-700 delay-500 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+          <div className={`max-w-lg mx-auto transition-all duration-700 delay-500 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             <OnboardingChecklist
               workflowType={userRole === "user" ? "client_onboarding" : "professional_onboarding"}
               compact
@@ -751,6 +829,12 @@ export default function Chat() {
       null
     );
   })();
+
+  // Transformation 2: proficiency data for the welcome gateway
+  const proficiencyQuery = trpc.exponentialEngine.getProficiency.useQuery(
+    undefined,
+    { enabled: !conversationId && allowQueries, retry: false, staleTime: 60_000 },
+  );
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -2307,6 +2391,9 @@ export default function Chat() {
               userRole={userRole}
               isGuest={user?.authTier === "anonymous"}
               topInsight={topInsight}
+              proficiency={proficiencyQuery.data ?? undefined}
+              conversationCount={conversationsQuery.data?.length ?? 0}
+              lastConversationTitle={conversationsQuery.data?.find((c: any) => c.title && c.title !== "New Conversation" && !c.title.startsWith("I cannot") && !c.title.startsWith("I apologize") && !c.title.startsWith("You can implement") && !c.title.startsWith("Based on"))?.title ?? undefined}
             />
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
@@ -2602,7 +2689,7 @@ export default function Chat() {
             <input ref={imageInputRef} type="file" className="hidden" multiple accept="image/*" onChange={handleFileSelect} />
 
             {/* Textarea — full width, rounded pill */}
-            <div data-tour="chat-input" className="relative bg-secondary/30 rounded-2xl border border-border focus-within:border-accent/40 focus-within:shadow-[0_0_0_1px_oklch(0.68_0.16_230_/_0.15)] transition-all px-3 py-1.5">
+            <div data-tour="chat-input" className="relative bg-secondary/30 rounded-2xl border border-border/50 focus-within:border-accent/50 focus-within:shadow-[0_0_20px_-4px_oklch(0.76_0.14_80_/_0.2)] transition-all duration-300 px-3 py-1.5">
               <Textarea
                 ref={textareaRef}
                 value={input}

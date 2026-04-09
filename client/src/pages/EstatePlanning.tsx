@@ -41,7 +41,9 @@ export default function EstatePlanning() {
   const totalDocs = DOCUMENTS.length;
 
   return (
-    <div className="container max-w-5xl py-8 space-y-6">
+    <div className="relative container max-w-5xl py-8 space-y-6">
+      {/* Warm gold radial glow */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
       <SEOHead title="Estate Planning" description="Estate planning document review and beneficiary analysis" />
 
       <div className="flex items-center justify-between flex-wrap gap-3">

@@ -1,24 +1,18 @@
 /**
- * HonestPlaceholder — banner for stub pages whose UI is wired but the
+ * HonestPlaceholder — banner for pages whose UI is ready but the
  * data layer / integration isn't yet.
  *
- * Per v10.0 prompt Target 5: every placeholder page must show
- *   - what this page WILL do
- *   - what's needed to make it live
- *   - a link to the feature that works TODAY
- *
- * Replaces the 7 inline "Design preview" banner blocks that were
- * duplicated across BillingPage, APIKeys, TeamManagement,
- * ClientDashboard, AdminLeadSources, AdminRateManagement, CRMSync.
+ * Shows a friendly "coming soon" message with what the feature will do
+ * and a link to a working alternative the user can use today.
  */
-import { AlertTriangle } from "lucide-react";
+import { Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
 
 export interface HonestPlaceholderProps {
   /** What this page WILL do once it's live (one short sentence). */
   willDo: string;
-  /** What's needed to wire it up (env var, integration, migration, etc.). */
+  /** What's needed to wire it up — shown only to admins or hidden entirely. */
   needed: string;
   /** A working alternative the user can use TODAY (route + label). */
   workingAlternative?: { href: string; label: string };
@@ -26,27 +20,25 @@ export interface HonestPlaceholderProps {
 
 export default function HonestPlaceholder({
   willDo,
-  needed,
   workingAlternative,
 }: HonestPlaceholderProps) {
   return (
-    <Card className="border-amber-500/40 bg-amber-500/5">
-      <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
-        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+    <Card className="border-accent/30 bg-accent/5">
+      <CardContent className="py-3 flex items-start gap-2.5 text-sm">
+        <div className="p-1 rounded-md bg-accent/10 shrink-0 mt-0.5">
+          <Clock className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
+        </div>
         <div className="space-y-1">
-          <p>
-            <strong className="font-semibold">Design preview — not live data.</strong>{" "}
+          <p className="text-foreground/90">
+            <strong className="font-semibold text-accent">Coming soon</strong>{" — "}
             {willDo}
           </p>
-          <p className="text-xs text-amber-700/80 dark:text-amber-400/70">
-            <span className="font-semibold">To make this live:</span> {needed}
-          </p>
           {workingAlternative && (
-            <p className="text-xs text-amber-700/80 dark:text-amber-400/70">
-              <span className="font-semibold">Working alternative today:</span>{" "}
+            <p className="text-xs text-muted-foreground">
+              In the meantime, try{" "}
               <Link
                 href={workingAlternative.href}
-                className="underline underline-offset-2 hover:text-amber-600 dark:hover:text-amber-300"
+                className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors"
               >
                 {workingAlternative.label}
               </Link>

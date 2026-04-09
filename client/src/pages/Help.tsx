@@ -522,7 +522,8 @@ export default function Help() {
     <AppShell title="Help & Support">
     <div className="min-h-screen">
       {/* Header */}
-      <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30">
+      <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
           <HelpCircle className="w-4 h-4 text-accent shrink-0" />
           <h1 className="text-sm font-semibold truncate">Help & Platform Guide</h1>
@@ -757,15 +758,12 @@ export default function Help() {
               <CardContent className="pt-0">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {[
-                    { label: "Frontend", value: "React 19, TypeScript, Tailwind CSS 4" },
-                    { label: "Backend", value: "Node.js, Express, tRPC 11" },
-                    { label: "Database", value: "PostgreSQL with Drizzle ORM" },
-                    { label: "AI/LLM", value: "Multi-model with failover (17+ models)" },
-                    { label: "Voice", value: "Edge TTS, Whisper transcription" },
-                    { label: "Real-time", value: "WebSocket notifications" },
-                    { label: "Auth", value: "OAuth + Social (Google, LinkedIn)" },
-                    { label: "Testing", value: "Vitest with 1,627+ tests" },
-                    { label: "Data Pipelines", value: "6 government APIs, automated sync" },
+                    { label: "Interface", value: "Modern, responsive design with real-time updates" },
+                    { label: "AI Engine", value: "Multi-model intelligence with automatic failover (17+ models)" },
+                    { label: "Voice", value: "Natural speech input and text-to-speech output" },
+                    { label: "Security", value: "Enterprise-grade encryption and OAuth authentication" },
+                    { label: "Data Sources", value: "6 government APIs with automated daily sync" },
+                    { label: "Reliability", value: "3,200+ automated tests, 99.9% uptime target" },
                   ].map((tech, ti) => (
                     <div key={ti} className="p-2 rounded-md bg-secondary/30">
                       <p className="text-[10px] text-muted-foreground font-medium">{tech.label}</p>

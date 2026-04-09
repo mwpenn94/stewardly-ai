@@ -3532,3 +3532,72 @@
 - [x] Adversarial Pass: 0 TS errors, DOMPurify on all dangerouslySetInnerHTML, ErrorBoundary + SectionErrorBoundary present, focus ring styling verified, no hardcoded localhost, no console.log in prod (1 in ComponentShowcase only), SnapTrade test timeout fix
 - [x] Synthesis Pass: All 3241 tests passing (123 files), test assertions updated for humanized messages
 - [ ] Recursive verification until convergence
+
+### UI/UX Full Transformation (Apr 9 — Prompt v11 Execution)
+#### Transformation 1: Sidebar — From 12 Groups to Clarity
+- [x] Consolidate nav to ≤6 groups matching user mental model (HOME, WORK, INTELLIGENCE, RELATIONSHIPS, LEARNING + ADMIN/UTILITY)
+- [x] Add visible "Search… ⌘K" trigger at top of sidebar (already existed)
+- [x] Add footer with user context (name, role badge, avatar with gold ring)
+- [x] Verify all routes still work via navReachability test
+- [x] Gold active indicator bar (3px left bar on active nav item)
+- [x] Gold gradient section separators
+- [x] Gold accent on brand name
+- [x] aria-current on active nav items
+
+#### Transformation 2: Chat — From Cockpit to Conversation
+- [x] Chat empty state: contextual subtitle referencing last conversation, feature discovery cards for undiscovered tools, smart suggestion chips
+- [x] Chat controls: progressive disclosure (advancedOpen toggle with localStorage, auto-expand on mode change)
+- [x] Chat responses: prose-chat enhanced with warm typography, gold list markers, styled tables/blockquotes
+- [ ] First AI response demonstrates contextual intelligence (backend-dependent)
+- [x] Gold focus glow on input bar
+- [x] Warm suggestion chips with gold hover borders
+- [x] Discovery cards with card-lift hover effect
+
+#### Transformation 3: Visual Identity — From Drab to Delightful
+- [x] Stewardship Gold tokens applied to 45+ page headers with radial gold glow
+- [x] Micro-interactions: card-lift hover, stagger-reveal animations, sidebar active bar, message-in slide-up
+- [x] Warm body vignette gradient on dark theme
+- [x] Gold decorative accent line under Chat greeting
+- [ ] Loading → content: curtain-lift transitions (partial — skeletons exist on some pages)
+- [x] Consistency audit: batch script applied gold glow to all pages with sticky headers
+
+#### Transformation 4: Component System — From Generic to Crafted
+- [x] Created shared FeatureCard component with hover lift + icon animation
+- [x] Created shared StatTile with animated counting + trend arrow
+- [x] Created shared EmptyState with warm glow, staggered animation, CTA buttons
+- [ ] Standardize all pages to use shared components (incremental)
+
+#### Transformation 5: Onboarding — From Friction to Flow
+- [x] Guest: zero friction, 3 suggested actions in Chat empty state, sign-in prompt
+- [ ] Person: spotlight tour of 5 features saved to onboarding_progress (OnboardingChecklist exists but not spotlight)
+- [x] HonestPlaceholder rewritten to feel like "coming soon" not "broken"
+
+#### Transformation 6: Accessibility — Invisible AND Delightful
+- [x] Skip to content link in AppShell (verified)
+- [x] ? key opens keyboard shortcuts overlay (KeyboardShortcuts component with 18 shortcuts)
+- [x] aria-live on chat streaming (role="status" aria-live="polite")
+- [x] 4.5:1 contrast ratio — 8 contrast fixes applied
+- [x] Semantic HTML (nav, main, aside) on every page
+- [x] Focus indicators designed (warm gold accent ring with glow)
+- [x] prefers-reduced-motion respected globally
+
+#### Transformation 7: Mobile — From Afterthought to First-Class
+- [x] Bottom tab bar below 768px (5 tabs: Chat, Tools, Insights, Learn, Menu)
+- [x] Chat input fixed to bottom with shrink-0 in flex-col
+- [x] Touch targets ≥ 44×44px (verified on bottom tab bar)
+- [x] Mobile header with hamburger menu on Chat page
+- [ ] Test on 375px viewport (structural analysis confirms layout works)
+
+#### Voice & Copy Audit
+- [ ] Every button label is a verb (nav labels are destinations, not actions — CTA buttons already use verbs)
+- [x] Every error message is helpful, not blaming (18 messages humanized across 10 files)
+- [x] Every empty state is an invitation (HonestPlaceholder rewritten, EmptyState component created)
+- [ ] Financial numbers have narrative context (backend-dependent — AI generates the narrative)
+- [x] Compliance disclaimers warm and clear (GlobalFooter with amber-tinted container, ReasoningChain with compliance badges)
+
+#### Trust & Intelligence
+- [ ] Data visibility indicators on sensitive content (PiiMaskedField exists for PII)
+- [ ] Encryption indicator on document uploads
+- [x] At least one delight moment: flashcard/quiz completion celebration with warm messaging, animated confetti-style celebration cards
+- [x] Code references removed from 4 admin pages (ComplianceAudit, AdminDataFreshness, AdminRateManagement, CRMSync)
+- [x] Developer jargon removed from Help page tech stack, BCP page

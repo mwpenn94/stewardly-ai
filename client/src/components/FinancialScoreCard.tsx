@@ -42,7 +42,7 @@ export function FinancialScoreCard({
   const trendColor = trend === "up" ? "text-emerald-400" : trend === "down" ? "text-red-400" : "text-muted-foreground";
 
   return (
-    <Card className={cn("hover:border-primary/30 transition-colors", className)}>
+    <Card className={cn("hover:border-accent/30 hover:shadow-[0_0_12px_-4px_oklch(0.76_0.14_80_/_0.08)] transition-all", className)}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
@@ -50,8 +50,8 @@ export function FinancialScoreCard({
             <p className="text-2xl font-bold tabular-nums">{formatValue(value, format)}</p>
           </div>
           {Icon && (
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-              <Icon className="h-4.5 w-4.5 text-primary" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent/10">
+              <Icon className="h-4.5 w-4.5 text-accent" />
             </div>
           )}
         </div>

@@ -223,6 +223,8 @@ export default function AppShell({ children, title }: AppShellProps) {
               onClick={() => navigate(item.href)}
               onMouseEnter={() => prefetchRoute(item.href)}
               onFocus={() => prefetchRoute(item.href)}
+              aria-current={active ? "page" : undefined}
+              aria-label={item.label}
               className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
                 active
                   ? "bg-accent/15 text-accent"
@@ -242,12 +244,16 @@ export default function AppShell({ children, title }: AppShellProps) {
         onClick={() => navigate(item.href)}
         onMouseEnter={() => prefetchRoute(item.href)}
         onFocus={() => prefetchRoute(item.href)}
-        className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${
+        aria-current={active ? "page" : undefined}
+        className={`relative flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-[13px] transition-all duration-200 ${
           active
             ? "bg-accent/15 text-accent font-medium"
             : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
         }`}
       >
+        {active && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-accent transition-all" />
+        )}
         {icon}
         <span className="truncate">{item.label}</span>
       </button>
@@ -286,9 +292,12 @@ export default function AppShell({ children, title }: AppShellProps) {
       out.push(
         <div
           key={`hdr-${section}`}
-          className="px-2.5 pt-3 pb-1 text-[9px] uppercase tracking-wider text-muted-foreground/50 font-semibold"
+          className="px-2.5 pt-3.5 pb-1 flex items-center gap-2"
         >
-          {NAV_SECTION_LABELS[section as NavSection]}
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
+            {NAV_SECTION_LABELS[section as NavSection]}
+          </span>
+          <span className="flex-1 h-px bg-gradient-to-r from-accent/20 to-transparent" />
         </div>,
       );
       out.push(...inSection.map(renderNavItem));
@@ -312,7 +321,7 @@ export default function AppShell({ children, title }: AppShellProps) {
           />
         </button>
         {!collapsed && (
-          <span className="font-semibold text-sm tracking-tight truncate">Stewardly</span>
+          <span className="font-semibold text-sm tracking-tight truncate text-foreground">Steward<span className="text-accent">ly</span></span>
         )}
       </div>
 
@@ -481,16 +490,21 @@ export default function AppShell({ children, title }: AppShellProps) {
               </Tooltip>
             ) : (
               <>
-                <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-xs font-medium text-accent shrink-0">
+                <div className="w-7 h-7 rounded-full bg-accent/20 ring-1 ring-accent/30 flex items-center justify-center text-xs font-semibold text-accent shrink-0">
                   {user?.name?.charAt(0)?.toUpperCase() || "U"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-xs truncate block">{user?.name || "User"}</span>
-                  <span className="text-[10px] text-muted-foreground capitalize">{userRole}</span>
+                  <span className="text-xs font-medium truncate block">{user?.name || "User"}</span>
+                  <span className="text-[10px] text-accent/60 capitalize">{userRole}</span>
                 </div>
-                <button onClick={() => logout()} className="text-muted-foreground hover:text-foreground shrink-0" title="Sign out">
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button onClick={() => logout()} className="text-muted-foreground hover:text-foreground shrink-0 p-1 rounded-md hover:bg-secondary/50 transition-colors" aria-label="Sign out">
+                      <LogOut className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Sign out</TooltipContent>
+                </Tooltip>
               </>
             )}
           </div>

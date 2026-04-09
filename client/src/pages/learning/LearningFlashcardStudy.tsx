@@ -275,14 +275,39 @@ function CompletionCard({
 }) {
   const total = correct + incorrect;
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const isGreat = pct >= 80;
+  const isGood = pct >= 60;
+
+  const getMessage = () => {
+    if (pct === 100) return "Perfect session! Every single one correct.";
+    if (isGreat) return "Excellent work — you're building real mastery here.";
+    if (isGood) return "Solid progress. The ones you missed will come back for review.";
+    return "Every session makes you stronger. The spaced repetition system will help these stick.";
+  };
+
   return (
-    <Card>
-      <CardContent className="p-8 text-center space-y-4">
-        <Trophy className="h-10 w-10 text-amber-500 mx-auto" />
-        <div>
-          <p className="text-2xl font-semibold">Session complete</p>
-          <p className="text-sm text-muted-foreground mt-1">
+    <Card className="overflow-hidden">
+      {/* Warm gold celebration glow for great scores */}
+      {isGreat && (
+        <div className="h-1 bg-gradient-to-r from-transparent via-accent to-transparent animate-pulse" />
+      )}
+      <CardContent className="p-8 text-center space-y-5">
+        <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
+          isGreat ? "bg-accent/15" : isGood ? "bg-emerald-500/15" : "bg-muted"
+        }`} style={{ animation: "page-enter 0.5s ease-out" }}>
+          <Trophy className={`h-8 w-8 ${
+            isGreat ? "text-accent" : isGood ? "text-emerald-500" : "text-muted-foreground"
+          }`} />
+        </div>
+        <div className="space-y-2">
+          <p className="text-2xl font-semibold">
+            {pct === 100 ? "Flawless!" : isGreat ? "Great session!" : "Session complete"}
+          </p>
+          <p className="text-sm text-muted-foreground">
             {correct} of {total} correct ({pct}%)
+          </p>
+          <p className="text-sm text-muted-foreground/80 max-w-xs mx-auto">
+            {getMessage()}
           </p>
         </div>
         <div className="flex gap-2 justify-center">

@@ -66,9 +66,10 @@ export default function MarketData() {
   return (
     <AppShell title="Market Data">
     <div className="min-h-screen">
-      <header className="border-b border-border px-4 py-3 flex items-center gap-3">
-        <BarChart3 className="w-5 h-5 text-accent" />
-        <h1 className="text-lg font-semibold">Market Data</h1>
+      <header className="border-b border-border px-4 py-3 flex items-center gap-3 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.10]" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80) 0%, transparent 70%)' }} />
+        <BarChart3 className="w-5 h-5 text-accent relative" />
+        <h1 className="text-lg font-semibold relative">Market Data</h1>
         <div className="ml-auto">
           <Button variant="ghost" size="icon" onClick={() => quotesQuery.refetch()} disabled={quotesQuery.isFetching}>
             <RefreshCw className={`w-4 h-4 ${quotesQuery.isFetching ? "animate-spin" : ""}`} />
