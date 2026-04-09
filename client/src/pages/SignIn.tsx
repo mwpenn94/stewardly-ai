@@ -19,8 +19,10 @@ export default function SignIn() {
 
   const signInMutation = trpc.emailAuth.signIn.useMutation({
     onSuccess: () => {
-      // Reload to pick up the new session cookie
-      window.location.href = "/chat";
+      // Pass 84: post-login users land on /dashboard (activity hub)
+      // instead of /chat, so they see recent conversations + proactive
+      // insights + quick actions before jumping into a conversation.
+      window.location.href = "/dashboard";
     },
     onError: (err) => {
       setError(err.message);
@@ -29,8 +31,7 @@ export default function SignIn() {
 
   const signUpMutation = trpc.emailAuth.signUp.useMutation({
     onSuccess: () => {
-      // Reload to pick up the new session cookie
-      window.location.href = "/chat";
+      window.location.href = "/dashboard";
     },
     onError: (err) => {
       setError(err.message);
@@ -39,10 +40,10 @@ export default function SignIn() {
 
   const isLoading = signInMutation.isPending || signUpMutation.isPending;
 
-  // If already authenticated, redirect to chat
+  // If already authenticated, redirect to the dashboard
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/chat");
+      navigate("/dashboard");
     }
   }, [isAuthenticated, navigate]);
 

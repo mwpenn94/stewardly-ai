@@ -13,10 +13,13 @@ export default function Welcome() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
 
-  // If already authenticated, offer to go to chat
+  // Pass 84: authenticated users land on /dashboard first so they see
+  // the activity hub and proactive insights. Guests still land on /chat
+  // because they need to experience the core value (asking a question)
+  // before they're asked to create an account.
   const handleGetStarted = () => {
     if (isAuthenticated) {
-      navigate("/chat");
+      navigate("/dashboard");
     } else {
       navigate("/signin");
     }
@@ -48,8 +51,8 @@ export default function Welcome() {
           </div>
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
-              <Button size="sm" onClick={() => navigate("/chat")} className="bg-gradient-to-r from-sky-500 to-emerald-500 text-white border-0">
-                Go to Chat
+              <Button size="sm" onClick={() => navigate("/dashboard")} className="bg-gradient-to-r from-sky-500 to-emerald-500 text-white border-0">
+                Go to Dashboard
               </Button>
             ) : (
               <>

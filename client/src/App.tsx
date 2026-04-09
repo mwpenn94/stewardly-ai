@@ -36,6 +36,8 @@ const WeQuickQuote = lazy(() => import("./pages/wealth-engine/QuickQuoteFlow"));
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 // Consensus (Round C3 — multi-model consensus stream UI)
 const ConsensusPage = lazy(() => import("./pages/Consensus"));
+// Dashboard — post-login landing page (UI/UX Pass 84)
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 // Engine Dashboard (parallel main-branch effort: UWE/BIE/HE visualization at /engine-dashboard)
 const EngineDashboard = lazy(() => import("./pages/EngineDashboard"));
 const Products = lazy(() => import("./pages/Products"));
@@ -141,6 +143,7 @@ function Router() {
         <Route path={"/privacy"} component={Privacy} />
 
         {/* Core app routes */}
+        <Route path={"/dashboard"} component={Dashboard} />
         <Route path={"/chat"} component={Chat} />
         <Route path={"/chat/:id"} component={Chat} />
         <Route path={"/calculators"} component={Calculators} />
