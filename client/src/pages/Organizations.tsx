@@ -238,7 +238,7 @@ export default function Organizations() {
                       <TableRow key={m.roleId || m.userId}>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 text-xs font-medium">
+                            <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-accent text-xs font-medium">
                               {m.userName?.[0]?.toUpperCase() || "?"}
                             </div>
                             <div>
@@ -396,13 +396,13 @@ export default function Organizations() {
             {(Array.isArray(orgList.data) ? orgList.data : []).map((org: any) => (
               <Card
                 key={org.id}
-                className="bg-card/50 border-border/50 hover:border-sky-500/30 transition-colors cursor-pointer group"
+                className="bg-card/50 border-border/50 hover:border-accent/30 transition-colors cursor-pointer group"
                 onClick={() => setShowDetail(org.id)}
               >
                 <CardContent className="pt-5">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-lg bg-sky-500/15 flex items-center justify-center text-sky-400">
+                      <div className="w-11 h-11 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
                         <Building2 className="w-6 h-6" />
                       </div>
                       <div>

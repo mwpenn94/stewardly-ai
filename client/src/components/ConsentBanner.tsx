@@ -40,9 +40,9 @@ export default function ConsentBanner() {
         <div className="bg-card/95 backdrop-blur-md border border-border/50 rounded-xl px-5 py-3 flex items-center gap-4 shadow-lg">
           <p className="text-sm text-muted-foreground flex-1">
             By using this service, you agree to our{" "}
-            <a href="/terms" className="text-sky-400 hover:underline">Terms of Service</a>{" "}
+            <a href="/terms" className="text-accent hover:underline">Terms of Service</a>{" "}
             and{" "}
-            <a href="/privacy" className="text-sky-400 hover:underline">Privacy Policy</a>.
+            <a href="/privacy" className="text-accent hover:underline">Privacy Policy</a>.
             Your data is private by default.
           </p>
           <button

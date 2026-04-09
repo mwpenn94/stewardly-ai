@@ -25,7 +25,7 @@ const LAYER_COLORS: Record<string, string> = {
   organization: "text-blue-400",
   manager: "text-emerald-400",
   professional: "text-amber-400",
-  client: "text-sky-400",
+  client: "text-accent",
 };
 
 /** Read guest session events from localStorage */

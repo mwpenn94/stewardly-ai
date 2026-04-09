@@ -21,7 +21,7 @@ import { useState, useMemo } from "react";
 const CATEGORY_META: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
   iul: { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Indexed Universal Life", color: "text-emerald-400" },
   whole_life: { icon: <Shield className="w-3.5 h-3.5" />, label: "Whole Life", color: "text-blue-400" },
-  term_life: { icon: <Building2 className="w-3.5 h-3.5" />, label: "Term Life", color: "text-sky-400" },
+  term_life: { icon: <Building2 className="w-3.5 h-3.5" />, label: "Term Life", color: "text-accent" },
   variable_life: { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Variable Life", color: "text-violet-400" },
   annuity: { icon: <Star className="w-3.5 h-3.5" />, label: "Annuities", color: "text-amber-400" },
   disability: { icon: <Heart className="w-3.5 h-3.5" />, label: "Disability", color: "text-rose-400" },

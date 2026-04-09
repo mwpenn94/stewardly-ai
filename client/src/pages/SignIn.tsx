@@ -77,19 +77,21 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      {/* Background gradient */}
+      {/* Pass 100: Stewardship Gold — background glows use the accent (gold)
+          + chart-2 (emerald) tokens so the gradient harmonizes with the
+          new design system instead of the old sky-blue hardcoded palette. */}
       <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl opacity-30 animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl opacity-30 animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute inset-0 bg-background" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-30 animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-chart-2/10 rounded-full blur-3xl opacity-30 animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
       <div className="w-full max-w-md space-y-8">
         {/* Logo and title */}
         <div className="text-center space-y-3">
           <div className="flex justify-center">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center">
-              <span className="text-lg font-bold text-slate-900">W</span>
+            <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center shadow-[0_0_24px_-6px] shadow-accent/60">
+              <span className="text-lg font-bold text-accent-foreground font-heading">S</span>
             </div>
           </div>
           <h1 className="text-2xl font-bold text-foreground">
@@ -200,7 +202,7 @@ export default function SignIn() {
             <Button
               type="submit"
               disabled={isLoading || !email || !password || (mode === "signup" && !name)}
-              className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white border-0 h-10"
+              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground border-0 h-10 font-semibold shadow-[0_8px_24px_-12px] shadow-accent/50"
             >
               {isLoading
                 ? mode === "signin" ? "Signing in..." : "Creating account..."
@@ -226,7 +228,7 @@ export default function SignIn() {
                 New here?{" "}
                 <button
                   onClick={() => { setMode("signup"); setError(""); }}
-                  className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
+                  className="text-accent hover:text-accent/80 font-medium transition-colors"
                 >
                   Create an account
                 </button>
@@ -236,7 +238,7 @@ export default function SignIn() {
                 Already have an account?{" "}
                 <button
                   onClick={() => { setMode("signin"); setError(""); }}
-                  className="text-sky-400 hover:text-sky-300 font-medium transition-colors"
+                  className="text-accent hover:text-accent/80 font-medium transition-colors"
                 >
                   Sign in
                 </button>

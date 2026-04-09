@@ -574,7 +574,7 @@ export function CarrierConnector() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Building2 className="h-7 w-7 text-sky-400" /> Carrier Connector
+              <Building2 className="h-7 w-7 text-accent" /> Carrier Connector
             </h1>
             <p className="text-muted-foreground mt-1">Register and manage insurance carrier API integrations</p>
           </div>
@@ -594,7 +594,7 @@ export function CarrierConnector() {
             <Card key={carrier.id} className="bg-card/50 border-border/50">
               <CardContent className="p-4 flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-3">
-                  <Building2 className="h-5 w-5 text-sky-400" />
+                  <Building2 className="h-5 w-5 text-accent" />
                   <div>
                     <p className="font-medium text-foreground">{carrier.carrierName}</p>
                     <p className="text-sm text-muted-foreground">Type: {carrier.connectionType} | Ops: {carrier.supportedOperationsJson ? JSON.stringify(carrier.supportedOperationsJson) : "N/A"}</p>

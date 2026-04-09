@@ -29,7 +29,7 @@ const TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; label:
   model_complete: { icon: <TrendingUp className="w-3.5 h-3.5" />, color: "text-emerald-400", label: "Model" },
   enrichment: { icon: <Zap className="w-3.5 h-3.5" />, color: "text-amber-400", label: "Enrichment" },
   system: { icon: <Settings2 className="w-3.5 h-3.5" />, color: "text-gray-400", label: "System" },
-  onboarding: { icon: <Rocket className="w-3.5 h-3.5" />, color: "text-sky-400", label: "Getting Started" },
+  onboarding: { icon: <Rocket className="w-3.5 h-3.5" />, color: "text-accent", label: "Getting Started" },
 };
 
 const PRIORITY_COLORS: Record<string, string> = {

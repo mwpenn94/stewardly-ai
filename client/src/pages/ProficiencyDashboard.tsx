@@ -22,13 +22,13 @@ const LAYER_CONFIG: Record<string, { icon: React.ReactNode; color: string; bgCol
   organization: { icon: <Briefcase className="w-4 h-4" />, color: "text-blue-400", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30" },
   manager: { icon: <Users className="w-4 h-4" />, color: "text-emerald-400", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/30" },
   professional: { icon: <Shield className="w-4 h-4" />, color: "text-amber-400", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/30" },
-  client: { icon: <Brain className="w-4 h-4" />, color: "text-sky-400", bgColor: "bg-sky-500/10", borderColor: "border-sky-500/30" },
+  client: { icon: <Brain className="w-4 h-4" />, color: "text-accent", bgColor: "bg-accent/10", borderColor: "border-accent/30" },
 };
 
 const PROFICIENCY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   expert: { bg: "bg-violet-500/20", text: "text-violet-300", label: "Expert" },
   proficient: { bg: "bg-emerald-500/20", text: "text-emerald-300", label: "Proficient" },
-  familiar: { bg: "bg-sky-500/20", text: "text-sky-300", label: "Familiar" },
+  familiar: { bg: "bg-accent/20", text: "text-accent/80", label: "Familiar" },
   novice: { bg: "bg-amber-500/20", text: "text-amber-300", label: "Novice" },
   undiscovered: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Undiscovered" },
 };
@@ -36,7 +36,7 @@ const PROFICIENCY_COLORS: Record<string, { bg: string; text: string; label: stri
 const OVERALL_LABELS: Record<string, { label: string; color: string }> = {
   new_user: { label: "New User", color: "text-gray-400" },
   beginner: { label: "Beginner", color: "text-amber-400" },
-  intermediate: { label: "Intermediate", color: "text-sky-400" },
+  intermediate: { label: "Intermediate", color: "text-accent" },
   advanced: { label: "Advanced", color: "text-emerald-400" },
   power_user: { label: "Power User", color: "text-violet-400" },
 };
@@ -152,7 +152,7 @@ export default function ProficiencyDashboard() {
         ) : prof && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard
-              icon={<Target className="w-4 h-4 text-sky-400" />}
+              icon={<Target className="w-4 h-4 text-accent" />}
               label="Features Explored"
               value={`${prof.featuresExplored}/${prof.featuresTotal}`}
               sub={`${Math.round((prof.featuresExplored / Math.max(prof.featuresTotal, 1)) * 100)}% coverage`}
@@ -305,7 +305,7 @@ export default function ProficiencyDashboard() {
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
                             lp.percentage >= 80 ? "bg-emerald-500" :
-                            lp.percentage >= 50 ? "bg-sky-500" :
+                            lp.percentage >= 50 ? "bg-accent" :
                             lp.percentage >= 20 ? "bg-amber-500" :
                             "bg-gray-500"
                           }`}
@@ -358,7 +358,7 @@ export default function ProficiencyDashboard() {
                                   className={`h-full rounded-full ${
                                     f.score >= 80 ? "bg-violet-500" :
                                     f.score >= 55 ? "bg-emerald-500" :
-                                    f.score >= 30 ? "bg-sky-500" :
+                                    f.score >= 30 ? "bg-accent" :
                                     "bg-amber-500"
                                   }`}
                                   style={{ width: `${f.score}%` }}

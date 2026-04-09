@@ -156,7 +156,7 @@ export default function OrgBrandingEditor() {
         /* ─── LIVE PREVIEW ─── */
         <div className="relative">
           <div className="fixed inset-0 -z-10">
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+            <div className="absolute inset-0 bg-background" />
             <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 animate-pulse" style={{ backgroundColor: primaryColor }} />
             <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 animate-pulse" style={{ backgroundColor: accentColor, animationDelay: "1.5s" }} />
           </div>

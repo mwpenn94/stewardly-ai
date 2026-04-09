@@ -124,9 +124,9 @@ export function CaptureModal({ open, onClose, onCapture, mode }: CaptureModalPro
 
           {/* Screen capture status indicator */}
           {mode === "screen" && capture.isCapturing && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-sky-500/10 border border-sky-500/20">
-              <div className={`w-2 h-2 rounded-full ${capture.isPaused ? "bg-amber-500" : "bg-sky-500 animate-pulse"}`} />
-              <span className="text-sm text-sky-400">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
+              <div className={`w-2 h-2 rounded-full ${capture.isPaused ? "bg-amber-500" : "bg-accent animate-pulse"}`} />
+              <span className="text-sm text-accent">
                 {capture.isPaused ? "Screen capture paused" : "Recording screen..."}
               </span>
             </div>

@@ -277,7 +277,7 @@ export default function AnalyticsDashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <StatCard icon={Database} label="Data Sources" value={stats.data?.totalSources ?? 0} color="bg-sky-500/10 text-sky-400" />
+          <StatCard icon={Database} label="Data Sources" value={stats.data?.totalSources ?? 0} color="bg-accent/10 text-accent" />
           <StatCard icon={BarChart3} label="Records" value={stats.data?.totalRecords ?? 0} color="bg-emerald-500/10 text-emerald-400" />
           <StatCard icon={Zap} label="Insights" value={stats.data?.totalInsights ?? 0} color="bg-amber-500/10 text-amber-400" />
           <StatCard icon={Activity} label="Jobs Run" value={stats.data?.totalJobs ?? 0} color="bg-violet-500/10 text-violet-400" />
@@ -291,7 +291,7 @@ export default function AnalyticsDashboard() {
         <Card className="border-border/30 bg-card/50 backdrop-blur-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-sky-400" />
+              <TrendingUp className="w-4 h-4 text-accent" />
               Ingestion Volume
             </CardTitle>
             <CardDescription className="text-xs">Records ingested per day</CardDescription>
@@ -368,7 +368,7 @@ export default function AnalyticsDashboard() {
         <Card className="border-border/30 bg-card/50 backdrop-blur-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Clock className="w-4 h-4 text-sky-400" />
+              <Clock className="w-4 h-4 text-accent" />
               Job Status
             </CardTitle>
           </CardHeader>

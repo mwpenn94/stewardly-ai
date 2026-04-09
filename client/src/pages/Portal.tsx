@@ -246,7 +246,7 @@ export default function Portal() {
         title="Total Clients"
         value={stats.data?.totalClients ?? 0}
         icon={<Users className="w-5 h-5" />}
-        accent="text-sky-400"
+        accent="text-accent"
       />
       <StatCard
         title="Active Clients"
@@ -372,7 +372,7 @@ export default function Portal() {
                               <TableRow key={client.associationId} className="group">
                                 <TableCell>
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 text-sm font-medium">
+                                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm font-medium">
                                       {client.clientName?.[0]?.toUpperCase() || "?"}
                                     </div>
                                     <div>
@@ -572,11 +572,11 @@ export default function Portal() {
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {(Array.isArray(myOrgs.data) ? myOrgs.data : []).map((org: any) => (
-                          <Card key={org.organizationId} className="bg-background/50 border-border/30 hover:border-sky-500/30 transition-colors cursor-pointer"
+                          <Card key={org.organizationId} className="bg-background/50 border-border/30 hover:border-accent/30 transition-colors cursor-pointer"
                             onClick={() => navigate(`/org/${org.orgSlug}`)}>
                             <CardContent className="pt-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center text-sky-400">
+                                <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center text-accent">
                                   <Building2 className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1">
@@ -635,7 +635,7 @@ export default function Portal() {
                   className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-accent/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 text-sm font-medium">
+                    <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm font-medium">
                       {u.name?.[0]?.toUpperCase() || "?"}
                     </div>
                     <div>

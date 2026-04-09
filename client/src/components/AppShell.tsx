@@ -90,12 +90,17 @@ export default function AppShell({ children, title }: AppShellProps) {
     try { return localStorage.getItem("appshell-collapsed") === "true"; } catch { return false; }
   });
 
-  // Collapsible nav sections — matching Chat sidebar pattern
+  // Collapsible nav sections — Pass 90: default to EXPANDED so first-time
+  // users actually see the sectioned navigation. Previously these defaulted
+  // to `false`, which meant new visitors saw "Navigate ▶ / Admin ▶" with
+  // zero items visible — the worst of both worlds. Power users who want
+  // a tighter sidebar can still collapse it; the choice persists in
+  // localStorage.
   const [navExpanded, setNavExpanded] = useState(() => {
-    try { const v = localStorage.getItem("appshell-nav-expanded"); return v === "true"; } catch { return false; }
+    try { const v = localStorage.getItem("appshell-nav-expanded"); return v === null ? true : v === "true"; } catch { return true; }
   });
   const [adminExpanded, setAdminExpanded] = useState(() => {
-    try { const v = localStorage.getItem("appshell-admin-expanded"); return v === "true"; } catch { return false; }
+    try { const v = localStorage.getItem("appshell-admin-expanded"); return v === null ? true : v === "true"; } catch { return true; }
   });
 
   useEffect(() => {
@@ -496,6 +501,17 @@ export default function AppShell({ children, title }: AppShellProps) {
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
+      {/* Pass 91 (Target 7 / WCAG 2.4.1): skip-to-content link.
+          Hidden visually until it receives focus, then jumps over the
+          sidebar nav directly to the main content. First focusable
+          element on every AppShell-wrapped page. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40"
+      >
+        Skip to main content
+      </a>
+
       {/* Mobile sidebar overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
@@ -528,10 +544,54 @@ export default function AppShell({ children, title }: AppShellProps) {
           {title && <span className="text-sm font-medium truncate ml-2">{title}</span>}
         </div>
 
-        {/* Page content — scrollable */}
-        <main className="flex-1 overflow-y-auto">
+        {/* Page content — scrollable. pb-16 lg:pb-0 reserves space for the
+            mobile bottom tab bar so the last row of content isn't covered. */}
+        <main id="main-content" className="flex-1 overflow-y-auto pb-16 lg:pb-0" tabIndex={-1}>
           {children}
         </main>
+
+        {/* Pass 92 (Target 8): mobile bottom tab bar — 5 tabs max per the
+            v10.0 prompt. Hidden on lg+ where the persistent sidebar is
+            visible. Always-visible "Menu" tab opens the full sidebar
+            sheet so every other nav item is still reachable. Touch
+            targets are 44px+ tall (WCAG 2.5.5). */}
+        <nav
+          aria-label="Primary mobile navigation"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-16 bg-card/95 backdrop-blur-sm border-t border-border flex items-stretch"
+        >
+          {[
+            { href: "/chat", label: "Chat", icon: <MessageSquare className="w-5 h-5" /> },
+            { href: "/calculators", label: "Tools", icon: <Calculator className="w-5 h-5" /> },
+            { href: "/intelligence-hub", label: "Insights", icon: <Brain className="w-5 h-5" /> },
+            { href: "/learning", label: "Learn", icon: <GraduationCap className="w-5 h-5" /> },
+          ].map((tab) => {
+            const active = location.startsWith(tab.href);
+            return (
+              <button
+                key={tab.href}
+                onClick={() => navigate(tab.href)}
+                aria-label={tab.label}
+                aria-current={active ? "page" : undefined}
+                className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 transition-colors ${
+                  active
+                    ? "text-accent"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.icon}
+                <span className="text-[10px] font-medium truncate">{tab.label}</span>
+              </button>
+            );
+          })}
+          <button
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open full menu"
+            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+            <span className="text-[10px] font-medium truncate">Menu</span>
+          </button>
+        </nav>
       </div>
     </div>
   );

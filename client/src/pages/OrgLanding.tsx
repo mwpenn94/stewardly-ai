@@ -67,7 +67,7 @@ export default function OrgLanding() {
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Animated gradient mesh background */}
       <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute inset-0 bg-background" />
         <div
           className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 animate-pulse"
           style={{ backgroundColor: primaryColor }}

@@ -19,26 +19,30 @@ interface InlineChartProps {
   className?: string;
 }
 
-// Color palette for charts
+// Pass 101 Stewardship Gold: chart palette now leads with gold to match
+// the new design system's --chart-1 token. Gold → emerald → sky → rose
+// → purple → orange → indigo mirrors the canonical chart order the
+// platform uses everywhere else. Values are rgba() because chart.js
+// needs hex/rgba, not oklch(), at runtime.
 const CHART_COLORS = [
-  "rgba(14, 165, 233, 0.8)",  // sky-500
-  "rgba(20, 184, 166, 0.8)",  // teal-500
-  "rgba(168, 85, 247, 0.8)",  // purple-500
+  "rgba(212, 168, 67, 0.8)",  // Stewardship Gold (matches --chart-1)
+  "rgba(20, 184, 166, 0.8)",  // teal-500 (chart-2)
+  "rgba(14, 165, 233, 0.8)",  // sky-500 (chart-3)
+  "rgba(239, 68, 68, 0.8)",   // red-500 (chart-4)
+  "rgba(168, 85, 247, 0.8)",  // purple-500 (chart-5)
   "rgba(249, 115, 22, 0.8)",  // orange-500
   "rgba(34, 197, 94, 0.8)",   // green-500
-  "rgba(239, 68, 68, 0.8)",   // red-500
-  "rgba(234, 179, 8, 0.8)",   // yellow-500
   "rgba(99, 102, 241, 0.8)",  // indigo-500
 ];
 
 const CHART_BORDERS = [
-  "rgba(14, 165, 233, 1)",
+  "rgba(212, 168, 67, 1)",
   "rgba(20, 184, 166, 1)",
+  "rgba(14, 165, 233, 1)",
+  "rgba(239, 68, 68, 1)",
   "rgba(168, 85, 247, 1)",
   "rgba(249, 115, 22, 1)",
   "rgba(34, 197, 94, 1)",
-  "rgba(239, 68, 68, 1)",
-  "rgba(234, 179, 8, 1)",
   "rgba(99, 102, 241, 1)",
 ];
 

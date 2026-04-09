@@ -44,7 +44,7 @@ import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
-import { TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole as sharedHasMinRole, type NavItemDef } from "@/lib/navigation";
+import { TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole as sharedHasMinRole, NAV_SECTION_ORDER, NAV_SECTION_LABELS, type NavItemDef, type NavSection } from "@/lib/navigation";
 import { useOnboardingNotifications } from "@/components/OnboardingNotifications";
 import ChangelogBell from "@/components/ChangelogBell";
 import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
@@ -339,18 +339,14 @@ function useTypingAnimation(text: string, speed = 40) {
 
 // ─── WELCOME SCREEN COMPONENT ─────────────────────────────────
 //
-// Pass 86 (v10.0 "Chat IS the dashboard"): the empty state surfaces
-// activity + insights + feature discovery before the first message.
-// Flow:
-//   1. Typed greeting + compact stat strip (authenticated only)
-//   2. Proactive insights banner (if any new high-priority insight)
-//   3. Existing suggestion chip grid (static/dynamic prompts)
-//   4. Guest sign-in banner (existing)
-//   5. Feature discovery cards (role-gated, navigate to feature pages
-//      or seed a contextual prompt)
-//   6. Onboarding checklist (existing, unchanged)
-// Everything is rendering-only. The Chat state machine, SSE pipeline,
-// mode controls, and compliance disclaimer paths are untouched.
+// Pass 93 (Target 2 done right): the empty state stays clean by default.
+// The only conditional content is a single proactive insight banner
+// that ONLY renders when the user has at least one `proactive_insights`
+// row with `status='new'`. No permanent stat tiles, no feature cards,
+// no "explore a workspace" grid — those were the clutter the user
+// flagged in pass 86. The banner is tappable and seeds a contextual
+// prompt so the user keeps the conversation in chat instead of
+// bouncing to another page.
 function WelcomeScreen({
   avatarUrl,
   userName,
@@ -361,11 +357,7 @@ function WelcomeScreen({
   isAuthenticated,
   userRole,
   isGuest,
-  // Pass 86 additions — optional so tests + guest flow tolerate undefined
-  conversationCount,
-  insightStats,
-  insights,
-  mastery,
+  topInsight,
 }: {
   avatarUrl?: string | null;
   userName?: string | null;
@@ -376,74 +368,18 @@ function WelcomeScreen({
   isAuthenticated: boolean;
   userRole: string;
   isGuest: boolean;
-  conversationCount?: number;
-  insightStats?: { total?: number; newCount?: number } | null;
-  insights?: Array<{
+  topInsight?: {
     id: number;
     title?: string | null;
     priority?: string | null;
     category?: string | null;
     suggestedAction?: string | null;
-  }>;
-  mastery?: { masteryPct?: number; dueNow?: number } | null;
+  } | null;
 }) {
   const displayName = userName && !isGuest && userName !== "Guest User" && userName !== "Guest" ? userName.split(" ")[0] : null;
   const greeting = `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}${displayName ? `, ${displayName}` : ""}`;
   const { displayed: typedGreeting, done: greetingDone } = useTypingAnimation(greeting, 35);
   const [prompts] = useState(() => getDynamicPrompts(selectedFocus, hasConversations, userRole));
-
-  // Pick the single highest-priority insight to surface as a banner.
-  // If none, the banner is skipped entirely.
-  const topInsight = (insights ?? []).find(
-    (i) => i.priority === "critical" || i.priority === "high",
-  ) ?? (insights ?? [])[0];
-
-  // Feature discovery cards — role-gated. Each card either seeds a
-  // contextual prompt (stays in chat) or navigates to the feature
-  // page. Mirrors the Hub architecture from STEWARDLY_COMPREHENSIVE_GUIDE §5.
-  const showProfessionalCards = userRole === "advisor" || userRole === "manager" || userRole === "admin";
-  const featureCards: Array<{
-    label: string;
-    desc: string;
-    icon: string;
-    onClick: () => void;
-  }> = [
-    {
-      label: "Run Intelligence analysis",
-      desc: "Portfolio risks, retirement gaps, product matches.",
-      icon: "🧠",
-      onClick: () => window.location.assign("/intelligence-hub"),
-    },
-    {
-      label: "Open Engine Dashboard",
-      desc: "UWE + BIE + HE + Monte Carlo + strategy compare.",
-      icon: "📊",
-      onClick: () => window.location.assign("/engine-dashboard"),
-    },
-    {
-      label: "Study a certification track",
-      desc: "SIE, Series 7, Series 66, CFP — flashcards + quizzes.",
-      icon: "🎓",
-      onClick: () => window.location.assign("/learning"),
-    },
-    ...(showProfessionalCards
-      ? [
-          {
-            label: "Review lead pipeline",
-            desc: "7-stage Kanban with AI propensity scoring.",
-            icon: "👥",
-            onClick: () => window.location.assign("/leads"),
-          },
-        ]
-      : [
-          {
-            label: "Use a financial calculator",
-            desc: "10 calculators: retirement, tax, SS, HSA, estate.",
-            icon: "🧮",
-            onClick: () => window.location.assign("/calculators"),
-          },
-        ]),
-  ];
 
   return (
     <div className="h-full flex flex-col items-center justify-center px-4 pb-16 sm:pb-32">
@@ -456,29 +392,13 @@ function WelcomeScreen({
           What can I help you with?
         </p>
 
-        {/* Pass 86: compact stat strip — authenticated users only,
-            hidden for guests since they have no data. Four tiles
-            map to the most common returning-user questions:
-            "Did I save conversations? Any new insights? Am I
-            making progress? What's due today?" */}
-        {isAuthenticated && !isGuest && greetingDone && (
-          <div
-            aria-label="Your activity summary"
-            className="grid grid-cols-4 gap-2 max-w-md mx-auto mb-4 sm:mb-6 animate-in fade-in slide-in-from-bottom-2 duration-500"
-          >
-            <WelcomeStat label="Chats" value={conversationCount != null ? String(conversationCount) : "—"} />
-            <WelcomeStat label="Insights" value={insightStats?.newCount != null ? String(insightStats.newCount) : "—"} />
-            <WelcomeStat label="Mastery" value={mastery?.masteryPct != null ? `${mastery.masteryPct}%` : "—"} />
-            <WelcomeStat label="Due" value={mastery?.dueNow != null ? String(mastery.dueNow) : "—"} />
-          </div>
-        )}
-
-        {/* Pass 86: proactive insight banner — clicking seeds a
-            contextual prompt so the user keeps the conversation in
-            chat instead of bouncing to another page. Only shows for
-            authenticated users with at least one active insight. */}
+        {/* Pass 93: ONE proactive insight banner — only renders when there
+            is at least one new high-priority insight in proactive_insights.
+            For users with no data: this whole block is omitted, the empty
+            state stays clean. */}
         {isAuthenticated && !isGuest && greetingDone && topInsight && (
           <button
+            type="button"
             onClick={() =>
               onPromptClick(
                 topInsight.suggestedAction
@@ -487,15 +407,15 @@ function WelcomeScreen({
               )
             }
             className="block w-full max-w-md mx-auto mb-4 sm:mb-6 text-left rounded-xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all p-3 animate-in fade-in slide-in-from-bottom-2 duration-500"
-            aria-label={`Proactive insight: ${topInsight.title ?? "New insight"}`}
+            aria-label={`Insight: ${topInsight.title ?? "New insight"}. Click to discuss.`}
           >
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-500">
-                {topInsight.priority ?? "Insight"}
+                {(topInsight.priority ?? "Insight").toString()}
                 {topInsight.category ? ` · ${topInsight.category}` : ""}
               </span>
             </div>
-            <p className="text-sm font-medium text-foreground line-clamp-1">
+            <p className="text-sm font-medium text-foreground line-clamp-2">
               {topInsight.title ?? "New insight"}
             </p>
             {topInsight.suggestedAction && (
@@ -520,38 +440,6 @@ function WelcomeScreen({
           ))}
         </div>
 
-        {/* Pass 86: feature discovery cards — role-gated. Cards take
-            users directly to their Hub so the platform's depth is
-            visible from the first screen, not buried behind sidebar
-            scrolling. Rendered below the suggestion chips so casual
-            users can still just type a question and ignore them. */}
-        {greetingDone && (
-          <div className="mt-4 sm:mt-6 max-w-lg mx-auto animate-in fade-in slide-in-from-bottom-2 duration-700 delay-200">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold mb-2 text-left">
-              Or explore a workspace
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {featureCards.map((card, i) => (
-                <button
-                  key={i}
-                  onClick={card.onClick}
-                  className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl border border-border/60 bg-card/40 hover:bg-secondary/40 hover:border-accent/30 transition-all text-left group"
-                >
-                  <span className="text-lg leading-none shrink-0 mt-0.5" aria-hidden="true">
-                    {card.icon}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-xs font-medium text-foreground">{card.label}</span>
-                    <span className="block text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
-                      {card.desc}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Guest sign-in prompt — hidden on mobile where header already has sign-in */}
         {isGuest && greetingDone && (
           <div className="hidden sm:block mt-6 max-w-lg mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -573,11 +461,15 @@ function WelcomeScreen({
           </div>
         )}
 
-        {/* Onboarding Checklist — hidden on mobile for guests to reduce crowding */}
+        {/* Onboarding Checklist — hidden for guests. Pass 91: pick the
+            workflow per role so a casual `user` sees "Getting Started"
+            (client_onboarding) instead of "Professional Setup", which
+            was confusing for non-advisors. Advisors+ keep the
+            professional setup flow. */}
         {!hasConversations && !isGuest && (
           <div className={`mt-4 sm:mt-8 max-w-lg mx-auto transition-all duration-700 delay-500 ${greetingDone ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             <OnboardingChecklist
-              workflowType="professional_onboarding"
+              workflowType={userRole === "user" ? "client_onboarding" : "professional_onboarding"}
               compact
               enabled={isAuthenticated}
               onStepAction={(key) => {
@@ -600,18 +492,6 @@ function WelcomeScreen({
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-// Pass 86: tiny stat tile — used by the WelcomeScreen activity strip.
-// Dash fallback when value is missing/loading so the grid never
-// collapses and users see a consistent shape every visit.
-function WelcomeStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border/60 bg-card/40 px-2 py-1.5 text-center">
-      <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60">{label}</p>
-      <p className="text-sm font-semibold tabular-nums text-foreground">{value}</p>
     </div>
   );
 }
@@ -854,24 +734,23 @@ export default function Chat() {
   const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: isAuthenticated });
   const avatarUrl = settingsQuery.data?.avatarUrl;
 
-  // Pass 86: WelcomeScreen data — surfaces activity + insights +
-  // mastery on the chat empty state so Chat doubles as a feature
-  // gateway (per v10.0 "Chat IS the dashboard"). All three are
-  // against existing tRPC procedures verified in Pass 82. retry:
-  // false so a transient error shows a 0 instead of blocking the
-  // whole empty state.
+  // Pass 93: single proactive insight for the welcome banner. Only fires
+  // on the empty state (no conversationId), and only for authenticated
+  // non-guest users. retry:false so a transient failure shows nothing
+  // instead of blocking the welcome render. The query is cheap (3 rows,
+  // already-indexed by user_id + status).
   const welcomeInsightsQuery = trpc.insights.list.useQuery(
     { limit: 3 },
-    { enabled: isAuthenticated && !conversationId, retry: false },
+    { enabled: isAuthenticated && !conversationId && user?.authTier !== "anonymous", retry: false },
   );
-  const welcomeInsightStatsQuery = trpc.insights.stats.useQuery(undefined, {
-    enabled: isAuthenticated && !conversationId,
-    retry: false,
-  });
-  const welcomeMasteryQuery = trpc.learning.mastery.summary.useQuery(undefined, {
-    enabled: isAuthenticated && !conversationId,
-    retry: false,
-  });
+  const topInsight = (() => {
+    const list = welcomeInsightsQuery.data ?? [];
+    return (
+      list.find((i: any) => i.priority === "critical" || i.priority === "high") ??
+      list[0] ??
+      null
+    );
+  })();
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -1710,8 +1589,34 @@ export default function Chat() {
   const showModes = availableModes.length > 0;
 
   // ─── SIDEBAR NAV STATE (must be before auth gate to maintain hook order) ─
-  const [toolsExpanded, setToolsExpanded] = useState(false);
-  const [adminExpanded, setAdminExpanded] = useState(false);
+  // Pass 90: Navigate defaults to OPEN so first-time visitors actually see
+  // the 5 nav sections. Previously both defaulted to `false`, which meant
+  // a brand-new chat user saw "Navigate ▶ / Admin ▶" with zero links
+  // visible. Power users can still collapse; choice persists in localStorage.
+  const [toolsExpanded, setToolsExpanded] = useState(() => {
+    try { const v = localStorage.getItem("chat-tools-expanded"); return v === null ? true : v === "true"; } catch { return true; }
+  });
+  const [adminExpanded, setAdminExpanded] = useState(() => {
+    try { const v = localStorage.getItem("chat-admin-expanded"); return v === null ? true : v === "true"; } catch { return true; }
+  });
+  useEffect(() => { try { localStorage.setItem("chat-tools-expanded", String(toolsExpanded)); } catch {} }, [toolsExpanded]);
+  useEffect(() => { try { localStorage.setItem("chat-admin-expanded", String(adminExpanded)); } catch {} }, [adminExpanded]);
+
+  // Pass 90: chat input "advanced controls" toggle. Default = collapsed.
+  // The model picker, chat mode segment, and per-mode config (loop pills,
+  // codechat config, etc.) used to be ALL visible at once, turning the
+  // input into a cockpit. Now they live behind a single "..." button so
+  // first-time users see just [+] [Focus] [audio] [send]. Choice persists
+  // in localStorage so power users keep their toolbar open. Auto-expand
+  // when chatMode is non-default so loop/consensus/codechat users can see
+  // their config without an extra click.
+  const [advancedOpen, setAdvancedOpen] = useState(() => {
+    try { const v = localStorage.getItem("chat-advanced-open"); return v === null ? false : v === "true"; } catch { return false; }
+  });
+  useEffect(() => { try { localStorage.setItem("chat-advanced-open", String(advancedOpen)); } catch {} }, [advancedOpen]);
+  // Auto-expand the advanced toolbar whenever the user activates a non-default
+  // chat mode — they need to see the per-mode config they just enabled.
+  useEffect(() => { if (chatMode !== "single") setAdvancedOpen(true); }, [chatMode]);
 
   // ─── MOBILE SWIPE GESTURE for sidebar open/close ──────────────
   const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -1764,12 +1669,16 @@ export default function Chat() {
     : selectedFocus.map(f => FOCUS_OPTIONS.find(o => o.value === f)?.label).filter(Boolean).join(" + ");
 
   // ─── SIDEBAR NAV ITEMS (from shared config, role-aware) ────────
-  // Chat page filters out "/chat" from tools since we ARE the chat page
+  // Chat page filters out "/chat" from tools since we ARE the chat page.
+  // Pass 90: preserve `section` so the Chat sidebar can render the same
+  // 5-section grouping AppShell uses (Home / Work / Intelligence /
+  // Relationships / Learning).
   const toolsNav = TOOLS_NAV.filter(i => i.href !== "/chat").map(i => ({
     icon: getNavIcon(i.iconName),
     label: i.label,
     href: i.href,
     minRole: i.minRole,
+    section: i.section,
   }));
 
   const adminNav = ADMIN_NAV.map(i => ({
@@ -1781,6 +1690,17 @@ export default function Chat() {
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
+      {/* Pass 91 (Target 7 / WCAG 2.4.1): skip-to-content link.
+          Hidden until focused — first focusable element on the Chat
+          page so keyboard users can jump past the conversation
+          sidebar nav directly to the chat. */}
+      <a
+        href="#chat-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40"
+      >
+        Skip to chat
+      </a>
+
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
@@ -1829,6 +1749,40 @@ export default function Chat() {
             </>
           )}
         </div>
+
+        {/* Pass 90: Global Command Palette trigger — opens the platform-wide
+            Cmd+K palette (which navigates between pages + runs actions),
+            distinct from the conversation search above which only filters
+            chat history. The palette is mounted in App.tsx and listens for
+            the `toggle-command-palette` event. */}
+        {!sidebarCollapsed ? (
+          <div className="px-2 py-1.5 border-b border-border/40 shrink-0">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
+              aria-label="Open Command Palette"
+              className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors text-[12px]"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span className="flex-1 text-left">Search pages…</span>
+              <kbd className="font-mono text-[10px] text-muted-foreground/70 bg-background/60 border border-border/60 rounded px-1 py-0.5">⌘K</kbd>
+            </button>
+          </div>
+        ) : (
+          <div className="p-1 border-b border-border/40 shrink-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
+                  aria-label="Open Command Palette"
+                  className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Search pages (⌘K)</TooltipContent>
+            </Tooltip>
+          </div>
+        )}
 
         {/* Search bar */}
         {searchOpen && !sidebarCollapsed && (
@@ -2062,21 +2016,46 @@ export default function Chat() {
               </button>
               {toolsExpanded && (
                 <div data-tour="sidebar-nav" className="px-2 pb-1 space-y-0.5">
-                  {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
-                    <button
-                      key={item.href}
-                      onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                      onMouseEnter={() => prefetchRoute(item.href)}
-                      onFocus={() => prefetchRoute(item.href)}
-                      className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
-                        location.startsWith(item.href)
-                          ? "bg-accent/15 text-accent font-medium"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                      }`}
-                    >
-                      {item.icon} <span className="truncate">{item.label}</span>
-                    </button>
-                  ))}
+                  {/* Pass 90: render the same 5 sections AppShell uses
+                      (Home / Work / Intelligence / Relationships / Learning).
+                      Previously the Chat sidebar dumped all 18 nav items as
+                      one flat list, ignoring the section grouping that pass
+                      83 added to navigation.ts. */}
+                  {(() => {
+                    const visible = toolsNav.filter((item) => hasMinRole(userRole, item.minRole));
+                    const out: React.ReactNode[] = [];
+                    const renderItem = (item: typeof visible[number]) => (
+                      <button
+                        key={item.href}
+                        onClick={() => { navigate(item.href); setSidebarOpen(false); }}
+                        onMouseEnter={() => prefetchRoute(item.href)}
+                        onFocus={() => prefetchRoute(item.href)}
+                        className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
+                          location.startsWith(item.href)
+                            ? "bg-accent/15 text-accent font-medium"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                        }`}
+                      >
+                        {item.icon} <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                    const unsectioned = visible.filter((i) => !i.section);
+                    out.push(...unsectioned.map(renderItem));
+                    for (const section of NAV_SECTION_ORDER) {
+                      const inSection = visible.filter((i) => i.section === section);
+                      if (inSection.length === 0) continue;
+                      out.push(
+                        <div
+                          key={`hdr-${section}`}
+                          className="px-2.5 pt-2 pb-0.5 text-[9px] uppercase tracking-wider text-muted-foreground/50 font-semibold"
+                        >
+                          {NAV_SECTION_LABELS[section as NavSection]}
+                        </div>,
+                      );
+                      out.push(...inSection.map(renderItem));
+                    }
+                    return out;
+                  })()}
                 </div>
               )}
               {adminNav.filter(item => hasMinRole(userRole, item.minRole)).length > 0 && (
@@ -2249,7 +2228,14 @@ export default function Chat() {
       </aside>
 
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main id="chat-main" tabIndex={-1} className="flex-1 flex flex-col min-w-0">
+        {/* Pass 99 (Target 7 delightful accessibility): aria-live region
+            so screen reader users get spoken feedback when the AI starts
+            thinking and when a response finishes streaming. polite so
+            it doesn't interrupt whatever they're currently reading. */}
+        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {isStreaming ? "AI is responding…" : ""}
+        </div>
         {/* Mobile-only sidebar toggle + escalation + guest sign-in */}
         <div className="lg:hidden flex items-center h-12 px-3 shrink-0 justify-between">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
@@ -2320,10 +2306,7 @@ export default function Chat() {
               isAuthenticated={isAuthenticated}
               userRole={userRole}
               isGuest={user?.authTier === "anonymous"}
-              conversationCount={conversationsQuery.data?.length ?? 0}
-              insightStats={welcomeInsightStatsQuery.data ?? null}
-              insights={welcomeInsightsQuery.data ?? []}
-              mastery={welcomeMasteryQuery.data ?? null}
+              topInsight={topInsight}
             />
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
@@ -2764,6 +2747,53 @@ export default function Chat() {
                 )}
               </div>
 
+              {/* Pass 90: collapsible "advanced" toolbar — model picker, chat
+                  mode segment, and per-mode config (loop pills, codechat
+                  config, consensus deep link) all live behind a single
+                  "More" button. Default = collapsed so the input bar shows
+                  just [+] [Focus] ... [audio] [send]. Auto-hides cockpit
+                  for casual users while preserving every existing control
+                  for power users (one click to reveal). When a non-default
+                  chat mode is active, a small badge replaces the toggle so
+                  the user can see at a glance what mode they're in. */}
+              {!advancedOpen && chatMode !== "single" && (
+                <button
+                  type="button"
+                  onClick={() => setAdvancedOpen(true)}
+                  className={`h-7 px-2 text-[10px] rounded-full border transition-colors ${
+                    chatMode === "loop"
+                      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                      : chatMode === "consensus"
+                        ? "bg-purple-500/15 text-purple-400 border-purple-500/30"
+                        : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                  }`}
+                  title="Click to show mode controls"
+                >
+                  {chatMode === "loop" ? "Loop" : chatMode === "consensus" ? "Consensus" : "CodeChat"}
+                </button>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setAdvancedOpen((p) => !p)}
+                    aria-label={advancedOpen ? "Hide advanced controls" : "Show advanced controls"}
+                    aria-expanded={advancedOpen}
+                    className={`h-7 px-2 text-[10px] rounded-full border border-border transition-colors flex items-center gap-1 ${
+                      advancedOpen
+                        ? "bg-secondary/60 text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                    }`}
+                  >
+                    <ChevronUp className={`w-3 h-3 transition-transform ${advancedOpen ? "" : "rotate-180"}`} />
+                    {advancedOpen ? "Less" : "More"}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{advancedOpen ? "Hide model + mode controls" : "Show model + mode controls"}</TooltipContent>
+              </Tooltip>
+
+              {advancedOpen && (
+              <>
               {/* Model selector — multi-select popup (mirrors focus mode pattern) */}
               <div className="relative">
                 <button
@@ -2984,6 +3014,8 @@ export default function Chat() {
                     </button>
                   )}
                 </div>
+              )}
+              </>
               )}
 
               <div className="flex-1" />

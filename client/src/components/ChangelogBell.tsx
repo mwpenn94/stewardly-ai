@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 const CHANGE_TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   new_feature: { icon: <Sparkles className="w-3.5 h-3.5" />, color: "text-violet-400", label: "New" },
-  improvement: { icon: <Wrench className="w-3.5 h-3.5" />, color: "text-sky-400", label: "Improved" },
+  improvement: { icon: <Wrench className="w-3.5 h-3.5" />, color: "text-accent", label: "Improved" },
   fix: { icon: <Bug className="w-3.5 h-3.5" />, color: "text-amber-400", label: "Fixed" },
   removal: { icon: <Trash2 className="w-3.5 h-3.5" />, color: "text-red-400", label: "Removed" },
 };

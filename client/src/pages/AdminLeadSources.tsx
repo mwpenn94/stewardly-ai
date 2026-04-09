@@ -18,8 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   BarChart3, Loader2, XCircle, DollarSign,
-  Users, Target, ArrowUpRight, ArrowDownRight, AlertTriangle,
+  Users, Target, ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
+import HonestPlaceholder from "@/components/HonestPlaceholder";
 
 interface LeadSource {
   name: string;
@@ -63,23 +64,11 @@ export default function AdminLeadSources() {
           <p className="text-muted-foreground">Compare lead source performance and ROI</p>
         </div>
 
-        {/* Pass 67: honest placeholder banner — the underlying
-            revenue-attribution backend doesn't yet exist, so every
-            number below is mock data. See REMAINING_ITEMS.md for
-            the backend build plan. */}
-        <Card className="border-amber-500/40 bg-amber-500/5">
-          <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
-            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-            <div>
-              <strong className="font-semibold">Design preview — not live data.</strong>{" "}
-              The numbers on this page are illustrative mock values. The
-              per-source revenue attribution backend has not been built yet.
-              See{" "}
-              <code className="font-mono text-xs">REMAINING_ITEMS.md &gt; Remaining Code Items</code>{" "}
-              for the build plan.
-            </div>
-          </CardContent>
-        </Card>
+        <HonestPlaceholder
+          willDo="Show per-lead-source attribution: lead count, conversion rate, and downstream revenue."
+          needed="Build a `lead_source_attribution` aggregate (joining `leads` to `revenue_events`) plus a `leadSources` tRPC query. The numbers below are illustrative mock values."
+          workingAlternative={{ href: "/leads", label: "Lead Pipeline (live Kanban with real lead data)" }}
+        />
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card><CardContent className="pt-4"><p className="text-2xl font-bold font-mono tabular-nums">{totalLeads.toLocaleString()}</p><p className="text-xs text-muted-foreground">Total Leads</p></CardContent></Card>
