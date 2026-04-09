@@ -104,6 +104,25 @@ These require you to sign up with the respective service and provide API keys vi
 
 **Status:** Referenced in the economic data pipeline (`scheduledIngestion.ts`). Currently the pipeline runs successfully using public endpoints; the API key enables higher rate limits and additional series access.
 
+### Developer Tools — GitHub (Code Chat self-update, admin only)
+
+| Variable | Purpose | How to Obtain |
+|---|---|---|
+| `GITHUB_TOKEN` | Personal Access Token for the admin Code Chat → GitHub tab (integration status + open PR list). Classic PAT needs `repo` scope; fine-grained needs Contents + Pull requests. | [github.com/settings/tokens](https://github.com/settings/tokens) |
+| `GITHUB_REPO` | `owner/repo` string the Code Chat self-update targets. Defaults to `mwpenn94/stewardly-ai` if unset. | Manually set to your fork if applicable. |
+
+**Status:** Added in pass 54. When unset, the `/code-chat` GitHub tab shows a "Not configured — see docs/ENV_SETUP.md" notice and degrades gracefully. When set, it calls `codeChat.githubStatus` + `codeChat.githubListOpenPRs` which hit the real GitHub REST API via `server/services/codeChat/githubClient.ts`.
+
+### Learning Content — EMBA Modules (optional, no token required)
+
+| Variable | Purpose |
+|---|---|
+| `EMBA_IMPORT_ON_BOOT` | Set to `"true"` to have `bootstrapLearning()` pull the full EMBA content payload (definitions + chapters + questions + flashcards) from the public `mwpenn94/emba_modules` repo on every server start. Idempotent (every insert is dedup-gated). When unset, admins can still trigger the same import manually from Content Studio via the "Import from GitHub" button. |
+| `EMBA_DATA_URL` | Override for the raw GitHub URL of `emba_data.json`. Only needed if you fork the content repo or pin a non-main branch. |
+| `EMBA_TRACKS_URL` | Override for the raw GitHub URL of `tracks_data.json`. Same use case as `EMBA_DATA_URL`. |
+
+**Status:** Added in pass 54. See `server/services/learning/embaImport.ts` and `docs/ENV_SETUP.md` for the full setup walkthrough.
+
 ---
 
 ## 4. Variables Summary by Status

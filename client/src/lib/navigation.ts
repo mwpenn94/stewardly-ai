@@ -72,6 +72,8 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "Building2", label: "Organizations", href: "/organizations", minRole: "advisor" },
   { iconName: "BarChart3", label: "Manager Dashboard", href: "/manager", minRole: "manager" },
   { iconName: "Globe", label: "Global Admin", href: "/admin", minRole: "admin" },
+  { iconName: "Bot", label: "AI Agents", href: "/agents", minRole: "advisor" },
+  { iconName: "Terminal", label: "Code Chat", href: "/code-chat", minRole: "admin" },
   { iconName: "Wrench", label: "Improvement Engine", href: "/improvement", minRole: "advisor" },
   { iconName: "BookOpen", label: "Platform Guide", href: "/admin/guide", minRole: "admin" },
   { iconName: "Activity", label: "System Health", href: "/admin/system-health", minRole: "admin" },

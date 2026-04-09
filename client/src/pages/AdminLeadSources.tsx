@@ -1,17 +1,24 @@
 /**
- * AdminLeadSources — Lead source ROI comparison table with charts. Admin only.
+ * AdminLeadSources — Lead source ROI comparison table with charts.
+ *
+ * PLACEHOLDER — pass 67 honesty pass.
+ *
+ * This page ships as a design preview only. The revenue-attribution
+ * backend it would need (per-source conversion + cost + revenue
+ * join) does not yet exist in any tRPC router. Until it's built,
+ * the page renders `MOCK_SOURCES` with a prominent placeholder
+ * banner so admins aren't misled into thinking the numbers are real.
+ *
+ * See REMAINING_ITEMS.md "Remaining Code Items" for the backend
+ * build plan that would let this page render live data.
  */
-import { useState } from "react";
 import AppShell from "@/components/AppShell";
-import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 import {
-  BarChart3, Loader2, XCircle, TrendingUp, DollarSign,
-  Users, Target, ArrowUpRight, ArrowDownRight,
+  BarChart3, Loader2, XCircle, DollarSign,
+  Users, Target, ArrowUpRight, ArrowDownRight, AlertTriangle,
 } from "lucide-react";
 
 interface LeadSource {
@@ -55,6 +62,24 @@ export default function AdminLeadSources() {
           <h1 className="text-2xl font-bold flex items-center gap-2"><BarChart3 className="w-6 h-6" /> Lead Source Analytics</h1>
           <p className="text-muted-foreground">Compare lead source performance and ROI</p>
         </div>
+
+        {/* Pass 67: honest placeholder banner — the underlying
+            revenue-attribution backend doesn't yet exist, so every
+            number below is mock data. See REMAINING_ITEMS.md for
+            the backend build plan. */}
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
+            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+            <div>
+              <strong className="font-semibold">Design preview — not live data.</strong>{" "}
+              The numbers on this page are illustrative mock values. The
+              per-source revenue attribution backend has not been built yet.
+              See{" "}
+              <code className="font-mono text-xs">REMAINING_ITEMS.md &gt; Remaining Code Items</code>{" "}
+              for the build plan.
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card><CardContent className="pt-4"><p className="text-2xl font-bold font-mono tabular-nums">{totalLeads.toLocaleString()}</p><p className="text-xs text-muted-foreground">Total Leads</p></CardContent></Card>

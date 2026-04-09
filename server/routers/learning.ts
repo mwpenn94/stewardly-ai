@@ -53,6 +53,7 @@ import {
   createTrack,
   updateTrack,
   listChaptersForTrack,
+  listSubsectionsForChapter,
   createChapter,
   createSubsection,
   listQuestionsForTrack,
@@ -76,6 +77,7 @@ import {
 
 import { recommendStudyContent } from "../services/learning/recommendations";
 import { seedLearningContent } from "../services/learning/seed";
+import { importEMBAFromGitHub } from "../services/learning/embaImport";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -367,6 +369,10 @@ const contentRouter = router({
     .input(z.object({ trackId: z.number().int() }))
     .query(async ({ input }) => listChaptersForTrack(input.trackId)),
 
+  listSubsections: protectedProcedure
+    .input(z.object({ chapterId: z.number().int() }))
+    .query(async ({ input }) => listSubsectionsForChapter(input.chapterId)),
+
   createChapter: protectedProcedure
     .input(
       z.object({
@@ -547,5 +553,16 @@ export const learningRouter = router({
       throw new TRPCError({ code: "FORBIDDEN", message: "Seeding is admin-only" });
     }
     return seedLearningContent();
+  }),
+
+  // Admin-only full content import from the mwpenn94/emba_modules
+  // GitHub repo. Idempotent — can be re-run safely to pick up new
+  // definitions / questions / flashcards added to the source repo
+  // without redeploying.
+  importFromGitHub: adminProcedure.mutation(async ({ ctx }) => {
+    if (!canSeedContent({ id: ctx.user.id, role: (ctx.user.role as any) ?? "user" })) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Import is admin-only" });
+    }
+    return importEMBAFromGitHub();
   }),
 });

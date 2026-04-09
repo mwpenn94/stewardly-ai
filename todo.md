@@ -3460,3 +3460,20 @@
 - [x] Run tests and verify after all changes (119/119 files, 3220/3220 tests, 0 TS errors)
 - [x] Update documentation with final state (CLAUDE.md, REMAINING_ITEMS.md, docs/ENV_SETUP.md)
 - [x] Recursive optimization pass 53 confirmed convergence
+
+### Recursive Optimization Pass 54-56: Reachability Gap (Apr 8, 2026)
+- [x] User flagged that Claude Code clone + EMBA content + UI consolidation claims were "not verifiable by users"
+- [x] Pass 54 fix 1: added `/code-chat` (admin) and `/agents` (advisor+) to `navigation.ts` ADMIN_NAV; added `Bot` + `Terminal` icons to AppShell + Chat icon maps
+- [x] Pass 54 fix 2: `codeChat.githubStatus` + `codeChat.githubListOpenPRs` admin tRPC procs; `loadGitHubCredentialsFromEnv()` + `getDefaultRepo()` in `githubClient.ts`; new "GitHub" tab in CodeChat showing integration status + open PR list
+- [x] Pass 54 fix 3: `server/services/learning/embaImport.ts` fetches real content (366+ definitions + chapters + subsections + questions + flashcards) from `mwpenn94/emba_modules`; exposed as `learning.importFromGitHub` + "Import from GitHub" button in Content Studio; optional `EMBA_IMPORT_ON_BOOT=true` for auto-boot
+- [x] Pass 54 fix 4: documented `GITHUB_TOKEN`, `GITHUB_REPO`, `EMBA_IMPORT_ON_BOOT`, `EMBA_DATA_URL`, `EMBA_TRACKS_URL` in env-reference.txt + docs/ENV_SETUP.md + docs/stewardly-env-variables.md
+- [x] Pass 54 tests: 11 new regression tests (5 embaImport + 6 navReachability)
+- [x] Pass 55-56: 2 consecutive clean convergence scans, merged via PR #6
+
+### Recursive Optimization Pass 57-59: Usability Gap (Apr 8, 2026)
+- [x] User raised the bar again: "it's not just reachability, but whether the features are accessible AND USABLE by users"
+- [x] Pass 57: launched parallel doc-sync + deep feature audits; direct workflow trace surfaced 3 critical usability gaps first
+- [x] Pass 58 fix 1 — Learning consumer UIs: `LearningTrackDetail.tsx` (chapter + subsection reader), `LearningFlashcardStudy.tsx` (flip cards with SRS wiring via `mastery.recordReview`), `LearningQuizRunner.tsx` (multi-choice with explanations + SRS wiring). Routes: `/learning/tracks/:slug`, `/learning/tracks/:slug/study`, `/learning/tracks/:slug/quiz`. Added `learning.content.listSubsections` tRPC query + `listSubsectionsForChapter` service helper.
+- [x] Pass 58 fix 2 — AgentManager run visibility: `executeAgent()` now writes rows to `agent_actions` + increments `agent_instances.totalActions` / `totalCostUsd` via `logAgentAction()`; `listAgentActions()` helper + `openClaw.listActions` tRPC procedure (owner-gated); `<AgentRecentRuns />` expansion panel on each card with 5s live refresh
+- [x] Pass 58 fix 3 — Code Chat roadmap persistence: replaced in-memory singleton with `loadRoadmap()` + `setRoadmap()` wrapper backed by `.stewardly/roadmap.json`; overridable via `CODE_CHAT_ROADMAP_PATH` env var; corrupted-file tolerant fallback; 3 round-trip tests in `server/codeChat-roadmap-persist.test.ts`; `.stewardly/` in `.gitignore`
+- [x] Pass 59 verification: 0 TS errors, build clean, 3,096 passing, 0 regressions, committed + pushed (`fefcfc1`)

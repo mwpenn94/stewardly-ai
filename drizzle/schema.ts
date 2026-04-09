@@ -400,6 +400,34 @@ export const workflowChecklist = mysqlTable("workflow_checklist", {
 
 export type WorkflowChecklist = typeof workflowChecklist.$inferSelect;
 
+// ─── Workflow Instances (pass 61) ───────────────────────────────────────────
+// Generic per-user workflow state, persisted across sessions/devices.
+// Separate from `workflow_checklist` because that table's `workflowType`
+// is a fixed 4-value enum for the onboarding flows, while the Workflows
+// page in `client/src/pages/Workflows.tsx` has its own 5-template
+// catalog (finra_registration, state_insurance, eo_insurance,
+// client_onboarding, prospect_qualification). Before this table
+// existed, the Workflows page stored in-progress runs in localStorage,
+// so a cache clear or cross-device switch vaporized 30 minutes of
+// registration paperwork. This table fixes that end-to-end.
+export const workflowInstances = mysqlTable("workflow_instances", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  templateId: varchar("template_id", { length: 128 }).notNull(),
+  templateName: varchar("template_name", { length: 255 }),
+  stateJson: json("state_json").notNull(),
+  currentStep: int("current_step").default(0).notNull(),
+  status: mysqlEnum("status", ["in_progress", "completed", "abandoned"]).default("in_progress").notNull(),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userIdx: index("idx_workflow_instances_user").on(table.userId),
+  userTemplateIdx: index("idx_workflow_instances_user_template").on(table.userId, table.templateId),
+}));
+
+export type WorkflowInstance = typeof workflowInstances.$inferSelect;
+
 // ─── PROFESSIONAL CONTEXT ────────────────────────────────────────────────
 export const professionalContext = mysqlTable("professional_context", {
   id: int("id").autoincrement().primaryKey(),

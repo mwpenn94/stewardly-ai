@@ -124,6 +124,9 @@ const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 const LearningHome = lazy(() => import("./pages/learning/LearningHome"));
 const LicenseTracker = lazy(() => import("./pages/learning/LicenseTracker"));
 const ContentStudio = lazy(() => import("./pages/learning/ContentStudio"));
+const LearningTrackDetail = lazy(() => import("./pages/learning/LearningTrackDetail"));
+const LearningFlashcardStudy = lazy(() => import("./pages/learning/LearningFlashcardStudy"));
+const LearningQuizRunner = lazy(() => import("./pages/learning/LearningQuizRunner"));
 
 function Router() {
   return (
@@ -215,9 +218,9 @@ function Router() {
         <Route path="/learning/licenses" component={LicenseTracker} />
         <Route path="/learning/studio" component={ContentStudio} />
         <Route path="/learning/studio/:tab" component={ContentStudio} />
-        <Route path="/learning/tracks/:slug" component={LearningHome} />
-        <Route path="/learning/study" component={LearningHome} />
-        <Route path="/learning/quiz" component={LearningHome} />
+        <Route path="/learning/tracks/:slug" component={LearningTrackDetail} />
+        <Route path="/learning/tracks/:slug/study" component={LearningFlashcardStudy} />
+        <Route path="/learning/tracks/:slug/quiz" component={LearningQuizRunner} />
 
         {/* Consolidated Hub Pages */}
         <Route path={"/operations"} component={OperationsHub} />

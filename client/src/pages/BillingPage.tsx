@@ -1,12 +1,23 @@
 /**
  * BillingPage — Subscription management, usage tracking, and invoices.
  */
+/**
+ * BillingPage — Subscription management preview.
+ *
+ * PLACEHOLDER — pass 67 honesty pass.
+ *
+ * No Stripe / billing integration is wired up to this page yet. The
+ * plans + invoices arrays are hardcoded mock data. The page is not
+ * in the sidebar navigation and is only reachable via direct URL,
+ * so normal users won't stumble into it — but any admin who does
+ * will see a clear banner explaining that this is a design preview.
+ */
 import { SEOHead } from "@/components/SEOHead";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CreditCard, Receipt, TrendingUp, Zap, Check } from "lucide-react";
+import { ArrowLeft, CreditCard, Receipt, TrendingUp, Zap, Check, AlertTriangle } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -39,6 +50,20 @@ export default function BillingPage() {
           <p className="text-sm text-muted-foreground">Manage your subscription and view invoices</p>
         </div>
       </div>
+
+      {/* Pass 67: honest placeholder banner */}
+      <Card className="border-amber-500/40 bg-amber-500/5">
+        <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <strong className="font-semibold">Design preview — not live billing.</strong>{" "}
+            The plans, usage bars, and invoices below are mock data. No
+            Stripe or billing integration is wired to this page yet. Clicking
+            Upgrade / Change Plan / Download Invoice will show a toast, not
+            perform a real action.
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Usage */}
       <Card>

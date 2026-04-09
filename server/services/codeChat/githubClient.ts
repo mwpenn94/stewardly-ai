@@ -62,6 +62,31 @@ export async function loadGitHubCredentials(
   }
 }
 
+/**
+ * Env-based credential fallback for the admin Code Chat UI.
+ *
+ * Returns a Personal Access Token credential if `GITHUB_TOKEN` is set.
+ * This lets a deployment wire the GitHub integration without having to
+ * provision an `integration_connections` row — useful for the "Code
+ * Chat" admin surface which is used by a small number of operators.
+ *
+ * The env path is SEPARATE from the DB-backed `loadGitHubCredentials`
+ * flow so per-user OAuth connections still take precedence when they
+ * exist. Callers decide the precedence.
+ */
+export function loadGitHubCredentialsFromEnv(): GitHubCredentials | null {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return null;
+  return { kind: "pat", token };
+}
+
+/** Default owner/repo for the Stewardly self-update workflow, overridable via env. */
+export function getDefaultRepo(): { owner: string; repo: string } {
+  const raw = process.env.GITHUB_REPO ?? "mwpenn94/stewardly-ai";
+  const parsed = parseRepoString(raw);
+  return parsed ?? { owner: "mwpenn94", repo: "stewardly-ai" };
+}
+
 export function getAuthHeader(creds: GitHubCredentials): string {
   return creds.kind === "pat"
     ? `Bearer ${creds.token}`

@@ -30,6 +30,10 @@ import {
   Sparkles,
   CheckCircle2,
   AlertTriangle,
+  Github,
+  ExternalLink,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,8 +44,9 @@ export default function CodeChatPage() {
         <header>
           <h1 className="text-2xl font-bold">Code Chat (Admin)</h1>
           <p className="text-sm text-muted-foreground">
-            Read-only file browser, roadmap iterator, and word-diff
-            visualizer for the Stewardly autonomous coding loop.
+            Read-only file browser, roadmap iterator, word-diff
+            visualizer, and GitHub integration status for the Stewardly
+            autonomous coding loop.
           </p>
         </header>
 
@@ -56,6 +61,9 @@ export default function CodeChatPage() {
             <TabsTrigger value="diff">
               <Sparkles className="mr-2 h-4 w-4" /> Diff
             </TabsTrigger>
+            <TabsTrigger value="github">
+              <Github className="mr-2 h-4 w-4" /> GitHub
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="files">
@@ -68,6 +76,10 @@ export default function CodeChatPage() {
 
           <TabsContent value="diff">
             <DiffPanel />
+          </TabsContent>
+
+          <TabsContent value="github">
+            <GitHubPanel />
           </TabsContent>
         </Tabs>
       </div>
@@ -395,6 +407,172 @@ function DiffPanel() {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+// ─── GitHub Panel ─────────────────────────────────────────────────────────
+//
+// Shows the live state of the GitHub self-update integration:
+//   - Is GITHUB_TOKEN configured?
+//   - Can we reach the configured owner/repo?
+//   - Open pull requests on the repo (admin can use this to track
+//     in-flight changes without leaving the app).
+//
+// This is the first user-facing surface for the codeChat → github
+// foundation. Write-side procedures (create branch, commit, open PR)
+// remain admin+confirmDangerous only and are NOT exposed here yet —
+// the read-side proves the integration is live before we add UI paths
+// that mutate the repo.
+function GitHubPanel() {
+  const status = trpc.codeChat.githubStatus.useQuery(undefined, {
+    retry: false,
+  });
+  const prs = trpc.codeChat.githubListOpenPRs.useQuery(undefined, {
+    retry: false,
+    enabled: status.data?.configured === true,
+  });
+
+  return (
+    <div className="space-y-4 mt-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Github className="h-4 w-4" />
+            Integration Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {status.isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Probing GitHub…
+            </div>
+          ) : status.data?.configured ? (
+            <>
+              <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>
+                  Connected to{" "}
+                  <code className="font-mono text-xs">
+                    {status.data.owner}/{status.data.repo}
+                  </code>
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                <div>
+                  <Label className="text-[10px] uppercase">
+                    Default branch
+                  </Label>
+                  <div className="font-mono">
+                    {status.data.defaultBranch ?? "—"}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-[10px] uppercase">Visibility</Label>
+                  <div className="flex items-center gap-1">
+                    {status.data.isPrivate ? (
+                      <>
+                        <Lock className="h-3 w-3" /> Private
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="h-3 w-3" /> Public
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {status.data.description && (
+                <p className="text-xs text-muted-foreground italic">
+                  {status.data.description}
+                </p>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Credential source: env (<code className="font-mono">GITHUB_TOKEN</code>)
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400">
+                <AlertTriangle className="h-4 w-4 mt-0.5" />
+                <span>Not configured</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {status.data?.error ??
+                  "Set the GITHUB_TOKEN environment variable (a Personal Access Token with repo scope) to enable the GitHub integration."}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                See{" "}
+                <code className="font-mono">docs/ENV_SETUP.md</code> for
+                step-by-step setup.
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <GitBranch className="h-4 w-4" /> Open Pull Requests
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!status.data?.configured ? (
+            <p className="text-sm text-muted-foreground">
+              Connect GitHub above to list open PRs.
+            </p>
+          ) : prs.isLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading PRs…
+            </div>
+          ) : prs.data?.error ? (
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              {prs.data.error}
+            </p>
+          ) : (prs.data?.prs ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No open pull requests on{" "}
+              <code className="font-mono text-xs">
+                {status.data.owner}/{status.data.repo}
+              </code>
+              .
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {(prs.data?.prs ?? []).map((pr) => (
+                <li
+                  key={pr.number}
+                  className="flex items-center justify-between gap-3 rounded border border-border/50 p-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-[10px]">
+                        #{pr.number}
+                      </Badge>
+                      <span className="text-sm font-medium truncate">
+                        {pr.title}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 font-mono truncate">
+                      {pr.head} → {pr.base}
+                    </p>
+                  </div>
+                  <a
+                    href={pr.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                    title="Open on GitHub"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

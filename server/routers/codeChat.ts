@@ -14,6 +14,7 @@
 
 import { z } from "zod";
 import path from "path";
+import fs from "fs";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import {
   dispatchCodeTool,
@@ -43,15 +44,73 @@ import {
   estimateCost,
   guessTaskType,
 } from "../services/synthesizer/costEstimator";
-
-// In-memory roadmap singleton for the running process. The full
-// implementation will persist this in modelRuns (slug=roadmap), but
-// for the foundation we keep it in-memory so the admin UI works
-// immediately.
-let _roadmap: Roadmap = emptyRoadmap();
+import {
+  loadGitHubCredentialsFromEnv,
+  getDefaultRepo,
+  getRepoInfo,
+  listOpenPullRequests,
+  GitHubError,
+} from "../services/codeChat/githubClient";
+import { logger } from "../_core/logger";
 
 const WORKSPACE_ROOT =
   process.env.CODE_CHAT_WORKSPACE_ROOT ?? path.resolve(process.cwd());
+
+// ─── Roadmap persistence (pass 58) ────────────────────────────────────────
+//
+// Pre-pass-58 this was a bare `let _roadmap = emptyRoadmap()` that was
+// reset on every server restart, so admin edits in the Code Chat UI
+// vanished across deploys. We now persist the roadmap to a JSON file
+// under `.stewardly/` in the workspace (outside the git tree so it's
+// safe to write from a deployed server). Writes are synchronous so the
+// UI never sees a stale snapshot on a quick refresh.
+//
+// This keeps the storage contract simple (no new drizzle migration,
+// no FK constraints) while still matching the "survives restarts"
+// expectation of the admin tool. If we later want multi-tenant
+// isolation or an audit trail, a real `code_chat_roadmaps` table
+// would be the right path.
+
+const ROADMAP_DIR = path.join(WORKSPACE_ROOT, ".stewardly");
+const ROADMAP_PATH =
+  process.env.CODE_CHAT_ROADMAP_PATH ?? path.join(ROADMAP_DIR, "roadmap.json");
+
+function loadRoadmap(): Roadmap {
+  try {
+    const raw = fs.readFileSync(ROADMAP_PATH, "utf-8");
+    const parsed = JSON.parse(raw) as Roadmap;
+    // Minimal shape check — if the file is corrupted, fall back to an
+    // empty roadmap so the admin UI still works instead of crashing on
+    // boot.
+    if (parsed && Array.isArray((parsed as any).items)) return parsed;
+  } catch {
+    /* file missing or unreadable — fall through to empty */
+  }
+  return emptyRoadmap();
+}
+
+function persistRoadmap(next: Roadmap): void {
+  try {
+    if (!fs.existsSync(ROADMAP_DIR)) {
+      fs.mkdirSync(ROADMAP_DIR, { recursive: true });
+    }
+    fs.writeFileSync(ROADMAP_PATH, JSON.stringify(next, null, 2), "utf-8");
+  } catch (err) {
+    // Best-effort: log to console but don't block the tRPC response.
+    // The user sees the in-memory state either way; a failed persist
+    // will surface on next restart via the "items you added are gone"
+    // symptom, which is recoverable via re-entry.
+    // eslint-disable-next-line no-console
+    console.warn("[codeChat] roadmap persist failed:", err);
+  }
+}
+
+let _roadmap: Roadmap = loadRoadmap();
+function setRoadmap(next: Roadmap): Roadmap {
+  _roadmap = next;
+  persistRoadmap(next);
+  return _roadmap;
+}
 
 // ─── Tool dispatch payload validation ────────────────────────────────────
 
@@ -135,10 +194,10 @@ export const codeChatRouter = router({
       }),
     )
     .mutation(({ input, ctx }) => {
-      _roadmap = addItem(_roadmap, {
+      setRoadmap(addItem(_roadmap, {
         ...input,
         addedBy: `user-${ctx.user.id}`,
-      });
+      }));
       return { roadmap: _roadmap };
     }),
 
@@ -146,7 +205,7 @@ export const codeChatRouter = router({
     .input(z.object({ topN: z.number().min(1).max(20).optional().default(5) }))
     .mutation(({ input }) => {
       const result = iterateRoadmap(_roadmap, input.topN);
-      _roadmap = result.newRoadmap;
+      setRoadmap(result.newRoadmap);
       return result;
     }),
 
@@ -163,7 +222,7 @@ export const codeChatRouter = router({
       }),
     )
     .mutation(({ input }) => {
-      _roadmap = rescoreItem(_roadmap, input.id, input.scores);
+      setRoadmap(rescoreItem(_roadmap, input.id, input.scores));
       return { roadmap: _roadmap };
     }),
 
@@ -183,7 +242,7 @@ export const codeChatRouter = router({
       }),
     )
     .mutation(({ input }) => {
-      _roadmap = updateStatus(_roadmap, input.id, input.status as RoadmapStatus, input.note);
+      setRoadmap(updateStatus(_roadmap, input.id, input.status as RoadmapStatus, input.note));
       return { roadmap: _roadmap };
     }),
 
@@ -254,4 +313,66 @@ export const codeChatRouter = router({
   classifyLatency: protectedProcedure
     .input(z.object({ ms: z.number() }))
     .query(({ input }) => ({ rating: classifyLatency(input.ms) })),
+
+  // ─── GitHub self-update surface ────────────────────────────────
+  // Exposes the read-side of server/services/codeChat/githubClient.ts
+  // to the admin Code Chat UI. Credentials are loaded from the
+  // GITHUB_TOKEN env var (PAT fallback); OAuth-per-user can still be
+  // layered on via integration_connections without touching this
+  // router. See docs/ENV_SETUP.md for token setup.
+
+  /** Is the GitHub integration reachable right now? Returns config state without leaking the token. */
+  githubStatus: adminProcedure.query(async () => {
+    const creds = loadGitHubCredentialsFromEnv();
+    const { owner, repo } = getDefaultRepo();
+    if (!creds) {
+      return {
+        configured: false as const,
+        source: null,
+        owner,
+        repo,
+        error: "GITHUB_TOKEN env var not set — see docs/ENV_SETUP.md",
+      };
+    }
+    try {
+      const info = await getRepoInfo(creds, owner, repo);
+      return {
+        configured: true as const,
+        source: "env" as const,
+        owner,
+        repo,
+        defaultBranch: info.defaultBranch,
+        description: info.description,
+        isPrivate: info.isPrivate,
+      };
+    } catch (err) {
+      const status = err instanceof GitHubError ? err.status : 0;
+      logger.warn({ owner, repo, err, status }, "github status probe failed");
+      return {
+        configured: false as const,
+        source: "env" as const,
+        owner,
+        repo,
+        error: `GitHub API returned ${status || "network error"}. Check token scope (needs repo).`,
+      };
+    }
+  }),
+
+  /** List open PRs on the configured repo. Admin only. */
+  githubListOpenPRs: adminProcedure.query(async () => {
+    const creds = loadGitHubCredentialsFromEnv();
+    if (!creds) return { prs: [], error: "GITHUB_TOKEN not configured" };
+    const { owner, repo } = getDefaultRepo();
+    try {
+      const prs = await listOpenPullRequests(creds, owner, repo);
+      return { prs, error: null };
+    } catch (err) {
+      const status = err instanceof GitHubError ? err.status : 0;
+      logger.warn({ owner, repo, err, status }, "github listOpenPullRequests failed");
+      return {
+        prs: [],
+        error: `GitHub API returned ${status || "network error"}`,
+      };
+    }
+  }),
 });

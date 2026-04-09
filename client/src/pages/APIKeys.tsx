@@ -1,15 +1,21 @@
 /**
- * APIKeys — API key management for third-party integrations.
- * Allows creating, revoking, and monitoring API keys.
+ * APIKeys — API key management preview.
+ *
+ * PLACEHOLDER — pass 67 honesty pass.
+ *
+ * No api-keys tRPC router or `api_keys` DB table exists yet. The
+ * three keys shown below are hardcoded mock data. Create / Copy /
+ * Revoke buttons fire toasts only; they do not generate real keys
+ * or mutate any backend state. The page is not in the sidebar
+ * navigation (only reachable via direct URL) so normal users won't
+ * stumble into it.
  */
-import { useState } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import { PiiMaskedField } from "@/components/PiiMaskedField";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft, Key, Plus, Copy, Trash2, Clock, Activity } from "lucide-react";
+import { ArrowLeft, Key, Plus, Copy, Trash2, Clock, Activity, AlertTriangle } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -36,10 +42,23 @@ export default function APIKeys() {
             <p className="text-sm text-muted-foreground">Manage API keys for integrations and automation</p>
           </div>
         </div>
-        <Button size="sm" onClick={() => toast.info("API key creation coming soon")}>
+        <Button size="sm" onClick={() => toast.info("API key creation is not yet wired — see REMAINING_ITEMS.md")}>
           <Plus className="h-3.5 w-3.5 mr-1" /> Create Key
         </Button>
       </div>
+
+      {/* Pass 67: honest placeholder banner */}
+      <Card className="border-amber-500/40 bg-amber-500/5">
+        <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-amber-400 text-sm">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <div>
+            <strong className="font-semibold">Design preview — not live API keys.</strong>{" "}
+            No backend `api_keys` table or tRPC router exists yet. The keys
+            below are mock data and the Create / Copy / Revoke buttons fire
+            toasts only. Do not rely on the values shown here.
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-0">

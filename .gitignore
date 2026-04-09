@@ -117,3 +117,6 @@ client/public/__manus__/version.json
 
 # Workflow orchestrator state (session-local, not source)
 .workflow/
+
+# Stewardly runtime data (Code Chat roadmap persistence, etc.)
+.stewardly/

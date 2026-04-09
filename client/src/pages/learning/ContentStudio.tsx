@@ -53,6 +53,26 @@ export default function ContentStudio() {
     onError: (e) => toast.error(e.message),
   });
 
+  const importMut = trpc.learning.importFromGitHub.useMutation({
+    onSuccess: (r) => {
+      const { counts, errors } = r;
+      const added =
+        counts.definitions + counts.tracks + counts.chapters + counts.questions + counts.flashcards;
+      if (added === 0 && errors.length > 0) {
+        toast.error(`Import failed: ${errors[0]}`);
+      } else {
+        toast.success(
+          `Imported ${counts.definitions} definitions, ${counts.chapters} chapters, ` +
+            `${counts.subsections} subsections, ${counts.questions} questions, ${counts.flashcards} flashcards` +
+            (errors.length ? ` (${errors.length} non-fatal errors)` : ""),
+        );
+      }
+      utils.learning.content.listTracks.invalidate();
+      utils.learning.content.listDefinitions.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const [term, setTerm] = useState("");
   const [definition, setDefinition] = useState("");
 
@@ -187,6 +207,34 @@ export default function ContentStudio() {
                 </div>
                 <Button onClick={() => seedMut.mutate()} disabled={seedMut.isPending}>
                   Run seed
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Import from emba_modules</CardTitle>
+              </CardHeader>
+              <CardContent className="flex items-start justify-between gap-3">
+                <div className="text-sm text-muted-foreground">
+                  Pull the full EMBA payload (disciplines + definitions + tracks + chapters + subsections +
+                  practice questions + flashcards) from{" "}
+                  <a
+                    href="https://github.com/mwpenn94/emba_modules"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    github.com/mwpenn94/emba_modules
+                  </a>
+                  . Idempotent — every insert is dedup-gated by slug/term/title.
+                </div>
+                <Button
+                  onClick={() => importMut.mutate()}
+                  disabled={importMut.isPending}
+                  variant="outline"
+                >
+                  {importMut.isPending ? "Importing…" : "Import from GitHub"}
                 </Button>
               </CardContent>
             </Card>

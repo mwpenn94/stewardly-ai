@@ -49,4 +49,12 @@ export const openClawRouter = router({
       const { deleteAgent } = await import("../services/openClawManager");
       return { deleted: await deleteAgent(input.agentId, ctx.user!.id) };
     }),
+
+  /** Recent action log for an agent the caller owns. Pass 58. */
+  listActions: protectedProcedure
+    .input(z.object({ agentId: z.number(), limit: z.number().min(1).max(100).default(20) }))
+    .query(async ({ ctx, input }) => {
+      const { listAgentActions } = await import("../services/openClawManager");
+      return listAgentActions(input.agentId, ctx.user!.id, input.limit);
+    }),
 });

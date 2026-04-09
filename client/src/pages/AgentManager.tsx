@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Bot, Play, Square, Trash2, Plus, Shield, Loader2, DollarSign, Clock } from "lucide-react";
+import { Bot, Play, Square, Trash2, Plus, Shield, Loader2, DollarSign, Clock, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 
 const AGENT_TYPES = [
   { value: "compliance_monitor", label: "Compliance Monitor", desc: "Reads compliance rules + communication archive, flags issues" },
@@ -32,6 +32,7 @@ export default function AgentManager() {
   const deleteMutation = trpc.openClaw.delete.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent deleted"); } });
 
   const [showCreate, setShowCreate] = useState(false);
+  const [expandedAgentId, setExpandedAgentId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: "", type: "compliance_monitor", instructions: "", maxBudgetPerRun: 0.5, complianceAware: true });
 
   return (
@@ -128,10 +129,28 @@ export default function AgentManager() {
                           <Square className="h-3 w-3 mr-1" /> Stop
                         </Button>
                       )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        onClick={() =>
+                          setExpandedAgentId((cur) => (cur === agent.id ? null : agent.id))
+                        }
+                        aria-label={expandedAgentId === agent.id ? "Hide recent runs" : "Show recent runs"}
+                      >
+                        {expandedAgentId === agent.id ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                      </Button>
                       <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => { if (confirm("Delete this agent?")) deleteMutation.mutate({ agentId: agent.id }); }}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
+                    {expandedAgentId === agent.id && (
+                      <AgentRecentRuns agentId={agent.id} />
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -140,5 +159,64 @@ export default function AgentManager() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+// ─── Recent runs panel ────────────────────────────────────────────────────
+// Shows the latest agent_actions rows for an agent the caller owns, so
+// the AgentManager card isn't stuck displaying a permanent "0 runs,
+// $0.00" counter after a launch. The server-side listActions procedure
+// gates on userId ownership before returning rows.
+function AgentRecentRuns({ agentId }: { agentId: number }) {
+  const q = trpc.openClaw.listActions.useQuery(
+    { agentId, limit: 10 },
+    { retry: false, refetchInterval: 5000 },
+  );
+  const rows = q.data ?? [];
+  return (
+    <div className="mt-3 border-t pt-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Recent runs
+        </p>
+        {q.isFetching && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-[11px] text-muted-foreground">
+          No runs yet. Click Launch to execute this agent.
+        </p>
+      ) : (
+        <ul className="space-y-1.5 max-h-52 overflow-y-auto">
+          {rows.map((r: any) => (
+            <li
+              key={r.id}
+              className="text-[11px] rounded border border-border/50 p-2 space-y-0.5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-[10px] truncate">
+                  {r.actionType}
+                </span>
+                <span className="text-muted-foreground tabular-nums">
+                  {r.durationMs != null ? `${(r.durationMs / 1000).toFixed(1)}s` : "—"}
+                </span>
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {new Date(r.createdAt).toLocaleString()}
+              </div>
+              {r.error ? (
+                <div className="flex items-start gap-1 text-rose-600 dark:text-rose-400">
+                  <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                  <span className="line-clamp-2">{r.error}</span>
+                </div>
+              ) : r.dataModified ? (
+                <div className="text-muted-foreground line-clamp-3">
+                  {r.dataModified}
+                </div>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
