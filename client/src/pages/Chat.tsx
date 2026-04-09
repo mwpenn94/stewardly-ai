@@ -47,7 +47,7 @@ import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
-import { TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole as sharedHasMinRole, NAV_SECTION_ORDER, NAV_SECTION_LABELS, type NavItemDef, type NavSection } from "@/lib/navigation";
+import { TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole, NAV_SECTION_ORDER, NAV_SECTION_LABELS, type NavItemDef, type NavSection } from "@/lib/navigation";
 import { useOnboardingNotifications } from "@/components/OnboardingNotifications";
 import ChangelogBell from "@/components/ChangelogBell";
 import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
@@ -98,6 +98,41 @@ function extractMediaFromText(content: string): MediaEmbed[] {
     embeds.push({ type: "document", source: m[0], title: "Document" });
   }
   return embeds.slice(0, 5);
+}
+
+// ─── NAV ICON MAP (mirrors AppShell.tsx getIcon) ────────────────
+const NAV_ICON_MAP: Record<string, React.ReactNode> = {
+  MessageSquare: <MessageSquare className="w-4 h-4" />,
+  Zap: <Zap className="w-4 h-4" />,
+  Brain: <Brain className="w-4 h-4" />,
+  Package: <Package className="w-4 h-4" />,
+  Users: <Users className="w-4 h-4" />,
+  TrendingUp: <TrendingUp className="w-4 h-4" />,
+  FileText: <FileText className="w-4 h-4" />,
+  RefreshCw: <RefreshCw className="w-4 h-4" />,
+  Briefcase: <Briefcase className="w-4 h-4" />,
+  Building2: <Building2 className="w-4 h-4" />,
+  BarChart3: <BarChart3 className="w-4 h-4" />,
+  Globe: <Globe className="w-4 h-4" />,
+  BookOpen: <BookOpen className="w-4 h-4" />,
+  HelpCircle: <HelpCircle className="w-4 h-4" />,
+  Settings: <Settings className="w-4 h-4" />,
+  GraduationCap: <GraduationCap className="w-4 h-4" />,
+  Sparkles: <Sparkles className="w-4 h-4" />,
+  Shield: <Shield className="w-4 h-4" />,
+  Bot: <Bot className="w-4 h-4" />,
+  Terminal: <Terminal className="w-4 h-4" />,
+  Calculator: <Calculator className="w-4 h-4" />,
+  LayoutDashboard: <LayoutDashboard className="w-4 h-4" />,
+  Users2: <Users2 className="w-4 h-4" />,
+  Database: <Database className="w-4 h-4" />,
+  Target: <Target className="w-4 h-4" />,
+  Fingerprint: <Fingerprint className="w-4 h-4" />,
+  Award: <Award className="w-4 h-4" />,
+  GitBranch: <GitBranch className="w-4 h-4" />,
+};
+function getNavIcon(name: string): React.ReactNode {
+  return NAV_ICON_MAP[name] ?? <Zap className="w-4 h-4" />;
 }
 
 // ─── CONSTANTS ────────────────────────────────────────────────────

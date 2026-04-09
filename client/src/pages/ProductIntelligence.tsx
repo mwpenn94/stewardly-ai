@@ -32,7 +32,7 @@ export default function ProductIntelligence() {
         <div className="container py-4">
           <div className="flex items-center gap-3">
             <Link href="/chat">
-              <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" aria-label="Back to chat"><ArrowLeft className="h-4 w-4" /></Button>
             </Link>
             <div className="flex-1">
               <h1 className="text-xl font-bold">Product Intelligence</h1>

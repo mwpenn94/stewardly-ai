@@ -158,6 +158,7 @@ export function ContextualHelp() {
           className="fixed bottom-6 right-6 z-50 h-10 w-10 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 border-0"
           onClick={() => setIsOpen(true)}
           title="Help & Tips (Ctrl+/)"
+          aria-label="Help & Tips"
         >
           <HelpCircle className="w-5 h-5" />
         </Button>
@@ -166,7 +167,7 @@ export function ContextualHelp() {
       {/* Help panel */}
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-50 bg-black/20" onClick={() => setIsOpen(false)} />
+          <div className="fixed inset-0 z-50 bg-black/20" role="presentation" onClick={() => setIsOpen(false)} />
           <Card className="fixed bottom-20 right-6 z-50 w-96 max-h-[60vh] shadow-2xl border-primary/20 overflow-hidden flex flex-col">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -174,7 +175,7 @@ export function ContextualHelp() {
                   <Sparkles className="w-4 h-4 text-primary" />
                   <CardTitle className="text-sm">Help & Tips</CardTitle>
                 </div>
-                <Button variant="ghost" size="icon-sm" onClick={() => setIsOpen(false)}>
+                <Button variant="ghost" size="icon-sm" aria-label="Close help" onClick={() => setIsOpen(false)}>
                   <X className="w-4 h-4" />
                 </Button>
               </div>

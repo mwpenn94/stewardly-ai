@@ -167,11 +167,13 @@ export default function IncomeStreamBreakdown({ results, title = "Income Stream 
             <p className="text-[10px] text-muted-foreground mb-2">Income Growth Over Time</p>
             <div className="flex items-end gap-[3px] h-20">
               {stackedBars.map((bar) => (
-                <div
+                <button
                   key={bar.year}
-                  className="flex-1 flex flex-col-reverse rounded-t-sm overflow-hidden cursor-pointer transition-opacity hover:opacity-80"
+                  type="button"
+                  className="flex-1 flex flex-col-reverse rounded-t-sm overflow-hidden cursor-pointer transition-opacity hover:opacity-80 border-0 bg-transparent p-0"
                   style={{ height: `${bar.heightPct}%` }}
                   onClick={() => setSelectedYear(bar.year)}
+                  aria-label={`Year ${bar.year}: ${fmt(bar.totalIncome)}`}
                   title={`Year ${bar.year}: ${fmt(bar.totalIncome)}`}
                 >
                   {bar.segments.map((seg) => (
@@ -180,7 +182,7 @@ export default function IncomeStreamBreakdown({ results, title = "Income Stream 
                       style={{ height: `${seg.pct}%`, backgroundColor: seg.color }}
                     />
                   ))}
-                </div>
+                </button>
               ))}
             </div>
             <div className="flex justify-between mt-1">

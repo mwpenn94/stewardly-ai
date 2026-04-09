@@ -206,6 +206,7 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
+                  aria-label="Mark all as read"
                   onClick={() => isGuest ? markAllGuestRead() : markAllReadMutation.mutate()}
                   disabled={!isGuest && markAllReadMutation.isPending}
                 >
@@ -217,7 +218,7 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
           )}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsOpen(false)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Close changelog" onClick={() => setIsOpen(false)}>
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </Button>
             </TooltipTrigger>
@@ -277,7 +278,8 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
-                            className="mt-1 p-1 rounded hover:bg-muted shrink-0"
+                            className="mt-1 p-1.5 rounded hover:bg-muted shrink-0"
+                            aria-label="Mark as read"
                             onClick={() => isGuest ? markGuestRead(entry.id) : markReadMutation.mutate({ changelogId: entry.id, via: "changelog_page" })}
                           >
                             <Check className="w-3 h-3 text-muted-foreground" />

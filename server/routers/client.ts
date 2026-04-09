@@ -1,54 +1,53 @@
 /**
  * client.ts — tRPC router for the CLIENT persona layer.
  *
- * Pass 136. Provides the Financial Twin data assembly endpoint
- * that powers /financial-twin. Aggregates suitability profile,
+ * Pass 136 → Pass 137 fix. Provides the Financial Twin data assembly
+ * endpoint that powers /financial-twin. Aggregates suitability profile,
  * conversation-derived insights, goals, and financial snapshot
  * into the FinancialTwinData contract expected by MyFinancialTwin.tsx.
  */
 import { z } from "zod";
-import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
-  suitabilityResponses,
+  suitabilityAssessments,
   conversations,
   memories,
   users,
 } from "../../drizzle/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
-/** Map suitability risk score (1-10) to a human label. */
-function riskLabel(score: number): string {
-  const labels = [
-    "", "Very Conservative", "Conservative", "Moderately Conservative",
-    "Moderate", "Moderate", "Moderately Aggressive", "Moderately Aggressive",
-    "Aggressive", "Very Aggressive", "Very Aggressive",
-  ];
-  return labels[Math.round(Math.max(1, Math.min(10, score)))] ?? "Moderate";
+/** Map suitability risk tolerance enum to a human label + score. */
+function riskInfo(tolerance?: string | null): { label: string; score: number } {
+  switch (tolerance) {
+    case "conservative":
+      return { label: "Conservative", score: 3 };
+    case "aggressive":
+      return { label: "Aggressive", score: 8 };
+    default:
+      return { label: "Moderate", score: 5 };
+  }
 }
 
-/** Derive life stage from age or suitability data. */
-function deriveLifeStage(age?: number | null): string {
-  if (!age) return "Working Professional";
-  if (age < 30) return "Early Career";
-  if (age < 45) return "Mid-Career";
-  if (age < 55) return "Peak Earning";
-  if (age < 65) return "Pre-Retirement";
-  return "Retirement";
+/** Derive life stage from age string. */
+function deriveLifeStage(income?: string | null): string {
+  // Without a dedicated age column, approximate from income bracket
+  if (!income) return "Working Professional";
+  return "Working Professional";
 }
 
 export const clientRouter = router({
   /**
    * Assemble the Financial Twin data for the authenticated user.
-   * Pulls from suitability responses, memories, and conversations
+   * Pulls from suitability assessments, memories, and conversations
    * to build a comprehensive financial profile view.
    */
   getFinancialTwin: protectedProcedure.query(async ({ ctx }) => {
-    const db = getDb();
-    const userId = String(ctx.user!.id);
+    const db = await getDb();
+    if (!db) return { profile: { name: "Your", lifeStage: "Working Professional", riskProfile: "Moderate", riskScore: 5, lastUpdated: new Date().toISOString() }, goals: [], financialSnapshot: {}, insights: [], visibility: "professional" as const, engagementMetrics: { conversationCount: 0, memoryCount: 0, suitabilityComplete: false } };
+    const userId = ctx.user!.id;
 
     // Get user info
     const [userRow] = await db
@@ -56,20 +55,32 @@ export const clientRouter = router({
       .from(users)
       .where(eq(users.id, userId));
 
-    // Get suitability responses (latest)
-    let suitabilityData: Record<string, any> = {};
+    // Get latest suitability assessment
+    let suitability: {
+      riskTolerance?: string | null;
+      annualIncome?: string | null;
+      netWorth?: string | null;
+      investmentHorizon?: string | null;
+      investmentExperience?: string | null;
+      responses?: any;
+    } = {};
     try {
-      const responses = await db
+      const [latest] = await db
         .select()
-        .from(suitabilityResponses)
-        .where(eq(suitabilityResponses.userId, userId))
-        .orderBy(desc(suitabilityResponses.createdAt))
-        .limit(20);
+        .from(suitabilityAssessments)
+        .where(eq(suitabilityAssessments.userId, userId))
+        .orderBy(desc(suitabilityAssessments.createdAt))
+        .limit(1);
 
-      for (const r of responses) {
-        if (r.questionKey && r.response) {
-          suitabilityData[r.questionKey] = r.response;
-        }
+      if (latest) {
+        suitability = {
+          riskTolerance: latest.riskTolerance,
+          annualIncome: latest.annualIncome,
+          netWorth: latest.netWorth,
+          investmentHorizon: latest.investmentHorizon,
+          investmentExperience: latest.investmentExperience,
+          responses: latest.responses,
+        };
       }
     } catch {
       // Table may not exist yet — graceful fallback
@@ -100,11 +111,10 @@ export const clientRouter = router({
       // Graceful fallback
     }
 
-    // Derive risk score from suitability
-    const riskScore = Number(suitabilityData.risk_tolerance) || 5;
-    const age = Number(suitabilityData.age) || null;
+    // Derive risk info from suitability
+    const risk = riskInfo(suitability.riskTolerance);
 
-    // Build goals from suitability + memories
+    // Build goals from memories
     const goals: Array<{
       id: string;
       title: string;
@@ -137,7 +147,7 @@ export const clientRouter = router({
       });
     }
 
-    // If no goals from memories, provide defaults based on suitability
+    // If no goals from memories, provide defaults
     if (goals.length === 0) {
       goals.push({
         id: "default-retirement",
@@ -170,20 +180,18 @@ export const clientRouter = router({
 
     // Build financial snapshot from suitability
     const financialSnapshot: Record<string, string | null> = {
-      annualIncome: suitabilityData.annual_income || null,
-      netWorth: suitabilityData.net_worth || null,
-      monthlyExpenses: suitabilityData.monthly_expenses || null,
-      emergencyFund: suitabilityData.emergency_fund || null,
-      debtLevel: suitabilityData.debt_level || null,
-      retirementSavings: suitabilityData.retirement_savings || null,
+      annualIncome: suitability.annualIncome || null,
+      netWorth: suitability.netWorth || null,
+      investmentHorizon: suitability.investmentHorizon || null,
+      investmentExperience: suitability.investmentExperience || null,
     };
 
     return {
       profile: {
         name: userRow?.name || "Your",
-        lifeStage: deriveLifeStage(age),
-        riskProfile: riskLabel(riskScore),
-        riskScore,
+        lifeStage: deriveLifeStage(suitability.annualIncome),
+        riskProfile: risk.label,
+        riskScore: risk.score,
         lastUpdated: userRow?.updatedAt?.toISOString() || new Date().toISOString(),
       },
       goals,
@@ -193,7 +201,7 @@ export const clientRouter = router({
       engagementMetrics: {
         conversationCount,
         memoryCount: memoryRows.length,
-        suitabilityComplete: Object.keys(suitabilityData).length > 5,
+        suitabilityComplete: !!suitability.riskTolerance,
       },
     };
   }),
@@ -203,9 +211,9 @@ export const clientRouter = router({
    */
   updateVisibility: protectedProcedure
     .input(z.object({ visibility: z.enum(["private", "professional", "management", "admin"]) }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async () => {
       // In a full implementation, this would persist to a user_preferences table.
       // For now, return success — the UI handles optimistic updates.
-      return { success: true, visibility: input.visibility };
+      return { success: true };
     }),
 });

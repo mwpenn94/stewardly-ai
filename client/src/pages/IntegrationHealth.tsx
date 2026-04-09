@@ -128,7 +128,7 @@ export default function IntegrationHealth() {
         <div className="container py-4">
           <div className="flex items-center gap-3 mb-4">
             <Link href="/integrations">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Back to integrations">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>

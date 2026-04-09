@@ -282,6 +282,7 @@ export default function PassiveActions() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7"
+                                aria-label={isExpanded ? "Collapse details" : "Expand details"}
                                 onClick={() => toggleExpand(source.id)}
                               >
                                 {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}

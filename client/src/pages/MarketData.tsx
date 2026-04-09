@@ -71,7 +71,7 @@ export default function MarketData() {
         <BarChart3 className="w-5 h-5 text-accent relative" />
         <h1 className="text-lg font-semibold relative">Market Data</h1>
         <div className="ml-auto">
-          <Button variant="ghost" size="icon" onClick={() => quotesQuery.refetch()} disabled={quotesQuery.isFetching}>
+          <Button variant="ghost" size="icon" aria-label="Refresh market data" onClick={() => quotesQuery.refetch()} disabled={quotesQuery.isFetching}>
             <RefreshCw className={`w-4 h-4 ${quotesQuery.isFetching ? "animate-spin" : ""}`} />
           </Button>
         </div>

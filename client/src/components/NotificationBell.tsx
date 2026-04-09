@@ -186,7 +186,7 @@ export function NotificationBell({
           {unreadCount > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMarkAllAsRead}>
+                <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Mark all as read" onClick={onMarkAllAsRead}>
                   <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
                 </Button>
               </TooltipTrigger>
@@ -195,7 +195,7 @@ export function NotificationBell({
           )}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Close notifications" onClick={() => setOpen(false)}>
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </Button>
             </TooltipTrigger>

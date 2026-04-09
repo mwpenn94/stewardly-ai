@@ -75,7 +75,7 @@ export default function FairnessTestDashboard() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
+            <Button variant="ghost" size="icon" aria-label="Back to admin" onClick={() => navigate("/admin")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>

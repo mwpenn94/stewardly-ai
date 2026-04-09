@@ -233,7 +233,7 @@ export default function ComponentsShowcase() {
           <h2 className="text-3xl font-bold tracking-tight mb-6">
             Shadcn/ui Component Library
           </h2>
-          <Button variant="outline" size="icon" onClick={toggleTheme}>
+          <Button variant="outline" size="icon" aria-label="Toggle theme" onClick={toggleTheme}>
             {theme === "light" ? (
               <Moon className="h-5 w-5" />
             ) : (
@@ -881,7 +881,7 @@ export default function ComponentsShowcase() {
                 <X className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
                 <AlertDescription>
-                  Your session has expired. Please log in again.
+                  Your session has expired. Please sign in again.
                 </AlertDescription>
               </Alert>
             </div>
