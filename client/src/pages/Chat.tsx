@@ -67,7 +67,7 @@ import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
 import { ConvItem, SortableConvItem } from "@/components/chat/ConvItem";
 import ChatGreetingV2 from "@/components/ChatGreeting";
-import MobileChatLayout from "@/components/MobileChatLayout";
+// MobileChatLayout available at @/components/MobileChatLayout for future mobile-first refactor (P3 backlog)
 import { parseFocusModes, serializeFocusModes } from "@shared/types";
 
 // ─── RICH MEDIA EXTRACTION (client-side fallback) ─────────────────
