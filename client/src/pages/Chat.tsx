@@ -1327,6 +1327,7 @@ export default function Chat() {
     { key: "steward", label: "Steward", minRole: "admin", items: [
       { label: "Platform Admin", icon: <Settings className="w-4 h-4" />, path: "/admin", match: ["/admin"] },
       { label: "AI Intelligence", icon: <Brain className="w-4 h-4" />, path: "/admin/intelligence", match: ["/admin/intelligence"] },
+      { label: "Code Chat", icon: <Monitor className="w-4 h-4" />, path: "/code-chat", match: ["/code-chat"] },
       { label: "System Health", icon: <Monitor className="w-4 h-4" />, path: "/admin/system-health", match: ["/admin/system-health"] },
     ]},
   ];

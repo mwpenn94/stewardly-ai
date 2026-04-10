@@ -155,6 +155,32 @@ export default function Calculators() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        {/* Wealth Engine — advanced multi-engine comparison tools */}
+        <div className="mb-6">
+          <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">Wealth Engine</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: "Strategy Comparison", path: "/wealth-engine/strategy-comparison", icon: <BarChart3 className="w-4 h-4" />, desc: "Compare 7 wealth strategies" },
+              { label: "Retirement Planner", path: "/wealth-engine/retirement", icon: <PiggyBank className="w-4 h-4" />, desc: "Goal, smooth, guardrails" },
+              { label: "Practice to Wealth", path: "/wealth-engine/practice-to-wealth", icon: <TrendingUp className="w-4 h-4" />, desc: "Practice growth modeling" },
+              { label: "Quick Quote", path: "/wealth-engine/quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Instant client proposal" },
+              { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
+            ].map(tool => (
+              <button
+                key={tool.path}
+                onClick={() => navigate(tool.path)}
+                className="card-lift p-3 rounded-lg border border-border bg-card/60 hover:bg-secondary/40 transition-colors text-left group"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-accent">{tool.icon}</span>
+                  <span className="text-xs font-medium">{tool.label}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">{tool.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Calculator selector cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           {CALCULATORS.map(calc => (

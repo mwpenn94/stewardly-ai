@@ -10,7 +10,7 @@ import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import {
   MessageSquare, FileText, BarChart3, Volume2,
-  Fingerprint, ClipboardList, Star,
+  Fingerprint, ClipboardList, Star, Terminal,
   Users, Briefcase, ShieldCheck, TrendingUp, Calculator,
   UserCog, LineChart,
   Cog, Brain, Activity,
@@ -89,6 +89,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     items: [
       { label: "Platform Admin", icon: Cog, path: "/admin", match: ["/admin"] },
       { label: "AI Intelligence", icon: Brain, path: "/admin/intelligence", match: ["/admin/intelligence"] },
+      { label: "Code Chat", icon: Terminal, path: "/code-chat", match: ["/code-chat"] },
       { label: "System Health", icon: Activity, path: "/admin/system-health", match: ["/admin/system-health"] },
     ],
   },
