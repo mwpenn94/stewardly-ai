@@ -155,6 +155,19 @@ async function runIterations(sessionId: string, config: ProcessingConfig): Promi
       session.totalCost += cost;
       accumulatedContext += `\n\n[Iteration ${iteration} - ${currentFocus}/${config.mode}]: ${content.slice(0, 500)}`;
 
+      // Saturation detection: if the last 3 iterations have high overlap
+      // with each other, the topic is converging and further iterations
+      // won't produce novel insights. Auto-stop to save budget.
+      if (session.iterations.length >= 3) {
+        const recent = session.iterations.slice(-3).map(i => i.content);
+        const overlapScore = computeOverlap(recent);
+        if (overlapScore > 0.6) {
+          session.status = "completed";
+          log.info({ sessionId, iteration, overlapScore: overlapScore.toFixed(2) }, "Saturation detected — auto-stopping");
+          break;
+        }
+      }
+
       // Store in user_memories for RAG
       try {
         const { learn } = await import("./ragTrainer");
@@ -194,4 +207,27 @@ export function getUserSessions(userId: number): ProcessingSession[] {
 
 export function getActiveSessionCount(): number {
   return Array.from(activeSessions.values()).filter(s => s.status === "running").length;
+}
+
+/**
+ * Compute pairwise content overlap between recent iterations using
+ * word-level Jaccard similarity. Returns 0..1 where 1 = identical.
+ * Used for saturation detection — if recent iterations repeat the
+ * same concepts, further exploration is unlikely to yield novelty.
+ */
+function computeOverlap(texts: string[]): number {
+  const wordSets = texts.map(t => new Set(t.toLowerCase().split(/\s+/).filter(w => w.length > 3)));
+  let totalSim = 0;
+  let pairs = 0;
+  for (let i = 0; i < wordSets.length; i++) {
+    for (let j = i + 1; j < wordSets.length; j++) {
+      const a = wordSets[i];
+      const b = wordSets[j];
+      const intersection = Array.from(a).filter(w => b.has(w));
+      const union = new Set(Array.from(a).concat(Array.from(b)));
+      totalSim += union.size > 0 ? intersection.length / union.size : 0;
+      pairs++;
+    }
+  }
+  return pairs > 0 ? totalSim / pairs : 0;
 }
