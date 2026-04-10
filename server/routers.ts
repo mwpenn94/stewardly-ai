@@ -431,7 +431,7 @@ const chatRouter = router({
         sessionId: input.conversationId,
         tools: activeTools.length > 0 ? activeTools : undefined,
         maxIterations: 5,
-        model: input.model,
+        model: input.model || (resolvedConfig?.modelPreferences?.primary && resolvedConfig.modelPreferences.primary !== "default" ? resolvedConfig.modelPreferences.primary : undefined),
         contextualLLM,
         executeTool: async (toolName: string, args: any) => {
           return toolName.startsWith("calc_") || toolName.startsWith("model_")
