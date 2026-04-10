@@ -66,7 +66,7 @@ export default function LicenseTracker() {
   const progress = progressQ.data ?? [];
 
   return (
-    <AppShell>
+    <AppShell title="License Tracker">
       <div className="mx-auto max-w-5xl p-6 space-y-6">
         <header className="flex items-center justify-between">
           <div>

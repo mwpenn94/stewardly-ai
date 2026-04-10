@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 type Theme = "light" | "dark";
 
@@ -42,14 +42,16 @@ export function ThemeProvider({
     }
   }, [theme, switchable]);
 
-  const toggleTheme = switchable
-    ? () => {
-        setTheme(prev => (prev === "light" ? "dark" : "light"));
-      }
-    : undefined;
+  const toggleTheme = useCallback(() => {
+    if (switchable) setTheme(prev => (prev === "light" ? "dark" : "light"));
+  }, [switchable]);
+
+  const value = useMemo(() => ({
+    theme, toggleTheme: switchable ? toggleTheme : undefined, switchable,
+  }), [theme, toggleTheme, switchable]);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, switchable }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

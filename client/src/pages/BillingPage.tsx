@@ -21,6 +21,7 @@ import { ArrowLeft, CreditCard, Receipt, TrendingUp, Zap, Check } from "lucide-r
 import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const PLANS = [
   { name: "Starter", price: "$49", period: "/mo", features: ["1 advisor", "50 clients", "Basic AI chat", "5 reports/mo"], current: false },
@@ -39,6 +40,7 @@ export default function BillingPage() {
   const [, navigate] = useLocation();
 
   return (
+    <AppShell title="Billing">
     <div className="container max-w-4xl py-8 space-y-6">
       <SEOHead title="Billing" description="Subscription management and billing" />
 
@@ -136,5 +138,6 @@ export default function BillingPage() {
         </CardContent>
       </Card>
     </div>
+    </AppShell>
   );
 }

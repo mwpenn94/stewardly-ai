@@ -81,7 +81,7 @@ export default function FinancialProtectionScore() {
 
   if (authLoading) {
     return (
-      <AppShell>
+      <AppShell title="Financial Protection">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
@@ -91,7 +91,7 @@ export default function FinancialProtectionScore() {
 
   if (!user) {
     return (
-      <AppShell>
+      <AppShell title="Financial Protection">
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <Shield className="w-12 h-12 text-primary" />
           <p className="text-muted-foreground">Sign in to assess your financial protection</p>
@@ -104,7 +104,7 @@ export default function FinancialProtectionScore() {
   // Intro
   if (step === 0) {
     return (
-      <AppShell>
+      <AppShell title="Financial Protection">
         <div className="container max-w-2xl py-8 space-y-6">
           <div className="text-center space-y-4">
             <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -139,7 +139,7 @@ export default function FinancialProtectionScore() {
   if (step === DIMENSIONS.length + 1) {
     const shareText = `I scored ${totalScore}/100 on my Financial Protection Score! ${scoreTier(totalScore)} rating.`;
     return (
-      <AppShell>
+      <AppShell title="Financial Protection">
         <div className="container max-w-2xl py-8 space-y-6">
           <div className="text-center space-y-4">
             <div className="mx-auto w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
@@ -221,7 +221,7 @@ export default function FinancialProtectionScore() {
   const progress = (step / DIMENSIONS.length) * 100;
 
   return (
-    <AppShell>
+    <AppShell title="Financial Protection">
       <div className="container max-w-2xl py-8 space-y-6">
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm text-muted-foreground">

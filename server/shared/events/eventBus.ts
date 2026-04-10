@@ -47,3 +47,25 @@ class StewardlyEventBus {
 
 /** Singleton event bus */
 export const eventBus = new StewardlyEventBus();
+
+// ── Proactive Insights Listener ────────────────────────────────────
+// Generates proactive_insights entries from compliance and memory events
+// so the Chat welcome screen can surface actionable alerts.
+eventBus.on("compliance.flagged", async (e) => {
+  try {
+    const { getDb } = await import("../../db");
+    const { proactiveInsights } = await import("../../../drizzle/schema");
+    const db = await getDb();
+    if (!db) return;
+    const userId = e.payload.userId as number;
+    const flagged = e.payload.flagged as string[] | undefined;
+    await db.insert(proactiveInsights).values({
+      userId,
+      category: "compliance",
+      priority: "high",
+      title: `Compliance flag: ${flagged?.join(", ") || "review needed"}`,
+      description: "A compliance issue was detected in your recent conversation. Please review.",
+      status: "new",
+    });
+  } catch { /* non-fatal — insight generation should never block */ }
+});

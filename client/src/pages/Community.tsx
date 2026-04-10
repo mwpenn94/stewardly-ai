@@ -54,7 +54,7 @@ export default function Community() {
 
   if (authLoading) {
     return (
-      <AppShell>
+      <AppShell title="Community">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
@@ -64,7 +64,7 @@ export default function Community() {
 
   if (!user) {
     return (
-      <AppShell>
+      <AppShell title="Community">
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <Users className="w-12 h-12 text-primary" />
           <p className="text-muted-foreground">Sign in to join the professional community</p>
@@ -77,7 +77,7 @@ export default function Community() {
   const posts = postsQuery.data ?? [];
 
   return (
-    <AppShell>
+    <AppShell title="Community">
       <div className="container max-w-4xl py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>

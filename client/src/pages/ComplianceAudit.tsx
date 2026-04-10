@@ -19,6 +19,7 @@
 import { useMemo, useState } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import { FinancialScoreCard } from "@/components/FinancialScoreCard";
+import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -99,6 +100,7 @@ export default function ComplianceAudit() {
   }, [reviews, search]);
 
   return (
+    <AppShell title="Compliance Audit">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Compliance Audit" description="Audit trail and regulatory compliance dashboard" />
 
@@ -259,5 +261,6 @@ export default function ComplianceAudit() {
         </Card>
       )}
     </div>
+    </AppShell>
   );
 }

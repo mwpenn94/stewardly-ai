@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import AppShell from "@/components/AppShell";
 
 export default function FairnessTestDashboard() {
   const [, navigate] = useLocation();
@@ -70,6 +71,7 @@ export default function FairnessTestDashboard() {
   };
 
   return (
+    <AppShell title="Fairness Testing">
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
@@ -365,5 +367,6 @@ export default function FairnessTestDashboard() {
         </div>
       </div>
     </div>
+    </AppShell>
   );
 }

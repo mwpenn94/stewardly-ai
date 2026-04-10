@@ -21,6 +21,7 @@ import { ArrowLeft, Users, UserPlus, Shield, Mail, MoreHorizontal, Search } from
 import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const TEAM = [
   { name: "Sarah Johnson", email: "sarah@stewardly.com", role: "admin", status: "active", lastActive: "2 min ago", clients: 42 },
@@ -42,6 +43,7 @@ export default function TeamManagement() {
   const filtered = TEAM.filter(m => m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase()));
 
   return (
+    <AppShell title="Team Management">
     <div className="container max-w-4xl py-8 space-y-6">
       <SEOHead title="Team Management" description="Manage team members, roles, and permissions" />
 
@@ -141,5 +143,6 @@ export default function TeamManagement() {
         </CardContent>
       </Card>
     </div>
+    </AppShell>
   );
 }

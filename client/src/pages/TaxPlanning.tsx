@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, BarChart3 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const BRACKETS_2026 = [
   { rate: "10%", single: "$0 – $11,925", married: "$0 – $23,850", fill: 100 },
@@ -29,6 +30,7 @@ export default function TaxPlanning() {
   const [, navigate] = useLocation();
 
   return (
+    <AppShell title="Tax Planning">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Tax Planning" description="Tax planning analysis and optimization strategies" />
 
@@ -148,5 +150,6 @@ export default function TaxPlanning() {
         </TabsContent>
       </Tabs>
     </div>
+    </AppShell>
   );
 }

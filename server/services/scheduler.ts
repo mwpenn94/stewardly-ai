@@ -611,6 +611,38 @@ export function initScheduler(): void {
     });
   });
 
+  // ─── DAILY: Learning SRS Due Review Reminder ───────────────────────
+  registerJob("learning_due_reminder", DAYS(1), async () => {
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return;
+      // Count users with items due for review
+      const { sql } = await import("drizzle-orm");
+      const result = await db.execute(
+        sql`SELECT userId, COUNT(*) as dueCount FROM learning_mastery_progress WHERE nextDue <= NOW() GROUP BY userId HAVING dueCount > 0 LIMIT 100`
+      );
+      if (Array.isArray(result) && result.length > 0) {
+        logger.info({ operation: "scheduler", usersWithDueItems: result.length }, "Learning SRS: users have due reviews");
+      }
+    } catch (e: any) {
+      logger.warn({ operation: "scheduler", error: e.message }, "Learning due reminder skipped");
+    }
+  });
+
+  // ─── WEEKLY: EMBA Content Freshness Check ─────────────────────────
+  registerJob("emba_content_check", WEEKS(1), async () => {
+    try {
+      // importEMBAFromGitHub is dedup-gated — safe to call repeatedly;
+      // it only inserts rows that don't already exist.
+      const { importEMBAFromGitHub } = await import("./learning/embaImport");
+      const result = await importEMBAFromGitHub();
+      logger.info({ operation: "scheduler", ...result }, "EMBA content freshness check completed");
+    } catch (e: any) {
+      logger.warn({ operation: "scheduler", error: e.message }, "EMBA content check skipped");
+    }
+  });
+
   // ─── DEV MODE: Only run essential jobs to prevent memory exhaustion ────
   const isDev = process.env.NODE_ENV !== "production";
   const essentialJobs = new Set([

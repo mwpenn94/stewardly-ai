@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Mail, Phone, Calendar, MapPin, DollarSign, FileText, MessageSquare, Clock } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const DEMO_LEAD = {
   id: 1, name: "Sarah Johnson", email: "sarah.johnson@example.com", phone: "555-0187",
@@ -34,6 +35,7 @@ export default function LeadDetail() {
   const params = useParams<{ id: string }>();
 
   return (
+    <AppShell title="Lead Detail">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title={`Lead: ${DEMO_LEAD.name}`} description="Lead detail view" />
 
@@ -180,5 +182,6 @@ export default function LeadDetail() {
         </div>
       </div>
     </div>
+    </AppShell>
   );
 }

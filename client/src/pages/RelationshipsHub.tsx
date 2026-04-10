@@ -5,6 +5,7 @@
  */
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export default function RelationshipsHub() {
 
   return (
     <AppShell title="Relationships">
+      <SEOHead title="Relationships" description="Professional network, meetings, and outreach campaigns" />
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">

@@ -31,6 +31,7 @@ import { ArrowLeft, Search, Plus, LayoutGrid, List, Loader2 } from "lucide-react
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 // The `lead_pipeline.status` column's enum is the authoritative set.
 // We collapse it into a narrower Kanban column layout so the board
@@ -120,6 +121,7 @@ export default function LeadPipeline() {
   }, [filtered]);
 
   return (
+    <AppShell title="Lead Pipeline">
     <div className="relative container py-8 space-y-6">
       {/* Warm gold radial glow */}
       <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
@@ -258,5 +260,6 @@ export default function LeadPipeline() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

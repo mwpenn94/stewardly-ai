@@ -20,6 +20,7 @@
 
 import type { MemoryCategory } from "./types";
 import { normalizeQualityScore, EXTENDED_MEMORY_CATEGORIES } from "./types";
+import { eventBus } from "../events/eventBus";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -187,8 +188,32 @@ export function createMemoryEngine(config: MemoryEngineConfig) {
         existing.map((m) => m.content.toLowerCase().trim()),
       );
 
+      // Conflict resolution: if a new fact appears to update an existing
+      // one (same category + similar subject), the new fact supersedes.
+      // E.g., "I'm 35" → "I'm 36" or "income is $80K" → "income is $90K"
+      const NUMERIC_PATTERN = /\b\d[\d,]*\.?\d*\b/;
+      const conflicts: Set<string> = new Set();
+      for (const m of extracted) {
+        if (m.category === "fact" || m.category === "financial") {
+          const nums = m.content.match(NUMERIC_PATTERN);
+          if (nums) {
+            for (const ex of existing) {
+              if (ex.category === m.category) {
+                // Same category + overlapping non-numeric words → likely update
+                const newWords = m.content.toLowerCase().replace(NUMERIC_PATTERN, "").split(/\s+/).filter(w => w.length > 3);
+                const exWords = ex.content.toLowerCase().replace(NUMERIC_PATTERN, "").split(/\s+/).filter(w => w.length > 3);
+                const overlap = newWords.filter(w => exWords.includes(w)).length;
+                if (overlap >= 2 && newWords.length > 0) {
+                  conflicts.add(ex.content.toLowerCase().trim());
+                }
+              }
+            }
+          }
+        }
+      }
+
       const newMemories = extracted.filter(
-        (m) => !existingContents.has(m.content.toLowerCase().trim()),
+        (m) => !existingContents.has(m.content.toLowerCase().trim()) || conflicts.has(m.content.toLowerCase().trim()),
       );
 
       if (newMemories.length === 0) return;
@@ -202,6 +227,13 @@ export function createMemoryEngine(config: MemoryEngineConfig) {
           confidence: m.confidence,
         })),
       );
+
+      // Emit memory.stored event for downstream listeners
+      eventBus.emit("memory.stored", { userId, count: newMemories.length, categories: newMemories.map(m => m.category) });
+
+      if (conflicts.size > 0) {
+        log.info(`[memoryEngine] Detected ${conflicts.size} superseded memories for user ${userId}`);
+      }
     } catch (err) {
       log.error("[memoryEngine] Failed to save memories:", err);
     }
@@ -260,13 +292,24 @@ export function createMemoryEngine(config: MemoryEngineConfig) {
       const episodes = await store.getEpisodes(userId, 5);
 
       const parts: string[] = [];
+      const now = Date.now();
+      const STALE_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
       if (mems.length > 0) {
+        // Sort by recency (most recent first), mark stale memories
+        const sorted = mems
+          .map((m) => {
+            const updatedMs = typeof m.updatedAt === "string" ? new Date(m.updatedAt).getTime() : (m.updatedAt as Date).getTime();
+            return { ...m, ageMs: now - updatedMs };
+          })
+          .sort((a, b) => a.ageMs - b.ageMs);
+
         const grouped: Record<string, string[]> = {};
-        for (const m of mems) {
+        for (const m of sorted) {
           const cat = m.category || "fact";
           if (!grouped[cat]) grouped[cat] = [];
-          grouped[cat].push(m.content);
+          const staleTag = m.ageMs > STALE_MS ? " [may be outdated]" : "";
+          grouped[cat].push(m.content + staleTag);
         }
         parts.push("KNOWN ABOUT THIS USER:");
         for (const [cat, items] of Object.entries(grouped)) {

@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, FileText, Users, DollarSign, CheckCircle2, XCircle, Clock, AlertTriangle, Scale } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const DOCUMENTS = [
   { name: "Last Will & Testament", status: "current", lastUpdated: "2024-06-15", attorney: "Smith & Associates" },
@@ -41,6 +42,7 @@ export default function EstatePlanning() {
   const totalDocs = DOCUMENTS.length;
 
   return (
+    <AppShell title="Estate Planning">
     <div className="relative container max-w-5xl py-8 space-y-6">
       {/* Warm gold radial glow */}
       <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
@@ -154,5 +156,6 @@ export default function EstatePlanning() {
         </TabsContent>
       </Tabs>
     </div>
+    </AppShell>
   );
 }

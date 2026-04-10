@@ -438,7 +438,7 @@ export default function EngineDashboard() {
   }, [bieResults]);
 
   return (
-    <AppShell>
+    <AppShell title="Engine Dashboard">
       <div className="container max-w-[1400px] py-4 md:py-6 space-y-4 md:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">

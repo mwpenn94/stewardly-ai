@@ -360,6 +360,9 @@ const contentRouter = router({
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Track not found" });
       assertCanEditOrThrow(asActing(ctx), existing);
       const { id, ...patch } = input;
+      if (patch.status === "published" && !canPublish(asActing(ctx))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only advisors can publish content" });
+      }
       const ok = await updateTrack(id, patch as any, ctx.user.id);
       return { ok };
     }),

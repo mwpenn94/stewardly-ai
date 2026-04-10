@@ -172,7 +172,7 @@ export default defineConfig({
         manualChunks: {
           "vendor-react": ["react", "react-dom"],
           "vendor-motion": ["framer-motion"],
-          "vendor-charts": ["chart.js", "react-chartjs-2"],
+          "vendor-charts": ["chart.js", "react-chartjs-2", "recharts"],
           "vendor-dnd": ["@dnd-kit/core", "@dnd-kit/sortable", "@dnd-kit/utilities"],
         },
       },

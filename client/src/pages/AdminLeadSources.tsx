@@ -46,10 +46,10 @@ export default function AdminLeadSources() {
   const { user, loading: authLoading } = useAuth();
 
   if (authLoading) {
-    return <AppShell><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
+    return <AppShell title="Lead Sources"><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
   }
   if (!user || user.role !== "admin") {
-    return <AppShell><div className="flex flex-col items-center justify-center h-64 gap-4"><XCircle className="w-12 h-12 text-red-500" /><p className="text-muted-foreground">Admin access required</p></div></AppShell>;
+    return <AppShell title="Lead Sources"><div className="flex flex-col items-center justify-center h-64 gap-4"><XCircle className="w-12 h-12 text-red-500" /><p className="text-muted-foreground">Admin access required</p></div></AppShell>;
   }
 
   const totalLeads = MOCK_SOURCES.reduce((s, src) => s + src.leads, 0);
@@ -57,7 +57,7 @@ export default function AdminLeadSources() {
   const totalRevenue = MOCK_SOURCES.reduce((s, src) => s + src.revenue, 0);
 
   return (
-    <AppShell>
+    <AppShell title="Lead Sources">
       <div className="container max-w-6xl py-8 space-y-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><BarChart3 className="w-6 h-6" /> Lead Source Analytics</h1>

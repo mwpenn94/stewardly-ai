@@ -19,6 +19,7 @@ import { ArrowLeft, Key, Plus, Copy, Trash2, Clock, Activity } from "lucide-reac
 import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const API_KEYS = [
   { id: "key_1", name: "Production CRM Sync", prefix: "sk_live_...a4f2", created: "2026-01-15", lastUsed: "2 min ago", requests: 12450, status: "active" },
@@ -30,6 +31,7 @@ export default function APIKeys() {
   const [, navigate] = useLocation();
 
   return (
+    <AppShell title="API Keys">
     <div className="container max-w-4xl py-8 space-y-6">
       <SEOHead title="API Keys" description="Manage API keys for third-party integrations" />
 
@@ -107,5 +109,6 @@ export default function APIKeys() {
         </CardContent>
       </Card>
     </div>
+    </AppShell>
   );
 }

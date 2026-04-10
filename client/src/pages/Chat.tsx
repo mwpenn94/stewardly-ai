@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { SEOHead } from "@/components/SEOHead";
 import TypingIndicator from "@/components/TypingIndicator";
 import { EmptyConversations } from "@/components/EmptyStates";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
@@ -20,16 +21,14 @@ import {
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
-  AlertTriangle, ArrowUp, AudioLines, BarChart3, BookOpen, Bot, Briefcase, Building2, Calculator, Check, CheckCircle,
-  ChevronDown, ChevronUp, FileText, GraduationCap, Image, Key, Loader2, LogOut, Menu, MessageSquare,
-  Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, PhoneOff, Plus,
-  Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
-  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
-  Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
-  Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
+  ArrowUp, AudioLines, BarChart3, Bot, Briefcase, Calculator, Check,
+  ChevronDown, ChevronUp, FileText, GraduationCap, Image, Loader2, LogOut, Menu, MessageSquare,
+  Monitor, PanelLeftClose, Paperclip, PhoneOff, Plus,
+  Settings, Sparkles, ThumbsDown, ThumbsUp, User, Users,
+  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Calendar, Brain, Shield,
+  Copy, RefreshCw, Zap, Scale, Search, HelpCircle,
+  Pin, FolderOpen, FolderPlus, ChevronRight, Phone,
   LogIn, GitBranch,
-  Terminal, Flame, Target, Compass, Award, LayoutGrid,
-  LayoutDashboard, Users2,
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
@@ -1059,6 +1058,7 @@ export default function Chat() {
     } finally {
       setIsStreaming(false);
       setAttachments([]);
+      soundCues.play("received");
       // If hands-free is active and TTS is NOT about to speak (no ttsEnabled or error path),
       // release the guard and restart listening.
       // If TTS IS enabled, the guard stays on until tts.onEnd releases it and restarts listening.
@@ -1345,6 +1345,7 @@ export default function Chat() {
       >
         Skip to chat
       </a>
+      <SEOHead title="Chat" description="AI-powered financial advisory chat" />
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
@@ -2174,7 +2175,7 @@ export default function Chat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={handsFreeActive && voice.isListening ? "Listening..." : "Ask Steward anything..."}
+                placeholder={handsFreeActive && voice.isListening ? "Listening..." : userRole === "advisor" ? "Ask about clients, strategies, compliance..." : userRole === "admin" ? "Ask about system health, usage, configuration..." : "Ask Steward anything..."}
                 className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[36px] max-h-[160px] text-sm py-2 px-0"
                 rows={1}
                 disabled={isStreaming}

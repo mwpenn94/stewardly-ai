@@ -368,7 +368,6 @@ export async function createSSEStreamHandler(
 function getToolStatusMessage(toolName: string): string {
   switch (toolName) {
     case "google_search":
-      return "Searching the web for current information...";
     case "web_search":
       return "Searching the web for current information...";
     case "lookup_stock_data":
@@ -376,9 +375,19 @@ function getToolStatusMessage(toolName: string): string {
     case "research_financial_product":
       return "Researching financial product details...";
     case "compare_products":
-      return "Comparing products...";
+      return "Comparing products side by side...";
+    case "check_license_status":
+      return "Checking license status...";
+    case "recommend_study_content":
+      return "Finding study recommendations...";
+    case "explain_concept":
+      return "Preparing explanation...";
+    case "quiz_me":
+      return "Generating practice questions...";
     default:
-      return `Running ${toolName}...`;
+      if (toolName.startsWith("calc_")) return "Running financial calculations...";
+      if (toolName.startsWith("model_")) return "Building financial model...";
+      return `Using ${toolName.replace(/_/g, " ")}...`;
   }
 }
 

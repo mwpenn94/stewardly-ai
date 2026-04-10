@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, BarChart3, Shield, TrendingDown, AlertTriangle, Target } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const RISK_FACTORS = [
   { name: "Time Horizon", score: 8, description: "20+ years to retirement" },
@@ -37,6 +38,7 @@ export default function RiskAssessment() {
   const overallScore = Math.round(RISK_FACTORS.reduce((s, f) => s + f.score, 0) / RISK_FACTORS.length * 10);
 
   return (
+    <AppShell title="Risk Assessment">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Risk Assessment" description="Client risk profiling and portfolio risk analysis" />
 
@@ -137,5 +139,6 @@ export default function RiskAssessment() {
       />
       </LeadCaptureGate>
     </div>
+    </AppShell>
   );
 }

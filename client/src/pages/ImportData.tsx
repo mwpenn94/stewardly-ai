@@ -15,6 +15,7 @@ import { Upload, Table2, CheckCircle2, ArrowLeft, FileSpreadsheet, Download, His
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 type Step = "upload" | "map" | "import" | "done";
 
@@ -73,6 +74,7 @@ export default function ImportData() {
   };
 
   return (
+    <AppShell title="Import Data">
     <div className="container max-w-4xl py-8 space-y-6">
       <SEOHead title="Import Data" description="Import client data from CSV or Excel files" />
 
@@ -148,5 +150,6 @@ export default function ImportData() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

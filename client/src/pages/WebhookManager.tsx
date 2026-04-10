@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Webhook, Plus, CheckCircle2, XCircle, Clock, RotateCcw } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const WEBHOOKS = [
   { id: "wh_1", url: "https://crm.example.com/webhooks/stewardly", events: ["client.created", "client.updated"], status: "active", successRate: 99.2, lastDelivery: "5 min ago" },
@@ -27,6 +28,7 @@ export default function WebhookManager() {
   const [, navigate] = useLocation();
 
   return (
+    <AppShell title="Webhooks">
     <div className="container max-w-4xl py-8 space-y-6">
       <SEOHead title="Webhooks" description="Manage webhook endpoints and delivery logs" />
 
@@ -108,5 +110,6 @@ export default function WebhookManager() {
         </CardContent>
       </Card>
     </div>
+    </AppShell>
   );
 }

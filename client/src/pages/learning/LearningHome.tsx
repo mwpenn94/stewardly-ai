@@ -13,6 +13,7 @@
  */
 
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,8 @@ export default function LearningHome() {
   const expiringSoon = alerts.filter((a: any) => a.alertType === "expiration_warning").length;
 
   return (
-    <AppShell>
+    <AppShell title="Learning">
+      <SEOHead title="Learning & Licensing" description="Track exam mastery, manage licenses, and access study tools" />
       <div className="mx-auto max-w-6xl p-6 space-y-6">
         <header className="flex items-center justify-between">
           <div>

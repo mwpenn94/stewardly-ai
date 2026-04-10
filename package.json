@@ -1,6 +1,7 @@
 {
-  "name": "wealthbridge-ai",
+  "name": "stewardly-ai",
   "version": "1.0.0",
+  "engines": { "node": ">=20.0.0" },
   "type": "module",
   "license": "MIT",
   "scripts": {

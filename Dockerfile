@@ -22,7 +22,6 @@ RUN addgroup -S stewardly && adduser -S stewardly -G stewardly
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/client/dist ./client/dist
 COPY package.json ./
 COPY drizzle/ ./drizzle/
 

@@ -93,7 +93,7 @@ export default function AdminRateManagement() {
 
   if (authLoading) {
     return (
-      <AppShell>
+      <AppShell title="Rate Management">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
@@ -102,7 +102,7 @@ export default function AdminRateManagement() {
   }
   if (!user || user.role !== "admin") {
     return (
-      <AppShell>
+      <AppShell title="Rate Management">
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <XCircle className="w-12 h-12 text-red-500" />
           <p className="text-muted-foreground">Admin access required</p>
@@ -115,7 +115,7 @@ export default function AdminRateManagement() {
   const recs = recsQ.data ?? [];
 
   return (
-    <AppShell>
+    <AppShell title="Rate Management">
       <div className="container max-w-6xl py-8 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
