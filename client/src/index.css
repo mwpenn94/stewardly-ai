@@ -488,11 +488,3 @@
     padding-bottom: env(safe-area-inset-bottom, 8px);
   }
 }
-
-/* ═══ REDUCED MOTION ═══ */
-@media (prefers-reduced-motion: reduce) {
-  .animate-message-in,
-  .animate-mic-pulse {
-    animation: none;
-  }
-}

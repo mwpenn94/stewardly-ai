@@ -1239,6 +1239,7 @@ export default function Integrations() {
   const totalRecords = Array.isArray(connections) ? connections.reduce((sum: number, c: any) => sum + (c.recordsSynced || 0), 0) : 0;
 
   return (
+    <AppShell title="Integrations">
     <div className="min-h-screen bg-background">
       {/* Navigation Header */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
@@ -1488,5 +1489,6 @@ export default function Integrations() {
       />
       </div>{/* close container */}
     </div>
+    </AppShell>
   );
 }

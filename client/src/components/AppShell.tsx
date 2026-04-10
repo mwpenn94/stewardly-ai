@@ -91,6 +91,15 @@ export default function AppShell({ children, title }: AppShellProps) {
   const [location, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   useKeyboardShortcuts(); // Global shortcuts: ?, /, g+h, g+s, g+c, g+d, g+l, g+o
+
+  // Auto-propagate title to browser tab
+  useEffect(() => {
+    if (title) {
+      const suffix = " | Stewardly AI";
+      document.title = title.includes("Stewardly") ? title : `${title}${suffix}`;
+    }
+  }, [title]);
+
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("appshell-collapsed") === "true"; } catch { return false; }
   });
