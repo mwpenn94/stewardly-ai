@@ -184,11 +184,11 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         )}
         <div className="flex items-center gap-0.5">
           {!collapsed && (
-            <button onClick={onNewChat} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" title="New chat">
+            <button onClick={onNewChat} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label="New chat">
               <Plus className="w-4 h-4" />
             </button>
           )}
-          <button onClick={onCollapse} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" title={collapsed ? "Expand" : "Collapse"}>
+          <button onClick={onCollapse} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
             {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </button>
         </div>
