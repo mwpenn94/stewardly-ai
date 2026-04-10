@@ -71,6 +71,10 @@ import {
   jobStats,
 } from "../services/codeChat/backgroundJobs";
 import { runAutonomousCoding } from "../services/codeChat/autonomousCoding";
+import {
+  getWorkspaceFileIndex,
+  fuzzyFilterFiles,
+} from "../services/codeChat/fileIndex";
 import { contextualLLM, executeReActLoop } from "../shared/stewardlyWiring";
 import { logger } from "../_core/logger";
 
@@ -265,6 +269,30 @@ export const codeChatRouter = router({
     .mutation(({ input }) => {
       setRoadmap(updateStatus(_roadmap, input.id, input.status as RoadmapStatus, input.note));
       return { roadmap: _roadmap };
+    }),
+
+  // ─── Workspace file index (Pass 206 @-mentions) ────────────────
+  //
+  // Returns up to `limit` files matching the query via a cached
+  // workspace walk. Used by the Code Chat input's @-mention popover
+  // to fuzzy-complete paths into the message.
+  listWorkspaceFiles: protectedProcedure
+    .input(
+      z
+        .object({
+          query: z.string().max(200).optional(),
+          limit: z.number().min(1).max(50).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const files = await getWorkspaceFileIndex(WORKSPACE_ROOT);
+      const filtered = fuzzyFilterFiles(
+        files,
+        input?.query ?? "",
+        input?.limit ?? 15,
+      );
+      return { files: filtered, total: files.length };
     }),
 
   // ─── Synthesizer procedures ────────────────────────────────────

@@ -1,14 +1,25 @@
-# GitHub Write Access & Background Jobs (Pass 201)
+# Code Chat Cloud Parity (Passes 201-206)
 
-Stewardly's Code Chat now ships full Claude-Code-style GitHub cloud parity:
+Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 
 - **Read** — repository metadata, open PRs, file contents at any ref
 - **Write** — list repos, create/delete branches, atomic multi-file commits,
-  create/update/merge pull requests
+  create/update/merge pull requests (Pass 201)
 - **Background** — long-running autonomous sessions and fire-and-forget
-  GitHub push jobs with cooperative-cancel + per-user concurrency caps
-- **Terminal UI** — streaming tool visualization + inline file editing in
-  the admin workspace file browser
+  GitHub push jobs with cooperative-cancel + per-user concurrency caps (Pass 201)
+- **Inline diff preview** — live diff between draft and saved content in the
+  file editor, GitHub-style two-column gutter (Pass 202)
+- **Slash commands** — `/clear`, `/cancel`, `/help`, `/write`, `/iterations`,
+  `/model`, `/diff`, `/explain`, `/find` with keyboard nav + rewrite-to-prompt
+  (Pass 203)
+- **Rich markdown responses** — `react-markdown` + GFM tables + fenced code
+  with per-block Copy button and language label (Pass 204)
+- **Streaming tool-result diffs** — edit_file / write_file results carry
+  64KB before/after snapshots that auto-render as inline diffs in the
+  trace viewer (Pass 205)
+- **`@file` mentions** — workspace file autocomplete in the chat input,
+  server-side file expansion so the LLM gets mentioned files as context
+  without a round-trip (Pass 206)
 
 This document walks through the architecture, the tRPC surface, the
 safety model, and the UI. For setup (tokens, connection flow) see
@@ -206,6 +217,101 @@ offline. `pnpm test -- githubClient backgroundJobs` runs them in under
 - [ ] Merge the PR with squash, confirm the branch is deleted from the list
 - [ ] `/code-chat` → **Jobs** tab — admin starts an autonomous session, watches events stream, cancels mid-flight
 - [ ] `/code-chat` → **Files** tab — admin clicks Edit on a file, changes a character, Save, verify the file changed on disk
+
+## Cloud parity features (Passes 202-206)
+
+### Inline diff preview (Pass 202)
+
+The Code Chat Files tab now includes a live diff preview when editing
+files. Click **Edit** → make changes in the Textarea → click **Diff**
+to swap the Textarea for a GitHub-style two-column unified diff:
+
+- Green background with `+` prefix for additions
+- Red background with `-` prefix for deletions
+- Two-column gutter showing old/new line numbers
+- Hunk headers (`@@ -10,3 +10,5 @@`)
+- Stats strip (`+X / −Y / NN% similar`)
+
+The underlying diff engine is `shared/lineDiff.ts` — a pure-function
+LCS diff that normalizes CRLF, groups entries into hunks with
+configurable context (default 3 lines), and exposes `formatUnifiedDiff()`
+for CLI output. Reused by the tool-result viewer in Pass 205 and
+available to any client component via `import DiffView from
+"@/components/codeChat/DiffView"`.
+
+### Slash commands (Pass 203)
+
+Type `/` at the start of the Code Chat input to open a fuzzy-filtered
+popover of built-in commands. Arrow up/down to navigate, Tab or Enter
+to select, Esc to close. Pressing Enter on a complete command with its
+args runs it immediately.
+
+| Command | Aliases | Description |
+|---|---|---|
+| `/clear` | `/c` | Clear chat history (keeps command history) |
+| `/cancel` | `/stop`, `/abort` | Abort the running ReAct loop |
+| `/help` | `/h`, `/?` | Show the command list |
+| `/write on\|off` | `/w` | Toggle write mode (admin only) |
+| `/iterations <n>` | `/iter`, `/i` | Set max ReAct iterations (1-10) |
+| `/model <id>` | `/m` | Override model for the next message |
+| `/diff <path>` | — | Expands into a "show unified diff" prompt |
+| `/explain <path>` | `/e` | Expands into an "explain this file" prompt |
+| `/find <pattern>` | `/grep`, `/search` | Expands into a grep prompt |
+
+Commands are pure data in `slashCommands.ts` — to add one, append a
+`SlashCommand` entry. 28 unit tests lock in the parser, registry
+lookup, fuzzy filter, and every built-in handler.
+
+### Markdown + code rendering (Pass 204)
+
+Assistant responses render via `react-markdown` + `remark-gfm`:
+
+- Headings (`# ## ###`) with the Stewardship Gold heading font
+- Lists, tables, blockquotes, emphasized text
+- Inline code with subtle background
+- Fenced code blocks with language label + one-click Copy button
+- External links open in a new tab with `rel="noopener noreferrer"`
+
+Syntax highlighting is exposed as CSS classes (`language-ts`, etc.)
+so Shiki or Prism can be layered on later without touching the
+component.
+
+### Tool result diffs (Pass 205)
+
+When the ReAct loop executes `write_file` or `edit_file`, the result
+now includes 64KB `before` and `after` snapshots (capped — set
+`diffTruncated: true` when either was trimmed). The SSE endpoint
+streams the JSON payload to the client as a `tool_result` event. The
+`TraceView` component auto-detects edit/write tool kinds, parses the
+JSON preview, and renders an inline `DiffView` in place of the raw
+observation dump. Expanded trace steps show a green `diff` badge so
+users know at a glance which tool calls produced file changes.
+
+### `@file` mentions (Pass 206)
+
+Type `@` in the Code Chat input to open a fuzzy-filtered workspace
+file picker:
+
+- `codeChat.listWorkspaceFiles` tRPC query returns up to 15 ranked
+  matches from a 60-second cached file index (`fileIndex.ts`)
+- Basename matches rank above path substring matches; exact basename
+  hits rank highest
+- `@server/routers/codeChat.ts` inserts the path at the cursor
+- `@{path with spaces.ts}` is supported via bracket syntax
+- Bare `@usernames` (no slash, no extension) are skipped so
+  `@bob take a look` doesn't trigger the picker
+
+The SSE streaming endpoint parses `@`-mentions out of the outgoing
+message, reads each file (capped at 5 refs per message, 32KB per
+file), and appends the contents to the user message as context
+blocks before handing off to the ReAct loop. The client sees a
+`mentions_resolved` SSE event so it can display which files were
+attached.
+
+**Why this matters:** before Pass 206, telling the agent "compare
+these three files" required three separate `code_read_file` tool
+calls. Now the agent gets all three file contents inline in the
+first message and can answer in a single turn.
 
 ## Known limitations
 

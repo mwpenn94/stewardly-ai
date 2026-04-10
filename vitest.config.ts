@@ -17,7 +17,9 @@ export default defineConfig({
     include: [
       "server/**/*.test.ts",
       "server/**/*.spec.ts",
+      "shared/**/*.test.ts",
       "client/src/lib/wealth-engine/**/*.test.ts",
+      "client/src/components/codeChat/**/*.test.ts",
     ],
   },
 });

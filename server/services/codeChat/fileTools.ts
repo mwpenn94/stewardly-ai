@@ -100,6 +100,24 @@ export interface WriteFileResult {
   path: string;
   byteLength: number;
   created: boolean;
+  /** Content before the write (truncated to DIFF_SNAPSHOT_BYTES) — empty for new files */
+  before?: string;
+  /** Content after the write (truncated to DIFF_SNAPSHOT_BYTES) */
+  after?: string;
+  /** True when either snapshot was truncated */
+  diffTruncated?: boolean;
+}
+
+/**
+ * Max bytes kept for before/after snapshots. 64KB covers virtually
+ * every source file Code Chat will touch while keeping SSE payload
+ * size bounded.
+ */
+const DIFF_SNAPSHOT_BYTES = 64 * 1024;
+
+function snapshot(s: string): string {
+  if (s.length <= DIFF_SNAPSHOT_BYTES) return s;
+  return s.slice(0, DIFF_SNAPSHOT_BYTES) + "\n[…truncated]";
 }
 
 export async function writeFile(
@@ -122,10 +140,30 @@ export async function writeFile(
       "TOO_LARGE",
     );
   }
+  // Capture the existing file for diff rendering if it exists. We
+  // read before writing so a failed write doesn't pollute the snapshot.
+  let before = "";
   const created = !existsSync(abs);
+  if (!created) {
+    try {
+      before = await fs.readFile(abs, "utf8");
+    } catch {
+      /* best-effort — a read failure doesn't block the write */
+    }
+  }
   await fs.mkdir(path.dirname(abs), { recursive: true });
   await fs.writeFile(abs, content, "utf8");
-  return { path: relativePath, byteLength: bytes, created };
+  const beforeSnap = snapshot(before);
+  const afterSnap = snapshot(content);
+  return {
+    path: relativePath,
+    byteLength: bytes,
+    created,
+    before: beforeSnap,
+    after: afterSnap,
+    diffTruncated:
+      beforeSnap.length !== before.length || afterSnap.length !== content.length,
+  };
 }
 
 // ─── Edit (find + replace) ────────────────────────────────────────────────
@@ -134,6 +172,9 @@ export interface EditFileResult {
   path: string;
   replacements: number;
   byteLength: number;
+  before?: string;
+  after?: string;
+  diffTruncated?: boolean;
 }
 
 export async function editFile(
@@ -178,10 +219,16 @@ export async function editFile(
     replacements = 1;
   }
   await fs.writeFile(abs, after, "utf8");
+  const beforeSnap = snapshot(before);
+  const afterSnap = snapshot(after);
   return {
     path: relativePath,
     replacements,
     byteLength: Buffer.byteLength(after, "utf8"),
+    before: beforeSnap,
+    after: afterSnap,
+    diffTruncated:
+      beforeSnap.length !== before.length || afterSnap.length !== after.length,
   };
 }
 

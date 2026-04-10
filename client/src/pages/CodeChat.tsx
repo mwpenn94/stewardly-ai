@@ -8,7 +8,7 @@
  *   - File browser, roadmap, diff, and GitHub tabs
  */
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -24,11 +24,20 @@ import {
   Loader2, FileText, FolderOpen, GitBranch, Sparkles,
   CheckCircle2, AlertTriangle, Github, ExternalLink,
   Lock, Unlock, Terminal, Send, ChevronDown, ChevronRight,
-  Activity, Save, Pencil, X,
+  Activity, Save, Pencil, X, SplitSquareHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
 import BackgroundJobsPanel from "@/components/codeChat/BackgroundJobsPanel";
+import DiffView from "@/components/codeChat/DiffView";
+import SlashCommandPopover from "@/components/codeChat/SlashCommandPopover";
+import MarkdownMessage from "@/components/codeChat/MarkdownMessage";
+import FileMentionPopover from "@/components/codeChat/FileMentionPopover";
+import {
+  filterCommands,
+  tryRunSlashCommand,
+  type SlashCommand,
+} from "@/components/codeChat/slashCommands";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -37,7 +46,38 @@ interface TraceStep {
   thought?: string;
   toolName?: string;
   observation?: string;
+  /** Raw JSON preview from the SSE tool_result event — parsed for diffs */
+  rawPreview?: string;
   durationMs?: number;
+}
+
+/**
+ * Try to extract before/after snapshots from a serialized dispatch
+ * result. Returns null if the tool isn't edit/write or the snapshots
+ * aren't present. Pass 205.
+ */
+function extractDiffFromTrace(
+  toolName: string | undefined,
+  rawPreview: string | undefined,
+): { before: string; after: string; path: string } | null {
+  if (!rawPreview) return null;
+  if (toolName !== "edit_file" && toolName !== "write_file") return null;
+  try {
+    const parsed = JSON.parse(rawPreview);
+    // dispatch result shape: { kind: "edit"|"write", result: { before, after, path } }
+    const inner = parsed?.result;
+    if (!inner) return null;
+    if (typeof inner.before !== "string" || typeof inner.after !== "string") {
+      return null;
+    }
+    return {
+      before: inner.before,
+      after: inner.after,
+      path: typeof inner.path === "string" ? inner.path : "",
+    };
+  } catch {
+    return null;
+  }
 }
 
 // ─── Tool Trace Visualization ──────────────────────────────────────────────
@@ -55,7 +95,9 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
 
   return (
     <div className="space-y-1 my-2">
-      {traces.map(t => (
+      {traces.map(t => {
+        const diff = extractDiffFromTrace(t.toolName, t.rawPreview);
+        return (
         <div key={t.step} className="border border-border/40 rounded-lg overflow-hidden bg-card/30">
           <button
             onClick={() => toggle(t.step)}
@@ -68,6 +110,11 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
             <span className="text-muted-foreground truncate flex-1 text-left">
               {t.thought?.slice(0, 80) || "processing..."}
             </span>
+            {diff && (
+              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-emerald-500/50 text-emerald-500">
+                diff
+              </Badge>
+            )}
             {t.durationMs != null && (
               <span className="text-[9px] text-muted-foreground/60 tabular-nums">{t.durationMs}ms</span>
             )}
@@ -77,7 +124,16 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
               {t.thought && (
                 <div className="text-[11px] text-muted-foreground italic">{t.thought}</div>
               )}
-              {t.observation && (
+              {diff ? (
+                <DiffView
+                  oldText={diff.before}
+                  newText={diff.after}
+                  pathA={diff.path || undefined}
+                  pathB={diff.path || undefined}
+                  heightClass="max-h-72"
+                  hideGutter={false}
+                />
+              ) : t.observation && (
                 <pre className="text-[11px] bg-background/80 rounded p-2 overflow-x-auto max-h-60 font-mono whitespace-pre-wrap border border-border/30">
                   {t.observation.length > 3000 ? t.observation.slice(0, 3000) + "\n... (truncated)" : t.observation}
                 </pre>
@@ -85,7 +141,8 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -127,9 +184,22 @@ function CodeChatInterface() {
   const [input, setInput] = useState("");
   const [allowMutations, setAllowMutations] = useState(false);
   const [maxIterations, setMaxIterations] = useState(5);
+  const [modelOverride, setModelOverride] = useState<string | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showFiles, setShowFiles] = useState(false);
+
+  // Slash-command popover state
+  const [slashOpen, setSlashOpen] = useState(false);
+  const [slashActiveIdx, setSlashActiveIdx] = useState(0);
+
+  // @-mention popover state
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionActiveIdx, setMentionActiveIdx] = useState(0);
+  const mentionFilesQuery = trpc.codeChat.listWorkspaceFiles.useQuery(
+    { query: mentionQuery ?? "", limit: 12 },
+    { enabled: mentionQuery !== null, staleTime: 30_000 },
+  );
 
   // Command history (up/down arrow)
   const [commandHistory, setCommandHistory] = useState<string[]>(() => {
@@ -138,6 +208,36 @@ function CodeChatInterface() {
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   const { messages, isExecuting, currentTools, error, sendMessage, abort, clearHistory } = useCodeChatStream();
+
+  // Derive slash-command suggestions from the current input
+  const slashSuggestions: SlashCommand[] = useMemo(() => {
+    if (!input.startsWith("/")) return [];
+    const query = input.slice(1).split(" ")[0];
+    return filterCommands(query);
+  }, [input]);
+
+  // Open/close the slash popover as the user types
+  useEffect(() => {
+    const shouldShow = input.startsWith("/") && !input.includes("\n");
+    setSlashOpen(shouldShow && slashSuggestions.length > 0);
+    setSlashActiveIdx(0);
+  }, [input, slashSuggestions.length]);
+
+  // Detect `@query` at the caret (simplified: look at the last @
+  // that isn't followed by whitespace). If found, open the mention
+  // popover with that query.
+  useEffect(() => {
+    const match = /@([\w./-]*)$/.exec(input);
+    if (match) {
+      setMentionQuery(match[1]);
+      setMentionActiveIdx(0);
+    } else {
+      setMentionQuery(null);
+    }
+  }, [input]);
+
+  const mentionFiles = mentionFilesQuery.data?.files ?? [];
+  const mentionOpen = mentionQuery !== null && mentionFiles.length > 0;
 
   // Persist messages to localStorage
   useEffect(() => {
@@ -159,6 +259,42 @@ function CodeChatInterface() {
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || isExecuting) return;
+
+    // Intercept slash commands first — they run locally without
+    // sending a chat message (unless the handler returns a rewrite)
+    if (text.startsWith("/")) {
+      const result = await tryRunSlashCommand(text, {
+        clear: clearHistory,
+        cancel: abort,
+        setInput,
+        setAllowMutations,
+        setMaxIterations,
+        setModel: setModelOverride,
+        toast: (kind, message) => {
+          if (kind === "success") toast.success(message);
+          else if (kind === "error") toast.error(message);
+          else toast.info(message);
+        },
+        isAdmin,
+      });
+      if (result !== null) {
+        if (result.handled) {
+          if ("rewrite" in result && result.rewrite) {
+            // The command expanded the input into a longer prompt —
+            // put it in the textarea for the user to review, don't auto-send
+            setInput(result.rewrite);
+            inputRef.current?.focus();
+          } else {
+            setInput("");
+          }
+          return;
+        } else {
+          toast.error(result.error);
+          return;
+        }
+      }
+    }
+
     // Save to command history
     const newHistory = [text, ...commandHistory.filter(h => h !== text)].slice(0, 50);
     setCommandHistory(newHistory);
@@ -168,12 +304,73 @@ function CodeChatInterface() {
     await sendMessage(text, {
       allowMutations: isAdmin && allowMutations,
       maxIterations,
+      model: modelOverride,
     });
     inputRef.current?.focus();
-  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory]);
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride]);
 
-  // Arrow key navigation for command history
+  const handleSlashSelect = useCallback((cmd: SlashCommand) => {
+    // Pre-fill the input with the command so the user can type args
+    setInput(`/${cmd.name}${cmd.args ? " " : ""}`);
+    setSlashOpen(false);
+    inputRef.current?.focus();
+  }, []);
+
+  const handleMentionSelect = useCallback((file: string) => {
+    // Replace the trailing @query with @file and a trailing space
+    setInput((prev) => prev.replace(/@([\w./-]*)$/, `@${file} `));
+    setMentionQuery(null);
+    inputRef.current?.focus();
+  }, []);
+
+  // Arrow key navigation for command history + slash popover
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Mention popover nav takes precedence over slash
+    if (mentionOpen) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setMentionActiveIdx((i) => Math.min(i + 1, mentionFiles.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setMentionActiveIdx((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+        e.preventDefault();
+        handleMentionSelect(mentionFiles[mentionActiveIdx]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMentionQuery(null);
+        return;
+      }
+    }
+    // Slash popover nav takes precedence over history
+    if (slashOpen && slashSuggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSlashActiveIdx((i) => Math.min(i + 1, slashSuggestions.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSlashActiveIdx((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === "Tab") {
+        e.preventDefault();
+        handleSlashSelect(slashSuggestions[slashActiveIdx]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setSlashOpen(false);
+        return;
+      }
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -187,8 +384,11 @@ function CodeChatInterface() {
       const idx = historyIndex - 1;
       setHistoryIndex(idx);
       setInput(idx >= 0 ? commandHistory[idx] : "");
+    } else if (e.key === "Escape" && isExecuting) {
+      e.preventDefault();
+      abort();
     }
-  }, [handleSend, input, commandHistory, historyIndex]);
+  }, [handleSend, input, commandHistory, historyIndex, slashOpen, slashSuggestions, slashActiveIdx, handleSlashSelect, mentionOpen, mentionFiles, mentionActiveIdx, handleMentionSelect, isExecuting, abort]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)]">
@@ -269,12 +469,13 @@ function CodeChatInterface() {
                     thought: ev.args ? `${ev.toolName}(${Object.entries(ev.args).map(([k,v]) => `${k}: ${String(v).slice(0,60)}`).join(", ")})` : undefined,
                     toolName: ev.toolName,
                     observation: ev.preview ? (typeof ev.preview === "string" ? ev.preview.slice(0, 3000) : JSON.stringify(ev.preview).slice(0, 3000)) : undefined,
+                    rawPreview: typeof ev.preview === "string" ? ev.preview : undefined,
                     durationMs: ev.durationMs,
                   }))} />
                 )}
                 {/* Response */}
-                <div className="bg-card/60 border border-border/30 px-4 py-3 rounded-xl text-sm whitespace-pre-wrap font-mono leading-relaxed">
-                  {msg.content}
+                <div className="bg-card/60 border border-border/30 px-4 py-3 rounded-xl text-sm leading-relaxed">
+                  <MarkdownMessage content={msg.content} />
                 </div>
                 {/* Meta */}
                 <div className="flex items-center gap-2 text-[9px] text-muted-foreground/50">
@@ -305,13 +506,33 @@ function CodeChatInterface() {
 
       {/* Input area */}
       <div className="border-t border-border/40 p-3">
-        <div className="flex gap-2">
+        <div className="flex gap-2 relative">
+          {mentionOpen && (
+            <FileMentionPopover
+              files={mentionFiles}
+              activeIndex={mentionActiveIdx}
+              onSelect={handleMentionSelect}
+            />
+          )}
+          {slashOpen && !mentionOpen && (
+            <SlashCommandPopover
+              commands={slashSuggestions}
+              activeIndex={slashActiveIdx}
+              onSelect={handleSlashSelect}
+            />
+          )}
           <Textarea
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={allowMutations ? "Ask or instruct (write mode enabled)..." : "Ask about the codebase..."}
+            placeholder={
+              modelOverride
+                ? `[${modelOverride}] @file or / for commands...`
+                : allowMutations
+                  ? "Write mode — ask, @file, or type / for commands..."
+                  : "Ask about the codebase — @file to reference, / for commands..."
+            }
             className="flex-1 min-h-[40px] max-h-[120px] resize-none text-sm border-border/50 bg-background/50 font-mono"
             rows={1}
             disabled={isExecuting}
@@ -440,6 +661,7 @@ function FileBrowser() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
 
   const onList = async () => {
     const result = await dispatch.mutateAsync({
@@ -559,8 +781,17 @@ function FileBrowser() {
                   <>
                     <Button
                       size="sm"
+                      variant={showDiff ? "default" : "outline"}
+                      onClick={() => setShowDiff((v) => !v)}
+                      className="h-7 text-[10px]"
+                      disabled={saving}
+                    >
+                      <SplitSquareHorizontal className="h-3 w-3 mr-1" /> Diff
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="outline"
-                      onClick={() => { setEditing(false); setDraft(fileContent.content); }}
+                      onClick={() => { setEditing(false); setDraft(fileContent.content); setShowDiff(false); }}
                       disabled={saving}
                       className="h-7 text-[10px]"
                     >
@@ -597,12 +828,22 @@ function FileBrowser() {
         <CardContent>
           {fileContent ? (
             editing ? (
-              <Textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                className="text-xs font-mono h-[500px] resize-none"
-                spellCheck={false}
-              />
+              showDiff ? (
+                <DiffView
+                  oldText={fileContent.content}
+                  newText={draft}
+                  pathA={`${fileContent.path} (saved)`}
+                  pathB={`${fileContent.path} (draft)`}
+                  heightClass="max-h-[500px]"
+                />
+              ) : (
+                <Textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  className="text-xs font-mono h-[500px] resize-none"
+                  spellCheck={false}
+                />
+              )
             ) : (
               <pre className="text-xs overflow-auto max-h-[500px] bg-muted/50 p-3 rounded-md">
                 <code>{fileContent.content}</code>
