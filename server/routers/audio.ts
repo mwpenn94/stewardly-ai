@@ -13,13 +13,19 @@ import { userAudioPreferences, audioScripts, userAudioOverrides } from "../../dr
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
+async function requireDb() {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+  return db;
+}
+
 export const audioRouter = router({
   /**
    * Get the authenticated user's audio preferences.
    * Returns defaults if no row exists yet.
    */
   getPreferences: protectedProcedure.query(async ({ ctx }) => {
-    const db = getDb();
+    const db = await requireDb();
     const [row] = await db
       .select()
       .from(userAudioPreferences)
@@ -76,7 +82,7 @@ export const audioRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await requireDb();
       const userId = String(ctx.user!.id);
 
       const [existing] = await db
@@ -128,7 +134,7 @@ export const audioRouter = router({
   getScript: protectedProcedure
     .input(z.object({ contentType: z.string(), contentId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await requireDb();
       const userId = String(ctx.user!.id);
 
       const [script] = await db
@@ -171,7 +177,7 @@ export const audioRouter = router({
   recordListen: protectedProcedure
     .input(z.object({ scriptId: z.string(), completionRate: z.number().min(0).max(1).optional() }))
     .mutation(async ({ input }) => {
-      const db = getDb();
+      const db = await requireDb();
       // Simple increment — in production this would use SQL increment
       const [script] = await db
         .select({ id: audioScripts.id, listenCount: audioScripts.listenCount })

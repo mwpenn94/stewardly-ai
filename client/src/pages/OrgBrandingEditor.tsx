@@ -110,7 +110,7 @@ export default function OrgBrandingEditor() {
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/chat")}>
+            <Button variant="ghost" size="icon" aria-label="Back to chat" onClick={() => navigate("/chat")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>

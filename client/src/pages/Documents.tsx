@@ -1218,11 +1218,11 @@ function AnnotationsPanel({ documentId }: { documentId: number }) {
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
                 {!ann.resolved && (
-                  <Button variant="ghost" size="icon" className="w-5 h-5" onClick={() => resolveMut.mutate({ id: ann.id })}>
+                  <Button variant="ghost" size="icon" className="w-5 h-5" aria-label="Resolve annotation" onClick={() => resolveMut.mutate({ id: ann.id })}>
                     <CheckCircle2 className="w-3 h-3 text-green-500" />
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" className="w-5 h-5" onClick={() => deleteMut.mutate({ id: ann.id })}>
+                <Button variant="ghost" size="icon" className="w-5 h-5" aria-label="Delete annotation" onClick={() => deleteMut.mutate({ id: ann.id })}>
                   <Trash2 className="w-3 h-3 text-destructive" />
                 </Button>
               </div>

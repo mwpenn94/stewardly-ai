@@ -141,7 +141,7 @@ export default function Organizations() {
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => setShowDetail(null)}>
+              <Button variant="ghost" size="icon" aria-label="Back to list" onClick={() => setShowDetail(null)}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
@@ -362,7 +362,7 @@ export default function Organizations() {
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/chat")}>
+            <Button variant="ghost" size="icon" aria-label="Back to chat" onClick={() => navigate("/chat")}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>

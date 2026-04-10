@@ -194,7 +194,7 @@ export default function EngineDashboard() {
 
   // ─── RUN ALL ENGINES ──────────────────────────────────────────
   const runSimulations = useCallback(async () => {
-    if (!user) { toast.error("Please log in to run simulations"); return; }
+    if (!user) { toast.error("Please sign in to run simulations"); return; }
     setIsRunning(true);
     toast.info("Running all engines...");
 
@@ -289,7 +289,7 @@ export default function EngineDashboard() {
 
   // ─── RUN BACK-PLAN ────────────────────────────────────────────
   const runBackPlan = useCallback(async () => {
-    if (!user) { toast.error("Please log in"); return; }
+    if (!user) { toast.error("Please sign in"); return; }
     try {
       const data = await bieBackPlan.mutateAsync({
         targetIncome: backPlanTarget,

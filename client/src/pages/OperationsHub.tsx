@@ -71,8 +71,8 @@ export default function OperationsHub() {
               className="pl-9"
             />
           </div>
-          <Button variant="outline" size="icon"><Filter className="h-4 w-4" /></Button>
-          <Button variant="outline" size="icon"><RefreshCw className="h-4 w-4" /></Button>
+          <Button variant="outline" size="icon" aria-label="Filter"><Filter className="h-4 w-4" /></Button>
+          <Button variant="outline" size="icon" aria-label="Refresh"><RefreshCw className="h-4 w-4" /></Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

@@ -35,7 +35,7 @@ export default function AdminIntelligenceDashboard() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/admin">
-          <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" aria-label="Back to admin"><ArrowLeft className="h-4 w-4" /></Button>
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Intelligence Dashboard</h1>

@@ -2105,7 +2105,7 @@ export const appRouter = router({
   dripifyWebhook: dripifyWebhookRouter,
   smsitWebhook: smsitWebhookRouter,
   audio: audioRouter,
-  client: clientRouter,
+  clientPortal: clientRouter,
 });
 
 export type AppRouter = typeof appRouter;

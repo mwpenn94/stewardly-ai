@@ -38,4 +38,4 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://stewardry.manus.space/sitemap.xml
+Sitemap: https://stewardly.manus.space/sitemap.xml

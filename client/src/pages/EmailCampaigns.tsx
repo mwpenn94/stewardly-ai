@@ -105,7 +105,7 @@ export default function EmailCampaigns() {
     <div className="container max-w-7xl py-6 space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/chat">
-          <Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button>
+          <Button variant="ghost" size="icon" aria-label="Back to chat"><ArrowLeft className="w-4 h-4" /></Button>
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -358,7 +358,7 @@ export default function EmailCampaigns() {
                           <div className="flex items-center gap-2">
                             <Badge className={statusColors[r.status || "pending"]} variant="outline">{r.status}</Badge>
                             {r.status === "pending" && (
-                              <Button size="icon" variant="ghost" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); removeRecipientMut.mutate({ sendId: r.id }); }}>
+                              <Button size="icon" variant="ghost" className="h-9 w-9" aria-label="Remove recipient" onClick={(e) => { e.stopPropagation(); removeRecipientMut.mutate({ sendId: r.id }); }}>
                                 <Trash2 className="w-3 h-3" />
                               </Button>
                             )}

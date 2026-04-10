@@ -145,6 +145,7 @@ export default function ShortcutsTab() {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                aria-label="Remove shortcut"
                 onClick={() => {
                   removeShortcut(shortcut.key);
                   toast.success(`Removed shortcut: G then ${shortcut.key.toUpperCase()}`);

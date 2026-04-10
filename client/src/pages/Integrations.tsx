@@ -1243,7 +1243,7 @@ export default function Integrations() {
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="container flex items-center gap-2 sm:gap-3 h-14">
           <Link href="/chat">
-            <Button variant="ghost" size="icon" className="shrink-0">
+            <Button variant="ghost" size="icon" className="shrink-0" aria-label="Back to chat">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>

@@ -131,7 +131,7 @@ export default function Meetings() {
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/chat")}>
+            <Button variant="ghost" size="icon" aria-label="Back to chat" onClick={() => navigate("/chat")}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
@@ -342,7 +342,7 @@ function MeetingDetail({ meeting, typeConfig, onBack, onGenerateBrief, onGenerat
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+        <Button variant="ghost" size="icon" aria-label="Go back" onClick={onBack}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="flex-1">
@@ -357,7 +357,7 @@ function MeetingDetail({ meeting, typeConfig, onBack, onGenerateBrief, onGenerat
             </p>
           )}
         </div>
-        <Button variant="ghost" size="icon" className="text-destructive/60 hover:text-destructive" onClick={onDelete}>
+        <Button variant="ghost" size="icon" className="text-destructive/60 hover:text-destructive" aria-label="Delete meeting" onClick={onDelete}>
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>

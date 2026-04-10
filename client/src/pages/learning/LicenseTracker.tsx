@@ -213,6 +213,7 @@ export default function LicenseTracker() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        aria-label="Remove license"
                         onClick={() => removeMut.mutate({ id: lic.id })}
                         disabled={removeMut.isPending}
                       >

@@ -183,6 +183,7 @@ export default function KnowledgeAdmin() {
                             variant="ghost"
                             size="icon"
                             className="shrink-0 text-destructive"
+                            aria-label="Delete article"
                             onClick={() => deleteArticle.mutate({ id: article.id })}
                           >
                             <Trash2 className="w-4 h-4" />

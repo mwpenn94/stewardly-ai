@@ -33,6 +33,7 @@ function CopyBlock({ code, language = "typescript" }: { code: string; language?:
       <Button
         variant="ghost" size="icon"
         className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+        aria-label="Copy code"
         onClick={handleCopy}
       >
         {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
