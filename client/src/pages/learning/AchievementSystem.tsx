@@ -108,7 +108,7 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
           <div className="text-[10px] text-muted-foreground">Exams</div>
         </div>
         <div className="p-3 rounded-xl border border-border bg-card/60 text-center">
-          <Calendar className="w-5 h-5 mx-auto mb-1 text-sky-400" />
+          <Calendar className="w-5 h-5 mx-auto mb-1 text-chart-3" />
           <div className="text-lg font-heading font-bold">{Math.round(d.totalStudyMinutes / 60)}h</div>
           <div className="text-[10px] text-muted-foreground">Study Time</div>
         </div>
