@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import AppShell from "@/components/AppShell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -307,6 +308,7 @@ export default function Workflows() {
     : null;
 
   return (
+    <AppShell title="Workflows">
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">
@@ -573,5 +575,6 @@ export default function Workflows() {
         )}
       </div>
     </div>
+    </AppShell>
   );
 }

@@ -9,6 +9,7 @@ import {
   ChevronRight, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import AppShell from "@/components/AppShell";
 
 interface WorkItem {
   id: string;
@@ -58,6 +59,7 @@ export default function MyWork({ items = [], isLoading = false }: MyWorkProps) {
   ];
 
   return (
+    <AppShell title="My Work">
     <div className="max-w-3xl mx-auto px-4 py-6 pb-20 md:pb-6">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -128,5 +130,6 @@ export default function MyWork({ items = [], isLoading = false }: MyWorkProps) {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }
