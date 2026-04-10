@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { SEOHead } from "@/components/SEOHead";
 import TypingIndicator from "@/components/TypingIndicator";
 import { EmptyConversations } from "@/components/EmptyStates";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
@@ -1345,6 +1346,7 @@ export default function Chat() {
       >
         Skip to chat
       </a>
+      <SEOHead title="Chat" description="AI-powered financial advisory chat" />
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
