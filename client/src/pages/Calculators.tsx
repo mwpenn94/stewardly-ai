@@ -140,8 +140,8 @@ export default function Calculators() {
   return (
     <AppShell title="Calculators">
     <div className="min-h-screen">
-      {/* Header */}
-      <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">
+      {/* Header — hidden on mobile where AppShell provides navigation */}
+      <div className="hidden lg:block border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3 relative">
           <Button variant="ghost" size="icon-sm" className="shrink-0" onClick={() => navigate("/chat")}>
