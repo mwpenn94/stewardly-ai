@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, ArrowRight, User, DollarSign, Shield, FileText, CheckCircle2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const STEPS = [
   { id: 1, title: "Personal Info", icon: User },
@@ -30,6 +31,7 @@ export default function ClientOnboarding() {
   const progress = Math.round((step / STEPS.length) * 100);
 
   return (
+    <AppShell title="Onboarding">
     <div className="container max-w-2xl py-8 space-y-6">
       <SEOHead title="Client Onboarding" description="New client onboarding wizard" />
 
@@ -158,5 +160,6 @@ export default function ClientOnboarding() {
         )}
       </div>
     </div>
+    </AppShell>
   );
 }

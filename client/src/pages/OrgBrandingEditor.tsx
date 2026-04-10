@@ -10,6 +10,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { ArrowLeft, Eye, Palette, Type, Shield, Save, Loader2, ExternalLink, Lock, TrendingUp } from "lucide-react";
+import AppShell from "@/components/AppShell";
 
 export default function OrgBrandingEditor() {
   const { user } = useAuth();
@@ -104,6 +105,7 @@ export default function OrgBrandingEditor() {
   }
 
   return (
+    <AppShell title="Organization Branding">
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-50 relative overflow-hidden">
@@ -366,5 +368,6 @@ export default function OrgBrandingEditor() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

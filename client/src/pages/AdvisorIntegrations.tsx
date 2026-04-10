@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { navigateToChat } from "@/lib/navigateToChat";
 import { Plug, Link2, Unlink, RefreshCw, CheckCircle, XCircle, Clock, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import AppShell from "@/components/AppShell";
 
 export default function AdvisorIntegrations() {
   const [tab, setTab] = useState("my-connections");
@@ -32,6 +33,7 @@ export default function AdvisorIntegrations() {
   };
 
   return (
+    <AppShell title="My Integrations">
     <div className="space-y-6">
       <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
       <div>
@@ -107,5 +109,6 @@ export default function AdvisorIntegrations() {
         </TabsContent>
       </Tabs>
     </div>
+    </AppShell>
   );
 }

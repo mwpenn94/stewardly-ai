@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Phone, MapPin, Calendar, Award, BookOpen, Star, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 export default function AdvisorProfile() {
   return (
+    <AppShell title="Advisor Profile">
     <div className="container max-w-3xl py-8 space-y-6">
       <SEOHead title="Advisor Profile" description="Financial advisor profile and credentials" />
 
@@ -96,5 +98,6 @@ export default function AdvisorProfile() {
         </CardContent>
       </Card>
     </div>
+    </AppShell>
   );
 }
