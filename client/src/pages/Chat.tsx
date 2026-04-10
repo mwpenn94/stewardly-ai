@@ -2711,6 +2711,7 @@ export default function Chat() {
                   size="icon"
                   className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
                   disabled
+                  aria-label="Sending message"
                 >
                   <Loader2 className="w-5 h-5 animate-spin" />
                 </Button>
@@ -2719,6 +2720,7 @@ export default function Chat() {
                   size="icon"
                   className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
                   onClick={handleSend}
+                  aria-label="Send message"
                 >
                   <ArrowUp className="w-5 h-5" />
                 </Button>
@@ -2727,6 +2729,7 @@ export default function Chat() {
                   size="icon"
                   className="h-10 w-10 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse transition-all"
                   onClick={toggleHandsFree}
+                  aria-label="Stop hands-free mode"
                 >
                   <PhoneOff className="w-5 h-5" />
                 </Button>
