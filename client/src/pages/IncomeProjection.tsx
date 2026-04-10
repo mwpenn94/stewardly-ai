@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, DollarSign, TrendingUp, PiggyBank, BarChart3, Clock } from "lucide-react";
 import { useLocation } from "wouter";
+import AppShell from "@/components/AppShell";
 
 const INCOME_SOURCES = [
   { source: "Social Security", monthly: 2678, annual: 32136, startAge: 67, type: "Guaranteed", color: "bg-blue-500" },
@@ -27,6 +28,7 @@ export default function IncomeProjection() {
   const targetMonthly = 10000;
 
   return (
+    <AppShell title="Income Projection">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Income Projection" description="Retirement income projection and sustainability analysis" />
 
@@ -93,5 +95,6 @@ export default function IncomeProjection() {
         severity="info"
       />
     </div>
+    </AppShell>
   );
 }

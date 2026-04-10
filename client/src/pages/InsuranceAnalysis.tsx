@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Shield, Heart, Home, Car, Umbrella, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const COVERAGE = [
   { type: "Life Insurance", icon: Heart, current: 500000, recommended: 1200000, status: "gap", carrier: "Northwestern Mutual", premium: "$145/mo" },
@@ -25,6 +26,7 @@ export default function InsuranceAnalysis() {
   const [, navigate] = useLocation();
 
   return (
+    <AppShell title="Insurance Analysis">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Insurance Analysis" description="Insurance needs analysis and coverage gap identification" />
 
@@ -99,5 +101,6 @@ export default function InsuranceAnalysis() {
         onAction={() => toast.info("Quote comparison coming soon")}
       />
     </div>
+    </AppShell>
   );
 }

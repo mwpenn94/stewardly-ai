@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, DollarSign, TrendingUp, Users, Clock } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const CLAIMING_AGES = [
   { age: 62, monthly: 1875, annual: 22500, reduction: "-30%", breakeven: "N/A", cumulative80: 405000 },
@@ -23,6 +24,7 @@ export default function SocialSecurity() {
   const [, navigate] = useLocation();
 
   return (
+    <AppShell title="Social Security">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Social Security" description="Social Security claiming strategy optimization" />
 
@@ -97,5 +99,6 @@ export default function SocialSecurity() {
         severity="info"
       />
     </div>
+    </AppShell>
   );
 }

@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 import {
   ArrowLeft, TrendingUp, Shield, FileSignature, BarChart3, Loader2,
   RefreshCw, Target, Activity, ChevronRight, DollarSign, Percent,
@@ -26,6 +27,7 @@ export default function ProductIntelligence() {
   const [activeTab, setActiveTab] = useState("market");
 
   return (
+    <AppShell title="Product Intelligence">
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -77,6 +79,7 @@ export default function ProductIntelligence() {
         </Tabs>
       </div>
     </div>
+    </AppShell>
   );
 }
 

@@ -18,6 +18,7 @@ import { Link } from "wouter";
 import { getLoginUrl } from "@/const";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
+import AppShell from "@/components/AppShell";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 type Provider = {

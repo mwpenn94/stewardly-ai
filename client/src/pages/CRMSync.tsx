@@ -22,6 +22,7 @@ import { ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, Clock, Database, Arr
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 // Sync history remains a design preview until a sync_history table
 // exists — the backend only has a pull/push trigger at the moment.
@@ -58,6 +59,7 @@ export default function CRMSync() {
   };
 
   return (
+    <AppShell title="CRM Sync">
     <div className="container max-w-4xl py-8 space-y-6">
       <SEOHead title="CRM Sync" description="Manage CRM integration and data synchronization" />
 
@@ -229,5 +231,6 @@ export default function CRMSync() {
         </TabsContent>
       </Tabs>
     </div>
+    </AppShell>
   );
 }

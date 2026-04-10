@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Heart, DollarSign, Calendar, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 const IRMAA_BRACKETS = [
   { magi: "≤ $103,000", partB: "$174.70", partD: "$0.00", total: "$174.70" },
@@ -26,6 +27,7 @@ export default function MedicareAnalysis() {
   const [, navigate] = useLocation();
 
   return (
+    <AppShell title="Medicare Analysis">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Medicare Analysis" description="Medicare enrollment guidance and plan comparison" />
 
@@ -153,5 +155,6 @@ export default function MedicareAnalysis() {
         </TabsContent>
       </Tabs>
     </div>
+    </AppShell>
   );
 }
