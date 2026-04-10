@@ -38,17 +38,6 @@ interface TraceStep {
   durationMs?: number;
 }
 
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  traces?: TraceStep[];
-  model?: string;
-  iterations?: number;
-  toolCallCount?: number;
-  timestamp: Date;
-}
-
 // ─── Tool Trace Visualization ──────────────────────────────────────────────
 
 function TraceView({ traces }: { traces: TraceStep[] }) {
@@ -99,62 +88,65 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
   );
 }
 
-// ─── Main Chat Interface ───────────────────────────────────────────────────
+import { useCodeChatStream, type ToolEvent, type CodeChatMessage } from "@/hooks/useCodeChatStream";
+
+// ─── Live Tool Event Display ───────────────────────────────────────────────
+
+function LiveToolEvents({ events }: { events: ToolEvent[] }) {
+  if (events.length === 0) return null;
+  return (
+    <div className="space-y-1 my-2">
+      {events.map(ev => (
+        <div key={ev.stepIndex} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/30 bg-card/20 text-xs">
+          {ev.status === "running" ? (
+            <Loader2 className="w-3 h-3 animate-spin text-accent" />
+          ) : ev.status === "error" ? (
+            <AlertTriangle className="w-3 h-3 text-destructive" />
+          ) : (
+            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+          )}
+          <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-mono">{ev.toolName}</Badge>
+          {ev.args?.path != null && <span className="text-muted-foreground truncate">{String(ev.args.path)}</span>}
+          {ev.args?.pattern != null && <span className="text-muted-foreground truncate">&quot;{String(ev.args.pattern)}&quot;</span>}
+          {ev.durationMs != null && <span className="text-muted-foreground/50 tabular-nums ml-auto">{ev.durationMs}ms</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main Chat Interface (SSE Streaming) ───────────────────────────────────
 
 function CodeChatInterface() {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [allowMutations, setAllowMutations] = useState(false);
   const [maxIterations, setMaxIterations] = useState(5);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const chatMut = trpc.codeChat.chat.useMutation();
+  const { messages, isExecuting, currentTools, error, sendMessage, abort, clearHistory } = useCodeChatStream();
 
   const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  }, [messages, currentTools]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
-    if (!text || chatMut.isPending) return;
-
-    const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
-      role: "user",
-      content: text,
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, userMsg]);
+    if (!text || isExecuting) return;
     setInput("");
-
-    try {
-      const result = await chatMut.mutateAsync({
-        message: text,
-        allowMutations: isAdmin && allowMutations,
-        maxIterations,
-      });
-
-      const assistantMsg: ChatMessage = {
-        id: `a-${Date.now()}`,
-        role: "assistant",
-        content: result.response,
-        traces: result.traces,
-        model: result.model,
-        iterations: result.iterations,
-        toolCallCount: result.toolCallCount,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, assistantMsg]);
-    } catch (err: any) {
-      toast.error(err.message || "Code Chat failed");
-    }
-
+    await sendMessage(text, {
+      allowMutations: isAdmin && allowMutations,
+      maxIterations,
+    });
     inputRef.current?.focus();
-  }, [input, chatMut, allowMutations, maxIterations, isAdmin]);
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)]">
@@ -217,9 +209,15 @@ function CodeChatInterface() {
               </div>
             ) : (
               <div className="space-y-2 max-w-full">
-                {/* Tool traces */}
-                {msg.traces && msg.traces.length > 0 && (
-                  <TraceView traces={msg.traces} />
+                {/* Tool events from streaming */}
+                {msg.toolEvents && msg.toolEvents.length > 0 && (
+                  <TraceView traces={msg.toolEvents.map(ev => ({
+                    step: ev.stepIndex,
+                    thought: ev.args ? `${ev.toolName}(${Object.entries(ev.args).map(([k,v]) => `${k}: ${String(v).slice(0,60)}`).join(", ")})` : undefined,
+                    toolName: ev.toolName,
+                    observation: ev.preview ? (typeof ev.preview === "string" ? ev.preview.slice(0, 3000) : JSON.stringify(ev.preview).slice(0, 3000)) : undefined,
+                    durationMs: ev.durationMs,
+                  }))} />
                 )}
                 {/* Response */}
                 <div className="bg-card/60 border border-border/30 px-4 py-3 rounded-xl text-sm whitespace-pre-wrap font-mono leading-relaxed">
@@ -231,16 +229,20 @@ function CodeChatInterface() {
                   {msg.toolCallCount != null && msg.toolCallCount > 0 && (
                     <span>• {msg.toolCallCount} tool calls</span>
                   )}
-                  {msg.iterations != null && (
-                    <span>• {msg.iterations} iterations</span>
-                  )}
+                  {msg.iterations != null && <span>• {msg.iterations} iterations</span>}
+                  {msg.totalDurationMs != null && <span>• {(msg.totalDurationMs / 1000).toFixed(1)}s</span>}
                 </div>
               </div>
             )}
           </div>
         ))}
 
-        {chatMut.isPending && (
+        {/* Live streaming tool events */}
+        {isExecuting && currentTools.length > 0 && (
+          <LiveToolEvents events={currentTools} />
+        )}
+
+        {isExecuting && currentTools.length === 0 && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="w-4 h-4 animate-spin text-accent" />
             <span>Thinking...</span>
@@ -257,19 +259,30 @@ function CodeChatInterface() {
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             placeholder={allowMutations ? "Ask or instruct (write mode enabled)..." : "Ask about the codebase..."}
-            className="flex-1 min-h-[40px] max-h-[120px] resize-none text-sm border-border/50 bg-background/50"
+            className="flex-1 min-h-[40px] max-h-[120px] resize-none text-sm border-border/50 bg-background/50 font-mono"
             rows={1}
-            disabled={chatMut.isPending}
+            disabled={isExecuting}
           />
-          <Button
-            size="icon"
-            onClick={handleSend}
-            disabled={!input.trim() || chatMut.isPending}
-            className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 shrink-0"
-            aria-label="Send message"
-          >
-            {chatMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </Button>
+          {isExecuting ? (
+            <Button
+              size="icon"
+              onClick={abort}
+              className="h-10 w-10 rounded-full bg-destructive/20 text-destructive hover:bg-destructive/30 shrink-0"
+              aria-label="Stop execution"
+            >
+              <span className="w-3 h-3 bg-destructive rounded-sm" />
+            </Button>
+          ) : (
+            <Button
+              size="icon"
+              onClick={handleSend}
+              disabled={!input.trim()}
+              className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 shrink-0"
+              aria-label="Send message"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
