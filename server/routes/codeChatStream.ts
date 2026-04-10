@@ -81,6 +81,14 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         },
       }));
 
+    // Resolve 5-layer AI config for personalized behavior
+    let layerOverlay = "";
+    try {
+      const { resolveAIConfig, buildLayerOverlayPrompt } = await import("../aiConfigResolver");
+      const resolved = await resolveAIConfig({ userId: user.id, organizationId: user.affiliateOrgId ?? undefined });
+      if (resolved) layerOverlay = buildLayerOverlayPrompt(resolved);
+    } catch { /* config resolution is optional */ }
+
     const systemPrompt = [
       "You are a Claude-Code-style coding assistant inside Stewardly.",
       "Work step-by-step. Use `code_list_directory` and `code_read_file` to explore.",
@@ -89,7 +97,8 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         ? "You have `code_write_file`, `code_edit_file`, `code_run_bash` — use sparingly, explain every change."
         : "Write/edit/bash disabled. Return diffs as code blocks.",
       "Keep responses concise. Surface reasoning + tool calls.",
-    ].join("\n");
+      layerOverlay ? `\n${layerOverlay}` : "",
+    ].filter(Boolean).join("\n");
 
     writeSse(res, { type: "thinking", content: "Starting analysis..." });
 
