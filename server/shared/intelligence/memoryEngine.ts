@@ -20,6 +20,7 @@
 
 import type { MemoryCategory } from "./types";
 import { normalizeQualityScore, EXTENDED_MEMORY_CATEGORIES } from "./types";
+import { eventBus } from "../events/eventBus";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -226,6 +227,9 @@ export function createMemoryEngine(config: MemoryEngineConfig) {
           confidence: m.confidence,
         })),
       );
+
+      // Emit memory.stored event for downstream listeners
+      eventBus.emit("memory.stored", { userId, count: newMemories.length, categories: newMemories.map(m => m.category) });
 
       if (conflicts.size > 0) {
         log.info(`[memoryEngine] Detected ${conflicts.size} superseded memories for user ${userId}`);

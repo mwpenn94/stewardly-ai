@@ -442,6 +442,20 @@ const chatRouter = router({
       });
 
       let aiContent = reactResult.response;
+
+      // ── URL HALLUCINATION GUARD ─────────────────────────────────
+      // Strip fabricated URLs from AI responses before they reach the user.
+      // Uses the trusted domain allowlist (IRS, SEC, FINRA, YouTube, etc.)
+      try {
+        const { stripHallucinatedURLs } = await import("./shared/guardrails/urlHallucination");
+        const sourceContext = fullSystemPrompt.slice(0, 2000);
+        const { cleaned, strippedCount } = stripHallucinatedURLs(aiContent, sourceContext);
+        if (strippedCount > 0) {
+          logger.warn({ strippedCount, userId: ctx.user.id }, "Stripped hallucinated URLs from AI response");
+          aiContent = cleaned;
+        }
+      } catch { /* guardrail failure is non-fatal */ }
+
       let response = { model: reactResult.model, choices: [{ message: { content: aiContent } }] } as any;
 
       // ── EMPTY RESPONSE GUARD ────────────────────────────────────
