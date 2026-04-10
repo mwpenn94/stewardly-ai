@@ -16,7 +16,7 @@ const PRIORITY_COLORS: Record<string, string> = {
   critical: "bg-red-500/15 text-red-400 border-red-500/30",
   high: "bg-orange-500/15 text-orange-400 border-orange-500/30",
   medium: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  low: "bg-slate-500/15 text-slate-400 border-slate-500/30",
+  low: "bg-muted/15 text-muted-foreground border-muted/30",
 };
 
 const TYPE_ICONS: Record<string, typeof Bell> = {

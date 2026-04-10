@@ -303,7 +303,7 @@ function AudioCompanionUI() {
           className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer">
           <SkipForward className="w-3.5 h-3.5" />
         </button>
-        <div className="w-16 h-1 rounded-full bg-border overflow-hidden" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
+        <div className="w-16 h-1 rounded-full bg-border overflow-hidden" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-valuetext={`${Math.round(progress)}% complete`}>
           <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
         </div>
         <button onClick={audio.expand}

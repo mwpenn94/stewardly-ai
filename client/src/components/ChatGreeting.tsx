@@ -312,7 +312,7 @@ export default function ChatGreetingV2({
               key={card.title}
               type="button"
               onClick={() => onSuggestionClick(card.prompt)}
-              className="flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-4 text-left transition-shadow hover:shadow-md hover:shadow-accent/5 hover:border-accent/20 focus-visible:ring-2 focus-visible:ring-ring"
+              className="card-lift flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-4 text-left transition-shadow hover:shadow-md hover:shadow-accent/5 hover:border-accent/20 focus-visible:ring-2 focus-visible:ring-ring"
               variants={variant}
               custom={i + 3}
             >

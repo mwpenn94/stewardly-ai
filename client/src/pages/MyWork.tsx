@@ -23,7 +23,7 @@ interface WorkItem {
 
 const STATUS_CONFIG = {
   "action-needed": { label: "Needs Action", color: "text-rose-400", bgColor: "bg-rose-500/10", icon: AlertTriangle },
-  "in-progress": { label: "In Progress", color: "text-sky-400", bgColor: "bg-sky-500/10", icon: Clock },
+  "in-progress": { label: "In Progress", color: "text-chart-3", bgColor: "bg-chart-3/10", icon: Clock },
   review: { label: "In Review", color: "text-amber-400", bgColor: "bg-amber-500/10", icon: ShieldCheck },
   complete: { label: "Complete", color: "text-emerald-400", bgColor: "bg-emerald-500/10", icon: CheckCircle2 },
 };

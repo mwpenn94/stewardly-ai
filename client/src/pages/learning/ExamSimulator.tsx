@@ -342,10 +342,7 @@ export default function ExamSimulator({
     setFinished(true);
     setTimerRunning(false);
 
-    const correctCount = answers.filter((a) => a.correct).length +
-      (selectedKey && currentQuestion && !revealed
-        ? (selectedKey === currentQuestion.correctKey ? 1 : 0)
-        : 0);
+    const correctCount = answers.filter((a) => a.correct).length;
 
     // Calculate weak topics: topics where accuracy < 60%
     const topicStats: Record<string, { correct: number; total: number }> = {};

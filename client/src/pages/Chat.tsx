@@ -244,6 +244,10 @@ export default function Chat() {
   const creatingConversationRef = useRef(false);
   const streamAbortRef = useRef<AbortController | null>(null);
   const loopPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Clean up loop polling on unmount to prevent background intervals
+  useEffect(() => {
+    return () => { if (loopPollRef.current) clearInterval(loopPollRef.current); };
+  }, []);
 
   // ─── GUARD REF ─────────────────────────────────────────────────
   // Blocks voice recognition during TTS playback AND AI processing.
@@ -273,7 +277,7 @@ export default function Chat() {
       forceUpdate(n => n + 1);
       // In hands-free mode, restart listening after TTS completes
       if (handsFreeActive) {
-        setTimeout(() => voice.start(), 600);
+        setTimeout(() => { try { voice.start(); } catch { /* voice may not be available */ } }, 600);
       }
     },
   });
@@ -528,7 +532,8 @@ export default function Chat() {
         setSelectedFocus([pending.focus]);
       }
       // Focus the textarea after a brief delay to let the component render
-      setTimeout(() => textareaRef.current?.focus(), 300);
+      const timer = setTimeout(() => textareaRef.current?.focus(), 300);
+      return () => clearTimeout(timer);
     }
   }, []);
   useEffect(() => {
@@ -1061,7 +1066,7 @@ export default function Chat() {
         guardRef.current = false;
         processingRef.current = false;
         forceUpdate(n => n + 1);
-        setTimeout(() => voice.start(), 600);
+        setTimeout(() => { try { voice.start(); } catch { /* voice may not be available */ } }, 600);
       }
     }
   };
@@ -1300,20 +1305,21 @@ export default function Chat() {
   const ROLE_LEVEL: Record<string, number> = { guest: 0, user: 1, advisor: 2, manager: 3, admin: 4 };
   const personaLayers: PersonaLayer[] = [
     { key: "person", label: "Person", minRole: "guest", items: [
-      { label: "Documents", icon: <FileText className="w-4 h-4" />, path: "/documents", match: ["/documents"] },
-      { label: "Progress", icon: <BarChart3 className="w-4 h-4" />, path: "/progress", match: ["/progress"] },
+      { label: "Documents", icon: <FileText className="w-4 h-4" />, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },
+      { label: "My Progress", icon: <BarChart3 className="w-4 h-4" />, path: "/proficiency", match: ["/proficiency"] },
       { label: "Audio", icon: <Volume2 className="w-4 h-4" />, path: "/settings/audio", match: ["/settings/audio"] },
     ]},
     { key: "client", label: "Client", minRole: "user", items: [
-      { label: "Financial Twin", icon: <Fingerprint className="w-4 h-4" />, path: "/financial-twin", match: ["/financial-twin"] },
-      { label: "Suitability", icon: <Scale className="w-4 h-4" />, path: "/suitability", match: ["/suitability"] },
+      { label: "My Financial Twin", icon: <Fingerprint className="w-4 h-4" />, path: "/financial-twin", match: ["/financial-twin"] },
+      { label: "Insights", icon: <Sparkles className="w-4 h-4" />, path: "/intelligence-hub", match: ["/intelligence-hub", "/insights"] },
+      { label: "Suitability", icon: <Scale className="w-4 h-4" />, path: "/settings/suitability", match: ["/settings/suitability", "/suitability"] },
     ]},
     { key: "advisor", label: "Advisor", minRole: "advisor", items: [
       { label: "Clients", icon: <Users className="w-4 h-4" />, path: "/relationships", match: ["/relationships", "/portal"] },
       { label: "Cases & Work", icon: <Briefcase className="w-4 h-4" />, path: "/my-work", match: ["/my-work", "/operations", "/workflows"] },
       { label: "Compliance", icon: <Shield className="w-4 h-4" />, path: "/compliance-audit", match: ["/compliance-audit"] },
       { label: "Market Data", icon: <TrendingUp className="w-4 h-4" />, path: "/market-data", match: ["/market-data"] },
-      { label: "Calculators", icon: <Calculator className="w-4 h-4" />, path: "/wealth-engine", match: ["/wealth-engine"] },
+      { label: "Calculators", icon: <Calculator className="w-4 h-4" />, path: "/calculators", match: ["/calculators", "/wealth-engine"] },
     ]},
     { key: "manager", label: "Manager", minRole: "manager", items: [
       { label: "Team Dashboard", icon: <Users className="w-4 h-4" />, path: "/manager", match: ["/manager"] },

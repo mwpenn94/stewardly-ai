@@ -44,8 +44,8 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  streak: "text-amber-400", mastery: "text-purple-400", exam: "text-emerald-400",
-  case: "text-sky-400", milestone: "text-rose-400",
+  streak: "text-chart-1", mastery: "text-chart-5", exam: "text-chart-2",
+  case: "text-chart-3", milestone: "text-chart-4",
 };
 
 const DEMO_DATA: AchievementData = {
@@ -108,7 +108,7 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
           <div className="text-[10px] text-muted-foreground">Exams</div>
         </div>
         <div className="p-3 rounded-xl border border-border bg-card/60 text-center">
-          <Calendar className="w-5 h-5 mx-auto mb-1 text-sky-400" />
+          <Calendar className="w-5 h-5 mx-auto mb-1 text-chart-3" />
           <div className="text-lg font-heading font-bold">{Math.round(d.totalStudyMinutes / 60)}h</div>
           <div className="text-[10px] text-muted-foreground">Study Time</div>
         </div>

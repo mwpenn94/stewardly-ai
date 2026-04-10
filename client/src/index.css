@@ -246,15 +246,6 @@
   border-color: oklch(0.76 0.14 80 / 0.35);
 }
 
-/* Chat message animations */
-@keyframes message-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-message-in {
-  animation: message-in 0.3s ease-out;
-}
-
 /* Pulse glow — Stewardship Gold */
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 0 0 oklch(0.76 0.14 80 / 0.4); }
@@ -447,6 +438,12 @@
 @keyframes card-flip-in {
   from { transform: rotateY(-90deg); opacity: 0; }
   to { transform: rotateY(0deg); opacity: 1; }
+}
+.animate-card-flip-out {
+  animation: card-flip-out 0.2s ease-in forwards;
+}
+.animate-card-flip-in {
+  animation: card-flip-in 0.2s ease-out forwards;
 }
 
 /* ═══ SKELETON LOADING ═══ */
