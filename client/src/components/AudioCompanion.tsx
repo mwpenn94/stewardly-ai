@@ -294,17 +294,20 @@ function AudioCompanionUI() {
           {audio.currentItem.title}
         </span>
         <button onClick={audio.playing ? audio.pause : audio.resume}
+          aria-label={audio.playing ? "Pause" : "Play"}
           className="w-7 h-7 flex items-center justify-center rounded-full bg-primary/10 text-primary cursor-pointer">
           {audio.playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
         </button>
         <button onClick={audio.skip}
+          aria-label="Skip forward"
           className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer">
           <SkipForward className="w-3.5 h-3.5" />
         </button>
-        <div className="w-16 h-1 rounded-full bg-border overflow-hidden">
+        <div className="w-16 h-1 rounded-full bg-border overflow-hidden" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
           <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
         </div>
         <button onClick={audio.expand}
+          aria-label="Expand player"
           className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer">
           <ChevronUp className="w-3.5 h-3.5" />
         </button>
@@ -334,10 +337,12 @@ function AudioCompanionUI() {
           </div>
           <div className="flex items-center gap-1">
             <button onClick={audio.minimize}
+              aria-label="Minimize player"
               className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground cursor-pointer">
               <ChevronDown className="w-4 h-4" />
             </button>
             <button onClick={audio.dismiss}
+              aria-label="Close player"
               className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground cursor-pointer">
               <X className="w-4 h-4" />
             </button>
@@ -360,6 +365,7 @@ function AudioCompanionUI() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <button onClick={() => audio.adjustSpeed(0.25)}
+              aria-label={`Playback speed ${audio.speed.toFixed(2)}x, click to increase`}
               className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground border border-border cursor-pointer tabular-nums">
               {audio.speed.toFixed(2)}x
             </button>
@@ -367,14 +373,17 @@ function AudioCompanionUI() {
 
           <div className="flex items-center gap-2">
             <button onClick={audio.previous}
+              aria-label="Previous track"
               className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground cursor-pointer">
               <SkipBack className="w-4 h-4" />
             </button>
             <button onClick={audio.playing ? audio.pause : audio.resume}
+              aria-label={audio.playing ? "Pause" : "Play"}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground cursor-pointer">
               {audio.playing ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
             </button>
             <button onClick={audio.skip}
+              aria-label="Next track"
               className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground cursor-pointer">
               <SkipForward className="w-4 h-4" />
             </button>
@@ -384,6 +393,7 @@ function AudioCompanionUI() {
             <button onClick={audio.toggleVoiceListening}
               className={`w-8 h-8 flex items-center justify-center rounded-full cursor-pointer transition-colors
                 ${audio.voiceListening ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              aria-label={audio.voiceListening ? "Disable voice commands" : "Enable voice commands"}
               title="Voice commands">
               {audio.voiceListening ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
             </button>
