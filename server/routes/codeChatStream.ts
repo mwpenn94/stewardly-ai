@@ -16,6 +16,8 @@ import {
   CODE_CHAT_TOOL_DEFINITIONS,
   type CodeToolCall,
 } from "../services/codeChat/codeChatExecutor";
+import { extractFileMentions } from "../services/codeChat/fileIndex";
+import { readFile as sandboxReadFile } from "../services/codeChat/fileTools";
 import { logger } from "../_core/logger";
 
 const codeChatStreamRouter = Router();
@@ -100,12 +102,47 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       layerOverlay ? `\n${layerOverlay}` : "",
     ].filter(Boolean).join("\n");
 
+    // ─── Pass 206: @file mention expansion ────────────────────────
+    //
+    // Pre-read any @path references in the user message and inline
+    // the content as context. The LLM can still use `code_read_file`
+    // for deeper exploration — this just saves a round-trip for the
+    // files the user explicitly pointed at.
+    const mentions = extractFileMentions(message, 5);
+    const contextChunks: string[] = [];
+    const resolvedMentions: Array<{ path: string; bytes: number; error?: string }> = [];
+    for (const rel of mentions) {
+      try {
+        const fileResult = await sandboxReadFile(
+          { workspaceRoot: WORKSPACE_ROOT, allowMutations: false, maxReadBytes: 32 * 1024 },
+          rel,
+        );
+        contextChunks.push(
+          `\n\n--- Mentioned file: ${rel} (${fileResult.byteLength}B${fileResult.truncated ? ", truncated" : ""}) ---\n${fileResult.content}`,
+        );
+        resolvedMentions.push({ path: rel, bytes: fileResult.byteLength });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        contextChunks.push(`\n\n--- Mentioned file: ${rel} (error: ${msg}) ---`);
+        resolvedMentions.push({ path: rel, bytes: 0, error: msg });
+      }
+    }
+    const userMessage = contextChunks.length > 0
+      ? `${message}${contextChunks.join("")}`
+      : message;
+    if (resolvedMentions.length > 0) {
+      writeSse(res, {
+        type: "mentions_resolved",
+        mentions: resolvedMentions,
+      });
+    }
+
     writeSse(res, { type: "thinking", content: "Starting analysis..." });
 
     const result = await executeReActLoop({
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: message },
+        { role: "user", content: userMessage },
       ] as any,
       userId: user.id,
       tools: toolDefs.length > 0 ? (toolDefs as any) : undefined,

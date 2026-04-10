@@ -157,6 +157,36 @@ describe("Round B1 — fileTools", () => {
       );
     });
 
+    // ─── Pass 205: before/after snapshots for diff rendering ──────
+    it("writeFile includes before/after snapshots for an overwrite", async () => {
+      await writeFile(sandboxRW(), "snap.txt", "original content");
+      const r = await writeFile(sandboxRW(), "snap.txt", "new content");
+      expect(r.created).toBe(false);
+      expect(r.before).toBe("original content");
+      expect(r.after).toBe("new content");
+      expect(r.diffTruncated).toBe(false);
+    });
+
+    it("writeFile reports empty before for a brand-new file", async () => {
+      const r = await writeFile(sandboxRW(), "brand-new.txt", "hello");
+      expect(r.created).toBe(true);
+      expect(r.before).toBe("");
+      expect(r.after).toBe("hello");
+    });
+
+    it("editFile includes before/after snapshots around the change", async () => {
+      await writeFile(sandboxRW(), "edit-snap.txt", "line1\nOLD\nline3");
+      const r = await editFile(
+        sandboxRW(),
+        "edit-snap.txt",
+        "OLD",
+        "NEW",
+      );
+      expect(r.before).toBe("line1\nOLD\nline3");
+      expect(r.after).toBe("line1\nNEW\nline3");
+      expect(r.replacements).toBe(1);
+    });
+
     it("readFile truncates at maxReadBytes", async () => {
       const big = "x".repeat(2000);
       await writeFile(sandboxRW(), "big.txt", big);

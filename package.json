@@ -1,7 +1,9 @@
 {
   "name": "stewardly-ai",
   "version": "1.0.0",
-  "engines": { "node": ">=20.0.0" },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -92,8 +94,10 @@
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.64.0",
+    "react-markdown": "10",
     "react-resizable-panels": "^3.0.6",
     "recharts": "^2.15.2",
+    "remark-gfm": "4",
     "snaptrade-typescript-sdk": "^9.0.173",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
