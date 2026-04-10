@@ -181,6 +181,33 @@ export default function Calculators() {
           </div>
         </div>
 
+        {/* Planning & Analysis — standalone advisory tools */}
+        <div className="mb-6">
+          <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">Planning & Analysis</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: "Tax Planning", path: "/tax-planning", icon: <DollarSign className="w-4 h-4" />, desc: "Brackets, Roth, strategy" },
+              { label: "Estate Planning", path: "/estate", icon: <Briefcase className="w-4 h-4" />, desc: "Documents, beneficiaries, estate tax" },
+              { label: "Risk Assessment", path: "/risk-assessment", icon: <Scale className="w-4 h-4" />, desc: "Risk profile analysis" },
+              { label: "Income Projection", path: "/income-projection", icon: <TrendingUp className="w-4 h-4" />, desc: "Income modeling" },
+              { label: "Insurance Analysis", path: "/insurance-analysis", icon: <Heart className="w-4 h-4" />, desc: "Coverage analysis" },
+              { label: "Protection Score", path: "/financial-protection-score", icon: <Calculator className="w-4 h-4" />, desc: "12-dimension scoring" },
+            ].map(tool => (
+              <button
+                key={tool.path}
+                onClick={() => navigate(tool.path)}
+                className="card-lift p-3 rounded-lg border border-border bg-card/60 hover:bg-secondary/40 transition-colors text-left group"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-accent">{tool.icon}</span>
+                  <span className="text-xs font-medium">{tool.label}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">{tool.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Calculator selector cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           {CALCULATORS.map(calc => (
