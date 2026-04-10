@@ -17,6 +17,7 @@ import {
 import { Link } from "wouter";
 import { useState } from "react";
 import { toast } from "sonner";
+import AppShell from "@/components/AppShell";
 
 export default function KnowledgeAdmin() {
   const { user } = useAuth();
@@ -50,6 +51,7 @@ export default function KnowledgeAdmin() {
   const isAdmin = user?.role === "admin" || user?.role === "manager";
 
   return (
+    <AppShell title="Knowledge Admin">
     <div className="min-h-screen bg-background">
       <div className="container max-w-7xl py-8">
         <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
@@ -537,5 +539,6 @@ export default function KnowledgeAdmin() {
         </Dialog>
       </div>
     </div>
+    </AppShell>
   );
 }
