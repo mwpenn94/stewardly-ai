@@ -2310,6 +2310,26 @@ export default function Chat() {
                           ))}
                         </>
                       )}
+                      {/* Processing mode — Loop, Consensus, CodeChat */}
+                      <div className="h-px bg-border my-1" />
+                      <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Processing</div>
+                      {(["single", "loop", "consensus", "codechat"] as const).map(m => (
+                        <button
+                          key={m}
+                          className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                            chatMode === m
+                              ? m === "loop" ? "bg-amber-500/15 text-amber-400"
+                                : m === "consensus" ? "bg-purple-500/15 text-purple-400"
+                                : m === "codechat" ? "bg-emerald-500/15 text-emerald-400"
+                                : "bg-accent/15 text-accent"
+                              : "hover:bg-secondary/60"
+                          }`}
+                          onClick={() => { setChatMode(m); if (m !== "single") setAdvancedOpen(true); setShowModeMenu(false); }}
+                        >
+                          {m === "single" ? "Single" : m === "loop" ? "Loop" : m === "consensus" ? "Consensus" : "CodeChat"}
+                          {chatMode === m && <Check className="w-3 h-3 ml-auto" />}
+                        </button>
+                      ))}
                     </div>
                   </>
                 )}
@@ -2324,12 +2344,12 @@ export default function Chat() {
                   for power users (one click to reveal). When a non-default
                   chat mode is active, a small badge replaces the toggle so
                   the user can see at a glance what mode they're in. */}
-              {/* Mode badge + advanced toggle */}
+              {/* Mode badge — desktop only (mobile users switch via Focus menu) */}
               {!advancedOpen && chatMode !== "single" && (
                 <button
                   type="button"
                   onClick={() => setAdvancedOpen(true)}
-                  className={`inline-flex h-7 px-2 text-[10px] rounded-full border transition-colors ${
+                  className={`hidden md:inline-flex h-7 px-2 text-[10px] rounded-full border transition-colors ${
                     chatMode === "loop"
                       ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
                       : chatMode === "consensus"
@@ -2348,7 +2368,7 @@ export default function Chat() {
                     onClick={() => setAdvancedOpen((p) => !p)}
                     aria-label={advancedOpen ? "Hide advanced controls" : "Show advanced controls"}
                     aria-expanded={advancedOpen}
-                    className={`flex h-7 px-2 text-[10px] rounded-full border border-border transition-colors items-center gap-1 ${
+                    className={`hidden md:flex h-7 px-2 text-[10px] rounded-full border border-border transition-colors items-center gap-1 ${
                       advancedOpen
                         ? "bg-secondary/60 text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
