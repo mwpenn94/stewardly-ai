@@ -203,6 +203,20 @@ async function startServer() {
   const ttsRouter = (await import("../routes/tts")).default;
   app.use(ttsRouter);
 
+  // ─── Code Chat SSE streaming endpoint ─────────────────────────────
+  const codeChatStreamRouter = (await import("../routes/codeChatStream")).default;
+  app.use(async (req, res, next) => {
+    if (req.path === "/api/codechat/stream" && req.method === "POST") {
+      try {
+        const user = await sdk.authenticateRequest(req);
+        if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+        (req as any).__user = user;
+        next();
+      } catch { res.status(401).json({ error: "Unauthorized" }); }
+    } else { next(); }
+  });
+  app.use(codeChatStreamRouter);
+
   // ─── SSE Streaming endpoint ──────────────────────────────────────────
   app.post("/api/chat/stream", generalLimiter, async (req, res) => {
     try {

@@ -1,0 +1,173 @@
+/**
+ * useCodeChatStream — SSE streaming hook for Code Chat
+ *
+ * Connects to POST /api/codechat/stream and processes real-time
+ * tool execution events, providing live updates to the UI.
+ */
+
+import { useState, useCallback, useRef } from "react";
+
+export interface ToolEvent {
+  stepIndex: number;
+  toolName: string;
+  args?: Record<string, unknown>;
+  kind?: string;
+  preview?: string;
+  truncated?: boolean;
+  durationMs?: number;
+  status: "running" | "complete" | "error";
+}
+
+export interface CodeChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  toolEvents?: ToolEvent[];
+  model?: string;
+  iterations?: number;
+  toolCallCount?: number;
+  totalDurationMs?: number;
+  timestamp: Date;
+}
+
+interface StreamConfig {
+  model?: string;
+  allowMutations?: boolean;
+  maxIterations?: number;
+}
+
+export function useCodeChatStream() {
+  const [messages, setMessages] = useState<CodeChatMessage[]>([]);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [currentTools, setCurrentTools] = useState<ToolEvent[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const sendMessage = useCallback(async (message: string, config: StreamConfig = {}) => {
+    if (isExecuting) return;
+    setIsExecuting(true);
+    setError(null);
+    setCurrentTools([]);
+
+    // Add user message
+    const userMsg: CodeChatMessage = {
+      id: `u-${Date.now()}`,
+      role: "user",
+      content: message,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const resp = await fetch("/api/codechat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          model: config.model,
+          allowMutations: config.allowMutations ?? false,
+          maxIterations: config.maxIterations ?? 5,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Stream failed" }));
+        throw new Error(err.error || `HTTP ${resp.status}`);
+      }
+
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const toolEvents: ToolEvent[] = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+
+            switch (event.type) {
+              case "tool_start": {
+                const te: ToolEvent = {
+                  stepIndex: event.stepIndex,
+                  toolName: event.toolName,
+                  args: event.args,
+                  status: "running",
+                };
+                toolEvents.push(te);
+                setCurrentTools([...toolEvents]);
+                break;
+              }
+              case "tool_result": {
+                const existing = toolEvents.find(t => t.stepIndex === event.stepIndex);
+                if (existing) {
+                  existing.status = event.kind === "error" ? "error" : "complete";
+                  existing.kind = event.kind;
+                  existing.preview = event.preview;
+                  existing.truncated = event.truncated;
+                  existing.durationMs = event.durationMs;
+                }
+                setCurrentTools([...toolEvents]);
+                break;
+              }
+              case "done": {
+                const assistantMsg: CodeChatMessage = {
+                  id: `a-${Date.now()}`,
+                  role: "assistant",
+                  content: event.response,
+                  toolEvents: [...toolEvents],
+                  model: event.model,
+                  iterations: event.iterations,
+                  toolCallCount: event.toolCallCount,
+                  totalDurationMs: event.totalDurationMs,
+                  timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, assistantMsg]);
+                setCurrentTools([]);
+                break;
+              }
+              case "error":
+                setError(event.message);
+                break;
+              case "thinking":
+              case "heartbeat":
+                break;
+            }
+          } catch { /* skip unparseable lines */ }
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        setError(err.message || "Stream failed");
+      }
+    } finally {
+      setIsExecuting(false);
+      abortRef.current = null;
+    }
+  }, [isExecuting]);
+
+  const abort = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    setMessages([]);
+    setCurrentTools([]);
+    setError(null);
+  }, []);
+
+  return { messages, isExecuting, currentTools, error, sendMessage, abort, clearHistory };
+}

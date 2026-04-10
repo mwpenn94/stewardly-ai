@@ -1,20 +1,17 @@
 /**
- * Code Chat — Round B5 admin UI.
+ * Code Chat — Claude Code-style interface.
  *
- * Minimal admin UI for the Claude-Code-style code chat foundation:
- *   - Read-only file browser (list_directory + read_file)
- *   - Roadmap table with iterate / rescore / mark-done actions
- *   - Word-diff visualizer for two responses
- *
- * Mutations (write/edit/bash) are NOT exposed in this initial UI;
- * they're available via the codeChat tRPC router but require admin
- * + confirmDangerous: true. Wiring those into the UI is deliberately
- * left for a follow-up iteration so the first-pass surface stays safe.
+ * Terminal-like conversational UI with:
+ *   - Chat input with ReAct loop tool visualization
+ *   - Inline file viewer with syntax highlighting (via <pre>)
+ *   - Step-by-step tool call traces (reading files, grep, edits)
+ *   - File browser, roadmap, diff, and GitHub tabs
  */
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,64 +19,389 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
-  Loader2,
-  FileText,
-  FolderOpen,
-  GitBranch,
-  Sparkles,
-  CheckCircle2,
-  AlertTriangle,
-  Github,
-  ExternalLink,
-  Lock,
-  Unlock,
+  Loader2, FileText, FolderOpen, GitBranch, Sparkles,
+  CheckCircle2, AlertTriangle, Github, ExternalLink,
+  Lock, Unlock, Terminal, Send, ChevronDown, ChevronRight,
+  Search, Code, Braces, Play,
 } from "lucide-react";
 import { toast } from "sonner";
+
+// ─── Types ─────────────────────────────────────────────────────────────────
+
+interface TraceStep {
+  step: number;
+  thought?: string;
+  toolName?: string;
+  observation?: string;
+  durationMs?: number;
+}
+
+// ─── Tool Trace Visualization ──────────────────────────────────────────────
+
+function TraceView({ traces }: { traces: TraceStep[] }) {
+  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+
+  const toggle = (step: number) => {
+    setExpandedSteps(prev => {
+      const next = new Set(prev);
+      next.has(step) ? next.delete(step) : next.add(step);
+      return next;
+    });
+  };
+
+  return (
+    <div className="space-y-1 my-2">
+      {traces.map(t => (
+        <div key={t.step} className="border border-border/40 rounded-lg overflow-hidden bg-card/30">
+          <button
+            onClick={() => toggle(t.step)}
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/30 transition-colors"
+          >
+            {expandedSteps.has(t.step) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-mono">
+              {t.toolName || "thinking"}
+            </Badge>
+            <span className="text-muted-foreground truncate flex-1 text-left">
+              {t.thought?.slice(0, 80) || "processing..."}
+            </span>
+            {t.durationMs != null && (
+              <span className="text-[9px] text-muted-foreground/60 tabular-nums">{t.durationMs}ms</span>
+            )}
+          </button>
+          {expandedSteps.has(t.step) && (
+            <div className="px-3 pb-2 space-y-1.5">
+              {t.thought && (
+                <div className="text-[11px] text-muted-foreground italic">{t.thought}</div>
+              )}
+              {t.observation && (
+                <pre className="text-[11px] bg-background/80 rounded p-2 overflow-x-auto max-h-60 font-mono whitespace-pre-wrap border border-border/30">
+                  {t.observation.length > 3000 ? t.observation.slice(0, 3000) + "\n... (truncated)" : t.observation}
+                </pre>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+import { useCodeChatStream, type ToolEvent, type CodeChatMessage } from "@/hooks/useCodeChatStream";
+
+// ─── Live Tool Event Display ───────────────────────────────────────────────
+
+function LiveToolEvents({ events }: { events: ToolEvent[] }) {
+  if (events.length === 0) return null;
+  return (
+    <div className="space-y-1 my-2">
+      {events.map(ev => (
+        <div key={ev.stepIndex} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/30 bg-card/20 text-xs">
+          {ev.status === "running" ? (
+            <Loader2 className="w-3 h-3 animate-spin text-accent" />
+          ) : ev.status === "error" ? (
+            <AlertTriangle className="w-3 h-3 text-destructive" />
+          ) : (
+            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+          )}
+          <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-mono">{ev.toolName}</Badge>
+          {ev.args?.path != null && <span className="text-muted-foreground truncate">{String(ev.args.path)}</span>}
+          {ev.args?.pattern != null && <span className="text-muted-foreground truncate">&quot;{String(ev.args.pattern)}&quot;</span>}
+          {ev.durationMs != null && <span className="text-muted-foreground/50 tabular-nums ml-auto">{ev.durationMs}ms</span>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main Chat Interface (SSE Streaming) ───────────────────────────────────
+
+const HISTORY_KEY = "stewardly-codechat-history";
+const MESSAGES_KEY = "stewardly-codechat-messages";
+
+function CodeChatInterface() {
+  const { user } = useAuth();
+  const [input, setInput] = useState("");
+  const [allowMutations, setAllowMutations] = useState(false);
+  const [maxIterations, setMaxIterations] = useState(5);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [showFiles, setShowFiles] = useState(false);
+
+  // Command history (up/down arrow)
+  const [commandHistory, setCommandHistory] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch { return []; }
+  });
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
+  const { messages, isExecuting, currentTools, error, sendMessage, abort, clearHistory } = useCodeChatStream();
+
+  // Persist messages to localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      try { localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages.slice(-50))); } catch { /* quota */ }
+    }
+  }, [messages]);
+
+  const isAdmin = user?.role === "admin";
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, currentTools]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
+
+  const handleSend = useCallback(async () => {
+    const text = input.trim();
+    if (!text || isExecuting) return;
+    // Save to command history
+    const newHistory = [text, ...commandHistory.filter(h => h !== text)].slice(0, 50);
+    setCommandHistory(newHistory);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory)); } catch { /* quota */ }
+    setHistoryIndex(-1);
+    setInput("");
+    await sendMessage(text, {
+      allowMutations: isAdmin && allowMutations,
+      maxIterations,
+    });
+    inputRef.current?.focus();
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory]);
+
+  // Arrow key navigation for command history
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    } else if (e.key === "ArrowUp" && !input && commandHistory.length > 0) {
+      e.preventDefault();
+      const idx = Math.min(historyIndex + 1, commandHistory.length - 1);
+      setHistoryIndex(idx);
+      setInput(commandHistory[idx]);
+    } else if (e.key === "ArrowDown" && historyIndex >= 0) {
+      e.preventDefault();
+      const idx = historyIndex - 1;
+      setHistoryIndex(idx);
+      setInput(idx >= 0 ? commandHistory[idx] : "");
+    }
+  }, [handleSend, input, commandHistory, historyIndex]);
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)]">
+      {/* Config bar */}
+      <div className="flex items-center gap-3 px-3 py-2 border-b border-border/40 text-xs">
+        <div className="flex items-center gap-1.5">
+          <Terminal className="w-3.5 h-3.5 text-accent" />
+          <span className="font-medium">Code Chat</span>
+        </div>
+        <div className="flex-1" />
+        {isAdmin && (
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            {allowMutations ? <Unlock className="w-3 h-3 text-amber-400" /> : <Lock className="w-3 h-3 text-muted-foreground" />}
+            <span className="text-muted-foreground">Write mode</span>
+            <Switch checked={allowMutations} onCheckedChange={setAllowMutations} className="scale-75" />
+          </label>
+        )}
+        <select
+          value={maxIterations}
+          onChange={e => setMaxIterations(Number(e.target.value))}
+          className="h-6 px-1.5 text-[10px] rounded border border-border bg-background"
+          aria-label="Max iterations"
+        >
+          {[1, 3, 5, 7, 10].map(n => <option key={n} value={n}>{n} steps</option>)}
+        </select>
+        <button
+          onClick={() => setShowFiles(!showFiles)}
+          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${showFiles ? "bg-accent/10 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
+          aria-label="Toggle file panel"
+        >
+          <FolderOpen className="w-3 h-3" /> Files
+        </button>
+      </div>
+
+      {/* Split layout: chat + optional file panel */}
+      <div className="flex flex-1 min-h-0">
+      {/* Chat column */}
+      <div className={`flex flex-col ${showFiles ? "flex-1 min-w-0" : "w-full"}`}>
+      {/* Messages area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+            <Terminal className="w-10 h-10 mb-3 text-accent/40" />
+            <h3 className="font-heading text-lg font-semibold text-foreground mb-1">Code Chat</h3>
+            <p className="text-sm max-w-md">
+              Ask questions about the codebase. The AI will read files, search code, and explain what it finds — step by step.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-4 justify-center">
+              {[
+                "What does the chat streaming pipeline do?",
+                "Find where user authentication is implemented",
+                "Explain the wealth engine architecture",
+              ].map(suggestion => (
+                <button
+                  key={suggestion}
+                  onClick={() => { setInput(suggestion); inputRef.current?.focus(); }}
+                  className="px-3 py-1.5 text-xs rounded-full border border-border hover:border-accent/30 hover:bg-accent/5 transition-colors"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {messages.map(msg => (
+          <div key={msg.id} className={`${msg.role === "user" ? "flex justify-end" : ""}`}>
+            {msg.role === "user" ? (
+              <div className="bg-accent/10 text-foreground px-4 py-2.5 rounded-2xl rounded-br-md max-w-[85%] text-sm">
+                {msg.content}
+              </div>
+            ) : (
+              <div className="space-y-2 max-w-full">
+                {/* Tool events from streaming */}
+                {msg.toolEvents && msg.toolEvents.length > 0 && (
+                  <TraceView traces={msg.toolEvents.map(ev => ({
+                    step: ev.stepIndex,
+                    thought: ev.args ? `${ev.toolName}(${Object.entries(ev.args).map(([k,v]) => `${k}: ${String(v).slice(0,60)}`).join(", ")})` : undefined,
+                    toolName: ev.toolName,
+                    observation: ev.preview ? (typeof ev.preview === "string" ? ev.preview.slice(0, 3000) : JSON.stringify(ev.preview).slice(0, 3000)) : undefined,
+                    durationMs: ev.durationMs,
+                  }))} />
+                )}
+                {/* Response */}
+                <div className="bg-card/60 border border-border/30 px-4 py-3 rounded-xl text-sm whitespace-pre-wrap font-mono leading-relaxed">
+                  {msg.content}
+                </div>
+                {/* Meta */}
+                <div className="flex items-center gap-2 text-[9px] text-muted-foreground/50">
+                  {msg.model && <span>{msg.model}</span>}
+                  {msg.toolCallCount != null && msg.toolCallCount > 0 && (
+                    <span>• {msg.toolCallCount} tool calls</span>
+                  )}
+                  {msg.iterations != null && <span>• {msg.iterations} iterations</span>}
+                  {msg.totalDurationMs != null && <span>• {(msg.totalDurationMs / 1000).toFixed(1)}s</span>}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Live streaming tool events */}
+        {isExecuting && currentTools.length > 0 && (
+          <LiveToolEvents events={currentTools} />
+        )}
+
+        {isExecuting && currentTools.length === 0 && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin text-accent" />
+            <span>Thinking...</span>
+          </div>
+        )}
+      </div>
+
+      {/* Input area */}
+      <div className="border-t border-border/40 p-3">
+        <div className="flex gap-2">
+          <Textarea
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={allowMutations ? "Ask or instruct (write mode enabled)..." : "Ask about the codebase..."}
+            className="flex-1 min-h-[40px] max-h-[120px] resize-none text-sm border-border/50 bg-background/50 font-mono"
+            rows={1}
+            disabled={isExecuting}
+          />
+          {isExecuting ? (
+            <Button
+              size="icon"
+              onClick={abort}
+              className="h-10 w-10 rounded-full bg-destructive/20 text-destructive hover:bg-destructive/30 shrink-0"
+              aria-label="Stop execution"
+            >
+              <span className="w-3 h-3 bg-destructive rounded-sm" />
+            </Button>
+          ) : (
+            <Button
+              size="icon"
+              onClick={handleSend}
+              disabled={!input.trim()}
+              className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 shrink-0"
+              aria-label="Send message"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+      </div>{/* end chat column */}
+
+      {/* File panel (desktop only, toggled) */}
+      {showFiles && (
+        <div className="hidden md:flex flex-col w-80 border-l border-border/40 overflow-y-auto">
+          <div className="p-3 border-b border-border/40 flex items-center justify-between">
+            <span className="text-xs font-medium flex items-center gap-1.5">
+              <FolderOpen className="w-3.5 h-3.5" /> File Explorer
+            </span>
+            <button onClick={() => setShowFiles(false)} className="text-muted-foreground hover:text-foreground text-xs">✕</button>
+          </div>
+          <div className="p-3">
+            <FileBrowser />
+          </div>
+        </div>
+      )}
+      </div>{/* end split layout */}
+    </div>
+  );
+}
+
+// ─── Page Component ────────────────────────────────────────────────────────
 
 export default function CodeChatPage() {
   return (
     <AppShell title="Code Chat">
-      <div className="p-6 max-w-6xl mx-auto space-y-6">
-        <header>
-          <h1 className="text-2xl font-bold">Code Chat (Admin)</h1>
-          <p className="text-sm text-muted-foreground">
-            Read-only file browser, roadmap iterator, word-diff
-            visualizer, and GitHub integration status for the Stewardly
-            autonomous coding loop.
-          </p>
-        </header>
+      <div className="max-w-6xl mx-auto">
+        <Tabs defaultValue="chat">
+          <div className="border-b border-border/40 px-4 pt-2">
+            <TabsList className="bg-transparent">
+              <TabsTrigger value="chat" className="gap-1.5">
+                <Terminal className="h-3.5 w-3.5" /> Chat
+              </TabsTrigger>
+              <TabsTrigger value="files" className="gap-1.5">
+                <FolderOpen className="h-3.5 w-3.5" /> Files
+              </TabsTrigger>
+              <TabsTrigger value="roadmap" className="gap-1.5">
+                <GitBranch className="h-3.5 w-3.5" /> Roadmap
+              </TabsTrigger>
+              <TabsTrigger value="diff" className="gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" /> Diff
+              </TabsTrigger>
+              <TabsTrigger value="github" className="gap-1.5">
+                <Github className="h-3.5 w-3.5" /> GitHub
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        <Tabs defaultValue="files">
-          <TabsList>
-            <TabsTrigger value="files">
-              <FolderOpen className="mr-2 h-4 w-4" /> Files
-            </TabsTrigger>
-            <TabsTrigger value="roadmap">
-              <GitBranch className="mr-2 h-4 w-4" /> Roadmap
-            </TabsTrigger>
-            <TabsTrigger value="diff">
-              <Sparkles className="mr-2 h-4 w-4" /> Diff
-            </TabsTrigger>
-            <TabsTrigger value="github">
-              <Github className="mr-2 h-4 w-4" /> GitHub
-            </TabsTrigger>
-          </TabsList>
+          <TabsContent value="chat" className="mt-0">
+            <CodeChatInterface />
+          </TabsContent>
 
           <TabsContent value="files">
-            <FileBrowser />
+            <div className="p-6"><FileBrowser /></div>
           </TabsContent>
 
           <TabsContent value="roadmap">
-            <RoadmapPanel />
+            <div className="p-6"><RoadmapPanel /></div>
           </TabsContent>
 
           <TabsContent value="diff">
-            <DiffPanel />
+            <div className="p-6"><DiffPanel /></div>
           </TabsContent>
 
           <TabsContent value="github">
-            <GitHubPanel />
+            <div className="p-6"><GitHubPanel /></div>
           </TabsContent>
         </Tabs>
       </div>

@@ -371,15 +371,24 @@ export const codeChatRouter = router({
           },
         }));
 
+      // Resolve 5-layer AI config for personalized behavior
+      let layerOverlay = "";
+      try {
+        const { resolveAIConfig, buildLayerOverlayPrompt } = await import("../aiConfigResolver");
+        const resolved = await resolveAIConfig({ userId: ctx.user.id, organizationId: ctx.user.affiliateOrgId ?? undefined });
+        if (resolved) layerOverlay = buildLayerOverlayPrompt(resolved);
+      } catch { /* config resolution is optional */ }
+
       const systemPrompt = [
-        "You are Claude-Code-style coding assistant running inside the Stewardly admin console.",
+        "You are a Claude-Code-style coding assistant inside Stewardly.",
         "Work step-by-step. Use the `code_list_directory` and `code_read_file` tools to explore the codebase",
         "before answering questions about it. Use `code_grep_search` to find specific symbols or strings.",
         allowMutations
           ? "You also have `code_write_file`, `code_edit_file`, and `code_run_bash` available — use them sparingly and explain every change."
           : "Write/edit/bash tools are disabled for this session. Return diffs as code blocks instead of attempting to apply them.",
         "Keep responses concise and surface your reasoning + tool calls to the user.",
-      ].join("\n");
+        layerOverlay ? `\n${layerOverlay}` : "",
+      ].filter(Boolean).join("\n");
 
       try {
         const result = await executeReActLoop({
