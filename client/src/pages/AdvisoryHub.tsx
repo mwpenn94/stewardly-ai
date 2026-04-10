@@ -32,7 +32,7 @@ export default function AdvisoryHub() {
     <AppShell title="Advisory">
     <div className="min-h-screen">
       {/* Header */}
-      <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="hidden lg:block border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container py-4">
           <div>
             <h1 className="text-xl font-bold">Advisory</h1>

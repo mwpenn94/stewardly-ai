@@ -10,7 +10,7 @@ import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import {
   MessageSquare, FileText, BarChart3, Volume2,
-  Fingerprint, ClipboardList, Star,
+  Fingerprint, ClipboardList, Star, Terminal,
   Users, Briefcase, ShieldCheck, TrendingUp, Calculator,
   UserCog, LineChart,
   Cog, Brain, Activity,
@@ -47,6 +47,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "guest",
     items: [
       { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat"] },
+      { label: "Code Chat", icon: Terminal, path: "/code-chat", match: ["/code-chat"] },
       { label: "Documents", icon: FileText, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },
       { label: "My Progress", icon: BarChart3, path: "/proficiency", match: ["/proficiency"] },
       { label: "Audio", icon: Volume2, path: "/settings/audio", match: ["/settings/audio"] },
