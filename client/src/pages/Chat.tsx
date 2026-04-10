@@ -1305,6 +1305,7 @@ export default function Chat() {
   const ROLE_LEVEL: Record<string, number> = { guest: 0, user: 1, advisor: 2, manager: 3, admin: 4 };
   const personaLayers: PersonaLayer[] = [
     { key: "person", label: "Person", minRole: "guest", items: [
+      { label: "Code Chat", icon: <Monitor className="w-4 h-4" />, path: "/code-chat", match: ["/code-chat"] },
       { label: "Documents", icon: <FileText className="w-4 h-4" />, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },
       { label: "My Progress", icon: <BarChart3 className="w-4 h-4" />, path: "/proficiency", match: ["/proficiency"] },
       { label: "Audio", icon: <Volume2 className="w-4 h-4" />, path: "/settings/audio", match: ["/settings/audio"] },
@@ -1327,7 +1328,6 @@ export default function Chat() {
     { key: "steward", label: "Steward", minRole: "admin", items: [
       { label: "Platform Admin", icon: <Settings className="w-4 h-4" />, path: "/admin", match: ["/admin"] },
       { label: "AI Intelligence", icon: <Brain className="w-4 h-4" />, path: "/admin/intelligence", match: ["/admin/intelligence"] },
-      { label: "Code Chat", icon: <Monitor className="w-4 h-4" />, path: "/code-chat", match: ["/code-chat"] },
       { label: "System Health", icon: <Monitor className="w-4 h-4" />, path: "/admin/system-health", match: ["/admin/system-health"] },
     ]},
   ];
@@ -2324,12 +2324,12 @@ export default function Chat() {
                   for power users (one click to reveal). When a non-default
                   chat mode is active, a small badge replaces the toggle so
                   the user can see at a glance what mode they're in. */}
-              {/* Mode badge + advanced toggle — hidden on mobile to reduce clutter */}
+              {/* Mode badge + advanced toggle */}
               {!advancedOpen && chatMode !== "single" && (
                 <button
                   type="button"
                   onClick={() => setAdvancedOpen(true)}
-                  className={`hidden md:inline-flex h-7 px-2 text-[10px] rounded-full border transition-colors ${
+                  className={`inline-flex h-7 px-2 text-[10px] rounded-full border transition-colors ${
                     chatMode === "loop"
                       ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
                       : chatMode === "consensus"
@@ -2348,7 +2348,7 @@ export default function Chat() {
                     onClick={() => setAdvancedOpen((p) => !p)}
                     aria-label={advancedOpen ? "Hide advanced controls" : "Show advanced controls"}
                     aria-expanded={advancedOpen}
-                    className={`hidden md:flex h-7 px-2 text-[10px] rounded-full border border-border transition-colors items-center gap-1 ${
+                    className={`flex h-7 px-2 text-[10px] rounded-full border border-border transition-colors items-center gap-1 ${
                       advancedOpen
                         ? "bg-secondary/60 text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"

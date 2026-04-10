@@ -47,6 +47,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "guest",
     items: [
       { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat"] },
+      { label: "Code Chat", icon: Terminal, path: "/code-chat", match: ["/code-chat"] },
       { label: "Documents", icon: FileText, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },
       { label: "My Progress", icon: BarChart3, path: "/proficiency", match: ["/proficiency"] },
       { label: "Audio", icon: Volume2, path: "/settings/audio", match: ["/settings/audio"] },
@@ -89,7 +90,6 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     items: [
       { label: "Platform Admin", icon: Cog, path: "/admin", match: ["/admin"] },
       { label: "AI Intelligence", icon: Brain, path: "/admin/intelligence", match: ["/admin/intelligence"] },
-      { label: "Code Chat", icon: Terminal, path: "/code-chat", match: ["/code-chat"] },
       { label: "System Health", icon: Activity, path: "/admin/system-health", match: ["/admin/system-health"] },
     ],
   },
