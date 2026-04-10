@@ -21,16 +21,14 @@ import {
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
-  AlertTriangle, ArrowUp, AudioLines, BarChart3, BookOpen, Bot, Briefcase, Building2, Calculator, Check, CheckCircle,
-  ChevronDown, ChevronUp, FileText, GraduationCap, Image, Key, Loader2, LogOut, Menu, MessageSquare,
-  Mic, MicOff, Monitor, Package, PanelLeft, PanelLeftClose, Paperclip, PhoneOff, Plus,
-  Settings, Sparkles, ThumbsDown, ThumbsUp, Trash2, User, Users,
-  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Globe, Calendar, DollarSign, Brain, Shield,
-  Copy, RefreshCw, Database, Zap, FileCheck, Scale, Mail, Search, HelpCircle,
-  Pin, FolderOpen, FolderPlus, MoreHorizontal, Pencil, ChevronRight, Download, GripVertical, Phone,
+  ArrowUp, AudioLines, BarChart3, Bot, Briefcase, Calculator, Check,
+  ChevronDown, ChevronUp, FileText, GraduationCap, Image, Loader2, LogOut, Menu, MessageSquare,
+  Monitor, PanelLeftClose, Paperclip, PhoneOff, Plus,
+  Settings, Sparkles, ThumbsDown, ThumbsUp, User, Users,
+  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Calendar, Brain, Shield,
+  Copy, RefreshCw, Zap, Scale, Search, HelpCircle,
+  Pin, FolderOpen, FolderPlus, ChevronRight, Phone,
   LogIn, GitBranch,
-  Terminal, Flame, Target, Compass, Award, LayoutGrid,
-  LayoutDashboard, Users2,
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
