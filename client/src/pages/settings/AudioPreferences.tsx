@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { useAudioCompanion } from "@/components/AudioCompanion";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { toast } from "sonner";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -66,7 +69,18 @@ const DEFAULT_VOICES: VoiceOption[] = [
 ];
 
 export default function AudioPreferences({ preferences, onSave, voices, isLoading }: Props) {
-  const [prefs, setPrefs] = useState<AudioPrefs>(preferences ?? DEFAULT_PREFS);
+  const { isAuthenticated } = useAuth();
+  // Self-sufficient mode: fetch/save via tRPC when no props provided
+  const prefsQ = trpc.audio.getPreferences.useQuery(undefined, {
+    enabled: isAuthenticated && !preferences,
+    retry: false,
+  });
+  const saveMut = trpc.audio.updatePreferences.useMutation({
+    onSuccess: () => { toast.success("Audio preferences saved"); prefsQ.refetch(); },
+    onError: () => toast.error("Failed to save preferences"),
+  });
+  const initialPrefs = preferences ?? (prefsQ.data as AudioPrefs | undefined) ?? DEFAULT_PREFS;
+  const [prefs, setPrefs] = useState<AudioPrefs>(initialPrefs);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const audio = useAudioCompanion();
   const voiceList = voices ?? DEFAULT_VOICES;
@@ -87,7 +101,11 @@ export default function AudioPreferences({ preferences, onSave, voices, isLoadin
   }, [audio]);
 
   const handleSave = () => {
-    onSave?.(prefs);
+    if (onSave) {
+      onSave(prefs);
+    } else if (isAuthenticated) {
+      saveMut.mutate(prefs);
+    }
   };
 
   return (
