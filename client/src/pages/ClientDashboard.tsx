@@ -67,12 +67,12 @@ export default function ClientDashboard() {
   const [expandedDomain, setExpandedDomain] = useState<string | null>(null);
 
   if (authLoading) {
-    return <AppShell><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
+    return <AppShell title="Client Dashboard"><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
   }
 
   if (!user) {
     return (
-      <AppShell>
+      <AppShell title="Client Dashboard">
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <Shield className="w-12 h-12 text-primary" />
           <p className="text-muted-foreground">Sign in to view your financial plan dashboard</p>
@@ -87,7 +87,7 @@ export default function ClientDashboard() {
   const totalActions = DOMAINS.reduce((s, d) => s + d.actions.length, 0);
 
   return (
-    <AppShell>
+    <AppShell title="Client Dashboard">
       <div className="container max-w-4xl py-8 space-y-6">
         <HonestPlaceholder
           willDo="Show a 9-domain holistic financial plan scorecard with per-domain scores and AI action recommendations."
