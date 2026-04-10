@@ -47,7 +47,7 @@ import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
-import { TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole, NAV_SECTION_ORDER, NAV_SECTION_LABELS, type NavItemDef, type NavSection } from "@/lib/navigation";
+import { hasMinRole } from "@/lib/navigation";
 import { useOnboardingNotifications } from "@/components/OnboardingNotifications";
 import ChangelogBell from "@/components/ChangelogBell";
 import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
@@ -98,41 +98,6 @@ function extractMediaFromText(content: string): MediaEmbed[] {
     embeds.push({ type: "document", source: m[0], title: "Document" });
   }
   return embeds.slice(0, 5);
-}
-
-// ─── NAV ICON MAP (mirrors AppShell.tsx getIcon) ────────────────
-const NAV_ICON_MAP: Record<string, React.ReactNode> = {
-  MessageSquare: <MessageSquare className="w-4 h-4" />,
-  Zap: <Zap className="w-4 h-4" />,
-  Brain: <Brain className="w-4 h-4" />,
-  Package: <Package className="w-4 h-4" />,
-  Users: <Users className="w-4 h-4" />,
-  TrendingUp: <TrendingUp className="w-4 h-4" />,
-  FileText: <FileText className="w-4 h-4" />,
-  RefreshCw: <RefreshCw className="w-4 h-4" />,
-  Briefcase: <Briefcase className="w-4 h-4" />,
-  Building2: <Building2 className="w-4 h-4" />,
-  BarChart3: <BarChart3 className="w-4 h-4" />,
-  Globe: <Globe className="w-4 h-4" />,
-  BookOpen: <BookOpen className="w-4 h-4" />,
-  HelpCircle: <HelpCircle className="w-4 h-4" />,
-  Settings: <Settings className="w-4 h-4" />,
-  GraduationCap: <GraduationCap className="w-4 h-4" />,
-  Sparkles: <Sparkles className="w-4 h-4" />,
-  Shield: <Shield className="w-4 h-4" />,
-  Bot: <Bot className="w-4 h-4" />,
-  Terminal: <Terminal className="w-4 h-4" />,
-  Calculator: <Calculator className="w-4 h-4" />,
-  LayoutDashboard: <LayoutDashboard className="w-4 h-4" />,
-  Users2: <Users2 className="w-4 h-4" />,
-  Database: <Database className="w-4 h-4" />,
-  Target: <Target className="w-4 h-4" />,
-  Fingerprint: <Fingerprint className="w-4 h-4" />,
-  Award: <Award className="w-4 h-4" />,
-  GitBranch: <GitBranch className="w-4 h-4" />,
-};
-function getNavIcon(name: string): React.ReactNode {
-  return NAV_ICON_MAP[name] ?? <Zap className="w-4 h-4" />;
 }
 
 // ─── CONSTANTS ────────────────────────────────────────────────────
@@ -1327,25 +1292,40 @@ export default function Chat() {
     ? "All Modes"
     : selectedFocus.map(f => FOCUS_OPTIONS.find(o => o.value === f)?.label).filter(Boolean).join(" + ");
 
-  // ─── SIDEBAR NAV ITEMS (from shared config, role-aware) ────────
-  // Chat page filters out "/chat" from tools since we ARE the chat page.
-  // Pass 90: preserve `section` so the Chat sidebar can render the same
-  // 5-section grouping AppShell uses (Home / Work / Intelligence /
-  // Relationships / Learning).
-  const toolsNav = TOOLS_NAV.filter(i => i.href !== "/chat").map(i => ({
-    icon: getNavIcon(i.iconName),
-    label: i.label,
-    href: i.href,
-    minRole: i.minRole,
-    section: i.section,
-  }));
-
-  const adminNav = ADMIN_NAV.map(i => ({
-    icon: getNavIcon(i.iconName),
-    label: i.label,
-    href: i.href,
-    minRole: i.minRole,
-  }));
+  // ─── SIDEBAR NAV — 5 persona layers matching PersonaSidebar5 ────
+  // Mirrors the PERSONA_LAYERS from PersonaSidebar5.tsx so the Chat
+  // sidebar is consistent with AppShell's navigation structure.
+  type PersonaNavItem = { label: string; icon: React.ReactNode; path: string; match: string[] };
+  type PersonaLayer = { key: string; label: string; minRole: string; items: PersonaNavItem[] };
+  const ROLE_LEVEL: Record<string, number> = { guest: 0, user: 1, advisor: 2, manager: 3, admin: 4 };
+  const personaLayers: PersonaLayer[] = [
+    { key: "person", label: "Person", minRole: "guest", items: [
+      { label: "Documents", icon: <FileText className="w-4 h-4" />, path: "/documents", match: ["/documents"] },
+      { label: "Progress", icon: <BarChart3 className="w-4 h-4" />, path: "/progress", match: ["/progress"] },
+      { label: "Audio", icon: <Volume2 className="w-4 h-4" />, path: "/settings/audio", match: ["/settings/audio"] },
+    ]},
+    { key: "client", label: "Client", minRole: "user", items: [
+      { label: "Financial Twin", icon: <Fingerprint className="w-4 h-4" />, path: "/financial-twin", match: ["/financial-twin"] },
+      { label: "Suitability", icon: <Scale className="w-4 h-4" />, path: "/suitability", match: ["/suitability"] },
+    ]},
+    { key: "advisor", label: "Advisor", minRole: "advisor", items: [
+      { label: "Clients", icon: <Users className="w-4 h-4" />, path: "/relationships", match: ["/relationships", "/portal"] },
+      { label: "Cases & Work", icon: <Briefcase className="w-4 h-4" />, path: "/my-work", match: ["/my-work", "/operations", "/workflows"] },
+      { label: "Compliance", icon: <Shield className="w-4 h-4" />, path: "/compliance-audit", match: ["/compliance-audit"] },
+      { label: "Market Data", icon: <TrendingUp className="w-4 h-4" />, path: "/market-data", match: ["/market-data"] },
+      { label: "Calculators", icon: <Calculator className="w-4 h-4" />, path: "/wealth-engine", match: ["/wealth-engine"] },
+    ]},
+    { key: "manager", label: "Manager", minRole: "manager", items: [
+      { label: "Team Dashboard", icon: <Users className="w-4 h-4" />, path: "/manager", match: ["/manager"] },
+    ]},
+    { key: "steward", label: "Steward", minRole: "admin", items: [
+      { label: "Platform Admin", icon: <Settings className="w-4 h-4" />, path: "/admin", match: ["/admin"] },
+      { label: "AI Intelligence", icon: <Brain className="w-4 h-4" />, path: "/admin/intelligence", match: ["/admin/intelligence"] },
+      { label: "System Health", icon: <Monitor className="w-4 h-4" />, path: "/admin/system-health", match: ["/admin/system-health"] },
+    ]},
+  ];
+  const roleLevel = ROLE_LEVEL[userRole] ?? ROLE_LEVEL.user;
+  const visibleLayers = personaLayers.filter(l => roleLevel >= (ROLE_LEVEL[l.minRole] ?? 0));
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
@@ -1618,19 +1598,18 @@ export default function Chat() {
           )}
         </div>
 
-        {/* Navigation — matches AppShell sidebar style for consistency */}
+        {/* Navigation — 5 persona layers (Person/Client/Advisor/Manager/Steward)
+            matching PersonaSidebar5 for consistency across the app */}
         <div className="border-t border-border shrink-0 max-h-[45%] overflow-y-auto">
           {sidebarCollapsed ? (
             <div className="p-1 space-y-0.5">
-              {toolsNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
-                <Tooltip key={item.href}>
+              {visibleLayers.flatMap(layer => layer.items).map(item => (
+                <Tooltip key={item.path}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                      onMouseEnter={() => prefetchRoute(item.href)}
-                      onFocus={() => prefetchRoute(item.href)}
+                      onClick={() => { navigate(item.path); setSidebarOpen(false); }}
                       className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
-                        location.startsWith(item.href)
+                        item.match.some(m => location === m || location.startsWith(m + "/"))
                           ? "bg-accent/15 text-accent"
                           : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                       }`}
@@ -1644,11 +1623,8 @@ export default function Chat() {
               <Separator className="mx-1" />
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    onClick={() => { navigate("/help"); setSidebarOpen(false); }}
-                    onMouseEnter={() => prefetchRoute("/help")}
-                    className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                  >
+                  <button onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                    className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
                     <HelpCircle className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
@@ -1656,12 +1632,9 @@ export default function Chat() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
-                    onMouseEnter={() => prefetchRoute("/settings/profile")}
-                    className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                  >
-                    <Fingerprint className="w-4 h-4" />
+                  <button onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                    className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+                    <Settings className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">Settings</TooltipContent>
@@ -1669,111 +1642,50 @@ export default function Chat() {
             </div>
           ) : (
             <>
-              <button
-                onClick={() => setToolsExpanded(!toolsExpanded)}
-                className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
-              >
-                <span>Navigate</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${toolsExpanded ? "rotate-180" : ""}`} />
-              </button>
-              {toolsExpanded && (
-                <div data-tour="sidebar-nav" className="px-2 pb-1 space-y-0.5">
-                  {/* Pass 90: render the same 5 sections AppShell uses
-                      (Home / Work / Intelligence / Relationships / Learning).
-                      Previously the Chat sidebar dumped all 18 nav items as
-                      one flat list, ignoring the section grouping that pass
-                      83 added to navigation.ts. */}
-                  {(() => {
-                    const visible = toolsNav.filter((item) => hasMinRole(userRole, item.minRole));
-                    const out: React.ReactNode[] = [];
-                    const renderItem = (item: typeof visible[number]) => (
-                      <button
-                        key={item.href}
-                        onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                        onMouseEnter={() => prefetchRoute(item.href)}
-                        onFocus={() => prefetchRoute(item.href)}
-                        className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
-                          location.startsWith(item.href)
-                            ? "bg-accent/15 text-accent font-medium"
-                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                        }`}
-                      >
-                        {item.icon} <span className="truncate">{item.label}</span>
-                      </button>
-                    );
-                    const unsectioned = visible.filter((i) => !i.section);
-                    out.push(...unsectioned.map(renderItem));
-                    for (const section of NAV_SECTION_ORDER) {
-                      const inSection = visible.filter((i) => i.section === section);
-                      if (inSection.length === 0) continue;
-                      out.push(
-                        <div
-                          key={`hdr-${section}`}
-                          className="px-2.5 pt-2 pb-0.5 text-[9px] uppercase tracking-wider text-muted-foreground/60 font-semibold"
-                        >
-                          {NAV_SECTION_LABELS[section as NavSection]}
-                        </div>,
-                      );
-                      out.push(...inSection.map(renderItem));
-                    }
-                    return out;
-                  })()}
-                </div>
-              )}
-              {adminNav.filter(item => hasMinRole(userRole, item.minRole)).length > 0 && (
-                <>
-                  <Separator className="my-1 mx-2" />
-                  <button
-                    onClick={() => setAdminExpanded(!adminExpanded)}
-                    className="flex items-center justify-between w-full px-3 py-2 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium hover:text-muted-foreground transition-colors"
-                  >
-                    <span>Admin</span>
-                    <ChevronDown className={`w-3 h-3 transition-transform ${adminExpanded ? "rotate-180" : ""}`} />
-                  </button>
-                  {adminExpanded && (
-                    <div className="px-2 pb-1 space-y-0.5">
-                      {adminNav.filter(item => hasMinRole(userRole, item.minRole)).map(item => (
-                        <button
-                          key={item.href}
-                          onClick={() => { navigate(item.href); setSidebarOpen(false); }}
-                          onMouseEnter={() => prefetchRoute(item.href)}
-                          onFocus={() => prefetchRoute(item.href)}
-                          className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
-                            location.startsWith(item.href)
-                              ? "bg-accent/15 text-accent font-medium"
-                              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                          }`}
-                        >
-                          {item.icon} <span className="truncate">{item.label}</span>
-                        </button>
-                      ))}
+              <nav aria-label="Main navigation" className="px-1.5 pb-1">
+                {visibleLayers.map(layer => (
+                  <div key={layer.key}>
+                    <div className="px-2.5 pt-3 pb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] select-none">
+                      {layer.label}
                     </div>
-                  )}
-                </>
-              )}
+                    <div className="space-y-[1px]">
+                      {layer.items.map(item => {
+                        const active = item.match.some(m => location === m || location.startsWith(m + "/"));
+                        return (
+                          <button
+                            key={item.path}
+                            onClick={() => { navigate(item.path); setSidebarOpen(false); }}
+                            className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
+                              active ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                            }`}
+                          >
+                            {item.icon} <span className="truncate">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </nav>
               <Separator className="my-1 mx-2" />
-              <div className="px-2 pb-1 space-y-0.5">
-                <button
-                  onClick={() => { navigate("/help"); setSidebarOpen(false); }}
-                  onMouseEnter={() => prefetchRoute("/help")}
-                  className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
-                    location === "/help"
-                      ? "bg-accent/15 text-accent font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                  }`}
-                >
-                  <HelpCircle className="w-4 h-4" /> Help & Support
+              <div className="px-1.5 pb-1 space-y-[1px]">
+                <button onClick={() => { navigate("/learning"); setSidebarOpen(false); }}
+                  className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
+                    location.startsWith("/learning") ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  }`}>
+                  <GraduationCap className="w-4 h-4" /> <span className="truncate">Learn</span>
                 </button>
-                <button
-                  onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
-                  onMouseEnter={() => prefetchRoute("/settings/profile")}
-                  className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-[13px] transition-colors ${
-                    location.startsWith("/settings")
-                      ? "bg-accent/15 text-accent font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                  }`}
-                >
-                  <Fingerprint className="w-4 h-4" /> Settings
+                <button onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                  className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
+                    location === "/help" ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  }`}>
+                  <HelpCircle className="w-4 h-4" /> <span className="truncate">Help</span>
+                </button>
+                <button onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                  className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
+                    location.startsWith("/settings") ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  }`}>
+                  <Settings className="w-4 h-4" /> <span className="truncate">Settings</span>
                 </button>
               </div>
 
@@ -2404,11 +2316,12 @@ export default function Chat() {
                   for power users (one click to reveal). When a non-default
                   chat mode is active, a small badge replaces the toggle so
                   the user can see at a glance what mode they're in. */}
+              {/* Mode badge + advanced toggle — hidden on mobile to reduce clutter */}
               {!advancedOpen && chatMode !== "single" && (
                 <button
                   type="button"
                   onClick={() => setAdvancedOpen(true)}
-                  className={`h-7 px-2 text-[10px] rounded-full border transition-colors ${
+                  className={`hidden md:inline-flex h-7 px-2 text-[10px] rounded-full border transition-colors ${
                     chatMode === "loop"
                       ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
                       : chatMode === "consensus"
@@ -2427,7 +2340,7 @@ export default function Chat() {
                     onClick={() => setAdvancedOpen((p) => !p)}
                     aria-label={advancedOpen ? "Hide advanced controls" : "Show advanced controls"}
                     aria-expanded={advancedOpen}
-                    className={`h-7 px-2 text-[10px] rounded-full border border-border transition-colors flex items-center gap-1 ${
+                    className={`hidden md:flex h-7 px-2 text-[10px] rounded-full border border-border transition-colors items-center gap-1 ${
                       advancedOpen
                         ? "bg-secondary/60 text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
@@ -2668,12 +2581,12 @@ export default function Chat() {
 
               <div className="flex-1" />
 
-              {/* Streaming toggle */}
+              {/* Streaming toggle — hidden on mobile to reduce clutter */}
               {!isAnonymous && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      className={`p-2.5 rounded-full transition-all ${
+                      className={`hidden md:block p-2.5 rounded-full transition-all ${
                         useStreaming
                           ? "bg-accent/15 text-accent"
                           : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
