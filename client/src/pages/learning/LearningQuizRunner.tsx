@@ -28,6 +28,7 @@ import {
   Trophy,
   HelpCircle,
 } from "lucide-react";
+import { useCelebration } from "@/lib/CelebrationEngine";
 import { toast } from "sonner";
 
 export default function LearningQuizRunner() {
@@ -299,9 +300,14 @@ function CompletionCard({
   onRestart: () => void;
   trackSlug: string;
 }) {
+  const celebrate = useCelebration();
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
   const isGreat = pct >= 80;
   const isGood = pct >= 60;
+
+  useEffect(() => {
+    if (isGreat) celebrate(pct === 100 ? "heavy" : "medium");
+  }, [isGreat, pct, celebrate]);
 
   const getMessage = () => {
     if (pct === 100) return "Perfect score! You've mastered this material.";

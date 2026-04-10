@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase } from "lucide-react";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale } from "lucide-react";
 import { Link } from "wouter";
 
 export default function LearningHome() {
@@ -231,6 +231,17 @@ export default function LearningHome() {
                       <BookOpen className="h-6 w-6 text-primary" />
                       <div className="text-sm font-medium">Deep Dive</div>
                       <div className="text-[10px] text-muted-foreground">Definitions, formulas, cases</div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              )}
+              {tracks.length > 0 && (
+                <Link href={`/learning/case/${tracks[0].slug}`}>
+                  <Card className="card-lift cursor-pointer h-full">
+                    <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                      <Scale className="h-6 w-6 text-primary" />
+                      <div className="text-sm font-medium">Case Studies</div>
+                      <div className="text-[10px] text-muted-foreground">Branching scenario decisions</div>
                     </CardContent>
                   </Card>
                 </Link>
