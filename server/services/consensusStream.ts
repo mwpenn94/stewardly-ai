@@ -63,7 +63,8 @@ export type ConsensusEvent =
       synthesisTimeMs: number;
       modelsUsed: string[];
     }
-  | { type: "error"; ts: number; error: string };
+  | { type: "error"; ts: number; error: string }
+  | { type: "agreement_scored"; ts: number; agreementScore: number; scorerSource: "jaccard" | "semantic"; semanticScore: number | null; jaccardScore: number };
 
 // ─── Pure helper: SSE encoder ─────────────────────────────────────────────
 // Returns the wire-format string an Express handler would write to
@@ -499,6 +500,18 @@ export async function streamConsensus(
   }
 
   const totalDurationMs = Date.now() - overallStart;
+
+  // Emit final agreement score — prefers semantic over Jaccard
+  const finalAgreementScore = semanticAgreementScore ?? agreementScore;
+  emit({
+    type: "agreement_scored",
+    ts: Date.now(),
+    agreementScore: finalAgreementScore,
+    scorerSource: agreementScorerSource,
+    semanticScore: semanticAgreementScore,
+    jaccardScore: agreementScore,
+  });
+
   emit({
     type: "done",
     ts: Date.now(),
