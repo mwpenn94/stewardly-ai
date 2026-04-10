@@ -138,8 +138,10 @@ export default function Workflows() {
   //      side and the localStorage cache continues to work — the UI
   //      never loses data
   const [savedWorkflows, setSavedWorkflows] = useState<WorkflowInstance[]>(() => {
-    const saved = localStorage.getItem("wb_workflows");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("wb_workflows");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
   });
 
   const instancesQ = trpc.workflow.listInstances.useQuery(undefined, {

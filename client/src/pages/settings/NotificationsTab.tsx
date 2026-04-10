@@ -76,8 +76,10 @@ const NOTIFICATION_GROUPS = [
 
 export default function NotificationsTab() {
   const [prefs, setPrefs] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem("wb_notification_prefs");
-    if (saved) return JSON.parse(saved);
+    try {
+      const saved = localStorage.getItem("wb_notification_prefs");
+      if (saved) return JSON.parse(saved);
+    } catch { /* corrupted localStorage — fall through to defaults */ }
     // Default all to true
     const defaults: Record<string, boolean> = {};
     NOTIFICATION_GROUPS.forEach(g => g.items.forEach(i => { defaults[i.key] = true; }));
