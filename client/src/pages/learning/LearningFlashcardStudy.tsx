@@ -206,7 +206,8 @@ export default function LearningFlashcardStudy() {
           current && (
             <div className="space-y-4">
               <Card
-                className="min-h-[220px] cursor-pointer select-none"
+                className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 ${flipped ? "animate-card-flip-in" : ""}`}
+                style={{ perspective: "600px" }}
                 onClick={() => setFlipped((f) => !f)}
               >
                 <CardContent className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center">

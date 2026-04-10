@@ -179,6 +179,38 @@ export default function GlobalAdmin() {
           </Card>
         </div>
 
+        {/* Admin Tools — quick access to all admin sub-pages */}
+        <div className="mb-8">
+          <h3 className="text-xs font-semibold mb-3 text-muted-foreground/60 uppercase tracking-wider">Admin Tools</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {[
+              { name: "System Health", path: "/admin/system-health", icon: Activity },
+              { name: "Data Freshness", path: "/admin/data-freshness", icon: TrendingUp },
+              { name: "Rate Management", path: "/admin/rate-management", icon: DollarSign },
+              { name: "Lead Sources", path: "/admin/lead-sources", icon: BarChart3 },
+              { name: "AI Intelligence", path: "/admin/intelligence", icon: Sparkles },
+              { name: "Platform Guide", path: "/admin/guide", icon: FileCheck },
+              { name: "Knowledge Admin", path: "/admin/knowledge", icon: Globe },
+              { name: "Integrations", path: "/admin/integrations", icon: Settings2 },
+              { name: "Team Management", path: "/admin/team", icon: Users },
+              { name: "Billing", path: "/admin/billing", icon: DollarSign },
+              { name: "API Keys", path: "/admin/api-keys", icon: Shield },
+              { name: "Webhooks", path: "/admin/webhooks", icon: Globe },
+              { name: "Reports", path: "/admin/platform-reports", icon: BarChart3 },
+            ].map((tool) => (
+              <button
+                key={tool.path}
+                onClick={() => navigate(tool.path)}
+                className="card-lift p-3 rounded-lg border border-border bg-card/60 hover:bg-secondary/40 transition-colors text-left text-xs font-medium flex items-center gap-2.5 group"
+              >
+                <tool.icon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-accent flex-none" />
+                {tool.name}
+                <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/40 group-hover:text-accent" />
+              </button>
+            ))}
+          </div>
+        </div>
+
         <Tabs defaultValue="firms" className="space-y-6">
           <TabsList className="bg-secondary">
             <TabsTrigger value="firms" className="gap-1.5 text-xs">
