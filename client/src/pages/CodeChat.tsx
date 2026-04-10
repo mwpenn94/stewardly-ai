@@ -24,9 +24,11 @@ import {
   Loader2, FileText, FolderOpen, GitBranch, Sparkles,
   CheckCircle2, AlertTriangle, Github, ExternalLink,
   Lock, Unlock, Terminal, Send, ChevronDown, ChevronRight,
-  Search, Code, Braces, Play,
+  Activity, Save, Pencil, X,
 } from "lucide-react";
 import { toast } from "sonner";
+import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
+import BackgroundJobsPanel from "@/components/codeChat/BackgroundJobsPanel";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -381,6 +383,12 @@ export default function CodeChatPage() {
               <TabsTrigger value="github" className="gap-1.5">
                 <Github className="h-3.5 w-3.5" /> GitHub
               </TabsTrigger>
+              <TabsTrigger value="write" className="gap-1.5">
+                <GitBranch className="h-3.5 w-3.5" /> Git Write
+              </TabsTrigger>
+              <TabsTrigger value="jobs" className="gap-1.5">
+                <Activity className="h-3.5 w-3.5" /> Jobs
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -403,6 +411,14 @@ export default function CodeChatPage() {
           <TabsContent value="github">
             <div className="p-6"><GitHubPanel /></div>
           </TabsContent>
+
+          <TabsContent value="write">
+            <div className="p-6"><GitHubWritePanel /></div>
+          </TabsContent>
+
+          <TabsContent value="jobs">
+            <div className="p-6"><BackgroundJobsPanel /></div>
+          </TabsContent>
         </Tabs>
       </div>
     </AppShell>
@@ -412,6 +428,8 @@ export default function CodeChatPage() {
 // ─── File Browser ─────────────────────────────────────────────────────────
 
 function FileBrowser() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [pathInput, setPathInput] = useState(".");
   const dispatch = trpc.codeChat.dispatch.useMutation();
   const [listing, setListing] = useState<{
@@ -419,6 +437,9 @@ function FileBrowser() {
     entries: Array<{ name: string; type: string; size?: number }>;
   } | null>(null);
   const [fileContent, setFileContent] = useState<{ path: string; content: string } | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
   const onList = async () => {
     const result = await dispatch.mutateAsync({
@@ -428,6 +449,7 @@ function FileBrowser() {
     if (result.kind === "list") {
       setListing(result.result);
       setFileContent(null);
+      setEditing(false);
     } else if (result.kind === "error") {
       toast.error(`list failed: ${result.error}`);
     }
@@ -440,8 +462,33 @@ function FileBrowser() {
     });
     if (result.kind === "read") {
       setFileContent({ path: result.result.path, content: result.result.content });
+      setDraft(result.result.content);
+      setEditing(false);
     } else if (result.kind === "error") {
       toast.error(`read failed: ${result.error}`);
+    }
+  };
+
+  const onSave = async () => {
+    if (!fileContent) return;
+    setSaving(true);
+    try {
+      const result = await dispatch.mutateAsync({
+        call: { name: "write_file", args: { path: fileContent.path, content: draft } },
+        allowMutations: true,
+        confirmDangerous: true,
+      });
+      if (result.kind === "write") {
+        toast.success(
+          `${result.result.created ? "Created" : "Saved"} ${result.result.path} (${result.result.byteLength}B)`,
+        );
+        setFileContent({ path: fileContent.path, content: draft });
+        setEditing(false);
+      } else if (result.kind === "error") {
+        toast.error(`save failed: ${result.error}`);
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -499,18 +546,72 @@ function FileBrowser() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="h-4 w-4" /> {fileContent?.path ?? "No file selected"}
+          <CardTitle className="text-base flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <FileText className="h-4 w-4 shrink-0" />
+              <span className="font-mono text-xs truncate">
+                {fileContent?.path ?? "No file selected"}
+              </span>
+            </div>
+            {fileContent && isAdmin && (
+              <div className="flex items-center gap-1 shrink-0">
+                {editing ? (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => { setEditing(false); setDraft(fileContent.content); }}
+                      disabled={saving}
+                      className="h-7 text-[10px]"
+                    >
+                      <X className="h-3 w-3 mr-1" /> Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={onSave}
+                      disabled={saving || draft === fileContent.content}
+                      className="h-7 text-[10px]"
+                    >
+                      {saving ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <Save className="h-3 w-3 mr-1" />
+                      )}
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEditing(true)}
+                    className="h-7 text-[10px]"
+                  >
+                    <Pencil className="h-3 w-3 mr-1" /> Edit
+                  </Button>
+                )}
+              </div>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {fileContent ? (
-            <pre className="text-xs overflow-auto max-h-[500px] bg-muted/50 p-3 rounded-md">
-              <code>{fileContent.content}</code>
-            </pre>
+            editing ? (
+              <Textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                className="text-xs font-mono h-[500px] resize-none"
+                spellCheck={false}
+              />
+            ) : (
+              <pre className="text-xs overflow-auto max-h-[500px] bg-muted/50 p-3 rounded-md">
+                <code>{fileContent.content}</code>
+              </pre>
+            )
           ) : (
             <p className="text-sm text-muted-foreground">
               Click a file in the listing to view its contents.
+              {isAdmin && <> Admin users can edit files directly with the Edit button.</>}
             </p>
           )}
         </CardContent>

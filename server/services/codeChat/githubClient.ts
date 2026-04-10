@@ -438,6 +438,420 @@ export async function listOpenPullRequests(
   }));
 }
 
+/**
+ * Update an existing pull request (title, body, state, base).
+ * Use `state: "closed"` to close without merging.
+ */
+export async function updatePullRequest(
+  creds: GitHubCredentials,
+  owner: string,
+  repo: string,
+  number: number,
+  input: {
+    title?: string;
+    body?: string;
+    state?: "open" | "closed";
+    base?: string;
+  },
+): Promise<PullRequest> {
+  const data = await ghFetch<{
+    number: number;
+    html_url: string;
+    title: string;
+    body: string | null;
+    state: string;
+    head: { ref: string };
+    base: { ref: string };
+  }>(creds, "PATCH", `/repos/${owner}/${repo}/pulls/${number}`, input);
+  return {
+    number: data.number,
+    url: data.html_url,
+    title: data.title,
+    body: data.body,
+    state: data.state,
+    head: data.head.ref,
+    base: data.base.ref,
+  };
+}
+
+/**
+ * Merge a pull request.
+ *
+ * `method`:
+ *   - "merge"  — merge commit (preserves history)
+ *   - "squash" — squash into a single commit
+ *   - "rebase" — rebase the PR onto the base
+ *
+ * Returns the merge commit SHA on success. Throws GitHubError(405) if
+ * the PR is not mergeable (conflicts, failing required checks,
+ * branch-protection blocks).
+ */
+export interface MergeResult {
+  sha: string;
+  merged: boolean;
+  message: string;
+}
+
+export async function mergePullRequest(
+  creds: GitHubCredentials,
+  owner: string,
+  repo: string,
+  number: number,
+  input: {
+    commitTitle?: string;
+    commitMessage?: string;
+    mergeMethod?: "merge" | "squash" | "rebase";
+    sha?: string;
+  } = {},
+): Promise<MergeResult> {
+  const body: Record<string, unknown> = {};
+  if (input.commitTitle) body.commit_title = input.commitTitle;
+  if (input.commitMessage) body.commit_message = input.commitMessage;
+  if (input.mergeMethod) body.merge_method = input.mergeMethod;
+  if (input.sha) body.sha = input.sha;
+  const data = await ghFetch<{
+    sha: string;
+    merged: boolean;
+    message: string;
+  }>(creds, "PUT", `/repos/${owner}/${repo}/pulls/${number}/merge`, body);
+  return {
+    sha: data.sha,
+    merged: data.merged,
+    message: data.message,
+  };
+}
+
+/** Single-PR detail view (includes mergeable state + checks). */
+export interface PullRequestDetail extends PullRequest {
+  mergeable: boolean | null;
+  mergeableState: string;
+  draft: boolean;
+  commits: number;
+  additions: number;
+  deletions: number;
+  changedFiles: number;
+}
+
+export async function getPullRequest(
+  creds: GitHubCredentials,
+  owner: string,
+  repo: string,
+  number: number,
+): Promise<PullRequestDetail> {
+  const data = await ghFetch<{
+    number: number;
+    html_url: string;
+    title: string;
+    body: string | null;
+    state: string;
+    head: { ref: string };
+    base: { ref: string };
+    mergeable: boolean | null;
+    mergeable_state: string;
+    draft: boolean;
+    commits: number;
+    additions: number;
+    deletions: number;
+    changed_files: number;
+  }>(creds, "GET", `/repos/${owner}/${repo}/pulls/${number}`);
+  return {
+    number: data.number,
+    url: data.html_url,
+    title: data.title,
+    body: data.body,
+    state: data.state,
+    head: data.head.ref,
+    base: data.base.ref,
+    mergeable: data.mergeable,
+    mergeableState: data.mergeable_state,
+    draft: data.draft,
+    commits: data.commits,
+    additions: data.additions,
+    deletions: data.deletions,
+    changedFiles: data.changed_files,
+  };
+}
+
+// ─── User + repository listing ───────────────────────────────────────────
+//
+// These power the multi-repo GitHub write surface. The caller's PAT
+// determines which repositories are visible — we only ever surface
+// what the user themselves has access to.
+
+export interface AuthenticatedUser {
+  login: string;
+  id: number;
+  avatarUrl: string;
+  name: string | null;
+  email: string | null;
+}
+
+export async function getAuthenticatedUser(
+  creds: GitHubCredentials,
+): Promise<AuthenticatedUser> {
+  const data = await ghFetch<{
+    login: string;
+    id: number;
+    avatar_url: string;
+    name: string | null;
+    email: string | null;
+  }>(creds, "GET", `/user`);
+  return {
+    login: data.login,
+    id: data.id,
+    avatarUrl: data.avatar_url,
+    name: data.name,
+    email: data.email,
+  };
+}
+
+export interface RepoSummary {
+  owner: string;
+  repo: string;
+  fullName: string;
+  defaultBranch: string;
+  description: string | null;
+  isPrivate: boolean;
+  permissions?: {
+    admin: boolean;
+    push: boolean;
+    pull: boolean;
+    maintain?: boolean;
+    triage?: boolean;
+  };
+  pushedAt: string | null;
+  htmlUrl: string;
+}
+
+/**
+ * List repositories the caller has access to. Defaults to repos with
+ * push permission (what the Code Chat write surface actually needs)
+ * but callers can override with `affiliation: "owner,collaborator,organization_member"`
+ * to see everything.
+ */
+export async function listUserRepositories(
+  creds: GitHubCredentials,
+  opts: {
+    affiliation?: string;
+    perPage?: number;
+    sort?: "created" | "updated" | "pushed" | "full_name";
+    onlyPushable?: boolean;
+  } = {},
+): Promise<RepoSummary[]> {
+  const perPage = Math.min(Math.max(opts.perPage ?? 100, 1), 100);
+  const sort = opts.sort ?? "pushed";
+  const affiliation =
+    opts.affiliation ?? "owner,collaborator,organization_member";
+  const data = await ghFetch<
+    Array<{
+      name: string;
+      full_name: string;
+      owner: { login: string };
+      default_branch: string;
+      description: string | null;
+      private: boolean;
+      permissions?: {
+        admin: boolean;
+        push: boolean;
+        pull: boolean;
+        maintain?: boolean;
+        triage?: boolean;
+      };
+      pushed_at: string | null;
+      html_url: string;
+    }>
+  >(
+    creds,
+    "GET",
+    `/user/repos?per_page=${perPage}&sort=${sort}&affiliation=${encodeURIComponent(affiliation)}`,
+  );
+  const all = data.map((r) => ({
+    owner: r.owner.login,
+    repo: r.name,
+    fullName: r.full_name,
+    defaultBranch: r.default_branch,
+    description: r.description,
+    isPrivate: r.private,
+    permissions: r.permissions,
+    pushedAt: r.pushed_at,
+    htmlUrl: r.html_url,
+  }));
+  if (opts.onlyPushable) {
+    return all.filter((r) => r.permissions?.push !== false);
+  }
+  return all;
+}
+
+/** List branches for a repo (paginated; returns first 100 by default). */
+export interface BranchSummary {
+  name: string;
+  sha: string;
+  protected: boolean;
+}
+
+export async function listBranches(
+  creds: GitHubCredentials,
+  owner: string,
+  repo: string,
+  perPage = 100,
+): Promise<BranchSummary[]> {
+  const data = await ghFetch<
+    Array<{
+      name: string;
+      commit: { sha: string };
+      protected: boolean;
+    }>
+  >(creds, "GET", `/repos/${owner}/${repo}/branches?per_page=${perPage}`);
+  return data.map((b) => ({
+    name: b.name,
+    sha: b.commit.sha,
+    protected: b.protected,
+  }));
+}
+
+// ─── Multi-file commit via the Git Data API ───────────────────────────────
+//
+// GitHub's contents API (createOrUpdateFile) only handles one file per
+// commit. For anything beyond a single-file change we build a tree +
+// commit manually:
+//   1. Get the base branch's tip SHA
+//   2. Create a blob per file
+//   3. Create a tree referencing every blob
+//   4. Create a commit pointing at the new tree
+//   5. Update the branch ref to the new commit
+//
+// This is the same path `git push` takes under the hood and lets us
+// commit dozens of files atomically in a single commit.
+
+export interface MultiFileCommitInput {
+  branch: string;
+  message: string;
+  files: Array<{ path: string; content: string; deleted?: boolean }>;
+  committer?: { name: string; email: string };
+  author?: { name: string; email: string };
+}
+
+export interface MultiFileCommitResult {
+  commitSha: string;
+  treeSha: string;
+  branch: string;
+  filesChanged: number;
+  url: string;
+}
+
+export async function commitMultipleFiles(
+  creds: GitHubCredentials,
+  owner: string,
+  repo: string,
+  input: MultiFileCommitInput,
+): Promise<MultiFileCommitResult> {
+  if (input.files.length === 0) {
+    throw new Error("commitMultipleFiles requires at least one file");
+  }
+
+  // 1. Resolve the branch's current tip
+  const baseSha = await getBranchSha(creds, owner, repo, input.branch);
+
+  // Look up the base commit's tree SHA
+  const baseCommit = await ghFetch<{ tree: { sha: string } }>(
+    creds,
+    "GET",
+    `/repos/${owner}/${repo}/git/commits/${baseSha}`,
+  );
+  const baseTreeSha = baseCommit.tree.sha;
+
+  // 2. Create a blob per non-deleted file
+  const treeEntries: Array<{
+    path: string;
+    mode: "100644";
+    type: "blob";
+    sha?: string | null;
+    content?: string;
+  }> = [];
+
+  for (const file of input.files) {
+    if (file.deleted) {
+      // Passing sha: null deletes the file from the new tree
+      treeEntries.push({
+        path: file.path,
+        mode: "100644",
+        type: "blob",
+        sha: null,
+      });
+      continue;
+    }
+    const blob = await ghFetch<{ sha: string }>(
+      creds,
+      "POST",
+      `/repos/${owner}/${repo}/git/blobs`,
+      {
+        content: Buffer.from(file.content, "utf8").toString("base64"),
+        encoding: "base64",
+      },
+    );
+    treeEntries.push({
+      path: file.path,
+      mode: "100644",
+      type: "blob",
+      sha: blob.sha,
+    });
+  }
+
+  // 3. Create a new tree
+  const tree = await ghFetch<{ sha: string }>(
+    creds,
+    "POST",
+    `/repos/${owner}/${repo}/git/trees`,
+    {
+      base_tree: baseTreeSha,
+      tree: treeEntries,
+    },
+  );
+
+  // 4. Create the commit
+  const commit = await ghFetch<{
+    sha: string;
+    html_url: string;
+  }>(creds, "POST", `/repos/${owner}/${repo}/git/commits`, {
+    message: input.message,
+    tree: tree.sha,
+    parents: [baseSha],
+    author: input.author,
+    committer: input.committer,
+  });
+
+  // 5. Update the branch ref
+  await ghFetch(
+    creds,
+    "PATCH",
+    `/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(input.branch)}`,
+    { sha: commit.sha, force: false },
+  );
+
+  return {
+    commitSha: commit.sha,
+    treeSha: tree.sha,
+    branch: input.branch,
+    filesChanged: input.files.length,
+    url: commit.html_url,
+  };
+}
+
+// ─── Delete branch ───────────────────────────────────────────────────────
+
+export async function deleteBranch(
+  creds: GitHubCredentials,
+  owner: string,
+  repo: string,
+  branch: string,
+): Promise<void> {
+  await ghFetch(
+    creds,
+    "DELETE",
+    `/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(branch)}`,
+  );
+}
+
 // ─── Owner/repo parser (used by the chat tool) ───────────────────────────
 
 export function parseRepoString(s: string): {
@@ -447,4 +861,40 @@ export function parseRepoString(s: string): {
   const match = s.match(/^([\w.-]+)\/([\w.-]+)$/);
   if (!match) return null;
   return { owner: match[1], repo: match[2] };
+}
+
+// ─── Permission gate helper ───────────────────────────────────────────────
+//
+// Quick server-side sanity check: does the caller's token actually have
+// push access to the requested repo? Used by the multi-repo write
+// surface to give a clear error before we burn a commit/branch attempt
+// against a repo the user only has read access to.
+
+export async function verifyPushAccess(
+  creds: GitHubCredentials,
+  owner: string,
+  repo: string,
+): Promise<{ canPush: boolean; reason?: string }> {
+  try {
+    const info = await ghFetch<{
+      permissions?: { push?: boolean; admin?: boolean };
+    }>(creds, "GET", `/repos/${owner}/${repo}`);
+    if (info.permissions?.push || info.permissions?.admin) {
+      return { canPush: true };
+    }
+    return {
+      canPush: false,
+      reason:
+        "Authenticated user does not have push permission on this repository.",
+    };
+  } catch (err) {
+    const status = err instanceof GitHubError ? err.status : 0;
+    return {
+      canPush: false,
+      reason:
+        status === 404
+          ? "Repository not found or not accessible to this token."
+          : `GitHub permission probe failed (${status || "network"}).`,
+    };
+  }
 }
