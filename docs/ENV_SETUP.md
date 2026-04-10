@@ -98,11 +98,15 @@ CENSUS_API_KEY not set — returning empty demographics
 
 ---
 
-## GitHub (admin Code Chat + self-update)
+## GitHub (Code Chat read + multi-repo write)
 
-**Purpose:** Enables the "GitHub" tab on the admin **Code Chat** page (`/code-chat`) so operators can see integration status, list open pull requests on the configured repo, and — as follow-on iterations ship — trigger self-update commits and PRs from within the running app.
+**Purpose:** Gives Code Chat full read + write access to any GitHub repository the caller's token has access to — not just the Stewardly app repo. This includes:
 
-**Impact when missing:** The GitHub tab shows a "Not configured" notice with direct links to both `/integrations` (for the preferred user-scoped flow) and this doc (for the env fallback). All other Code Chat tabs (Files, Roadmap, Diff) keep working. No server endpoints fail; reads and writes simply degrade to disabled.
+- **Read:** repository metadata, open pull requests, file contents at any ref (the "GitHub" read tab)
+- **Write (Pass 201):** list-my-repos, create/delete branches, atomic multi-file commits via the Git Data API, create/update/merge pull requests (merge, squash, rebase) — all exposed through the "Git Write" tab in Code Chat and the `codeChat.github*` tRPC procedures
+- **Background:** queue "GitHub push" jobs that commit + optionally open a PR in the background so long-running changesets don't block the UI
+
+**Impact when missing:** Both the "GitHub" read tab and the "Git Write" tab show a "Not connected" notice with direct links to `/integrations`. Local Code Chat tools (Files, Roadmap, Diff, Chat) keep working against the in-process workspace. No server endpoints fail; the GitHub surface simply degrades to disabled.
 
 **Used by:**
 - `server/services/codeChat/githubClient.ts` — REST wrapper around api.github.com
@@ -129,13 +133,16 @@ The Code Chat → GitHub tab now displays which path was resolved under the "Cre
 ### Setup (Path A — user-connected, recommended)
 
 1. Create a GitHub Personal Access Token at [https://github.com/settings/tokens](https://github.com/settings/tokens):
-   - **Classic PAT:** check the `repo` scope (grants full repo access).
-   - **Fine-grained PAT:** give it Contents (read/write) + Pull requests (read/write) on the target repo only.
+   - **Classic PAT:** check the `repo` scope (full repo access, including write to any repo you can push to).
+   - **Fine-grained PAT:** give it Contents (read/write) + Pull requests (read/write) + Metadata (read) on every repo you want the Git Write tab to reach. The Git Write tab enumerates whatever the token can see.
 2. Copy the token value.
 3. Sign in to Stewardly and visit `/integrations`.
 4. Find **GitHub** in the provider list (category: Middleware) and click **Connect**.
 5. Paste your PAT in the `token` field and save.
-6. Visit `/code-chat` → GitHub tab. You should see a green check with the repo metadata and `Credential source: your connected account`.
+6. Visit `/code-chat` → **GitHub** tab. You should see a green check with the repo metadata and `Credential source: your connected account`.
+7. Open the **Git Write** tab. You should see "Connected as @your-handle" and a dropdown of every repo your token can push to. Pick one and you'll get branches, a commit-&-push form (with load-from-repo), open PRs (with merge/squash buttons), and an open-PR form.
+
+**Important:** Every write goes through **your** GitHub identity, not a shared bot. The `Git Write` tab is available to any authenticated user — their token's own scope is the hard access boundary. Admins using the local-workspace `write_file`/`edit_file`/`run_bash` path still need the server's admin role.
 
 ### Setup (Path B — env var fallback)
 
@@ -152,6 +159,13 @@ The **GitHub** tab should show:
 - Default branch name, visibility (public/private), description
 - A "Credential source" line telling you whether you're on Path A or Path B
 - Any open pull requests on that repo
+
+The **Git Write** tab should show:
+- "Connected as @your-handle" with the credential source
+- A repo dropdown populated with every pushable repository your token can see
+- Branches, commit form, open PRs, and create-PR cards for the selected repo
+
+The **Jobs** tab should show any running/completed background jobs (autonomous sessions, GitHub push jobs) with their event log.
 
 If the probe fails you'll see an inline error explaining whether the token is missing, lacks scope, or the API returned a non-2xx status.
 
