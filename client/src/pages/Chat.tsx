@@ -1058,6 +1058,7 @@ export default function Chat() {
     } finally {
       setIsStreaming(false);
       setAttachments([]);
+      soundCues.play("received");
       // If hands-free is active and TTS is NOT about to speak (no ttsEnabled or error path),
       // release the guard and restart listening.
       // If TTS IS enabled, the guard stays on until tts.onEnd releases it and restarts listening.
@@ -2174,7 +2175,7 @@ export default function Chat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={handsFreeActive && voice.isListening ? "Listening..." : "Ask Steward anything..."}
+                placeholder={handsFreeActive && voice.isListening ? "Listening..." : userRole === "advisor" ? "Ask about clients, strategies, compliance..." : userRole === "admin" ? "Ask about system health, usage, configuration..." : "Ask Steward anything..."}
                 className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[36px] max-h-[160px] text-sm py-2 px-0"
                 rows={1}
                 disabled={isStreaming}
