@@ -1629,10 +1629,10 @@ const voiceRouter = router({
       return { url };
     }),
   /** Edge TTS — high-quality neural speech synthesis */
-  speak: publicProcedure
+  speak: protectedProcedure
     .input(z.object({
       text: z.string().min(1).max(5000),
-      voice: z.string().default("aria"),
+      voice: z.string().default("en-US-GuyNeural"),
       rate: z.string().default("+0%"),
       pitch: z.string().default("+0Hz"),
     }))
@@ -1658,7 +1658,7 @@ const voiceRouter = router({
       }
     }),
   /** List available Edge TTS voices with metadata */
-  voices: publicProcedure.query(() => getVoiceCatalog()),
+  voices: protectedProcedure.query(() => getVoiceCatalog()),
 });
 
 // ─── SETTINGS ROUTER ──────────────────────────────────────────────

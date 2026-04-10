@@ -14,7 +14,7 @@ const ttsRouter = Router();
 
 ttsRouter.post("/api/tts", async (req, res) => {
   try {
-    const { text, voice = "aria", speed = 1.0, pitch = "default" } = req.body;
+    const { text, voice = "en-US-GuyNeural", speed = 1.0, pitch = "default" } = req.body;
     if (!text || text.length === 0) return res.status(400).json({ error: "Text is required" });
     if (text.length > 5000) return res.status(400).json({ error: "Text exceeds 5000 character limit" });
 
