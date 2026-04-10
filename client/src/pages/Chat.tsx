@@ -244,6 +244,10 @@ export default function Chat() {
   const creatingConversationRef = useRef(false);
   const streamAbortRef = useRef<AbortController | null>(null);
   const loopPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Clean up loop polling on unmount to prevent background intervals
+  useEffect(() => {
+    return () => { if (loopPollRef.current) clearInterval(loopPollRef.current); };
+  }, []);
 
   // ─── GUARD REF ─────────────────────────────────────────────────
   // Blocks voice recognition during TTS playback AND AI processing.
@@ -528,7 +532,8 @@ export default function Chat() {
         setSelectedFocus([pending.focus]);
       }
       // Focus the textarea after a brief delay to let the component render
-      setTimeout(() => textareaRef.current?.focus(), 300);
+      const timer = setTimeout(() => textareaRef.current?.focus(), 300);
+      return () => clearTimeout(timer);
     }
   }, []);
   useEffect(() => {
@@ -1305,7 +1310,7 @@ export default function Chat() {
       { label: "Audio", icon: <Volume2 className="w-4 h-4" />, path: "/settings/audio", match: ["/settings/audio"] },
     ]},
     { key: "client", label: "Client", minRole: "user", items: [
-      { label: "Financial Twin", icon: <Fingerprint className="w-4 h-4" />, path: "/financial-twin", match: ["/financial-twin"] },
+      { label: "My Financial Twin", icon: <Fingerprint className="w-4 h-4" />, path: "/financial-twin", match: ["/financial-twin"] },
       { label: "Insights", icon: <Sparkles className="w-4 h-4" />, path: "/intelligence-hub", match: ["/intelligence-hub", "/insights"] },
       { label: "Suitability", icon: <Scale className="w-4 h-4" />, path: "/settings/suitability", match: ["/settings/suitability", "/suitability"] },
     ]},

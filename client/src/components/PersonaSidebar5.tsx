@@ -96,7 +96,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
 
 const LEARN_ITEM: NavItem = {
   label: "Learn", icon: GraduationCap, path: "/learning",
-  match: ["/learning", "/learning/flashcards", "/learning/practice-test", "/learning/exam"],
+  match: ["/learning", "/learning/tracks", "/learning/exam", "/learning/discipline", "/learning/case", "/learning/connections", "/learning/achievements", "/learning/licenses", "/learning/studio"],
 };
 
 const FOOTER_ITEMS: NavItem[] = [
