@@ -1301,11 +1301,12 @@ export default function Chat() {
   const personaLayers: PersonaLayer[] = [
     { key: "person", label: "Person", minRole: "guest", items: [
       { label: "Documents", icon: <FileText className="w-4 h-4" />, path: "/documents", match: ["/documents"] },
-      { label: "Progress", icon: <BarChart3 className="w-4 h-4" />, path: "/progress", match: ["/progress"] },
+      { label: "My Progress", icon: <BarChart3 className="w-4 h-4" />, path: "/proficiency", match: ["/proficiency"] },
       { label: "Audio", icon: <Volume2 className="w-4 h-4" />, path: "/settings/audio", match: ["/settings/audio"] },
     ]},
     { key: "client", label: "Client", minRole: "user", items: [
       { label: "Financial Twin", icon: <Fingerprint className="w-4 h-4" />, path: "/financial-twin", match: ["/financial-twin"] },
+      { label: "Insights", icon: <Sparkles className="w-4 h-4" />, path: "/insights", match: ["/insights"] },
       { label: "Suitability", icon: <Scale className="w-4 h-4" />, path: "/suitability", match: ["/suitability"] },
     ]},
     { key: "advisor", label: "Advisor", minRole: "advisor", items: [
@@ -1313,7 +1314,7 @@ export default function Chat() {
       { label: "Cases & Work", icon: <Briefcase className="w-4 h-4" />, path: "/my-work", match: ["/my-work", "/operations", "/workflows"] },
       { label: "Compliance", icon: <Shield className="w-4 h-4" />, path: "/compliance-audit", match: ["/compliance-audit"] },
       { label: "Market Data", icon: <TrendingUp className="w-4 h-4" />, path: "/market-data", match: ["/market-data"] },
-      { label: "Calculators", icon: <Calculator className="w-4 h-4" />, path: "/wealth-engine", match: ["/wealth-engine"] },
+      { label: "Calculators", icon: <Calculator className="w-4 h-4" />, path: "/calculators", match: ["/calculators", "/wealth-engine"] },
     ]},
     { key: "manager", label: "Manager", minRole: "manager", items: [
       { label: "Team Dashboard", icon: <Users className="w-4 h-4" />, path: "/manager", match: ["/manager"] },

@@ -48,7 +48,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     items: [
       { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat"] },
       { label: "Documents", icon: FileText, path: "/documents", match: ["/documents"] },
-      { label: "Progress", icon: BarChart3, path: "/progress", match: ["/progress"] },
+      { label: "My Progress", icon: BarChart3, path: "/proficiency", match: ["/proficiency"] },
       { label: "Audio", icon: Volume2, path: "/settings/audio", match: ["/settings/audio"] },
     ],
   },
@@ -58,7 +58,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "user",
     items: [
       { label: "My Financial Twin", icon: Fingerprint, path: "/financial-twin", match: ["/financial-twin"] },
-      { label: "Recommendations", icon: Star, path: "/recommendations", match: ["/recommendations"] },
+      { label: "Insights", icon: Star, path: "/insights", match: ["/insights"] },
       { label: "Suitability", icon: ClipboardList, path: "/suitability", match: ["/suitability", "/settings/suitability"] },
     ],
   },
@@ -71,7 +71,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "Cases & Work", icon: Briefcase, path: "/my-work", match: ["/my-work", "/operations", "/advisory", "/workflows"] },
       { label: "Compliance", icon: ShieldCheck, path: "/compliance-audit", match: ["/compliance-audit"] },
       { label: "Market Data", icon: TrendingUp, path: "/market-data", match: ["/market-data"] },
-      { label: "Calculators", icon: Calculator, path: "/wealth-engine", match: ["/wealth-engine"] },
+      { label: "Calculators", icon: Calculator, path: "/calculators", match: ["/calculators", "/wealth-engine"] },
     ],
   },
   {
@@ -80,7 +80,6 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "manager",
     items: [
       { label: "Team Dashboard", icon: UserCog, path: "/manager", match: ["/manager"] },
-      { label: "Performance", icon: LineChart, path: "/manager/performance", match: ["/manager/performance"] },
     ],
   },
   {

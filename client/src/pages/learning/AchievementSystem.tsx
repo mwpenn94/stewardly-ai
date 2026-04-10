@@ -44,8 +44,8 @@ const CATEGORY_ICONS: Record<string, any> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  streak: "text-amber-400", mastery: "text-purple-400", exam: "text-emerald-400",
-  case: "text-sky-400", milestone: "text-rose-400",
+  streak: "text-chart-1", mastery: "text-chart-5", exam: "text-chart-2",
+  case: "text-chart-3", milestone: "text-chart-4",
 };
 
 const DEMO_DATA: AchievementData = {
