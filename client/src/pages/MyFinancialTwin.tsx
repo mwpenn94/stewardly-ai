@@ -14,6 +14,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAudioCompanion } from "@/components/AudioCompanion";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocation } from "wouter";
+import AppShell from "@/components/AppShell";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -72,7 +76,7 @@ interface Props {
   onAskAbout?: (context: string) => void;
 }
 
-export default function MyFinancialTwin({
+function MyFinancialTwinView({
   data, isLoading, onVisibilityChange, onDeleteInsight, onExport, onAskAbout,
 }: Props) {
   const audio = useAudioCompanion();
@@ -256,5 +260,61 @@ export default function MyFinancialTwin({
         )}
       </div>
     </div>
+  );
+}
+
+/* ── Standalone route wrapper — fetches data from clientPortal ── */
+const STATUS_MAP: Record<string, "on-track" | "needs-attention" | "not-started"> = {
+  on_track: "on-track", needs_attention: "needs-attention", at_risk: "needs-attention",
+};
+
+export default function MyFinancialTwin() {
+  const { isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
+
+  const twinQ = trpc.clientPortal.getFinancialTwin.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  if (!isAuthenticated) {
+    return (
+      <AppShell title="My Financial Twin">
+        <div className="max-w-3xl mx-auto px-4 py-16 text-center">
+          <Fingerprint className="w-12 h-12 mx-auto mb-4 text-accent/60" />
+          <h2 className="text-lg font-heading font-semibold mb-2">Sign in to view your Financial Twin</h2>
+          <p className="text-sm text-muted-foreground mb-4">Your AI-built financial profile assembles itself from your conversations, assessments, and goals.</p>
+          <Button onClick={() => navigate("/signin")} className="bg-accent hover:bg-accent/90">Sign In</Button>
+        </div>
+      </AppShell>
+    );
+  }
+
+  // Map server shape to component shape
+  const mapped: FinancialTwinData | undefined = twinQ.data ? {
+    profile: twinQ.data.profile,
+    goals: twinQ.data.goals.map((g: any) => ({
+      ...g,
+      status: STATUS_MAP[g.status] ?? "not-started",
+      category: g.category as any,
+    })),
+    financialSnapshot: {
+      incomeRange: twinQ.data.financialSnapshot.annualIncome ?? undefined,
+      netWorthRange: twinQ.data.financialSnapshot.netWorth ?? undefined,
+    },
+    insights: twinQ.data.insights.map((i: any) => ({
+      id: i.id,
+      text: i.text,
+      source: "conversation" as const,
+      date: i.createdAt,
+      actionable: i.actionable,
+    })),
+    visibility: twinQ.data.visibility,
+  } : undefined;
+
+  return (
+    <AppShell title="My Financial Twin">
+      <MyFinancialTwinView data={mapped} isLoading={twinQ.isLoading} onAskAbout={(ctx) => navigate(`/chat?prompt=${encodeURIComponent(ctx)}`)} />
+    </AppShell>
   );
 }
