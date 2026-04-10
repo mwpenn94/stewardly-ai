@@ -277,7 +277,7 @@ export default function Chat() {
       forceUpdate(n => n + 1);
       // In hands-free mode, restart listening after TTS completes
       if (handsFreeActive) {
-        setTimeout(() => voice.start(), 600);
+        setTimeout(() => { try { voice.start(); } catch { /* voice may not be available */ } }, 600);
       }
     },
   });
@@ -1066,7 +1066,7 @@ export default function Chat() {
         guardRef.current = false;
         processingRef.current = false;
         forceUpdate(n => n + 1);
-        setTimeout(() => voice.start(), 600);
+        setTimeout(() => { try { voice.start(); } catch { /* voice may not be available */ } }, 600);
       }
     }
   };
