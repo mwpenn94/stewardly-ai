@@ -47,7 +47,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "guest",
     items: [
       { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat"] },
-      { label: "Documents", icon: FileText, path: "/documents", match: ["/documents"] },
+      { label: "Documents", icon: FileText, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },
       { label: "My Progress", icon: BarChart3, path: "/proficiency", match: ["/proficiency"] },
       { label: "Audio", icon: Volume2, path: "/settings/audio", match: ["/settings/audio"] },
     ],
@@ -58,8 +58,8 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "user",
     items: [
       { label: "My Financial Twin", icon: Fingerprint, path: "/financial-twin", match: ["/financial-twin"] },
-      { label: "Insights", icon: Star, path: "/insights", match: ["/insights"] },
-      { label: "Suitability", icon: ClipboardList, path: "/suitability", match: ["/suitability", "/settings/suitability"] },
+      { label: "Insights", icon: Star, path: "/intelligence-hub", match: ["/intelligence-hub", "/insights"] },
+      { label: "Suitability", icon: ClipboardList, path: "/settings/suitability", match: ["/settings/suitability", "/suitability"] },
     ],
   },
   {

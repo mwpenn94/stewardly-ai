@@ -1300,14 +1300,14 @@ export default function Chat() {
   const ROLE_LEVEL: Record<string, number> = { guest: 0, user: 1, advisor: 2, manager: 3, admin: 4 };
   const personaLayers: PersonaLayer[] = [
     { key: "person", label: "Person", minRole: "guest", items: [
-      { label: "Documents", icon: <FileText className="w-4 h-4" />, path: "/documents", match: ["/documents"] },
+      { label: "Documents", icon: <FileText className="w-4 h-4" />, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },
       { label: "My Progress", icon: <BarChart3 className="w-4 h-4" />, path: "/proficiency", match: ["/proficiency"] },
       { label: "Audio", icon: <Volume2 className="w-4 h-4" />, path: "/settings/audio", match: ["/settings/audio"] },
     ]},
     { key: "client", label: "Client", minRole: "user", items: [
       { label: "Financial Twin", icon: <Fingerprint className="w-4 h-4" />, path: "/financial-twin", match: ["/financial-twin"] },
-      { label: "Insights", icon: <Sparkles className="w-4 h-4" />, path: "/insights", match: ["/insights"] },
-      { label: "Suitability", icon: <Scale className="w-4 h-4" />, path: "/suitability", match: ["/suitability"] },
+      { label: "Insights", icon: <Sparkles className="w-4 h-4" />, path: "/intelligence-hub", match: ["/intelligence-hub", "/insights"] },
+      { label: "Suitability", icon: <Scale className="w-4 h-4" />, path: "/settings/suitability", match: ["/settings/suitability", "/suitability"] },
     ]},
     { key: "advisor", label: "Advisor", minRole: "advisor", items: [
       { label: "Clients", icon: <Users className="w-4 h-4" />, path: "/relationships", match: ["/relationships", "/portal"] },
