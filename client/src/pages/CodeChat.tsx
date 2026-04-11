@@ -27,7 +27,7 @@ import {
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
-  BookOpen, History, StickyNote, Brain, BarChart3, Webhook,
+  BookOpen, History, StickyNote, Brain, BarChart3, Webhook, Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -134,6 +134,7 @@ import {
 } from "@/components/codeChat/agentMemory";
 import SymbolNavigatorPopover from "@/components/codeChat/SymbolNavigatorPopover";
 import HooksPopover from "@/components/codeChat/HooksPopover";
+import SubagentsPopover from "@/components/codeChat/SubagentsPopover";
 import {
   loadHooks,
   saveHooks,
@@ -427,7 +428,7 @@ function CodeChatInterface() {
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const { messages, isExecuting, currentTools, currentTodos, loadedInstructionFiles, error, sendMessage, abort, clearHistory, regenerateLast, loadMessages } = useCodeChatStream();
+  const { messages, isExecuting, currentTools, currentTodos, loadedInstructionFiles, activeSubagent, error, sendMessage, abort, clearHistory, regenerateLast, loadMessages } = useCodeChatStream();
 
   // Pass 238: project instructions toggle — persisted so toggling
   // off sticks across refreshes for users who prefer a clean slate
@@ -492,6 +493,23 @@ function CodeChatInterface() {
     saveHooks(hooks);
   }, [hooks]);
   const hooksSummary = useMemo(() => summarizeHooks(hooks), [hooks]);
+
+  // Pass 253: user-defined subagents (Claude Code Task-tool parity)
+  const SUBAGENT_SLUG_KEY = "stewardly-codechat-subagent-slug";
+  const [subagentSlug, setSubagentSlug] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(SUBAGENT_SLUG_KEY);
+    } catch {
+      return null;
+    }
+  });
+  useEffect(() => {
+    try {
+      if (subagentSlug) localStorage.setItem(SUBAGENT_SLUG_KEY, subagentSlug);
+      else localStorage.removeItem(SUBAGENT_SLUG_KEY);
+    } catch { /* quota */ }
+  }, [subagentSlug]);
+  const [subagentsOpen, setSubagentsOpen] = useState(false);
 
   /**
    * Serialized tool-level hook rules forwarded to the server. Only
@@ -612,6 +630,9 @@ function CodeChatInterface() {
           break;
         case "hooks":
           setHooksOpen(true);
+          break;
+        case "subagents":
+          setSubagentsOpen(true);
           break;
         case "shortcuts":
           setShortcutsOpen(true);
@@ -938,9 +959,10 @@ function CodeChatInterface() {
         includeProjectInstructions: projectInstructionsOn,
         memoryOverlay,
         toolHookRules,
+        subagentSlug: subagentSlug ?? undefined,
       });
     },
-    [sendMessage, user, allowMutations, maxIterations, modelOverride, enabledTools, projectInstructionsOn, memoryOverlay, toolHookRules],
+    [sendMessage, user, allowMutations, maxIterations, modelOverride, enabledTools, projectInstructionsOn, memoryOverlay, toolHookRules, subagentSlug],
   );
 
   // Pass 220: fork conversation at a specific message
@@ -1268,9 +1290,10 @@ function CodeChatInterface() {
       memoryOverlay,
       toolHookRules,
       hookSystemOverlay: hookOutcome.systemOverlay,
+      subagentSlug: subagentSlug ?? undefined,
     });
     inputRef.current?.focus();
-  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages, projectInstructionsOn, memoryOverlay, toolHookRules, applyHooksToPrompt]);
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages, projectInstructionsOn, memoryOverlay, toolHookRules, applyHooksToPrompt, subagentSlug]);
 
   const handleSlashSelect = useCallback((cmd: SlashCommand) => {
     // Pre-fill the input with the command so the user can type args
@@ -1526,6 +1549,25 @@ function CodeChatInterface() {
         >
           <Webhook className="w-3 h-3" />
           {hooksSummary.enabled > 0 ? hooksSummary.enabled : "Hooks"}
+        </button>
+        <button
+          onClick={() => setSubagentsOpen(true)}
+          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
+            subagentSlug
+              ? "border-accent/40 bg-accent/5 text-accent"
+              : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Subagents"
+          title={
+            activeSubagent
+              ? `Active subagent: ${activeSubagent.name}`
+              : subagentSlug
+                ? `Subagent: ${subagentSlug}`
+                : "Subagents (.stewardly/agents/*.md)"
+          }
+        >
+          <Users className="w-3 h-3" />
+          {activeSubagent?.name ?? (subagentSlug ? subagentSlug : "Agents")}
         </button>
         <button
           onClick={() => setInstructionsOpen(true)}
@@ -1973,6 +2015,7 @@ function CodeChatInterface() {
                             includeProjectInstructions: projectInstructionsOn,
                             memoryOverlay,
                             toolHookRules,
+                            subagentSlug: subagentSlug ?? undefined,
                           });
                           if (!ok) toast.error("Nothing to regenerate");
                         }}
@@ -2027,6 +2070,7 @@ function CodeChatInterface() {
                   includeProjectInstructions: projectInstructionsOn,
                   memoryOverlay,
                   toolHookRules,
+                  subagentSlug: subagentSlug ?? undefined,
                 });
                 if (ok) setLastErrorBanner(null);
                 else toast.info("No previous prompt to retry");
@@ -2233,6 +2277,12 @@ function CodeChatInterface() {
         onClose={() => setHooksOpen(false)}
         hooks={hooks}
         onChange={setHooks}
+      />
+      <SubagentsPopover
+        open={subagentsOpen}
+        onClose={() => setSubagentsOpen(false)}
+        activeSlug={subagentSlug}
+        onPick={(slug) => setSubagentSlug(slug)}
       />
       {/* Pass 233: bookmarks popover */}
       {bookmarksOpen && (

@@ -22,6 +22,11 @@ import {
   loadProjectInstructions,
   buildInstructionsPromptOverlay,
 } from "../services/codeChat/projectInstructions";
+import {
+  loadSubagents,
+  buildSubagentOverlay,
+  intersectTools as intersectSubagentTools,
+} from "../services/codeChat/subagents";
 import { logger } from "../_core/logger";
 
 const codeChatStreamRouter = Router();
@@ -176,7 +181,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
     return;
   }
 
-  const { message, model, allowMutations = false, maxIterations = 5, enabledTools, includeProjectInstructions = true, memoryOverlay, toolHookRules, hookSystemOverlay } = req.body;
+  const { message, model, allowMutations = false, maxIterations = 5, enabledTools, includeProjectInstructions = true, memoryOverlay, toolHookRules, hookSystemOverlay, subagentSlug } = req.body;
   if (!message || typeof message !== "string") {
     res.status(400).json({ error: "message is required" });
     return;
@@ -223,7 +228,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
   // omitted, every tool the caller's role allows stays available.
   // If provided, we intersect it with the role-based allowlist so a
   // non-admin can never enable write tools by passing `enabledTools`.
-  const userAllowed: Set<string> | null = Array.isArray(enabledTools)
+  let userAllowed: Set<string> | null = Array.isArray(enabledTools)
     ? new Set(
         enabledTools.filter((t: unknown): t is string => typeof t === "string"),
       )
@@ -300,6 +305,49 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         ? hookSystemOverlay.trim().slice(0, 8192)
         : "";
 
+    // Pass 253: subagent overlay — if the user picked a specific
+    // subagent, load its spec from .stewardly/agents/<slug>.md,
+    // build a system-prompt fragment, intersect its tool allowlist
+    // with the session's allowlist, and emit a SSE receipt event.
+    let subagentOverlay = "";
+    let activeSubagent: {
+      slug: string;
+      name: string;
+      tools: string[];
+      model?: string;
+    } | null = null;
+    if (typeof subagentSlug === "string" && subagentSlug.trim()) {
+      try {
+        const manifest = await loadSubagents(WORKSPACE_ROOT);
+        const match = manifest.agents.find(
+          (a) => a.slug === subagentSlug.trim().toLowerCase(),
+        );
+        if (match) {
+          subagentOverlay = buildSubagentOverlay(match).slice(0, 16384);
+          activeSubagent = {
+            slug: match.slug,
+            name: match.name,
+            tools: match.tools,
+            model: match.model,
+          };
+          writeSse(res, {
+            type: "subagent_active",
+            slug: match.slug,
+            name: match.name,
+            description: match.description,
+            toolsIntersected: intersectSubagentTools(
+              Array.isArray(enabledTools)
+                ? enabledTools.filter((t: any) => typeof t === "string")
+                : [],
+              match.tools,
+            ),
+          });
+        }
+      } catch {
+        /* subagent load is best-effort */
+      }
+    }
+
     const systemPrompt = [
       "You are a Claude-Code-style coding assistant inside Stewardly.",
       "Work step-by-step. Use `code_list_directory` and `code_read_file` to explore.",
@@ -317,7 +365,22 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       projectInstructionsOverlay ? `\n${projectInstructionsOverlay}` : "",
       memorySnippet ? `\n${memorySnippet}` : "",
       hookSnippet ? `\n${hookSnippet}` : "",
+      subagentOverlay ? `\n${subagentOverlay}` : "",
     ].filter(Boolean).join("\n");
+
+    // Pass 253: if a subagent was picked and it has an explicit tool
+    // allowlist, intersect it with the session's allowlist so the
+    // subagent can't re-enable tools the user disabled.
+    if (activeSubagent && activeSubagent.tools.length > 0) {
+      const sessionAllowedArray = userAllowed
+        ? Array.from(userAllowed)
+        : CODE_CHAT_TOOL_DEFINITIONS.map((t) => t.name);
+      const intersected = intersectSubagentTools(
+        sessionAllowedArray,
+        activeSubagent.tools,
+      );
+      userAllowed = new Set(intersected);
+    }
 
     // Pass 238: tell the client which instruction files landed in the
     // prompt so the UI can show a badge / hover preview
@@ -365,6 +428,11 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
 
     writeSse(res, { type: "thinking", content: "Starting analysis..." });
 
+    // Pass 253: subagent can override the model if the session
+    // didn't pick one explicitly.
+    const effectiveModel =
+      model || (activeSubagent && activeSubagent.model) || undefined;
+
     const result = await executeReActLoop({
       messages: [
         { role: "system", content: systemPrompt },
@@ -373,7 +441,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       userId: user.id,
       tools: toolDefs.length > 0 ? (toolDefs as any) : undefined,
       maxIterations,
-      model,
+      model: effectiveModel,
       contextualLLM,
       executeTool: async (toolName: string, args: Record<string, unknown>) => {
         stepIndex++;

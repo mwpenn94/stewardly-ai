@@ -6,10 +6,10 @@
 > also write to this file — always re-read before editing and use the
 > Reconciliation Log to resolve conflicts.
 
-**Last updated:** 2026-04-11 (Pass 252 — NotebookEdit tool)
-**Current composite score:** 9.5 / 10 (self-assessed, conservative)
-**Passes completed:** 252+ cumulative across all platforms
-**Test surface:** codeChat **871 passing across 36 files** (+39 new this pass)
+**Last updated:** 2026-04-11 (Pass 253 — Custom subagents)
+**Current composite score:** 9.6 / 10 (self-assessed, conservative)
+**Passes completed:** 253+ cumulative across all platforms
+**Test surface:** codeChat **904 passing across 37 files** (+33 new this pass)
 **Full suite:** 3,840+ passing (baseline 3,103/109 — 14 pre-existing env-dependent failing files unchanged)
 
 ---
@@ -84,7 +84,7 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 |  | Keyboard shortcuts overlay | ✅ | ✅ | 9 | Pass 209 |
 | **Extensibility** | User-defined hooks (pre/post tool) | ✅ | ✅ | 8 | Pass 249 — PreToolUse/PostToolUse/SessionStart/UserPromptSubmit with matchers |
 |  | Custom slash commands (user files) | ✅ | 🔶 | 4 | Built-ins only; no custom slash file loading yet |
-|  | Custom subagent definitions | ✅ | ❌ | 0 | No ~/.claude/agents/*.md equivalent |
+|  | Custom subagent definitions | ✅ | ✅ | 8 | Pass 253 — .stewardly/agents/*.md loader with YAML frontmatter, tool allowlist intersection, system prompt overlay, picker popover |
 |  | Output style override | ✅ | ❌ | 0 | No output style switcher |
 | **Analytics** | Session analytics dashboard | ❌ | ⭐ | 9 | Pass 243 — cost + tools + bytes + duration |
 |  | Token/cost telemetry per message | ✅ | ✅ | 9 | Pass 210 |
@@ -92,15 +92,16 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 
 ---
 
-## Current focus areas (Pass 252+)
+## Current focus areas (Pass 253+)
 
 1. ~~**Hooks system**~~ — ✅ Pass 249
 2. ~~**WebFetch tool**~~ — ✅ Pass 250
 3. ~~**WebSearch tool**~~ — ✅ Pass 251
 4. ~~**NotebookEdit**~~ — ✅ Pass 252
-5. **Custom subagents** — Agent definition files + inline spawn
+5. ~~**Custom subagents**~~ — ✅ Pass 253
 6. **MCP tool provider** — Consume external MCP servers as additional tools
 7. **Image paste in prompt** — Paste screenshots directly into Code Chat
+8. **Git worktree isolation** — Spin up isolated worktrees for experimental tasks
 
 ---
 
@@ -108,6 +109,7 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 
 | Pass | Date | Feature | Tests |
 |---|---|---|---|
+| 253 | 2026-04-11 | Custom subagents (.stewardly/agents/*.md loader + picker) | +33 |
 | 252 | 2026-04-11 | NotebookEdit tool (Jupyter .ipynb structured edits) | +39 |
 | 251 | 2026-04-11 | WebSearch tool (cascading providers, structured results) | +22 |
 | 250 | 2026-04-11 | WebFetch tool (URL → markdown, SSRF-guarded) | +37 |

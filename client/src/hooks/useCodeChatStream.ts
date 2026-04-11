@@ -77,6 +77,13 @@ interface StreamConfig {
    * to the server's base system prompt.
    */
   hookSystemOverlay?: string;
+  /**
+   * Pass 253: slug of the user-defined subagent to activate for
+   * this turn. The server loads .stewardly/agents/<slug>.md,
+   * injects its system prompt, and intersects its tool allowlist
+   * with enabledTools.
+   */
+  subagentSlug?: string;
 }
 
 export function useCodeChatStream() {
@@ -87,6 +94,12 @@ export function useCodeChatStream() {
   const [currentTodos, setCurrentTodos] = useState<AgentTodoItem[]>([]);
   /** Pass 238: files auto-loaded from CLAUDE.md / .stewardly / AGENTS.md */
   const [loadedInstructionFiles, setLoadedInstructionFiles] = useState<string[]>([]);
+  /** Pass 253: currently-active subagent name, if any */
+  const [activeSubagent, setActiveSubagent] = useState<{
+    slug: string;
+    name: string;
+    description: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -123,6 +136,7 @@ export function useCodeChatStream() {
           memoryOverlay: config.memoryOverlay,
           toolHookRules: config.toolHookRules,
           hookSystemOverlay: config.hookSystemOverlay,
+          subagentSlug: config.subagentSlug,
         }),
         signal: controller.signal,
       });
@@ -199,6 +213,16 @@ export function useCodeChatStream() {
                   };
                   setCurrentTools([...toolEvents]);
                 }
+                break;
+              }
+              case "subagent_active": {
+                // Pass 253: server confirmed a subagent is active for
+                // this turn so the UI can render a badge
+                setActiveSubagent({
+                  slug: String(event.slug),
+                  name: String(event.name),
+                  description: String(event.description ?? ""),
+                });
                 break;
               }
               case "instructions_loaded": {
@@ -312,6 +336,7 @@ export function useCodeChatStream() {
     currentTools,
     currentTodos,
     loadedInstructionFiles,
+    activeSubagent,
     error,
     sendMessage,
     abort,
