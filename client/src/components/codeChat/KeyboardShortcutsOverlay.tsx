@@ -23,6 +23,7 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
   { keys: ["↑"], description: "Previous prompt from history (empty input)" },
   { keys: ["↓"], description: "Newer prompt from history" },
   { keys: ["Ctrl", "R"], description: "Reverse-search command history" },
+  { keys: ["Ctrl", "K"], description: "Open the action palette (⌘K)", context: "Pass 248 — unified launcher" },
   { keys: ["Ctrl", "T"], description: "Open symbol navigator", context: "Pass 242 — jump to definition" },
   { keys: ["Ctrl", "Z"], description: "Undo the most recent file edit", context: "outside text fields" },
   { keys: ["Ctrl", "Shift", "Z"], description: "Redo the most recently undone file edit" },
