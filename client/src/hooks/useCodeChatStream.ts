@@ -43,6 +43,8 @@ interface StreamConfig {
   maxIterations?: number;
   /** Pass 213: per-tool allowlist, e.g. ["read_file", "grep_search"] */
   enabledTools?: string[];
+  /** Pass 238: auto-load CLAUDE.md and friends into the system prompt */
+  includeProjectInstructions?: boolean;
 }
 
 export function useCodeChatStream() {
@@ -51,6 +53,8 @@ export function useCodeChatStream() {
   const [currentTools, setCurrentTools] = useState<ToolEvent[]>([]);
   /** Pass 237: live agent todo list, cleared at each new send */
   const [currentTodos, setCurrentTodos] = useState<AgentTodoItem[]>([]);
+  /** Pass 238: files auto-loaded from CLAUDE.md / .stewardly / AGENTS.md */
+  const [loadedInstructionFiles, setLoadedInstructionFiles] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -83,6 +87,7 @@ export function useCodeChatStream() {
           allowMutations: config.allowMutations ?? false,
           maxIterations: config.maxIterations ?? 5,
           enabledTools: config.enabledTools,
+          includeProjectInstructions: config.includeProjectInstructions ?? true,
         }),
         signal: controller.signal,
       });
@@ -142,6 +147,15 @@ export function useCodeChatStream() {
                 const parsed = parseTodosPayload(event.todos);
                 agentTodos = mergeTodoList(agentTodos, parsed);
                 setCurrentTodos([...agentTodos]);
+                break;
+              }
+              case "instructions_loaded": {
+                // Pass 238: CLAUDE.md auto-loading receipt
+                if (Array.isArray(event.files)) {
+                  setLoadedInstructionFiles(
+                    event.files.filter((f: unknown): f is string => typeof f === "string"),
+                  );
+                }
                 break;
               }
               case "done": {
@@ -245,6 +259,7 @@ export function useCodeChatStream() {
     isExecuting,
     currentTools,
     currentTodos,
+    loadedInstructionFiles,
     error,
     sendMessage,
     abort,
