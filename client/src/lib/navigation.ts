@@ -104,6 +104,7 @@ export const TOOLS_NAV: NavItemDef[] = [
 
   // ── INTELLIGENCE — multi-model AI + analysis tools
   { iconName: "Brain", label: "Intelligence", href: "/intelligence-hub", minRole: "user", section: "intelligence" },
+  { iconName: "Sparkles", label: "Wealth Engine", href: "/wealth-engine", minRole: "user", section: "intelligence" },
   { iconName: "Calculator", label: "Engine Dashboard", href: "/engine-dashboard", minRole: "user", section: "intelligence" },
   { iconName: "TrendingUp", label: "Market Data", href: "/market-data", minRole: "user", section: "intelligence" },
   { iconName: "Shield", label: "Protection Score", href: "/protection-score", minRole: "user", section: "intelligence" },

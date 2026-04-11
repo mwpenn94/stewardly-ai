@@ -49,7 +49,15 @@ import {
   checkGuardrail,
   INDUSTRY_BENCHMARKS,
   METHODOLOGY_DISCLOSURE,
+  // Owner Comp Engine (business owner compensation + valuation)
+  buildOwnerCompSnapshot,
+  compareEntities,
+  valueBusiness,
 } from "../shared/calculators";
+import {
+  generateMultiLineQuickQuote,
+  type QuickQuoteProfile,
+} from "../services/wealthChat/multiLineQuote";
 import {
   persistComputation,
   getLatestRun,
@@ -951,4 +959,126 @@ export const wealthEngineRouter = router({
       }
       return response;
     }),
+
+  // ── Owner Compensation Engine ────────────────────────────────────
+  // Business owner force multipliers: entity comparison (sole prop / LLC /
+  // S-Corp / C-Corp), QBI calculation, retirement plan stacking, business
+  // valuation. Pure functions — no persistence required but we still
+  // use runAndPersist so admin dashboards can diff owner comp scenarios.
+  ownerCompSnapshot: protectedProcedure
+    .input(
+      z.object({
+        netBusinessProfit: z.number().min(0).max(100_000_000),
+        entity: z.enum(["sole_prop", "llc", "s_corp", "c_corp"]),
+        filingStatus: z.enum(["single", "mfj", "hoh"]),
+        age: z.number().min(18).max(100),
+        ownerSalary: z.number().min(0).optional(),
+        hasEmployees: z.boolean().optional(),
+        w2WagesToOthers: z.number().min(0).optional(),
+        ubia: z.number().min(0).optional(),
+        isSstb: z.boolean().optional(),
+        stateRate: z.number().min(0).max(0.15).optional(),
+        retirementContributions: z.number().min(0).optional(),
+        itemizedDeductions: z.number().min(0).optional(),
+        targetYearsToRetire: z.number().min(0).max(60).optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      return runAndPersist(
+        "uwe.simulate",
+        input,
+        () => buildOwnerCompSnapshot(input),
+        { userId: ctx.user.id, trigger: "user_ui" },
+        0.85,
+      );
+    }),
+
+  ownerCompCompareEntities: protectedProcedure
+    .input(
+      z.object({
+        netBusinessProfit: z.number().min(0).max(100_000_000),
+        filingStatus: z.enum(["single", "mfj", "hoh"]),
+        age: z.number().min(18).max(100),
+        hasEmployees: z.boolean().optional(),
+        w2WagesToOthers: z.number().min(0).optional(),
+        ubia: z.number().min(0).optional(),
+        isSstb: z.boolean().optional(),
+        stateRate: z.number().min(0).max(0.15).optional(),
+        targetYearsToRetire: z.number().min(0).max(60).optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      return runAndPersist(
+        "uwe.simulate",
+        input,
+        () => compareEntities(input),
+        { userId: ctx.user.id, trigger: "user_ui" },
+        0.85,
+      );
+    }),
+
+  valueBusiness: protectedProcedure
+    .input(
+      z.object({
+        annualRevenue: z.number().min(0).max(1_000_000_000),
+        annualEbitda: z.number().min(-100_000_000).max(500_000_000),
+        ownerAddBack: z.number().min(0).optional(),
+        growthRate: z.number().min(-0.5).max(1).optional(),
+        industryMultiple: z.number().min(0.5).max(20).optional(),
+        exitYears: z.number().min(1).max(30).optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      return runAndPersist(
+        "uwe.simulate",
+        input,
+        () => valueBusiness(input),
+        { userId: ctx.user.id, trigger: "user_ui" },
+        0.8,
+      );
+    }),
+
+  // ── Multi-Line Quick Quote — bundled proposal across every major line
+  multiLineQuickQuote: protectedProcedure
+    .input(
+      z.object({
+        age: z.number().min(0).max(100),
+        income: z.number().min(0).max(100_000_000),
+        netWorth: z.number().optional(),
+        savings: z.number().min(0).optional(),
+        dependents: z.number().min(0).max(20),
+        monthlySavings: z.number().min(0).optional(),
+        hasHome: z.boolean().optional(),
+        homeValue: z.number().min(0).optional(),
+        isBizOwner: z.boolean().optional(),
+        businessRevenue: z.number().min(0).optional(),
+        numEmployees: z.number().min(0).max(10_000).optional(),
+        stateCode: z.string().length(2).optional(),
+        healthClass: z.enum(["preferred", "standard", "substandard"]).optional(),
+        occupation: z.enum(["professional", "skilled", "manual"]).optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const profile: QuickQuoteProfile = input;
+      return runAndPersist(
+        "uwe.simulate",
+        input,
+        () => generateMultiLineQuickQuote(profile),
+        { userId: ctx.user.id, trigger: "user_ui" },
+        0.75,
+      );
+    }),
+
+  // Read-only variant usable in marketing / public calculator flows
+  // (no persistence — just synchronously runs the heuristics).
+  multiLineQuickQuotePublic: protectedProcedure
+    .input(
+      z.object({
+        age: z.number().min(0).max(100),
+        income: z.number().min(0).max(100_000_000),
+        dependents: z.number().min(0).max(20),
+        isBizOwner: z.boolean().optional(),
+      }),
+    )
+    .query(({ input }) => generateMultiLineQuickQuote(input)),
 });

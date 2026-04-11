@@ -35,6 +35,9 @@ const WeStrategyComparison = lazy(() => import("./pages/wealth-engine/StrategyCo
 const WeRetirement = lazy(() => import("./pages/wealth-engine/Retirement"));
 const WePracticeToWealth = lazy(() => import("./pages/wealth-engine/PracticeToWealth"));
 const WeQuickQuote = lazy(() => import("./pages/wealth-engine/QuickQuoteFlow"));
+const WeHub = lazy(() => import("./pages/wealth-engine/WealthEngineHub"));
+const WeOwnerComp = lazy(() => import("./pages/wealth-engine/OwnerCompPage"));
+const WeBusinessValuation = lazy(() => import("./pages/wealth-engine/BusinessValuationPage"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 // Consensus (Round C3 — multi-model consensus stream UI)
@@ -139,11 +142,14 @@ function Router() {
         <Route path={"/chat"} component={Chat} />
         <Route path={"/chat/:id"} component={Chat} />
         <Route path={"/calculators"} component={Calculators} />
-        {/* ── Wealth Engine (Phase 4) ──────────────────────────────────── */}
+        {/* ── Wealth Engine (Phase 4 + unified hub) ────────────────────── */}
+        <Route path={"/wealth-engine"} component={WeHub} />
         <Route path={"/wealth-engine/strategy-comparison"} component={WeStrategyComparison} />
         <Route path={"/wealth-engine/retirement"} component={WeRetirement} />
         <Route path={"/wealth-engine/practice-to-wealth"} component={WePracticeToWealth} />
         <Route path={"/wealth-engine/quick-quote"} component={WeQuickQuote} />
+        <Route path={"/wealth-engine/owner-comp"} component={WeOwnerComp} />
+        <Route path={"/wealth-engine/business-valuation"} component={WeBusinessValuation} />
         {/* Code Chat (admin foundation) */}
         <Route path={"/code-chat"} component={CodeChatPage} />
         {/* Consensus (Round C — multi-model consensus stream) */}
