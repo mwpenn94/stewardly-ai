@@ -951,4 +951,52 @@ export const integrationsRouter = router({
       const schema = mergeSchemas(input.a, input.b);
       return { schema, crudMapping: suggestCrudMapping(schema), summary: summarizeSchema(schema) };
     }),
+
+  /**
+   * Generate a full CRUD adapter spec from sample records + options.
+   * This is the one-shot "take sample data and spit out a working adapter"
+   * entry point. Pass sample records + base URL + (optional) auth hint and
+   * you get a complete AdapterSpec back with endpoints, field mappings,
+   * pagination probe, and a readiness report.
+   */
+  generateAdapter: protectedProcedure
+    .input(z.object({
+      records: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+      name: z.string().min(1).max(100),
+      baseUrl: z.string().url().optional(),
+      listEndpoint: z.string().optional(),
+      authHint: z.object({
+        type: z.enum(["none", "api_key_header", "api_key_query", "bearer", "basic", "oauth2", "unknown"]).optional(),
+        headerName: z.string().optional(),
+        queryParam: z.string().optional(),
+      }).optional(),
+      sampleListResponse: z.any().optional(),
+      collectionPath: z.string().optional(),
+      rateLimitHint: z.object({
+        requestsPerSecond: z.number().optional(),
+        requestsPerMinute: z.number().optional(),
+        burstBudget: z.number().optional(),
+        maxRetries: z.number().optional(),
+      }).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { inferSchema } = await import("../services/dynamicIntegrations/schemaInference");
+      const { generateAdapter, buildCurlExamples, summarizeAdapter } = await import("../services/dynamicIntegrations/adapterGenerator");
+      const schema = inferSchema(input.records);
+      const spec = generateAdapter(schema, {
+        name: input.name,
+        baseUrl: input.baseUrl,
+        listEndpoint: input.listEndpoint,
+        authHint: input.authHint,
+        sampleListResponse: input.sampleListResponse,
+        collectionPath: input.collectionPath,
+        rateLimitHint: input.rateLimitHint,
+      });
+      return {
+        schema,
+        spec,
+        curlExamples: buildCurlExamples(spec),
+        summary: summarizeAdapter(spec),
+      };
+    }),
 });

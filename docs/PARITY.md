@@ -21,10 +21,10 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 
 | ID  | Prio | Area            | Description                                                                 | Status      | Source           | Depth | Commit  |
 |-----|------|-----------------|-----------------------------------------------------------------------------|-------------|------------------|-------|---------|
-| G1  | P0   | dynamic-crud    | Schema inference from arbitrary sample records (docless integrations)      | done        | build-loop-p1    | 5/10  | pending |
-| G2  | P0   | dynamic-crud    | Adapter generator — turn inferred schema into a read/write CRUD adapter    | open        | build-loop-p1    | 0/10  | —       |
+| G1  | P0   | dynamic-crud    | Schema inference from arbitrary sample records (docless integrations)      | done        | build-loop-p1    | 5/10  | 00ab579 |
+| G2  | P0   | dynamic-crud    | Adapter generator — turn inferred schema into a read/write CRUD adapter    | done        | build-loop-p1    | 4/10  | pending |
 | G3  | P1   | dynamic-crud    | Field mapping overrides UI (accept or edit inferred semantic hints)        | open        | build-loop-p1    | 0/10  | —       |
-| G4  | P1   | dynamic-crud    | Auth-shape probe — detect api-key/oauth/basic/bearer from a sample request | open        | build-loop-p1    | 0/10  | —       |
+| G4  | P1   | dynamic-crud    | Auth-shape probe — detect api-key/oauth/basic/bearer from a sample request | done        | build-loop-p1    | 4/10  | pending |
 | G5  | P1   | pipelines       | Idempotent upsert with drift detection (schema changed since last run)     | open        | build-loop-p1    | 0/10  | —       |
 | G6  | P1   | pipelines       | Rate limiting + exponential backoff honored per-source                     | open        | build-loop-p1    | 0/10  | —       |
 | G7  | P2   | code-chat       | Schema inference exposed as a Code Chat tool                               | open        | build-loop-p1    | 0/10  | —       |
@@ -33,6 +33,11 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G10 | P1   | continuous      | Schema drift detector — re-infer, diff, flag for review                    | open        | build-loop-p1    | 0/10  | —       |
 | G11 | P2   | model-training  | Cross-model distillation loop (learn from other models' outputs)           | open        | build-loop-p1    | 0/10  | —       |
 | G12 | P2   | agentic-ai      | Universal adapter DSL — declarative integration spec the agent can emit    | open        | build-loop-p1    | 0/10  | —       |
+
+| G13 | P1   | dynamic-crud    | Pagination probe — cursor/offset/page/link_header detection                | done        | build-loop-p2    | 5/10  | pending |
+| G14 | P1   | dynamic-crud    | Collection-path probe — detect where records live in response body        | done        | build-loop-p2    | 5/10  | pending |
+| G15 | P2   | dynamic-crud    | Curl example generator for human verification                              | done        | build-loop-p2    | 4/10  | pending |
+| G16 | P2   | dynamic-crud    | Schema fingerprint-based version derivation                                | done        | build-loop-p2    | 4/10  | pending |
 
 ## Protected Improvements
 
@@ -46,6 +51,14 @@ commit that first shipped it.
   `mergeSchemas`, `summarizeSchema`, and `normalizeFieldName` as exported
   surfaces. Must keep primary-key detection only for bare `id`/`uuid`/`guid`
   (never `foo_id`). Must keep mixed-type fields classified as `mixed`.
+
+- **P2 → adapter generator** (server/services/dynamicIntegrations/
+  adapterGenerator.ts) — pure-function adapter DSL generator with 32 unit
+  tests. Must stay pure (no I/O, no network). Must keep `generateAdapter`,
+  `probeAuth`, `probePagination`, `detectCollectionPath`, `buildCurlExamples`,
+  `summarizeAdapter` as exported surfaces. Must keep the ReadinessReport
+  semantics: `baseUrl` and `auth.type` are both required for `ready=true`.
+  Must keep get/update/delete endpoints conditional on primary-key presence.
 
 ## Known-Bad (dead ends — do NOT retry)
 
@@ -62,4 +75,5 @@ a date stamp + evidence-recency resolution.
 
 One line per pass. Format: `Pass N · angle · queue · commit · done · deferred`
 
-- Pass 1 · dynamic schema inference · [A1: schemaInference.ts, A2: tests, A3: PARITY.md] · pending · A1+A2+A3 done · G2-G12 deferred
+- Pass 1 · dynamic schema inference · [A1: schemaInference.ts, A2: tests, A3: PARITY.md] · 00ab579 · A1+A2+A3 done · G2-G12 deferred
+- Pass 2 · adapter generation · [R1: G2 adapter generator, G13 pagination probe, G14 collection path, G15 curl, G16 fingerprint] · pending · G2+G4+G13+G14+G15+G16 done · G3/G5-G12 deferred
