@@ -137,6 +137,7 @@ import SessionAnalyticsPopover from "@/components/codeChat/SessionAnalyticsPopov
 import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
 import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
 import TodoMarkerPanel from "@/components/codeChat/TodoMarkerPanel";
+import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import {
   loadHistory,
   saveHistory,
@@ -452,6 +453,80 @@ function CodeChatInterface() {
 
   // Pass 243: session analytics popover
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+
+  // Pass 248: listen for palette-dispatched actions
+  useEffect(() => {
+    const openHandler = (e: Event) => {
+      const detail = (e as CustomEvent<{ target: string }>).detail;
+      switch (detail?.target) {
+        case "symbols":
+          setSymbolNavOpen(true);
+          break;
+        case "sessions":
+          setSessionsOpen(true);
+          break;
+        case "bookmarks":
+          setBookmarksOpen(true);
+          break;
+        case "tools":
+          setToolsOpen(true);
+          break;
+        case "templates":
+          setTemplatesOpen(true);
+          break;
+        case "memory":
+          setMemoryOpen(true);
+          break;
+        case "instructions":
+          setInstructionsOpen(true);
+          break;
+        case "history":
+          setHistoryPanelOpen(true);
+          break;
+        case "scratchpad":
+          setScratchpadOpen((v) => !v);
+          break;
+        case "analytics":
+          setAnalyticsOpen(true);
+          break;
+        case "shortcuts":
+          setShortcutsOpen(true);
+          break;
+        case "search":
+          setHistoryOpen(true);
+          break;
+      }
+    };
+    const slashHandler = (e: Event) => {
+      const detail = (e as CustomEvent<{ command: string }>).detail;
+      if (detail?.command) {
+        setInput(`/${detail.command} `);
+        inputRef.current?.focus();
+      }
+    };
+    const actionHandler = (e: Event) => {
+      const detail = (e as CustomEvent<{ action: string }>).detail;
+      switch (detail?.action) {
+        case "clear":
+          clearHistory();
+          setCurrentSessionId(null);
+          toast.success("Chat cleared");
+          break;
+        case "abort":
+          abort();
+          break;
+      }
+    };
+    window.addEventListener("codechat-palette-open", openHandler);
+    window.addEventListener("codechat-palette-slash", slashHandler);
+    window.addEventListener("codechat-palette-action", actionHandler);
+    return () => {
+      window.removeEventListener("codechat-palette-open", openHandler);
+      window.removeEventListener("codechat-palette-slash", slashHandler);
+      window.removeEventListener("codechat-palette-action", actionHandler);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const handleScratchpadInsert = useCallback((text: string) => {
     setInput((prev) => {
       if (!prev) return text;
@@ -2084,6 +2159,53 @@ function CodeChatInterface() {
 
 export default function CodeChatPage() {
   const [activeTab, setActiveTab] = useState("chat");
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Pass 248: ⌘K / Ctrl+K opens the action palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // Pass 248: dispatch an action by id
+  const handlePaletteRun = (actionId: string) => {
+    if (actionId.startsWith("tab:")) {
+      const tab = actionId.slice(4);
+      setActiveTab(tab);
+      return;
+    }
+    if (actionId.startsWith("open:")) {
+      // Forward to inner components via window event
+      window.dispatchEvent(
+        new CustomEvent("codechat-palette-open", {
+          detail: { target: actionId.slice(5) },
+        }),
+      );
+      return;
+    }
+    if (actionId.startsWith("slash:")) {
+      window.dispatchEvent(
+        new CustomEvent("codechat-palette-slash", {
+          detail: { command: actionId.slice(6) },
+        }),
+      );
+      return;
+    }
+    if (actionId.startsWith("workspace:")) {
+      window.dispatchEvent(
+        new CustomEvent("codechat-palette-action", {
+          detail: { action: actionId.slice(10) },
+        }),
+      );
+      return;
+    }
+  };
 
   // Pass 225 / 227: cross-component tab navigation via window events.
   // Grep quick-jump dispatches `codechat-open-file` which switches to
@@ -2228,6 +2350,11 @@ export default function CodeChatPage() {
           </TabsContent>
         </Tabs>
       </div>
+      <ActionPalettePopover
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onRun={handlePaletteRun}
+      />
     </AppShell>
   );
 }
