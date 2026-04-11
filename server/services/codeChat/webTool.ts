@@ -19,6 +19,7 @@
 import { WebNavigator, type NavigationConfig } from "../../shared/automation/webNavigator";
 import { RobotsChecker } from "../../shared/automation/robotsPolicy";
 import { ResponseCache } from "../../shared/automation/responseCache";
+import { getAutomationTelemetryBus } from "../../shared/automation/automationTelemetry";
 
 let _navigator: WebNavigator | null = null;
 let _robotsChecker: RobotsChecker | null = null;
@@ -52,6 +53,7 @@ export function buildNavigatorConfigFromEnv(env: NodeJS.ProcessEnv = process.env
     robotsChecker: checker,
     honorRobots,
     cache,
+    telemetry: env.WEB_TOOL_TELEMETRY !== "false" ? getAutomationTelemetryBus() : undefined,
   };
 }
 

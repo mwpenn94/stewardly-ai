@@ -11,7 +11,18 @@
  *   - Synthesizer wordDiff + timeBudgetSelector + costEstimator
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+// Mock the webSearchTool service module so web_search dispatcher tests
+// don't hit the network or require env vars. Must live at module top
+// level to be hoisted before any dynamic import.
+vi.mock("../webSearchTool", () => ({
+  executeWebSearch: vi.fn(async (query: string) => {
+    if (query === "fail") throw new Error("forced failure");
+    return `**Result for ${query}**\nhttps://example.com/${encodeURIComponent(query)}\nSnippet here.\n`;
+  }),
+  getSearchProvider: vi.fn(() => "tavily" as const),
+}));
 import path from "path";
 import fs from "fs/promises";
 import { existsSync } from "fs";
@@ -475,6 +486,38 @@ describe("Round B1 — codeChatExecutor", () => {
       );
       expect(r.kind).toBe("error");
       if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_search rejects missing query", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_search", args: {} },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_search returns formatted results via mocked provider", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_search", args: { query: "IRA limits 2026" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("web_search");
+      if (r.kind === "web_search") {
+        expect(r.result.query).toBe("IRA limits 2026");
+        expect(r.result.provider).toBe("tavily");
+        expect(r.result.results).toContain("example.com");
+        expect(r.result.charCount).toBeGreaterThan(0);
+      }
+    });
+
+    it("web_search surfaces provider errors", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_search", args: { query: "fail" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("SEARCH_FAILED");
     });
 
     it("web_crawl runs a 2-page BFS via stub adapter", async () => {

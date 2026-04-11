@@ -93,6 +93,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
       "Bounded BFS crawl of a site (dedupe+depth+budget, same-origin by default, read-only)",
     mutation: false,
   },
+  {
+    id: "web_search",
+    label: "Web search",
+    description:
+      "Cascading search (Tavily → Brave → Manus → LLM fallback) to find URLs you don't already know",
+    mutation: false,
+  },
 ];
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
@@ -107,6 +114,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "web_read",
   "web_extract",
   "web_crawl",
+  "web_search",
 ];
 
 export default function ToolPermissionsPopover({

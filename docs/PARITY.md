@@ -42,6 +42,8 @@ bottom. The Build Loop Pass Log at the very bottom is append-only.
 | G25 | Robots.txt honoring                                        | defensive infra           |      0 |     6 | done · P2    | build   | pass-2           |
 | G26 | Bounded crawl session (BFS + depth + dedupe + budget)      | browser-use / Manus       |      0 |     5 | done · P4    | build   | pass-4           |
 | G27 | Hostile-input resilience on URL inputs (found by build)    | security / SSRF           |      0 |     5 | done · P4    | build   | pass-4           |
+| G28 | Chat agent exposes `web_search` (find URLs you don't know) | Manus / Claude search     |      0 |     6 | done · P5    | build   | pass-5           |
+| G29 | Automation telemetry fan-out bus (multi-sink)              | observability infra       |      0 |     6 | done · P5    | build   | pass-5           |
 
 Legend: `open` = not started; `in-progress` = under active work by build or
 parallel process; `done · P<N>` = shipped in pass N. Depth scores are rough
@@ -81,6 +83,15 @@ process reading PARITY.md, not just next-pass-self).
   navigation (the emit helper wraps sinks in try/catch). File:
   `server/shared/automation/webNavigator.ts`. Do not remove the
   try/catch wrapper, do not drop the start→network lifecycle pairing.
+- **AutomationTelemetryBus** — pass 5. Fan-out event bus for the
+  NavigationTelemetryEvent stream. Multiple sinks (OTel, SSE, logs)
+  subscribe to the same underlying events. Type filters via
+  `subscribe({ types: [...] })`. `subscribeOnce` auto-unsubscribes.
+  Swallows both sync throws and async rejections from sinks so bad
+  downstream code can't break navigation. Ring buffer for snapshot
+  debugging. File: `server/shared/automation/automationTelemetry.ts`.
+  Do not drop the try/catch wrappers, do not expose `publish` to
+  untrusted code paths.
 - **crawlSession primitive** — pass 4. Bounded BFS over any PageReader
   shape (duck-typed so a future Playwright adapter can plug in). Hard
   caps: maxPages=100, maxDepth=5. Canonicalizing dedupe (fragment,
@@ -113,4 +124,5 @@ Append-only log of what each pass accomplished. Format:
 - Pass 1 · correctness-first · [bootstrap PARITY + G1..G6, G21] · 8baaeed · webNavigator service + 30 tests + code_web_read tool + client popover entry · deferred: G7 (playwright adapter), G9 (click/type layer), G22 (web_extract schema-guided), G25 (robots.txt)
 - Pass 2 · graceful-degradation + input-validation · [G22, G25, G20 partial] · d0a82b9 · webExtractor + robotsPolicy + code_web_extract tool + robotsChecker wired into WebNavigator + 35 new tests · deferred: G7 (playwright), G9 (click/type), G23 (SSE streaming of browser events), G17 (OTel spans for automation)
 - Pass 3 · observability + dead-code-prevention · [G17, G24] · afb47b5 · responseCache (LRU + ETag + SWR) + NavigationTelemetrySink + cache/telemetry wired through fetchPage + env-driven singletons in webTool · 25 new tests · deferred: G7, G9, G23, G16 (download files), G19 (multi-agent browser orchestration)
-- Pass 4 · accessibility + hostile-input-security · [G26+G27 new gaps, G19 groundwork] · (pending commit) · crawlSession primitive + code_web_crawl tool + canonicalizing dedupe + SSRF protocol filter + client popover entry · 23 new tests · deferred: G7 (playwright still not started), G9 (click/type layer), G14 (computer-use vision), G23 (SSE of browser events)
+- Pass 4 · accessibility + hostile-input-security · [G26+G27 new gaps, G19 groundwork] · c06a175 · crawlSession primitive + code_web_crawl tool + canonicalizing dedupe + SSRF protocol filter + client popover entry · 23 new tests · deferred: G7 (playwright still not started), G9 (click/type layer), G14 (computer-use vision), G23 (SSE of browser events)
+- Pass 5 · edge-cases + bundle-size · [G28+G29 new, G17 extension] · (pending commit) · AutomationTelemetryBus (sync+async sink error isolation, type filter, ring buffer) + wired as the default telemetry sink for the WebNavigator singleton + code_web_search tool bridging to existing executeWebSearch (Tavily/Brave/Manus/LLM fallback) + vi.mock in codeChat test · 13 new tests · deferred: G7, G9, G14, G23 (SSE bridge for telemetry events)

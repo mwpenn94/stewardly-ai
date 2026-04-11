@@ -47,6 +47,7 @@ export type CodeToolName =
   | "web_read"
   | "web_extract"
   | "web_crawl"
+  | "web_search"
   | "finish";
 
 export interface CodeToolCall {
@@ -98,6 +99,13 @@ export interface WebExtractResultPayload {
   fetchMs: number;
 }
 
+export interface WebSearchResultPayload {
+  query: string;
+  provider: string;
+  results: string;
+  charCount: number;
+}
+
 export interface WebCrawlResultPayload {
   startUrl: string;
   pagesAttempted: number;
@@ -128,6 +136,7 @@ export type CodeToolResult =
   | { kind: "web"; result: WebReadResultPayload }
   | { kind: "web_extract"; result: WebExtractResultPayload }
   | { kind: "web_crawl"; result: WebCrawlResultPayload }
+  | { kind: "web_search"; result: WebSearchResultPayload }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -310,6 +319,46 @@ export async function dispatchCodeTool(
             kind: "error",
             error: err instanceof Error ? err.message : "web read failed",
             code,
+          };
+        }
+      }
+      case "web_search": {
+        // Pass 5: bridge the agent to the existing multi-provider
+        // web search tool (Tavily → Brave → Manus → LLM fallback).
+        // Formatting lives in webSearchTool; we just ferry the result
+        // into the tool-result envelope.
+        const query = String(call.args.query ?? "").trim();
+        if (!query) {
+          return { kind: "error", error: "query required", code: "BAD_ARGS" };
+        }
+        const maxResults = Math.min(Math.max(Number(call.args.maxResults ?? 5), 1), 20);
+        const maxChars = Math.min(Math.max(Number(call.args.maxChars ?? 2000), 200), 8000);
+        const includeDomains = Array.isArray(call.args.includeDomains)
+          ? (call.args.includeDomains as unknown[]).filter((d): d is string => typeof d === "string")
+          : undefined;
+        try {
+          const { executeWebSearch, getSearchProvider } = await import(
+            "../webSearchTool"
+          );
+          const results = await executeWebSearch(query, {
+            maxResults,
+            maxChars,
+            includeDomains,
+          });
+          return {
+            kind: "web_search",
+            result: {
+              query,
+              provider: getSearchProvider(),
+              results,
+              charCount: results.length,
+            },
+          };
+        } catch (err) {
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : "web_search failed",
+            code: "SEARCH_FAILED",
           };
         }
       }
@@ -713,6 +762,25 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         url: { type: "string", description: "Absolute http(s) URL to read" },
       },
       required: ["url"],
+    },
+  },
+  {
+    name: "web_search",
+    description:
+      "Search the public web for a query via Stewardly's cascading provider chain (Tavily → Brave → Manus Google → LLM fallback). Returns a pre-formatted markdown result list with title/URL/snippet per hit. Prefer this when you need to find URLs you don't already know. `maxResults` defaults to 5 (cap 20); `maxChars` defaults to 2000 (cap 8000); `includeDomains` narrows by site suffix.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Free-text search query" },
+        maxResults: { type: "number", description: "Max results to return (1-20)" },
+        maxChars: { type: "number", description: "Max output characters (200-8000)" },
+        includeDomains: {
+          type: "array",
+          items: { type: "string" },
+          description: "Restrict results to these domain suffixes",
+        },
+      },
+      required: ["query"],
     },
   },
   {
