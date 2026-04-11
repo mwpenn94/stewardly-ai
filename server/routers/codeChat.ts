@@ -137,6 +137,10 @@ import { buildWorkspaceRenamePlan } from "../services/codeChat/renameSymbolRunne
 import { runVitest } from "../services/codeChat/testRunner";
 import { inspectPackages } from "../services/codeChat/packageInspector";
 import {
+  loadTemplates as loadEnvTemplates,
+  buildReport as buildEnvReport,
+} from "../services/codeChat/envInspector";
+import {
   parseDiffStats,
   composeMessage,
   formatMessage,
@@ -398,6 +402,12 @@ export const codeChatRouter = router({
   // Pass 261: package.json dependency inspector
   inspectPackages: protectedProcedure.query(async () => {
     return await inspectPackages(WORKSPACE_ROOT);
+  }),
+
+  // Pass 263: env var inspector (safe masking)
+  inspectEnv: adminProcedure.query(async () => {
+    const declared = await loadEnvTemplates(WORKSPACE_ROOT);
+    return buildEnvReport(declared, process.env as Record<string, string | undefined>);
   }),
 
   // Pass 262: commit message composer (pure stats-based draft)
