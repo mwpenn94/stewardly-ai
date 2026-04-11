@@ -94,6 +94,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "tab:write", label: "Go to Git Write", category: "tab", keywords: ["commit", "push"] },
   { id: "tab:jobs", label: "Go to Jobs", category: "tab", keywords: ["background"] },
   { id: "tab:gitstatus", label: "Go to Git Status", category: "tab", keywords: ["status", "dirty"] },
+  { id: "tab:search", label: "Find anywhere", category: "tab", hint: "g s", keywords: ["search", "grep", "symbol", "todo", "find"] },
   { id: "tab:imports", label: "Go to Imports", category: "tab", keywords: ["dependencies", "graph"] },
   { id: "tab:todos", label: "Go to TODOs", category: "tab", keywords: ["fixme", "markers"] },
   // Popovers

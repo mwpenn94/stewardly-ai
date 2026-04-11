@@ -90,4 +90,11 @@ describe("allChordLabels", () => {
     expect(labels.every((l) => l.keys[0] === "g")).toBe(true);
     expect(labels.some((l) => l.label.includes("Files"))).toBe(true);
   });
+
+  it("includes the g+s Find chord added in Pass 249", () => {
+    const labels = allChordLabels();
+    const findChord = labels.find((l) => l.keys[1] === "s");
+    expect(findChord).toBeDefined();
+    expect(findChord!.label).toContain("Find");
+  });
 });

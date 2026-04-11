@@ -105,6 +105,10 @@ import {
   summarizeCycles,
 } from "../services/codeChat/circularDeps";
 import {
+  unifiedSearch,
+  type UnifiedResultKind,
+} from "../services/codeChat/workspaceSearch";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -445,6 +449,67 @@ export const codeChatRouter = router({
       summary: summarizeCycles(cycles),
     };
   }),
+
+  // Pass 249: unified workspace search (symbols + grep + TODOs in one query)
+  workspaceSearch: protectedProcedure
+    .input(
+      z.object({
+        query: z.string().min(1).max(200),
+        kinds: z.array(z.enum(["symbol", "grep", "todo"])).optional(),
+        perKindLimit: z.number().min(1).max(100).optional(),
+        totalLimit: z.number().min(1).max(500).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const kinds = new Set<UnifiedResultKind>(
+        input.kinds && input.kinds.length > 0
+          ? input.kinds
+          : ["symbol", "grep", "todo"],
+      );
+
+      // Run each source in parallel. Each is independent and has its
+      // own cache so parallelism is a free speedup.
+      const [symbolIndex, todoMarkers, grepResult] = await Promise.all([
+        kinds.has("symbol") ? getSymbolIndex(WORKSPACE_ROOT) : null,
+        kinds.has("todo") ? getTodoMarkers(WORKSPACE_ROOT) : null,
+        kinds.has("grep")
+          ? dispatchCodeTool(
+              {
+                name: "grep_search",
+                args: { pattern: input.query, path: "." },
+              } as CodeToolCall,
+              { workspaceRoot: WORKSPACE_ROOT },
+            ).catch(() => null)
+          : null,
+      ]);
+
+      const grepMatches: Array<{ file: string; line: number; text: string }> = [];
+      if (
+        grepResult &&
+        grepResult.kind === "grep" &&
+        Array.isArray(grepResult.result?.matches)
+      ) {
+        for (const m of grepResult.result.matches) {
+          grepMatches.push({
+            file: String(m.file ?? ""),
+            line: Number(m.line ?? 0),
+            text: String(m.text ?? ""),
+          });
+        }
+      }
+
+      const output = unifiedSearch({
+        query: input.query,
+        symbols: symbolIndex?.symbols ?? [],
+        grepMatches,
+        todos: todoMarkers ?? [],
+        kinds: Array.from(kinds),
+        perKindLimit: input.perKindLimit,
+        totalLimit: input.totalLimit,
+      });
+
+      return output;
+    }),
 
   // Pass 246: TODO marker scanner
   scanTodoMarkers: protectedProcedure
