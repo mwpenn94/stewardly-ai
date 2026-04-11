@@ -229,9 +229,45 @@
   .animate-pulse-glow,
   .animate-message-in,
   .avatar-talking,
-  .typing-dot {
+  .typing-dot,
+  .mic-pulse-a11y {
     animation: none !important;
   }
+}
+
+/* Pass 1 (multisensory): prefers-contrast: more — users who have asked
+   their OS for high-contrast UI get stronger borders, thicker focus rings,
+   and a boosted text-to-background contrast ratio. WCAG 1.4.11
+   (non-text contrast) Level AA. */
+@media (prefers-contrast: more) {
+  :root {
+    --border: oklch(0.55 0 0);
+    --ring: oklch(0.82 0.16 80);
+    --muted-foreground: oklch(0.72 0.02 80);
+  }
+  *, *::before, *::after {
+    border-color: var(--border) !important;
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring) !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 6px oklch(0.76 0.14 80 / 0.35) !important;
+  }
+  button, a, input, textarea, select {
+    border-width: 2px !important;
+  }
+}
+
+/* Pass 1 (multisensory): mic-pulse-a11y — subtle indicator for the
+   GlobalVoiceButton when voice recognition is actively listening. Uses
+   box-shadow rather than transform so the 44x44 touch target doesn't
+   jump around under the user's finger. Respected by reduced-motion. */
+@keyframes mic-pulse-a11y {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.76 0.14 80 / 0.5); }
+  50% { box-shadow: 0 0 0 10px oklch(0.76 0.14 80 / 0); }
+}
+.mic-pulse-a11y {
+  animation: mic-pulse-a11y 1.4s ease-in-out infinite;
 }
 
 /* Pass 98: gentle card lift on hover — applied as a utility class so

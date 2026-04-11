@@ -19,6 +19,10 @@ import { lazy, Suspense } from "react";
 
 import { AudioCompanionProvider } from "./components/AudioCompanion";
 import { PILProvider } from "./components/PlatformIntelligence";
+import { LiveAnnouncer } from "./lib/multisensory/LiveAnnouncer";
+import { IntentRouter } from "./lib/multisensory/IntentRouter";
+import { GlobalVoiceButton } from "./lib/multisensory/GlobalVoiceButton";
+import { useGlobalShortcuts } from "./lib/multisensory/useGlobalShortcuts";
 
 // ── Eagerly loaded (critical path — instant navigation) ──────────────
 import Landing from "./pages/Landing";
@@ -294,8 +298,19 @@ function AppContent() {
   useGuestSession();
   // Track page visits for the Exponential Engine (adaptive AI personalization)
   usePageTracking();
+  // Global keyboard shortcut handler — must live INSIDE PILProvider so the
+  // IntentRouter can handle dispatched intents with pil context available.
+  useGlobalShortcuts();
   return (
     <>
+      {/* Pass 1: Live regions + intent router + global voice button.
+          These provide the multisensory/a11y backbone: every navigation is
+          announced to screen readers, every keyboard shortcut and slash
+          command routes through the same intent bus, and hands-free voice
+          mode is reachable from any page via the top-right mic button. */}
+      <LiveAnnouncer />
+      <IntentRouter />
+      <GlobalVoiceButton />
       <OfflineBanner />
       <GuestBanner />
       <Router />

@@ -68,6 +68,12 @@ import { ConvItem, SortableConvItem } from "@/components/chat/ConvItem";
 import ChatGreetingV2 from "@/components/ChatGreeting";
 // MobileChatLayout available at @/components/MobileChatLayout for future mobile-first refactor (P3 backlog)
 import { parseFocusModes, serializeFocusModes } from "@shared/types";
+// Pass 1 (multisensory): slash-command interceptor — lets users type
+// "/go learning", "/read", "/hands-free", etc. inside the chat input to
+// drive navigation/audio without ever leaving the keyboard.
+import { parseIntent } from "@/lib/multisensory/intentParser";
+import { dispatchIntent } from "@/lib/multisensory/useGlobalShortcuts";
+import { announce } from "@/lib/multisensory/LiveAnnouncer";
 
 // ─── RICH MEDIA EXTRACTION (client-side fallback) ─────────────────
 // Mirrors server/services/richMediaService extractMediaFromResponse for the case
@@ -589,6 +595,58 @@ export default function Chat() {
     const trimmed = text.trim();
     if (!trimmed && attachments.length === 0) return;
     if (isStreaming) return;
+
+    // Pass 1 (multisensory): slash-command interceptor. If the message is
+    // a recognised command like "/go learning" or "/hands-free on", route
+    // it through the shared intent parser and short-circuit the chat send.
+    // We ONLY intercept inputs that start with "/" so natural-language chat
+    // like "can you go over my retirement plan?" still reaches the LLM.
+    if (trimmed.startsWith("/") && attachments.length === 0) {
+      const parsed = parseIntent(trimmed, { allowBareNav: true });
+      if (parsed.kind !== "unknown") {
+        setInput("");
+        switch (parsed.kind) {
+          case "navigate":
+            dispatchIntent({
+              intent: "nav.chat", // overridden by programmatic navigate below
+              source: "chat",
+            });
+            // Use direct wouter navigation for the parsed arbitrary route,
+            // since the shortcut registry only covers named destinations.
+            navigate(parsed.route);
+            announce(`Navigated to ${parsed.label}`, "polite");
+            toast.success(`→ ${parsed.label}`);
+            return;
+          case "read_page":
+            dispatchIntent({ intent: "audio.read_page", source: "chat" });
+            return;
+          case "focus_chat":
+            // Already focused — re-announce for feedback
+            announce("Chat input focused", "polite");
+            return;
+          case "open_palette":
+            dispatchIntent({ intent: "palette.open", source: "chat" });
+            return;
+          case "help":
+            dispatchIntent({ intent: "a11y.show_shortcuts", source: "chat" });
+            return;
+          case "hands_free":
+            dispatchIntent({
+              intent: "voice.toggle_hands_free",
+              source: "chat",
+            });
+            return;
+          case "audio":
+            if (parsed.action === "pause")
+              dispatchIntent({ intent: "audio.stop_speech", source: "chat" });
+            if (parsed.action === "resume")
+              dispatchIntent({ intent: "audio.toggle_tts", source: "chat" });
+            announce(`Audio ${parsed.action}`, "polite");
+            return;
+        }
+      }
+      // Unknown slash command — fall through and let the LLM handle it.
+    }
 
     const userMsg = { role: "user" as const, content: trimmed, createdAt: new Date() };
     setMessages(prev => [...prev, userMsg]);

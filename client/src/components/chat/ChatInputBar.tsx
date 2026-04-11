@@ -129,6 +129,9 @@ export function ChatInputBar({
             className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[36px] max-h-[160px] text-sm py-2 px-0"
             rows={1}
             disabled={isStreaming}
+            aria-label="Chat message input. Type a message or a slash command like /go learning."
+            data-chat-input
+            data-testid="chat-input"
           />
         </div>
 
