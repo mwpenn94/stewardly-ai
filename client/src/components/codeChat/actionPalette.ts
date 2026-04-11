@@ -107,6 +107,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "open:bookmarks", label: "Open bookmarks", category: "popover", keywords: ["starred"] },
   { id: "open:tools", label: "Open tool permissions", category: "popover", keywords: ["shield", "allow"] },
   { id: "open:templates", label: "Open prompt templates", category: "popover", keywords: ["library", "snippets"] },
+  { id: "open:snippets", label: "Open code snippets library", category: "popover", keywords: ["code", "library", "paste", "fence"] },
   { id: "open:memory", label: "Open agent memory", category: "popover", keywords: ["brain", "facts"] },
   { id: "open:instructions", label: "Open project instructions", category: "popover", keywords: ["claude", "rules"] },
   { id: "open:history", label: "Open edit history", category: "popover", hint: "⌃Z / ⌃⇧Z", keywords: ["undo", "redo"] },

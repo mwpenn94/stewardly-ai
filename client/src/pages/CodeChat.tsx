@@ -27,7 +27,7 @@ import {
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
-  BookOpen, History, StickyNote, Brain, BarChart3,
+  BookOpen, History, StickyNote, Brain, BarChart3, Code2,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -62,6 +62,7 @@ import ToolPermissionsPopover, {
   DEFAULT_ENABLED_TOOLS,
 } from "@/components/codeChat/ToolPermissionsPopover";
 import PromptTemplatesPopover from "@/components/codeChat/PromptTemplatesPopover";
+import CodeSnippetsPopover from "@/components/codeChat/CodeSnippetsPopover";
 import FileTreePanel from "@/components/codeChat/FileTreePanel";
 import CommandHistorySearchPopover from "@/components/codeChat/CommandHistorySearchPopover";
 import {
@@ -479,6 +480,9 @@ function CodeChatInterface() {
         case "templates":
           setTemplatesOpen(true);
           break;
+        case "snippets":
+          setSnippetsOpen(true);
+          break;
         case "memory":
           setMemoryOpen(true);
           break;
@@ -673,6 +677,7 @@ function CodeChatInterface() {
 
   // Pass 214: prompt template library
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [snippetsOpen, setSnippetsOpen] = useState(false);
 
   // Pass 216: Ctrl+R command history search
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -1319,6 +1324,14 @@ function CodeChatInterface() {
           title="Prompt templates"
         >
           <LibraryBig className="w-3 h-3" /> Templates
+        </button>
+        <button
+          onClick={() => setSnippetsOpen(true)}
+          className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Code snippets"
+          title="Code snippets library"
+        >
+          <Code2 className="w-3 h-3" /> Snippets
         </button>
         <button
           onClick={() => setToolsOpen(true)}
@@ -2030,6 +2043,20 @@ function CodeChatInterface() {
         currentInput={input}
         onInsert={(body) => {
           setInput(body);
+          inputRef.current?.focus();
+        }}
+      />
+      <CodeSnippetsPopover
+        open={snippetsOpen}
+        onClose={() => setSnippetsOpen(false)}
+        onInsert={(markdown) => {
+          setInput((prev) => {
+            const base = prev ?? "";
+            if (!base) return markdown;
+            if (base.endsWith("\n\n")) return base + markdown;
+            if (base.endsWith("\n")) return base + "\n" + markdown;
+            return base + "\n\n" + markdown;
+          });
           inputRef.current?.focus();
         }}
       />
