@@ -1,4 +1,4 @@
-# Code Chat Cloud Parity (Passes 201-223)
+# Code Chat Cloud Parity (Passes 201-227)
 
 Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 
@@ -63,6 +63,16 @@ Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 - **Silent auto-checkpoint** — conversations auto-save to the
   sessions library every 4 turns; no more lost work from refresh
   or crash (Pass 223)
+- **Pinned files working set** — keep a small set of files in
+  context across every prompt via auto-injected `@path` references
+  (Pass 224)
+- **Grep result quick-jump** — clickable per-line rows under every
+  grep trace step that open the file at the matched line (Pass 225)
+- **Session stats dashboard** — aggregate totals (sessions /
+  messages / tool calls) + top-6 tool-kind chips in the sessions
+  popover (Pass 226)
+- **Vim-style chord shortcuts** — `g c` / `g f` / `g r` / `g d` /
+  `g h` / `g w` / `g j` for instant tab navigation (Pass 227)
 
 This document walks through the architecture, the tRPC surface, the
 safety model, and the UI. For setup (tokens, connection flow) see
@@ -674,6 +684,74 @@ saves update the same row. Key properties:
 Result: users never lose work to a refresh or tab crash, and the
 sessions library quietly accumulates a complete history without
 anyone having to remember to click Save.
+
+## Workflow power features (Passes 224-227)
+
+### Pinned files working set (Pass 224)
+
+A small set of files you want kept in context across every prompt.
+Pin from the FileBrowser viewer via the **Pin** button; the pins
+render as chips above the chat input with per-chip unpin buttons.
+
+On every send, `applyPinnedToMessage()` prepends `@path` references
+for the pinned files to the user message so the existing
+`extractFileMentions()` server expander reads them and inlines the
+file contents as context. Already-mentioned paths are skipped so
+user-explicit `@` references always win.
+
+State persists to `localStorage['stewardly-codechat-pinned-files']`,
+capped at 10 entries with oldest-drops-first overflow. 21 unit
+tests cover parsing, dedup, toggle, path-with-spaces bracketing,
+and the "skip already-mentioned" rule.
+
+### Grep result quick-jump (Pass 225)
+
+`grep_search` trace steps now render clickable match rows under
+each result. Matches are grouped by file with a line-number gutter;
+clicking any row dispatches a `codechat-open-file` custom event
+that switches to the Files tab and reads the file at the matched
+line.
+
+The Tabs component is now controlled (`activeTab` state hoisted
+into `CodeChatPage`) so any code path can navigate to another tab.
+`FileBrowser` reads a pending-open target from localStorage on
+mount since it re-mounts when the user switches tabs.
+
+`extractGrepMatches()` is a pure parser — 7 tests cover the JSON
+shape, malformed entries, non-grep tool kinds, and the truncated
+flag. `groupMatchesByFile()` is 3 more tests.
+
+### Session stats dashboard (Pass 226)
+
+The Sessions popover grew an aggregated stats strip showing:
+
+- Total sessions, messages, tool calls, distinct models used
+- Top-6 tool-kind chips (read_file / grep_search / edit_file / ...)
+
+`aggregateSessions(library)` is a pure function — 3 unit tests
+cover the zero-library case, the full shape, and the
+no-toolEvents fallback.
+
+### Vim-style chord shortcuts (Pass 227)
+
+Two-key chord sequences for instant tab navigation matching the
+GitHub "g p / g i / g c" convention that power users already know:
+
+| Chord | Destination |
+|---|---|
+| `g c` | Chat tab |
+| `g f` | Files tab |
+| `g r` | Roadmap tab |
+| `g d` | Diff tab |
+| `g h` | GitHub (read) tab |
+| `g w` | Git Write tab |
+| `g j` | Jobs tab |
+
+The chord state machine (`stepChord`) lives in `keyChords.ts` as a
+pure function — 10 unit tests cover every chord, the wrong-second-
+key reset, the 1.5-second timeout, and ignore behavior for
+unrelated keys. The listener in `CodeChatPage` skips text fields so
+typing `g` as part of a prompt doesn't trigger the chord.
 
 ## Known limitations
 
