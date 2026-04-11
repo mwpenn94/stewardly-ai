@@ -5,13 +5,13 @@
 
 ## Meta
 
-- **Last updated:** 2026-04-11T00:01Z by `claude/parity-accessibility-optimization-wPhiw` Pass 2
+- **Last updated:** 2026-04-11T00:02Z by `claude/parity-accessibility-optimization-wPhiw` Pass 3
 - **Comparable benchmark:** best-in-industry multisensory + accessibility leaders — ChatGPT Advanced Voice, Google Gemini Live, Claude.ai voice mode, Linear, Superhuman, Raycast, Arc Browser, Apple VoiceOver + Voice Control, Google TalkBack, NVDA / JAWS, Speechify / Eleven Labs, Perplexity voice, Notion
 - **Core purpose:** A 5-layer AI financial advisory platform that every user — sighted, blind, deaf, low-vision, motor-impaired, or hands-busy — can operate fluently via voice, keyboard, screen reader, touch, or any combination, with delight on every modality.
 - **Target user:** Financial advisors, clients, and learners across the full accessibility spectrum, including users operating the app hands-free (driving, cooking, walking) and users on assistive tech (VoiceOver, TalkBack, NVDA, JAWS, Voice Control).
 - **Success metric:** Every critical task (send chat, read response, navigate, take a recommended action, celebrate a win) is completable — and feels delightful — via voice alone, keyboard alone, screen reader alone, touch alone, or any mix, without requiring modality switches.
 - **Starting baseline commit (Pass 1):** `6086236a24bc4532140ea7f4261902b50c169404`
-- **Current parity score:** **58%** (Pass 2 — downgraded after discovering the AppearanceTab Potemkin UI: 6 controls, 0 actually apply. Users are actively misled, not just feature-gapped.)
+- **Current parity score:** **54%** (Pass 3 — further downgraded after adversarial pass surfaced 10 new gaps including 2 CRITICAL: Firefox/Safari-iOS silent-fail STT paths and WCAG 2.4.3 focus-lost-on-nav failure. This is an honest re-baseline, not a code regression.)
 - **Dimension scorecard (v2 ten dimensions):**
   - CoreFunction: 8.0 — app accomplishes its core advisory purpose reliably
   - UI: 8.0 — Stewardship Gold visual identity is late-stage polished
@@ -23,7 +23,7 @@
   - Performance: 8.0 — builds clean, bundle split, SSE streaming is fast
   - Robustness: 7.0 — 3,103+ tests but user-visible "Save Preferences" button creates false confidence
   - CodeQuality: 8.0 — consistent patterns but dead code (AppShell sidebarContent unreachable)
-  - **Composite:** 7.00 (−0.30 from Pass 1 after Potemkin discovery; honest downgrade, not regression)
+  - **Composite (Pass 3):** 6.75 (−0.25 from Pass 2 after adversarial surfacing of 10 hidden failures; 2 now CRITICAL for WCAG + cross-browser)
 
 ## Gap Matrix
 
@@ -89,8 +89,26 @@ Legend: Priority P0 (ship-blocker) → P3 (polish). Effort: S (≤1 day) / M (1�
 | G56 | `AppShell.tsx` has ~200 lines of `sidebarContent` / `renderNavItem` render code (lines 322-528) that's unreachable because `PersonaSidebar5` replaced it at line 552 — dead code | ⚠ dead | 4/10 | P2 | S | No | — | open |
 | G57 | Accent color selector offers 6 colors (`AppearanceTab.tsx:10-17`) that don't exist in the Stewardship Gold theme — selecting "Rose" does nothing | ❌ | 0/10 | P1 | S | No | — | open |
 | G58 | No keyboard shortcut to open CommandPalette documented in `useKeyboardShortcuts.ts` — Ctrl+K is wired inside `CommandPalette.tsx:147` only; not listed in the `?` help overlay as a chord | ⚠ wired, undocumented | 6/10 | P2 | S | Yes | — | open |
+| G59 | **CRITICAL — Firefox has zero SpeechRecognition support; Safari iOS blocks `recognition.continuous=true`** (`useVoiceRecognition.ts:147-150` silently returns; `PlatformIntelligence.tsx:290-291` silently returns; `LiveChatMode.tsx:96-99` sets internal error but no toast/banner for users) — hands-free button in Firefox is a dead button | ❌ silent fail | 0/10 | P0 | M | Yes | — | open |
+| G60 | **CRITICAL — Keyboard focus is not restored to `#main-content` after route change** (`AppShell.tsx:131-134` closes mobile sidebar + records page visit but never calls `document.getElementById("main-content")?.focus()`); SR users navigating via g-chord hear nothing about the new page — WCAG 2.4.3 Focus Order failure | ❌ | 0/10 | P0 | S | Yes | — | open |
+| G61 | Voice "stop" command pauses TTS playback but does **not** abort SSE stream (`PlatformIntelligence.tsx:232-234` → `audioCompanion.pause()` → `AudioCompanion.tsx:184-188` only cancels `speechSynthesis` + HTML audio; `Chat.tsx:873-990` SSE loop keeps running); user says "stop" then a new prompt → answers interleave | ⚠ incomplete | 3/10 | P1 | M | Yes | — | open |
+| G62 | Network drop mid-SSE-stream → infinite spinner; no `navigator.onLine` check, no timeout, aria-live region stays stuck on "AI is responding…" (`Chat.tsx:873-990`, `Chat.tsx:1818`); `OfflineBanner.tsx` exists but isn't wired into Chat streaming | ❌ | 0/10 | P1 | M | Yes | — | open |
+| G63 | Dual keyboard chord handlers on "g" create a race (`AppShell.tsx:184-215` AND `useKeyboardShortcuts.ts:57-61` both attach `window.keydown`); neither calls `preventDefault()` on match → possible double-navigation | ⚠ race | 4/10 | P1 | S | Yes | — | open |
+| G64 | `framer-motion` animations ignore `prefers-reduced-motion` unless explicitly wrapped in ReducedMotion context (`AudioCompanion.tsx:287,319` use `<motion.div>` without `reduceMotion="user"` prop); OS-level preference is honored by CSS but not by framer-motion components | ⚠ partial | 5/10 | P1 | S | Yes | — | open |
+| G65 | AudioCompanion queue is in-memory `useState` only (`AudioCompanion.tsx:74-84`); navigating routes doesn't lose it (provider is at App.tsx root) but a full page reload discards queue + position → user re-starts from scratch on every refresh | ⚠ in-memory | 4/10 | P2 | M | No | — | open |
+| G66 | Disabled button state color contrast likely fails WCAG AA (`opacity-50` default from shadcn/ui button yields ~3.8:1 against `--card` — below 4.5:1 threshold); no explicit disabled-state token in `index.css` | ⚠ untested, likely fails | 5/10 | P2 | S | Yes | — | open |
+| G67 | CommandPalette doesn't filter PAGES by user role — user with `user` role sees "Global Admin" and "Manager Dashboard" entries (`CommandPalette.tsx:45-67` has no `hasMinRole` filter unlike `AppShell.tsx:219-220`); clicking them leads to 403 pages | ❌ | 0/10 | P2 | S | Yes | — | open |
+| G68 | Focus trap stack conflict — CommandPalette synthesizes a `?` keydown (`CommandPalette.tsx:95-98`) to open KeyboardShortcutsOverlay; both dialogs mount simultaneously and both try to trap focus; whichever mounts last wins and the other's trap is broken | ⚠ | 4/10 | P2 | M | Yes | — | open |
 
-**Summary (Pass 2 updated):** P0 = 6 (G1, G2, G3, G4, G8, **G51**) · P1 = 22 (+G52, G53, G54, G57) · P2 = 21 (+G55, G56, G58) · P3 = 8 · **Total = 58**
+**Summary (Pass 3 updated):** P0 = 8 (G1, G2, G3, G4, G8, G51, **G59, G60**) · P1 = 26 (+G61, G62, G63, G64) · P2 = 24 (+G65, G66, G67, G68) · P3 = 8 · **Total = 66**
+
+### Pass 3 Adversarial Insight — Cross-browser, Focus-on-Nav, Offline
+
+The adversarial pass surfaced 10 silent-failure classes that earlier passes missed because they assumed Chrome-on-desktop, online, sighted-mouse users. The **two CRITICAL items (G59, G60)** directly violate the parity target "max accessibility via conversational hands-free and text navigation":
+- G59 (Firefox / Safari iOS): the hands-free button exists but fails silently for ~25% of real users. **The feature the comparable target is named after doesn't work in a quarter of browsers.**
+- G60 (Focus on nav): SR users navigating with g-chords get zero announcement of where they arrived. **Keyboard + SR users cannot orient themselves in the app.** This is a WCAG 2.4.3 Level A failure — a ship blocker for any accessibility claim.
+
+The remaining 8 gaps are HIGH/MED and form a "robustness under real-world conditions" theme: streaming abort doesn't abort, network drop hangs forever, chord handlers race, framer-motion ignores user motion preference, disabled states fail contrast. These are the classes of bugs that only surface when someone actively tries to break the app — hence why no prior optimization pass caught them.
 
 **Critical insight — the P0 cluster is actually ONE root cause:** G1, G8, G21, and G23 all fail because `usePlatformIntelligence` / `giveFeedback` have zero consumers. Fixing the PIL consumer pattern (5–10 call sites in Chat.tsx, handleSend, TTS onEnd, error toasts, action completions, celebrations) unlocks haptics + earcons + celebrations + voice-driven feedback simultaneously. Highest leverage fix in the matrix.
 
@@ -153,11 +171,13 @@ _(append-only, one line per merge event)_
 
 - 2026-04-11 · Pass 1 · no prior doc · no reconciliation needed
 - 2026-04-11 · Pass 2 · no concurrent edits detected (sole writer) · no reconciliation needed
+- 2026-04-11 · Pass 3 · no concurrent edits detected (sole writer) · no reconciliation needed
 
 ## Changelog
 
 _(append-only, most recent first)_
 
+- **Pass 3** (Claude Code, Adversarial, 58%→54%) · +10 new gaps (G59–G68) with 2 CRITICAL: G59 Firefox/Safari-iOS STT silent-fail (comparable target is named after the feature that dies in a quarter of browsers); G60 WCAG 2.4.3 Focus Order failure (keyboard+SR users get no announcement of where they arrived after g-chord navigation). Additional HIGH items: G61 voice "stop" doesn't abort SSE stream, G62 offline network-drop → infinite spinner, G63 dual chord handler race, G64 framer-motion ignores prefers-reduced-motion. Adversarial pass specifically hunted silent failures under non-Chrome/non-online/non-sighted conditions that earlier passes assumed away.
 - **Pass 2** (Claude Code, Depth, 62%→58%) · +8 new gaps (G51–G58); `feedbackSpecs.ts` contains 30 fully-designed multimodal feedback events with 0 dispatch sites; produced 14-file dispatch recipe; discovered `AppearanceTab.tsx` is a Potemkin UI (6 controls, 6 silent failures on `wb_*` keys that nothing reads); discovered `CommandPalette` PAGES list drifts from `navigation.ts` by ~15 routes and shows "G R / G M / G D" shortcut hints that were never wired; discovered dead `sidebarContent` (200+ lines) in `AppShell.tsx` replaced by `PersonaSidebar5`. Score downgraded 62→58% not because of regression but because Pass 1 over-valued infrastructure-that-exists at the expense of infrastructure-that-works; honest re-baseline.
 - **Pass 1** (Claude Code, Landscape, n/a→62%) · Initial audit; 50-item gap matrix; 7 beyond-parity wins; 6 anti-parity rejections. Root-cause insight: PIL consumer pattern unlocks the P0 cluster (G1/G8/G21/G23).
 
