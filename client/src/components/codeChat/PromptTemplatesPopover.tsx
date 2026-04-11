@@ -10,6 +10,8 @@ import {
   addTemplate,
   deleteTemplate,
   filterTemplates,
+  extractTemplateVariables,
+  applyTemplateVariables,
   type PromptTemplate,
 } from "./promptTemplates";
 import { Button } from "@/components/ui/button";
@@ -45,13 +47,44 @@ export default function PromptTemplatesPopover({
   const [newName, setNewName] = useState("");
   const [newBody, setNewBody] = useState("");
 
+  // Pass 218: variable-substitution form state
+  const [pendingTemplate, setPendingTemplate] = useState<PromptTemplate | null>(
+    null,
+  );
+  const [pendingVars, setPendingVars] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (open) {
       setTemplates(loadTemplates());
       setQuery("");
       setShowCreate(false);
+      setPendingTemplate(null);
+      setPendingVars({});
     }
   }, [open]);
+
+  const handleSelectTemplate = (t: PromptTemplate) => {
+    const vars = extractTemplateVariables(t.body);
+    if (vars.length === 0) {
+      onInsert(t.body);
+      onClose();
+      toast.success(`Inserted "${t.name}"`);
+      return;
+    }
+    // Open the variable form
+    setPendingTemplate(t);
+    const init: Record<string, string> = {};
+    for (const v of vars) init[v] = "";
+    setPendingVars(init);
+  };
+
+  const handleApplyPending = () => {
+    if (!pendingTemplate) return;
+    const body = applyTemplateVariables(pendingTemplate.body, pendingVars);
+    onInsert(body);
+    onClose();
+    toast.success(`Inserted "${pendingTemplate.name}"`);
+  };
 
   const filtered = useMemo(
     () => filterTemplates(templates, query),
@@ -116,6 +149,68 @@ export default function PromptTemplatesPopover({
           Reusable macros. Click one to insert it into the input.
           Supports @file refs and slash commands.
         </p>
+
+        {/* Pass 218: variable form (shown when a template with vars is picked) */}
+        {pendingTemplate && (
+          <div className="mb-4 p-3 rounded-lg border border-amber-500/40 bg-amber-500/5 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] uppercase tracking-wide text-amber-500">
+                Fill in variables for "{pendingTemplate.name}"
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingTemplate(null);
+                  setPendingVars({});
+                }}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Cancel variable form"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+            {Object.keys(pendingVars).map((name) => (
+              <div key={name} className="space-y-1">
+                <Label className="text-[10px] font-mono">{`{{${name}}}`}</Label>
+                <Input
+                  value={pendingVars[name]}
+                  onChange={(e) =>
+                    setPendingVars((prev) => ({
+                      ...prev,
+                      [name]: e.target.value,
+                    }))
+                  }
+                  placeholder={`Value for ${name}`}
+                  className="h-8 text-xs"
+                  autoFocus={name === Object.keys(pendingVars)[0]}
+                />
+              </div>
+            ))}
+            <div className="flex gap-2 pt-1">
+              <Button
+                size="sm"
+                onClick={handleApplyPending}
+                className="h-7 text-[10px]"
+              >
+                Insert with values
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (pendingTemplate) {
+                    onInsert(pendingTemplate.body);
+                    onClose();
+                    toast.info("Inserted raw (placeholders left)");
+                  }
+                }}
+                className="h-7 text-[10px]"
+              >
+                Insert raw
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Search + actions */}
         <div className="flex items-center gap-2 mb-3">
@@ -209,11 +304,7 @@ export default function PromptTemplatesPopover({
                 <button
                   type="button"
                   className="flex-1 text-left min-w-0"
-                  onClick={() => {
-                    onInsert(t.body);
-                    onClose();
-                    toast.success(`Inserted "${t.name}"`);
-                  }}
+                  onClick={() => handleSelectTemplate(t)}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-foreground truncate">
@@ -224,6 +315,18 @@ export default function PromptTemplatesPopover({
                         built-in
                       </span>
                     )}
+                    {(() => {
+                      const vars = extractTemplateVariables(t.body);
+                      if (vars.length === 0) return null;
+                      return (
+                        <span
+                          className="text-[9px] uppercase tracking-wide text-amber-500"
+                          title={`Variables: ${vars.join(", ")}`}
+                        >
+                          {vars.length} var{vars.length === 1 ? "" : "s"}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="text-[10px] text-muted-foreground/80 font-mono truncate">
                     {t.body.slice(0, 140)}

@@ -42,6 +42,11 @@ import ToolPermissionsPopover, {
 } from "@/components/codeChat/ToolPermissionsPopover";
 import PromptTemplatesPopover from "@/components/codeChat/PromptTemplatesPopover";
 import FileTreePanel from "@/components/codeChat/FileTreePanel";
+import CommandHistorySearchPopover from "@/components/codeChat/CommandHistorySearchPopover";
+import {
+  summarizeToolEvents,
+  summaryChips,
+} from "@/components/codeChat/toolSummary";
 import {
   exportConversationAsMarkdown,
   exportSingleMessageAsMarkdown,
@@ -253,6 +258,12 @@ function CodeChatInterface() {
   // Pass 214: prompt template library
   const [templatesOpen, setTemplatesOpen] = useState(false);
 
+  // Pass 216: Ctrl+R command history search
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Pass 219: gist export mutation
+  const gistExportMutation = trpc.codeChat.exportToGist.useMutation();
+
   // Derive slash-command suggestions from the current input
   const slashSuggestions: SlashCommand[] = useMemo(() => {
     if (!input.startsWith("/")) return [];
@@ -324,8 +335,16 @@ function CodeChatInterface() {
 
   // Pass 209: `?` opens the keyboard shortcuts overlay when the
   // input is empty (so typing a literal "?" in a prompt still works).
+  // Pass 216: Ctrl+R (or Cmd+R) opens the command history reverse-
+  // search from anywhere in the Code Chat UI.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Ctrl+R / Cmd+R → reverse-search — works even from the textarea
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        setHistoryOpen(true);
+        return;
+      }
       if (e.key === "?" && !input) {
         const target = e.target as HTMLElement | null;
         const isTextField =
@@ -574,9 +593,60 @@ function CodeChatInterface() {
           }}
           className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Export conversation as markdown"
-          title="Export conversation"
+          title="Export conversation as markdown file"
         >
           <Download className="w-3 h-3" /> Export
+        </button>
+        <button
+          onClick={async () => {
+            if (messages.length === 0) {
+              toast.info("Nothing to export yet");
+              return;
+            }
+            const content = exportConversationAsMarkdown(messages);
+            const description =
+              messages[0]?.role === "user"
+                ? `Code Chat: ${messages[0].content.slice(0, 200)}`
+                : `Code Chat transcript (${messages.length} messages)`;
+            const toastId = toast.loading("Publishing to Gist…");
+            try {
+              const result = await gistExportMutation.mutateAsync({
+                description,
+                content,
+                public: false,
+                filename: `code-chat-${new Date().toISOString().slice(0, 10)}.md`,
+              });
+              toast.dismiss(toastId);
+              if (result.ok) {
+                toast.success(
+                  <span>
+                    Gist created.{" "}
+                    <a
+                      href={result.gist.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      Open
+                    </a>
+                  </span>,
+                );
+                try {
+                  await navigator.clipboard.writeText(result.gist.url);
+                } catch { /* clipboard optional */ }
+              } else {
+                toast.error(`Gist failed: ${result.error}`);
+              }
+            } catch (err: any) {
+              toast.dismiss(toastId);
+              toast.error(`Gist failed: ${err.message ?? err}`);
+            }
+          }}
+          className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Publish conversation as GitHub Gist"
+          title="Publish conversation as a secret GitHub Gist (uses your connected GitHub)"
+        >
+          <Github className="w-3 h-3" /> Gist
         </button>
         <button
           onClick={() => setShowFiles(!showFiles)}
@@ -647,6 +717,40 @@ function CodeChatInterface() {
                 <div className="bg-card/60 border border-border/30 px-4 py-3 rounded-xl text-sm leading-relaxed">
                   <MarkdownMessage content={msg.content} />
                 </div>
+                {/* Pass 217: tool-call summary chips */}
+                {(() => {
+                  const summary = summarizeToolEvents(msg.toolEvents);
+                  const chips = summaryChips(summary);
+                  if (chips.length === 0) return null;
+                  return (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {chips.map((c) => (
+                        <span
+                          key={c.key}
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-mono tabular-nums ${
+                            c.variant === "error"
+                              ? "border-destructive/50 text-destructive bg-destructive/5"
+                              : c.variant === "warn"
+                                ? "border-amber-500/40 text-amber-500 bg-amber-500/5"
+                                : "border-border/60 text-muted-foreground bg-muted/10"
+                          }`}
+                        >
+                          {c.label} {c.count}
+                        </span>
+                      ))}
+                      {summary.filesTouched.length > 0 && (
+                        <span
+                          className="text-[9px] text-muted-foreground/60 font-mono truncate"
+                          title={summary.filesTouched.join("\n")}
+                        >
+                          {summary.filesTouched.length === 1
+                            ? summary.filesTouched[0]
+                            : `${summary.filesTouched.length} files`}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
                 {/* Meta + action bar */}
                 <div className="flex items-center gap-2 text-[9px] text-muted-foreground/50">
                   {msg.model && <span>{msg.model}</span>}
@@ -873,6 +977,16 @@ function CodeChatInterface() {
         currentInput={input}
         onInsert={(body) => {
           setInput(body);
+          inputRef.current?.focus();
+        }}
+      />
+      <CommandHistorySearchPopover
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        history={commandHistory}
+        onSelect={(entry) => {
+          setInput(entry);
+          setHistoryOpen(false);
           inputRef.current?.focus();
         }}
       />

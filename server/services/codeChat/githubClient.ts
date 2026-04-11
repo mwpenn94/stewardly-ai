@@ -863,6 +863,47 @@ export function parseRepoString(s: string): {
   return { owner: match[1], repo: match[2] };
 }
 
+// ─── Gists (Pass 219) ─────────────────────────────────────────────────────
+//
+// Minimal wrapper around the GitHub Gists API. Lets Code Chat
+// publish a conversation as a shareable URL with one click. Uses the
+// caller's own PAT so the gist is owned by the user, respects their
+// account's public/secret default, and shows up in their own gist
+// list.
+
+export interface CreateGistInput {
+  description: string;
+  public: boolean;
+  files: Record<string, { content: string }>;
+}
+
+export interface GistResult {
+  id: string;
+  url: string; // html_url
+  rawUrl?: string;
+}
+
+export async function createGist(
+  creds: GitHubCredentials,
+  input: CreateGistInput,
+): Promise<GistResult> {
+  const data = await ghFetch<{
+    id: string;
+    html_url: string;
+    files: Record<string, { raw_url: string }>;
+  }>(creds, "POST", `/gists`, {
+    description: input.description,
+    public: input.public,
+    files: input.files,
+  });
+  const firstFileKey = Object.keys(data.files)[0];
+  return {
+    id: data.id,
+    url: data.html_url,
+    rawUrl: firstFileKey ? data.files[firstFileKey].raw_url : undefined,
+  };
+}
+
 // ─── Permission gate helper ───────────────────────────────────────────────
 //
 // Quick server-side sanity check: does the caller's token actually have

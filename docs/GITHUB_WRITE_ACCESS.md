@@ -1,4 +1,4 @@
-# Code Chat Cloud Parity (Passes 201-215)
+# Code Chat Cloud Parity (Passes 201-219)
 
 Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 
@@ -42,6 +42,16 @@ Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
   macros with save/search/insert (Pass 214)
 - **Hierarchical file tree + codebase stats** — collapsible workspace
   tree with top-language pills in the Files tab (Pass 215)
+- **Ctrl+R command history search** — terminal-style reverse-i-search
+  with fuzzy matching and highlighted matches (Pass 216)
+- **Per-message tool-call summary** — "read 4 · grep 2 · edit 1"
+  chip row under every assistant response with files-touched tooltip
+  (Pass 217)
+- **Template variables `{{name}}`** — insert-time form asks for
+  placeholder values before applying a template (Pass 218)
+- **Export conversation to GitHub Gist** — one-click publish as a
+  secret Gist owned by the caller, auto-copies URL to clipboard
+  (Pass 219)
 
 This document walks through the architecture, the tRPC surface, the
 safety model, and the UI. For setup (tokens, connection flow) see
@@ -510,6 +520,75 @@ The server-side `codeChat.listWorkspaceFiles` tRPC query grew an
 `all: true` option that bypasses fuzzy filtering and returns the
 full 5000-file cap so the tree view has the whole workspace in one
 fetch. Indexing is cached for 60s so tab switching stays cheap.
+
+## Terminal classics & power features (Passes 216-219)
+
+### Ctrl+R command history search (Pass 216)
+
+Press **Ctrl+R** (or **Cmd+R** on Mac) anywhere in the Code Chat —
+including from inside the input textarea — to open a terminal-style
+reverse-i-search modal over the command history. The popover:
+
+- Fuzzy-matches against every past prompt (substring first, falling
+  back to subsequence)
+- Highlights the matched characters in accent color
+- Arrow up/down to navigate, Enter to insert, Esc to close
+- Shows `N matches / total history` in the footer
+
+The matching logic lives in `commandHistorySearch.ts` as pure
+functions — 13 unit tests cover the scoring model, dedup, case
+insensitivity, highlight-segment builder, and empty-query pass-
+through.
+
+### Per-message tool-call summary (Pass 217)
+
+Every assistant message now shows a chip row under the response with
+a running receipt of what the agent actually did during that turn —
+`read 4 · grep 2 · edit 1 · bash 1 · errors 1`. Chips are color-coded:
+info (neutral) for read-only tools, warn (amber) for mutating tools,
+error (red) for failed calls. A `N files` suffix (with a tooltip
+listing exact paths) shows how many unique files the agent touched.
+
+`toolSummary.ts` is a pure-function aggregator — 12 tests cover the
+kind counts, error detection, duration sums, unique-file collection,
+chip filtering, and the human-readable `summarySentence()` output
+used for exports.
+
+### Template variables (Pass 218)
+
+Prompt templates can now contain `{{variable}}` placeholders that
+get filled in at insert time. When a user picks a template with
+placeholders, the popover opens a form above the template list
+asking for values, then substitutes them into the body before
+insertion. An "Insert raw" escape hatch leaves the placeholders
+intact for users who want to fill them manually.
+
+Variable extraction is pure: `{{ file }}` and `{{file}}` match the
+same name, malformed placeholders (`{{123}}`, `{{-bad}}`, `{file}`)
+are ignored, and unknown variables are left as-is on substitution
+so the user sees exactly what they forgot to fill in. Template list
+rows show a `N vars` badge when placeholders are present, with a
+hover tooltip listing the variable names.
+
+### Export conversation to GitHub Gist (Pass 219)
+
+The **Gist** button next to Export in the config bar publishes the
+current conversation as a GitHub Gist owned by the caller's own
+identity. Defaults to **secret** (not public) so users can share via
+URL without accidentally broadcasting their work. The description is
+auto-derived from the first user message (truncated to 200 chars).
+
+On success, the gist URL is copied to the clipboard automatically
+and a toast surfaces with an "Open" link. Failures surface the
+GitHub API error message inline.
+
+Server-side: `createGist` is a thin wrapper around `POST /gists` in
+`server/services/codeChat/githubClient.ts`. The tRPC mutation
+(`codeChat.exportToGist`) validates content size (≤1MB), sanitizes
+the filename with a regex allowlist, and logs every export with
+`{ userId, gistId, public }` so ops can track who published what.
+2 new primitive tests cover the POST body shape and 422 validation
+error handling.
 
 ## Known limitations
 

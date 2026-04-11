@@ -154,6 +154,48 @@ export function filterTemplates(
   );
 }
 
+// ─── Pass 218: template variables ────────────────────────────────────
+
+/**
+ * Extract unique `{{name}}` placeholders from a template body in the
+ * order they first appear. Placeholder names are alphanumeric +
+ * underscore; anything else is treated as plain text. Whitespace
+ * inside the braces is stripped so `{{ file }}` and `{{file}}` match.
+ */
+export function extractTemplateVariables(body: string): string[] {
+  const rx = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = rx.exec(body)) !== null) {
+    const name = match[1];
+    if (!seen.has(name)) {
+      seen.add(name);
+      out.push(name);
+    }
+  }
+  return out;
+}
+
+/**
+ * Substitute `{{name}}` placeholders in `body` with the matching
+ * values from the `values` map. Missing values are left as the
+ * original `{{name}}` so the user sees what they forgot to fill in.
+ * Whitespace inside the braces is tolerated.
+ */
+export function applyTemplateVariables(
+  body: string,
+  values: Record<string, string>,
+): string {
+  return body.replace(
+    /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g,
+    (full, name: string) => {
+      const value = values[name];
+      return typeof value === "string" ? value : full;
+    },
+  );
+}
+
 // ─── localStorage adapter ────────────────────────────────────────────────
 
 export function loadTemplates(): PromptTemplate[] {
