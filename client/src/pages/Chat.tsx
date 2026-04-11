@@ -46,6 +46,12 @@ import { useTTS } from "@/hooks/useTTS";
 import { detectStt, type SttCapabilities } from "@/lib/sttSupport";
 import { VoiceSupportBanner } from "@/components/VoiceSupportBanner";
 import { useFocusOnRouteChange } from "@/hooks/useFocusOnRouteChange";
+import {
+  createAnnouncerState,
+  shouldEmitChunk,
+  finalChunk,
+  type AnnouncerState,
+} from "@/lib/liveAnnouncer";
 import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
@@ -245,6 +251,16 @@ export default function Chat() {
   // via aria-live. Chat owns its own <main> element (id="chat-main") so
   // we override the default target here.
   useFocusOnRouteChange({ mainId: "chat-main" });
+
+  // Build Loop Pass 5 (G3): sentence-chunked aria-live announcements for
+  // streamed content. Instead of "AI is responding…", SR users now hear
+  // the actual answer sentence-by-sentence as it arrives, debounced to
+  // 800ms between announcements so the live region doesn't machine-gun.
+  // Build Loop Pass 5 (G4): same state powers a visible caption panel
+  // during TTS playback so deaf/HoH users have a WCAG 1.2.1-A transcript.
+  const announcerRef = useRef<AnnouncerState>(createAnnouncerState());
+  const [liveAnnouncement, setLiveAnnouncement] = useState<string>("");
+  const [captionText, setCaptionText] = useState<string>("");
   const [ttsEnabled, setTtsEnabled] = useState(() => {
     const stored = localStorage.getItem("tts-enabled");
     return stored !== "false"; // Default ON
@@ -640,6 +656,11 @@ export default function Chat() {
     pil.giveFeedback("chat.sent");
     setFollowUpSuggestions([]);
     setIsStreaming(true);
+    // Pass 5 (G3): reset the sentence chunker for the new response so
+    // we start emitting from byte 0 of the streaming content.
+    announcerRef.current = createAnnouncerState();
+    setLiveAnnouncement("");
+    setCaptionText("");
     // PIL: begin streaming — fires typing-start animation + aria-live "thinking"
     pil.giveFeedback("chat.streaming_start");
 
@@ -971,7 +992,25 @@ export default function Chat() {
                     }
                     return updated;
                   });
+                  // Pass 5 (G3): feed the growing stream to the sentence
+                  // chunker so aria-live + captions track the answer in
+                  // real time. shouldEmitChunk is pure — no throttle
+                  // wrapper needed, the state advances atomically.
+                  const emit = shouldEmitChunk(accumulated, announcerRef.current);
+                  if (emit.emit) {
+                    announcerRef.current = emit.nextState;
+                    setLiveAnnouncement(emit.text);
+                    setCaptionText(emit.text);
+                  }
                 } else if (event.type === "done") {
+                  // Pass 5 (G3): flush any un-terminated trailing text
+                  // to the aria-live region + caption panel + then mark
+                  // the response complete so SR users hear the closure.
+                  const trailing = finalChunk(accumulated, announcerRef.current);
+                  if (trailing) {
+                    setLiveAnnouncement(trailing);
+                    setCaptionText(trailing);
+                  }
                   // Finalize — persist the streamed content (NOT regenerate)
                   // First update the UI immediately with the accumulated content
                   const streamedMediaEmbeds = Array.isArray(event.mediaEmbeds) ? event.mediaEmbeds : undefined;
@@ -1143,6 +1182,40 @@ export default function Chat() {
       streamAbortRef.current = null;
     };
   }, []);
+
+  // Pass 5 (G61): voice "stop" command fires a `pil:stop-stream` window
+  // event. Chat listens for it + aborts any in-flight SSE stream AND
+  // clears the streaming UI so the new prompt doesn't interleave with
+  // the abandoned response. Also clears the captions.
+  useEffect(() => {
+    const onStop = () => {
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+      setIsStreaming(false);
+      setStreamingContent("");
+      setCaptionText("");
+      setLiveAnnouncement("Stopped.");
+    };
+    // Pass 5 (G5): voice vocabulary — send / new-chat via PIL events.
+    const onVoiceSend = () => {
+      if (input.trim()) handleSendRef.current(input);
+    };
+    const onVoiceNewChat = () => {
+      setConversationId(null);
+      setMessages([]);
+      setInput("");
+      navigate("/chat");
+    };
+    window.addEventListener("pil:stop-stream", onStop as EventListener);
+    window.addEventListener("pil:send", onVoiceSend as EventListener);
+    window.addEventListener("pil:new-chat", onVoiceNewChat as EventListener);
+    return () => {
+      window.removeEventListener("pil:stop-stream", onStop as EventListener);
+      window.removeEventListener("pil:send", onVoiceSend as EventListener);
+      window.removeEventListener("pil:new-chat", onVoiceNewChat as EventListener);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input, navigate]);
 
   // Keep the ref in sync for voice recognition callback
   useEffect(() => {
@@ -1874,12 +1947,20 @@ export default function Chat() {
 
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
       <main id="chat-main" tabIndex={-1} className="flex-1 flex flex-col min-w-0">
-        {/* Pass 99 (Target 7 delightful accessibility): aria-live region
-            so screen reader users get spoken feedback when the AI starts
-            thinking and when a response finishes streaming. polite so
-            it doesn't interrupt whatever they're currently reading. */}
-        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-          {isStreaming ? "AI is responding…" : ""}
+        {/* Pass 99 + Pass 5 (G3): aria-live region announces the ACTUAL
+            streamed content sentence-by-sentence (debounced ≥800ms
+            between announcements by `shouldEmitChunk`) instead of the
+            stale "AI is responding…" placeholder. SR users now hear
+            the answer as it arrives. polite = doesn't interrupt. */}
+        <div
+          className="sr-only"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {isStreaming && !liveAnnouncement
+            ? "AI is responding…"
+            : liveAnnouncement}
         </div>
         {/* Mobile-only sidebar toggle + escalation + guest sign-in */}
         <div className="lg:hidden flex items-center h-12 px-3 shrink-0 justify-between">
@@ -2219,6 +2300,35 @@ export default function Chat() {
             {!sttFullSupport && (
               <div className="mb-2">
                 <VoiceSupportBanner caps={sttCaps} />
+              </div>
+            )}
+            {/* Pass 5 (G4 — WCAG 1.2.1-A captions): visible caption strip
+                that mirrors the streamed content + TTS audio for deaf /
+                hard-of-hearing users. Renders during streaming OR during
+                TTS playback. Auto-clears on response end + user
+                interaction. Honors the user's reduced-motion preference
+                via the global .reduced-motion-user body class. */}
+            {(isStreaming || tts.isSpeaking) && captionText && (
+              <div
+                role="region"
+                aria-label="Live response caption"
+                className="mb-2 rounded-lg border border-accent/30 bg-card/80 backdrop-blur-sm px-3 py-2 text-xs text-foreground/90 shadow-sm animate-message-in"
+              >
+                <div className="flex items-start gap-2">
+                  <AudioLines
+                    className="w-3 h-3 text-accent shrink-0 mt-0.5"
+                    aria-hidden="true"
+                  />
+                  <div className="flex-1 leading-snug">{captionText}</div>
+                  <button
+                    type="button"
+                    onClick={() => setCaptionText("")}
+                    className="shrink-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
+                    aria-label="Dismiss caption"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             )}
             {/* Attachment chips */}

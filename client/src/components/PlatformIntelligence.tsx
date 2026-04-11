@@ -228,9 +228,50 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Pass 5 (G5): voice command vocabulary beyond navigation.
+    // Dispatch global events that the active page can listen for.
+    // Chat.tsx wires send / new_chat / palette / undo into its own
+    // handlers; any other page can subscribe similarly without
+    // changing PIL.
+
+    // "send" / "send it" / "submit" — fire the send event.
+    if (/^(send|send it|submit|go)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("pil:send"));
+      return;
+    }
+    // "new chat" / "new conversation" / "start over"
+    if (/^(new chat|new conversation|start over|blank slate)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("pil:new-chat"));
+      return;
+    }
+    // "open palette" / "search" / "command palette"
+    if (/^(open palette|command palette|open command|search|find)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("toggle-command-palette"));
+      return;
+    }
+    // "undo" — maps to the edit history ring buffer on pages that have one
+    if (/^(undo|take it back|revert)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("pil:undo"));
+      return;
+    }
+    // "cancel" — abort whatever is in flight (same as stop-stream)
+    if (/^(cancel|abort|never mind|forget it)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("pil:stop-stream"));
+      audioCompanion.pause();
+      return;
+    }
+
     // Level 2: Audio commands
     if (/^(pause|stop|hold on)$/i.test(normalized)) {
       audioCompanion.pause();
+      // Pass 5 (G61 — voice "stop" must actually stop everything):
+      // prior to this the command only paused TTS; SSE streaming kept
+      // running in the background and interleaved the user's next
+      // answer with the abandoned response. Emit a global event any
+      // streaming consumer can listen for — Chat.tsx handles it by
+      // calling streamAbortRef.current?.abort() in its `stop`
+      // listener.
+      window.dispatchEvent(new CustomEvent("pil:stop-stream"));
       return;
     }
     if (/^(resume|continue|play|keep going)$/i.test(normalized)) {
