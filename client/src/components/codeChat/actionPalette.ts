@@ -98,6 +98,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "tab:replace", label: "Find & replace across files", category: "tab", hint: "g p", keywords: ["replace", "refactor", "rename", "apply"] },
   { id: "tab:checkpoints", label: "Workspace checkpoints", category: "tab", hint: "g k", keywords: ["stash", "snapshot", "restore", "rollback"] },
   { id: "tab:diagnostics", label: "Problems / diagnostics", category: "tab", hint: "g x", keywords: ["errors", "tsc", "typescript", "lint", "problems"] },
+  { id: "tab:prdraft", label: "Draft a pull request", category: "tab", hint: "g u", keywords: ["pr", "pull request", "draft", "summary"] },
   { id: "tab:imports", label: "Go to Imports", category: "tab", keywords: ["dependencies", "graph"] },
   { id: "tab:todos", label: "Go to TODOs", category: "tab", keywords: ["fixme", "markers"] },
   // Popovers

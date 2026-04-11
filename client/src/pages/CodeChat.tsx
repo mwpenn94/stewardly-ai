@@ -141,6 +141,7 @@ import WorkspaceSearchPanel from "@/components/codeChat/WorkspaceSearchPanel";
 import FindReplacePanel from "@/components/codeChat/FindReplacePanel";
 import CheckpointsPanel from "@/components/codeChat/CheckpointsPanel";
 import DiagnosticsPanel from "@/components/codeChat/DiagnosticsPanel";
+import PRDrafterPanel from "@/components/codeChat/PRDrafterPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import {
   loadHistory,
@@ -2307,6 +2308,9 @@ export default function CodeChatPage() {
               <TabsTrigger value="diagnostics" className="gap-1.5">
                 <AlertTriangle className="h-3.5 w-3.5" /> Problems
               </TabsTrigger>
+              <TabsTrigger value="prdraft" className="gap-1.5">
+                <Github className="h-3.5 w-3.5" /> PR Draft
+              </TabsTrigger>
               <TabsTrigger value="imports" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> Imports
               </TabsTrigger>
@@ -2359,6 +2363,10 @@ export default function CodeChatPage() {
 
           <TabsContent value="diagnostics">
             <div className="p-6"><DiagnosticsPanel /></div>
+          </TabsContent>
+
+          <TabsContent value="prdraft">
+            <div className="p-6"><PRDrafterPanel /></div>
           </TabsContent>
 
           <TabsContent value="imports">

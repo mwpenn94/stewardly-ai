@@ -143,6 +143,11 @@ import {
   type DiagnosticsSnapshot,
 } from "../services/codeChat/diagnosticsCache";
 import {
+  draftPullRequest,
+  type CommitSummary,
+  type ChangedFile,
+} from "../services/codeChat/prDrafter";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -936,6 +941,138 @@ export const codeChatRouter = router({
     clearDiagnosticsCache();
     return { ok: true };
   }),
+
+  // Pass 253: draft a PR body from the current branch delta
+  draftPullRequest: protectedProcedure
+    .input(
+      z.object({
+        /** Defaults to "main" */
+        targetBranch: z.string().max(200).optional(),
+        /** Defaults to the current HEAD branch */
+        sourceBranch: z.string().max(200).optional(),
+        /** Hard cap on commits pulled (default 40) */
+        maxCommits: z.number().min(1).max(200).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const target = (input.targetBranch ?? "main").replace(/[^a-zA-Z0-9._/-]/g, "");
+      const maxCommits = Math.min(input.maxCommits ?? 40, 200);
+
+      // Resolve source branch (caller override or current HEAD)
+      let source = input.sourceBranch?.replace(/[^a-zA-Z0-9._/-]/g, "");
+      if (!source) {
+        const headResult = await dispatchCodeTool(
+          {
+            name: "run_bash",
+            args: { command: "git rev-parse --abbrev-ref HEAD" },
+          } as CodeToolCall,
+          { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 10_000 },
+        );
+        if (headResult.kind === "bash") {
+          source = (headResult.result.stdout ?? "").trim() || "HEAD";
+        } else {
+          source = "HEAD";
+        }
+      }
+
+      if (!source) source = "HEAD";
+
+      // Gather commits on the branch that are not on target
+      const commits: CommitSummary[] = [];
+      const logResult = await dispatchCodeTool(
+        {
+          name: "run_bash",
+          args: {
+            command: `git log ${source} ^${target} --no-merges -n ${maxCommits} --format="%H%x1f%an%x1f%s%x1f%b%x1e" 2>/dev/null || true`,
+          },
+        } as CodeToolCall,
+        { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 15_000 },
+      );
+      if (logResult.kind === "bash") {
+        const raw = logResult.result.stdout ?? "";
+        for (const rec of raw.split("\x1e")) {
+          const trimmed = rec.trim();
+          if (!trimmed) continue;
+          const parts = trimmed.split("\x1f");
+          if (parts.length < 3) continue;
+          const [sha, author, subject, body] = parts;
+          commits.push({
+            sha: (sha ?? "").slice(0, 40),
+            author: author ?? undefined,
+            subject: (subject ?? "").trim(),
+            body: (body ?? "").trim() || undefined,
+          });
+        }
+      }
+
+      // Gather changed files with numstat
+      const changedFiles: ChangedFile[] = [];
+      const diffResult = await dispatchCodeTool(
+        {
+          name: "run_bash",
+          args: {
+            command: `git diff --numstat ${target}...${source} 2>/dev/null || true`,
+          },
+        } as CodeToolCall,
+        { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 15_000 },
+      );
+      const statusMap = new Map<string, string>();
+      const nameStatusResult = await dispatchCodeTool(
+        {
+          name: "run_bash",
+          args: {
+            command: `git diff --name-status ${target}...${source} 2>/dev/null || true`,
+          },
+        } as CodeToolCall,
+        { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 15_000 },
+      );
+      if (nameStatusResult.kind === "bash") {
+        for (const line of (nameStatusResult.result.stdout ?? "").split("\n")) {
+          const parts = line.trim().split(/\s+/);
+          if (parts.length < 2) continue;
+          // Rename/copy have 3 columns: R100 old new — take the new
+          const status = (parts[0] ?? "").charAt(0);
+          const path = parts[parts.length - 1] ?? "";
+          if (path) statusMap.set(path, status);
+        }
+      }
+      if (diffResult.kind === "bash") {
+        for (const line of (diffResult.result.stdout ?? "").split("\n")) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          // Format: "adds\tdels\tpath"; binary files are "-\t-\tpath"
+          const parts = trimmed.split(/\s+/);
+          if (parts.length < 3) continue;
+          const [a, d, ...rest] = parts;
+          const path = rest.join(" ");
+          const additions = a === "-" ? 0 : Number.parseInt(a!, 10) || 0;
+          const deletions = d === "-" ? 0 : Number.parseInt(d!, 10) || 0;
+          changedFiles.push({
+            path,
+            status: statusMap.get(path) ?? "M",
+            additions,
+            deletions,
+          });
+        }
+      }
+
+      const draft = draftPullRequest({
+        sourceBranch: source,
+        targetBranch: target,
+        commits,
+        changedFiles,
+      });
+
+      return {
+        draft,
+        meta: {
+          sourceBranch: source,
+          targetBranch: target,
+          commitCount: commits.length,
+          filesChanged: changedFiles.length,
+        },
+      };
+    }),
 
   // Pass 246: TODO marker scanner
   scanTodoMarkers: protectedProcedure

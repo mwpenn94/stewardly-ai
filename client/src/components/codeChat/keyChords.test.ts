@@ -118,4 +118,11 @@ describe("allChordLabels", () => {
     expect(xChord).toBeDefined();
     expect(xChord!.label).toContain("Problems");
   });
+
+  it("includes the g+u PR Draft chord added in Pass 253", () => {
+    const labels = allChordLabels();
+    const uChord = labels.find((l) => l.keys[1] === "u");
+    expect(uChord).toBeDefined();
+    expect(uChord!.label).toContain("PR");
+  });
 });
