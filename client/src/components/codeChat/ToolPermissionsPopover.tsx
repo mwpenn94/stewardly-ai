@@ -31,6 +31,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
     mutation: false,
   },
   {
+    id: "multi_read",
+    label: "Multi-read",
+    description:
+      "Batch-read up to 10 files in one call to save LLM round-trips",
+    mutation: false,
+  },
+  {
     id: "list_directory",
     label: "List directory",
     description: "Enumerate files + subdirectories at a path",
@@ -83,6 +90,7 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
   "read_file",
+  "multi_read",
   "list_directory",
   "grep_search",
   "glob_files",

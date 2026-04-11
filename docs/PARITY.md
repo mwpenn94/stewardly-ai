@@ -51,7 +51,7 @@ Columns:
 | Id  | Area        | Gap                                                                                               | Comparable                       | Priority | Status     | Depth | Found  | Notes |
 |-----|-------------|---------------------------------------------------------------------------------------------------|----------------------------------|----------|------------|-------|--------|-------|
 | G1  | tool        | `glob_files` — find files by glob pattern (e.g. `src/**/*.tsx`). No dep on grep.                   | Claude Code `Glob`, Aider        | P0       | done (pass 1) | 4     | build  | Shipped pass 1. `globMatcher.ts` pure `*`/`**`/`?`/`[]`/`{}`/`!`; `globFiles.ts` binds to cached `fileIndex`; wired into `dispatchCodeTool` + stream route + router `READ_ONLY_TOOLS` + `DEFAULT_ENABLED_TOOLS`. 32 matcher tests + 4 dispatcher tests. |
-| G2  | tool        | `multi_read` — atomically read up to 10 files in one tool call. Saves round-trips.                 | Cursor, Continue                 | P1       | open       | 0     | build  | Batch read. |
+| G2  | tool        | `multi_read` — atomically read up to 10 files in one tool call. Saves round-trips.                 | Cursor, Continue                 | P1       | done (pass 2) | 4     | build  | Shipped pass 2. Per-file errors captured inline. `MultiReadEntry` result shape, cap at 10, filters non-string entries. 6 dispatcher tests. |
 | G3  | tool        | `web_fetch` — fetch a URL's content (HTML→markdown) and pass to the model as context.              | Claude Code `WebFetch`           | P1       | open       | 0     | build  | Needs allowlist. |
 | G4  | tool        | `web_search` — SERP search for recent docs/answers.                                                | Claude Code `WebSearch`, Cursor  | P1       | open       | 0     | build  | Reuse Tavily/Brave. |
 | G5  | tool        | `run_bash_background` — long-running shell process with output streaming.                          | Claude Code `run_in_background`  | P2       | open       | 0     | build  | Child process mgmt. |
@@ -90,6 +90,8 @@ _(empty)_
 
 Append one line per pass: `Pass N · angle · queue · commit SHA · shipped · deferred`.
 
-Pass 1 · angle: correctness + tool parity · queue: G1 (glob_files) · shipped: globMatcher.ts + globFiles.ts + executor dispatch + stream/router wiring + 36 new tests · deferred: G2–G24
+Pass 1 · angle: correctness + tool parity · queue: G1 (glob_files) · 8bae6a0 · shipped: globMatcher.ts + globFiles.ts + executor dispatch + stream/router wiring + 36 new tests · deferred: G2–G24
+
+Pass 2 · angle: performance / round-trip reduction · queue: G2 (multi_read) · shipped: multi_read tool + dispatcher + stream/router wiring + 6 new tests · deferred: G3–G24
 
 <!-- PASS_LOG_APPEND_HERE -->

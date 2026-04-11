@@ -217,5 +217,7 @@ export function summarizeStep(step: CodeChatStep): string {
       return `find_symbol ${result.result.query} → ${result.result.matches.length} matches (${ms})`;
     case "glob":
       return `glob ${Array.isArray(result.result.pattern) ? result.result.pattern.join(",") : result.result.pattern} → ${result.result.files.length}/${result.result.searched} files (${ms})`;
+    case "multi_read":
+      return `multi_read ${result.result.files.length} files (${result.result.totalBytes}B, ${result.result.errors} error${result.result.errors === 1 ? "" : "s"}, ${ms})`;
   }
 }

@@ -31,6 +31,7 @@ const WORKSPACE_ROOT =
 
 const READ_ONLY_TOOLS = new Set([
   "read_file",
+  "multi_read", // Build-loop Pass 2: batch read
   "list_directory",
   "grep_search",
   "glob_files", // Build-loop Pass 1: Claude-Code Glob parity
@@ -139,6 +140,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "You are a Claude-Code-style coding assistant inside Stewardly.",
       "Work step-by-step. Use `code_list_directory` and `code_read_file` to explore.",
       "Use `code_grep_search` to find occurrences of text across the codebase.",
+      "Use `code_multi_read` to read up to 10 files in ONE call whenever you already know 2+ files you need to inspect — it saves round-trips (the slowest part of a session).",
       "Use `code_glob_files` to find files by pattern (e.g. `src/**/*.tsx`, `server/services/**/*.test.ts`). Prefer this over `code_list_directory` when you know the filename shape, and over shell `find` for speed.",
       "Use `code_find_symbol` when you know the name of a function/class/interface/type/const and want to jump to its DEFINITION (faster than grep, and returns only definition sites).",
       canMutate

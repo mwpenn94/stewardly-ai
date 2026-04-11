@@ -312,7 +312,7 @@ function GrepResultView({
               <span className="text-accent tabular-nums shrink-0 w-10 text-right">
                 {m.line}
               </span>
-              <span className="truncate text-foreground/90">{m.text}</span>
+              <span className="truncate text-foreground/100">{m.text}</span>
             </button>
           ))}
         </div>
@@ -1319,9 +1319,9 @@ function CodeChatInterface() {
           onClick={() => setToolsOpen(true)}
           className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Tool permissions"
-          title={`Tool permissions (${enabledTools.length}/9 enabled)`}
+          title={`Tool permissions (${enabledTools.length}/10 enabled)`}
         >
-          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/9
+          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/10
         </button>
         {(() => {
           const s = summarizeHistory(editHistory);
@@ -1963,7 +1963,7 @@ function CodeChatInterface() {
               size="icon"
               onClick={handleSend}
               disabled={!input.trim()}
-              className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 shrink-0"
+              className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/100 shrink-0"
               aria-label="Send message"
             >
               <Send className="w-4 h-4" />

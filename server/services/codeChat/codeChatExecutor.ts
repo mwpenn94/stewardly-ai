@@ -37,6 +37,7 @@ import {
 
 export type CodeToolName =
   | "read_file"
+  | "multi_read"
   | "write_file"
   | "edit_file"
   | "list_directory"
@@ -71,8 +72,18 @@ export interface SymbolLookupHit {
   exported: boolean;
 }
 
+export interface MultiReadEntry {
+  path: string;
+  content?: string;
+  byteLength: number;
+  truncated: boolean;
+  error?: string;
+  errorCode?: string;
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
+  | { kind: "multi_read"; result: { files: MultiReadEntry[]; totalBytes: number; errors: number } }
   | { kind: "write"; result: WriteFileResult }
   | { kind: "edit"; result: EditFileResult }
   | { kind: "list"; result: { path: string; entries: ListDirEntry[] } }
@@ -122,6 +133,56 @@ export async function dispatchCodeTool(
       case "read_file": {
         const r = await readFile(sandbox, String(call.args.path));
         return { kind: "read", result: r };
+      }
+      case "multi_read": {
+        // Build-loop Pass 2: batch read tool. Takes a list of paths
+        // and reads each one in parallel, returning per-file entries
+        // that the agent can inspect without a separate round-trip
+        // per file. Max 10 files per call; individual read errors
+        // are captured inline (not the whole call).
+        const rawPaths = call.args.paths;
+        if (!Array.isArray(rawPaths)) {
+          return { kind: "error", error: "paths must be an array", code: "BAD_ARGS" };
+        }
+        const paths = rawPaths
+          .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
+          .slice(0, 10);
+        if (paths.length === 0) {
+          return { kind: "error", error: "paths must contain at least one string", code: "BAD_ARGS" };
+        }
+        const entries: MultiReadEntry[] = await Promise.all(
+          paths.map(async (p): Promise<MultiReadEntry> => {
+            try {
+              const r = await readFile(sandbox, p);
+              return {
+                path: r.path,
+                content: r.content,
+                byteLength: r.byteLength,
+                truncated: r.truncated,
+              };
+            } catch (err) {
+              if (err instanceof SandboxError) {
+                return {
+                  path: p,
+                  byteLength: 0,
+                  truncated: false,
+                  error: err.message,
+                  errorCode: err.code,
+                };
+              }
+              return {
+                path: p,
+                byteLength: 0,
+                truncated: false,
+                error: err instanceof Error ? err.message : "unknown",
+                errorCode: "READ_FAILED",
+              };
+            }
+          }),
+        );
+        const totalBytes = entries.reduce((acc, e) => acc + e.byteLength, 0);
+        const errors = entries.filter((e) => e.error).length;
+        return { kind: "multi_read", result: { files: entries, totalBytes, errors } };
       }
       case "write_file": {
         const r = await writeFile(
@@ -426,6 +487,23 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
       type: "object",
       properties: { path: { type: "string", description: "Workspace-relative path" } },
       required: ["path"],
+    },
+  },
+  {
+    name: "multi_read",
+    description:
+      "Read up to 10 files in one call. Prefer over `read_file` whenever you already know 2+ files you need to look at (e.g. after `glob_files` or `find_symbol`) — it saves LLM round-trips, which are the slowest part of a coding session. Per-file errors are captured inline and don't abort the whole call.",
+    parameters: {
+      type: "object",
+      properties: {
+        paths: {
+          type: "array",
+          items: { type: "string" },
+          description: "Up to 10 workspace-relative paths to read.",
+          maxItems: 10,
+        },
+      },
+      required: ["paths"],
     },
   },
   {

@@ -385,6 +385,101 @@ describe("Round B1 — codeChatExecutor", () => {
         expect(r.result.files).not.toContain("src/skip.ts");
       }
     });
+
+    // Build-loop Pass 2: multi_read dispatcher
+    it("multi_read reads a batch of files in one call", async () => {
+      await writeFile(sandboxRW(), "a.txt", "alpha");
+      await writeFile(sandboxRW(), "b.txt", "bravo");
+      await writeFile(sandboxRW(), "c.txt", "charlie");
+      const r = await dispatchCodeTool(
+        { name: "multi_read", args: { paths: ["a.txt", "b.txt", "c.txt"] } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("multi_read");
+      if (r.kind === "multi_read") {
+        expect(r.result.files).toHaveLength(3);
+        expect(r.result.errors).toBe(0);
+        expect(r.result.files.map((f) => f.content)).toEqual([
+          "alpha",
+          "bravo",
+          "charlie",
+        ]);
+        expect(r.result.totalBytes).toBe(5 + 5 + 7);
+      }
+    });
+
+    it("multi_read captures per-file errors inline (doesn't abort)", async () => {
+      await writeFile(sandboxRW(), "real.txt", "here");
+      const r = await dispatchCodeTool(
+        {
+          name: "multi_read",
+          args: { paths: ["real.txt", "missing.txt"] },
+        },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("multi_read");
+      if (r.kind === "multi_read") {
+        expect(r.result.files).toHaveLength(2);
+        expect(r.result.errors).toBe(1);
+        const missing = r.result.files.find((f) => f.path === "missing.txt");
+        expect(missing?.error).toBeTruthy();
+        expect(missing?.errorCode).toBe("NOT_FOUND");
+        expect(missing?.content).toBeUndefined();
+        const real = r.result.files.find((f) => f.path.endsWith("real.txt"));
+        expect(real?.content).toBe("here");
+      }
+    });
+
+    it("multi_read caps at 10 files", async () => {
+      // Create 12 files, pass all 12 paths, expect only first 10 read
+      const paths: string[] = [];
+      for (let i = 0; i < 12; i++) {
+        await writeFile(sandboxRW(), `file-${i}.txt`, `content ${i}`);
+        paths.push(`file-${i}.txt`);
+      }
+      const r = await dispatchCodeTool(
+        { name: "multi_read", args: { paths } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("multi_read");
+      if (r.kind === "multi_read") {
+        expect(r.result.files).toHaveLength(10);
+      }
+    });
+
+    it("multi_read rejects non-array paths", async () => {
+      const r = await dispatchCodeTool(
+        { name: "multi_read", args: { paths: "not-an-array" as unknown as string[] } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("multi_read rejects empty path list", async () => {
+      const r = await dispatchCodeTool(
+        { name: "multi_read", args: { paths: [] } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("multi_read filters out non-string + empty entries", async () => {
+      await writeFile(sandboxRW(), "ok.txt", "ok");
+      const r = await dispatchCodeTool(
+        {
+          name: "multi_read",
+          args: { paths: ["ok.txt", "", null, undefined, 42] as unknown as string[] },
+        },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("multi_read");
+      if (r.kind === "multi_read") {
+        expect(r.result.files).toHaveLength(1);
+        expect(r.result.files[0].path).toContain("ok.txt");
+      }
+    });
   });
 
   describe("executeCodeChat multi-turn", () => {

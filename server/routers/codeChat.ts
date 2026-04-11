@@ -184,6 +184,7 @@ function setRoadmap(next: Roadmap): Roadmap {
 const CodeToolCallSchema = z.object({
   name: z.enum([
     "read_file",
+    "multi_read",
     "write_file",
     "edit_file",
     "list_directory",
@@ -599,6 +600,7 @@ export const codeChatRouter = router({
 
       const READ_ONLY_TOOLS = new Set([
         "read_file",
+        "multi_read", // Build-loop Pass 2: batch read
         "list_directory",
         "grep_search",
         "glob_files", // Build-loop Pass 1: Claude-Code Glob parity
@@ -634,6 +636,7 @@ export const codeChatRouter = router({
         "Work step-by-step. Use the `code_list_directory` and `code_read_file` tools to explore the codebase",
         "before answering questions about it. Use `code_grep_search` to find specific symbols or strings.",
         "Use `code_glob_files` to find files by pattern (e.g. `src/**/*.tsx`) — faster than `list_directory` when you know the filename shape.",
+        "Use `code_multi_read` to read up to 10 files in one call whenever you already know 2+ files you need to inspect.",
         "Use `code_find_symbol` to jump to a function/class/interface definition by name.",
         allowMutations
           ? "You also have `code_write_file`, `code_edit_file`, and `code_run_bash` available — use them sparingly and explain every change."
