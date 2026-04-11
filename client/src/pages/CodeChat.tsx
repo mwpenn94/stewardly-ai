@@ -27,7 +27,7 @@ import {
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
-  BookOpen, History, StickyNote, Brain,
+  BookOpen, History, StickyNote, Brain, BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -133,6 +133,7 @@ import {
   type MemoryEntry,
 } from "@/components/codeChat/agentMemory";
 import SymbolNavigatorPopover from "@/components/codeChat/SymbolNavigatorPopover";
+import SessionAnalyticsPopover from "@/components/codeChat/SessionAnalyticsPopover";
 import {
   loadHistory,
   saveHistory,
@@ -445,6 +446,9 @@ function CodeChatInterface() {
 
   // Pass 242: symbol navigator (Ctrl+T / Cmd+T)
   const [symbolNavOpen, setSymbolNavOpen] = useState(false);
+
+  // Pass 243: session analytics popover
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const handleScratchpadInsert = useCallback((text: string) => {
     setInput((prev) => {
       if (!prev) return text;
@@ -1263,6 +1267,16 @@ function CodeChatInterface() {
         >
           <Sparkles className="w-3 h-3" /> Symbols
         </button>
+        {messages.length > 0 && (
+          <button
+            onClick={() => setAnalyticsOpen(true)}
+            className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Session analytics"
+            title="Session analytics — cost, model, tool, and I/O breakdown"
+          >
+            <BarChart3 className="w-3 h-3" /> Stats
+          </button>
+        )}
         <button
           onClick={() => setMemoryOpen(true)}
           className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
@@ -1971,6 +1985,12 @@ function CodeChatInterface() {
       <SymbolNavigatorPopover
         open={symbolNavOpen}
         onClose={() => setSymbolNavOpen(false)}
+      />
+      <SessionAnalyticsPopover
+        open={analyticsOpen}
+        onClose={() => setAnalyticsOpen(false)}
+        messages={messages}
+        onJumpToMessage={scrollToMessage}
       />
       {/* Pass 233: bookmarks popover */}
       {bookmarksOpen && (
