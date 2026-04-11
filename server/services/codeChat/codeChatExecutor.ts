@@ -44,6 +44,7 @@ export type CodeToolName =
   | "run_bash"
   | "update_todos"
   | "find_symbol"
+  | "web_fetch"
   | "finish";
 
 export interface CodeToolCall {
@@ -70,6 +71,16 @@ export interface SymbolLookupHit {
   exported: boolean;
 }
 
+export interface WebFetchLookupResult {
+  url: string;
+  status: number;
+  contentType: string;
+  content: string;
+  byteLength: number;
+  truncated: boolean;
+  durationMs: number;
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -79,6 +90,7 @@ export type CodeToolResult =
   | { kind: "bash"; result: BashResult }
   | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
+  | { kind: "webfetch"; result: WebFetchLookupResult }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -216,6 +228,27 @@ export async function dispatchCodeTool(
             truncated: raw.length > limit,
           },
         };
+      }
+      case "web_fetch": {
+        // Pass 250: fetch a URL and return HTML-converted markdown.
+        // The sandbox here is the webFetch module itself — it
+        // enforces scheme/host/size limits independently. The tool
+        // is read-only as far as the filesystem is concerned, so
+        // it's exposed to non-admin users too.
+        const { fetchUrl, WebFetchError } = await import("./webFetch");
+        const url = String(call.args.url ?? "").trim();
+        if (!url) {
+          return { kind: "error", error: "url required", code: "BAD_ARGS" };
+        }
+        try {
+          const result = await fetchUrl(url);
+          return { kind: "webfetch", result };
+        } catch (err) {
+          if (err instanceof WebFetchError) {
+            return { kind: "error", error: err.message, code: err.code };
+          }
+          throw err;
+        }
       }
       case "update_todos": {
         // Validate + normalize the todos array. No file system side
@@ -450,6 +483,21 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
       type: "object",
       properties: { command: { type: "string" } },
       required: ["command"],
+    },
+  },
+  {
+    name: "web_fetch",
+    description:
+      "Fetch a public URL (http/https only) and return its content as LLM-friendly markdown. HTML is converted to plaintext-ish markdown, JSON is pretty-printed, plain text passes through. Use this when the user asks about external docs, a library API, release notes, a stack overflow answer, or any other URL their question depends on. The response is capped at 32KB and loopback/private ranges are blocked.",
+    parameters: {
+      type: "object",
+      properties: {
+        url: {
+          type: "string",
+          description: "Full http:// or https:// URL to fetch",
+        },
+      },
+      required: ["url"],
     },
   },
   {

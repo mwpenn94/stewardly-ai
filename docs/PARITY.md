@@ -6,11 +6,11 @@
 > also write to this file — always re-read before editing and use the
 > Reconciliation Log to resolve conflicts.
 
-**Last updated:** 2026-04-11 (Pass 249 — hooks system, committed)
-**Current composite score:** 9.3 / 10 (self-assessed, conservative)
-**Passes completed:** 249+ cumulative across all platforms
-**Test surface:** codeChat 539 passing across 23 client files + 234 server tests = **773 codeChat-specific tests** (+62 new this pass)
-**Full suite:** 3,840 passing across 142 files (baseline 3,103/109 — 14 pre-existing env-dependent failing files unchanged)
+**Last updated:** 2026-04-11 (Pass 250 — WebFetch tool)
+**Current composite score:** 9.4 / 10 (self-assessed, conservative)
+**Passes completed:** 250+ cumulative across all platforms
+**Test surface:** codeChat **810 passing across 34 files** (+37 new this pass)
+**Full suite:** 3,840+ passing (baseline 3,103/109 — 14 pre-existing env-dependent failing files unchanged)
 
 ---
 
@@ -34,7 +34,7 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 |  | find_symbol (Go to Symbol) | ✅ | ✅ | 9 | Pass 242 — regex index, 8 kinds, 4-tier ranking |
 |  | update_todos | ✅ | ✅ | 9 | Pass 237 |
 |  | WebSearch | ✅ | 🔶 | 4 | Available at platform level (tavily/brave) but not in Code Chat tool definitions |
-|  | WebFetch | ✅ | ❌ | 0 | Not wired into Code Chat |
+|  | WebFetch | ✅ | ✅ | 9 | Pass 250 — URL fetch + HTML→markdown, SSRF-guarded (loopback/RFC-1918/IMDS blocked), 2MB/32KB caps |
 |  | NotebookEdit (.ipynb) | ✅ | ❌ | 0 | Not implemented |
 |  | @file mention expansion | ✅ | ✅ | 9 | Pass 206 — auto-inlines file contents |
 |  | MCP server tool provider | ✅ | 🔶 | 4 | Stewardly has MCP server at platform level but Code Chat doesn't consume external MCP servers as tools |
@@ -92,13 +92,14 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 
 ---
 
-## Current focus areas (Pass 249+)
+## Current focus areas (Pass 250+)
 
-1. **Hooks system (in progress)** — User-configurable pre/post tool hooks
-2. **Custom subagents** — Agent definition files + inline spawn
-3. **WebFetch / WebSearch tools** — Add to Code Chat tool definitions
-4. **MCP tool provider** — Consume external MCP servers as additional tools
-5. **NotebookEdit** — Jupyter notebook editing tool
+1. ~~**Hooks system**~~ — ✅ Pass 249
+2. ~~**WebFetch tool**~~ — ✅ Pass 250
+3. **WebSearch tool** — Add to Code Chat tool definitions (platform infra already exists)
+4. **Custom subagents** — Agent definition files + inline spawn
+5. **MCP tool provider** — Consume external MCP servers as additional tools
+6. **NotebookEdit** — Jupyter notebook editing tool
 
 ---
 
@@ -106,7 +107,8 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 
 | Pass | Date | Feature | Tests |
 |---|---|---|---|
-| 249 | 2026-04-11 | Hooks system (PreToolUse/PostToolUse/SessionStart/UserPromptSubmit) | +37 |
+| 250 | 2026-04-11 | WebFetch tool (URL → markdown, SSRF-guarded) | +37 |
+| 249 | 2026-04-11 | Hooks system (PreToolUse/PostToolUse/SessionStart/UserPromptSubmit) | +62 |
 | 248 | 2026-04-11 | Action palette (⌘K unified launcher) | +21 |
 | 247 | 2026-04-11 | Circular dependency detector (Tarjan's SCC) | +12 |
 | 246 | 2026-04-11 | TODO/FIXME marker scanner tab | +26 |
