@@ -3,15 +3,15 @@
 > Always re-read immediately before writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11T00:00:04Z by chat:optimize-crud-parity-satL3/pass-5
+- Last updated: 2026-04-11T00:00:05Z by chat:optimize-crud-parity-satL3/pass-6
 - Comparable target: "best-in-class dynamic CRUD for any integration/pipeline/ingestion process, even where documentation or vendor support is limited or nonexistent but data is available from sources — plus continuous improvement across Code Chat, AI chat financial force multipliers, learning/training/onboarding, CRM/marketing coordination, workflow, and agentic AI/browser/device automation"
 - Core purpose: Give Stewardly the ability to dynamically CRUD any integration/pipeline/ingestion process and turn the resulting data fabric into a continuous-improvement force multiplier across every Stewardly surface
 - Target user: Platform admin / advisor-tier developer / power client who needs to wire a new data source without writing a schema migration or waiting on a vendor SDK
 - Success metric: Time from "I have a URL/sample/cURL and know the data is there" → "live, scheduled, personalized ingestion flowing into the 5-layer intelligence stack" → <10 min (documented), <30 min (undocumented), <60 min (portal-only)
-- Current parity score: 52% (composite 5.2 / 10 — Pass 5 found 18 novel continuous-improvement seam findings)
-- Passes completed: 5
-- Last reconciliation: 2026-04-11T00:00:04Z (conflicts: 0)
-- Active branches: 2 of 5 (A eliminated via Sequential Halving round 1; see Pass 5 Branch Resolution)
+- Current parity score: 50% (composite 5.0 / 10 — Pass 6 future-state pass exposed scale + regulatory + competitive exposure)
+- Passes completed: 6
+- Last reconciliation: 2026-04-11T00:00:05Z (conflicts: 0)
+- Active branches: 2 of 5 (B + E; A/C/D shelved)
 
 ## Pillars (comparable target decomposition)
 1. **Dynamic CRUD for integrations / pipelines / ingestion** (documented, undocumented, portal-only)
@@ -361,6 +361,94 @@ Sequential Halving Round 2 will evaluate B vs E on implementation spike
 results from Pass 4's pasteable implementation prompt (if that prototype
 ships before the next Depth pass).
 
+## Pass 6 Future-State Findings (10x scale + regulatory + competitive)
+
+Future-State projects forward along six axes: 10x user/connection/job volume,
+10x provider count, regulatory tightening (EU AI Act, SEC/CFPB, Rule 17a-4),
+competitive pressure (Fivetran/Airbyte/Arize/LangSmith), platform evolution
+(MCP v2, durable-execution platforms, browser-automation commodification),
+and data modality expansion (video, audio earnings calls, structured
+document AI). Each X-series finding projects what will break, or what
+will become table-stakes, in the 12–36 month horizon.
+
+| ID | Axis | Finding | Horizon | Severity | Action |
+|---|---|---|---|---|---|
+| X1 | 10x provider count | `seedIntegrations.ts` is a monolithic seed file. At 10x provider count (~200 providers), it becomes unmaintainable, merge-conflict-prone, and slow to boot-time parse. Need per-provider directory structure + lazy seed | 12mo | med | Restructure `server/services/integrations/providers/<slug>/{seed.ts, healthSpec.ts, fieldHints.ts}` |
+| X2 | 10x connection count | `listConnections` at `integrations.ts` L80 does `db.select().from(integrationConnections)` **unfiltered** and filters in JS. O(N) per request. Breaks at ~10K connections. SQL WHERE clauses needed | 12mo | high | Push filters into the SQL query; add (ownershipTier, userId, organizationId) composite index |
+| X3 | 10x job frequency | `scheduler.ts` is in-process cron. At 37 current jobs × 10x = 370 jobs, single-process ticking becomes unreliable. Missed ticks, worker contention, deploy-time job loss. Need distributed queue (pg-boss on TiDB, BullMQ on Redis, or Temporal) | 18mo | high | Migrate to durable-execution platform |
+| X4 | Regulatory | **EU AI Act Article 6** classifies AI systems used in financial advice as **high-risk**, requiring formal QMS, post-market monitoring, transparency (disclose AI costs to users), and human oversight. We have parts (graduated autonomy, improvement loops) but no formal QMS integration and no per-response cost transparency to users | 12mo (2027 enforcement) | critical | Build a formal AI QMS layer: risk register, incident log, model-change audit trail |
+| X5 | Platform evolution (MCP v2) | Anthropic MCP v2 roadmap extends runtime tool registration + marketplace discovery. Our `integration_providers` + Code Chat tools should be reimagined as MCP servers with dynamic mount. Beyond-parity: ship an MCP-native integration layer. Already have 6-tool MCP server at `/mcp/sse` | 6-12mo | med (opportunity) | Refactor to make every provider ingestible as an MCP server |
+| X6 | Browser automation forward | Browserbase / Browserless / E2B are commodifying server-side headless browsers. Branch D (Provider-as-Playwright-Trace) was shelved as too expensive; in 12mo it becomes cheap. **Un-shelve D for re-evaluation in Pass 8+** | 12mo | med | Defer reconsideration to Pass 8 |
+| X7 | Token cost deflation | LLM token costs dropping ~50%/yr. Branch C (Provider-as-LLM-Loop) was shelved as too expensive; in 18-36mo the cost arbitrage reverses for low-frequency sources. **Un-shelve C for re-evaluation in Pass 10+** | 18-36mo | low (opportunity) | Defer reconsideration |
+| X8 | Scale — ingested_records | At 1M records/day, single `ingested_records` table becomes a perf problem. Need monthly partitioning, archival to cold storage, and read replicas for queries. TiDB supports partitioning natively — just not used today | 18mo | high | Partition + archive policy |
+| X9 | Scale — scrape dedup | `web_scrape_results` has a `content_hash` column but **no index on it**. At 100K/day, dedup scans become full-table. Add index + composite (source, hash) | 6mo | med | `CREATE INDEX idx_web_scrape_hash ON web_scrape_results(content_hash)` |
+| X10 | Attacker forward | Prompt injection via HTML/PDF content is escalating. A24 (Pass 3) addressed one surface; the broader problem needs (a) injection-risk scoring as an LLM pre-screen, (b) output quarantine queue for suspect extractions, (c) per-source injection-attempt budget so a poisoned feed auto-pauses | 6-12mo | high | Build `extractionSafetyScorer` + quarantine queue |
+| X11 | Compliance forward | SEC / CFPB are tightening AI advice audit requirements. Per-recommendation trails need to link to the **specific ingestion events** that contributed. Today `compliance_reviews` doesn't carry the ingestion job id that sourced the underlying data. Regulators will ask "show me the scrape that produced this advice" — we can't | 6-12mo | critical | Add `ingestionJobId[]` provenance field to compliance_reviews |
+| X12 | Cost forward | Current LLM + scraper budget is unbounded per provider. At 10x scale a runaway extractor burns $10K+ in hours. Need per-provider monthly cap and circuit breaker at cost threshold, not just error threshold. Extends A22 (cost cap per call) to cost cap per provider per period | 12mo | high | `integration_connections.monthlyCostBudget` column + cron enforcement |
+| X13 | Competitive forward | Braintrust / Humanloop / LangSmith / Arize ship "model observability" — extraction drift tracking, eval dashboards, prompt A/B. Our OpenTelemetry spans are a foundation but no vendor-comparable UI. Closing this gap is table-stakes in 6-12 months | 12mo | high | Either build native observability UI or integrate with one of the vendors |
+| X14 | Platform evolution (durable execution) | Vercel AI SDK / Modal / Inngest are standardizing durable-execution for LLM workflows. Our scheduler is in-process; durable workflows would make every pipeline **resumable, retriable, observable by default** — a massive robustness win | 12mo | high | Evaluate Inngest or Temporal; pilot on one gov pipeline |
+| X15 | Data modality forward | Specialized financial document understanding models (e.g., OpenAI's structured-extract models, fine-tuned Claude for SEC filings) are emerging. A "video earnings call" or "audio earnings call" becomes an ingestable source. Our architecture assumes text + JSON | 18mo | low (opportunity) | Add `multimodal_source` record type; pilot audio earnings call ingestion |
+| X16 | Regulatory — SEC Rule 17a-4 retention | Rule 17a-4 requires 6-year retention with specific record types. `ingested_records` has no per-record retention policy. Today a 2-week cleanup could silently delete regulated records | 6mo | critical | Add `retentionUntil` column + retention-policy-per-recordType lookup |
+| X17 | Beyond-parity — per-user personalization of ingested data | Most integration platforms stop at "data in warehouse". Stewardly can go further: ingested records feed the 5-layer personalization shard, Chat, learning, workflow, calculators. This is still the biggest beyond-parity moat but 0% implemented today | Now | high opportunity | Wire `ingested_records` into existing `memoryEngine` + `contextualLLM` context assembly |
+| X18 | Distribution forward | AWS Marketplace / GCP Marketplace / Snowflake Data Exchange are becoming primary distribution for B2B data feeds. A marketplace-listed feed should be ingestible with minimal config (auth + endpoint already vetted by the marketplace) | 18mo | low (opportunity) | Ship a `sourceType: "marketplace_listing"` with one-click onboarding for pre-vetted providers |
+
+### Future-state self-consistency
+- X4, X11, X16 are **regulatory time bombs**. All three are blocked on the same gap: per-record lineage linking ingestion events to downstream recommendations. This is the single highest-leverage future-state fix because it unblocks 3 separate regulatory requirements at once.
+- X6 and X7 both argue for **un-shelving** branches we eliminated too quickly. Schedule a Pass-8 branch reconsideration when implementation data becomes available.
+- X14 is the quiet big win: durable execution would fix half of Pass 2 and Pass 3 findings (A5, A6, A11, D6, D15, D24) as a byproduct of platform migration.
+
+## Custom Domain Passes (per CLAUDE.md)
+
+CLAUDE.md specifies three domain-specific audits that must run alongside
+v2 passes for client-facing features. Pass 6 executes them.
+
+### Compliance Pass
+- **SEC/FINRA automated-advice coverage:** Partial. Pass 3 A15 flagged
+  compliance-bypass in ingestion; A23 flagged recommendations sourced from
+  ingested regulatory feeds bypassing human-in-the-loop. Must fix both
+  before the recommendation layer can cite ingested data.
+- **17a-4 retention:** Pass 6 X16 — retention policy per record type not
+  implemented. Immediate compliance exposure.
+- **Record-keeping audit trail:** Partial. `compliance_reviews` exists but
+  doesn't link to source ingestion job (X11). Pass 6 identifies this as a
+  critical gap.
+- **Data privacy / PII:** PII hashing exists for leads only (G33). All
+  other record types carry raw PII through the extraction path, which is
+  a CCPA / GDPR risk. Broader PII classification needed.
+- **AML / KYC:** Out of scope for this parity assessment (handled by the
+  `compliance` router, not ingestion).
+
+**Compliance gap register:** A15, A17, A23, X4 (EU AI Act), X11, X16,
+G33 expansion. 7 items, 4 critical.
+
+### Fiduciary Pass
+- **Lowest-cost-equivalent check:** Not performed on ingested product data
+  today. If a new carrier provider ships a more expensive equivalent
+  product, the reco engine doesn't automatically flag it.
+- **Graduated autonomy on ingestion ops:** Blocked (F10). Ingestion
+  operations are not one of the 8 graduated-autonomy contexts.
+- **Visible conflicts:** No conflict registry on ingested records that
+  might present a conflict of interest (e.g., a "recommendation" from a
+  sponsored data feed).
+- **Client challenge path:** Clients cannot challenge a recommendation
+  derived from an ingested regulatory update — there's no "show me the
+  source" path in the UI from recommendation back to the ingestion job.
+- **Fiduciary alignment score:** 5/10 across ingestion-derived
+  recommendations today. Gap is large and urgent.
+
+### Cost Pass
+- **Token consumption per extraction:** Unbounded per call (A22). Per
+  provider per month: also unbounded (X12).
+- **Semantic cache hit rates:** `enrichmentCache` hits tracked but
+  reset-on-update bug (A18) makes the metric unreliable.
+- **Cost per interaction at 10x:** Projected to exceed $50K/month at 10x
+  current provider count + unbounded extraction. Immediate risk.
+- **Provider cost comparison for routing:** Not implemented. A single
+  Claude Opus call for schema extraction when Haiku would suffice.
+- **Cost projection model:** Needs to be built. Add a `cost_projections`
+  view that rolls up LLM + API costs per provider per month and projects
+  forward at current growth rate.
+
 ## Reconciliation Log (append-only)
 
 | Time | Pass | Action | Conflicts | Notes |
@@ -370,11 +458,13 @@ ships before the next Depth pass).
 | 2026-04-11T00:00:02Z | 3 | Adversarial findings append | 0 | Re-read before write; no concurrent writer. Added A1–A25 adversarial findings including 5 SEC-class issues (A9 multi-tenant leak, A15 compliance bypass, A17 SnapTrade consent, A20 public pipeline health enum, A21 SSRF pre-fix, A22 cost cap, A24 bash sandbox). Revised parity DOWN 58% → 54%. Self-consistency check flags Goodhart risk on "continuous improvement" claim (A12). |
 | 2026-04-11T00:00:03Z | 4 | Exploration branches append | 0 | Re-read before write; no concurrent writer. Added 5 architectural branches (A Provider-as-Code, B Provider-as-Data, C Provider-as-LLM-Loop, D Provider-as-Playwright-Trace, E Provider-as-Hybrid). A/B/E active, C/D shelved. Score unchanged (Exploration does not evaluate). Temperature bumped 0.45 → 0.65 for this pass, will decay on next convergent pass. |
 | 2026-04-11T00:00:04Z | 5 | Depth F-series + Sequential Halving round 1 | 0 | Re-read before write; no concurrent writer. Added F1–F18 continuous-improvement seam findings. Eliminated branch D via Sequential Halving round 1 (tied with A on 5.30, D lost tie-break). A shelved for compliance tracks. C shelved for one-shot use. Active: B + E. Parity revised DOWN 54% → 52%. Temperature decayed 0.65 → 0.50. |
+| 2026-04-11T00:00:05Z | 6 | Future-state X1-X18 + compliance/fiduciary/cost pass | 0 | Re-read before write; no concurrent writer. Added X1-X18 forward projections along 6 axes + compliance/fiduciary/cost custom domain pass. X6/X7 flag branches that should be un-shelved in later passes (browser automation commodity, token deflation). X4/X11/X16 are 3 regulatory requirements blocked on same gap (per-record lineage). Parity 52% → 50%. Temperature 0.50 → 0.40. |
 
 ## Changelog (append-only, most recent first)
 
 | Pass | Platform | Type | Score Δ | Summary |
 |---|---|---|---|---|
+| 6 | Claude Code | Future-State + custom domains | -0.20 | 18 forward projections (X1-X18) along 6 axes: 10x scale, regulatory (EU AI Act, SEC 17a-4), competitive (Fivetran/Arize), platform evolution (MCP v2, durable execution), data modality. Plus custom-domain Compliance/Fiduciary/Cost passes per CLAUDE.md. Major reveal: X4+X11+X16 (3 regulatory requirements) all blocked on the SAME gap — per-record lineage linking ingestion events to downstream recommendations. Highest-leverage fix in the parity doc. X6+X7 flag branches to un-shelve later (browser commodity, token deflation). Parity 52% → 50%. Temperature 0.50 → 0.40. |
 | 5 | Claude Code | Depth | -0.20 | 18 continuous-improvement seam findings (F1-F18). Major reveal: improvementLoops.ts exists but watches the wrong layer (F2). Event bus types are hardcoded union (F1) blocking integration events. Chat ReAct has no integration tools in its tool surface (F13). Code Chat autonomousCoding is blind to the integration registry (F7). Sequential Halving round 1 eliminated Branch D. Active: B + E. Parity 54% → 52%. Temperature 0.65 → 0.50. |
 | 4 | Claude Code | Exploration | +0.00 (branches generated, not evaluated) | Generated 5 architectural branches for dynamic CRUD. A/B/E active, C/D shelved. Temperature bumped 0.45 → 0.65 (will decay next pass). Core assumption challenged: "provider = row + code". Alternatives range from declarative JSON (B) to agent re-derivation every run (C) to browser replay (D) to hybrid fallback (E). No code changes. |
 | 3 | Claude Code | Adversarial | -0.40 | Added 25 adversarial findings (A1–A25). 5 critical SEC-class items: A9 multi-tenant insight leakage, A15 ingested content bypasses compliance pipeline, A17 SnapTrade no consent check, A20 public pipelineHealth enumerable, A21 SSRF pre-fix for future G5, A22 extraction cost cap missing, A24 run_bash no sandbox. Goodhart alert (A12) on "continuous improvement" claim. Parity 58% → 54%. No code changes. |
