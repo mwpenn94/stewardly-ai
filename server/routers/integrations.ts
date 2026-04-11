@@ -915,4 +915,40 @@ export const integrationsRouter = router({
       const accounts = await st.getUserAccounts(input.clientUserId);
       return { ...status, connections, accounts };
     }),
+
+  // ─── Dynamic CRUD Integrations: Schema Inference (Pass 1) ────────────
+  /**
+   * Infer a schema from arbitrary sample records. Use this when a third-party
+   * integration has limited or nonexistent documentation but you can get
+   * sample data out of it. Returns field types, semantic hints, primary key
+   * candidates, and suggested CRUD field roles.
+   */
+  inferSchema: protectedProcedure
+    .input(z.object({
+      records: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+      sourceName: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { inferSchema, suggestCrudMapping, summarizeSchema } = await import("../services/dynamicIntegrations/schemaInference");
+      const schema = inferSchema(input.records);
+      const crudMapping = suggestCrudMapping(schema);
+      const summary = summarizeSchema(schema);
+      return { schema, crudMapping, summary, sourceName: input.sourceName || null };
+    }),
+
+  /**
+   * Merge two already-inferred schemas (e.g. from two paginated sample
+   * batches). Exposed so wizards can progressively improve schema confidence
+   * as more sample data arrives.
+   */
+  mergeInferredSchemas: protectedProcedure
+    .input(z.object({
+      a: z.any(),
+      b: z.any(),
+    }))
+    .mutation(async ({ input }) => {
+      const { mergeSchemas, suggestCrudMapping, summarizeSchema } = await import("../services/dynamicIntegrations/schemaInference");
+      const schema = mergeSchemas(input.a, input.b);
+      return { schema, crudMapping: suggestCrudMapping(schema), summary: summarizeSchema(schema) };
+    }),
 });
