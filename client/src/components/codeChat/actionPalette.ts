@@ -110,6 +110,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "open:analytics", label: "Open session analytics", category: "popover", keywords: ["cost", "stats"] },
   { id: "open:audit", label: "Open tool audit", category: "popover", keywords: ["hooks", "rules", "safety", "compliance"] },
   { id: "open:references", label: "Find references", category: "popover", hint: "⇧F12", keywords: ["usages", "xrefs", "lookup"] },
+  { id: "open:checkpoints", label: "Open workspace checkpoints", category: "popover", keywords: ["snapshot", "rollback", "stash", "restore"] },
   { id: "open:shortcuts", label: "Open keyboard shortcuts", category: "popover", hint: "?", keywords: ["help"] },
   { id: "open:search", label: "Search command history", category: "popover", hint: "⌃R", keywords: ["reverse"] },
   // Workspace actions

@@ -28,6 +28,7 @@ import {
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
   BookOpen, History, StickyNote, Brain, BarChart3,
+  Camera,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -141,6 +142,17 @@ import TodoMarkerPanel from "@/components/codeChat/TodoMarkerPanel";
 import DiagnosticsPanel from "@/components/codeChat/DiagnosticsPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import ToolAuditPopover from "@/components/codeChat/ToolAuditPopover";
+import CheckpointsPopover from "@/components/codeChat/CheckpointsPopover";
+import {
+  loadCheckpoints,
+  saveCheckpoints,
+  createCheckpoint,
+  addCheckpoint as addCheckpointPure,
+  removeCheckpoint as removeCheckpointPure,
+  renameCheckpoint as renameCheckpointPure,
+  deriveStats as deriveCheckpointStats,
+  type Checkpoint as WorkspaceCheckpoint,
+} from "@/components/codeChat/checkpoints";
 import AnsiOutput from "@/components/codeChat/AnsiOutput";
 import { hasAnsi } from "@/components/codeChat/ansiParser";
 import {
@@ -564,6 +576,11 @@ function CodeChatInterface() {
   const [referencesOpen, setReferencesOpen] = useState(false);
   const [referencesQuery, setReferencesQuery] = useState("");
 
+  // Pass 253: workspace checkpoints (named snapshots for rollback)
+  const [checkpoints, setCheckpoints] = useState<WorkspaceCheckpoint[]>(() => loadCheckpoints());
+  useEffect(() => { saveCheckpoints(checkpoints); }, [checkpoints]);
+  const [checkpointsOpen, setCheckpointsOpen] = useState(false);
+
   // Pass 249: tool audit rules + trail
   const [auditState, setAuditState] = useState<AuditState>(() => loadAuditState());
   useEffect(() => { saveAuditState(auditState); }, [auditState]);
@@ -645,6 +662,9 @@ function CodeChatInterface() {
         case "references":
           setReferencesQuery("");
           setReferencesOpen(true);
+          break;
+        case "checkpoints":
+          setCheckpointsOpen(true);
           break;
         case "shortcuts":
           setShortcutsOpen(true);
@@ -973,6 +993,47 @@ function CodeChatInterface() {
       });
     },
     [sendMessage, user, allowMutations, maxIterations, modelOverride, enabledTools, projectInstructionsOn, memoryOverlay],
+  );
+
+  // Pass 253: save / restore workspace checkpoints
+  const handleSaveCheckpoint = useCallback(
+    (name: string, note?: string) => {
+      const cp = createCheckpoint(
+        name,
+        {
+          messages: messages as unknown as unknown[],
+          editHistory,
+          runConfig: {
+            allowMutations,
+            maxIterations,
+            modelOverride,
+            enabledTools,
+            currentSessionId,
+          },
+        },
+        note,
+      );
+      setCheckpoints((prev) => addCheckpointPure(prev, cp));
+      toast.success(`Checkpoint saved: "${cp.meta.name}"`);
+    },
+    [messages, editHistory, allowMutations, maxIterations, modelOverride, enabledTools, currentSessionId],
+  );
+
+  const handleRestoreCheckpoint = useCallback(
+    (cp: WorkspaceCheckpoint) => {
+      loadMessages(cp.payload.messages as unknown as CodeChatMessage[]);
+      setEditHistory(cp.payload.editHistory as EditHistoryState);
+      const rc = cp.payload.runConfig;
+      if (typeof rc.allowMutations === "boolean") setAllowMutations(rc.allowMutations);
+      if (typeof rc.maxIterations === "number") setMaxIterations(rc.maxIterations);
+      if (typeof rc.modelOverride === "string") setModelOverride(rc.modelOverride);
+      if (Array.isArray(rc.enabledTools)) setEnabledTools(rc.enabledTools);
+      if (typeof rc.currentSessionId === "string" || rc.currentSessionId === null) {
+        setCurrentSessionId(rc.currentSessionId ?? null);
+      }
+      toast.success(`Restored checkpoint "${cp.meta.name}"`);
+    },
+    [loadMessages],
   );
 
   // Pass 220: fork conversation at a specific message
@@ -1529,6 +1590,22 @@ function CodeChatInterface() {
             <BarChart3 className="w-3 h-3" /> Stats
           </button>
         )}
+        <button
+          onClick={() => setCheckpointsOpen(true)}
+          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
+            checkpoints.length > 0
+              ? "border-accent/40 bg-accent/5 text-accent"
+              : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Workspace checkpoints"
+          title={
+            checkpoints.length > 0
+              ? `${checkpoints.length} checkpoint${checkpoints.length === 1 ? "" : "s"} saved`
+              : "Workspace checkpoints (none saved)"
+          }
+        >
+          <Camera className="w-3 h-3" /> {checkpoints.length > 0 ? checkpoints.length : "Checkpoint"}
+        </button>
         {(() => {
           const flagged = auditSummary.byVerdict.warn + auditSummary.byVerdict.block;
           return (
@@ -2275,6 +2352,20 @@ function CodeChatInterface() {
         onClose={() => setAuditOpen(false)}
         state={auditState}
         onChange={setAuditState}
+      />
+      <CheckpointsPopover
+        open={checkpointsOpen}
+        onClose={() => setCheckpointsOpen(false)}
+        checkpoints={checkpoints}
+        currentStats={deriveCheckpointStats(messages as any, editHistory as any)}
+        onSave={handleSaveCheckpoint}
+        onRestore={handleRestoreCheckpoint}
+        onRename={(id, name, note) =>
+          setCheckpoints((prev) => renameCheckpointPure(prev, id, name, note))
+        }
+        onDelete={(id) =>
+          setCheckpoints((prev) => removeCheckpointPure(prev, id))
+        }
       />
       {/* Pass 233: bookmarks popover */}
       {bookmarksOpen && (
