@@ -16,6 +16,7 @@ import {
   renameSession,
   autoName,
   searchSessions,
+  aggregateSessions,
   type SessionLibrary,
   type SessionSnapshot,
   type SessionSearchHit,
@@ -60,6 +61,8 @@ export default function SessionsLibraryPopover({
     () => searchSessions(library, searchQuery, 50),
     [library, searchQuery],
   );
+  // Pass 226: aggregated library stats
+  const stats = useMemo(() => aggregateSessions(library), [library]);
 
   // Reload from storage when the popover opens so cross-tab changes
   // show up.
@@ -137,10 +140,59 @@ export default function SessionsLibraryPopover({
         <h2 className="font-heading text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
           <BookMarked className="h-4 w-4 text-accent" /> Saved sessions
         </h2>
-        <p className="text-[11px] text-muted-foreground mb-4">
+        <p className="text-[11px] text-muted-foreground mb-3">
           Snapshot the current conversation and switch between saved
           sessions. Stored in your browser (localStorage).
         </p>
+
+        {/* Pass 226: aggregate stats strip */}
+        {stats.totalSessions > 0 && (
+          <div className="mb-4 p-3 rounded-lg border border-border/40 bg-muted/10">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-mono tabular-nums">
+              <span>
+                <span className="text-foreground font-medium">
+                  {stats.totalSessions}
+                </span>{" "}
+                <span className="text-muted-foreground">sessions</span>
+              </span>
+              <span>
+                <span className="text-foreground font-medium">
+                  {stats.totalMessages}
+                </span>{" "}
+                <span className="text-muted-foreground">messages</span>
+              </span>
+              <span>
+                <span className="text-foreground font-medium">
+                  {stats.totalToolCalls}
+                </span>{" "}
+                <span className="text-muted-foreground">tool calls</span>
+              </span>
+              {stats.modelsUsed.length > 0 && (
+                <span>
+                  <span className="text-foreground font-medium">
+                    {stats.modelsUsed.length}
+                  </span>{" "}
+                  <span className="text-muted-foreground">models</span>
+                </span>
+              )}
+            </div>
+            {Object.keys(stats.toolCallsByKind).length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {Object.entries(stats.toolCallsByKind)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 6)
+                  .map(([kind, count]) => (
+                    <span
+                      key={kind}
+                      className="text-[9px] px-1.5 py-0.5 rounded-full border border-border/40 bg-background/60 font-mono text-muted-foreground"
+                    >
+                      {kind} {count}
+                    </span>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Save current */}
         <div className="mb-4 p-3 rounded-lg border border-border/40 bg-muted/20 space-y-2">

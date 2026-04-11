@@ -46,6 +46,17 @@ import {
   shouldCheckpoint,
   type SessionSnapshot,
 } from "@/components/codeChat/sessionLibrary";
+import {
+  loadPinned,
+  savePinned,
+  addPinned,
+  removePinned,
+  applyPinnedToMessage,
+} from "@/components/codeChat/pinnedFiles";
+import {
+  emptyChordState,
+  stepChord,
+} from "@/components/codeChat/keyChords";
 import ToolPermissionsPopover, {
   DEFAULT_ENABLED_TOOLS,
 } from "@/components/codeChat/ToolPermissionsPopover";
@@ -56,6 +67,10 @@ import {
   summarizeToolEvents,
   summaryChips,
 } from "@/components/codeChat/toolSummary";
+import {
+  extractGrepMatches,
+  groupMatchesByFile,
+} from "@/components/codeChat/grepMatches";
 import {
   exportConversationAsMarkdown,
   exportSingleMessageAsMarkdown,
@@ -135,6 +150,7 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
     <div className="space-y-1 my-2">
       {traces.map(t => {
         const diff = extractDiffFromTrace(t.toolName, t.rawPreview);
+        const grep = extractGrepMatches(t.toolName, t.rawPreview);
         return (
         <div key={t.step} className="border border-border/40 rounded-lg overflow-hidden bg-card/30">
           <button
@@ -151,6 +167,11 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
             {diff && (
               <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-emerald-500/50 text-emerald-500">
                 diff
+              </Badge>
+            )}
+            {grep && grep.matches.length > 0 && (
+              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-chart-3/50 text-chart-3">
+                {grep.matches.length} hit{grep.matches.length === 1 ? "" : "s"}
               </Badge>
             )}
             {t.durationMs != null && (
@@ -171,6 +192,8 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
                   heightClass="max-h-72"
                   hideGutter={false}
                 />
+              ) : grep ? (
+                <GrepResultView result={grep} />
               ) : t.observation && (
                 <pre className="text-[11px] bg-background/80 rounded p-2 overflow-x-auto max-h-60 font-mono whitespace-pre-wrap border border-border/30">
                   {t.observation.length > 3000 ? t.observation.slice(0, 3000) + "\n... (truncated)" : t.observation}
@@ -181,6 +204,65 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
         </div>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Grep result row view (Pass 225) ──────────────────────────────────
+//
+// Renders parsed grep matches as clickable per-line rows. Clicking a
+// hit dispatches a `codechat-open-file` custom event so the
+// FileBrowser (standalone component) can read the file at that line.
+
+function GrepResultView({
+  result,
+}: {
+  result: ReturnType<typeof extractGrepMatches>;
+}) {
+  if (!result) return null;
+  const groups = groupMatchesByFile(result.matches);
+  if (groups.length === 0) {
+    return (
+      <p className="text-[11px] text-muted-foreground italic">No matches.</p>
+    );
+  }
+  return (
+    <div className="rounded border border-border/40 max-h-60 overflow-auto bg-background/80">
+      {groups.map((group) => (
+        <div key={group.file} className="border-b border-border/20 last:border-b-0">
+          <div className="px-2 py-1 bg-muted/30 text-[10px] font-mono text-muted-foreground flex items-center justify-between">
+            <span className="truncate">{group.file}</span>
+            <span className="text-muted-foreground/60">
+              {group.matches.length} hit{group.matches.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          {group.matches.map((m, i) => (
+            <button
+              key={`${m.file}-${m.line}-${i}`}
+              type="button"
+              className="w-full text-left flex items-start gap-2 px-2 py-1 text-[10px] font-mono hover:bg-secondary/40 transition-colors"
+              onClick={() => {
+                window.dispatchEvent(
+                  new CustomEvent("codechat-open-file", {
+                    detail: { path: m.file, line: m.line },
+                  }),
+                );
+              }}
+              title={`Open ${m.file}:${m.line}`}
+            >
+              <span className="text-accent tabular-nums shrink-0 w-10 text-right">
+                {m.line}
+              </span>
+              <span className="truncate text-foreground/90">{m.text}</span>
+            </button>
+          ))}
+        </div>
+      ))}
+      {result.truncated && (
+        <p className="px-2 py-1 text-[10px] italic text-muted-foreground">
+          … results truncated
+        </p>
+      )}
     </div>
   );
 }
@@ -272,6 +354,27 @@ function CodeChatInterface() {
 
   // Pass 216: Ctrl+R command history search
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Pass 224: pinned working set of files
+  const [pinned, setPinned] = useState<string[]>(() => loadPinned());
+  useEffect(() => {
+    savePinned(pinned);
+  }, [pinned]);
+  const handleUnpin = useCallback((path: string) => {
+    setPinned((prev) => removePinned(prev, path));
+  }, []);
+  // Listen for pin events from the FileBrowser (decoupled via window
+  // event so FileBrowser stays a standalone component)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ path: string }>).detail;
+      if (detail?.path) {
+        setPinned((prev) => addPinned(prev, detail.path));
+      }
+    };
+    window.addEventListener("codechat-pin-file", handler);
+    return () => window.removeEventListener("codechat-pin-file", handler);
+  }, []);
 
   // Pass 219: gist export mutation
   const gistExportMutation = trpc.codeChat.exportToGist.useMutation();
@@ -545,14 +648,17 @@ function CodeChatInterface() {
     setHistoryIndex(-1);
     setInput("");
     setLastErrorBanner(null); // Pass 211: clear previous error on new send
-    await sendMessage(text, {
+    // Pass 224: inject pinned files as @-mentions so the server-side
+    // expander picks them up as auto-context
+    const messageWithPinned = applyPinnedToMessage(pinned, text);
+    await sendMessage(messageWithPinned, {
       allowMutations: isAdmin && allowMutations,
       maxIterations,
       model: modelOverride,
       enabledTools,
     });
     inputRef.current?.focus();
-  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD]);
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned]);
 
   const handleSlashSelect = useCallback((cmd: SlashCommand) => {
     // Pre-fill the input with the command so the user can type args
@@ -1044,6 +1150,34 @@ function CodeChatInterface() {
         </div>
       )}
 
+      {/* Pass 224: pinned files working set */}
+      {pinned.length > 0 && (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-border/30 bg-muted/10 text-[10px]">
+          <span className="text-muted-foreground font-mono shrink-0">
+            Pinned ({pinned.length}):
+          </span>
+          <div className="flex flex-wrap gap-1 min-w-0 flex-1">
+            {pinned.map((path) => (
+              <span
+                key={path}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border border-accent/40 bg-accent/5 text-accent font-mono max-w-[200px]"
+                title={path}
+              >
+                <span className="truncate">{path}</span>
+                <button
+                  type="button"
+                  onClick={() => handleUnpin(path)}
+                  className="text-muted-foreground hover:text-destructive shrink-0"
+                  aria-label={`Unpin ${path}`}
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Input area */}
       <div className="border-t border-border/40 p-3">
         <div className="flex gap-2 relative">
@@ -1165,10 +1299,75 @@ function CodeChatInterface() {
 // ─── Page Component ────────────────────────────────────────────────────────
 
 export default function CodeChatPage() {
+  const [activeTab, setActiveTab] = useState("chat");
+
+  // Pass 225 / 227: cross-component tab navigation via window events.
+  // Grep quick-jump dispatches `codechat-open-file` which switches to
+  // the Files tab and the FileBrowser (which re-mounts on tab switch)
+  // reads the pending open target from localStorage.
+  // Keyboard chord shortcuts (Pass 227) use `codechat-go-tab`.
+  useEffect(() => {
+    const openHandler = (e: Event) => {
+      const detail = (e as CustomEvent<{ path: string; line?: number }>).detail;
+      if (detail?.path) {
+        try {
+          localStorage.setItem(
+            "stewardly-codechat-pending-open",
+            JSON.stringify({ path: detail.path, line: detail.line ?? null }),
+          );
+        } catch { /* quota */ }
+        setActiveTab("files");
+      }
+    };
+    const goTabHandler = (e: Event) => {
+      const detail = (e as CustomEvent<{ tab: string }>).detail;
+      if (detail?.tab) setActiveTab(detail.tab);
+    };
+    window.addEventListener("codechat-open-file", openHandler);
+    window.addEventListener("codechat-go-tab", goTabHandler);
+    return () => {
+      window.removeEventListener("codechat-open-file", openHandler);
+      window.removeEventListener("codechat-go-tab", goTabHandler);
+    };
+  }, []);
+
+  // Pass 227: keyboard chord shortcuts (g c / g f / g r / g d / g h / g w / g j)
+  const chordStateRef = useRef(emptyChordState());
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Ignore when typing inside an editable field — the user might
+      // be pressing `g` as part of their prose
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      // Only alphanumeric single-key presses (no modifiers)
+      if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) return;
+      const result = stepChord(chordStateRef.current, e.key, Date.now());
+      if (result.kind === "pending") {
+        chordStateRef.current = result.next;
+      } else if (result.kind === "match") {
+        e.preventDefault();
+        chordStateRef.current = result.next;
+        setActiveTab(result.match.tab);
+        toast.info(`→ ${result.match.label}`);
+      } else if (result.kind === "reset") {
+        chordStateRef.current = result.next;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   return (
     <AppShell title="Code Chat">
       <div className="max-w-6xl mx-auto">
-        <Tabs defaultValue="chat">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="border-b border-border/40 px-4 pt-2">
             <TabsList className="bg-transparent">
               <TabsTrigger value="chat" className="gap-1.5">
@@ -1273,6 +1472,24 @@ function FileBrowser() {
       toast.error(`read failed: ${result.error}`);
     }
   };
+
+  // Pass 225: honor a pending-open target (grep quick-jump) on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("stewardly-codechat-pending-open");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { path?: string; line?: number | null };
+      if (parsed?.path) {
+        localStorage.removeItem("stewardly-codechat-pending-open");
+        onRead(parsed.path);
+        if (parsed.line) {
+          toast.info(`Line ${parsed.line} in ${parsed.path}`);
+        }
+      }
+    } catch { /* malformed */ }
+    // Intentionally run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSave = async () => {
     if (!fileContent) return;
@@ -1384,6 +1601,25 @@ function FileBrowser() {
                 {fileContent?.path ?? "No file selected"}
               </span>
             </div>
+            {fileContent && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent("codechat-pin-file", {
+                      detail: { path: fileContent.path },
+                    }),
+                  );
+                  toast.success(`Pinned ${fileContent.path}`);
+                }}
+                className="h-7 text-[10px] shrink-0"
+                title="Pin file to working set (auto-inject into every prompt)"
+                aria-label="Pin file to working set"
+              >
+                <BookMarked className="h-3 w-3 mr-1" /> Pin
+              </Button>
+            )}
             {fileContent && isAdmin && (
               <div className="flex items-center gap-1 shrink-0">
                 {editing ? (

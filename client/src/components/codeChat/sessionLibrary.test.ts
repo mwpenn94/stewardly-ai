@@ -14,6 +14,7 @@ import {
   forkMessagesAt,
   searchSessions,
   shouldCheckpoint,
+  aggregateSessions,
   type SessionSnapshot,
 } from "./sessionLibrary";
 import type { CodeChatMessage } from "@/hooks/useCodeChatStream";
@@ -340,6 +341,101 @@ describe("shouldCheckpoint", () => {
   it("returns false for everyN <= 0 (disabled)", () => {
     expect(shouldCheckpoint(mkMsgs(100), state(0), 0)).toBe(false);
     expect(shouldCheckpoint(mkMsgs(100), state(0), -1)).toBe(false);
+  });
+});
+
+describe("aggregateSessions", () => {
+  it("returns zero stats for empty library", () => {
+    const s = aggregateSessions(emptyLibrary());
+    expect(s.totalSessions).toBe(0);
+    expect(s.totalMessages).toBe(0);
+    expect(s.oldestAt).toBeNull();
+    expect(s.newestAt).toBeNull();
+    expect(s.modelsUsed).toEqual([]);
+  });
+
+  it("counts sessions and messages across the library", () => {
+    let lib = emptyLibrary();
+    lib = upsertSession(lib, {
+      id: "a",
+      name: "A",
+      createdAt: 100,
+      updatedAt: 200,
+      messages: [
+        { id: "m1", role: "user", content: "hi", timestamp: new Date() },
+        {
+          id: "m2",
+          role: "assistant",
+          content: "hello",
+          model: "claude-opus-4-6",
+          timestamp: new Date(),
+          toolEvents: [
+            {
+              stepIndex: 1,
+              toolName: "read_file",
+              args: {},
+              status: "complete",
+            },
+            {
+              stepIndex: 2,
+              toolName: "grep_search",
+              args: {},
+              status: "complete",
+            },
+          ],
+        },
+      ],
+    });
+    lib = upsertSession(lib, {
+      id: "b",
+      name: "B",
+      createdAt: 300,
+      updatedAt: 400,
+      messages: [
+        { id: "m3", role: "user", content: "hey", timestamp: new Date() },
+        {
+          id: "m4",
+          role: "assistant",
+          content: "reply",
+          model: "gpt-5",
+          timestamp: new Date(),
+          toolEvents: [
+            {
+              stepIndex: 1,
+              toolName: "read_file",
+              args: {},
+              status: "complete",
+            },
+          ],
+        },
+      ],
+    });
+    const s = aggregateSessions(lib);
+    expect(s.totalSessions).toBe(2);
+    expect(s.totalMessages).toBe(4);
+    expect(s.totalUserMessages).toBe(2);
+    expect(s.totalAssistantMessages).toBe(2);
+    expect(s.totalToolCalls).toBe(3);
+    expect(s.toolCallsByKind.read_file).toBe(2);
+    expect(s.toolCallsByKind.grep_search).toBe(1);
+    expect(s.modelsUsed.sort()).toEqual(["claude-opus-4-6", "gpt-5"]);
+    expect(s.oldestAt).toBe(100);
+    expect(s.newestAt).toBe(400);
+  });
+
+  it("handles sessions with no toolEvents gracefully", () => {
+    const lib = upsertSession(emptyLibrary(), {
+      id: "a",
+      name: "A",
+      createdAt: 1,
+      updatedAt: 1,
+      messages: [
+        { id: "m1", role: "assistant", content: "hi", timestamp: new Date() },
+      ],
+    });
+    const s = aggregateSessions(lib);
+    expect(s.totalToolCalls).toBe(0);
+    expect(s.toolCallsByKind).toEqual({});
   });
 });
 

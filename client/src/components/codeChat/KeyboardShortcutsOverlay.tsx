@@ -28,6 +28,13 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
   { keys: ["@"], description: "Open file mention picker", context: "anywhere in input" },
   { keys: ["Tab"], description: "Accept selected picker item" },
   { keys: ["?"], description: "Open this help overlay", context: "while input is empty" },
+  { keys: ["g", "c"], description: "Go to Chat tab", context: "chord — outside text fields" },
+  { keys: ["g", "f"], description: "Go to Files tab" },
+  { keys: ["g", "r"], description: "Go to Roadmap tab" },
+  { keys: ["g", "d"], description: "Go to Diff tab" },
+  { keys: ["g", "h"], description: "Go to GitHub tab" },
+  { keys: ["g", "w"], description: "Go to Git Write tab" },
+  { keys: ["g", "j"], description: "Go to Jobs tab" },
 ];
 
 export default function KeyboardShortcutsOverlay({

@@ -158,6 +158,65 @@ export function autoName(messages: CodeChatMessage[]): string {
   return firstLine.slice(0, 57) + "…";
 }
 
+// ─── Library aggregation (Pass 226) ──────────────────────────────────────
+
+export interface LibraryStats {
+  totalSessions: number;
+  totalMessages: number;
+  totalUserMessages: number;
+  totalAssistantMessages: number;
+  totalToolCalls: number;
+  /** Break down tool calls by tool name */
+  toolCallsByKind: Record<string, number>;
+  /** Distinct models referenced across all assistant messages */
+  modelsUsed: string[];
+  /** Oldest session createdAt (epoch ms) or null */
+  oldestAt: number | null;
+  /** Newest session updatedAt (epoch ms) or null */
+  newestAt: number | null;
+}
+
+export function aggregateSessions(library: SessionLibrary): LibraryStats {
+  const stats: LibraryStats = {
+    totalSessions: library.sessions.length,
+    totalMessages: 0,
+    totalUserMessages: 0,
+    totalAssistantMessages: 0,
+    totalToolCalls: 0,
+    toolCallsByKind: {},
+    modelsUsed: [],
+    oldestAt: null,
+    newestAt: null,
+  };
+  const modelSet = new Set<string>();
+
+  for (const session of library.sessions) {
+    if (stats.oldestAt === null || session.createdAt < stats.oldestAt) {
+      stats.oldestAt = session.createdAt;
+    }
+    if (stats.newestAt === null || session.updatedAt > stats.newestAt) {
+      stats.newestAt = session.updatedAt;
+    }
+    for (const msg of session.messages) {
+      stats.totalMessages++;
+      if (msg.role === "user") stats.totalUserMessages++;
+      else if (msg.role === "assistant") stats.totalAssistantMessages++;
+      if (msg.role === "assistant") {
+        if (msg.model) modelSet.add(msg.model);
+        if (msg.toolEvents) {
+          for (const ev of msg.toolEvents) {
+            stats.totalToolCalls++;
+            const kind = ev.toolName ?? "unknown";
+            stats.toolCallsByKind[kind] = (stats.toolCallsByKind[kind] ?? 0) + 1;
+          }
+        }
+      }
+    }
+  }
+  stats.modelsUsed = Array.from(modelSet).sort();
+  return stats;
+}
+
 // ─── Auto-checkpoint (Pass 223) ──────────────────────────────────────────
 
 export interface AutoCheckpointState {
