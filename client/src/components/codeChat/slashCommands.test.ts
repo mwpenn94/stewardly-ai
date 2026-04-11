@@ -119,6 +119,58 @@ describe("tryRunSlashCommand — built-ins", () => {
     expect(ctx.cancel).toHaveBeenCalled();
   });
 
+  // Pass v5 #80: /help dispatches a window event so the overlay opens
+  // instead of dumping a wall of text into a toast. The tests run in
+  // a Node environment with no global `window`, so we stub a minimal
+  // DOM event target so the handler can dispatch into it.
+  function withWindowStub<T>(fn: (received: () => boolean) => Promise<T>): Promise<T> {
+    let received = false;
+    const listeners = new Set<() => void>();
+    const stub = {
+      addEventListener: (_type: string, listener: () => void) => {
+        listeners.add(listener);
+      },
+      removeEventListener: (_type: string, listener: () => void) => {
+        listeners.delete(listener);
+      },
+      dispatchEvent: (_event: unknown) => {
+        for (const l of listeners) l();
+        return true;
+      },
+    };
+    const hadGlobal = "window" in globalThis;
+    const prior = (globalThis as unknown as { window?: unknown }).window;
+    (globalThis as unknown as { window: unknown }).window = stub;
+    const listener = () => { received = true; };
+    (stub as unknown as Window).addEventListener("codechat-show-shortcuts", listener);
+    return Promise.resolve(fn(() => received)).finally(() => {
+      if (hadGlobal) {
+        (globalThis as unknown as { window: unknown }).window = prior;
+      } else {
+        delete (globalThis as unknown as { window?: unknown }).window;
+      }
+    });
+  }
+
+  it("runs /help and dispatches codechat-show-shortcuts", async () => {
+    const ctx = mockCtx();
+    await withWindowStub(async (received) => {
+      const r = await tryRunSlashCommand("/help", ctx);
+      expect(r).toEqual({ handled: true });
+      expect(received()).toBe(true);
+      // Should NOT dump command list into a toast
+      expect(ctx.toast).not.toHaveBeenCalled();
+    });
+  });
+
+  it("/h alias also dispatches the shortcuts event", async () => {
+    const ctx = mockCtx();
+    await withWindowStub(async (received) => {
+      await tryRunSlashCommand("/h", ctx);
+      expect(received()).toBe(true);
+    });
+  });
+
   it("refuses /write for non-admin", async () => {
     const ctx = mockCtx({ isAdmin: false });
     await tryRunSlashCommand("/write on", ctx);

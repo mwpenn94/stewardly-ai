@@ -332,6 +332,38 @@ export function rejectPlan(plan: Plan): Plan {
 }
 
 /**
+ * Unapprove an approved plan — flip it back to draft mode so the user
+ * can edit / reorder / add / remove steps again. Refuses if any step
+ * is currently `executing` (the ReAct loop is mid-flight); refuses if
+ * any step is already `done`/`failed` (the user should start a fresh
+ * plan instead). Pass v5 #83.
+ */
+export function unapprovePlan(plan: Plan): Plan {
+  // Can't flip back if we're running or if results already landed
+  for (const s of plan.steps) {
+    if (
+      s.status === "executing" ||
+      s.status === "done" ||
+      s.status === "failed"
+    ) {
+      return plan;
+    }
+  }
+  const steps = plan.steps.map((s) =>
+    s.status === "approved" ? { ...s, status: "pending" as const } : s,
+  );
+  return touch({ ...plan, status: "draft", steps });
+}
+
+/**
+ * Discard a plan completely. Returns `null` so callers can drop the
+ * plan from their message→plan map on a single round trip. Pass v5 #83.
+ */
+export function discardPlan(_plan: Plan): null {
+  return null;
+}
+
+/**
  * Build the execution prompt for an approved plan. Instructs the agent
  * to report per-step progress with parseable markers so the UI can
  * correlate assistant output back to plan steps.

@@ -18,6 +18,7 @@ export const BOOKMARKS_STORAGE_KEY = "stewardly-codechat-bookmarks";
 export const REACTIONS_STORAGE_KEY = "stewardly-codechat-reactions";
 
 const MAX_BOOKMARKS = 500;
+const MAX_REACTIONS = 1000;
 
 // ─── Bookmarks (Pass 233) ────────────────────────────────────────────────
 
@@ -78,19 +79,33 @@ export function saveBookmarks(bookmarks: string[]): void {
 export type Reaction = "up" | "down";
 export type ReactionMap = Record<string, Reaction>;
 
+/**
+ * Cap reactions to the MAX_REACTIONS most-recent entries. Uses the
+ * object insertion-order contract so the oldest entries drop first
+ * when we spill past the ceiling (Pass v5 #79).
+ */
+function capReactions(entries: Array<[string, Reaction]>): ReactionMap {
+  const start = entries.length > MAX_REACTIONS ? entries.length - MAX_REACTIONS : 0;
+  const out: ReactionMap = {};
+  for (let i = start; i < entries.length; i++) {
+    out[entries[i][0]] = entries[i][1];
+  }
+  return out;
+}
+
 export function parseReactions(raw: string | null): ReactionMap {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-    const out: ReactionMap = {};
+    const entries: Array<[string, Reaction]> = [];
     for (const [k, v] of Object.entries(parsed)) {
       if (typeof k !== "string" || !k) continue;
       if (v === "up" || v === "down") {
-        out[k] = v;
+        entries.push([k, v]);
       }
     }
-    return out;
+    return capReactions(entries);
   } catch {
     return {};
   }
@@ -99,6 +114,8 @@ export function parseReactions(raw: string | null): ReactionMap {
 /**
  * Toggle a reaction on a message. Clicking the same reaction twice
  * clears it; clicking the opposite reaction replaces the first.
+ * Enforces MAX_REACTIONS by dropping the oldest entry when a new
+ * message is added past the cap (Pass v5 #79).
  */
 export function setReaction(
   reactions: ReactionMap,
@@ -112,7 +129,20 @@ export function setReaction(
     delete next[messageId];
     return next;
   }
-  return { ...reactions, [messageId]: reaction };
+  // Re-insert at the end so it becomes the most-recent entry
+  const next: ReactionMap = {};
+  for (const [k, v] of Object.entries(reactions)) {
+    if (k !== messageId) next[k] = v;
+  }
+  next[messageId] = reaction;
+  const keys = Object.keys(next);
+  if (keys.length <= MAX_REACTIONS) return next;
+  const dropCount = keys.length - MAX_REACTIONS;
+  const trimmed: ReactionMap = {};
+  for (let i = dropCount; i < keys.length; i++) {
+    trimmed[keys[i]] = next[keys[i]];
+  }
+  return trimmed;
 }
 
 export function getReaction(
@@ -130,11 +160,21 @@ export function loadReactions(): ReactionMap {
   }
 }
 
-export function saveReactions(reactions: ReactionMap): void {
+/**
+ * Persist reactions to localStorage. Returns {ok: true} on success, or
+ * {ok: false, reason: "quota"} when the browser rejects the write
+ * (private mode, quota exhausted). Callers can surface the failure as
+ * a user-visible toast — symmetric with sessionLibrary's saveLibrary
+ * (Pass v5 #79).
+ */
+export function saveReactions(
+  reactions: ReactionMap,
+): { ok: true } | { ok: false; reason: "quota" } {
   try {
     localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(reactions));
+    return { ok: true };
   } catch {
-    /* quota */
+    return { ok: false, reason: "quota" };
   }
 }
 

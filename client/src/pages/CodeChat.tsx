@@ -35,6 +35,10 @@ import BackgroundJobsPanel from "@/components/codeChat/BackgroundJobsPanel";
 import DiffView from "@/components/codeChat/DiffView";
 import SlashCommandPopover from "@/components/codeChat/SlashCommandPopover";
 import MarkdownMessage from "@/components/codeChat/MarkdownMessage";
+import { setShikiFailureNotifier } from "@/components/codeChat/shikiHighlight";
+import MessageVirtualList, {
+  type MessageVirtualListHandle,
+} from "@/components/codeChat/MessageVirtualList";
 import FileMentionPopover from "@/components/codeChat/FileMentionPopover";
 import KeyboardShortcutsOverlay from "@/components/codeChat/KeyboardShortcutsOverlay";
 import SessionsLibraryPopover from "@/components/codeChat/SessionsLibraryPopover";
@@ -374,7 +378,8 @@ function CodeChatInterface() {
   const [allowMutations, setAllowMutations] = useState(false);
   const [maxIterations, setMaxIterations] = useState(5);
   const [modelOverride, setModelOverride] = useState<string | undefined>(undefined);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  // Pass v5 #76: the virtualized message list owns its own scroll
+  // container. The legacy `scrollRef` is retired.
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showFiles, setShowFiles] = useState(false);
 
@@ -446,6 +451,25 @@ function CodeChatInterface() {
     };
     window.addEventListener("codechat-remember", handler);
     return () => window.removeEventListener("codechat-remember", handler);
+  }, []);
+
+  // Pass v5 #80: /help slash command opens the keyboard shortcuts
+  // overlay instead of dumping the command list into a toast
+  useEffect(() => {
+    const handler = () => setShortcutsOpen(true);
+    window.addEventListener("codechat-show-shortcuts", handler);
+    return () => window.removeEventListener("codechat-show-shortcuts", handler);
+  }, []);
+
+  // Pass v5 #81: surface a one-time toast when the Shiki highlighter
+  // fails to load so users know it'll auto-retry on the next code block
+  useEffect(() => {
+    setShikiFailureNotifier(() => {
+      toast.info(
+        "Syntax highlighting unavailable, retrying on next code block",
+      );
+    });
+    return () => setShikiFailureNotifier(null);
   }, []);
 
   // Pass 242: symbol navigator (Ctrl+T / Cmd+T)
@@ -682,28 +706,28 @@ function CodeChatInterface() {
   const [bookmarks, setBookmarks] = useState<string[]>(() => loadBookmarks());
   useEffect(() => { saveBookmarks(bookmarks); }, [bookmarks]);
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  // Pass v5 #76: delegate to the virtualized list's imperative handle
+  // so bookmark jumps still work even when the target row isn't
+  // currently mounted in the virtualized window.
   const scrollToMessage = useCallback((messageId: string) => {
-    const el = scrollRef.current?.querySelector(
-      `[data-message-id="${CSS.escape(messageId)}"]`,
-    );
-    if (el && "scrollIntoView" in el) {
-      (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
-      // Briefly highlight
-      const prevBg = (el as HTMLElement).style.backgroundColor;
-      (el as HTMLElement).style.transition = "background-color 0.3s";
-      (el as HTMLElement).style.backgroundColor = "rgba(212,168,67,0.15)";
-      setTimeout(() => {
-        (el as HTMLElement).style.backgroundColor = prevBg;
-      }, 1500);
-    }
+    virtualListRef.current?.scrollToMessage(messageId);
   }, []);
 
   // Pass 234: message outline rail toggle
   const [outlineOpen, setOutlineOpen] = useState(false);
 
   // Pass 235: message reactions (thumbs up/down)
+  // Pass v5 #79: surface localStorage quota failures as a one-time toast
+  const reactionsQuotaToastedRef = useRef(false);
   const [reactions, setReactions] = useState<ReactionMap>(() => loadReactions());
-  useEffect(() => { saveReactions(reactions); }, [reactions]);
+  useEffect(() => {
+    const result = saveReactions(reactions);
+    if (!result.ok && !reactionsQuotaToastedRef.current) {
+      reactionsQuotaToastedRef.current = true;
+      toast.error("Reactions couldn't be saved — storage quota exceeded");
+    }
+    if (result.ok) reactionsQuotaToastedRef.current = false;
+  }, [reactions]);
 
   // Pass 236: Plan Mode — per-assistant-message plan state, persisted
   // across refreshes via localStorage. When the user runs `/plan <task>`
@@ -1029,9 +1053,13 @@ function CodeChatInterface() {
 
   const isAdmin = user?.role === "admin";
 
+  // Pass v5 #76: virtualized message list — imperative handle drives
+  // auto-scroll + bookmark jumps. The list owns its own scroll
+  // container so the legacy non-virtualized `scrollRef` is retired.
+  const virtualListRef = useRef<MessageVirtualListHandle>(null);
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, currentTools]);
+    virtualListRef.current?.autoScrollToBottom({ smooth: true });
+  }, [messages, currentTools, currentTodos]);
 
   // Pass 211: persistent error banner instead of a single toast.
   // Errors stick until the user dismisses them or kicks off a retry.
@@ -1579,9 +1607,9 @@ function CodeChatInterface() {
       )}
       {/* Chat column */}
       <div className={`flex flex-col ${showFiles ? "flex-1 min-w-0" : "flex-1"}`}>
-      {/* Messages area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && (
+      {/* Messages area (Pass v5 #76: virtualized via MessageVirtualList) */}
+      {messages.length === 0 ? (
+        <div className="flex-1 overflow-y-auto p-4">
           <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
             <Terminal className="w-10 h-10 mb-3 text-accent/40" />
             <h3 className="font-heading text-lg font-semibold text-foreground mb-1">Code Chat</h3>
@@ -1604,250 +1632,261 @@ function CodeChatInterface() {
               ))}
             </div>
           </div>
-        )}
-
-        {messages.map((msg, msgIdx) => {
-          // Only the most recent assistant message shows the Regenerate button
-          const isLastAssistant =
-            msg.role === "assistant" &&
-            msgIdx === messages.length - 1 &&
-            !isExecuting;
-          return (
-          <div
-            key={msg.id}
-            data-message-id={msg.id}
-            className={`${msg.role === "user" ? "flex justify-end" : "group"}`}
-          >
-            {msg.role === "user" ? (
-              <div className="bg-accent/10 text-foreground px-4 py-2.5 rounded-2xl rounded-br-md max-w-[85%] text-sm">
-                {msg.content}
-              </div>
-            ) : (
-              <div className="space-y-2 max-w-full">
-                {/* Pass 237: captured agent todo list */}
-                {msg.agentTodos && msg.agentTodos.length > 0 && (
-                  <AgentTodoPanel todos={msg.agentTodos} variant="card" />
-                )}
-                {/* Tool events from streaming */}
-                {msg.toolEvents && msg.toolEvents.length > 0 && (
-                  <TraceView traces={msg.toolEvents.map(ev => ({
-                    step: ev.stepIndex,
-                    thought: ev.args ? `${ev.toolName}(${Object.entries(ev.args).map(([k,v]) => `${k}: ${String(v).slice(0,60)}`).join(", ")})` : undefined,
-                    toolName: ev.toolName,
-                    observation: ev.preview ? (typeof ev.preview === "string" ? ev.preview.slice(0, 3000) : JSON.stringify(ev.preview).slice(0, 3000)) : undefined,
-                    rawPreview: typeof ev.preview === "string" ? ev.preview : undefined,
-                    durationMs: ev.durationMs,
-                  }))} />
-                )}
-                {/* Response */}
-                <div className="bg-card/60 border border-border/30 px-4 py-3 rounded-xl text-sm leading-relaxed">
-                  <MarkdownMessage content={msg.content} />
-                </div>
-                {/* Pass 236: inline Plan review panel */}
-                {plans[msg.id] && (
-                  <PlanReviewPanel
-                    plan={plans[msg.id]}
-                    onChange={(next) =>
-                      setPlans((prev) => ({ ...prev, [msg.id]: next }))
-                    }
-                    onApprove={(approved) => {
-                      // Fire-and-forget; handleExecutePlan handles toasts
-                      handleExecutePlan(approved);
-                    }}
-                    onReject={() => {
-                      toast.info("Plan rejected");
-                    }}
-                  />
-                )}
-                {/* Pass 217: tool-call summary chips */}
-                {(() => {
-                  const summary = summarizeToolEvents(msg.toolEvents);
-                  const chips = summaryChips(summary);
-                  if (chips.length === 0) return null;
-                  return (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {chips.map((c) => (
-                        <span
-                          key={c.key}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-mono tabular-nums ${
-                            c.variant === "error"
-                              ? "border-destructive/50 text-destructive bg-destructive/5"
-                              : c.variant === "warn"
-                                ? "border-amber-500/40 text-amber-500 bg-amber-500/5"
-                                : "border-border/60 text-muted-foreground bg-muted/10"
-                          }`}
-                        >
-                          {c.label} {c.count}
-                        </span>
-                      ))}
-                      {summary.filesTouched.length > 0 && (
-                        <span
-                          className="text-[9px] text-muted-foreground/60 font-mono truncate"
-                          title={summary.filesTouched.join("\n")}
-                        >
-                          {summary.filesTouched.length === 1
-                            ? summary.filesTouched[0]
-                            : `${summary.filesTouched.length} files`}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })()}
-                {/* Meta + action bar */}
-                <div className="flex items-center gap-2 text-[9px] text-muted-foreground/50">
-                  {msg.model && <span>{msg.model}</span>}
-                  {msg.toolCallCount != null && msg.toolCallCount > 0 && (
-                    <span>• {msg.toolCallCount} tool calls</span>
-                  )}
-                  {msg.iterations != null && <span>• {msg.iterations} iterations</span>}
-                  {msg.totalDurationMs != null && <span>• {(msg.totalDurationMs / 1000).toFixed(1)}s</span>}
-                  {(() => {
-                    const usage = messageUsages.get(msg.id);
-                    if (!usage) return null;
-                    return (
-                      <span
-                        className="tabular-nums"
-                        title={`${usage.inputTokens} in / ${usage.outputTokens} out`}
-                      >
-                        • {formatTokens(usage.totalTokens)} {usage.costUSD !== null && `(${formatCost(usage.costUSD)})`}
-                      </span>
-                    );
-                  })()}
-                  <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      type="button"
-                      className="hover:text-foreground transition-colors p-1 rounded"
-                      aria-label="Copy response"
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(msg.content);
-                          toast.success("Response copied");
-                        } catch {
-                          toast.error("Copy failed");
-                        }
-                      }}
-                    >
-                      <Copy className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      className="hover:text-foreground transition-colors p-1 rounded"
-                      aria-label="Export message as markdown"
-                      onClick={() => {
-                        downloadTextFile(
-                          exportSingleMessageAsMarkdown(msg),
-                          `code-chat-${msg.id}.md`,
-                        );
-                      }}
-                    >
-                      <Download className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      className="hover:text-foreground transition-colors p-1 rounded"
-                      aria-label="Fork conversation from this message"
-                      title="Fork — save as new session trimmed here"
-                      onClick={() => handleForkAt(msg.id)}
-                    >
-                      <GitFork className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      className={`transition-colors p-1 rounded ${
-                        isBookmarked(bookmarks, msg.id)
-                          ? "text-amber-400"
-                          : "hover:text-foreground"
-                      }`}
-                      aria-label={
-                        isBookmarked(bookmarks, msg.id)
-                          ? "Remove bookmark"
-                          : "Bookmark this message"
-                      }
-                      title="Bookmark"
-                      onClick={() =>
-                        setBookmarks((prev) => toggleBookmarkPure(prev, msg.id))
-                      }
-                    >
-                      <Star
-                        className="w-3 h-3"
-                        fill={
-                          isBookmarked(bookmarks, msg.id) ? "currentColor" : "none"
-                        }
-                      />
-                    </button>
-                    <button
-                      type="button"
-                      className={`transition-colors p-1 rounded ${
-                        getReaction(reactions, msg.id) === "up"
-                          ? "text-emerald-500"
-                          : "hover:text-foreground"
-                      }`}
-                      aria-label="Thumbs up"
-                      onClick={() =>
-                        setReactions((prev) => setReactionPure(prev, msg.id, "up"))
-                      }
-                    >
-                      <ThumbsUp className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      className={`transition-colors p-1 rounded ${
-                        getReaction(reactions, msg.id) === "down"
-                          ? "text-destructive"
-                          : "hover:text-foreground"
-                      }`}
-                      aria-label="Thumbs down"
-                      onClick={() =>
-                        setReactions((prev) => setReactionPure(prev, msg.id, "down"))
-                      }
-                    >
-                      <ThumbsDown className="w-3 h-3" />
-                    </button>
-                    {isLastAssistant && (
-                      <button
-                        type="button"
-                        className="hover:text-foreground transition-colors p-1 rounded"
-                        aria-label="Regenerate response"
-                        onClick={async () => {
-                          const ok = await regenerateLast({
-                            allowMutations: isAdmin && allowMutations,
-                            maxIterations,
-                            model: modelOverride,
-                            enabledTools,
-                            includeProjectInstructions: projectInstructionsOn,
-                            memoryOverlay,
-                          });
-                          if (!ok) toast.error("Nothing to regenerate");
-                        }}
-                      >
-                        <RotateCw className="w-3 h-3" />
-                      </button>
-                    )}
+        </div>
+      ) : (
+        <MessageVirtualList
+          ref={virtualListRef}
+          messages={messages}
+          renderMessage={(msg, msgIdx) => {
+            const isLastAssistant =
+              msg.role === "assistant" &&
+              msgIdx === messages.length - 1 &&
+              !isExecuting;
+            return (
+              <div
+                data-message-id={msg.id}
+                className={`${msg.role === "user" ? "flex justify-end" : "group"}`}
+              >
+                {msg.role === "user" ? (
+                  <div className="bg-accent/10 text-foreground px-4 py-2.5 rounded-2xl rounded-br-md max-w-[85%] text-sm">
+                    {msg.content}
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-2 max-w-full">
+                    {/* Pass 237: captured agent todo list */}
+                    {msg.agentTodos && msg.agentTodos.length > 0 && (
+                      <AgentTodoPanel todos={msg.agentTodos} variant="card" />
+                    )}
+                    {/* Tool events from streaming */}
+                    {msg.toolEvents && msg.toolEvents.length > 0 && (
+                      <TraceView traces={msg.toolEvents.map(ev => ({
+                        step: ev.stepIndex,
+                        thought: ev.args ? `${ev.toolName}(${Object.entries(ev.args).map(([k,v]) => `${k}: ${String(v).slice(0,60)}`).join(", ")})` : undefined,
+                        toolName: ev.toolName,
+                        observation: ev.preview ? (typeof ev.preview === "string" ? ev.preview.slice(0, 3000) : JSON.stringify(ev.preview).slice(0, 3000)) : undefined,
+                        rawPreview: typeof ev.preview === "string" ? ev.preview : undefined,
+                        durationMs: ev.durationMs,
+                      }))} />
+                    )}
+                    {/* Response */}
+                    <div className="bg-card/60 border border-border/30 px-4 py-3 rounded-xl text-sm leading-relaxed">
+                      <MarkdownMessage content={msg.content} />
+                    </div>
+                    {/* Pass 236: inline Plan review panel */}
+                    {plans[msg.id] && (
+                      <PlanReviewPanel
+                        plan={plans[msg.id]}
+                        onChange={(next) =>
+                          setPlans((prev) => ({ ...prev, [msg.id]: next }))
+                        }
+                        onApprove={(approved) => {
+                          // Fire-and-forget; handleExecutePlan handles toasts
+                          handleExecutePlan(approved);
+                        }}
+                        onReject={() => {
+                          toast.info("Plan rejected");
+                        }}
+                        onDiscard={() => {
+                          // Pass v5 #83: drop the plan from the per-message map
+                          setPlans((prev) => {
+                            const { [msg.id]: _dropped, ...rest } = prev;
+                            return rest;
+                          });
+                          toast.info("Plan discarded");
+                        }}
+                      />
+                    )}
+                    {/* Pass 217: tool-call summary chips */}
+                    {(() => {
+                      const summary = summarizeToolEvents(msg.toolEvents);
+                      const chips = summaryChips(summary);
+                      if (chips.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {chips.map((c) => (
+                            <span
+                              key={c.key}
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-mono tabular-nums ${
+                                c.variant === "error"
+                                  ? "border-destructive/50 text-destructive bg-destructive/5"
+                                  : c.variant === "warn"
+                                    ? "border-amber-500/40 text-amber-500 bg-amber-500/5"
+                                    : "border-border/60 text-muted-foreground bg-muted/10"
+                              }`}
+                            >
+                              {c.label} {c.count}
+                            </span>
+                          ))}
+                          {summary.filesTouched.length > 0 && (
+                            <span
+                              className="text-[9px] text-muted-foreground/60 font-mono truncate"
+                              title={summary.filesTouched.join("\n")}
+                            >
+                              {summary.filesTouched.length === 1
+                                ? summary.filesTouched[0]
+                                : `${summary.filesTouched.length} files`}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {/* Meta + action bar */}
+                    <div className="flex items-center gap-2 text-[9px] text-muted-foreground/50">
+                      {msg.model && <span>{msg.model}</span>}
+                      {msg.toolCallCount != null && msg.toolCallCount > 0 && (
+                        <span>• {msg.toolCallCount} tool calls</span>
+                      )}
+                      {msg.iterations != null && <span>• {msg.iterations} iterations</span>}
+                      {msg.totalDurationMs != null && <span>• {(msg.totalDurationMs / 1000).toFixed(1)}s</span>}
+                      {(() => {
+                        const usage = messageUsages.get(msg.id);
+                        if (!usage) return null;
+                        return (
+                          <span
+                            className="tabular-nums"
+                            title={`${usage.inputTokens} in / ${usage.outputTokens} out`}
+                          >
+                            • {formatTokens(usage.totalTokens)} {usage.costUSD !== null && `(${formatCost(usage.costUSD)})`}
+                          </span>
+                        );
+                      })()}
+                      <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          className="hover:text-foreground transition-colors p-1 rounded"
+                          aria-label="Copy response"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(msg.content);
+                              toast.success("Response copied");
+                            } catch {
+                              toast.error("Copy failed");
+                            }
+                          }}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          className="hover:text-foreground transition-colors p-1 rounded"
+                          aria-label="Export message as markdown"
+                          onClick={() => {
+                            downloadTextFile(
+                              exportSingleMessageAsMarkdown(msg),
+                              `code-chat-${msg.id}.md`,
+                            );
+                          }}
+                        >
+                          <Download className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          className="hover:text-foreground transition-colors p-1 rounded"
+                          aria-label="Fork conversation from this message"
+                          title="Fork — save as new session trimmed here"
+                          onClick={() => handleForkAt(msg.id)}
+                        >
+                          <GitFork className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          className={`transition-colors p-1 rounded ${
+                            isBookmarked(bookmarks, msg.id)
+                              ? "text-amber-400"
+                              : "hover:text-foreground"
+                          }`}
+                          aria-label={
+                            isBookmarked(bookmarks, msg.id)
+                              ? "Remove bookmark"
+                              : "Bookmark this message"
+                          }
+                          title="Bookmark"
+                          onClick={() =>
+                            setBookmarks((prev) => toggleBookmarkPure(prev, msg.id))
+                          }
+                        >
+                          <Star
+                            className="w-3 h-3"
+                            fill={
+                              isBookmarked(bookmarks, msg.id) ? "currentColor" : "none"
+                            }
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          className={`transition-colors p-1 rounded ${
+                            getReaction(reactions, msg.id) === "up"
+                              ? "text-emerald-500"
+                              : "hover:text-foreground"
+                          }`}
+                          aria-label="Thumbs up"
+                          onClick={() =>
+                            setReactions((prev) => setReactionPure(prev, msg.id, "up"))
+                          }
+                        >
+                          <ThumbsUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          className={`transition-colors p-1 rounded ${
+                            getReaction(reactions, msg.id) === "down"
+                              ? "text-destructive"
+                              : "hover:text-foreground"
+                          }`}
+                          aria-label="Thumbs down"
+                          onClick={() =>
+                            setReactions((prev) => setReactionPure(prev, msg.id, "down"))
+                          }
+                        >
+                          <ThumbsDown className="w-3 h-3" />
+                        </button>
+                        {isLastAssistant && (
+                          <button
+                            type="button"
+                            className="hover:text-foreground transition-colors p-1 rounded"
+                            aria-label="Regenerate response"
+                            onClick={async () => {
+                              const ok = await regenerateLast({
+                                allowMutations: isAdmin && allowMutations,
+                                maxIterations,
+                                model: modelOverride,
+                                enabledTools,
+                                includeProjectInstructions: projectInstructionsOn,
+                                memoryOverlay,
+                              });
+                              if (!ok) toast.error("Nothing to regenerate");
+                            }}
+                          >
+                            <RotateCw className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          );
-        })}
-
-        {/* Pass 237: live agent todo summary while executing */}
-        {isExecuting && currentTodos.length > 0 && (
-          <AgentTodoPanel todos={currentTodos} variant="live" />
-        )}
-
-        {/* Live streaming tool events */}
-        {isExecuting && currentTools.length > 0 && (
-          <LiveToolEvents events={currentTools} />
-        )}
-
-        {isExecuting && currentTools.length === 0 && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="w-4 h-4 animate-spin text-accent" />
-            <span>Thinking...</span>
-          </div>
-        )}
-      </div>
+            );
+          }}
+          trailing={
+            <>
+              {/* Pass 237: live agent todo summary while executing */}
+              {isExecuting && currentTodos.length > 0 && (
+                <AgentTodoPanel todos={currentTodos} variant="live" />
+              )}
+              {/* Live streaming tool events */}
+              {isExecuting && currentTools.length > 0 && (
+                <LiveToolEvents events={currentTools} />
+              )}
+              {isExecuting && currentTools.length === 0 && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin text-accent" />
+                  <span>Thinking...</span>
+                </div>
+              )}
+            </>
+          }
+        />
+      )}
 
       {/* Error banner (Pass 211) */}
       {lastErrorBanner && !isExecuting && (
@@ -2313,11 +2352,17 @@ export default function CodeChatPage() {
             <CodeChatInterface />
           </TabsContent>
 
-          <TabsContent value="files">
+          {/* Pass v5 #77: content-heavy panels use forceMount so their
+              internal state survives tab switches. Radix Tabs default
+              unmounts inactive panels, which would wipe the Files
+              viewer's open-file + edit-draft state whenever the user
+              flipped to Roadmap and back. The `hidden` attribute
+              hides without unmounting. */}
+          <TabsContent value="files" forceMount hidden={activeTab !== "files"}>
             <div className="p-6"><FileBrowser /></div>
           </TabsContent>
 
-          <TabsContent value="roadmap">
+          <TabsContent value="roadmap" forceMount hidden={activeTab !== "roadmap"}>
             <div className="p-6"><RoadmapPanel /></div>
           </TabsContent>
 
@@ -2325,7 +2370,7 @@ export default function CodeChatPage() {
             <div className="p-6"><DiffPanel /></div>
           </TabsContent>
 
-          <TabsContent value="gitstatus">
+          <TabsContent value="gitstatus" forceMount hidden={activeTab !== "gitstatus"}>
             <div className="p-6"><GitStatusPanel /></div>
           </TabsContent>
 
@@ -2360,6 +2405,15 @@ export default function CodeChatPage() {
 }
 
 // ─── File Browser ─────────────────────────────────────────────────────────
+
+// Pass v5 #78: per-file autosave key prefix. Drafts persist across
+// tab close + refresh so an accidental nav doesn't wipe in-progress
+// work in the FileBrowser inline editor.
+const FILE_DRAFT_PREFIX = "stewardly-codechat-draft-file-";
+
+function fileDraftKey(path: string): string {
+  return `${FILE_DRAFT_PREFIX}${path}`;
+}
 
 function FileBrowser() {
   const { user } = useAuth();
@@ -2398,12 +2452,52 @@ function FileBrowser() {
     });
     if (result.kind === "read") {
       setFileContent({ path: result.result.path, content: result.result.content });
-      setDraft(result.result.content);
-      setEditing(false);
+      // Pass v5 #78: rehydrate any stored draft for this file before
+      // falling back to the on-disk content. If a draft exists and
+      // differs from disk, automatically flip into editing mode so
+      // the user sees their in-progress changes.
+      let rehydrated = result.result.content;
+      let hasDraft = false;
+      try {
+        const storedDraft = localStorage.getItem(
+          fileDraftKey(result.result.path),
+        );
+        if (storedDraft !== null && storedDraft !== result.result.content) {
+          rehydrated = storedDraft;
+          hasDraft = true;
+        }
+      } catch { /* quota */ }
+      setDraft(rehydrated);
+      if (hasDraft) {
+        setEditing(true);
+        toast.info("Restored unsaved draft from this file");
+      } else {
+        setEditing(false);
+      }
     } else if (result.kind === "error") {
       toast.error(`read failed: ${result.error}`);
     }
   };
+
+  // Pass v5 #78: debounced draft autosave. Writes every 500ms of
+  // inactivity so we don't spam localStorage on each keystroke.
+  useEffect(() => {
+    if (!fileContent || !editing) return;
+    // Skip the autosave when the draft matches saved content (no
+    // point persisting an empty-delta draft).
+    if (draft === fileContent.content) {
+      try {
+        localStorage.removeItem(fileDraftKey(fileContent.path));
+      } catch { /* quota */ }
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      try {
+        localStorage.setItem(fileDraftKey(fileContent.path), draft);
+      } catch { /* quota */ }
+    }, 500);
+    return () => window.clearTimeout(handle);
+  }, [draft, fileContent, editing]);
 
   // Pass 225: honor a pending-open target (grep quick-jump) on mount
   useEffect(() => {
@@ -2452,12 +2546,32 @@ function FileBrowser() {
         );
         setFileContent({ path: fileContent.path, content: draft });
         setEditing(false);
+        // Pass v5 #78: successful save — drop the autosaved draft
+        try {
+          localStorage.removeItem(fileDraftKey(fileContent.path));
+        } catch { /* quota */ }
       } else if (result.kind === "error") {
         toast.error(`save failed: ${result.error}`);
       }
     } finally {
       setSaving(false);
     }
+  };
+
+  // Pass v5 #78: cancel the inline editor, with a confirm when the
+  // draft still has unsaved changes so we don't silently dump work.
+  const onCancel = () => {
+    if (!fileContent) return;
+    if (draft !== fileContent.content) {
+      const ok = window.confirm("Discard unsaved changes?");
+      if (!ok) return;
+    }
+    setEditing(false);
+    setDraft(fileContent.content);
+    setShowDiff(false);
+    try {
+      localStorage.removeItem(fileDraftKey(fileContent.path));
+    } catch { /* quota */ }
   };
 
   return (
@@ -2582,7 +2696,7 @@ function FileBrowser() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => { setEditing(false); setDraft(fileContent.content); setShowDiff(false); }}
+                      onClick={onCancel}
                       disabled={saving}
                       className="h-7 text-[10px]"
                     >
