@@ -204,6 +204,30 @@ export const BUILT_IN_COMMANDS: SlashCommand[] = [
       };
     },
   },
+  {
+    name: "remember",
+    aliases: ["mem"],
+    description: "Save a fact to agent memory (Pass 241)",
+    args: "<fact>",
+    handler: (ctx, args) => {
+      const fact = args.trim();
+      if (!fact) {
+        ctx.toast("error", "usage: /remember <fact>");
+        return;
+      }
+      // Dispatch a window event so the parent CodeChat component can
+      // add to its memory store. Slash commands don't have direct
+      // access to the memory state.
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("codechat-remember", {
+            detail: { content: fact },
+          }),
+        );
+      }
+      ctx.toast("success", `Saved to memory: "${fact.slice(0, 60)}${fact.length > 60 ? "…" : ""}"`);
+    },
+  },
 ];
 
 // ─── Parser + lookup ─────────────────────────────────────────────────────

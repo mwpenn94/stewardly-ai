@@ -27,7 +27,7 @@ import {
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
-  BookOpen, History, StickyNote,
+  BookOpen, History, StickyNote, Brain,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -124,6 +124,14 @@ import {
   saveScratchpad,
   type ScratchpadState,
 } from "@/components/codeChat/scratchpad";
+import AgentMemoryPopover from "@/components/codeChat/AgentMemoryPopover";
+import {
+  loadMemory,
+  saveMemory,
+  addMemory,
+  buildMemoryOverlay,
+  type MemoryEntry,
+} from "@/components/codeChat/agentMemory";
 import {
   loadHistory,
   saveHistory,
@@ -412,6 +420,27 @@ function CodeChatInterface() {
   const [scratchpad, setScratchpad] = useState<ScratchpadState>(() => loadScratchpad());
   useEffect(() => { saveScratchpad(scratchpad); }, [scratchpad]);
   const [scratchpadOpen, setScratchpadOpen] = useState(false);
+
+  // Pass 241: agent memory — persistent facts injected into system prompt
+  const [memoryEntries, setMemoryEntries] = useState<MemoryEntry[]>(() => loadMemory());
+  useEffect(() => { saveMemory(memoryEntries); }, [memoryEntries]);
+  const [memoryOpen, setMemoryOpen] = useState(false);
+  const memoryOverlay = useMemo(
+    () => buildMemoryOverlay(memoryEntries),
+    [memoryEntries],
+  );
+
+  // /remember slash command broadcasts a window event
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ content: string }>).detail;
+      if (detail?.content) {
+        setMemoryEntries((prev) => addMemory(prev, detail.content, "fact"));
+      }
+    };
+    window.addEventListener("codechat-remember", handler);
+    return () => window.removeEventListener("codechat-remember", handler);
+  }, []);
   const handleScratchpadInsert = useCallback((text: string) => {
     setInput((prev) => {
       if (!prev) return text;
@@ -697,9 +726,10 @@ function CodeChatInterface() {
         model: modelOverride,
         enabledTools,
         includeProjectInstructions: projectInstructionsOn,
+        memoryOverlay,
       });
     },
-    [sendMessage, user, allowMutations, maxIterations, modelOverride, enabledTools, projectInstructionsOn],
+    [sendMessage, user, allowMutations, maxIterations, modelOverride, enabledTools, projectInstructionsOn, memoryOverlay],
   );
 
   // Pass 220: fork conversation at a specific message
@@ -1006,9 +1036,10 @@ function CodeChatInterface() {
       model: modelOverride,
       enabledTools,
       includeProjectInstructions: projectInstructionsOn,
+      memoryOverlay,
     });
     inputRef.current?.focus();
-  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages, projectInstructionsOn]);
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages, projectInstructionsOn, memoryOverlay]);
 
   const handleSlashSelect = useCallback((cmd: SlashCommand) => {
     // Pre-fill the input with the command so the user can type args
@@ -1214,6 +1245,22 @@ function CodeChatInterface() {
             </button>
           );
         })()}
+        <button
+          onClick={() => setMemoryOpen(true)}
+          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
+            memoryEntries.length > 0
+              ? "border-accent/40 bg-accent/5 text-accent"
+              : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Agent memory"
+          title={
+            memoryEntries.length > 0
+              ? `${memoryEntries.length} memories injected into every prompt`
+              : "Agent memory (empty)"
+          }
+        >
+          <Brain className="w-3 h-3" /> {memoryEntries.length > 0 ? memoryEntries.length : "Mem"}
+        </button>
         <button
           onClick={() => setInstructionsOpen(true)}
           className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
@@ -1658,6 +1705,7 @@ function CodeChatInterface() {
                             model: modelOverride,
                             enabledTools,
                             includeProjectInstructions: projectInstructionsOn,
+                            memoryOverlay,
                           });
                           if (!ok) toast.error("Nothing to regenerate");
                         }}
@@ -1710,6 +1758,7 @@ function CodeChatInterface() {
                   model: modelOverride,
                   enabledTools,
                   includeProjectInstructions: projectInstructionsOn,
+                  memoryOverlay,
                 });
                 if (ok) setLastErrorBanner(null);
                 else toast.info("No previous prompt to retry");
@@ -1894,6 +1943,12 @@ function CodeChatInterface() {
         onRevert={handleRevertToBefore}
         onDrop={(id) => setEditHistory((prev) => dropEntry(prev, id))}
         onClear={() => setEditHistory(clearEditHistory())}
+      />
+      <AgentMemoryPopover
+        open={memoryOpen}
+        onClose={() => setMemoryOpen(false)}
+        entries={memoryEntries}
+        onChange={setMemoryEntries}
       />
       {/* Pass 233: bookmarks popover */}
       {bookmarksOpen && (
