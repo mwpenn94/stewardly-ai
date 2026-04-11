@@ -23,6 +23,8 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
   { keys: ["↑"], description: "Previous prompt from history (empty input)" },
   { keys: ["↓"], description: "Newer prompt from history" },
   { keys: ["Ctrl", "R"], description: "Reverse-search command history" },
+  { keys: ["Ctrl", "Z"], description: "Undo the most recent file edit", context: "outside text fields" },
+  { keys: ["Ctrl", "Shift", "Z"], description: "Redo the most recently undone file edit" },
   { keys: ["Esc"], description: "Abort a running ReAct loop", context: "while executing" },
   { keys: ["/"], description: "Open slash command picker", context: "at start of input" },
   { keys: ["@"], description: "Open file mention picker", context: "anywhere in input" },

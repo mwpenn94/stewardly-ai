@@ -27,7 +27,7 @@ import {
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
-  BookOpen,
+  BookOpen, History,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -117,6 +117,19 @@ import {
 } from "@/components/codeChat/planMode";
 import AgentTodoPanel from "@/components/codeChat/AgentTodoPanel";
 import ProjectInstructionsPopover from "@/components/codeChat/ProjectInstructionsPopover";
+import EditHistoryPopover from "@/components/codeChat/EditHistoryPopover";
+import {
+  loadHistory,
+  saveHistory,
+  recordEdit,
+  undo as undoEdit,
+  redo as redoEdit,
+  dropEntry,
+  clearHistory as clearEditHistory,
+  summarizeHistory,
+  type EditHistoryState,
+  type EditHistoryEntry,
+} from "@/components/codeChat/editHistory";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -382,6 +395,131 @@ function CodeChatInterface() {
     } catch { /* quota */ }
   }, [projectInstructionsOn]);
   const [instructionsOpen, setInstructionsOpen] = useState(false);
+
+  // Pass 239: edit history ring buffer
+  const [editHistory, setEditHistory] = useState<EditHistoryState>(() => loadHistory());
+  useEffect(() => { saveHistory(editHistory); }, [editHistory]);
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const dispatchMutation = trpc.codeChat.dispatch.useMutation();
+
+  // Listen for manual edits broadcast from the FileBrowser component
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        path: string;
+        before: string;
+        after: string;
+        kind: "write" | "edit";
+        origin: "agent" | "manual";
+      }>).detail;
+      if (!detail?.path) return;
+      setEditHistory((prev) =>
+        recordEdit(prev, {
+          path: detail.path,
+          before: detail.before,
+          after: detail.after,
+          kind: detail.kind,
+          origin: detail.origin,
+        }),
+      );
+    };
+    window.addEventListener("codechat-edit-recorded", handler);
+    return () => window.removeEventListener("codechat-edit-recorded", handler);
+  }, []);
+
+  // Watch for newly-completed assistant messages with edit/write tool
+  // events that carry before/after snapshots (Pass 205 added these)
+  // and record them in the edit history.
+  const recordedMsgIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (isExecuting) return;
+    for (const msg of messages) {
+      if (msg.role !== "assistant") continue;
+      if (recordedMsgIdsRef.current.has(msg.id)) continue;
+      if (!msg.toolEvents || msg.toolEvents.length === 0) {
+        recordedMsgIdsRef.current.add(msg.id);
+        continue;
+      }
+      const toRecord: Array<{ path: string; before: string; after: string; kind: "write" | "edit" }> = [];
+      for (const ev of msg.toolEvents) {
+        if (ev.toolName !== "edit_file" && ev.toolName !== "write_file") continue;
+        if (typeof ev.preview !== "string") continue;
+        try {
+          const parsed = JSON.parse(ev.preview);
+          const inner = parsed?.result;
+          if (!inner || typeof inner.before !== "string" || typeof inner.after !== "string") continue;
+          if (typeof inner.path !== "string") continue;
+          toRecord.push({
+            path: inner.path,
+            before: inner.before,
+            after: inner.after,
+            kind: ev.toolName === "edit_file" ? "edit" : "write",
+          });
+        } catch { /* skip */ }
+      }
+      if (toRecord.length > 0) {
+        setEditHistory((prev) => {
+          let next = prev;
+          for (const e of toRecord) {
+            next = recordEdit(next, { ...e, origin: "agent" });
+          }
+          return next;
+        });
+      }
+      recordedMsgIdsRef.current.add(msg.id);
+    }
+  }, [messages, isExecuting]);
+
+  const handleUndoEdit = useCallback(async () => {
+    const result = undoEdit(editHistory);
+    if (!result) {
+      toast.info("Nothing to undo");
+      return;
+    }
+    try {
+      await dispatchMutation.mutateAsync({
+        call: { name: "write_file", args: { path: result.entry.path, content: result.entry.before } },
+        allowMutations: true,
+        confirmDangerous: true,
+      });
+      setEditHistory(result.state);
+      toast.success(`Reverted ${result.entry.path}`);
+    } catch (err: any) {
+      toast.error(`Undo failed: ${err.message ?? err}`);
+    }
+  }, [editHistory, dispatchMutation]);
+
+  const handleRedoEdit = useCallback(async () => {
+    const result = redoEdit(editHistory);
+    if (!result) {
+      toast.info("Nothing to redo");
+      return;
+    }
+    try {
+      await dispatchMutation.mutateAsync({
+        call: { name: "write_file", args: { path: result.entry.path, content: result.entry.after } },
+        allowMutations: true,
+        confirmDangerous: true,
+      });
+      setEditHistory(result.state);
+      toast.success(`Re-applied ${result.entry.path}`);
+    } catch (err: any) {
+      toast.error(`Redo failed: ${err.message ?? err}`);
+    }
+  }, [editHistory, dispatchMutation]);
+
+  const handleRevertToBefore = useCallback(async (entry: EditHistoryEntry) => {
+    try {
+      await dispatchMutation.mutateAsync({
+        call: { name: "write_file", args: { path: entry.path, content: entry.before } },
+        allowMutations: true,
+        confirmDangerous: true,
+      });
+      toast.success(`Reverted ${entry.path} to before this edit`);
+    } catch (err: any) {
+      toast.error(`Revert failed: ${err.message ?? err}`);
+    }
+  }, [dispatchMutation]);
 
   // Pass 212: saved sessions library
   const [sessionsOpen, setSessionsOpen] = useState(false);
@@ -709,21 +847,34 @@ function CodeChatInterface() {
   // input is empty (so typing a literal "?" in a prompt still works).
   // Pass 216: Ctrl+R (or Cmd+R) opens the command history reverse-
   // search from anywhere in the Code Chat UI.
+  // Pass 239: Ctrl+Z / Ctrl+Shift+Z for edit undo/redo (only when not
+  // in a textarea so the native undo-in-input still works).
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTextField =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
       // Ctrl+R / Cmd+R → reverse-search — works even from the textarea
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r") {
         e.preventDefault();
         setHistoryOpen(true);
         return;
       }
+      // Ctrl+Z / Ctrl+Shift+Z → edit undo/redo
+      // Only fire outside text fields so in-textarea undo still works
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !isTextField) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedoEdit();
+        } else {
+          handleUndoEdit();
+        }
+        return;
+      }
       if (e.key === "?" && !input) {
-        const target = e.target as HTMLElement | null;
-        const isTextField =
-          target &&
-          (target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.isContentEditable);
         if (!isTextField) {
           e.preventDefault();
           setShortcutsOpen(true);
@@ -732,7 +883,7 @@ function CodeChatInterface() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [input]);
+  }, [input, handleUndoEdit, handleRedoEdit]);
 
   const isAdmin = user?.role === "admin";
 
@@ -1029,6 +1180,20 @@ function CodeChatInterface() {
         >
           <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/7
         </button>
+        {(() => {
+          const s = summarizeHistory(editHistory);
+          if (s.total === 0) return null;
+          return (
+            <button
+              onClick={() => setHistoryPanelOpen(true)}
+              className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Edit history"
+              title={`Edit history (${s.undoCount}/${s.total} applied, ⌃Z undo, ⌃⇧Z redo)`}
+            >
+              <History className="w-3 h-3" /> {s.undoCount}/{s.total}
+            </button>
+          );
+        })()}
         <button
           onClick={() => setInstructionsOpen(true)}
           className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
@@ -1674,6 +1839,16 @@ function CodeChatInterface() {
         enabled={projectInstructionsOn}
         onToggle={setProjectInstructionsOn}
       />
+      <EditHistoryPopover
+        open={historyPanelOpen}
+        onClose={() => setHistoryPanelOpen(false)}
+        state={editHistory}
+        onUndo={handleUndoEdit}
+        onRedo={handleRedoEdit}
+        onRevert={handleRevertToBefore}
+        onDrop={(id) => setEditHistory((prev) => dropEntry(prev, id))}
+        onClear={() => setEditHistory(clearEditHistory())}
+      />
       {/* Pass 233: bookmarks popover */}
       {bookmarksOpen && (
         <div
@@ -1958,6 +2133,7 @@ function FileBrowser() {
     if (!fileContent) return;
     setSaving(true);
     try {
+      const before = fileContent.content;
       const result = await dispatch.mutateAsync({
         call: { name: "write_file", args: { path: fileContent.path, content: draft } },
         allowMutations: true,
@@ -1966,6 +2142,19 @@ function FileBrowser() {
       if (result.kind === "write") {
         toast.success(
           `${result.result.created ? "Created" : "Saved"} ${result.result.path} (${result.result.byteLength}B)`,
+        );
+        // Pass 239: broadcast the manual edit so CodeChatInterface
+        // captures it in the edit history ring buffer
+        window.dispatchEvent(
+          new CustomEvent("codechat-edit-recorded", {
+            detail: {
+              path: fileContent.path,
+              before,
+              after: draft,
+              kind: "write",
+              origin: "manual",
+            },
+          }),
         );
         setFileContent({ path: fileContent.path, content: draft });
         setEditing(false);
