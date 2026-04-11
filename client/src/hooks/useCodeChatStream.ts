@@ -169,5 +169,49 @@ export function useCodeChatStream() {
     setError(null);
   }, []);
 
-  return { messages, isExecuting, currentTools, error, sendMessage, abort, clearHistory };
+  /**
+   * Regenerate the last assistant response: remove the last assistant
+   * message and re-send the most recent user message through the
+   * stream. Returns true if a regeneration actually kicked off.
+   * Pass 208.
+   */
+  const regenerateLast = useCallback(
+    async (config: StreamConfig = {}) => {
+      if (isExecuting) return false;
+      // Find the last user message in the current log
+      let lastUser: CodeChatMessage | null = null;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === "user") {
+          lastUser = messages[i];
+          break;
+        }
+      }
+      if (!lastUser) return false;
+      // Drop every message after (and including) the last user turn,
+      // then resend. This matches Claude Code's "regenerate" UX where
+      // the conversation trims back to the last question.
+      setMessages((prev) => {
+        const out: CodeChatMessage[] = [];
+        for (const m of prev) {
+          if (m === lastUser) break;
+          out.push(m);
+        }
+        return out;
+      });
+      await sendMessage(lastUser.content, config);
+      return true;
+    },
+    [isExecuting, messages, sendMessage],
+  );
+
+  return {
+    messages,
+    isExecuting,
+    currentTools,
+    error,
+    sendMessage,
+    abort,
+    clearHistory,
+    regenerateLast,
+  };
 }

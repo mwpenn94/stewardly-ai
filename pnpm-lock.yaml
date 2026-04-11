@@ -259,6 +259,9 @@ importers:
       remark-gfm:
         specifier: '4'
         version: 4.0.1
+      shiki:
+        specifier: '3'
+        version: 3.14.0
       snaptrade-typescript-sdk:
         specifier: ^9.0.173
         version: 9.0.173

@@ -25,6 +25,7 @@ import {
   CheckCircle2, AlertTriangle, Github, ExternalLink,
   Lock, Unlock, Terminal, Send, ChevronDown, ChevronRight,
   Activity, Save, Pencil, X, SplitSquareHorizontal,
+  Copy, RotateCw, Download, Keyboard,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -33,6 +34,19 @@ import DiffView from "@/components/codeChat/DiffView";
 import SlashCommandPopover from "@/components/codeChat/SlashCommandPopover";
 import MarkdownMessage from "@/components/codeChat/MarkdownMessage";
 import FileMentionPopover from "@/components/codeChat/FileMentionPopover";
+import KeyboardShortcutsOverlay from "@/components/codeChat/KeyboardShortcutsOverlay";
+import {
+  exportConversationAsMarkdown,
+  exportSingleMessageAsMarkdown,
+  downloadTextFile,
+} from "@/components/codeChat/conversationExport";
+import {
+  estimateMessageUsage,
+  sumUsage,
+  formatTokens,
+  formatCost,
+  type TokenUsage,
+} from "@/components/codeChat/tokenEstimator";
 import {
   filterCommands,
   tryRunSlashCommand,
@@ -178,10 +192,20 @@ function LiveToolEvents({ events }: { events: ToolEvent[] }) {
 
 const HISTORY_KEY = "stewardly-codechat-history";
 const MESSAGES_KEY = "stewardly-codechat-messages";
+const DRAFT_KEY = "stewardly-codechat-draft";
 
 function CodeChatInterface() {
   const { user } = useAuth();
-  const [input, setInput] = useState("");
+  // Pass 209: draft autosave — restore any in-progress text from the
+  // previous session so a refresh doesn't lose what the user typed
+  const [input, setInput] = useState(() => {
+    try {
+      return localStorage.getItem(DRAFT_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [allowMutations, setAllowMutations] = useState(false);
   const [maxIterations, setMaxIterations] = useState(5);
   const [modelOverride, setModelOverride] = useState<string | undefined>(undefined);
@@ -207,7 +231,7 @@ function CodeChatInterface() {
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const { messages, isExecuting, currentTools, error, sendMessage, abort, clearHistory } = useCodeChatStream();
+  const { messages, isExecuting, currentTools, error, sendMessage, abort, clearHistory, regenerateLast } = useCodeChatStream();
 
   // Derive slash-command suggestions from the current input
   const slashSuggestions: SlashCommand[] = useMemo(() => {
@@ -239,6 +263,29 @@ function CodeChatInterface() {
   const mentionFiles = mentionFilesQuery.data?.files ?? [];
   const mentionOpen = mentionQuery !== null && mentionFiles.length > 0;
 
+  // Pass 210: compute per-message usage + running session total
+  const messageUsages = useMemo<Map<string, TokenUsage>>(() => {
+    const map = new Map<string, TokenUsage>();
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+      if (msg.role !== "assistant") continue;
+      // Input = the most recent user turn before this assistant message
+      let input = "";
+      for (let j = i - 1; j >= 0; j--) {
+        if (messages[j].role === "user") {
+          input = messages[j].content;
+          break;
+        }
+      }
+      map.set(msg.id, estimateMessageUsage(input, msg.content, msg.model));
+    }
+    return map;
+  }, [messages]);
+  const sessionUsage = useMemo(
+    () => sumUsage(Array.from(messageUsages.values())),
+    [messageUsages],
+  );
+
   // Persist messages to localStorage
   useEffect(() => {
     if (messages.length > 0) {
@@ -246,14 +293,50 @@ function CodeChatInterface() {
     }
   }, [messages]);
 
+  // Pass 209: persist the in-progress draft to localStorage on every
+  // change, and clear it as soon as the draft becomes empty.
+  useEffect(() => {
+    try {
+      if (input) localStorage.setItem(DRAFT_KEY, input);
+      else localStorage.removeItem(DRAFT_KEY);
+    } catch { /* quota */ }
+  }, [input]);
+
+  // Pass 209: `?` opens the keyboard shortcuts overlay when the
+  // input is empty (so typing a literal "?" in a prompt still works).
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "?" && !input) {
+        const target = e.target as HTMLElement | null;
+        const isTextField =
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable);
+        if (!isTextField) {
+          e.preventDefault();
+          setShortcutsOpen(true);
+        }
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [input]);
+
   const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, currentTools]);
 
+  // Pass 211: persistent error banner instead of a single toast.
+  // Errors stick until the user dismisses them or kicks off a retry.
+  const [lastErrorBanner, setLastErrorBanner] = useState<string | null>(null);
   useEffect(() => {
-    if (error) toast.error(error);
+    if (error) {
+      setLastErrorBanner(error);
+      toast.error(error);
+    }
   }, [error]);
 
   const handleSend = useCallback(async () => {
@@ -301,6 +384,7 @@ function CodeChatInterface() {
     try { localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory)); } catch { /* quota */ }
     setHistoryIndex(-1);
     setInput("");
+    setLastErrorBanner(null); // Pass 211: clear previous error on new send
     await sendMessage(text, {
       allowMutations: isAdmin && allowMutations,
       maxIterations,
@@ -398,6 +482,16 @@ function CodeChatInterface() {
           <Terminal className="w-3.5 h-3.5 text-accent" />
           <span className="font-medium">Code Chat</span>
         </div>
+        {messages.length > 0 && (
+          <div
+            className="hidden md:flex items-center gap-1 text-[10px] text-muted-foreground font-mono tabular-nums"
+            title={`${sessionUsage.inputTokens} in / ${sessionUsage.outputTokens} out`}
+          >
+            <span>{formatTokens(sessionUsage.totalTokens)}</span>
+            <span className="text-muted-foreground/40">·</span>
+            <span>{formatCost(sessionUsage.costUSD)}</span>
+          </div>
+        )}
         <div className="flex-1" />
         {isAdmin && (
           <label className="flex items-center gap-1.5 cursor-pointer">
@@ -414,6 +508,31 @@ function CodeChatInterface() {
         >
           {[1, 3, 5, 7, 10].map(n => <option key={n} value={n}>{n} steps</option>)}
         </select>
+        <button
+          onClick={() => setShortcutsOpen(true)}
+          className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Keyboard shortcuts"
+          title="Keyboard shortcuts (press ?)"
+        >
+          <Keyboard className="w-3 h-3" /> ?
+        </button>
+        <button
+          onClick={() => {
+            if (messages.length === 0) {
+              toast.info("Nothing to export yet");
+              return;
+            }
+            downloadTextFile(
+              exportConversationAsMarkdown(messages),
+              `code-chat-${new Date().toISOString().slice(0, 10)}.md`,
+            );
+          }}
+          className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Export conversation as markdown"
+          title="Export conversation"
+        >
+          <Download className="w-3 h-3" /> Export
+        </button>
         <button
           onClick={() => setShowFiles(!showFiles)}
           className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${showFiles ? "bg-accent/10 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
@@ -454,8 +573,14 @@ function CodeChatInterface() {
           </div>
         )}
 
-        {messages.map(msg => (
-          <div key={msg.id} className={`${msg.role === "user" ? "flex justify-end" : ""}`}>
+        {messages.map((msg, msgIdx) => {
+          // Only the most recent assistant message shows the Regenerate button
+          const isLastAssistant =
+            msg.role === "assistant" &&
+            msgIdx === messages.length - 1 &&
+            !isExecuting;
+          return (
+          <div key={msg.id} className={`${msg.role === "user" ? "flex justify-end" : "group"}`}>
             {msg.role === "user" ? (
               <div className="bg-accent/10 text-foreground px-4 py-2.5 rounded-2xl rounded-br-md max-w-[85%] text-sm">
                 {msg.content}
@@ -477,7 +602,7 @@ function CodeChatInterface() {
                 <div className="bg-card/60 border border-border/30 px-4 py-3 rounded-xl text-sm leading-relaxed">
                   <MarkdownMessage content={msg.content} />
                 </div>
-                {/* Meta */}
+                {/* Meta + action bar */}
                 <div className="flex items-center gap-2 text-[9px] text-muted-foreground/50">
                   {msg.model && <span>{msg.model}</span>}
                   {msg.toolCallCount != null && msg.toolCallCount > 0 && (
@@ -485,11 +610,71 @@ function CodeChatInterface() {
                   )}
                   {msg.iterations != null && <span>• {msg.iterations} iterations</span>}
                   {msg.totalDurationMs != null && <span>• {(msg.totalDurationMs / 1000).toFixed(1)}s</span>}
+                  {(() => {
+                    const usage = messageUsages.get(msg.id);
+                    if (!usage) return null;
+                    return (
+                      <span
+                        className="tabular-nums"
+                        title={`${usage.inputTokens} in / ${usage.outputTokens} out`}
+                      >
+                        • {formatTokens(usage.totalTokens)} {usage.costUSD !== null && `(${formatCost(usage.costUSD)})`}
+                      </span>
+                    );
+                  })()}
+                  <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      className="hover:text-foreground transition-colors p-1 rounded"
+                      aria-label="Copy response"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(msg.content);
+                          toast.success("Response copied");
+                        } catch {
+                          toast.error("Copy failed");
+                        }
+                      }}
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      className="hover:text-foreground transition-colors p-1 rounded"
+                      aria-label="Export message as markdown"
+                      onClick={() => {
+                        downloadTextFile(
+                          exportSingleMessageAsMarkdown(msg),
+                          `code-chat-${msg.id}.md`,
+                        );
+                      }}
+                    >
+                      <Download className="w-3 h-3" />
+                    </button>
+                    {isLastAssistant && (
+                      <button
+                        type="button"
+                        className="hover:text-foreground transition-colors p-1 rounded"
+                        aria-label="Regenerate response"
+                        onClick={async () => {
+                          const ok = await regenerateLast({
+                            allowMutations: isAdmin && allowMutations,
+                            maxIterations,
+                            model: modelOverride,
+                          });
+                          if (!ok) toast.error("Nothing to regenerate");
+                        }}
+                      >
+                        <RotateCw className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {/* Live streaming tool events */}
         {isExecuting && currentTools.length > 0 && (
@@ -503,6 +688,42 @@ function CodeChatInterface() {
           </div>
         )}
       </div>
+
+      {/* Error banner (Pass 211) */}
+      {lastErrorBanner && !isExecuting && (
+        <div className="px-3 py-2 border-t border-destructive/30 bg-destructive/5 text-xs flex items-start gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-destructive">Request failed</div>
+            <div className="text-muted-foreground break-words">{lastErrorBanner}</div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              className="px-2 py-0.5 rounded border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors"
+              onClick={async () => {
+                const ok = await regenerateLast({
+                  allowMutations: isAdmin && allowMutations,
+                  maxIterations,
+                  model: modelOverride,
+                });
+                if (ok) setLastErrorBanner(null);
+                else toast.info("No previous prompt to retry");
+              }}
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              className="px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setLastErrorBanner(null)}
+              aria-label="Dismiss error"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Input area */}
       <div className="border-t border-border/40 p-3">
@@ -576,6 +797,10 @@ function CodeChatInterface() {
         </div>
       )}
       </div>{/* end split layout */}
+      <KeyboardShortcutsOverlay
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
     </div>
   );
 }
