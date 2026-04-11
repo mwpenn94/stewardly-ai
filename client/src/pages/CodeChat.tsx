@@ -139,6 +139,8 @@ import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
 import TodoMarkerPanel from "@/components/codeChat/TodoMarkerPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import ToolAuditPopover from "@/components/codeChat/ToolAuditPopover";
+import AnsiOutput from "@/components/codeChat/AnsiOutput";
+import { hasAnsi } from "@/components/codeChat/ansiParser";
 import {
   loadState as loadAuditState,
   saveState as saveAuditState,
@@ -204,6 +206,31 @@ function extractDiffFromTrace(
 
 // ─── Tool Trace Visualization ──────────────────────────────────────────────
 
+/**
+ * Extract the stdout/stderr/exit_code/command from a run_bash dispatch
+ * result serialized in the SSE tool_result preview. Returns null if
+ * the tool isn't run_bash or the shape is wrong. Pass 250.
+ */
+function extractBashResult(
+  toolName: string | undefined,
+  rawPreview: string | undefined,
+): { command: string; stdout: string; stderr: string; exitCode: number } | null {
+  if (!rawPreview || toolName !== "run_bash") return null;
+  try {
+    const parsed = JSON.parse(rawPreview);
+    const inner = parsed?.result;
+    if (!inner) return null;
+    return {
+      command: typeof inner.command === "string" ? inner.command : "",
+      stdout: typeof inner.stdout === "string" ? inner.stdout : "",
+      stderr: typeof inner.stderr === "string" ? inner.stderr : "",
+      exitCode: typeof inner.exitCode === "number" ? inner.exitCode : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function TraceView({ traces }: { traces: TraceStep[] }) {
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
 
@@ -220,6 +247,7 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
       {traces.map(t => {
         const diff = extractDiffFromTrace(t.toolName, t.rawPreview);
         const grep = extractGrepMatches(t.toolName, t.rawPreview);
+        const bash = extractBashResult(t.toolName, t.rawPreview);
         return (
         <div key={t.step} className="border border-border/40 rounded-lg overflow-hidden bg-card/30">
           <button
@@ -243,6 +271,18 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
                 {grep.matches.length} hit{grep.matches.length === 1 ? "" : "s"}
               </Badge>
             )}
+            {bash && (
+              <Badge
+                variant="outline"
+                className={`text-[9px] h-4 px-1.5 ${
+                  bash.exitCode === 0
+                    ? "border-emerald-500/50 text-emerald-500"
+                    : "border-destructive/50 text-destructive"
+                }`}
+              >
+                exit {bash.exitCode}
+              </Badge>
+            )}
             {t.durationMs != null && (
               <span className="text-[9px] text-muted-foreground/60 tabular-nums">{t.durationMs}ms</span>
             )}
@@ -263,10 +303,51 @@ function TraceView({ traces }: { traces: TraceStep[] }) {
                 />
               ) : grep ? (
                 <GrepResultView result={grep} />
+              ) : bash ? (
+                <div className="bg-background/80 rounded border border-border/30 overflow-hidden">
+                  {bash.command && (
+                    <div className="px-2 py-1 text-[10px] font-mono text-muted-foreground bg-muted/20 border-b border-border/20 flex items-center gap-1.5">
+                      <span className="text-accent">$</span>
+                      <span className="truncate">{bash.command}</span>
+                    </div>
+                  )}
+                  {bash.stdout && (
+                    <AnsiOutput
+                      text={bash.stdout}
+                      maxChars={5000}
+                      className="p-2 max-h-60 overflow-auto"
+                    />
+                  )}
+                  {bash.stderr && (
+                    <div className="border-t border-border/20">
+                      <div className="px-2 py-0.5 text-[9px] uppercase tracking-wider text-destructive bg-destructive/5">
+                        stderr
+                      </div>
+                      <AnsiOutput
+                        text={bash.stderr}
+                        maxChars={3000}
+                        className="p-2 max-h-40 overflow-auto text-destructive/90"
+                      />
+                    </div>
+                  )}
+                  {!bash.stdout && !bash.stderr && (
+                    <div className="p-2 text-[11px] text-muted-foreground italic">
+                      (no output)
+                    </div>
+                  )}
+                </div>
               ) : t.observation && (
-                <pre className="text-[11px] bg-background/80 rounded p-2 overflow-x-auto max-h-60 font-mono whitespace-pre-wrap border border-border/30">
-                  {t.observation.length > 3000 ? t.observation.slice(0, 3000) + "\n... (truncated)" : t.observation}
-                </pre>
+                hasAnsi(t.observation) ? (
+                  <AnsiOutput
+                    text={t.observation}
+                    maxChars={3000}
+                    className="bg-background/80 rounded p-2 max-h-60 overflow-auto border border-border/30"
+                  />
+                ) : (
+                  <pre className="text-[11px] bg-background/80 rounded p-2 overflow-x-auto max-h-60 font-mono whitespace-pre-wrap border border-border/30">
+                    {t.observation.length > 3000 ? t.observation.slice(0, 3000) + "\n... (truncated)" : t.observation}
+                  </pre>
+                )
               )}
             </div>
           )}
