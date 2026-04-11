@@ -11,9 +11,14 @@ import path from "path";
 import fs from "fs/promises";
 import { getWorkspaceFileIndex } from "./fileIndex";
 import { buildSymbolIndex, type SymbolIndex } from "./symbolIndex";
+import {
+  registerCacheSubscriber,
+  byExtension,
+} from "./cacheInvalidation";
 
 const CACHE_TTL_MS = 60_000;
-const SUPPORTED_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
+const SUPPORTED_EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+const SUPPORTED_EXTS_SET = new Set(SUPPORTED_EXTS);
 const MAX_FILE_SIZE = 256 * 1024;
 
 let cached: { index: SymbolIndex; builtAt: number } | null = null;
@@ -24,12 +29,21 @@ export function clearSymbolIndexCache(): void {
   buildInFlight = null;
 }
 
+// Build-loop Pass 9 (G10): subscribe to file-change notifications so
+// agent edits invalidate the symbol index immediately instead of
+// waiting up to 60s for the TTL to fire.
+registerCacheSubscriber({
+  name: "symbolIndex",
+  predicate: byExtension(SUPPORTED_EXTS),
+  clear: clearSymbolIndexCache,
+});
+
 async function rebuildIndex(workspaceRoot: string): Promise<SymbolIndex> {
   const files = await getWorkspaceFileIndex(workspaceRoot);
   const sources: Array<{ path: string; content: string }> = [];
   for (const rel of files) {
     const ext = path.extname(rel).toLowerCase();
-    if (!SUPPORTED_EXTS.has(ext)) continue;
+    if (!SUPPORTED_EXTS_SET.has(ext)) continue;
     try {
       const abs = path.resolve(workspaceRoot, rel);
       const stat = await fs.stat(abs);

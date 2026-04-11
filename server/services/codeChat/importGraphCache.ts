@@ -8,9 +8,14 @@ import path from "path";
 import fs from "fs/promises";
 import { getWorkspaceFileIndex } from "./fileIndex";
 import { buildImportGraph, type ImportGraph } from "./importGraph";
+import {
+  registerCacheSubscriber,
+  byExtension,
+} from "./cacheInvalidation";
 
 const CACHE_TTL_MS = 60_000;
-const SUPPORTED_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
+const SUPPORTED_EXTS_LIST = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+const SUPPORTED_EXTS = new Set(SUPPORTED_EXTS_LIST);
 const MAX_FILE_SIZE = 256 * 1024;
 
 let cached: { graph: ImportGraph; knownFiles: string[]; builtAt: number } | null = null;
@@ -20,6 +25,13 @@ export function clearImportGraphCache(): void {
   cached = null;
   buildInFlight = null;
 }
+
+// Build-loop Pass 9 (G10): eager invalidation on file change.
+registerCacheSubscriber({
+  name: "importGraph",
+  predicate: byExtension(SUPPORTED_EXTS_LIST),
+  clear: clearImportGraphCache,
+});
 
 async function rebuildGraph(
   workspaceRoot: string,

@@ -6,9 +6,13 @@ import path from "path";
 import fs from "fs/promises";
 import { getWorkspaceFileIndex } from "./fileIndex";
 import { extractMarkers, type TodoMarker } from "./todoMarkers";
+import {
+  registerCacheSubscriber,
+  byExtension,
+} from "./cacheInvalidation";
 
 const CACHE_TTL_MS = 60_000;
-const SUPPORTED_EXTS = new Set([
+const SUPPORTED_EXTS_LIST = [
   ".ts",
   ".tsx",
   ".js",
@@ -34,7 +38,8 @@ const SUPPORTED_EXTS = new Set([
   ".yml",
   ".sh",
   ".sql",
-]);
+];
+const SUPPORTED_EXTS = new Set(SUPPORTED_EXTS_LIST);
 const MAX_FILE_SIZE = 256 * 1024;
 
 let cached: { markers: TodoMarker[]; builtAt: number } | null = null;
@@ -44,6 +49,13 @@ export function clearTodoMarkersCache(): void {
   cached = null;
   buildInFlight = null;
 }
+
+// Build-loop Pass 9 (G10): eager invalidation on file change.
+registerCacheSubscriber({
+  name: "todoMarkers",
+  predicate: byExtension(SUPPORTED_EXTS_LIST),
+  clear: clearTodoMarkersCache,
+});
 
 async function rebuildMarkers(workspaceRoot: string): Promise<TodoMarker[]> {
   const files = await getWorkspaceFileIndex(workspaceRoot);
