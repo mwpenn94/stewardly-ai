@@ -188,6 +188,10 @@ import {
   type VulnSeverity,
 } from "../services/codeChat/npmInspector";
 import {
+  computeWorkspaceHealth,
+  type HealthInput,
+} from "../services/codeChat/workspaceHealth";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -885,6 +889,102 @@ export const codeChatRouter = router({
       const ok = await deleteCheckpointFromDisk(WORKSPACE_ROOT, input.id);
       return { ok };
     }),
+
+  // Pass 261: workspace health dashboard (aggregates every inspector)
+  workspaceHealth: protectedProcedure.query(async () => {
+    // Pull from every cached source in parallel. Each source has its
+    // own TTL cache so this stays snappy — we do NOT re-run tsc or
+    // tests here; users must visit those panels explicitly to refresh.
+    const [importData, todoMarkers, symbolIdx, diagCache] = await Promise.all([
+      getImportGraph(WORKSPACE_ROOT),
+      getTodoMarkers(WORKSPACE_ROOT),
+      getSymbolIndex(WORKSPACE_ROOT),
+      Promise.resolve(getCachedDiagnostics()),
+    ]);
+
+    // Circular deps from the import graph
+    const cycles = findCycles(importData.graph);
+    const circularCycles = cycles.length;
+    const circularFilesInCycles = cycles.reduce(
+      (acc, c) => acc + c.files.length,
+      0,
+    );
+
+    // Dead code
+    const deadReport = {
+      entries: [] as Array<{ path: string; name: string }>,
+      orphanFiles: [] as string[],
+    };
+    try {
+      const { detectDeadCode } = await import("../services/codeChat/deadCode");
+      const report = detectDeadCode(symbolIdx, importData.graph, {
+        limit: 1000,
+      });
+      deadReport.entries = report.entries.map((e) => ({
+        path: e.path,
+        name: e.name,
+      }));
+      deadReport.orphanFiles = report.orphanFiles;
+    } catch {
+      /* ignore */
+    }
+
+    // TODO marker stats
+    const markerStats = { TODO: 0, FIXME: 0, HACK: 0, BUG: 0 };
+    for (const m of todoMarkers) {
+      if (m.kind in markerStats) {
+        markerStats[m.kind as keyof typeof markerStats]++;
+      }
+    }
+
+    // Diagnostics — only the cached snapshot; the caller refreshes via
+    // the Problems tab
+    let tsErrors = 0;
+    let tsWarnings = 0;
+    if (diagCache) {
+      for (const d of diagCache.diagnostics) {
+        if (d.severity === "error") tsErrors++;
+        else if (d.severity === "warning") tsWarnings++;
+      }
+    }
+
+    // Git status for dirty file count
+    const gitEntries = await getWorkspaceGitStatus(WORKSPACE_ROOT);
+    const gitStaged = gitEntries.filter((e) => e.staged).length;
+    const gitDirty = gitEntries.filter((e) => e.dirty).length;
+    const gitUntracked = gitEntries.filter((e) => e.worktree === "untracked").length;
+
+    const input: HealthInput = {
+      tsErrors,
+      tsWarnings,
+      diagnosticsDurationMs: diagCache?.durationMs,
+      // Tests + npm data are not cached server-side (runTests is a mutation
+      // and npmInspect runs on demand); we treat them as "unknown" => 0
+      testsFailed: 0,
+      testsTotal: 0,
+      testsPassed: 0,
+      outdatedMajor: 0,
+      outdatedMinor: 0,
+      outdatedPatch: 0,
+      vulnCritical: 0,
+      vulnHigh: 0,
+      vulnModerate: 0,
+      circularCycles,
+      circularFilesInCycles,
+      deadExports: deadReport.entries.length,
+      orphanFiles: deadReport.orphanFiles.length,
+      todoCount: markerStats.TODO,
+      fixmeCount: markerStats.FIXME,
+      bugCount: markerStats.BUG,
+      hackCount: markerStats.HACK,
+      gitDirtyFiles: gitDirty,
+      gitStaged,
+      gitUntracked,
+    };
+
+    const report = computeWorkspaceHealth(input);
+    return { report, input };
+  }),
 
   // Pass 260: npm outdated + audit inspector
   npmInspect: protectedProcedure

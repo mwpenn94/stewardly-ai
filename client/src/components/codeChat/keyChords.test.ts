@@ -167,4 +167,11 @@ describe("allChordLabels", () => {
     expect(mChord).toBeDefined();
     expect(mChord!.label).toContain("NPM");
   });
+
+  it("includes the g+q Health chord added in Pass 261", () => {
+    const labels = allChordLabels();
+    const qChord = labels.find((l) => l.keys[1] === "q");
+    expect(qChord).toBeDefined();
+    expect(qChord!.label).toContain("Health");
+  });
 });

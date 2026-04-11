@@ -149,6 +149,7 @@ import CommitTimelinePanel from "@/components/codeChat/CommitTimelinePanel";
 import LicenseScannerPanel from "@/components/codeChat/LicenseScannerPanel";
 import DeadCodePanel from "@/components/codeChat/DeadCodePanel";
 import NpmInspectorPanel from "@/components/codeChat/NpmInspectorPanel";
+import WorkspaceHealthPanel from "@/components/codeChat/WorkspaceHealthPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import {
   loadHistory,
@@ -2362,6 +2363,9 @@ export default function CodeChatPage() {
               <TabsTrigger value="npm" className="gap-1.5">
                 <Activity className="h-3.5 w-3.5" /> NPM
               </TabsTrigger>
+              <TabsTrigger value="health" className="gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Health
+              </TabsTrigger>
               <TabsTrigger value="imports" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> Imports
               </TabsTrigger>
@@ -2442,6 +2446,10 @@ export default function CodeChatPage() {
 
           <TabsContent value="npm">
             <div className="p-6"><NpmInspectorPanel /></div>
+          </TabsContent>
+
+          <TabsContent value="health">
+            <div className="p-6"><WorkspaceHealthPanel /></div>
           </TabsContent>
 
           <TabsContent value="imports">

@@ -105,6 +105,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "tab:licenses", label: "Dependency licenses", category: "tab", hint: "g n", keywords: ["license", "legal", "npm", "packages", "spdx"] },
   { id: "tab:dead", label: "Dead code detector", category: "tab", hint: "g v", keywords: ["dead", "unused", "orphan", "exports", "void"] },
   { id: "tab:npm", label: "NPM outdated + audit", category: "tab", hint: "g m", keywords: ["npm", "outdated", "audit", "vulnerabilities", "security"] },
+  { id: "tab:health", label: "Workspace health dashboard", category: "tab", hint: "g q", keywords: ["health", "score", "dashboard", "quality", "overview"] },
   { id: "tab:imports", label: "Go to Imports", category: "tab", keywords: ["dependencies", "graph"] },
   { id: "tab:todos", label: "Go to TODOs", category: "tab", keywords: ["fixme", "markers"] },
   // Popovers
