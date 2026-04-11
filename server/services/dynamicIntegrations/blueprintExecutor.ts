@@ -136,8 +136,15 @@ async function fetchSource(
   const creds = await resolveCreds(blueprint);
   const req = buildRequest(blueprint, creds);
   if (!req) return { error: "blueprint source URL is missing" };
+  return fetchUrl(req.url, req.init);
+}
+
+async function fetchUrl(
+  url: string,
+  init: RequestInit,
+): Promise<{ body: string; contentType: string; status: number } | { error: string }> {
   try {
-    const response = await fetch(req.url, req.init);
+    const response = await fetch(url, init);
     const contentType = response.headers.get("content-type") ?? "";
     const buffer = await response.arrayBuffer();
     if (buffer.byteLength > MAX_RESPONSE_BYTES) {
@@ -148,6 +155,101 @@ async function fetchSource(
   } catch (e: unknown) {
     return { error: (e as Error).message || "fetch failed" };
   }
+}
+
+/**
+ * Iterate a paginated source. Supports three pagination kinds:
+ *   - cursor:  after each page, pull `{cursorField}` from the parsed JSON envelope
+ *              and send it as `{pageParam}`.
+ *   - page:    numeric page counter (1..maxPages), sent as `{pageParam}`.
+ *   - offset:  offset counter (0, pageSize, 2*pageSize, ...), sent as `{pageParam}`.
+ * Max pages is capped by `pagination.maxPages` (hard ceiling: 50).
+ * Each page runs through extractRecords; records are concatenated up to
+ * the blueprint's `maxRecordsPerRun`.
+ */
+async function fetchPaginated(
+  blueprint: BlueprintDefinition,
+): Promise<
+  | { pages: Array<{ body: string; contentType: string; status: number }>; warnings: string[] }
+  | { error: string; warnings: string[] }
+> {
+  const pagination = blueprint.sourceConfig.pagination;
+  const warnings: string[] = [];
+
+  // No pagination → single-page fetch.
+  if (!pagination || pagination.kind === "none") {
+    const first = await fetchSource(blueprint);
+    if ("error" in first) return { error: first.error, warnings };
+    return { pages: [first], warnings };
+  }
+
+  // Inline samples don't paginate.
+  if (blueprint.sourceConfig.inlineSample) {
+    const first = await fetchSource(blueprint);
+    if ("error" in first) return { error: first.error, warnings };
+    warnings.push("pagination skipped for inline sample");
+    return { pages: [first], warnings };
+  }
+
+  const creds = await resolveCreds(blueprint);
+  const maxPages = Math.min(pagination.maxPages ?? 10, 50);
+  const pageSize = pagination.pageSize ?? 100;
+  const pageParam = pagination.pageParam ?? (pagination.kind === "offset" ? "offset" : "page");
+  const cursorField = pagination.cursorField ?? "next_cursor";
+  const pages: Array<{ body: string; contentType: string; status: number }> = [];
+
+  let cursor: string | null = null;
+  for (let i = 0; i < maxPages; i++) {
+    const req = buildRequest(blueprint, creds);
+    if (!req) return { error: "blueprint source URL is missing", warnings };
+    const url = new URL(req.url);
+    if (pagination.kind === "page") {
+      url.searchParams.set(pageParam, String(i + 1));
+      if (pagination.pageSize) url.searchParams.set("page_size", String(pagination.pageSize));
+    } else if (pagination.kind === "offset") {
+      url.searchParams.set(pageParam, String(i * pageSize));
+      url.searchParams.set("limit", String(pageSize));
+    } else if (pagination.kind === "cursor") {
+      if (cursor) url.searchParams.set(pageParam, cursor);
+    }
+    const result = await fetchUrl(url.toString(), req.init);
+    if ("error" in result) {
+      warnings.push(`page ${i + 1} failed: ${result.error}`);
+      if (pages.length === 0) return { error: result.error, warnings };
+      break;
+    }
+    pages.push(result);
+
+    // Cursor mode: pull next cursor from the body.
+    if (pagination.kind === "cursor") {
+      try {
+        const parsed = JSON.parse(result.body);
+        const next = readNestedCursor(parsed, cursorField);
+        if (!next) break;
+        if (next === cursor) {
+          warnings.push("cursor did not advance — stopping");
+          break;
+        }
+        cursor = String(next);
+      } catch {
+        warnings.push(`page ${i + 1}: cursor body not parseable — stopping`);
+        break;
+      }
+    }
+  }
+
+  return { pages, warnings };
+}
+
+function readNestedCursor(obj: unknown, field: string): unknown {
+  if (!obj || typeof obj !== "object") return undefined;
+  const segments = field.split(".");
+  let cur: unknown = obj;
+  for (const seg of segments) {
+    if (!cur || typeof cur !== "object") return undefined;
+    cur = (cur as Record<string, unknown>)[seg];
+  }
+  return cur;
 }
 
 /** Parse the raw body according to the blueprint's extraction config. */
@@ -297,18 +399,35 @@ export async function executeBlueprint(
   } as never);
 
   try {
-    // 1. Fetch
-    const fetched = await fetchSource(blueprint);
+    // 1. Fetch (possibly paginated)
+    const fetched = await fetchPaginated(blueprint);
     if ("error" in fetched) {
       errorMessage = fetched.error;
+      warnings.push(...fetched.warnings);
       throw new Error(fetched.error);
     }
-    recordsFetched = fetched.body.length;
+    warnings.push(...fetched.warnings);
+    recordsFetched = fetched.pages.reduce((acc, p) => acc + p.body.length, 0);
 
-    // 2. Extract
-    const extracted = extractRecords(fetched.body, fetched.contentType, blueprint);
+    // 2. Extract (concatenate records across pages)
+    let allRecords: Record_[] = [];
+    let format: RawFormat = "unknown";
+    const cap = blueprint.maxRecordsPerRun ?? 10000;
+    for (const page of fetched.pages) {
+      const extracted = extractRecords(page.body, page.contentType, blueprint);
+      if (extracted.format !== "unknown") format = extracted.format;
+      warnings.push(...extracted.warnings);
+      for (const rec of extracted.records) {
+        if (allRecords.length >= cap) break;
+        allRecords.push(rec);
+      }
+      if (allRecords.length >= cap) {
+        warnings.push(`stopped at maxRecordsPerRun=${cap}`);
+        break;
+      }
+    }
+    const extracted = { records: allRecords, format, warnings: [] as string[] };
     recordsParsed = extracted.records.length;
-    warnings.push(...extracted.warnings);
 
     // 3. Transform
     const { accepted, rejected } = runPipeline(extracted.records, blueprint.transformSteps ?? []);
@@ -350,7 +469,7 @@ export async function executeBlueprint(
         rawFormat: extracted.format,
         inferredSchema: schemaToPersisted(inferred) as unknown,
         recordCount: validated.length,
-        sourceHash: hashString(fetched.body),
+        sourceHash: hashString(fetched.pages.map((p) => p.body).join("\n")),
         fetchedAt: nowMs(),
       } as never);
     } catch (e: unknown) {

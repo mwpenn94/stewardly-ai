@@ -691,11 +691,93 @@ export const WEALTH_CHAT_TOOLS: Tool[] = [
   },
 ];
 
+// ─── Dynamic Integrations Tools ──────────────────────────────────
+// Lets the AI draft a brand-new dynamic integration blueprint from a URL +
+// description, probe a source to preview its shape, and run an existing
+// blueprint end-to-end. All three tools delegate to
+// `server/services/dynamicIntegrations/*` so the agent uses the same
+// pipeline as the UI.
+export const DYNAMIC_INTEGRATION_TOOLS: Tool[] = [
+  {
+    type: "function",
+    function: {
+      name: "blueprint_probe",
+      description:
+        "Probe a data source URL or pasted sample to preview the shape (detected format, record count, inferred schema fields). Use this BEFORE drafting a blueprint so the draft can match the real field names.",
+      parameters: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "HTTP URL to fetch (GET)." },
+          inlineSample: { type: "string", description: "Raw body as a string — use when there is no URL." },
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "blueprint_draft",
+      description:
+        "Draft a dynamic-integration blueprint from a plain-English description plus an optional URL or inline sample. Returns a JSON draft that can be passed to blueprint_save.",
+      parameters: {
+        type: "object",
+        properties: {
+          description: { type: "string", description: "Plain-English description of the data source and what it should sink to." },
+          url: { type: "string" },
+          inlineSample: { type: "string" },
+          preferSink: {
+            type: "string",
+            enum: [
+              "ingested_records",
+              "learning_definitions",
+              "lead_captures",
+              "user_memories",
+              "proactive_insights",
+              "none",
+            ],
+          },
+          name: { type: "string" },
+        },
+        required: ["description"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "blueprint_list",
+      description:
+        "List all dynamic-integration blueprints the current user owns. Returns id, name, sinkKind, status, totalRuns.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "blueprint_run",
+      description:
+        "Run an existing dynamic-integration blueprint by id. Set dryRun=true to preview without writing to the sink.",
+      parameters: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          dryRun: { type: "boolean" },
+        },
+        required: ["id"],
+        additionalProperties: false,
+      },
+    },
+  },
+];
+
 export const ALL_AI_TOOLS: Tool[] = [
   ...CALCULATOR_TOOLS,
   ...MODEL_TOOLS,
   ...WEALTH_ENGINE_TOOLS,
   ...WEALTH_CHAT_TOOLS,
+  ...DYNAMIC_INTEGRATION_TOOLS,
 ];
 
 // ─── Tool Execution (inline calculator logic) ────────────────────

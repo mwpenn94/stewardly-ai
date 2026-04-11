@@ -30,3 +30,17 @@ export { executeBlueprint } from "./blueprintExecutor";
 export { draftBlueprint } from "./aiBlueprintDrafter";
 export type { DraftRequest, DraftResult } from "./aiBlueprintDrafter";
 export { dispatchToSink } from "./sinkDispatcher";
+export {
+  executeBlueprintTool,
+  BLUEPRINT_TOOL_NAMES,
+  type BlueprintToolContext,
+} from "./agentTools";
+export {
+  schedulerTick,
+  startBlueprintScheduler,
+  stopBlueprintScheduler,
+  parseCron,
+  cronMatchesDate,
+  isDue,
+  type ParsedCron,
+} from "./blueprintScheduler";

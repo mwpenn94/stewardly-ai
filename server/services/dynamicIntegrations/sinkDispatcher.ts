@@ -18,10 +18,14 @@
  */
 
 import { getDb } from "../../db";
+import crypto from "crypto";
 import { eq, and } from "drizzle-orm";
 import {
   ingestedRecords,
   learningDefinitions,
+  leadPipeline,
+  userMemories,
+  proactiveInsights,
 } from "../../../drizzle/schema";
 import { getByPath } from "./transformEngine";
 import type { BlueprintDefinition } from "./types";
@@ -85,18 +89,218 @@ export async function dispatchToSink(
     case "learning_definitions":
       return writeLearningDefinitions(blueprint, records);
     case "lead_captures":
-      result.warnings.push("lead_captures sink: not yet implemented — records passed through");
-      return result;
+      return writeLeadPipeline(blueprint, records);
     case "user_memories":
-      result.warnings.push("user_memories sink: not yet implemented — records passed through");
-      return result;
+      return writeUserMemories(blueprint, records, options);
     case "proactive_insights":
-      result.warnings.push("proactive_insights sink: not yet implemented — records passed through");
-      return result;
+      return writeProactiveInsights(blueprint, records, options);
     default:
       result.warnings.push(`unknown sink kind "${(sink as { kind?: string }).kind}"`);
       return result;
   }
+}
+
+// ─── hash helper for emailHash / phoneHash ──────────────────────────────
+function sha256Hex(input: string): string {
+  return crypto.createHash("sha256").update(input.trim().toLowerCase()).digest("hex");
+}
+
+async function writeLeadPipeline(
+  blueprint: BlueprintDefinition,
+  records: Record<string, unknown>[],
+): Promise<SinkWriteResult> {
+  const result: SinkWriteResult = { written: 0, skipped: 0, errored: 0, warnings: [] };
+  const db = await requireDb();
+  const sink = blueprint.sinkConfig;
+  const targetSegment = sink.target || "dynamic_blueprint";
+  for (const record of records) {
+    try {
+      const rawEmail = asString(
+        resolveField(record, sink.fieldMap, "email") ??
+          resolveField(record, sink.fieldMap, "email_address") ??
+          "",
+      );
+      if (!rawEmail || !rawEmail.includes("@")) {
+        result.skipped++;
+        continue;
+      }
+      const emailHash = sha256Hex(rawEmail);
+      // Dedup on emailHash
+      const existing = await db
+        .select()
+        .from(leadPipeline)
+        .where(eq(leadPipeline.emailHash, emailHash))
+        .limit(1);
+      if (existing.length > 0) {
+        result.skipped++;
+        continue;
+      }
+      const rawPhone = asString(
+        resolveField(record, sink.fieldMap, "phone") ??
+          resolveField(record, sink.fieldMap, "phone_number") ??
+          "",
+      );
+      const phoneHash = rawPhone ? sha256Hex(rawPhone) : null;
+      const firstName = asString(
+        resolveField(record, sink.fieldMap, "first_name") ??
+          resolveField(record, sink.fieldMap, "firstName") ??
+          resolveField(record, sink.fieldMap, "name") ??
+          "",
+      ).slice(0, 100);
+      const lastName = asString(
+        resolveField(record, sink.fieldMap, "last_name") ??
+          resolveField(record, sink.fieldMap, "lastName") ??
+          "",
+      ).slice(0, 100);
+      const linkedinUrl = asString(
+        resolveField(record, sink.fieldMap, "linkedin_url") ??
+          resolveField(record, sink.fieldMap, "linkedin") ??
+          "",
+      ).slice(0, 500);
+      const company = asString(
+        resolveField(record, sink.fieldMap, "company") ??
+          resolveField(record, sink.fieldMap, "organization") ??
+          "",
+      ).slice(0, 200);
+      const title = asString(
+        resolveField(record, sink.fieldMap, "title") ??
+          resolveField(record, sink.fieldMap, "job_title") ??
+          "",
+      ).slice(0, 200);
+      const city = asString(resolveField(record, sink.fieldMap, "city") ?? "").slice(0, 100);
+      const state = asString(resolveField(record, sink.fieldMap, "state") ?? "").slice(0, 50);
+      const zip = asString(resolveField(record, sink.fieldMap, "zip") ?? resolveField(record, sink.fieldMap, "postal_code") ?? "").slice(0, 20);
+
+      await db.insert(leadPipeline).values({
+        leadSourceId: null,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        emailHash,
+        phoneHash,
+        linkedinUrl: linkedinUrl || null,
+        company: company || null,
+        title: title || null,
+        city: city || null,
+        state: state || null,
+        zip: zip || null,
+        targetSegment,
+        segmentData: { blueprintId: blueprint.id, blueprintSlug: blueprint.slug } as unknown,
+        enrichmentData: record as unknown,
+        status: "new" as never,
+      } as never);
+      result.written++;
+    } catch (e: unknown) {
+      result.errored++;
+      result.warnings.push(`lead_pipeline insert failed: ${(e as Error).message}`);
+    }
+  }
+  return result;
+}
+
+async function writeUserMemories(
+  blueprint: BlueprintDefinition,
+  records: Record<string, unknown>[],
+  options: { triggeredBy?: number | null; jobId?: number | null },
+): Promise<SinkWriteResult> {
+  const result: SinkWriteResult = { written: 0, skipped: 0, errored: 0, warnings: [] };
+  const db = await requireDb();
+  const sink = blueprint.sinkConfig;
+  const userId = options.triggeredBy ?? blueprint.createdBy ?? blueprint.ownerId;
+  if (!userId) {
+    result.warnings.push("user_memories sink: no userId available on blueprint or trigger");
+    return result;
+  }
+  const category = (sink.target || "fact") as "fact" | "preference" | "episodic" | "amp_engagement" | "ho_domain_trajectory";
+  for (const record of records) {
+    try {
+      const content = asString(
+        resolveField(record, sink.fieldMap, "content") ??
+          resolveField(record, sink.fieldMap, "text") ??
+          resolveField(record, sink.fieldMap, "summary") ??
+          JSON.stringify(record),
+      ).slice(0, 4000);
+      if (!content) {
+        result.skipped++;
+        continue;
+      }
+      await db.insert(userMemories).values({
+        userId,
+        category: category as never,
+        content,
+        confidence: "0.80",
+        source: `blueprint:${blueprint.slug}`,
+        sessionId: null,
+      } as never);
+      result.written++;
+    } catch (e: unknown) {
+      result.errored++;
+      result.warnings.push(`user_memories insert failed: ${(e as Error).message}`);
+    }
+  }
+  return result;
+}
+
+async function writeProactiveInsights(
+  blueprint: BlueprintDefinition,
+  records: Record<string, unknown>[],
+  options: { triggeredBy?: number | null; jobId?: number | null },
+): Promise<SinkWriteResult> {
+  const result: SinkWriteResult = { written: 0, skipped: 0, errored: 0, warnings: [] };
+  const db = await requireDb();
+  const sink = blueprint.sinkConfig;
+  const userId = options.triggeredBy ?? blueprint.createdBy ?? blueprint.ownerId;
+  if (!userId) {
+    result.warnings.push("proactive_insights sink: no userId available on blueprint or trigger");
+    return result;
+  }
+  const category = (sink.target || "engagement") as
+    | "compliance" | "portfolio" | "tax" | "engagement" | "spending" | "life_event";
+  for (const record of records) {
+    try {
+      const title = asString(
+        resolveField(record, sink.fieldMap, "title") ??
+          resolveField(record, sink.fieldMap, "name") ??
+          resolveField(record, sink.fieldMap, "headline") ??
+          "",
+      ).slice(0, 255);
+      const description = asString(
+        resolveField(record, sink.fieldMap, "description") ??
+          resolveField(record, sink.fieldMap, "summary") ??
+          resolveField(record, sink.fieldMap, "content") ??
+          "",
+      ).slice(0, 4000);
+      const suggestedAction = asString(
+        resolveField(record, sink.fieldMap, "suggested_action") ??
+          resolveField(record, sink.fieldMap, "action") ??
+          "",
+      ).slice(0, 4000);
+      const priorityRaw = asString(
+        resolveField(record, sink.fieldMap, "priority") ?? "",
+      ).toLowerCase();
+      const priority = ["low", "medium", "high", "critical"].includes(priorityRaw) ? priorityRaw : "medium";
+      if (!title) {
+        result.skipped++;
+        continue;
+      }
+      await db.insert(proactiveInsights).values({
+        userId,
+        organizationId: null,
+        clientId: null,
+        category: category as never,
+        priority: priority as never,
+        title,
+        description: description || null,
+        suggestedAction: suggestedAction || null,
+        status: "new" as never,
+        metadata: { blueprintId: blueprint.id, blueprintSlug: blueprint.slug, record } as unknown,
+      } as never);
+      result.written++;
+    } catch (e: unknown) {
+      result.errored++;
+      result.warnings.push(`proactive_insights insert failed: ${(e as Error).message}`);
+    }
+  }
+  return result;
 }
 
 async function writeIngestedRecords(

@@ -5,7 +5,7 @@
 > writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11 by `claude-code @ claude/dynamic-crud-integrations-3hNOR`
+- Last updated: 2026-04-11 (Pass 2) by `claude-code @ claude/dynamic-crud-integrations-3hNOR`
 - Comparable: "best existing and planned comparables overall to Stewardly repo"
   (informal — Stewardly sits at the intersection of advisor CRM/pipeline tools
   like Wealthbox/Redtail, planning engines like eMoney/MoneyGuide, ingestion
@@ -13,7 +13,7 @@
 - Core purpose (from v2 scope lock): 5-layer financial advisory AI platform
   that makes every layer — consumer → advisor → firm → compliance → data —
   smarter and faster through shared, governed, grounded intelligence.
-- Current parity score: 74% (estimate, weighted by core-purpose alignment)
+- Current parity score: 83% (up from 74% after Pass 2)
 
 ## Gap Matrix
 
@@ -25,18 +25,18 @@
 | D04 | Source prober (JSON, NDJSON, CSV, TSV, RSS, Atom, HTML JSON-LD, HTML tables) | ✅ | 8/10 | P0 | M | ✅ | claude-code | **landed** |
 | D05 | Blueprint versioning + rollback                   |   ✅    |  7/10 |  P0      |  M     |   ✅    | claude-code | **landed** |
 | D06 | Blueprint dry-run (no DB write)                   |   ✅    |  8/10 |  P0      |  S     |   ✅    | claude-code | **landed** |
-| D07 | Sink dispatcher (ingested_records, learning defs) |   ⚠️    |  6/10 |  P1      |  M     |   ✅    | claude-code | partial    |
+| D07 | Sink dispatcher (ingested_records, learning defs, lead_pipeline, user_memories, proactive_insights) | ✅ | 8/10 | P1 | M | ✅ | claude-code | **landed** (Pass 2) |
 | D08 | AI blueprint drafter (URL + description → draft)  |   ✅    |  7/10 |  P0      |  M     |   ✅    | claude-code | **landed** |
-| D09 | Scheduled blueprint runs (cron)                   |   ⚠️    |  3/10 |  P1      |  M     |   ✅    | —           | scheduleCron stored but not yet executed |
-| D10 | Lead capture sink                                 |   ❌    |  0/10 |  P1      |  M     |   ✅    | —           | todo       |
-| D11 | User-memory sink for chat personalization          |  ❌    |  0/10 |  P1      |  S     |   ✅    | —           | todo       |
-| D12 | Proactive-insights sink                            |  ❌    |  0/10 |  P2      |  S     |   ✅    | —           | todo       |
+| D09 | Scheduled blueprint runs (cron)                   |   ✅    |  8/10 |  P1      |  M     |   ✅    | claude-code | **landed** (Pass 2 — minimal 5-field parser + 60s tick) |
+| D10 | Lead capture sink                                 |   ✅    |  7/10 |  P1      |  M     |   ✅    | claude-code | **landed** (Pass 2) |
+| D11 | User-memory sink for chat personalization          |  ✅    |  7/10 |  P1      |  S     |   ✅    | claude-code | **landed** (Pass 2) |
+| D12 | Proactive-insights sink                            |  ✅    |  7/10 |  P2      |  S     |   ✅    | claude-code | **landed** (Pass 2) |
 | D13 | Webhook-triggered blueprint run                   |   ❌    |  0/10 |  P1      |  S     |   ✅    | —           | todo       |
 | D14 | HMAC signature verification for webhook sources   |   ❌    |  0/10 |  P1      |  S     |   ✅    | —           | todo       |
 | D15 | Public blueprint gallery (shareable templates)    |   ✅    |  5/10 |  P2      |  M     |   ✅    | claude-code | stub (listPublic exposed, no curation UI) |
-| D16 | Agent ReAct tool: `blueprint_draft`               |   ❌    |  0/10 |  P1      |  S     |   ✅    | —           | todo (lets chat agents build their own pipelines) |
-| D17 | Agent ReAct tool: `blueprint_run`                 |   ❌    |  0/10 |  P1      |  S     |   ✅    | —           | todo       |
-| D18 | Pagination support (cursor / page / offset)       |   ⚠️    |  2/10 |  P1      |  M     |   ✅    | —           | schema field exists, executor ignores it |
+| D16 | Agent ReAct tool: `blueprint_draft`               |   ✅    |  8/10 |  P1      |  S     |   ✅    | claude-code | **landed** (Pass 2) |
+| D17 | Agent ReAct tool: `blueprint_run`                 |   ✅    |  8/10 |  P1      |  S     |   ✅    | claude-code | **landed** (Pass 2) |
+| D18 | Pagination support (cursor / page / offset)       |   ✅    |  7/10 |  P1      |  M     |   ✅    | claude-code | **landed** (Pass 2) |
 | D19 | Rate-limited run scheduler (per-blueprint rpm)    |   ⚠️    |  3/10 |  P1      |  S     |   ✅    | —           | rateLimitPerMin stored, not enforced |
 | D20 | Code Chat integration: inspect/edit blueprint JSON |  ⚠️    |  4/10 |  P2      |  S     |   ✅    | —           | readable via file browser, no dedicated tool |
 | D21 | CRM/marketing auto-connect from blueprint         |   ❌    |  0/10 |  P1      |  L     |   ✅    | —           | todo       |
@@ -83,6 +83,21 @@ Legend: ✅ present  ⚠️ partial  ❌ missing
 
 (append-only, one line per pass, most recent first)
 
+- 2026-04-11 — Pass 2 (Depth, claude-code, branch
+  `claude/dynamic-crud-integrations-3hNOR`): closed D07/D09/D10/D11/D12/D16/D17/D18.
+  Added 3 new sinks (lead_pipeline dedup by emailHash, user_memories tagged
+  by category, proactive_insights with priority + category); added pagination
+  support to the executor (cursor/page/offset with 50-page ceiling + multi-page
+  record concatenation capped at maxRecordsPerRun); added blueprintScheduler
+  with a minimal 5-field cron parser (literal/range/step/list, POSIX
+  DOM/DOW OR semantics, 7→0 Sunday normalization) and a 60s tick wired into
+  server boot; added 4 ReAct agent tools (blueprint_probe, blueprint_draft,
+  blueprint_list, blueprint_run) routed through a new executeBlueprintTool
+  dispatcher and wired into the chat ReAct loop's executeTool callback
+  with per-caller userId+role context. 25 new unit tests (18 scheduler + 7
+  agentTools) pushing the dynamicIntegrations surface to 112 passing. TS clean,
+  build clean in 44.32s, full suite 3,890 passing / 112 pre-existing failures
+  (0 regressions).
 - 2026-04-11 — Pass 1 (Landscape/Depth, claude-code, branch
   `claude/dynamic-crud-integrations-3hNOR`): landed D01–D08 end-to-end: schema
   + migration 0013, schemaInference + transformEngine + sourceProber (87

@@ -435,6 +435,10 @@ const chatRouter = router({
         model: input.model || (resolvedConfig?.modelPreferences?.primary && resolvedConfig.modelPreferences.primary !== "default" ? resolvedConfig.modelPreferences.primary : undefined),
         contextualLLM,
         executeTool: async (toolName: string, args: any) => {
+          if (toolName.startsWith("blueprint_")) {
+            const { executeBlueprintTool } = await import("./services/dynamicIntegrations");
+            return executeBlueprintTool(toolName, args, { userId: ctx.user.id, role: ctx.user.role });
+          }
           return toolName.startsWith("calc_") || toolName.startsWith("model_")
             ? await executeAITool(toolName, args)
             : await executeSearchTool(toolName, args);
