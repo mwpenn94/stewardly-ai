@@ -101,6 +101,10 @@ import {
   graphStats,
 } from "../services/codeChat/importGraph";
 import {
+  findCycles,
+  summarizeCycles,
+} from "../services/codeChat/circularDeps";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -430,6 +434,16 @@ export const codeChatRouter = router({
     clearImportGraphCache();
     const { graph, knownFiles } = await getImportGraph(WORKSPACE_ROOT);
     return graphStats(graph, knownFiles);
+  }),
+
+  // Pass 247: circular dependency detector
+  findCircularDeps: protectedProcedure.query(async () => {
+    const { graph } = await getImportGraph(WORKSPACE_ROOT);
+    const cycles = findCycles(graph);
+    return {
+      cycles,
+      summary: summarizeCycles(cycles),
+    };
   }),
 
   // Pass 246: TODO marker scanner
