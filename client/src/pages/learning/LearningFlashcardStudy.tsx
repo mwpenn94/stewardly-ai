@@ -35,6 +35,15 @@ import {
 import { toast } from "sonner";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { recordStudyEvent } from "@/lib/dailyStreak";
+import { KeyboardHelpOverlay } from "@/components/learning/KeyboardHelpOverlay";
+
+const FLASHCARD_SHORTCUTS = [
+  { keys: "Space", label: "Flip the card", group: "Flashcard" },
+  { keys: "1  /  W", label: "Mark wrong", group: "Flashcard" },
+  { keys: "2  /  R", label: "Mark right", group: "Flashcard" },
+  { keys: "Esc", label: "Exit to track", group: "Navigation" },
+  { keys: "?", label: "Toggle this help", group: "Navigation" },
+];
 
 export default function LearningFlashcardStudy() {
   const params = useParams<{ slug: string }>();
@@ -330,6 +339,7 @@ export default function LearningFlashcardStudy() {
           )
         )}
       </div>
+      <KeyboardHelpOverlay shortcuts={FLASHCARD_SHORTCUTS} title="Flashcard shortcuts" />
     </AppShell>
   );
 }

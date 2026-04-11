@@ -447,6 +447,72 @@ DisciplineDeepDive.
 - Localized content — English only
 - No "Share your streak" / social affordance (Future-State)
 
+### Pass 6 — Adversarial + Polish (2026-04-11, Claude Code)
+**Pass type:** Adversarial / Polish hybrid
+**Temperature in:** 0.14
+**Temperature out:** 0.12
+
+Quick adversarial sweep over Pass 5's new code (daily streak + Cases
+registry + TrackDetail readiness) and a keyboard-help affordance
+polish that was overdue since Pass 1 added the shortcuts.
+
+**Addressed:**
+- **`LearningReview.restart` state reset bug**: before this pass
+  `restart` only called `dueQ.refetch()` and relied on the useEffect
+  that watches `dueQ.data` to reset every piece of session state.
+  But if the refetch returned an identical data reference (common
+  when nothing has changed server-side), the effect never fired and
+  the session sat in a stale "complete=true" state. Fix: explicitly
+  reset every piece of state inside `restart()` before the refetch.
+  This is the kind of bug that only surfaces when a user clicks
+  "Try again" immediately after finishing — exactly the moment that
+  should feel frictionless.
+- **`KeyboardHelpOverlay` component** (NEW,
+  `client/src/components/learning/KeyboardHelpOverlay.tsx`):
+  `?`/`Shift+/`-triggered modal listing every keyboard shortcut
+  available on the current page, grouped by category (Flashcard /
+  Quiz / Navigation). ARIA dialog semantics (`role="dialog"`,
+  `aria-modal="true"`, `aria-labelledby`), close-on-backdrop,
+  close-on-Escape, close-on-X button. Session pages drop in
+  `<KeyboardHelpOverlay shortcuts={...} />` with a per-page shortcut
+  list. Before this pass the shortcuts were only discoverable as a
+  single-line footer hint — fine for power users but invisible to
+  newcomers.
+- **Wired into 3 session pages**: LearningFlashcardStudy (5
+  shortcuts), LearningQuizRunner (5 shortcuts), LearningReview (8
+  shortcuts, grouped). Footer hints updated to include "? help"
+  so the affordance is discoverable from the existing footer too.
+
+**Dimension deltas (self-rated, conservative):**
+- Usability: 7.5 → 8 (shortcuts are now discoverable — a real
+  accessibility win for keyboard-only users)
+- Robustness: 7.5 → 7.5 (one real bug fixed, no new surface area)
+- Delightfulness: 8.5 → 8.5
+
+**Composite:** 8.3 → 8.4
+
+**Build + test state (end of Pass 6):**
+- TS check: 0 errors
+- Build: clean in 20.22s
+- Full suite: 3,878 passing / 113 env-dependent failing (same as
+  Pass 5 — no new tests because the component is all rendering +
+  interactive which can't be unit-tested in this suite)
+- Total new tests across Passes 1-6: +101 (unchanged)
+
+**Convergence check after Pass 6:**
+- ≥3 passes total: 6 ✅
+- Temperature ≤0.2: 0.12 ✅
+- Score improvement <0.2 for 2 consecutive passes: Pass 5→6 delta
+  0.1 ✅ (need ONE more pass with <0.2 delta to satisfy the
+  "2 consecutive" criterion)
+- No active branches: ✅
+- Zero regressions: ✅
+- <3 genuinely novel findings in last pass: 2 (restart reset bug +
+  keyboard help overlay) ✅
+- No dimension <7.0: ✅ (lowest 7.5 Robustness)
+- TWO consecutive convergence confirmations with zero actions: ❌
+  (none yet — next pass should be the first)
+
 ## Reconciliation Log
 
 (parallel passes write here if they conflict with a landing commit)

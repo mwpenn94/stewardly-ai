@@ -32,6 +32,15 @@ import {
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { toast } from "sonner";
 import { recordStudyEvent } from "@/lib/dailyStreak";
+import { KeyboardHelpOverlay } from "@/components/learning/KeyboardHelpOverlay";
+
+const QUIZ_SHORTCUTS = [
+  { keys: "1 – 6", label: "Select an option", group: "Quiz" },
+  { keys: "Enter", label: "Submit / advance", group: "Quiz" },
+  { keys: "→", label: "Next question after reveal", group: "Quiz" },
+  { keys: "Esc", label: "Exit to track", group: "Navigation" },
+  { keys: "?", label: "Toggle this help", group: "Navigation" },
+];
 
 export default function LearningQuizRunner() {
   const params = useParams<{ slug: string }>();
@@ -357,10 +366,11 @@ export default function LearningQuizRunner() {
         {!complete && (
           <p className="text-[11px] text-muted-foreground text-center">
             1–{Math.max(4, Array.isArray(current?.options) ? (current!.options as string[]).length : 4)} select
-            · Enter submit/next · Esc exit
+            · Enter submit/next · Esc exit · ? help
           </p>
         )}
       </div>
+      <KeyboardHelpOverlay shortcuts={QUIZ_SHORTCUTS} title="Quiz shortcuts" />
     </AppShell>
   );
 }

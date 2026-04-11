@@ -50,6 +50,18 @@ import {
 import { toast } from "sonner";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { recordStudyEvent } from "@/lib/dailyStreak";
+import { KeyboardHelpOverlay } from "@/components/learning/KeyboardHelpOverlay";
+
+const REVIEW_SHORTCUTS = [
+  { keys: "Space", label: "Flip a flashcard", group: "Flashcard" },
+  { keys: "1  /  W", label: "Mark flashcard wrong", group: "Flashcard" },
+  { keys: "2  /  R", label: "Mark flashcard right", group: "Flashcard" },
+  { keys: "1 – 6", label: "Select a quiz option", group: "Quiz" },
+  { keys: "Enter", label: "Submit / advance", group: "Quiz" },
+  { keys: "→", label: "Next item after reveal", group: "Quiz" },
+  { keys: "Esc", label: "Exit the session", group: "Navigation" },
+  { keys: "?", label: "Toggle this help", group: "Navigation" },
+];
 
 type SessionItem =
   | {
@@ -180,6 +192,20 @@ export default function LearningReview() {
   }, [current, selected, applyOutcome]);
 
   const restart = useCallback(() => {
+    // Explicitly reset every piece of session state BEFORE refetching
+    // so the UI flips back to the loading/first-item view immediately.
+    // The existing useEffect that watches `dueQ.data` also resets on
+    // data changes, but if the refetch returns an identical reference
+    // the effect won't re-run — explicit reset is load-bearing.
+    setIndex(0);
+    setFlipped(false);
+    setSelected(null);
+    setRevealed(false);
+    setCorrectCount(0);
+    setIncorrectCount(0);
+    setStreak(0);
+    setBestStreak(0);
+    setComplete(false);
     dueQ.refetch();
   }, [dueQ]);
 
@@ -400,11 +426,12 @@ export default function LearningReview() {
         {!complete && (
           <p className="text-[11px] text-muted-foreground text-center">
             {current?.kind === "flashcard"
-              ? "Space to flip · 1 or W wrong · 2 or R right · Esc to exit"
-              : "1–4 to select · Enter to submit/advance · Esc to exit"}
+              ? "Space to flip · 1 or W wrong · 2 or R right · Esc to exit · ? help"
+              : "1–4 to select · Enter to submit/advance · Esc to exit · ? help"}
           </p>
         )}
       </div>
+      <KeyboardHelpOverlay shortcuts={REVIEW_SHORTCUTS} title="Review shortcuts" />
     </AppShell>
   );
 }
