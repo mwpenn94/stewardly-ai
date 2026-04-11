@@ -1206,16 +1206,24 @@ export default function Chat() {
       setInput("");
       navigate("/chat");
     };
+    // Pass 6 (G25): Shift+V routes to Chat's local voice mode when
+    // the user is on a chat page (useKeyboardShortcuts dispatches
+    // `chat:toggle-handsfree` in that case). Chat's voice → send flow
+    // is different from PIL's voice → navigate flow, so each owns
+    // its own handler.
+    const onToggleHandsFree = () => toggleHandsFree();
     window.addEventListener("pil:stop-stream", onStop as EventListener);
     window.addEventListener("pil:send", onVoiceSend as EventListener);
     window.addEventListener("pil:new-chat", onVoiceNewChat as EventListener);
+    window.addEventListener("chat:toggle-handsfree", onToggleHandsFree as EventListener);
     return () => {
       window.removeEventListener("pil:stop-stream", onStop as EventListener);
       window.removeEventListener("pil:send", onVoiceSend as EventListener);
       window.removeEventListener("pil:new-chat", onVoiceNewChat as EventListener);
+      window.removeEventListener("chat:toggle-handsfree", onToggleHandsFree as EventListener);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input, navigate]);
+  }, [input, navigate, toggleHandsFree]);
 
   // Keep the ref in sync for voice recognition callback
   useEffect(() => {

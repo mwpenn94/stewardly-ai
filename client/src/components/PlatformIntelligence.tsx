@@ -173,6 +173,14 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, currentPage: location }));
   }, [location]);
 
+  // Pass 6 (G15 / G25 / G26): keyboard shortcut event bus. Shift+V and
+  // Shift+R (from useKeyboardShortcuts) fire these window events; the
+  // PIL provider handles them centrally so the shortcut works on every
+  // page. The `actions` closure below holds the real implementations —
+  // we bind them through a ref to avoid stale-closure bugs when the
+  // shortcut fires during a state transition.
+  const actionsRef = useRef<PILActions | null>(null);
+
   useEffect(() => {
     const onResize = () => {
       const w = window.innerWidth;
@@ -410,6 +418,32 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     speak: speakShort,
     playSound: (soundId) => SOUNDS[soundId]?.(),
   };
+
+  // Pass 6: keep the ref in sync so window-event handlers always hit
+  // the latest actions, and wire the listeners once on mount.
+  actionsRef.current = actions;
+  useEffect(() => {
+    const onToggle = () => {
+      const current = actionsRef.current;
+      if (!current) return;
+      if (state.handsFreeActive) current.exitHandsFree();
+      else current.enterHandsFree();
+    };
+    const onReadPage = () => {
+      const current = actionsRef.current;
+      if (!current) return;
+      // `readCurrentPage` is on AudioCompanion, not PIL. The existing
+      // processIntent voice path uses the same call — here we hit it
+      // via the same module.
+      audioCompanion.readCurrentPage?.();
+    };
+    window.addEventListener("pil:toggle-handsfree", onToggle);
+    window.addEventListener("pil:read-page", onReadPage);
+    return () => {
+      window.removeEventListener("pil:toggle-handsfree", onToggle);
+      window.removeEventListener("pil:read-page", onReadPage);
+    };
+  }, [state.handsFreeActive, audioCompanion]);
 
   return (
     <PILCtx.Provider value={{ ...state, ...actions }}>
