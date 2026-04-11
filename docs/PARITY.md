@@ -3,16 +3,16 @@
 > Always re-read immediately before writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11T00:00:10Z by chat:optimize-crud-parity-satL3/pass-11
+- Last updated: 2026-04-11T00:00:11Z by chat:optimize-crud-parity-satL3/pass-12
 - Comparable target: "best-in-class dynamic CRUD for any integration/pipeline/ingestion process, even where documentation or vendor support is limited or nonexistent but data is available from sources — plus continuous improvement across Code Chat, AI chat financial force multipliers, learning/training/onboarding, CRM/marketing coordination, workflow, and agentic AI/browser/device automation"
 - Core purpose: Give Stewardly the ability to dynamically CRUD any integration/pipeline/ingestion process and turn the resulting data fabric into a continuous-improvement force multiplier across every Stewardly surface
 - Target user: Platform admin / advisor-tier developer / power client who needs to wire a new data source without writing a schema migration or waiting on a vendor SDK
 - Success metric: Time from "I have a URL/sample/cURL and know the data is there" → "live, scheduled, personalized ingestion flowing into the 5-layer intelligence stack" → <10 min (documented), <30 min (undocumented), <60 min (portal-only)
-- Current parity score: 43% (unchanged — Pass 11 Future-State-2 adds economic + moat dimensions that aren't scored inline)
-- Passes completed: 11
-- Last reconciliation: 2026-04-11T00:00:10Z (conflicts: 0)
+- Current parity score: 41% (composite 4.1 / 10 — Pass 12 Depth-3 found a third orphaned infrastructure piece: the knowledge graph)
+- Passes completed: 12
+- Last reconciliation: 2026-04-11T00:00:11Z (conflicts: 0)
 - Active branches: 2 of 5 (B + E; A/C/D shelved)
-- Convergence status: **NOT CONVERGED** — Pass 11 produced 18 novel E-series and M-series findings
+- Convergence status: **NOT CONVERGED, DIVERGING** — 12 passes, still finding 15-20 novel items per pass. The loop is structurally stuck in divergence mode; implementation passes are needed to protect improvements and ratchet the score up.
 
 ## Pillars (comparable target decomposition)
 1. **Dynamic CRUD for integrations / pipelines / ingestion** (documented, undocumented, portal-only)
@@ -851,6 +851,64 @@ pick one of three business models:
 advisor tier 15 sources, manager tier 50 sources, platform tier
 unlimited (but subject to E2/E3 review).
 
+## Pass 12 Depth-3 — Knowledge Graph Orphan + Event-Sourcing + Convergence Reality
+
+Pass 12 drills three new angles: (1) the knowledge graph subsystem
+(`knowledgeGraphDynamic.ts`) — the THIRD orphaned infrastructure piece
+after `deepContextAssembler` and `improvementLoops`; (2) the event-sourcing
+opportunity hidden in the ingestion tables; (3) a convergence reality check.
+
+| ID | Finding | Layer | Severity | Code Evidence | Effort |
+|---|---|---|---|---|---|
+| T1 | **Knowledge graph is not wired from the ingestion path.** `knowledgeGraphDynamic.extractEntitiesFromText` is called from conversation / analysis paths but NOT from scraped page processing or document extraction. Entities are extracted twice (once by the scraper's `extractWithLLM`, once by the graph), and the two data sets never meet | Graph orphan | high | `knowledgeGraphDynamic.ts` vs `dataIngestion.ts` extractors | M — call `extractEntitiesFromText` from `normalizeAndStore` after a successful extraction |
+| T2 | `entityResolutionRules` table exists — suggests a formal entity-resolution infrastructure. Likely populated (or not) by seed code. Grep for usage will tell. Either way: entity resolution is declared but unclear if operational | Dead feature? | med | `knowledgeGraphDynamic.ts` L7 import + schema.ts | S — audit and either wire or delete |
+| T3 | `knowledge_graph_edges.weight` allows weighted relationships but **no stale-edge decay**. An edge representing "Company X hires Person Y" from 2 years ago has the same weight as today's fact. No temporal relevance | Graph quality | med | edges schema | S — add `lastConfirmedAt` + decay function in query |
+| T4 | **No `knowledge_graph_entities.source_ingestion_job_id` back-reference**. If an entity is extracted from an ingested record, we can't trace "which scrape produced this entity". **Same X11 lineage gap applied to the graph — compound with Pass 9 P1 + Pass 12 T1 into a triple-orphaned data layer** | Lineage | high | schema | S — 1 FK column + writer update |
+| T5 | Graph extraction is **non-deterministic** — LLM may produce different entity sets across two runs on the same text. No canonicalization. Graph state drifts over time | Determinism | med | LLM-based extraction | M — cache + canonical form per source_hash |
+| T6 | **Triple-orphan compound**: Pass 9 P1 (assembler ignores ingested records) + Pass 12 T1 (graph ignores ingestion) + Pass 5 F2 (improvement loops ignore ingestion) = the ingestion output fabric is invisible to the THREE core cross-cutting systems. This is not a set of unrelated gaps — it's a single architectural disconnect | Meta-finding | critical | three separate files | L — architectural realignment; one "ingestion dispatcher" could fan-out to all three |
+| T7 | **Event-sourcing opportunity** — `ingestion_jobs` + `web_scrape_results` + `document_extractions` are effectively an append-only observation log. If `normalizeAndStore` treated every write as an **event** and computed current state as a projection, we'd get free time-travel, audit trail, and replay (G6, G34 for free). Today `normalizeAndStore` overwrites on higher confidence (D21 gap). **Reframing opportunity** | Architecture | beyond-parity | `dataIngestion.ts` normalizer | L — but amortized across G6, G34, X11, X16 |
+| T8 | `entityResolutionRules` could handle the Pass 3 A3 cross-provider entityId collision. "GOOGL" from provider A + "GOOGL" from provider B merged into one canonical entity with dual provenance. **We have the mechanism; it's not wired.** | Entity resolution | high | `knowledgeGraphDynamic.ts` + normalizer | M — wire resolver into normalizer |
+| T9 | `contextType: "analysis"` is used by improvementLoops + knowledgeGraphDynamic. **Adding ingestion records to the "analysis" branch of `deepContextAssembler` benefits BOTH** loops + graph extraction, with zero new infra | Cross-cut force multiplier | high | contextualLLM + deepContextAssembler | S — single code path, multiple consumers |
+| T10 | **Convergence reality check (meta)** — after 12 passes, score has dropped 62% → 41% (21 points). If convergence target is ~70%, we need +29 points, which requires (a) stopping to find novel gaps, AND (b) implementation passes landing protected improvements. (a) hasn't happened yet (Pass 11 found 21, Pass 12 finds 18). **The loop as structured cannot self-converge — it needs implementation to feed protected improvements back in.** | Process meta | critical | loop topology | — |
+| T11 | **Meta-doc gap** — PARITY.md has no "Resolved" section. Every gap is "open". When implementation passes begin, there's no place to track closed gaps with commit SHAs. Fix: add a `## Resolved Items` section with 4 columns (ID, commit SHA, pass number, resolution note). Pass 7 L18 sort-of flagged this | Meta doc | low | this file | S — schema addition |
+| T12 | `entity_resolution_rules` hints at a pattern matcher (regex → canonical). This is useful for phone normalization, address canon, company name variants, ticker symbols. **A pure function library could consolidate half of A16 tag-vocab + D3 transform registry + T8 entity resolution.** Three gaps, one solution | Consolidation | high | — | M — shared `canonicalization.ts` module |
+| T13 | **`contextType: "chat"` vs `"analysis"` routing is inconsistent** — chat-context assembler reads from a subset of sources; analysis-context assembler from a different subset. Neither includes ingestion records (T6). Fix: make contextType a profile of WHICH sources to query, not a hardcoded branch | Abstraction | med | `deepContextAssembler.ts` | M |
+| T14 | **Test coverage audit (re-visit Pass 7 L7)**: if 12 passes find 193 gaps and the test suite doesn't catch any, either tests are over-specified (only happy paths) or sparse (no coverage on these paths). Without running coverage analysis, we can't quantify, but 15-20 novel gaps/pass strongly suggests coverage < 60% on the integration hot path | Test gap | high | estimate | L — coverage run + targeted test backfill |
+| T15 | **CLAUDE.md vs PARITY.md governance gap** — CLAUDE.md claims 200+ convergence passes. PARITY.md finds 193 missing items. Both are true because CLAUDE.md's "convergence" was scoped to Code Chat + Chat + Learning + visual polish. **Integration / dynamic CRUD was simply not on the optimization team's radar.** The project needs a "what's being optimized" ledger to prevent future blind spots | Governance | med | CLAUDE.md | S — add "Optimization Scope Ledger" section |
+| T16 | **Toolkit.js is not exercised against integrations.** `node toolkit.js verify && snapshot` runs per-pass in CLAUDE.md, but no `integration` pass type. M6 (recursive optimization per integration) would extend toolkit.js with a new pass type. Concrete path from Pass 11's moat design | Toolkit | med | toolkit.js | M |
+| T17 | `integration_improvement_log` is append-only but **has no archive path**. At 10x scale, grows forever. Same partitioning need as X8. Carry through the retention policy layer from X16 | Scale | low | schema.integrationImprovementLog | S — add retentionUntil |
+| T18 | `entityResolutionRules` pattern is DECLARED but nowhere in ingestion is `resolveEntity(name)` called. **Deeper than Pass 2 D8 — at least D8 (integrationAnalyzer) was a pure function; T18 is a full table + schema that nothing writes to.** Elevate severity | Dead feature | high | schema + ingestion path | S — wire or delete |
+
+### Convergence reality check (Pass 12 — replaces Pass 8 check)
+
+The v2 convergence criteria (Rule 8) require all of:
+- ≥3 passes across platforms → YES (12 passes)
+- Temperature ≤ 0.2 via decay → **NO** (0.25, and not decaying)
+- Score improvement <0.2 for 2 consecutive → **NO** (score still moving)
+- No active branches → **NO** (2 active)
+- Zero regressions → YES (no code changes)
+- <3 novel findings in last pass → **NO** (Pass 12 = 18 novel)
+- No dimension below 7.0 → **NO** (all are below)
+- Two consecutive convergence confirmations → NO
+- Parallel tracks merged → N/A
+
+**Convergence probability from this loop alone: 0%.**
+
+The parity assessment loop has surfaced the landscape it needs to surface.
+**Further assessment-only passes will find marginal returns.** Implementation
+work is the bottleneck. Pass 12 recommends **switching modes**:
+- From "assessment-loop-to-exhaustion" (what we've been doing)
+- To "assessment-paused-until-implementation-milestones" (wait for the
+  first Phase 1 implementation chat to land, then re-open the loop)
+
+This is **not declaring convergence** — it's declaring that the assessment
+loop has reached **diminishing returns** and the next useful work is
+implementation. The loop remains re-openable once implementation passes
+begin landing protected improvements.
+
+**Recommended stop condition for this loop: complete one more Synthesis
+pass (Pass 13) to finalize the implementation roadmap, then pause.**
+
 ## Reconciliation Log (append-only)
 
 | Time | Pass | Action | Conflicts | Notes |
@@ -866,12 +924,14 @@ unlimited (but subject to E2/E3 review).
 | 2026-04-11T00:00:08Z | 9 | Depth — P1-P20 personalization layer | 0 | Found deepContextAssembler personalization orphan. Parity 48% → 45%. Temperature 0.35 → 0.30. |
 | 2026-04-11T00:00:09Z | 10 | Adversarial-2 — context assembler stress test | 0 | Re-read before write; no concurrent writer. 20 AA-series findings. AA6/AA7/AA8 systemic prompt-injection surface. AA12/AA16 cost bombs. AA10/AA11 v2 handoff gaps. Fix-order dependency: AA8 sanitization MUST precede P1 personalization wiring. Parity 45% → 43%. Temperature 0.30 → 0.28. |
 | 2026-04-11T00:00:10Z | 11 | Future-State-2 — economics + moat designs | 0 | Re-read before write; no concurrent writer. 9 E-series economic findings + 12 M-series concrete moat designs. E2/E3/E4 identify the $30K-$50K/month cost bomb at 10x scale. E6 surfaces beyond-parity business-model moat (data brokerage). M1-M12 turn Pass 1 beyond-parity opportunities into buildable designs. Business-model recommendation: Option 3 (tier-capped with overage). Parity 43% (unchanged — economics are scored separately as a new dimension to consider). Temperature 0.28 → 0.25. |
+| 2026-04-11T00:00:11Z | 12 | Depth-3 — knowledge graph orphan + event sourcing + convergence reality | 0 | Re-read before write; no concurrent writer. 18 T-series findings. T1: knowledge graph is the THIRD orphaned infrastructure layer not wired from ingestion (after deepContextAssembler P1 and improvementLoops F2). T6: triple-orphan is a single architectural disconnect, not three unrelated gaps. T7: event-sourcing opportunity hidden in ingestion_jobs — reframe as append-only log + projection, free G6/G34/X11/X16. T10: convergence reality check — loop cannot self-converge, implementation passes are needed. Recommends one more synthesis pass (13) then pause for implementation. Parity 43% → 41%. Temperature 0.25 → 0.22. |
 
 ## Changelog (append-only, most recent first)
 
 | Pass | Platform | Type | Score Δ | Summary |
 |---|---|---|---|---|
-| 11 | Claude Code | Future-State-2 | +0.00 | 9 E-series economic findings + 12 M-series concrete beyond-parity moat designs. E2/E3/E4 reveal a $30K-$50K/month cost bomb at 10x scale if the personalization + ingestion layers ship naively. E6 surfaces a potential reverse-revenue moat (Stewardly becomes a data broker). E8 flags cold-start cost bombs in the onboarding funnel. M1-M12 turn the Pass 1 beyond-parity wish-list into buildable plans with effort + risk. **Business-model recommendation: tier-capped with overage (Option 3)** with free=3/advisor=15/manager=50/platform=unlimited source caps. Parity 43% (unchanged — Future-State-2 adds new dimensions, doesn't re-score existing ones). Temperature 0.28 → 0.25. Non-convergence extended. |
+| 12 | Claude Code | Depth-3 | -0.20 | 18 T-series findings on knowledge graph + event sourcing + convergence. **Major finding: triple-orphan architectural disconnect (T6)** — the knowledge graph (T1), improvement loops (F2), and deep context assembler (P1) all ignore the ingestion output fabric. These are not three unrelated gaps but one architectural realignment. T7: event-sourcing opportunity reframes ingestion_jobs as an append-only observation log that solves G6/G34/X11/X16 for free. T10: convergence reality check — this loop cannot self-converge (0 of 9 criteria met, still finding 15-20 novel/pass). **Recommended: one more Synthesis pass (13) to finalize roadmap, then PAUSE for implementation work.** The next useful action is not more assessment. Parity 43% → 41%. Temperature 0.25 → 0.22. |
+| 11 | Claude Code | Future-State-2 | +0.00 | 9 E-series economic findings + 12 M-series concrete beyond-parity moat designs. Business-model recommendation: tier-capped with overage. Parity 43% (unchanged). Temperature 0.28 → 0.25. |
 | 10 | Claude Code | Adversarial-2 | -0.20 | 20 AA-series findings stress-testing the Pass 9-discovered `deepContextAssembler`. AA6/AA7/AA8 expose systemic prompt-injection surface — EVERY string assembled into `fullContextPrompt` is un-sanitized. AA12 + AA16 identify the assembler as a cost bomb at 10x scale. AA10/AA11 flag v2 handoff gaps. **Critical sequencing: AA8 sanitization MUST ship BEFORE Pass 9 P1 personalization wiring**. Parity 45% → 43%. Temperature 0.30 → 0.28. |
 | 9 | Claude Code | Depth | -0.30 | **Major discovery: deepContextAssembler.ts** — the "central nervous system for all AI context" passes 1-8 never inspected. It assembles 14 data source types into every `contextualLLM` call, BUT entirely ignores `ingestedRecords`, `webScrapeResults`, and `documentExtractions`. The entire dynamic-CRUD output fabric is orphaned from the personalization layer. X17 beyond-parity moat is far more broken than Pass 6 stated. 20 novel findings (P1-P20). Parity 48% → 45%. Temperature 0.35 → 0.30. |
 | 8 | Claude Code | Synthesis | +0.00 | Consolidated 150 items into highest-leverage bundles: (1) lineage unblocks 6 regulatory gaps; (2) schema loosening unblocks 10 dynamic-registration gaps; (3) ConnectorSpec Branch B unblocks 8 provider gaps; (4) event-bus + improvement loops make continuous-improvement real (10+ gap closures); (5) security gate bundle is critical-path; (6) Code Chat tools are a force multiplier. Re-synthesized dimension scorecard unchanged from Pass 7 (4.8/10). **Convergence check: NOT CONVERGED** — 0 of 7 criteria met. Still need ~3 passes of novel findings, 1 branch elimination, implementation start, dimension scores above 7.0. Parity 48% (unchanged). Temperature 0.35. |
