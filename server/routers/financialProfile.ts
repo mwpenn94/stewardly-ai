@@ -18,13 +18,15 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   deleteProfile,
   getProfile,
   replaceProfile,
   setProfile,
 } from "../services/financialProfile/store";
+import { suggestQuickQuotes } from "../services/quickQuoteSuggestions";
+import type { FinancialProfile } from "../../shared/financialProfile";
 
 // Allow every field — the shared sanitizer will drop unknowns + clamp
 // out-of-range values. Using `passthrough` so the schema is permissive
@@ -118,4 +120,41 @@ export const financialProfileRouter = router({
     await deleteProfile(ctx.user.id);
     return { ok: true };
   }),
+
+  // ── SUGGEST QUICK QUOTES ───────────────────────────────────────────
+  // Returns the top-N quick-quote routes the user should be sent to
+  // for a given chat message + saved profile. Used by the chat
+  // pipeline to surface contextual CTAs above the message bar.
+  // `publicProcedure` so anonymous chat sessions can also receive
+  // suggestions — the profile param is optional and defaults to {}.
+  suggest: publicProcedure
+    .input(
+      z.object({
+        message: z.string().max(2000).optional(),
+        profile: z.record(z.string(), z.unknown()).optional(),
+        scope: z
+          .enum(["user", "advisor", "manager", "steward"])
+          .optional()
+          .default("user"),
+        topN: z.number().min(1).max(10).optional().default(3),
+        minScore: z.number().min(0).max(1).optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // Prefer the saved profile when authenticated and the caller
+      // didn't supply an explicit one.
+      let profile = input.profile as FinancialProfile | undefined;
+      if (!profile && ctx.user) {
+        const fromDb = await getProfile(ctx.user.id);
+        if (fromDb) profile = fromDb;
+      }
+      const suggestions = suggestQuickQuotes({
+        message: input.message,
+        profile: profile ?? {},
+        scope: input.scope,
+        topN: input.topN,
+        minScore: input.minScore,
+      });
+      return { suggestions };
+    }),
 });

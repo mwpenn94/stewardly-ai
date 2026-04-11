@@ -13,6 +13,9 @@ import {
   ChevronDown, ChevronUp, PiggyBank, Shield, Loader2,
   BarChart3, Percent, Calendar, Plus, Trash2, CheckCircle,
 } from "lucide-react";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import type { FinancialProfile } from "@/stores/financialProfile";
 
 // ─── Monte Carlo Simulation ────────────────────────────────────────────
 function runMonteCarlo(params: {
@@ -135,15 +138,48 @@ export default function FinancialPlanning() {
 
 // ─── Retirement Projection (Monte Carlo) ───────────────────────────────
 function RetirementProjection() {
-  const [params, setParams] = useState({
-    currentSavings: 500000,
-    annualContribution: 25000,
-    yearsToRetirement: 20,
-    annualWithdrawal: 60000,
-    yearsInRetirement: 30,
-    avgReturn: 0.07,
+  const { profile, setProfile } = useFinancialProfile();
+  const [params, setParams] = useState(() => ({
+    currentSavings: profile.savings ?? 500000,
+    annualContribution: profile.monthlySavings !== undefined ? profile.monthlySavings * 12 : 25000,
+    yearsToRetirement:
+      profile.age !== undefined && profile.retirementAge !== undefined
+        ? Math.max(1, profile.retirementAge - profile.age)
+        : 20,
+    annualWithdrawal: profile.desiredRetirementIncome ?? 60000,
+    yearsInRetirement: profile.yearsInRetirement ?? 30,
+    avgReturn: profile.equitiesReturn ?? 0.07,
     stdDev: 0.15,
-  });
+  }));
+
+  const handlePrefill = (p: FinancialProfile) => {
+    setParams((prev) => ({
+      ...prev,
+      currentSavings: p.savings ?? prev.currentSavings,
+      annualContribution:
+        p.monthlySavings !== undefined ? p.monthlySavings * 12 : prev.annualContribution,
+      yearsToRetirement:
+        p.age !== undefined && p.retirementAge !== undefined
+          ? Math.max(1, p.retirementAge - p.age)
+          : prev.yearsToRetirement,
+      annualWithdrawal: p.desiredRetirementIncome ?? prev.annualWithdrawal,
+      yearsInRetirement: p.yearsInRetirement ?? prev.yearsInRetirement,
+      avgReturn: p.equitiesReturn ?? prev.avgReturn,
+    }));
+  };
+
+  const persistRetirementToProfile = () => {
+    setProfile(
+      {
+        savings: params.currentSavings,
+        monthlySavings: Math.round(params.annualContribution / 12),
+        yearsInRetirement: params.yearsInRetirement,
+        desiredRetirementIncome: params.annualWithdrawal,
+        equitiesReturn: params.avgReturn,
+      },
+      "user",
+    );
+  };
   const [results, setResults] = useState<ReturnType<typeof runMonteCarlo> | null>(null);
   const [running, setRunning] = useState(false);
   const [scenario2, setScenario2] = useState<ReturnType<typeof runMonteCarlo> | null>(null);
@@ -151,6 +187,7 @@ function RetirementProjection() {
   const [params2, setParams2] = useState({ ...params, yearsToRetirement: 25 });
 
   const run = useCallback(() => {
+    persistRetirementToProfile();
     setRunning(true);
     setTimeout(() => {
       const r = runMonteCarlo({ ...params, trials: 1000 });
@@ -161,12 +198,25 @@ function RetirementProjection() {
       }
       setRunning(false);
     }, 100);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params, params2, showScenario2]);
 
   const successColor = (rate: number) => rate >= 80 ? "text-emerald-400" : rate >= 60 ? "text-amber-400" : "text-red-400";
 
   return (
     <div className="space-y-6">
+      <FinancialProfileBanner
+        onPrefill={handlePrefill}
+        usesFields={[
+          "savings",
+          "monthlySavings",
+          "age",
+          "retirementAge",
+          "yearsInRetirement",
+          "desiredRetirementIncome",
+          "equitiesReturn",
+        ]}
+      />
       <div className="grid md:grid-cols-2 gap-6">
         {/* Inputs */}
         <Card>
