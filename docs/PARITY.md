@@ -3,14 +3,14 @@
 > Always re-read immediately before writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11T00:00:01Z by chat:optimize-crud-parity-satL3/pass-2
+- Last updated: 2026-04-11T00:00:02Z by chat:optimize-crud-parity-satL3/pass-3
 - Comparable target: "best-in-class dynamic CRUD for any integration/pipeline/ingestion process, even where documentation or vendor support is limited or nonexistent but data is available from sources — plus continuous improvement across Code Chat, AI chat financial force multipliers, learning/training/onboarding, CRM/marketing coordination, workflow, and agentic AI/browser/device automation"
 - Core purpose: Give Stewardly the ability to dynamically CRUD any integration/pipeline/ingestion process and turn the resulting data fabric into a continuous-improvement force multiplier across every Stewardly surface
 - Target user: Platform admin / advisor-tier developer / power client who needs to wire a new data source without writing a schema migration or waiting on a vendor SDK
 - Success metric: Time from "I have a URL/sample/cURL and know the data is there" → "live, scheduled, personalized ingestion flowing into the 5-layer intelligence stack" → <10 min (documented), <30 min (undocumented), <60 min (portal-only)
-- Current parity score: 58% (composite 5.8 / 10 — revised DOWN after Pass 2 depth findings exposed deeper blockers)
-- Passes completed: 2
-- Last reconciliation: 2026-04-11T00:00:01Z (conflicts: 0)
+- Current parity score: 54% (composite 5.4 / 10 — revised DOWN again after Pass 3 adversarial exposed silent-failure + security gaps)
+- Passes completed: 3
+- Last reconciliation: 2026-04-11T00:00:02Z (conflicts: 0)
 
 ## Pillars (comparable target decomposition)
 1. **Dynamic CRUD for integrations / pipelines / ingestion** (documented, undocumented, portal-only)
@@ -151,17 +151,60 @@ dependency. Priority re-weights apply.
 | D24 | No **idempotency keys** on ingestion runs. Running the same job twice in parallel (e.g., cron fires while manual trigger is in-flight) doubles records. G44 (circuit breaker) + G6 (replay) both depend on this | G6, G44, G13 | P1 | +S (single idempotency column) | dataIngestion.ts runIngestion |
 | D25 | **`normalizeAndStore` swallows errors in a blanket catch** — every record-level error increments `skipped`, losing the distinction between "dedup skip" and "error skip". G11 lineage + G34 replay both need structured error categorization | G11, G34 | P1 | +S (error shape + category) | dataIngestion.ts L547–550 |
 
+## Pass 3 Adversarial Findings (hidden failure modes, Goodhart, security)
+
+Each A-series finding assumes **everything contains hidden failure modes** and
+stress-tests the live code against real-world adversarial conditions. Items
+marked **SEC** are security-adjacent; **GH** is Goodhart's-law / gaming detection;
+**SIL** is silent-failure.
+
+| ID | Finding | Class | Severity | Code Evidence | Fix Effort |
+|---|---|---|---|---|---|
+| A1 | `robotsChecker.isAllowed` defaults to **`true` on fetch failure**. An attacker who blocks robots.txt retrieval (DNS poison, connection refused, TLS mismatch) gets unrestricted scraping — the default is permissive when it should be restrictive for compliance-sensitive sources | SEC | high | `scraping/robotsChecker.ts` L39–42 | S — add `strict: boolean` option; default `strict: true` for `regulatory` / `crm` / `carrier` categories |
+| A2 | `getCRMAdapter()` returns null unless `GHL_API_TOKEN` is set — the abstract adapter pattern is a **sham for Wealthbox + Redtail**. Those adapter files (`wealthboxClient.ts`, `redtailClient.ts`) exist but are never plumbed into the factory. CRM capability claim is overstated | SIL, GH | high | `services/crm/crmAdapter.ts` L35–68 | S — add branches for Wealthbox + Redtail env vars |
+| A3 | `normalizeAndStore` dedup key is `(entityId, recordType)` — if two different providers emit the same entityId (common for IDs like "GOOGL" or stock tickers), **records collide across providers**. Correct key: `(dataSourceId, entityId, recordType)` | SIL | high | `dataIngestion.ts` L504–530 | S — extend the WHERE clause |
+| A4 | `integration_connections.credentialsEncrypted` has **no rotation tracking** — no `credentialsRotatedAt`, no `requireRotationBy`. A compromised credential cannot be flagged "rotate in 24h" and followed up | SEC | med | `drizzle/schema.ts` integrationConnections | S — 2 columns + cron nag |
+| A5 | `runHealthCheck` failure writes `status: "error"` but **does not auto-disable** the connection. Scheduler continues running a known-broken connection on its cron — cost runaway + log spam | SIL | high | `integrationHealth.ts` + `integrations.ts` L315–344 | S — circuit-breaker: 5 consecutive failures → auto-pause, wait 1h, retry; log to improvement log |
+| A6 | `pipelineSelfTest` runs on boot; **if it hangs, the entire boot sequence blocks**. No per-provider timeout + parallel execution | SIL | high | `pipelineSelfTest.ts` | S — `Promise.race(timeout, test)` + `Promise.all` parallelization |
+| A7 | `scraperService.hashContent` uses a **32-bit rolling hash** (djb2-ish with `hash \|= 0`). Collision rate on 10K+ records is measurable. Content dedup is lossy — a real scrape hash collision means stale data is served | SIL | med | `dataIngestion.ts` L187–196 | S — replace with `crypto.createHash('sha256')` |
+| A8 | `fetchECBRates` appends USD/* rates to the **same array it's iterating**. Today's rate set (euro-base) makes this work by luck. Future-state: adding a third base currency ships an ArrayModifiedDuringIteration bug | SIL | low | `dataIngestion.ts` L343–354 | S — build USD rates in a new array, concat at end |
+| A9 | `generateInsights` hardcodes 50 records with **zero user/tenant filter**. A manager at Firm A receives insights derived from Firm B's ingested records. **Multi-tenant data leak** | SEC | critical | `dataIngestion.ts` L564–570 | S (masking) — M (proper per-tenant scoping) |
+| A10 | `getContextEnrichment` filters on `isVerified: true` but **nothing in the ingestion path sets `isVerified`**. The feature returns empty forever in practice. Latent dead feature | SIL, GH | med | `dataIngestion.ts` L620–623 | S — verification workflow OR relax the filter |
+| A11 | `enrichContact` increments `usageThisPeriod` but **never resets at month boundaries**. A "100/month" provider permanently blocks after ~day 30 regardless of the actual calendar month | SIL | high | `integrations.ts` L597–598 | S — add monthly reset cron |
+| A12 | **Goodhart alert** — CLAUDE.md claims "continuous improvement across the app". The underlying telemetry is `integrationImprovementLog` rows that only append on consecutive failures or degradation events. We measure "did we log?" not "did the system actually improve?". Score-inflation risk on every pass that touches "continuous improvement" | GH | high (meta) | `integrationHealth.ts` L336–427 | M — define genuine improvement KPIs: repair time, schema-drift recovery time, cost-per-insight trend |
+| A13 | `scrapeUrl` has a 30s fetch timeout but the **LLM extraction call has NO timeout**. A slow extraction can extend effective request to tens of minutes, drifting cron schedules + starving the worker pool | SIL | med | `dataIngestion.ts` L56 vs L101 | S — add `AbortSignal.timeout(60000)` to `contextualLLM` calls in extractors |
+| A14 | `rateRecommender.generateRecommendation` has **no rate limit on itself**. A malicious admin could call it in a tight loop to burn expensive LLM + API quota. Ironic gap: the thing that optimizes rate-limits isn't rate-limited | SEC | med | `adminIntelligence` → `rateRecommender.ts` | S — add admin-per-minute throttle at the tRPC layer |
+| A15 | Ingested third-party content (news, regulatory, competitor) **bypasses the compliance engine**. If a provider serves advisory text that violates FINRA 2210, it flows into `ingestedRecords` and is available to `getContextEnrichment` without a `compliance_reviews` entry. Compliance coverage claim is partial | SEC, GH | high | compliance pipeline vs ingestion pipeline | M — hook `compliance.flagged` emitter into `normalizeAndStore` |
+| A16 | `ingestedRecords.tags` is a free-form JSON array. Over time, tag vocabulary drifts (`"crm"` / `"CRM"` / `"Crm"`), breaking filter queries. No vocabulary control | SIL | low | `dataIngestion.ts` normalizer tags | S — normalize tags to lowercase on insert; add a `tag_vocab` seed |
+| A17 | SnapTrade `snapTradeClientStatus` is advisor-accessible via `clientAssociations`. **No explicit `consentGivenAt` check** before exposing a client's brokerage balances/positions to an advisor. Real-world compliance needs explicit, time-stamped consent | SEC | critical | `integrations.ts` L892–917 | M — add `client_consent_records` with per-scope consent; gate the procedure on consent presence |
+| A18 | `enrichmentCache.onDuplicateKeyUpdate` **resets `hitCount: 1`** on every update, not `hitCount + 1`. Hit counts are a lie over time — the analytics we build on top of this metric are misleading | SIL, GH | med | `integrations.ts` L591–593 | S — change to `hitCount: sql\`${hitCount} + 1\`` |
+| A19 | `carrierImportTemplates.uploadCarrierData` parses CSV with **naive `lines[i].split(",")`**. Breaks on embedded commas in quoted values — a common real-world failure. We have a real parser (`services/import/csvParser.ts`) but this path doesn't use it | SIL | high | `integrations.ts` L462–488 | S — replace with `csvParser.parse()` |
+| A20 | `integrations.pipelineHealth` is a `publicProcedure`. Returns provider slugs + runCount + errorCount + lastError. Unauthenticated users can **enumerate integration topology + brokenness**. Reconnaissance surface for attackers | SEC | high | `integrations.ts` L787–815 | S — require protectedProcedure OR sanitize output (strip slugs, only return aggregate counts) |
+| A21 | Dynamic provider registration (G5) — once implemented — has a latent **SSRF attack vector**. An admin can register a provider with `baseUrl: "http://169.254.169.254/latest/meta-data/"` and hit cloud metadata. Health-check + test-connection will cheerfully fetch from internal IPs | SEC | critical (future) | must-fix before G5 ships | S — SSRF allowlist: deny `127.0.0.0/8`, `169.254.0.0/16`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `localhost`, `metadata.google.internal`; resolve hostname before fetch |
+| A22 | **Cost pass** — `contextualLLM` calls in extractors have **no per-call cost cap**. A 500KB malicious document fed to `processDocument` could generate a multi-dollar extraction bill per invocation | SEC, Cost | high | `dataIngestion.ts` extractors | S — add `maxInputTokens` and `maxCostUsd` to `contextualLLM` options; hard-cap in extractors |
+| A23 | **Fiduciary pass** — a new regulatory provider pulling rule updates could **auto-generate client recommendations** via the improvement engine without human-in-the-loop review. Core purpose is compliance-first; this is a fiduciary red flag | Fid | critical | improvement engine + learning router + integration event fan-out | M — insert a `pending_human_review` gate on recommendations sourced from any new-provider data |
+| A24 | Code Chat `run_bash` tool is admin-gated, but **within** a run_bash call there's no filesystem sandbox. An admin can `rm -rf` the workspace or read `/etc/passwd`. Not a parity gap but should be documented in PARITY.md's anti-parity / known-limit section | SEC | high (doc gap) | `codeChatExecutor.ts` run_bash | doc (S) or chroot (L) |
+| A25 | `web_scrape_results.content_hash` + `enrichmentCache.lookupKey` use **the same key namespace** without per-table prefix. A future cache-layer abstraction could accidentally pull from the wrong table | SIL | low | arch smell | S — add table-prefix or use typed key objects |
+
+### Self-Consistency Check (from Rule 9)
+
+- **Does the app embody its stated purpose?** Mostly yes. The data-fabric exists and serves the 5-layer stack. But Pass 3 found **multi-tenant leakage (A9), compliance bypass (A15), SnapTrade consent gap (A17)** — these are direct conflicts with Stewardly's compliance-first core purpose. HIGH-priority fixes.
+- **Are we optimizing for scores or user value?** Pass 2 and Pass 3 both *lowered* the composite score by finding deeper problems. This is the **opposite** of score-gaming and should be considered a healthy audit.
+- **Goodhart alert (A12)** — the "continuous improvement" claim throughout CLAUDE.md is partially aspirational. We should either define concrete improvement KPIs (repair time, schema-recovery time, cost-per-insight trend) or soften the claim. **Flagged for later docs revision outside this parity loop.**
+
 ## Reconciliation Log (append-only)
 
 | Time | Pass | Action | Conflicts | Notes |
 |---|---|---|---|---|
 | 2026-04-11T00:00:00Z | 1 | Initial write | 0 | First version of PARITY.md; no prior file to reconcile with |
 | 2026-04-11T00:00:01Z | 2 | Depth findings append | 0 | Re-read before write; no concurrent writer. Added D1–D25 depth findings with code line references. Revised composite parity DOWN from 62% → 58% after depth findings exposed D1/D2/D3/D4/D5/D11/D17 as hard-blockers |
+| 2026-04-11T00:00:02Z | 3 | Adversarial findings append | 0 | Re-read before write; no concurrent writer. Added A1–A25 adversarial findings including 5 SEC-class issues (A9 multi-tenant leak, A15 compliance bypass, A17 SnapTrade consent, A20 public pipeline health enum, A21 SSRF pre-fix, A22 cost cap, A24 bash sandbox). Revised parity DOWN 58% → 54%. Self-consistency check flags Goodhart risk on "continuous improvement" claim (A12). |
 
 ## Changelog (append-only, most recent first)
 
 | Pass | Platform | Type | Score Δ | Summary |
 |---|---|---|---|---|
+| 3 | Claude Code | Adversarial | -0.40 | Added 25 adversarial findings (A1–A25). 5 critical SEC-class items: A9 multi-tenant insight leakage, A15 ingested content bypasses compliance pipeline, A17 SnapTrade no consent check, A20 public pipelineHealth enumerable, A21 SSRF pre-fix for future G5, A22 extraction cost cap missing, A24 run_bash no sandbox. Goodhart alert (A12) on "continuous improvement" claim. Parity 58% → 54%. No code changes. |
 | 2 | Claude Code | Depth | -0.45 | Added 25 depth findings (D1–D25) with code line references. Revised parity DOWN to 58%. Exposed hard blockers: enum-closed category (D1), enum-closed authMethod (D2), enum-closed transform (D3), Date.now() defeating dedup (D4), hardcoded PROVIDER_TEST_CONFIGS (D5), 0 integration-aware Code Chat tools (D11), prompt-injection exposure in extractors (D17). Score down is GOOD — we found deeper problems. No code changes. |
 | 1 | Claude Code | Landscape | +0.00 (baseline) | Created docs/PARITY.md with 44-row gap matrix across 4 pillars, 10 beyond-parity opportunities, 7 anti-parity rejections. Scoped integration/ingestion surface to 14 parsers, 11 scraping primitives, 30+ learning tables, 4 gov pipelines, SnapTrade, CRM adapters (GHL/Wealthbox/Redtail), EMBA GitHub importer, chrome-extension (LinkedIn/Gmail only). Composite parity score 62%. No code changes. |
 
