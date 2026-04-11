@@ -17,6 +17,7 @@
  *   - generate_practice_questions (Task 7D)
  *   - suggest_content_improvements (Task 7D)
  *   - draft_definition           (Task 7D)
+ *   - start_review_session       (Pass 2 build loop — G-5)
  *
  * Registration is idempotent — existing tool rows (matched by name)
  * are not duplicated. Called once at server startup (see
@@ -209,6 +210,35 @@ export const LEARNING_AGENT_TOOLS: LearningToolDef[] = [
       required: ["term"],
     },
     trpcProcedure: "learning.content.createDefinition",
+  },
+  {
+    // Pass 2 build loop — G-5. The `learning.mastery.dueReview` tRPC
+    // query returns a hydrated mixed deck of everything SRS-due for
+    // the current user. Exposing it as an agent tool lets the ReAct
+    // loop say "you have 7 items due across Series 7 and CFP — shall
+    // I start a review session?" and deep-link to /learning/review.
+    toolName: "start_review_session",
+    toolType: "query",
+    description:
+      "List everything currently due for SRS review across all of the user's tracks (flashcards + practice questions), hydrated with track name and overdue delta. Use this when the user asks 'what's due', 'should I study today', or as a proactive nudge when dueNow > 0. Returns a ranked deck — most overdue first, ties broken by lowest confidence — capped at `limit` (default 20, max 200). Pair with a deep link to /learning/review if the user wants to start.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          minimum: 1,
+          maximum: 200,
+          description: "Max items to return (default 20).",
+        },
+        kind: {
+          type: "string",
+          enum: ["flashcard", "question"],
+          description: "Optional filter to only flashcards or only practice questions.",
+        },
+      },
+      required: [],
+    },
+    trpcProcedure: "learning.mastery.dueReview",
   },
 ];
 
