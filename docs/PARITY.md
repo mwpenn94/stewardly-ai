@@ -31,7 +31,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G8  | P2   | learning        | Continuous training — fold sample data into learning recommendations       | open        | build-loop-p1    | 0/10  | —       |
 | G9  | P2   | crm             | CRM field auto-map from inferred schema → canonical CRM shape              | done        | build-loop-p1    | 6/10  | pending |
 | G10 | P1   | continuous      | Schema drift detector — re-infer, diff, flag for review                    | done        | build-loop-p1    | 6/10  | pending |
-| G11 | P2   | model-training  | Cross-model distillation loop (learn from other models' outputs)           | open        | build-loop-p1    | 0/10  | —       |
+| G11 | P2   | model-training  | Cross-model distillation loop (learn from other models' outputs)           | done        | build-loop-p1    | 5/10  | pending |
 | G12 | P2   | agentic-ai      | Universal adapter DSL — declarative integration spec the agent can emit    | open        | build-loop-p1    | 0/10  | —       |
 
 | G13 | P1   | dynamic-crud    | Pagination probe — cursor/offset/page/link_header detection                | done        | build-loop-p2    | 5/10  | pending |
@@ -97,4 +97,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 - Pass 4 · schema drift · [R1: G10 drift detector, R2: G5 drift-aware upsert, A1: rename heuristic] · 3dc33cc · G10+G21+G22 done · G3/G5-G12 deferred
 - Pass 5 · field overrides · [R1: G3 override layer, A1: pinned rehydrate, A2: diffOverrideSets] · b8d9b04 · G3+G23+G24 done · G5-G9/G11/G12 deferred
 - Pass 6 · CRM canonical map · [R1: G9 CRM auto-map, A1: synonym tables, A2: value-pattern + semantic-hint scoring] · 8a6656f · G9 done · G5-G8/G11/G12 deferred
-- Pass 7 · code chat agent tools · [R1: G7 schema inference tool, A1: 4 new read-only Code Chat tools, A2: dispatcher tests] · pending · G7 done · G5/G6/G8/G11/G12 deferred
+- Pass 7 · code chat agent tools · [R1: G7 schema inference tool, A1: 4 new read-only Code Chat tools, A2: dispatcher tests] · 2e93967 · G7 done · G5/G6/G8/G11/G12 deferred
+- Pass 8 · cross-model distillation · [R1: G11, A1: claim extraction + clustering + training examples] · pending · G11 done · G5/G6/G8/G12 deferred
