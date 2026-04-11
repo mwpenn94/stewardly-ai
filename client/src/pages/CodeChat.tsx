@@ -143,6 +143,12 @@ import DiagnosticsPanel from "@/components/codeChat/DiagnosticsPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import ToolAuditPopover from "@/components/codeChat/ToolAuditPopover";
 import CheckpointsPopover from "@/components/codeChat/CheckpointsPopover";
+import SnippetLibraryPopover from "@/components/codeChat/SnippetLibraryPopover";
+import {
+  loadSnippets,
+  saveSnippets,
+  type CodeSnippet,
+} from "@/components/codeChat/snippetLibrary";
 import {
   loadCheckpoints,
   saveCheckpoints,
@@ -581,6 +587,18 @@ function CodeChatInterface() {
   useEffect(() => { saveCheckpoints(checkpoints); }, [checkpoints]);
   const [checkpointsOpen, setCheckpointsOpen] = useState(false);
 
+  // Pass 254: code snippet library
+  const [snippets, setSnippets] = useState<CodeSnippet[]>(() => loadSnippets());
+  useEffect(() => { saveSnippets(snippets); }, [snippets]);
+  const [snippetsOpen, setSnippetsOpen] = useState(false);
+  const handleInsertSnippet = useCallback((body: string) => {
+    setInput((prev) => {
+      if (!prev) return body;
+      return prev.endsWith("\n") ? `${prev}${body}` : `${prev}\n${body}`;
+    });
+    inputRef.current?.focus();
+  }, []);
+
   // Pass 249: tool audit rules + trail
   const [auditState, setAuditState] = useState<AuditState>(() => loadAuditState());
   useEffect(() => { saveAuditState(auditState); }, [auditState]);
@@ -665,6 +683,9 @@ function CodeChatInterface() {
           break;
         case "checkpoints":
           setCheckpointsOpen(true);
+          break;
+        case "snippets":
+          setSnippetsOpen(true);
           break;
         case "shortcuts":
           setShortcutsOpen(true);
@@ -1591,6 +1612,14 @@ function CodeChatInterface() {
           </button>
         )}
         <button
+          onClick={() => setSnippetsOpen(true)}
+          className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Code snippet library"
+          title="Code snippets — reusable code blocks"
+        >
+          <FileText className="w-3 h-3" /> Snippets
+        </button>
+        <button
           onClick={() => setCheckpointsOpen(true)}
           className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
             checkpoints.length > 0
@@ -2352,6 +2381,13 @@ function CodeChatInterface() {
         onClose={() => setAuditOpen(false)}
         state={auditState}
         onChange={setAuditState}
+      />
+      <SnippetLibraryPopover
+        open={snippetsOpen}
+        onClose={() => setSnippetsOpen(false)}
+        snippets={snippets}
+        onChange={setSnippets}
+        onInsert={handleInsertSnippet}
       />
       <CheckpointsPopover
         open={checkpointsOpen}
