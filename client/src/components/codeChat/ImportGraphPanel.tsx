@@ -23,6 +23,7 @@ import {
   Loader2,
   FileCode,
   AlertTriangle,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,6 +37,9 @@ export default function ImportGraphPanel() {
     { limit: 10 },
     { staleTime: 30_000 },
   );
+  const cyclesQuery = trpc.codeChat.findCircularDeps.useQuery(undefined, {
+    staleTime: 30_000,
+  });
   const rebuildMutation = trpc.codeChat.rebuildImportGraph.useMutation();
   const utils = trpc.useUtils();
 
@@ -44,6 +48,7 @@ export default function ImportGraphPanel() {
       await rebuildMutation.mutateAsync();
       utils.codeChat.fileDependencies.invalidate();
       utils.codeChat.importGraphHotFiles.invalidate();
+      utils.codeChat.findCircularDeps.invalidate();
       toast.success("Import graph rebuilt");
     } catch (err: any) {
       toast.error(`Rebuild failed: ${err.message ?? err}`);
@@ -102,6 +107,71 @@ export default function ImportGraphPanel() {
               </Badge>
             </div>
           )}
+
+          {/* Circular dependencies (Pass 247) */}
+          <div className="border rounded-md overflow-hidden">
+            <div className="px-3 py-1.5 bg-background/60 border-b border-border/30 flex items-center gap-1.5 text-[11px] font-medium">
+              <RotateCcw className="h-3 w-3 text-destructive" /> Circular deps
+              {cyclesQuery.data?.summary && (
+                <Badge
+                  variant="outline"
+                  className={`text-[9px] h-4 px-1.5 font-mono ${
+                    cyclesQuery.data.summary.totalCycles > 0
+                      ? "border-destructive/40 text-destructive"
+                      : "border-emerald-500/40 text-emerald-500"
+                  }`}
+                >
+                  {cyclesQuery.data.summary.totalCycles === 0
+                    ? "none"
+                    : `${cyclesQuery.data.summary.totalCycles} cycles · ${cyclesQuery.data.summary.filesInCycles} files`}
+                </Badge>
+              )}
+            </div>
+            {cyclesQuery.isLoading ? (
+              <p className="text-[10px] text-muted-foreground italic text-center py-3">
+                Analyzing…
+              </p>
+            ) : (cyclesQuery.data?.cycles ?? []).length === 0 ? (
+              <p className="text-[10px] text-emerald-500/80 italic text-center py-3">
+                ✓ No circular imports detected.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border/20 max-h-56 overflow-y-auto">
+                {cyclesQuery.data!.cycles.map((cycle, idx) => (
+                  <li key={`cycle-${idx}`} className="px-3 py-2 text-[10px]">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] h-4 px-1.5 font-mono ${
+                          cycle.selfLoop
+                            ? "border-amber-500/40 text-amber-500"
+                            : "border-destructive/40 text-destructive"
+                        }`}
+                      >
+                        {cycle.selfLoop ? "self-loop" : `${cycle.size}-cycle`}
+                      </Badge>
+                    </div>
+                    <ol className="font-mono space-y-0.5 pl-2">
+                      {cycle.files.map((f, fi) => (
+                        <li key={f} className="flex items-center gap-1">
+                          <span className="text-muted-foreground/60">
+                            {fi + 1}.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPath(f)}
+                            className="truncate hover:text-accent hover:underline text-left"
+                          >
+                            {f}
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           {/* Hot files leaderboard */}
           <div className="border rounded-md overflow-hidden">
