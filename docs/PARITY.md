@@ -8,13 +8,13 @@
 
 ## Meta
 
-- **Last updated:** 2026-04-11T00:00:02Z by parity-pass-2 (claude/optimize-app-parity-FRm86)
+- **Last updated:** 2026-04-11T00:00:04Z by parity-pass-3 (claude/optimize-app-parity-FRm86)
 - **Comparable (primary):** Claude Code CLI
 - **Comparable (adjacent):** Cursor Composer, Aider, Cline, Windsurf Cascade, Continue.dev, Codex CLI
 - **Core purpose:** Give Stewardly advisors + admins a Claude-Code-style agentic coding assistant that can read, understand, and (with permission) modify the Stewardly codebase from inside the web app, without leaving the advisory workflow.
 - **Target user:** Primarily Stewardly admins (full write access), secondarily advisor-role power users (read-only exploration, PR review), tertiarily developer contributors shipping features against the same product their firm runs on.
 - **Success metric:** An admin can complete a typical development task — "fix a bug in the X router and push a PR" — start-to-finish inside Code Chat, without falling back to a terminal, without a regression, in comparable wall-clock time to Claude Code.
-- **Current parity score:** **72%** (weighted by core-purpose alignment — see scoring methodology at bottom)
+- **Current parity score:** **68.8%** (Pass 3 adversarial uncovered 3 live bugs on existing features — see Adversarial hazards section)
 
 ## Parity score breakdown
 
@@ -204,17 +204,55 @@ Per-gap hazards the naïve implementation will hit. Each gap's implementation pr
 - Apply-selected reconstructs file content from `(original + selected added hunks − selected removed hunks)` and dispatches one `write_file`.
 - Integration point: tool call intercepted when "Review hunks before apply" flag is on.
 
+## Adversarial hazards (Pass 3)
+
+Real bugs + implementation hazards discovered by attacking the existing surface from a concurrency, compliance, and silent-failure angle. Each row has a severity; **High/Critical rows are now open bugs in addition to any gap they modify.**
+
+| ID | Hazard | Severity | Target | Status |
+|---|---|---|---|---|
+| H1 | Silent session clobber via unlocked `upsertSession` — fork + auto-checkpoint race can erase the fork | Medium | `client/src/components/codeChat/sessionLibrary.ts` (Pass 220+223) | Open |
+| H2 | Scratchpad 200KB clamp is silent — paste overflow drops bytes with no toast | Medium | `client/src/components/codeChat/scratchpad.ts` (Pass 240) | Open |
+| H3 | Edit history ring buffer can exceed localStorage quota — 50 entries × 2 × 64KB = 6.4MB, typical quota 5MB; writes fail silently, undo breaks | **High** | `client/src/components/codeChat/editHistory.ts` (Pass 239) | Open |
+| H4 | Subagent audit trail hole — future subagents must log `parentSessionId` + `parentStepIndex` to `agent_actions` or FINRA 17a-4 tree breaks | High | `server/services/codeChat/subagent.ts` (G1 spec) | Spec amendment |
+| H5 | Bash command repeat-timeout loop can burn the entire budget on one failing command with no circuit breaker | Medium | `server/services/codeChat/codeChatExecutor.ts` + `fileTools.ts` | Open |
+| H6 | G9 cross-session permission rules in localStorage would leak across users on shared devices | **Critical** | G9 spec | Spec amendment (server-side only) |
+| H7 | `.stewardly/roadmap.json` corrupted-file fallback silently replaces user data with default | Medium | `server/services/codeChat/roadmapPlanner.ts` (Pass 58) | Open |
+| H8 | `/compact` has no undo — mis-run destroys message history with no stack | Low-Med | `client/src/components/codeChat/conversationCompact.ts` (Pass 232) | Open |
+| H9 | G11 permission rule DSL naive prefix match would pre-approve `git push --force` if user wrote `Bash(git:*)` | **Critical** | G11 spec | Spec amendment (reject under-specified rules) |
+| H10 | Tool result audit capture truncates at 10KB preview but LLM sees full — FINRA 17a-4 record gap | **High** | `server/routes/codeChatStream.ts` | Open |
+
+### H3 — detailed mitigation plan
+
+The 5MB localStorage quota is non-negotiable. Fix plan:
+
+1. **Reduce ring buffer snapshot cap.** 64KB per snapshot is for SSE preview. For undo, trim to 16KB per snapshot. That drops worst case from 6.4MB to 1.6MB.
+2. **Store full content by reference.** For edits larger than 16KB, keep only `{pathHash, byteLength, timestamp}` in the ring. On undo, re-read the file from disk — yes, this means undo can't restore a file the user manually overwrote outside Code Chat, but that's an acceptable boundary.
+3. **QuotaExceededError handler.** Wrap every localStorage write in try/catch; on quota error, drop the oldest 10 entries and retry once.
+4. **Storage meter.** Add a small indicator in EditHistoryPopover showing "32 / 50 entries, 1.2MB / ~5MB". Lets power users see the ceiling coming.
+
+### H10 — detailed mitigation plan
+
+Audit trail must be complete. Options:
+
+- **Option A (simple):** New `codechat_tool_results` table with `(sessionId, stepIndex, toolName, resultFullJson, createdAt)`. Write full result after `dispatchCodeTool` returns. Truncation for SSE preview stays; full result persists.
+- **Option B (costly):** S3-backed blob store with presigned-URL references. Better for huge results. Overkill for v1.
+- **Option C (free):** Log full result to existing `agent_actions.dataAccessedSummary` as a JSON string. Works if the column is MEDIUMTEXT or larger; needs migration check.
+
+Recommendation: **Option A** for v1. Migration: `0013_codechat_tool_results.sql`. Retention: 6 months (FINRA standard) then archive to S3 cold storage.
+
 ## Reconciliation log
 
 (append-only, one line per merge event)
 
 - 2026-04-11T00:00:00Z — parity-pass-1 — initial creation, no prior version to merge.
 - 2026-04-11T00:00:02Z — parity-pass-2 — appended Implementation risk notes section covering G35, G29, G1, G9, G2, G3, G21. No conflicts with on-disk (single-process write). Pass 1 content preserved verbatim.
+- 2026-04-11T00:00:04Z — parity-pass-3 — appended Adversarial hazards section H1–H10. Amended G9 + G11 specs in-place via the hazards cross-reference (the original gap rows still point to the spec, but the hazards row overrides specific fields). No conflicts. Pass 1 + Pass 2 content preserved verbatim.
 
 ## Changelog
 
 (append-only, one line per pass, most recent first)
 
+- Pass 3 (parity adversarial, 2026-04-11, score 72.0% → **68.8%**) — found 10 real hazards (H1–H10). 2 are critical (H6 cross-user permission leak in G9 spec, H9 under-specified rule DSL in G11 spec) and both are caught as spec amendments before ship. 3 high-severity live bugs (H3 localStorage quota, H4 subagent audit, H10 tool result capture hole) now open. Score drops 3.2 points: H3 is a live Pass 239 bug (−1.5), H10 is a compliance hole on an existing system (−1.5), H2/H7 are silent data-loss bugs on existing features (−0.2). Planning-only — no code changed. Temperature adjustment: score regressed (hazards discovered on existing surface) → raise temp by 0.20 to **0.4**.
 - Pass 2 (parity depth, 2026-04-11, score 72.0% unchanged) — added Implementation risk notes for all 4 critical gaps + 3 high-priority gaps. Depth pass is planning-only; no code changed, so score holds. Surfaced 30+ new edge cases across 7 gaps — biggest novel findings: (a) G35 binary-file detection + CRLF handling, (b) G29 LLM-must-be-instructed-to-parallelize prompt gap, (c) G1 read-only hard gate on subagents as compliance divergence, (d) G9 session-ID state bolt-on for approval flow. Temperature 0.2.
 - Pass 1 (parity landscape, 2026-04-11, score 72.0%) — initial parity audit against Claude Code + 6 adjacent comparables. Logged 40 gap-matrix rows, 20 beyond-parity wins, 8 anti-parity rejections. No file changes; planning-only pass. Discovered 4 critical gaps (G1 subagents, G9 per-call approval, G29 parallel tool calls, G35 line-range read). Temperature 0.2.
 
@@ -239,10 +277,10 @@ This score is a *navigational instrument*, not a benchmark. It moves up when gap
 
 ## Open parity gaps — count by severity
 
-- Critical: **4** (G1, G9, G29, G35)
-- High: **7** (G2, G3, G4, G7, G11, G13, G21)
-- Medium: **12** (G5, G8, G10, G14, G15, G22, G26, G27, G30, G34, G37, D1/D4)
-- Low: **13** (G6, G19, G20, G23, G24, G25, G31, G32, G33, G36, G38, G39, G40)
-- **Total open: 36**
+- Critical: **4** (G1, G9, G29, G35) + 2 spec-amendment criticals from Pass 3 (H6, H9 already folded into G9/G11)
+- High: **7** (G2, G3, G4, G7, G11, G13, G21) + 3 Pass 3 live hazards (H3 Pass 239 quota, H4 audit, H10 compliance capture)
+- Medium: **12** (G5, G8, G10, G14, G15, G22, G26, G27, G30, G34, G37, D1/D4) + 4 Pass 3 live hazards (H1, H2, H5, H7)
+- Low: **13** (G6, G19, G20, G23, G24, G25, G31, G32, G33, G36, G38, G39, G40) + 1 Pass 3 hazard (H8)
+- **Total open: 46** (36 feature gaps + 10 hazards, with no double-counting)
 - **Anti-parity rejected: 8**
 - **Features already present at full or partial depth: 44** (27 feature-matrix + 20 beyond-parity, with overlap)
