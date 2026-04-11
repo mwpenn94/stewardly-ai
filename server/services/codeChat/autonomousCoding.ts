@@ -215,5 +215,7 @@ export function summarizeStep(step: CodeChatStep): string {
       return `todos updated (${result.result.count} items, ${ms})`;
     case "symbols":
       return `find_symbol ${result.result.query} → ${result.result.matches.length} matches (${ms})`;
+    case "web":
+      return `web_read ${result.result.url} → ${result.result.status} · ${result.result.wordCount} words (${ms})`;
   }
 }

@@ -35,6 +35,7 @@ const READ_ONLY_TOOLS = new Set([
   "grep_search",
   "update_todos", // Pass 237: no-op progress reporter, safe for all roles
   "find_symbol", // Pass 242: workspace symbol index lookup
+  "web_read", // Pass 1 (automation): read-only public web fetch
 ]);
 
 function writeSse(res: any, data: Record<string, unknown>): void {
@@ -139,6 +140,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "Work step-by-step. Use `code_list_directory` and `code_read_file` to explore.",
       "Use `code_grep_search` to find occurrences of text across the codebase.",
       "Use `code_find_symbol` when you know the name of a function/class/interface/type/const and want to jump to its DEFINITION (faster than grep, and returns only definition sites).",
+      "Use `code_web_read` to fetch a public URL and read it as structured content (title, headings, text, links, forms). Prefer this over quoting from memory when the user asks about current docs, regulation, news, or an external site. It is rate-limited per domain and will not navigate private/internal hosts.",
       canMutate
         ? "You have `code_write_file`, `code_edit_file`, `code_run_bash` — use sparingly, explain every change."
         : "Write/edit/bash disabled. Return diffs as code blocks.",

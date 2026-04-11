@@ -44,6 +44,7 @@ export type CodeToolName =
   | "run_bash"
   | "update_todos"
   | "find_symbol"
+  | "web_read"
   | "finish";
 
 export interface CodeToolCall {
@@ -70,6 +71,21 @@ export interface SymbolLookupHit {
   exported: boolean;
 }
 
+export interface WebReadResultPayload {
+  url: string;
+  finalUrl: string;
+  status: number;
+  title: string;
+  description: string;
+  text: string;
+  headings: Array<{ level: number; text: string }>;
+  links: Array<{ href: string; text: string; nofollow: boolean }>;
+  forms: Array<{ action: string; method: string; fieldCount: number }>;
+  wordCount: number;
+  truncated: boolean;
+  fetchMs: number;
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -79,6 +95,7 @@ export type CodeToolResult =
   | { kind: "bash"; result: BashResult }
   | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
+  | { kind: "web"; result: WebReadResultPayload }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -216,6 +233,53 @@ export async function dispatchCodeTool(
             truncated: raw.length > limit,
           },
         };
+      }
+      case "web_read": {
+        // Pass 1 (automation scope): read a URL via the shared
+        // WebNavigator primitive. Pure-fetch, rate-limited,
+        // allow/deny-listed. No headless browser required.
+        const url = String(call.args.url ?? "").trim();
+        if (!url) {
+          return { kind: "error", error: "url required", code: "BAD_ARGS" };
+        }
+        const { getWebNavigator } = await import("./webTool");
+        try {
+          const view = await getWebNavigator().readPage(url);
+          const MAX_TEXT = 20_000;
+          const payload: WebReadResultPayload = {
+            url: view.url,
+            finalUrl: view.finalUrl,
+            status: view.status,
+            title: view.title,
+            description: view.description,
+            text: view.text.length > MAX_TEXT ? view.text.slice(0, MAX_TEXT) + "…" : view.text,
+            headings: view.headings.slice(0, 30),
+            links: view.links.slice(0, 40).map((l) => ({
+              href: l.href,
+              text: l.text,
+              nofollow: l.nofollow,
+            })),
+            forms: view.forms.slice(0, 10).map((f) => ({
+              action: f.action,
+              method: f.method,
+              fieldCount: f.fields.length,
+            })),
+            wordCount: view.wordCount,
+            truncated: view.truncated || view.text.length > MAX_TEXT,
+            fetchMs: view.fetchMs,
+          };
+          return { kind: "web", result: payload };
+        } catch (err) {
+          const code =
+            err && typeof err === "object" && "code" in err
+              ? String((err as { code: unknown }).code)
+              : "WEB_FAILED";
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : "web read failed",
+            code,
+          };
+        }
       }
       case "update_todos": {
         // Validate + normalize the todos array. No file system side
@@ -488,6 +552,18 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         },
       },
       required: ["todos"],
+    },
+  },
+  {
+    name: "web_read",
+    description:
+      "Fetch a URL and return a structured page view (title, text, headings, links, forms). Use this to read public web pages: regulatory docs, market data, documentation, news. Read-only, rate-limited per domain, enforces an allow/deny hostname list, capped at 2MB per response. No JavaScript execution (a Playwright adapter will replace this in a future pass without breaking callers).",
+    parameters: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Absolute http(s) URL to read" },
+      },
+      required: ["url"],
     },
   },
   {

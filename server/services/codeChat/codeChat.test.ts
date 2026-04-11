@@ -331,6 +331,65 @@ describe("Round B1 — codeChatExecutor", () => {
       expect(r.kind).toBe("todos");
       if (r.kind === "todos") expect(r.result.todos[0].status).toBe("pending");
     });
+
+    it("web_read rejects missing url", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_read", args: {} },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_read returns a structured page view via stub adapter", async () => {
+      const { WebNavigator } = await import("../../shared/automation/webNavigator");
+      const { __setWebNavigator, __resetWebNavigator } = await import("./webTool");
+      const nav = new WebNavigator({
+        adapter: {
+          async fetch(url) {
+            const body = `<html><head><title>Stub</title></head><body><h1>H</h1><a href="/x">link</a></body></html>`;
+            return {
+              status: 200,
+              finalUrl: url,
+              headers: { "content-type": "text/html" },
+              body,
+              bytes: new TextEncoder().encode(body).length,
+              truncated: false,
+              redirects: 0,
+            };
+          },
+        },
+        rateLimitPerMin: 100,
+      });
+      __setWebNavigator(nav);
+      try {
+        const r = await dispatchCodeTool(
+          { name: "web_read", args: { url: "https://example.com/x" } },
+          sandboxRO(),
+        );
+        expect(r.kind).toBe("web");
+        if (r.kind === "web") {
+          expect(r.result.title).toBe("Stub");
+          expect(r.result.headings).toContainEqual({ level: 1, text: "H" });
+          expect(r.result.links[0].href).toBe("https://example.com/x");
+          expect(r.result.status).toBe(200);
+          expect(r.result.wordCount).toBeGreaterThan(0);
+        }
+      } finally {
+        __resetWebNavigator();
+      }
+    });
+
+    it("web_read surfaces navigation errors (blocked private host)", async () => {
+      const { __resetWebNavigator } = await import("./webTool");
+      __resetWebNavigator(); // use default env singleton
+      const r = await dispatchCodeTool(
+        { name: "web_read", args: { url: "http://127.0.0.1:8080/x" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BLOCKED_HOST");
+    });
   });
 
   describe("executeCodeChat multi-turn", () => {

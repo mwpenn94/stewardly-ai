@@ -72,6 +72,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
     description: "Look up where a symbol is defined (Pass 242, read-only)",
     mutation: false,
   },
+  {
+    id: "web_read",
+    label: "Web read",
+    description:
+      "Fetch a public URL and return title/text/links/forms (rate-limited per domain, read-only)",
+    mutation: false,
+  },
 ];
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
@@ -83,6 +90,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "run_bash",
   "update_todos",
   "find_symbol",
+  "web_read",
 ];
 
 export default function ToolPermissionsPopover({
