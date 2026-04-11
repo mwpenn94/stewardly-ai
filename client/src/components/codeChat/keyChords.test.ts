@@ -104,4 +104,11 @@ describe("allChordLabels", () => {
     expect(replaceChord).toBeDefined();
     expect(replaceChord!.label).toContain("Replace");
   });
+
+  it("includes the g+k Checkpoints chord added in Pass 251", () => {
+    const labels = allChordLabels();
+    const cpChord = labels.find((l) => l.keys[1] === "k");
+    expect(cpChord).toBeDefined();
+    expect(cpChord!.label).toContain("Checkpoints");
+  });
 });

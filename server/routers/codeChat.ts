@@ -118,6 +118,16 @@ import {
   type FilePreview,
 } from "../services/codeChat/findReplace";
 import {
+  buildCheckpoint,
+  buildRestorePlan,
+  summarizeCheckpoint,
+  saveCheckpointToDisk,
+  loadCheckpointsFromDisk,
+  deleteCheckpointFromDisk,
+  type Checkpoint,
+} from "../services/codeChat/checkpoints";
+import { randomUUID } from "crypto";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -661,6 +671,159 @@ export const codeChatRouter = router({
         failed,
         skippedUnknown: plan.skippedUnknown,
       };
+    }),
+
+  // Pass 251: workspace checkpoints (snapshot/restore)
+  listCheckpoints: protectedProcedure.query(async () => {
+    const checkpoints = await loadCheckpointsFromDisk(WORKSPACE_ROOT);
+    return {
+      checkpoints: checkpoints.map(summarizeCheckpoint),
+    };
+  }),
+
+  getCheckpoint: protectedProcedure
+    .input(z.object({ id: z.string().max(200) }))
+    .query(async ({ input }) => {
+      const all = await loadCheckpointsFromDisk(WORKSPACE_ROOT);
+      const c = all.find((x) => x.id === input.id);
+      return c ? { checkpoint: c } : { checkpoint: null };
+    }),
+
+  createCheckpoint: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(120),
+        description: z.string().max(500).optional(),
+        paths: z.array(z.string().max(500)).min(1).max(500),
+        tags: z.array(z.string().max(40)).max(16).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      // Read each accepted path via the sandbox read helper so we
+      // inherit the out-of-bounds guard for free.
+      const fileEntries: Array<{ path: string; content: string }> = [];
+      const readErrors: Array<{ path: string; error: string }> = [];
+      for (const rel of input.paths) {
+        try {
+          const abs = path.resolve(WORKSPACE_ROOT, rel);
+          if (!abs.startsWith(path.resolve(WORKSPACE_ROOT))) {
+            readErrors.push({ path: rel, error: "out_of_bounds" });
+            continue;
+          }
+          const stat = await fs.promises.stat(abs);
+          if (!stat.isFile()) {
+            readErrors.push({ path: rel, error: "not_a_file" });
+            continue;
+          }
+          if (stat.size > 2_000_000) {
+            readErrors.push({ path: rel, error: "too_large" });
+            continue;
+          }
+          const content = await fs.promises.readFile(abs, "utf-8");
+          fileEntries.push({ path: rel, content });
+        } catch (err) {
+          readErrors.push({
+            path: rel,
+            error: err instanceof Error ? err.message : "read_failed",
+          });
+        }
+      }
+
+      if (fileEntries.length === 0) {
+        return {
+          checkpoint: null,
+          readErrors,
+          skipped: [],
+        };
+      }
+
+      const { checkpoint, skipped } = buildCheckpoint({
+        id: `cp_${Date.now()}_${randomUUID().slice(0, 8)}`,
+        name: input.name,
+        description: input.description,
+        tags: input.tags,
+        files: fileEntries,
+      });
+
+      await saveCheckpointToDisk(WORKSPACE_ROOT, checkpoint);
+
+      return {
+        checkpoint: summarizeCheckpoint(checkpoint),
+        readErrors,
+        skipped,
+      };
+    }),
+
+  restoreCheckpoint: adminProcedure
+    .input(
+      z.object({
+        id: z.string().max(200),
+        confirmDangerous: z.literal(true),
+        /** Optional subset of paths to restore. Default: all. */
+        paths: z.array(z.string().max(500)).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const all = await loadCheckpointsFromDisk(WORKSPACE_ROOT);
+      const target = all.find((x) => x.id === input.id);
+      if (!target) {
+        return {
+          ok: false,
+          error: "checkpoint_not_found",
+          restoredPaths: [],
+          failed: [],
+        };
+      }
+
+      // Collect live byte lengths so the UI can warn about drift on
+      // the way back (also returned for the post-restore toast).
+      const liveBytes = new Map<string, number>();
+      for (const f of target.files) {
+        try {
+          const abs = path.resolve(WORKSPACE_ROOT, f.path);
+          const stat = await fs.promises.stat(abs);
+          if (stat.isFile()) liveBytes.set(f.path, stat.size);
+        } catch {
+          /* missing files are ok — restore will create them */
+        }
+      }
+
+      const plan = buildRestorePlan(target, {
+        paths: input.paths,
+        liveBytes,
+      });
+
+      const restoredPaths: string[] = [];
+      const failed: Array<{ path: string; error: string }> = [];
+      for (const entry of plan.entries) {
+        const result = await dispatchCodeTool(
+          {
+            name: "write_file",
+            args: { path: entry.path, content: entry.content },
+          } as CodeToolCall,
+          { workspaceRoot: WORKSPACE_ROOT, allowMutations: true },
+        );
+        if (result.kind === "error") {
+          failed.push({ path: entry.path, error: result.error });
+        } else {
+          restoredPaths.push(entry.path);
+        }
+      }
+
+      return {
+        ok: true,
+        error: null,
+        restoredPaths,
+        failed,
+        filteredPaths: plan.filtered,
+      };
+    }),
+
+  deleteCheckpoint: protectedProcedure
+    .input(z.object({ id: z.string().max(200) }))
+    .mutation(async ({ input }) => {
+      const ok = await deleteCheckpointFromDisk(WORKSPACE_ROOT, input.id);
+      return { ok };
     }),
 
   // Pass 246: TODO marker scanner

@@ -139,6 +139,7 @@ import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
 import TodoMarkerPanel from "@/components/codeChat/TodoMarkerPanel";
 import WorkspaceSearchPanel from "@/components/codeChat/WorkspaceSearchPanel";
 import FindReplacePanel from "@/components/codeChat/FindReplacePanel";
+import CheckpointsPanel from "@/components/codeChat/CheckpointsPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import {
   loadHistory,
@@ -2299,6 +2300,9 @@ export default function CodeChatPage() {
               <TabsTrigger value="replace" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> Replace
               </TabsTrigger>
+              <TabsTrigger value="checkpoints" className="gap-1.5">
+                <GitBranch className="h-3.5 w-3.5" /> Checkpoints
+              </TabsTrigger>
               <TabsTrigger value="imports" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> Imports
               </TabsTrigger>
@@ -2343,6 +2347,10 @@ export default function CodeChatPage() {
 
           <TabsContent value="replace">
             <div className="p-6"><FindReplacePanel /></div>
+          </TabsContent>
+
+          <TabsContent value="checkpoints">
+            <div className="p-6"><CheckpointsPanel /></div>
           </TabsContent>
 
           <TabsContent value="imports">
