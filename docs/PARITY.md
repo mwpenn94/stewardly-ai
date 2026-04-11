@@ -3,16 +3,16 @@
 > Always re-read immediately before writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11T00:00:11Z by chat:optimize-crud-parity-satL3/pass-12
+- Last updated: 2026-04-11T00:00:12Z by chat:optimize-crud-parity-satL3/pass-13
 - Comparable target: "best-in-class dynamic CRUD for any integration/pipeline/ingestion process, even where documentation or vendor support is limited or nonexistent but data is available from sources — plus continuous improvement across Code Chat, AI chat financial force multipliers, learning/training/onboarding, CRM/marketing coordination, workflow, and agentic AI/browser/device automation"
 - Core purpose: Give Stewardly the ability to dynamically CRUD any integration/pipeline/ingestion process and turn the resulting data fabric into a continuous-improvement force multiplier across every Stewardly surface
 - Target user: Platform admin / advisor-tier developer / power client who needs to wire a new data source without writing a schema migration or waiting on a vendor SDK
 - Success metric: Time from "I have a URL/sample/cURL and know the data is there" → "live, scheduled, personalized ingestion flowing into the 5-layer intelligence stack" → <10 min (documented), <30 min (undocumented), <60 min (portal-only)
-- Current parity score: 41% (composite 4.1 / 10 — Pass 12 Depth-3 found a third orphaned infrastructure piece: the knowledge graph)
-- Passes completed: 12
-- Last reconciliation: 2026-04-11T00:00:11Z (conflicts: 0)
+- Current parity score: 41% (unchanged — Pass 13 Synthesis consolidates, does not re-score)
+- Passes completed: 13
+- Last reconciliation: 2026-04-11T00:00:12Z (conflicts: 0)
 - Active branches: 2 of 5 (B + E; A/C/D shelved)
-- Convergence status: **NOT CONVERGED, DIVERGING** — 12 passes, still finding 15-20 novel items per pass. The loop is structurally stuck in divergence mode; implementation passes are needed to protect improvements and ratchet the score up.
+- **Loop status: PAUSED pending implementation milestones. Re-open conditions specified in Pass 13 Final Synthesis section.**
 
 ## Pillars (comparable target decomposition)
 1. **Dynamic CRUD for integrations / pipelines / ingestion** (documented, undocumented, portal-only)
@@ -909,6 +909,241 @@ begin landing protected improvements.
 **Recommended stop condition for this loop: complete one more Synthesis
 pass (Pass 13) to finalize the implementation roadmap, then pause.**
 
+## Pass 13 Final Synthesis — Consolidated Roadmap + Pause Conditions
+
+Pass 13 is the final assessment pass before implementation. It consolidates
+the 13-pass findings into (a) a prioritized execution ladder, (b) explicit
+pause conditions for the assessment loop, and (c) re-open triggers.
+
+### Final gap inventory (13 passes)
+
+| Series | Count | Nature | Pass discovered |
+|---|---|---|---|
+| G | 44 | High-level gap matrix across 4 pillars | 1 |
+| D | 25 | Code-referenced depth blockers | 2 |
+| A | 25 | Adversarial / SEC / silent failures | 3 |
+| Branches | 5 | Architectural alternatives (A/B/C/D/E) | 4 |
+| F | 18 | Continuous-improvement seam findings | 5 |
+| X | 18 | Future-state forward projections | 6 |
+| L | 20 | UI / test coverage / meta blind-spots | 7 |
+| P | 20 | Personalization layer (deepContextAssembler orphan) | 9 |
+| AA | 20 | Context assembler adversarial + v2 handoff | 10 |
+| E | 9 | Economic findings | 11 |
+| M | 12 | Concrete beyond-parity moat designs | 11 |
+| T | 18 | Knowledge graph + event-sourcing + convergence | 12 |
+| **Total** | **229** | items + 5 branches | — |
+
+### Final execution ladder (the ONE roadmap to implement)
+
+Phase gates enforce dependency discipline. Each phase must complete before
+the next begins. Parallelism is available within phases marked PARALLEL.
+
+```
+GATE 0 — Latent bugs + safe preparation
+  ├─ A3, A4, A5, A7, A8, A16, A18, D4, X9, A11
+  ├─ Files: dataIngestion.ts normalizer, integrations.ts, one SQL index
+  ├─ Test delta: +25 regression + fix tests
+  ├─ Risk: low
+  └─ Unblocks: nothing critical, but clean base
+
+GATE 1 — Security gate bundle (CRITICAL PATH)
+  ├─ A9 multi-tenant insight fix
+  ├─ A15 compliance screen on ingestion
+  ├─ A17 SnapTrade consent enforcement
+  ├─ A20 pipelineHealth private
+  ├─ A21 SSRF allowlist module (pre-G5)
+  ├─ A22 extraction cost cap
+  ├─ A24 run_bash documentation
+  ├─ AA8 contextSanitizer module (centralized)
+  ├─ AA6/AA7 per-vector sanitization wrappers
+  ├─ AA1/AA2 advisor focusedClientId scope
+  ├─ AA14 conversation scope
+  ├─ X11 per-record lineage columns
+  ├─ X16 retention policy per record type
+  ├─ X12 per-provider cost budget
+  ├─ Files: contextSanitizer.ts (new), ssrfGuard.ts (new),
+  │         client_consent_records (new), dataIngestion.ts (screen),
+  │         drizzle/0018-0020.sql
+  ├─ Test delta: +80 security + regulatory tests
+  ├─ Risk: HIGH — touches multi-tenant + compliance
+  └─ Unblocks: every subsequent phase (nothing ships without security)
+
+GATE 2 — Schema loosening + dynamic primitives (CRITICAL PATH)
+  ├─ D1 category enum → varchar + category table
+  ├─ D2 authMethod enum → varchar
+  ├─ D3 transform enum + runtime registry
+  ├─ D5 declarative healthCheckSpec on provider
+  ├─ D14 credentialSchema per provider
+  ├─ G5 dynamic provider registration tRPC
+  ├─ G1 schema inference module
+  ├─ G6 raw payload storage + replay
+  ├─ G7 versioned field mappings (history + rollback)
+  ├─ G8 semantic field mapping suggestions
+  ├─ G9 cURL parser
+  ├─ L11 category vocabulary expansion
+  ├─ Files: transformRegistry.ts, schemaInfer.ts, curlParser.ts,
+  │         fieldMappingSuggest.ts, drizzle/0021-0024.sql
+  ├─ Test delta: +85 provider + schema + inference
+  ├─ Risk: medium — reversible migrations
+  └─ Unblocks: phases 3/4/5 in parallel, phase 6 at the end
+
+GATE 3 — CI-seam wiring (PARALLEL w/ 4 after G2)
+  ├─ F1 event bus extension for ingestion types
+  ├─ F5 improvement.signal proactive insight listener
+  ├─ F2 improvementLoops 7 + 8 on ingestion data
+  ├─ F7 autonomousCoding sees integration health
+  ├─ F11 2 new cron jobs (health recap + drift audit)
+  ├─ F12 improvement log resolution columns
+  ├─ F13 chat ReAct integration tools (3 read-only)
+  ├─ D10 emit ingestion events from existing paths
+  ├─ D16 enrichmentCache schemaVersion cache-bust
+  ├─ Files: eventBus.ts (extend), improvementLoops.ts (add loops),
+  │         autonomousCoding planner input, cron registrations
+  ├─ Test delta: +35 CI seam tests
+  └─ Risk: low-medium
+
+GATE 4 — Code Chat integration tools (PARALLEL w/ 3 after G2)
+  ├─ D11 six integration tools (probe_api, infer_schema,
+  │     register_integration, map_fields, replay_ingestion,
+  │     diff_schema)
+  ├─ G23 tool definitions
+  ├─ Files: codeChatExecutor.ts (6 tool defs), codeChat router
+  ├─ Test delta: +25 per-tool + SSE round-trip
+  └─ Risk: low (additive)
+
+GATE 5 — Triple-orphan unification (after G3 + G4)
+  ├─ T1/T6 ingestion dispatcher fanning out to context + loops + graph
+  ├─ T4 knowledge_graph.source_ingestion_job_id FK
+  ├─ T8 wire entityResolutionRules into normalizer
+  ├─ T12 canonicalization.ts consolidated module
+  ├─ P1/P2 deepContextAssembler now reads ingestedRecords +
+  │       webScrapeResults + documentExtractions
+  ├─ P3 enrichmentCache fields surfaced into prompt
+  ├─ P4 bidirectional ingestion-side assembler consumption
+  ├─ P8 per-source smart truncation
+  ├─ AA12 assembler cache layer
+  ├─ AA16 unified cost budget across sources
+  ├─ X17 beyond-parity personalization moat
+  ├─ M10 per-user personalization shard
+  ├─ Files: server/services/ingestion/dispatcher.ts (new),
+  │         canonicalization.ts (new), deepContextAssembler.ts
+  │         (extend), contextAssemblerCache.ts (new)
+  ├─ Test delta: +60 cross-orphan + cache tests
+  ├─ Risk: medium (touches personalization)
+  └─ Unblocks: Phase 6 UX that depends on personalized context
+
+GATE 6 — User-facing UX (after G5)
+  ├─ G2 integration-from-URL agentic flow
+  ├─ G16 chat "add integration" mode
+  ├─ L1 /admin/data-fabric unified page (5 tabs)
+  ├─ L2 RegisterProviderDialog with 3 tabs (cURL/OpenAPI/manual)
+  ├─ L3 unified add-source dialog
+  ├─ L4 status quick-filter
+  ├─ L5 paste-cURL UI
+  ├─ L6 provider detail page with deep-link
+  ├─ L9 wouter deep-link support
+  ├─ Files: client/src/pages/AdminDataFabric.tsx (new),
+  │         RegisterProviderDialog.tsx (new),
+  │         ProviderDetail.tsx (new)
+  ├─ Test delta: +40 E2E
+  └─ Risk: medium (large UI surface)
+
+GATE 7 — Scale + observability (after G6)
+  ├─ X2 SQL filter pushdown on listConnections
+  ├─ X3 durable scheduler (Inngest or Temporal pilot)
+  ├─ X8 ingestion records partitioning
+  ├─ X9 content_hash index
+  ├─ X13 observability dashboard
+  ├─ X14 durable-execution pilot on one pipeline
+  ├─ L7 integration test suite lift to 200+
+  ├─ L8 perf test suite
+  ├─ L13 composite trust score
+  ├─ AA17 parallel-with-timeout per source
+  ├─ AA18 auto-scale token budget
+  ├─ AA19 cross-source dedup
+  ├─ Files: infrastructure migration
+  ├─ Test delta: +100 load + coverage
+  └─ Risk: high (infra migration)
+
+GATE 8 — Economics + moats (parallel w/ G7 once G5 lands)
+  ├─ E2/E3/E4/E5/E7/E8 cost controls + tier caps + estimators
+  ├─ E9 per-user cost observability
+  ├─ M1 financial-domain schema priors
+  ├─ M2 5-layer tier-aware routing
+  ├─ M3 compliance-gated extraction default
+  ├─ M4 chat-native integration wizard
+  ├─ M5 failure-to-learning-signal loop
+  ├─ M6 recursive optimization passes on integrations (toolkit.js extension)
+  ├─ M7 integration recipe as learning content
+  ├─ M8 Wealth Engine auto-hydration
+  ├─ M9 consensus validation for high-stakes extraction
+  ├─ M11 learning-as-integration
+  └─ Risk: mostly low (each moat ships independently)
+
+GATE 9 — Pass 4 Branch evaluation + elimination (after G5)
+  ├─ Branch E prototype hardened into production
+  ├─ Branch B as default path, E as fallback
+  ├─ Sequential Halving Round 2 closes on B vs E based on Phase-5
+  │   prototype data
+  └─ Re-evaluate C (LLM-loop) + D (Playwright) un-shelving per X6/X7
+
+Total implementation surface:
+- ~450 new/modified tests
+- ~60 new files
+- ~12 schema migrations
+- ~22 implementation chats (one per gate + sub-gate)
+- Critical path: G0 → G1 → G2 → G5 → G6 = 5 sequential gates = ~12 chats
+- Parallelizable: G3, G4, G7, G8 can run concurrently after G2
+```
+
+### Pause conditions (explicit)
+
+The assessment loop pauses as of Pass 13 until ANY of:
+
+1. **First Phase 1 implementation chat lands** — re-open with Depth-4 on
+   what changed and whether the implementation matches the plan.
+2. **A parallel process writes to docs/PARITY.md** — the reconciliation
+   protocol fires and a new merge-and-reconcile pass runs.
+3. **12 weeks elapse** — refresh pass re-audits for drift in
+   CLAUDE.md, the integration layer, and comparable-target features.
+4. **User-initiated re-open** — at any time, explicitly request a new
+   pass with a specific focus.
+5. **Regulatory change** — EU AI Act, SEC rule amendment, or state
+   consumer-privacy law that changes compliance gap severity.
+
+### Re-open triggers (concrete)
+
+When the loop re-opens, the first action must be:
+1. Re-read this file
+2. Reconcile with any on-disk changes
+3. Populate the "Resolved Items" section with anything shipped since pause
+4. Re-score composite parity
+5. Run Signal Assessment for the next pass type
+
+### The top-10 "do first" list (if time-constrained)
+
+If implementation bandwidth is limited, the single highest-leverage fixes
+in priority order:
+
+1. **A9** — Multi-tenant insight leakage (1 hour, critical SEC)
+2. **A15** — Compliance screen on ingestion (2 hours, critical SEC)
+3. **A17** — SnapTrade consent gate (2 hours, critical SEC)
+4. **AA8** — contextSanitizer central module (1 day, enables everything downstream)
+5. **X11** — Per-record ingestion lineage (1 day, unblocks 3 regulatory
+   requirements simultaneously)
+6. **T1/T6** — Ingestion dispatcher unifying the triple-orphan (2 days,
+   single architectural fix amortized across 3 major gaps)
+7. **D1/D2/D3** — Schema enum loosening (1 day, unblocks all dynamic
+   provider work)
+8. **G5** — Dynamic provider registration (2 days after D1-3)
+9. **D11** — Six Code Chat integration tools (2 days, force multiplier)
+10. **P1** — deepContextAssembler reads ingestedRecords (1 day, enables
+    the beyond-parity personalization moat)
+
+**Rough total: ~13 days of focused implementation** to go from 41% parity
+to an estimated ~65% parity — unlocking the top 10 fixes alone closes
+~60+ of the 229 gap items by cascade.
+
 ## Reconciliation Log (append-only)
 
 | Time | Pass | Action | Conflicts | Notes |
@@ -925,12 +1160,14 @@ pass (Pass 13) to finalize the implementation roadmap, then pause.**
 | 2026-04-11T00:00:09Z | 10 | Adversarial-2 — context assembler stress test | 0 | Re-read before write; no concurrent writer. 20 AA-series findings. AA6/AA7/AA8 systemic prompt-injection surface. AA12/AA16 cost bombs. AA10/AA11 v2 handoff gaps. Fix-order dependency: AA8 sanitization MUST precede P1 personalization wiring. Parity 45% → 43%. Temperature 0.30 → 0.28. |
 | 2026-04-11T00:00:10Z | 11 | Future-State-2 — economics + moat designs | 0 | Re-read before write; no concurrent writer. 9 E-series economic findings + 12 M-series concrete moat designs. E2/E3/E4 identify the $30K-$50K/month cost bomb at 10x scale. E6 surfaces beyond-parity business-model moat (data brokerage). M1-M12 turn Pass 1 beyond-parity opportunities into buildable designs. Business-model recommendation: Option 3 (tier-capped with overage). Parity 43% (unchanged — economics are scored separately as a new dimension to consider). Temperature 0.28 → 0.25. |
 | 2026-04-11T00:00:11Z | 12 | Depth-3 — knowledge graph orphan + event sourcing + convergence reality | 0 | Re-read before write; no concurrent writer. 18 T-series findings. T1: knowledge graph is the THIRD orphaned infrastructure layer not wired from ingestion (after deepContextAssembler P1 and improvementLoops F2). T6: triple-orphan is a single architectural disconnect, not three unrelated gaps. T7: event-sourcing opportunity hidden in ingestion_jobs — reframe as append-only log + projection, free G6/G34/X11/X16. T10: convergence reality check — loop cannot self-converge, implementation passes are needed. Recommends one more synthesis pass (13) then pause for implementation. Parity 43% → 41%. Temperature 0.25 → 0.22. |
+| 2026-04-11T00:00:12Z | 13 | Final Synthesis — roadmap + pause conditions | 0 | Re-read before write; no concurrent writer. Consolidated 229 items + 5 branches into a 9-gate execution ladder. Critical path: G0 → G1 → G2 → G5 → G6 (5 sequential gates, ~12 implementation chats). Top-10 do-first list: A9, A15, A17, AA8, X11, T1/T6, D1/D2/D3, G5, D11, P1. Estimated ~13 days of focused implementation → ~65% parity. **Loop PAUSED pending implementation milestones.** Re-open conditions specified. Parity 41% (unchanged — Synthesis is neutral). Temperature 0.22 (unchanged). |
 
 ## Changelog (append-only, most recent first)
 
 | Pass | Platform | Type | Score Δ | Summary |
 |---|---|---|---|---|
-| 12 | Claude Code | Depth-3 | -0.20 | 18 T-series findings on knowledge graph + event sourcing + convergence. **Major finding: triple-orphan architectural disconnect (T6)** — the knowledge graph (T1), improvement loops (F2), and deep context assembler (P1) all ignore the ingestion output fabric. These are not three unrelated gaps but one architectural realignment. T7: event-sourcing opportunity reframes ingestion_jobs as an append-only observation log that solves G6/G34/X11/X16 for free. T10: convergence reality check — this loop cannot self-converge (0 of 9 criteria met, still finding 15-20 novel/pass). **Recommended: one more Synthesis pass (13) to finalize roadmap, then PAUSE for implementation work.** The next useful action is not more assessment. Parity 43% → 41%. Temperature 0.25 → 0.22. |
+| 13 | Claude Code | Final Synthesis | +0.00 | Consolidated 13-pass findings (229 items + 5 branches) into a 9-gate execution ladder with explicit dependency sequencing. Critical path: G0 (latent bugs) → G1 (security bundle) → G2 (schema loosening) → G5 (triple-orphan unification) → G6 (user-facing UX) = 5 sequential gates spanning ~12 implementation chats. Parallelizable: G3, G4, G7, G8 after G2. Top-10 do-first list (A9, A15, A17, AA8, X11, T1/T6, D1/D2/D3, G5, D11, P1) = ~13 days of focused implementation → ~65% parity. **Loop PAUSED pending implementation milestones.** Five re-open conditions specified: Phase-1 implementation lands / concurrent writer / 12 weeks / user-initiated / regulatory change. Parity 41% (unchanged). Temperature 0.22 (unchanged). |
+| 12 | Claude Code | Depth-3 | -0.20 | 18 T-series findings. Triple-orphan architectural disconnect: knowledge graph + improvement loops + deep context assembler all ignore ingestion. Event-sourcing reframe solves G6/G34/X11/X16 for free. Loop cannot self-converge; recommends pause after one more synthesis pass. Parity 43% → 41%. Temperature 0.25 → 0.22. |
 | 11 | Claude Code | Future-State-2 | +0.00 | 9 E-series economic findings + 12 M-series concrete beyond-parity moat designs. Business-model recommendation: tier-capped with overage. Parity 43% (unchanged). Temperature 0.28 → 0.25. |
 | 10 | Claude Code | Adversarial-2 | -0.20 | 20 AA-series findings stress-testing the Pass 9-discovered `deepContextAssembler`. AA6/AA7/AA8 expose systemic prompt-injection surface — EVERY string assembled into `fullContextPrompt` is un-sanitized. AA12 + AA16 identify the assembler as a cost bomb at 10x scale. AA10/AA11 flag v2 handoff gaps. **Critical sequencing: AA8 sanitization MUST ship BEFORE Pass 9 P1 personalization wiring**. Parity 45% → 43%. Temperature 0.30 → 0.28. |
 | 9 | Claude Code | Depth | -0.30 | **Major discovery: deepContextAssembler.ts** — the "central nervous system for all AI context" passes 1-8 never inspected. It assembles 14 data source types into every `contextualLLM` call, BUT entirely ignores `ingestedRecords`, `webScrapeResults`, and `documentExtractions`. The entire dynamic-CRUD output fabric is orphaned from the personalization layer. X17 beyond-parity moat is far more broken than Pass 6 stated. 20 novel findings (P1-P20). Parity 48% → 45%. Temperature 0.35 → 0.30. |
