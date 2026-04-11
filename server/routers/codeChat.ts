@@ -62,6 +62,7 @@ import {
   deleteBranch,
   getAuthenticatedUser,
   verifyPushAccess,
+  createGist,
 } from "../services/codeChat/githubClient";
 import {
   enqueueJob,
@@ -1124,6 +1125,68 @@ export const codeChatRouter = router({
           ok: false as const,
           error: `GitHub API returned ${status || "network error"}`,
         };
+      }
+    }),
+
+  // ─── Conversation → Gist export (Pass 219) ─────────────────────
+  //
+  // Publishes a Code Chat conversation as a GitHub Gist owned by the
+  // caller's own identity. The markdown is rendered client-side via
+  // `exportConversationAsMarkdown` and POSTed here; the server just
+  // wraps the Gists API with credential resolution. Defaults to a
+  // secret gist (not public) so users can share via URL without
+  // accidentally broadcasting their work.
+  exportToGist: protectedProcedure
+    .input(
+      z.object({
+        description: z.string().min(1).max(256),
+        filename: z
+          .string()
+          .min(1)
+          .max(120)
+          .regex(/^[\w.\- ]+$/, "invalid filename")
+          .optional(),
+        content: z.string().min(1).max(1024 * 1024),
+        public: z.boolean().optional().default(false),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const resolved = await loadGitHubCredentialsForUser(ctx.user.id);
+      if (!resolved) {
+        return { ok: false as const, error: "not_connected" };
+      }
+      try {
+        const filename =
+          (input.filename ?? `code-chat-${new Date().toISOString().slice(0, 10)}.md`)
+            .replace(/\s+/g, "-");
+        const gist = await createGist(resolved.credentials, {
+          description: input.description,
+          public: input.public,
+          files: {
+            [filename]: { content: input.content },
+          },
+        });
+        logger.info(
+          {
+            userId: ctx.user.id,
+            gistId: gist.id,
+            public: input.public,
+          },
+          "github exportToGist",
+        );
+        return {
+          ok: true as const,
+          gist: { id: gist.id, url: gist.url, rawUrl: gist.rawUrl },
+        };
+      } catch (err) {
+        const status = err instanceof GitHubError ? err.status : 0;
+        const message =
+          err instanceof GitHubError
+            ? (typeof err.body === "object" && err.body !== null && "message" in (err.body as any)
+                ? String((err.body as any).message)
+                : `GitHub ${status}`)
+            : String(err instanceof Error ? err.message : err);
+        return { ok: false as const, error: message };
       }
     }),
 

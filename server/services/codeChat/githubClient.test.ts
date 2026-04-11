@@ -23,6 +23,7 @@ import {
   verifyPushAccess,
   parseRepoString,
   deleteBranch,
+  createGist,
   type GitHubCredentials,
 } from "./githubClient";
 
@@ -345,5 +346,48 @@ describe("githubClient — deleteBranch", () => {
     await deleteBranch(creds, "o", "r", "feat/x");
     expect(stubCalls[0].method).toBe("DELETE");
     expect(stubCalls[0].url).toContain("/git/refs/heads/feat%2Fx");
+  });
+});
+
+describe("githubClient — createGist", () => {
+  it("POSTs to /gists with the expected body", async () => {
+    respondWith(() =>
+      jsonResponse({
+        id: "abc123",
+        html_url: "https://gist.github.com/octocat/abc123",
+        files: {
+          "chat.md": {
+            raw_url: "https://gist.githubusercontent.com/octocat/abc123/raw/chat.md",
+          },
+        },
+      }),
+    );
+    const result = await createGist(creds, {
+      description: "My chat",
+      public: false,
+      files: { "chat.md": { content: "# hello" } },
+    });
+    expect(result.id).toBe("abc123");
+    expect(result.url).toContain("gist.github.com");
+    expect(result.rawUrl).toContain("raw/chat.md");
+    expect(stubCalls[0].method).toBe("POST");
+    expect(stubCalls[0].url).toContain("/gists");
+    const body = stubCalls[0].body as any;
+    expect(body.description).toBe("My chat");
+    expect(body.public).toBe(false);
+    expect(body.files["chat.md"].content).toBe("# hello");
+  });
+
+  it("raises GitHubError on 422 validation", async () => {
+    respondWith(() =>
+      errorResponse(422, "Validation failed: files is too short"),
+    );
+    await expect(
+      createGist(creds, {
+        description: "x",
+        public: false,
+        files: {},
+      }),
+    ).rejects.toBeInstanceOf(GitHubError);
   });
 });

@@ -11,6 +11,8 @@ import {
   addTemplate,
   deleteTemplate,
   filterTemplates,
+  extractTemplateVariables,
+  applyTemplateVariables,
 } from "./promptTemplates";
 
 describe("BUILTIN_TEMPLATES", () => {
@@ -133,6 +135,58 @@ describe("deleteTemplate", () => {
     const lib = emptyTemplateLibrary();
     const out = deleteTemplate(lib, "builtin-review");
     expect(out.some((t) => t.id === "builtin-review")).toBe(true);
+  });
+});
+
+describe("extractTemplateVariables", () => {
+  it("returns empty array when there are no placeholders", () => {
+    expect(extractTemplateVariables("plain text")).toEqual([]);
+  });
+
+  it("extracts unique names in order of first appearance", () => {
+    const vars = extractTemplateVariables(
+      "read {{file}} and find {{pattern}} in {{file}}",
+    );
+    expect(vars).toEqual(["file", "pattern"]);
+  });
+
+  it("tolerates whitespace inside the braces", () => {
+    const vars = extractTemplateVariables("{{ file }} and {{  name  }}");
+    expect(vars).toEqual(["file", "name"]);
+  });
+
+  it("ignores malformed placeholders", () => {
+    expect(extractTemplateVariables("{{123}} {file} {{-bad}}")).toEqual([]);
+  });
+});
+
+describe("applyTemplateVariables", () => {
+  it("replaces known variables", () => {
+    expect(
+      applyTemplateVariables("read {{file}} twice", { file: "a.ts" }),
+    ).toBe("read a.ts twice");
+  });
+
+  it("leaves unknown variables as placeholders", () => {
+    expect(
+      applyTemplateVariables("read {{file}} and {{other}}", { file: "a.ts" }),
+    ).toBe("read a.ts and {{other}}");
+  });
+
+  it("replaces every occurrence", () => {
+    expect(
+      applyTemplateVariables("{{x}} and {{x}} and {{x}}", { x: "Y" }),
+    ).toBe("Y and Y and Y");
+  });
+
+  it("tolerates whitespace inside the braces", () => {
+    expect(
+      applyTemplateVariables("{{  file  }}", { file: "a.ts" }),
+    ).toBe("a.ts");
+  });
+
+  it("is a no-op when the template has no placeholders", () => {
+    expect(applyTemplateVariables("plain", { file: "a.ts" })).toBe("plain");
   });
 });
 
