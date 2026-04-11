@@ -123,6 +123,11 @@ import {
 } from "../services/codeChat/diagnosticsRunner";
 import { findReferencesInWorkspace } from "../services/codeChat/findReferencesRunner";
 import {
+  checkFreshness,
+  summarizeFreshness,
+  statFile,
+} from "../services/codeChat/fileWatcher";
+import {
   groupReferences,
   summarizeReferences,
   filterReferences,
@@ -551,6 +556,32 @@ export const codeChatRouter = router({
       fatalError: run.fatalError,
     };
   }),
+
+  // Pass 255: file freshness checker
+  checkFileFreshness: protectedProcedure
+    .input(
+      z.object({
+        checks: z.array(
+          z.object({
+            path: z.string(),
+            expectedMtime: z.number().nullable(),
+          }),
+        ),
+      }),
+    )
+    .query(async ({ input }) => {
+      const result = await checkFreshness(WORKSPACE_ROOT, input.checks);
+      return {
+        ...result,
+        summary: summarizeFreshness(result),
+      };
+    }),
+
+  getFileMtime: protectedProcedure
+    .input(z.object({ path: z.string() }))
+    .query(async ({ input }) => {
+      return await statFile(WORKSPACE_ROOT, input.path);
+    }),
 
   // Pass 252: find-references across the workspace
   findReferences: protectedProcedure

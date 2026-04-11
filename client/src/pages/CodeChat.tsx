@@ -145,6 +145,16 @@ import ToolAuditPopover from "@/components/codeChat/ToolAuditPopover";
 import CheckpointsPopover from "@/components/codeChat/CheckpointsPopover";
 import SnippetLibraryPopover from "@/components/codeChat/SnippetLibraryPopover";
 import {
+  loadTrackedSet,
+  saveTrackedSet,
+  recordFile as recordFreshnessFile,
+  applyFreshnessResult,
+  buildChecks as buildFreshnessChecks,
+  extractTrackedFromTools,
+  removeTrackedFile,
+  type TrackedFileSet,
+} from "@/components/codeChat/fileFreshness";
+import {
   loadSnippets,
   saveSnippets,
   type CodeSnippet,
@@ -591,6 +601,77 @@ function CodeChatInterface() {
   const [snippets, setSnippets] = useState<CodeSnippet[]>(() => loadSnippets());
   useEffect(() => { saveSnippets(snippets); }, [snippets]);
   const [snippetsOpen, setSnippetsOpen] = useState(false);
+
+  // Pass 255: tracked files for external-change detection
+  const [trackedFiles, setTrackedFiles] = useState<TrackedFileSet>(() => loadTrackedSet());
+  useEffect(() => { saveTrackedSet(trackedFiles); }, [trackedFiles]);
+  const [staleFiles, setStaleFiles] = useState<string[]>([]);
+
+  // Capture new file interactions from completed messages
+  const watchedMsgIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (isExecuting) return;
+    for (const msg of messages) {
+      if (msg.role !== "assistant") continue;
+      if (watchedMsgIdsRef.current.has(msg.id)) continue;
+      watchedMsgIdsRef.current.add(msg.id);
+      const tracked = extractTrackedFromTools(msg.toolEvents ?? []);
+      if (tracked.length === 0) continue;
+      // Best-effort: fetch the mtime after the agent interaction so
+      // we can detect drift later. Batched via Promise.allSettled.
+      (async () => {
+        let next = trackedFiles;
+        for (const t of tracked) {
+          try {
+            const res = await fetch(
+              `/api/trpc/codeChat.getFileMtime?input=${encodeURIComponent(JSON.stringify({ path: t.path }))}`,
+              { credentials: "include" },
+            );
+            if (!res.ok) continue;
+            const json = await res.json();
+            const mtime = json?.result?.data?.mtime ?? null;
+            next = recordFreshnessFile(next, t.path, mtime, t.origin);
+          } catch { /* skip */ }
+        }
+        setTrackedFiles(next);
+      })();
+    }
+  }, [messages, isExecuting]);
+
+  // Poll for freshness every 15s when the window is visible
+  useEffect(() => {
+    if (trackedFiles.entries.length === 0) return;
+    let cancelled = false;
+    const poll = async () => {
+      if (document.hidden) return;
+      const checks = buildFreshnessChecks(trackedFiles);
+      if (checks.length === 0) return;
+      try {
+        const res = await fetch(
+          `/api/trpc/codeChat.checkFileFreshness?input=${encodeURIComponent(JSON.stringify({ checks }))}`,
+          { credentials: "include" },
+        );
+        if (!res.ok || cancelled) return;
+        const json = await res.json();
+        const result = json?.result?.data;
+        if (!result) return;
+        setTrackedFiles((prev) => applyFreshnessResult(prev, result));
+        setStaleFiles(result.summary?.stalePaths ?? []);
+      } catch { /* skip */ }
+    };
+    const id = window.setInterval(poll, 15_000);
+    // Immediate first check
+    poll();
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [trackedFiles.entries.length]);
+
+  const dismissStaleFile = useCallback((path: string) => {
+    setStaleFiles((prev) => prev.filter((p) => p !== path));
+    setTrackedFiles((prev) => removeTrackedFile(prev, path));
+  }, []);
   const handleInsertSnippet = useCallback((body: string) => {
     setInput((prev) => {
       if (!prev) return body;
@@ -2182,6 +2263,48 @@ function CodeChatInterface() {
               className="px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setLastErrorBanner(null)}
               aria-label="Dismiss error"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pass 255: stale file banner — external change detected */}
+      {staleFiles.length > 0 && (
+        <div className="px-3 py-2 border-t border-amber-500/30 bg-amber-500/5 text-xs flex items-start gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-amber-500">
+              {staleFiles.length} file{staleFiles.length === 1 ? "" : "s"} changed outside Code Chat
+            </div>
+            <div className="text-muted-foreground break-words font-mono text-[10px]">
+              {staleFiles.slice(0, 3).join(", ")}
+              {staleFiles.length > 3 ? ` +${staleFiles.length - 3} more` : ""}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              className="px-2 py-0.5 rounded border border-amber-500/40 text-amber-500 hover:bg-amber-500/10 transition-colors"
+              onClick={() => {
+                setInput(
+                  (prev) =>
+                    `${prev ? prev + "\n\n" : ""}Please re-read these files since they changed on disk: ${staleFiles.map((p) => `@${p}`).join(" ")}`,
+                );
+                setStaleFiles([]);
+                inputRef.current?.focus();
+              }}
+            >
+              Re-read
+            </button>
+            <button
+              type="button"
+              className="px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => {
+                for (const p of staleFiles) dismissStaleFile(p);
+              }}
+              aria-label="Dismiss stale files"
             >
               Dismiss
             </button>
