@@ -27,7 +27,7 @@ import {
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
-  BookOpen, History,
+  BookOpen, History, StickyNote,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -118,6 +118,12 @@ import {
 import AgentTodoPanel from "@/components/codeChat/AgentTodoPanel";
 import ProjectInstructionsPopover from "@/components/codeChat/ProjectInstructionsPopover";
 import EditHistoryPopover from "@/components/codeChat/EditHistoryPopover";
+import ScratchpadPanel from "@/components/codeChat/ScratchpadPanel";
+import {
+  loadScratchpad,
+  saveScratchpad,
+  type ScratchpadState,
+} from "@/components/codeChat/scratchpad";
 import {
   loadHistory,
   saveHistory,
@@ -401,6 +407,20 @@ function CodeChatInterface() {
   useEffect(() => { saveHistory(editHistory); }, [editHistory]);
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
   const dispatchMutation = trpc.codeChat.dispatch.useMutation();
+
+  // Pass 240: scratchpad drawer
+  const [scratchpad, setScratchpad] = useState<ScratchpadState>(() => loadScratchpad());
+  useEffect(() => { saveScratchpad(scratchpad); }, [scratchpad]);
+  const [scratchpadOpen, setScratchpadOpen] = useState(false);
+  const handleScratchpadInsert = useCallback((text: string) => {
+    setInput((prev) => {
+      if (!prev) return text;
+      // Append with a separating newline so the user's in-progress
+      // draft isn't clobbered
+      return prev.endsWith("\n") || prev.endsWith(" ") ? `${prev}${text}` : `${prev}\n${text}`;
+    });
+    inputRef.current?.focus();
+  }, []);
 
   // Listen for manual edits broadcast from the FileBrowser component
   useEffect(() => {
@@ -1322,6 +1342,24 @@ function CodeChatInterface() {
           <Github className="w-3 h-3" /> Gist
         </button>
         <button
+          onClick={() => setScratchpadOpen((v) => !v)}
+          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
+            scratchpadOpen
+              ? "bg-accent/10 border-accent/30 text-accent"
+              : scratchpad.content
+                ? "border-accent/30 text-accent/80"
+                : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Toggle scratchpad"
+          title={
+            scratchpad.content
+              ? `Scratchpad (${scratchpad.content.length.toLocaleString()} chars)`
+              : "Scratchpad (empty)"
+          }
+        >
+          <StickyNote className="w-3 h-3" /> Notes
+        </button>
+        <button
           onClick={() => setShowFiles(!showFiles)}
           className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${showFiles ? "bg-accent/10 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
           aria-label="Toggle file panel"
@@ -1790,6 +1828,14 @@ function CodeChatInterface() {
           </div>
         </div>
       )}
+      {/* Pass 240: scratchpad drawer */}
+      <ScratchpadPanel
+        open={scratchpadOpen}
+        onClose={() => setScratchpadOpen(false)}
+        state={scratchpad}
+        onChange={setScratchpad}
+        onInsertIntoPrompt={handleScratchpadInsert}
+      />
       </div>{/* end split layout */}
       <KeyboardShortcutsOverlay
         open={shortcutsOpen}
