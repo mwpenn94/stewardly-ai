@@ -432,7 +432,10 @@ function TrackProgressCard({
               {formatProgressPct(progress.trackCompletionPct)} mastered
             </span>
           </div>
-          <Progress value={progress.trackCompletionPct * 100} />
+          <Progress
+            value={progress.trackCompletionPct * 100}
+            aria-label={`Track mastery: ${progress.trackMastered} of ${progress.trackTotal} items mastered`}
+          />
           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
             <span>{progress.trackTotal} items total</span>
             <span>{formatProgressPct(progress.trackAttemptedPct)} touched</span>
@@ -467,6 +470,7 @@ function TrackProgressCard({
                         ? (progress.unchaptered.mastered / progress.unchaptered.total) * 100
                         : 0
                     }
+                    aria-label={`Unchaptered material: ${progress.unchaptered.mastered} of ${progress.unchaptered.total} mastered`}
                   />
                 </li>
               )}
@@ -495,7 +499,10 @@ function ChapterProgressRow({ chapter }: { chapter: ChapterProgress }) {
           {chapter.mastered}/{chapter.total} · {formatProgressPct(chapter.completionPct)}
         </span>
       </div>
-      <Progress value={chapter.completionPct * 100} />
+      <Progress
+        value={chapter.completionPct * 100}
+        aria-label={`${chapter.title}: ${chapter.mastered} of ${chapter.total} mastered`}
+      />
     </li>
   );
 }

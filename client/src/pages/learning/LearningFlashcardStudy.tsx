@@ -356,9 +356,23 @@ export default function LearningFlashcardStudy() {
           current && (
             <div className="space-y-4">
               <Card
-                className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 ${flipped ? "animate-card-flip-in" : ""}`}
+                role="button"
+                tabIndex={0}
+                aria-pressed={flipped}
+                aria-label={
+                  flipped
+                    ? `Definition revealed. ${current.definition}. Press space to flip back.`
+                    : `Flashcard term: ${current.term}. Press space or enter to reveal the definition.`
+                }
+                className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${flipped ? "animate-card-flip-in" : ""}`}
                 style={{ perspective: "600px" }}
                 onClick={() => setFlipped((f) => !f)}
+                onKeyDown={(e) => {
+                  if (e.key === " " || e.key === "Enter") {
+                    e.preventDefault();
+                    setFlipped((f) => !f);
+                  }
+                }}
               >
                 <CardContent className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
                   {flipped ? (
@@ -377,7 +391,7 @@ export default function LearningFlashcardStudy() {
                       </p>
                       <p className="text-xl font-semibold">{current.term}</p>
                       <p className="text-xs text-muted-foreground mt-3">
-                        Click the card to reveal
+                        Click or press Space to reveal
                       </p>
                     </>
                   )}
@@ -390,6 +404,7 @@ export default function LearningFlashcardStudy() {
                   className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-400"
                   onClick={() => mark(false)}
                   disabled={!flipped || recordReview.isPending}
+                  aria-label="Mark this card as got it wrong"
                 >
                   <X className="h-4 w-4 mr-2" /> Got it wrong
                 </Button>
@@ -397,6 +412,7 @@ export default function LearningFlashcardStudy() {
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                   onClick={() => mark(true)}
                   disabled={!flipped || recordReview.isPending}
+                  aria-label="Mark this card as got it right"
                 >
                   <Check className="h-4 w-4 mr-2" /> Got it right
                 </Button>

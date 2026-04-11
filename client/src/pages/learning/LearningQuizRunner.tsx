@@ -139,6 +139,43 @@ export default function LearningQuizRunner() {
     setStarted(true);
   };
 
+  // Pass 6 (build loop) — keyboard shortcuts during the quiz:
+  // digits 1..N pick option, Enter submits / advances. No-op when
+  // not started yet, complete, or focus is in a text input.
+  useEffect(() => {
+    if (!started || complete || !current) return;
+    function handle(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+      const opts = (current?.options ?? []) as unknown as string[];
+      if (/^[1-9]$/.test(e.key)) {
+        const idx = Number(e.key) - 1;
+        if (idx < opts.length && !revealed) {
+          e.preventDefault();
+          setSelected(idx);
+        }
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (!revealed && selected != null && !recordReview.isPending) submit();
+        else if (revealed) next();
+      }
+    }
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [
+    started,
+    complete,
+    current,
+    revealed,
+    selected,
+    recordReview.isPending,
+  ]);
+
   if (trackQ.isLoading || questionsQ.isLoading) {
     return (
       <AppShell title="Quiz">
@@ -358,8 +395,14 @@ export default function LearningQuizRunner() {
           current && (
             <Card>
               <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 justify-between">
                   <Badge variant="outline">{current.difficulty}</Badge>
+                  <span
+                    className="text-[10px] text-muted-foreground hidden md:inline"
+                    aria-hidden
+                  >
+                    Press 1–{options.length} to choose · Enter to submit
+                  </span>
                 </div>
                 <p className="text-base font-medium leading-relaxed">
                   {current.prompt}

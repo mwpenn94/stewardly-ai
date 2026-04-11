@@ -360,14 +360,33 @@ function FlashcardCard({
     setFlipped(false);
   }, [term, definition]);
 
+  // Pass 6 (build loop) — keyboard accessibility. The flashcard is
+  // an interactive surface; treat it as a button so screen readers
+  // and keyboard users can flip it. Space/Enter both flip.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      setFlipped((f) => !f);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card
-        className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 ${
+        role="button"
+        tabIndex={0}
+        aria-pressed={flipped}
+        aria-label={
+          flipped
+            ? `Definition revealed. ${definition}. Press space to flip back.`
+            : `Flashcard term: ${term}. Press space or enter to reveal the definition.`
+        }
+        className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
           flipped ? "animate-card-flip-in" : ""
         }`}
         style={{ perspective: "600px" }}
         onClick={() => setFlipped((f) => !f)}
+        onKeyDown={handleKeyDown}
       >
         <CardContent className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
           {flipped ? (
@@ -384,7 +403,7 @@ function FlashcardCard({
               </p>
               <p className="text-xl font-semibold">{term}</p>
               <p className="text-xs text-muted-foreground mt-3">
-                Click the card to reveal
+                Click or press Space to reveal
               </p>
             </>
           )}
@@ -397,6 +416,7 @@ function FlashcardCard({
           className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-400"
           onClick={onIncorrect}
           disabled={!flipped || disabled}
+          aria-label="Mark this card as got it wrong"
         >
           <X className="h-4 w-4 mr-2" /> Got it wrong
         </Button>
@@ -404,6 +424,7 @@ function FlashcardCard({
           className="bg-emerald-600 hover:bg-emerald-700 text-white"
           onClick={onCorrect}
           disabled={!flipped || disabled}
+          aria-label="Mark this card as got it right"
         >
           <Check className="h-4 w-4 mr-2" /> Got it right
         </Button>
@@ -446,11 +467,46 @@ function QuestionCard({
   isLast: boolean;
   disabled?: boolean;
 }) {
+  // Pass 6 — keyboard shortcuts for the quiz: digits 1..6 select an
+  // option, Enter submits or advances. Skips when focus is in a
+  // text input so we don't hijack typing elsewhere on the page.
+  useEffect(() => {
+    function handle(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+      // Digit 1..options.length picks the option.
+      if (/^[1-9]$/.test(e.key)) {
+        const idx = Number(e.key) - 1;
+        if (idx < options.length && !revealed) {
+          e.preventDefault();
+          onSelect(idx);
+        }
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (!revealed && selected != null && !disabled) onSubmit();
+        else if (revealed) onNext();
+      }
+    }
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [options.length, revealed, selected, disabled, onSelect, onSubmit, onNext]);
+
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-between">
           <Badge variant="outline">{difficulty}</Badge>
+          <span
+            className="text-[10px] text-muted-foreground hidden md:inline"
+            aria-hidden
+          >
+            Press 1–{options.length} to choose · Enter to submit
+          </span>
         </div>
         <p className="text-base font-medium leading-relaxed">{prompt}</p>
 
