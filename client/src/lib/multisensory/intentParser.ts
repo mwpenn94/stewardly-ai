@@ -193,7 +193,10 @@ const SLOWER_PATTERNS = [/^(?:slow down|slower|go slower)$/i];
 const SKIP_PATTERNS = [/^(?:skip|next audio|skip this)$/i];
 const RESTART_PATTERNS = [/^(?:restart|start over|from the top)$/i];
 
-const READ_PATTERNS = [/^(?:read (?:this|it)(?: to me)?|read (?:this )?(?:page|aloud)|narrate(?: this(?: page)?)?)$/i];
+const READ_PATTERNS = [
+  /^read$/i,
+  /^(?:read (?:this|it)(?: to me)?|read (?:this )?(?:page|aloud)|narrate(?: this(?: page)?)?)$/i,
+];
 const FOCUS_CHAT = [/^(?:focus(?: the)? (?:chat|input)|select (?:chat|input)|type(?: here)?)$/i];
 const OPEN_PALETTE = [/^(?:open (?:the )?(?:palette|command palette)|search pages|command palette)$/i];
 

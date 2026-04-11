@@ -65,6 +65,7 @@ export function IntentRouter() {
         case "chat.new":
           window.dispatchEvent(new CustomEvent("chat:new"));
           announce("New conversation started", "polite");
+          pil.giveFeedback("navigate.success", { label: "New conversation" });
           return;
 
         case "chat.focus_input": {
@@ -76,6 +77,9 @@ export function IntentRouter() {
           if (input) {
             input.focus();
             announce("Chat input focused", "polite");
+            pil.playSound("mic_on");
+          } else {
+            announce("No chat input on this page", "assertive");
           }
           return;
         }
@@ -89,15 +93,18 @@ export function IntentRouter() {
           if (audioCompanion.playing) {
             audioCompanion.pause();
             announce("Audio paused", "polite");
+            pil.playSound("mic_off");
           } else {
             audioCompanion.resume();
             announce("Audio resumed", "polite");
+            pil.playSound("mic_on");
           }
           return;
 
         case "audio.read_page":
           audioCompanion.readCurrentPage();
           announce("Reading page aloud", "polite");
+          pil.playSound("mic_on");
           return;
 
         case "audio.stop_speech":
@@ -112,6 +119,7 @@ export function IntentRouter() {
             }
           }
           announce("Speech stopped", "assertive");
+          pil.playSound("mic_off");
           return;
 
         // ── Voice actions ──
@@ -119,9 +127,11 @@ export function IntentRouter() {
           if (pil.handsFreeActive) {
             pil.exitHandsFree();
             announce("Hands-free mode off", "assertive");
+            // exitHandsFree already plays mode_deactivate via PIL
           } else {
             pil.enterHandsFree();
             announce("Hands-free mode on. Say go to, followed by a page name.", "assertive");
+            // enterHandsFree already plays mode_activate via PIL
           }
           return;
 
@@ -129,6 +139,7 @@ export function IntentRouter() {
           // Pass 2: push-to-talk — listens for a single utterance, routes
           // it through PIL.processIntent, then stops. No-ops if hands-free
           // is already running so we don't interrupt the continuous loop.
+          // Pass 5: listenOnce already plays mic_on internally via PIL.
           announce("Listening for one command", "polite");
           void pil.listenOnce();
           return;

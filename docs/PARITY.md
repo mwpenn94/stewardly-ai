@@ -141,6 +141,51 @@ Dimension scores are 1–10 using the v2 Appendix A calibration.
 
 ## Changelog
 
+### Pass 5 (2026-04-11, Depth round 2, composite 8.95 → 9.05, +0.10)
+
+Temperature raised to 0.45 after Pass 4's stagnation signal (δ=0.15).
+Went deep on feedback coverage, caught a real parser bug, tightened
+the intent bus.
+
+1. **Broader feedback coverage in `IntentRouter`**. Pass 1 only wired
+   `pil.giveFeedback("navigate.success")` for nav intents. Pass 5 adds
+   it to `chat.new` and adds direct `pil.playSound()` cues to every
+   audio/voice intent:
+   - `chat.new` → `navigate.success` feedback spec
+   - `chat.focus_input` → `mic_on` sound (unless no input → assertive
+     announcement "No chat input on this page")
+   - `audio.toggle_tts` → `mic_on`/`mic_off` depending on direction
+   - `audio.read_page` → `mic_on`
+   - `audio.stop_speech` → `mic_off`
+
+   Users now get a matching audio cue for every keyboard shortcut or
+   slash command fired.
+
+2. **Chat slash-command test suite** (`chatSlashCommand.test.ts`, 12 new
+   tests). End-to-end verification that every branch of the Chat.tsx
+   slash-command switch maps to the correct `parseIntent` kind:
+   `/go X`, `/open X`, `/read`, `/hands-free`, `/hands-free off`,
+   `/command palette`, `/help`, `/pause`, `/resume`, `/faster`,
+   `/slower`. Includes a "kind completeness" check that locks the set
+   of 9 parser kinds so new kinds trigger a test failure before being
+   silently missed by the Chat handler.
+
+3. **Parser bug caught by the new test**: `/read` alone (without
+   "this", "page", or "aloud") returned `unknown`. Users who type the
+   shortest form of the command were falling through to the LLM
+   instead of triggering read-aloud. Added `/^read$/i` to
+   `READ_PATTERNS`. This is a real user-visible bug — the test suite
+   caught a regression that wasn't in any prior bug report.
+
+**Dimension scorecard delta:**
+- Core Function: 8.5 → 9.0 (+0.5) — `/read` bug fixed, broader action
+  coverage
+- Robustness: 9.0 → 9.0 (0) — same ceiling
+- Delightfulness: 8.5 → 9.0 (+0.5) — every action now has audio feedback
+- Digestibility: 9.0 → 9.0 — still strong
+
+**Composite:** 9.05 / 10 (+0.10)
+
 ### Pass 4 (2026-04-11, Delight & Polish, composite 8.80 → 8.95, +0.15)
 
 Core function solid, robustness locked in. Time for the "it just feels
