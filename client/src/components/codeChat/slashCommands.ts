@@ -30,7 +30,11 @@ export interface SlashCommand {
   handler: (
     ctx: SlashCommandContext,
     args: string,
-  ) => void | { rewrite: string } | Promise<void | { rewrite: string }>;
+  ) =>
+    | void
+    | { rewrite: string }
+    | { compact: true; keepRecent?: number }
+    | Promise<void | { rewrite: string } | { compact: true; keepRecent?: number }>;
 }
 
 export interface SlashCommandContext {
@@ -171,6 +175,19 @@ export const BUILT_IN_COMMANDS: SlashCommand[] = [
       };
     },
   },
+  {
+    name: "compact",
+    description: "Summarize older turns into a single message to free up context",
+    args: "[keepRecent]",
+    handler: (_ctx, args) => {
+      const trimmed = args.trim();
+      const keepRecent = trimmed ? parseInt(trimmed, 10) : 4;
+      if (trimmed && (!Number.isFinite(keepRecent) || keepRecent < 0)) {
+        return;
+      }
+      return { compact: true, keepRecent: Number.isFinite(keepRecent) ? keepRecent : 4 };
+    },
+  },
 ];
 
 // ─── Parser + lookup ─────────────────────────────────────────────────────
@@ -240,6 +257,7 @@ export function filterCommands(
  *   - null if the input isn't a slash command (caller should treat it as a chat message)
  *   - { handled: true } if the command ran without producing a rewrite
  *   - { handled: true, rewrite: "..." } if the command rewrote the input
+ *   - { handled: true, compact: true, keepRecent } if the command requested compaction
  *   - { handled: false, error: "..." } if the command name was unknown
  */
 export async function tryRunSlashCommand(
@@ -248,7 +266,7 @@ export async function tryRunSlashCommand(
   registry: SlashCommand[] = BUILT_IN_COMMANDS,
 ): Promise<
   | null
-  | { handled: true; rewrite?: string }
+  | { handled: true; rewrite?: string; compact?: boolean; keepRecent?: number }
   | { handled: false; error: string }
 > {
   const parsed = parseSlashInput(input);
@@ -259,8 +277,17 @@ export async function tryRunSlashCommand(
   }
   try {
     const result = await cmd.handler(ctx, parsed.args);
-    if (result && "rewrite" in result) {
-      return { handled: true, rewrite: result.rewrite };
+    if (result && typeof result === "object") {
+      if ("rewrite" in result) {
+        return { handled: true, rewrite: result.rewrite };
+      }
+      if ("compact" in result && result.compact) {
+        return {
+          handled: true,
+          compact: true,
+          keepRecent: result.keepRecent,
+        };
+      }
     }
     return { handled: true };
   } catch (err) {

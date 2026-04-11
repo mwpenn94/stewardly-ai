@@ -207,4 +207,20 @@ describe("tryRunSlashCommand — built-ins", () => {
       error: "Unknown slash command: /bogus",
     });
   });
+
+  it("/compact returns the compact intent with default keepRecent", async () => {
+    const r = await tryRunSlashCommand("/compact", mockCtx());
+    expect(r).toMatchObject({ handled: true, compact: true, keepRecent: 4 });
+  });
+
+  it("/compact with a numeric arg overrides keepRecent", async () => {
+    const r = await tryRunSlashCommand("/compact 6", mockCtx());
+    expect(r).toMatchObject({ handled: true, compact: true, keepRecent: 6 });
+  });
+
+  it("/compact with invalid arg returns handled:true without compact flag", async () => {
+    const r = await tryRunSlashCommand("/compact abc", mockCtx());
+    expect(r).toMatchObject({ handled: true });
+    if (r && "compact" in r) expect(r.compact).toBeUndefined();
+  });
 });

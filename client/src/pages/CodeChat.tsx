@@ -26,7 +26,7 @@ import {
   Lock, Unlock, Terminal, Send, ChevronDown, ChevronRight,
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
-  LibraryBig, GitFork,
+  LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -67,6 +67,18 @@ import {
   summarizeToolEvents,
   summaryChips,
 } from "@/components/codeChat/toolSummary";
+import { compactConversation } from "@/components/codeChat/conversationCompact";
+import {
+  loadBookmarks,
+  saveBookmarks,
+  toggleBookmark as toggleBookmarkPure,
+  isBookmarked,
+  loadReactions,
+  saveReactions,
+  setReaction as setReactionPure,
+  getReaction,
+  type ReactionMap,
+} from "@/components/codeChat/messageAnnotations";
 import {
   extractGrepMatches,
   groupMatchesByFile,
@@ -362,6 +374,33 @@ function CodeChatInterface() {
   useEffect(() => {
     savePinned(pinned);
   }, [pinned]);
+
+  // Pass 233: message bookmarks
+  const [bookmarks, setBookmarks] = useState<string[]>(() => loadBookmarks());
+  useEffect(() => { saveBookmarks(bookmarks); }, [bookmarks]);
+  const [bookmarksOpen, setBookmarksOpen] = useState(false);
+  const scrollToMessage = useCallback((messageId: string) => {
+    const el = scrollRef.current?.querySelector(
+      `[data-message-id="${CSS.escape(messageId)}"]`,
+    );
+    if (el && "scrollIntoView" in el) {
+      (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" });
+      // Briefly highlight
+      const prevBg = (el as HTMLElement).style.backgroundColor;
+      (el as HTMLElement).style.transition = "background-color 0.3s";
+      (el as HTMLElement).style.backgroundColor = "rgba(212,168,67,0.15)";
+      setTimeout(() => {
+        (el as HTMLElement).style.backgroundColor = prevBg;
+      }, 1500);
+    }
+  }, []);
+
+  // Pass 234: message outline rail toggle
+  const [outlineOpen, setOutlineOpen] = useState(false);
+
+  // Pass 235: message reactions (thumbs up/down)
+  const [reactions, setReactions] = useState<ReactionMap>(() => loadReactions());
+  useEffect(() => { saveReactions(reactions); }, [reactions]);
   const handleUnpin = useCallback((path: string) => {
     setPinned((prev) => removePinned(prev, path));
   }, []);
@@ -635,6 +674,21 @@ function CodeChatInterface() {
       });
       if (result !== null) {
         if (result.handled) {
+          if ("compact" in result && result.compact) {
+            // Pass 232: /compact — collapse older turns into a summary
+            const keep = typeof result.keepRecent === "number" ? result.keepRecent : 4;
+            const compacted = compactConversation(messages, keep);
+            if (compacted.compacted) {
+              loadMessages(compacted.messages);
+              toast.success(
+                `Compacted ${compacted.collapsed} older message${compacted.collapsed === 1 ? "" : "s"} into a summary`,
+              );
+            } else {
+              toast.info("Nothing to compact yet");
+            }
+            setInput("");
+            return;
+          }
           if ("rewrite" in result && result.rewrite) {
             // The command expanded the input into a longer prompt —
             // put it in the textarea for the user to review, don't auto-send
@@ -676,7 +730,7 @@ function CodeChatInterface() {
       enabledTools,
     });
     inputRef.current?.focus();
-  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned]);
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages]);
 
   const handleSlashSelect = useCallback((cmd: SlashCommand) => {
     // Pre-fill the input with the command so the user can type args
@@ -877,6 +931,26 @@ function CodeChatInterface() {
           <BookMarked className="w-3 h-3" /> Sessions
         </button>
         <button
+          onClick={() => setBookmarksOpen(true)}
+          className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Bookmarks"
+          title={`Bookmarks (${bookmarks.filter((id) => messages.some((m) => m.id === id)).length} in this session)`}
+        >
+          <Star className="w-3 h-3" /> {bookmarks.filter((id) => messages.some((m) => m.id === id)).length}
+        </button>
+        <button
+          onClick={() => setOutlineOpen((v) => !v)}
+          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
+            outlineOpen
+              ? "bg-accent/10 border-accent/30 text-accent"
+              : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Toggle outline"
+          title="Message outline (Pass 234)"
+        >
+          <List className="w-3 h-3" /> Outline
+        </button>
+        <button
           onClick={() => setShortcutsOpen(true)}
           className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Keyboard shortcuts"
@@ -961,10 +1035,60 @@ function CodeChatInterface() {
         </button>
       </div>
 
-      {/* Split layout: chat + optional file panel */}
+      {/* Split layout: chat + optional file panel + optional outline rail */}
       <div className="flex flex-1 min-h-0">
+      {/* Pass 234: outline rail (user prompts only, click to scroll) */}
+      {outlineOpen && (
+        <div className="hidden md:flex flex-col w-60 border-r border-border/40 overflow-y-auto bg-card/20">
+          <div className="p-3 border-b border-border/40 flex items-center justify-between text-xs font-medium">
+            <span className="flex items-center gap-1.5">
+              <List className="w-3.5 h-3.5" /> Outline
+            </span>
+            <button
+              onClick={() => setOutlineOpen(false)}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Close outline"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {messages.filter((m) => m.role === "user").length === 0 ? (
+              <p className="text-[10px] text-muted-foreground italic p-3">
+                No prompts yet.
+              </p>
+            ) : (
+              <ol className="divide-y divide-border/20">
+                {messages.map((msg, idx) => {
+                  if (msg.role !== "user") return null;
+                  const preview = msg.content.split("\n")[0].slice(0, 80);
+                  const turnNumber =
+                    messages.slice(0, idx + 1).filter((m) => m.role === "user")
+                      .length;
+                  return (
+                    <li key={msg.id}>
+                      <button
+                        type="button"
+                        onClick={() => scrollToMessage(msg.id)}
+                        className="w-full text-left px-3 py-2 hover:bg-secondary/30 transition-colors"
+                      >
+                        <div className="text-[9px] uppercase tracking-wide text-muted-foreground/60 font-mono">
+                          turn {turnNumber}
+                        </div>
+                        <div className="text-[11px] text-foreground truncate">
+                          {preview}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </div>
+        </div>
+      )}
       {/* Chat column */}
-      <div className={`flex flex-col ${showFiles ? "flex-1 min-w-0" : "w-full"}`}>
+      <div className={`flex flex-col ${showFiles ? "flex-1 min-w-0" : "flex-1"}`}>
       {/* Messages area */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
@@ -999,7 +1123,11 @@ function CodeChatInterface() {
             msgIdx === messages.length - 1 &&
             !isExecuting;
           return (
-          <div key={msg.id} className={`${msg.role === "user" ? "flex justify-end" : "group"}`}>
+          <div
+            key={msg.id}
+            data-message-id={msg.id}
+            className={`${msg.role === "user" ? "flex justify-end" : "group"}`}
+          >
             {msg.role === "user" ? (
               <div className="bg-accent/10 text-foreground px-4 py-2.5 rounded-2xl rounded-br-md max-w-[85%] text-sm">
                 {msg.content}
@@ -1112,6 +1240,58 @@ function CodeChatInterface() {
                       onClick={() => handleForkAt(msg.id)}
                     >
                       <GitFork className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      className={`transition-colors p-1 rounded ${
+                        isBookmarked(bookmarks, msg.id)
+                          ? "text-amber-400"
+                          : "hover:text-foreground"
+                      }`}
+                      aria-label={
+                        isBookmarked(bookmarks, msg.id)
+                          ? "Remove bookmark"
+                          : "Bookmark this message"
+                      }
+                      title="Bookmark"
+                      onClick={() =>
+                        setBookmarks((prev) => toggleBookmarkPure(prev, msg.id))
+                      }
+                    >
+                      <Star
+                        className="w-3 h-3"
+                        fill={
+                          isBookmarked(bookmarks, msg.id) ? "currentColor" : "none"
+                        }
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      className={`transition-colors p-1 rounded ${
+                        getReaction(reactions, msg.id) === "up"
+                          ? "text-emerald-500"
+                          : "hover:text-foreground"
+                      }`}
+                      aria-label="Thumbs up"
+                      onClick={() =>
+                        setReactions((prev) => setReactionPure(prev, msg.id, "up"))
+                      }
+                    >
+                      <ThumbsUp className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      className={`transition-colors p-1 rounded ${
+                        getReaction(reactions, msg.id) === "down"
+                          ? "text-destructive"
+                          : "hover:text-foreground"
+                      }`}
+                      aria-label="Thumbs down"
+                      onClick={() =>
+                        setReactions((prev) => setReactionPure(prev, msg.id, "down"))
+                      }
+                    >
+                      <ThumbsDown className="w-3 h-3" />
                     </button>
                     {isLastAssistant && (
                       <button
@@ -1331,6 +1511,87 @@ function CodeChatInterface() {
           inputRef.current?.focus();
         }}
       />
+      {/* Pass 233: bookmarks popover */}
+      {bookmarksOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+          onClick={() => setBookmarksOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Bookmarks"
+        >
+          <div
+            className="relative w-full max-w-lg max-h-[80vh] overflow-auto rounded-xl border border-border/60 bg-card p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setBookmarksOpen(false)}
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+              aria-label="Close bookmarks"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <h2 className="font-heading text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
+              <Star className="h-4 w-4 text-amber-400" /> Bookmarks
+            </h2>
+            <p className="text-[11px] text-muted-foreground mb-4">
+              Messages you starred in this session. Click to scroll to
+              them. Bookmarks persist across sessions in localStorage.
+            </p>
+            {(() => {
+              const inSession = messages.filter((m) => bookmarks.includes(m.id));
+              if (inSession.length === 0) {
+                return (
+                  <p className="text-xs text-muted-foreground italic text-center py-4">
+                    No bookmarked messages in this session.
+                  </p>
+                );
+              }
+              return (
+                <ul className="space-y-1.5">
+                  {inSession.map((msg) => {
+                    const preview = msg.content.split("\n")[0].slice(0, 140);
+                    return (
+                      <li key={msg.id}>
+                        <button
+                          type="button"
+                          className="w-full flex items-start gap-2 px-3 py-2 rounded border border-border/40 hover:bg-secondary/20 transition-colors text-left"
+                          onClick={() => {
+                            scrollToMessage(msg.id);
+                            setBookmarksOpen(false);
+                          }}
+                        >
+                          <Star className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" fill="currentColor" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[9px] uppercase tracking-wide text-muted-foreground">
+                              {msg.role}
+                            </div>
+                            <div className="text-[11px] text-foreground truncate">
+                              {preview}
+                              {msg.content.length > 140 ? "…" : ""}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="text-muted-foreground hover:text-destructive shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setBookmarks((prev) => toggleBookmarkPure(prev, msg.id));
+                            }}
+                            aria-label={`Unbookmark ${msg.role} message`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
