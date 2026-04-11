@@ -140,6 +140,7 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "Target", label: "Lead Sources", href: "/admin/lead-sources", minRole: "admin" },
   { iconName: "TrendingUp", label: "Rate Management", href: "/admin/rate-management", minRole: "admin" },
   { iconName: "FileText", label: "Platform Reports", href: "/admin/platform-reports", minRole: "admin" },
+  { iconName: "Compass", label: "Comparables", href: "/comparables", minRole: "advisor" },
 ];
 
 // ─── UTILITY section (always visible at bottom) ──────────────────────────────

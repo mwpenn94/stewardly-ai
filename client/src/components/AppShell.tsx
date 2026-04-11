@@ -32,7 +32,7 @@ import {
   Menu, X, ChevronDown, Keyboard, BookOpen,
   GraduationCap, Sparkles, Shield, Bot, Terminal,
   Calculator, LayoutDashboard, Users2, Database, Target, Search,
-  Fingerprint, Award, GitBranch,
+  Fingerprint, Award, GitBranch, Compass,
 } from "lucide-react";
 
 // ─── Icon lookup ─────────────────────────────────────────────────────────────
@@ -74,6 +74,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Fingerprint: <Fingerprint className="w-4 h-4" />,
   Award: <Award className="w-4 h-4" />,
   GitBranch: <GitBranch className="w-4 h-4" />,
+  Compass: <Compass className="w-4 h-4" />,
 };
 
 function getIcon(name: string): React.ReactNode {

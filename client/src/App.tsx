@@ -122,6 +122,8 @@ const CaseStudySimulator = lazy(() => import("./pages/learning/CaseStudySimulato
 const AchievementSystem = lazy(() => import("./pages/learning/AchievementSystem"));
 const ConnectionMap = lazy(() => import("./pages/learning/ConnectionMap"));
 const AudioPreferences = lazy(() => import("./pages/settings/AudioPreferences"));
+// Comparables — competitive gap dashboard (hybrid build loop, pass 1)
+const ComparablesPage = lazy(() => import("./pages/Comparables"));
 
 function Router() {
   return (
@@ -230,6 +232,9 @@ function Router() {
         <Route path="/learning/achievements">{() => <AchievementSystem />}</Route>
 
         {/* Consolidated Hub Pages */}
+        {/* Comparables — competitive gap dashboard (hybrid build loop pass 1) */}
+        <Route path={"/comparables"} component={ComparablesPage} />
+
         <Route path={"/operations"} component={OperationsHub} />
         <Route path={"/agents"} component={AgentManager} />
         <Route path={"/intelligence-hub"} component={IntelligenceHub} />
