@@ -128,6 +128,21 @@ import {
 } from "../services/codeChat/checkpoints";
 import { randomUUID } from "crypto";
 import {
+  parseTscOutput,
+  groupByFile as groupDiagnosticsByFile,
+  summarizeDiagnostics,
+  filterDiagnostics,
+  type DiagnosticSeverity,
+  type DiagnosticSource,
+} from "../services/codeChat/diagnostics";
+import {
+  getCachedDiagnostics,
+  setCachedDiagnostics,
+  clearDiagnosticsCache,
+  withInflight,
+  type DiagnosticsSnapshot,
+} from "../services/codeChat/diagnosticsCache";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -825,6 +840,102 @@ export const codeChatRouter = router({
       const ok = await deleteCheckpointFromDisk(WORKSPACE_ROOT, input.id);
       return { ok };
     }),
+
+  // Pass 252: workspace diagnostics (tsc --noEmit + parse)
+  getDiagnostics: protectedProcedure
+    .input(
+      z
+        .object({
+          severity: z.array(z.enum(["error", "warning", "info"])).optional(),
+          source: z.array(z.enum(["tsc", "eslint", "manual"])).optional(),
+          pathPrefix: z.string().max(200).optional(),
+          code: z.string().max(80).optional(),
+          search: z.string().max(200).optional(),
+          /** When true, bypass the cache and run tsc fresh */
+          refresh: z.boolean().optional(),
+          limit: z.number().min(1).max(2000).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const snapshot = await (async (): Promise<DiagnosticsSnapshot> => {
+        if (!input?.refresh) {
+          const cached = getCachedDiagnostics();
+          if (cached) return cached;
+        }
+        return withInflight(async () => {
+          const startedAt = new Date().toISOString();
+          const t0 = Date.now();
+          const result = await dispatchCodeTool(
+            {
+              name: "run_bash",
+              args: {
+                command:
+                  "npx --no-install tsc --noEmit --pretty false 2>&1 | head -n 2000",
+              },
+            } as CodeToolCall,
+            {
+              workspaceRoot: WORKSPACE_ROOT,
+              allowMutations: true,
+              bashTimeoutMs: 120_000,
+            },
+          );
+          const durationMs = Date.now() - t0;
+          const finishedAt = new Date().toISOString();
+          let stdout = "";
+          let stderrTail = "";
+          let exitCode = 0;
+          if (result.kind === "bash") {
+            stdout = result.result.stdout ?? "";
+            stderrTail = (result.result.stderr ?? "").slice(-2000);
+            exitCode = result.result.exitCode ?? 0;
+          } else if (result.kind === "error") {
+            stderrTail = result.error.slice(-2000);
+            exitCode = -1;
+          }
+          const diagnostics = parseTscOutput(stdout);
+          const snap: DiagnosticsSnapshot = {
+            diagnostics,
+            startedAt,
+            finishedAt,
+            durationMs,
+            exitCode,
+            stderrTail,
+          };
+          setCachedDiagnostics(snap);
+          return snap;
+        });
+      })();
+
+      const filtered = filterDiagnostics(snapshot.diagnostics, {
+        severity: input?.severity as DiagnosticSeverity[] | undefined,
+        source: input?.source as DiagnosticSource[] | undefined,
+        pathPrefix: input?.pathPrefix,
+        code: input?.code,
+        search: input?.search,
+      });
+      const limit = Math.min(input?.limit ?? 500, 2000);
+
+      return {
+        diagnostics: filtered.slice(0, limit),
+        groups: groupDiagnosticsByFile(filtered).slice(0, 200),
+        summary: summarizeDiagnostics(filtered),
+        rawTotal: snapshot.diagnostics.length,
+        totalFiltered: filtered.length,
+        runMeta: {
+          startedAt: snapshot.startedAt,
+          finishedAt: snapshot.finishedAt,
+          durationMs: snapshot.durationMs,
+          exitCode: snapshot.exitCode,
+          stderrTail: snapshot.stderrTail,
+        },
+      };
+    }),
+
+  refreshDiagnostics: protectedProcedure.mutation(async () => {
+    clearDiagnosticsCache();
+    return { ok: true };
+  }),
 
   // Pass 246: TODO marker scanner
   scanTodoMarkers: protectedProcedure

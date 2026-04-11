@@ -111,4 +111,11 @@ describe("allChordLabels", () => {
     expect(cpChord).toBeDefined();
     expect(cpChord!.label).toContain("Checkpoints");
   });
+
+  it("includes the g+x Problems chord added in Pass 252", () => {
+    const labels = allChordLabels();
+    const xChord = labels.find((l) => l.keys[1] === "x");
+    expect(xChord).toBeDefined();
+    expect(xChord!.label).toContain("Problems");
+  });
 });
