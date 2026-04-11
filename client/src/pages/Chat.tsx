@@ -45,6 +45,7 @@ import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
 import { useTTS } from "@/hooks/useTTS";
 import { detectStt, type SttCapabilities } from "@/lib/sttSupport";
 import { VoiceSupportBanner } from "@/components/VoiceSupportBanner";
+import { useFocusOnRouteChange } from "@/hooks/useFocusOnRouteChange";
 import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
@@ -240,6 +241,10 @@ export default function Chat() {
   const sttCaps = useMemo<SttCapabilities>(() => detectStt(), []);
   const sttFullSupport = sttCaps.mode === "full";
   const sttAnySupport = sttCaps.mode !== "unsupported";
+  // Build Loop Pass 3 (G60): focus #chat-main on route change + announce
+  // via aria-live. Chat owns its own <main> element (id="chat-main") so
+  // we override the default target here.
+  useFocusOnRouteChange({ mainId: "chat-main" });
   const [ttsEnabled, setTtsEnabled] = useState(() => {
     const stored = localStorage.getItem("tts-enabled");
     return stored !== "false"; // Default ON

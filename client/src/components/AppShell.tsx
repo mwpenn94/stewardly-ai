@@ -11,6 +11,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import PersonaSidebar5 from "@/components/PersonaSidebar5";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useFocusOnRouteChange } from "@/hooks/useFocusOnRouteChange";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -91,6 +92,13 @@ export default function AppShell({ children, title }: AppShellProps) {
   const [location, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   useKeyboardShortcuts(); // Global shortcuts: ?, /, g+h, g+s, g+c, g+d, g+l, g+o
+  // Build Loop Pass 3 (G60 — WCAG 2.4.3 focus order): on every route
+  // change, focus the #main-content element AND fire an aria-live
+  // announcement of the new page name. Keyboard + SR users now get a
+  // spoken "Clients" / "Compliance Audit" marker when they navigate via
+  // g-chord, sidebar click, or deep link. Defers the focus call to
+  // requestAnimationFrame so the new route has actually mounted.
+  useFocusOnRouteChange({ mainId: "main-content" });
 
   // Auto-propagate title to browser tab
   useEffect(() => {
