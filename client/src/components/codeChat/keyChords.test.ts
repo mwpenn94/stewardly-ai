@@ -139,4 +139,11 @@ describe("allChordLabels", () => {
     expect(eChord).toBeDefined();
     expect(eChord!.label).toContain("Env");
   });
+
+  it("includes the g+l Log chord added in Pass 257", () => {
+    const labels = allChordLabels();
+    const lChord = labels.find((l) => l.keys[1] === "l");
+    expect(lChord).toBeDefined();
+    expect(lChord!.label).toContain("Log");
+  });
 });

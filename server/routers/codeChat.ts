@@ -159,6 +159,14 @@ import {
   type EnvCategory,
 } from "../services/codeChat/envInspector";
 import {
+  parseGitLog,
+  parseNumstat,
+  mergeCommitStats,
+  computeLogStats,
+  groupCommitsByDay,
+  filterCommits,
+} from "../services/codeChat/gitLog";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -855,6 +863,70 @@ export const codeChatRouter = router({
     .mutation(async ({ input }) => {
       const ok = await deleteCheckpointFromDisk(WORKSPACE_ROOT, input.id);
       return { ok };
+    }),
+
+  // Pass 257: commit history timeline
+  gitLogHistory: protectedProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(500).optional(),
+          branch: z.string().max(200).optional(),
+          author: z.string().max(200).optional(),
+          search: z.string().max(200).optional(),
+          sinceIso: z.string().max(40).optional(),
+          includeStats: z.boolean().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const limit = Math.min(input?.limit ?? 50, 500);
+      const branch = (input?.branch ?? "HEAD").replace(/[^a-zA-Z0-9._/-]/g, "");
+
+      const logResult = await dispatchCodeTool(
+        {
+          name: "run_bash",
+          args: {
+            command: `git log ${branch} -n ${limit} --format="%H%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%b%x1e" 2>/dev/null || true`,
+          },
+        } as CodeToolCall,
+        { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 20_000 },
+      );
+      let rawLog = "";
+      if (logResult.kind === "bash") {
+        rawLog = logResult.result.stdout ?? "";
+      }
+      const commits = parseGitLog(rawLog);
+
+      // Optionally pull the numstat pass so each commit carries a delta
+      let withStats = commits;
+      if (input?.includeStats && commits.length > 0) {
+        const statsResult = await dispatchCodeTool(
+          {
+            name: "run_bash",
+            args: {
+              command: `git log ${branch} -n ${limit} --numstat --format="commit:%H" 2>/dev/null || true`,
+            },
+          } as CodeToolCall,
+          { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 20_000 },
+        );
+        if (statsResult.kind === "bash") {
+          const statsMap = parseNumstat(statsResult.result.stdout ?? "");
+          withStats = mergeCommitStats(commits, statsMap);
+        }
+      }
+
+      const filtered = filterCommits(withStats, {
+        author: input?.author,
+        search: input?.search,
+        sinceIso: input?.sinceIso,
+      });
+
+      return {
+        commits: filtered,
+        groups: groupCommitsByDay(filtered),
+        stats: computeLogStats(filtered),
+      };
     }),
 
   // Pass 256: environment variable inspector (admin-only, masked values)
