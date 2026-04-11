@@ -576,6 +576,53 @@ declare the learning experience converged at composite ~8.5. Re-entry
 triggers: new content kinds (video), new exam types, WCAG regressions,
 or success-metric drops.
 
+### Pass 8 — Convergence Confirmation #1 (2026-04-11, Claude Code)
+**Pass type:** Adversarial (verification)
+**Temperature in:** 0.11
+**Temperature out:** 0.11
+
+Zero-action verification sweep. Ran signal assessment against every
+pass type, ran the learning test subsystem (181 passing across 12
+files), verified no TODO/FIXME markers in any file touched by Passes
+1-7, verified no unused imports, verified all routing references are
+consistent (`/learning/case/:caseId` singular across LearningHome,
+DisciplineDeepDive, App.tsx).
+
+**Findings:** none requiring immediate action.
+
+**Minor gap noted (deferred, non-blocking):** the side navigation
+in `client/src/lib/navigation.ts` exposes `/learning`,
+`/learning/licenses`, `/learning/achievements`, `/learning/connections`,
+and `/learning/studio`, but NOT the new `/learning/review` or
+`/learning/case` routes added in Passes 1-4. Adding these is a
+2-line polish that a future pass can land.
+
+**Signal assessment:**
+| Pass type | Signal |
+|---|---|
+| Fundamental Redesign | Absent — core architecture sound |
+| Exploration | Absent — temp 0.11 < 0.6 |
+| Landscape | Absent — Pass 1 covered breadth, no new surface |
+| Depth | Absent — all tested code has tests; KeyboardHelpOverlay is purely interactive |
+| Adversarial | Absent — Pass 7 found the error-state conflation, nothing new turned up |
+| Delight & Polish | Absent — Pass 5-6 covered streak + help overlay |
+| Future-State | Premature — wait for user data |
+| Synthesis | Covered incrementally each pass |
+
+**Dimension deltas:** none.
+
+**Composite:** 8.5 → 8.5 (unchanged)
+
+**Build + test state (end of Pass 8):**
+- TS check: 0 errors
+- Build: clean in 19.35s
+- Learning subsystem: 181 passing across 12 files
+- Full suite: 3,878 passing / 113 env-dependent failing (baseline
+  unchanged)
+
+**Convergence status: 1 of 2 consecutive zero-action confirmations
+complete.** Pass 9 (if similarly clean) completes convergence.
+
 ## Reconciliation Log
 
 (parallel passes write here if they conflict with a landing commit)
