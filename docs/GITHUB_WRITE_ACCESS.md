@@ -1,4 +1,4 @@
-# Code Chat Cloud Parity (Passes 201-219)
+# Code Chat Cloud Parity (Passes 201-223)
 
 Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 
@@ -52,6 +52,17 @@ Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 - **Export conversation to GitHub Gist** — one-click publish as a
   secret Gist owned by the caller, auto-copies URL to clipboard
   (Pass 219)
+- **Conversation fork at any message** — clone the conversation up to
+  an assistant turn into a new session for exploring alternate paths
+  (Pass 220)
+- **Cross-session full-text search** — search across every saved
+  session's message content with highlighted match snippets (Pass 221)
+- **Session cost budget guardrail** — set a USD limit per session;
+  warns at 50% and blocks sends at 100% with an override prompt
+  (Pass 222)
+- **Silent auto-checkpoint** — conversations auto-save to the
+  sessions library every 4 turns; no more lost work from refresh
+  or crash (Pass 223)
 
 This document walks through the architecture, the tRPC surface, the
 safety model, and the UI. For setup (tokens, connection flow) see
@@ -589,6 +600,80 @@ the filename with a regex allowlist, and logs every export with
 `{ userId, gistId, public }` so ops can track who published what.
 2 new primitive tests cover the POST body shape and 422 validation
 error handling.
+
+## Session power features (Passes 220-223)
+
+### Fork conversation at any message (Pass 220)
+
+Every assistant message has a **GitFork** button in its hover action
+bar. Clicking it creates a new saved session with the conversation
+truncated to and including that message, then immediately switches
+the active session to the fork so the user can continue from there
+without touching the original. Great for "what if I had asked this
+differently?" exploration.
+
+`forkMessagesAt(messages, forkMessageId)` is a pure function that
+returns the inclusive slice up to the target id, or the original
+list unchanged if the id isn't found. The fork is named
+`Fork: <auto-derived title>` via the same `autoName()` helper used
+for manual saves.
+
+### Cross-session full-text search (Pass 221)
+
+The Sessions popover grew a top-level search input that scans every
+saved session's message content (not just names). Results render in
+a compact list above the session rows with:
+
+- Session name + message index + role as the header
+- A ~120-char snippet window around the match with the matched
+  substring highlighted in accent color
+- Click to load the matching session into the live hook
+
+`searchSessions` is case-insensitive, ordered by session
+`updatedAt` newest-first, capped at 50 results. 10 new unit tests
+cover the snippet window, match-position tracking, role metadata,
+ordering, and the empty-query passthrough.
+
+### Cost budget guardrail (Pass 222)
+
+The token/cost pill in the config bar is now clickable — click it
+to set a USD session budget (empty = no limit). The pill colors
+itself by budget status:
+
+- Neutral: under the warn threshold (default 50% of limit)
+- Amber: between warn threshold and limit
+- Red: at or over the limit
+
+When the budget is blocked, `handleSend` short-circuits with a
+toast so users can't accidentally spend beyond the cap. The limit
+persists to `localStorage['stewardly-codechat-budget']` across
+refreshes.
+
+`evaluateBudget()` is a pure function: returns `{status, pct,
+remainingUSD}`. 8 unit tests cover no-limit, unpriced models,
+threshold crossings, zero-clamping over-budget remaining, and the
+"limit ≤ 0 means no limit" edge.
+
+### Silent auto-checkpoint (Pass 223)
+
+Conversations now save themselves. A `useEffect` watches
+`messages` and calls `upsertSession()` every 4 new messages
+(configurable) with a stable `auto-${uuid}` session id so repeated
+saves update the same row. Key properties:
+
+- Waits until there's ≥1 assistant reply before the first save
+  (avoids saving empty prompts)
+- Reuses `currentSessionId` when set, so manual saves and
+  auto-checkpoints share the same snapshot
+- Resets state on `messages.length === 0` (after `/clear`) so the
+  next conversation gets a fresh auto-id
+- `shouldCheckpoint()` is a pure function with 6 unit tests
+  covering delta math, the assistant-required rule, and the
+  everyN ≤ 0 "disabled" case
+
+Result: users never lose work to a refresh or tab crash, and the
+sessions library quietly accumulates a complete history without
+anyone having to remember to click Save.
 
 ## Known limitations
 

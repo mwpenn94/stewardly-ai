@@ -11,6 +11,9 @@ import {
   renameSession,
   getSession,
   autoName,
+  forkMessagesAt,
+  searchSessions,
+  shouldCheckpoint,
   type SessionSnapshot,
 } from "./sessionLibrary";
 import type { CodeChatMessage } from "@/hooks/useCodeChatStream";
@@ -151,6 +154,192 @@ describe("getSession", () => {
   });
   it("returns null when missing", () => {
     expect(getSession(emptyLibrary(), "missing")).toBeNull();
+  });
+});
+
+describe("forkMessagesAt", () => {
+  const mkMsg = (
+    id: string,
+    role: "user" | "assistant",
+    content: string,
+  ): CodeChatMessage => ({
+    id,
+    role,
+    content,
+    timestamp: new Date(),
+  });
+
+  it("returns the slice up to and including the target", () => {
+    const msgs = [
+      mkMsg("u1", "user", "first prompt"),
+      mkMsg("a1", "assistant", "first reply"),
+      mkMsg("u2", "user", "second prompt"),
+      mkMsg("a2", "assistant", "second reply"),
+    ];
+    const forked = forkMessagesAt(msgs, "a1");
+    expect(forked).toHaveLength(2);
+    expect(forked[1].id).toBe("a1");
+  });
+
+  it("returns the original list when the id is missing", () => {
+    const msgs = [mkMsg("u1", "user", "x")];
+    expect(forkMessagesAt(msgs, "nope")).toEqual(msgs);
+  });
+
+  it("forks at a user message", () => {
+    const msgs = [
+      mkMsg("u1", "user", "first"),
+      mkMsg("a1", "assistant", "reply"),
+      mkMsg("u2", "user", "second"),
+    ];
+    const forked = forkMessagesAt(msgs, "u2");
+    expect(forked).toHaveLength(3);
+    expect(forked.map((m) => m.id)).toEqual(["u1", "a1", "u2"]);
+  });
+});
+
+describe("searchSessions", () => {
+  const mkSession = (
+    id: string,
+    name: string,
+    updatedAt: number,
+    contents: Array<{ role: "user" | "assistant"; text: string }>,
+  ): SessionSnapshot => ({
+    id,
+    name,
+    createdAt: updatedAt,
+    updatedAt,
+    messages: contents.map((c, i) => ({
+      id: `${id}-${i}`,
+      role: c.role,
+      content: c.text,
+      timestamp: new Date(updatedAt),
+    })),
+  });
+
+  const lib = (() => {
+    let l = emptyLibrary();
+    l = upsertSession(
+      l,
+      mkSession("s1", "Wealth engine", 1000, [
+        { role: "user", text: "explain the wealth engine architecture" },
+        { role: "assistant", text: "The wealth engine is structured in 7 phases..." },
+      ]),
+    );
+    l = upsertSession(
+      l,
+      mkSession("s2", "Auth", 2000, [
+        { role: "user", text: "find authentication code" },
+        { role: "assistant", text: "Authentication lives in server/_core/auth.ts" },
+      ]),
+    );
+    l = upsertSession(
+      l,
+      mkSession("s3", "Empty", 3000, []),
+    );
+    return l;
+  })();
+
+  it("returns empty array for empty query", () => {
+    expect(searchSessions(lib, "")).toEqual([]);
+    expect(searchSessions(lib, "   ")).toEqual([]);
+  });
+
+  it("finds matches across sessions", () => {
+    const r = searchSessions(lib, "authentication");
+    expect(r.length).toBeGreaterThan(0);
+    expect(r.every((h) => h.sessionId === "s2")).toBe(true);
+  });
+
+  it("is case-insensitive", () => {
+    const r = searchSessions(lib, "WEALTH ENGINE");
+    expect(r.some((h) => h.sessionId === "s1")).toBe(true);
+  });
+
+  it("includes role + session metadata on each hit", () => {
+    const r = searchSessions(lib, "phases");
+    expect(r[0].sessionName).toBe("Wealth engine");
+    expect(r[0].messageRole).toBe("assistant");
+  });
+
+  it("produces a snippet window around the match", () => {
+    const r = searchSessions(lib, "wealth");
+    expect(r[0].snippet.toLowerCase()).toContain("wealth");
+    expect(r[0].snippet.length).toBeGreaterThan(0);
+  });
+
+  it("tracks match position for highlighting", () => {
+    const r = searchSessions(lib, "wealth");
+    expect(r[0].matchAt).toBeGreaterThanOrEqual(0);
+    expect(r[0].matchLen).toBe("wealth".length);
+  });
+
+  it("orders by session updatedAt newest-first", () => {
+    // Both sessions contain "the", newer session (s2, updatedAt 2000)
+    // should appear first in the results
+    const r = searchSessions(lib, "the");
+    expect(r[0].sessionId).toBe("s2");
+  });
+
+  it("respects the limit argument", () => {
+    // Force ≥ 2 matches then cap at 1
+    const r = searchSessions(lib, "the", 1);
+    expect(r).toHaveLength(1);
+  });
+
+  it("returns empty for no-match queries", () => {
+    expect(searchSessions(lib, "xyz987-nothing")).toEqual([]);
+  });
+});
+
+describe("shouldCheckpoint", () => {
+  const state = (lastSavedCount: number) => ({
+    lastSavedCount,
+    sessionId: "auto",
+  });
+
+  const mkMsgs = (count: number, withAssistant = true): CodeChatMessage[] => {
+    const out: CodeChatMessage[] = [];
+    for (let i = 0; i < count; i++) {
+      out.push({
+        id: `m${i}`,
+        role: i === 1 && withAssistant ? "assistant" : "user",
+        content: `msg ${i}`,
+        timestamp: new Date(),
+      });
+    }
+    return out;
+  };
+
+  it("returns false for empty messages", () => {
+    expect(shouldCheckpoint([], state(0), 4)).toBe(false);
+  });
+
+  it("returns false until there is at least one assistant reply", () => {
+    const userOnly: CodeChatMessage[] = Array.from({ length: 6 }, (_, i) => ({
+      id: `u${i}`,
+      role: "user" as const,
+      content: `x${i}`,
+      timestamp: new Date(),
+    }));
+    expect(shouldCheckpoint(userOnly, state(0), 4)).toBe(false);
+  });
+
+  it("returns true when delta reaches everyN", () => {
+    expect(shouldCheckpoint(mkMsgs(4), state(0), 4)).toBe(true);
+  });
+
+  it("returns false when delta is below everyN", () => {
+    expect(shouldCheckpoint(mkMsgs(3), state(0), 4)).toBe(false);
+  });
+
+  it("returns false when there has been no new activity", () => {
+    expect(shouldCheckpoint(mkMsgs(4), state(4), 4)).toBe(false);
+  });
+
+  it("returns false for everyN <= 0 (disabled)", () => {
+    expect(shouldCheckpoint(mkMsgs(100), state(0), 0)).toBe(false);
+    expect(shouldCheckpoint(mkMsgs(100), state(0), -1)).toBe(false);
   });
 });
 
