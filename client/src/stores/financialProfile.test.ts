@@ -18,7 +18,7 @@ import {
   serializeProfileState,
   toEngineProfile,
   type FinancialProfile,
-} from "./financialProfile";
+} from "@shared/financialProfile";
 
 describe("financialProfile / parseFinancialProfile", () => {
   it("returns an empty profile for null / undefined input", () => {

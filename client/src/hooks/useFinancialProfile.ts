@@ -12,7 +12,7 @@
  * wrapping this hook with a mutation on save.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   EMPTY_PROFILE,
   FINANCIAL_PROFILE_STORAGE_KEY,
@@ -24,6 +24,8 @@ import {
   serializeProfileState,
   toEngineProfile,
 } from "@/stores/financialProfile";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 function readFromStorage(): FinancialProfile {
   if (typeof window === "undefined") return { ...EMPTY_PROFILE };
@@ -78,9 +80,52 @@ export interface UseFinancialProfileResult {
  * Components can use `profile` directly in JSX, call `setProfile` on
  * form events, and render a "Profile ready / partial / empty" chip
  * from `completenessStatus`.
+ *
+ * Pass 4 (G9): when the user is authenticated, the hook also
+ * mirrors writes to the server-side `financialProfile.set` tRPC
+ * procedure so the profile follows them across devices. The
+ * localStorage acts as the L1 cache; the server is the L2 cache.
+ * Reads pull from the server on mount once and merge over the
+ * local copy if the server value is newer.
  */
 export function useFinancialProfile(): UseFinancialProfileResult {
+  const { isAuthenticated } = useAuth();
   const [profile, setProfileState] = useState<FinancialProfile>(readFromStorage);
+
+  // Server-side hydration on mount when authenticated. Skips on
+  // guest sessions so anonymous users get the local-only experience.
+  const serverGet = trpc.financialProfile.get.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: true,
+  });
+  const serverSet = trpc.financialProfile.set.useMutation();
+  const serverDelete = trpc.financialProfile.delete.useMutation();
+
+  // When the server returns a non-null profile, merge it over the
+  // local copy. The server's `updatedAt` wins as the tiebreaker so
+  // a different-device update overrides stale localStorage.
+  const didHydrateRef = useRef(false);
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    if (!isAuthenticated || !serverGet.data) return;
+    const remote = serverGet.data.profile as FinancialProfile | null;
+    if (!remote) {
+      didHydrateRef.current = true;
+      return;
+    }
+    const localUpdated = profile.updatedAt ? Date.parse(profile.updatedAt) : 0;
+    const remoteUpdated = remote.updatedAt ? Date.parse(remote.updatedAt) : 0;
+    // Prefer the newer of the two
+    if (remoteUpdated >= localUpdated) {
+      writeToStorage(remote);
+      setProfileState(remote);
+    }
+    didHydrateRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, serverGet.data]);
 
   // Cross-tab sync via the storage event
   useEffect(() => {
@@ -102,10 +147,21 @@ export function useFinancialProfile(): UseFinancialProfileResult {
       setProfileState((prev) => {
         const next = mergeProfile(prev, patch, source);
         writeToStorage(next);
+        // Fire-and-forget sync to server when authenticated. The
+        // server-side store is idempotent so a missed mutation
+        // (e.g., offline) only costs a one-tab divergence until
+        // the next save.
+        if (isAuthenticated) {
+          serverSet.mutate(
+            { patch: patch as Record<string, never>, source },
+            // Errors are non-fatal — the local copy is still right.
+            { onError: () => undefined },
+          );
+        }
         return next;
       });
     },
-    [],
+    [isAuthenticated, serverSet],
   );
 
   const replaceProfile = useCallback(
@@ -113,8 +169,14 @@ export function useFinancialProfile(): UseFinancialProfileResult {
       const merged = mergeProfile({}, next, source);
       writeToStorage(merged);
       setProfileState(merged);
+      if (isAuthenticated) {
+        serverSet.mutate(
+          { patch: merged as Record<string, never>, source },
+          { onError: () => undefined },
+        );
+      }
     },
-    [],
+    [isAuthenticated, serverSet],
   );
 
   const resetProfile = useCallback(() => {
@@ -126,7 +188,10 @@ export function useFinancialProfile(): UseFinancialProfileResult {
       }
     }
     setProfileState({});
-  }, []);
+    if (isAuthenticated) {
+      serverDelete.mutate(undefined, { onError: () => undefined });
+    }
+  }, [isAuthenticated, serverDelete]);
 
   const completeness = useMemo(() => profileCompleteness(profile), [profile]);
   const completenessStatus = useMemo(() => completenessLabel(completeness), [completeness]);

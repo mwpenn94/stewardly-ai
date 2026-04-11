@@ -1990,6 +1990,7 @@ import { openClawRouter } from "./routers/openClaw";
 import { wealthEngineRouter } from "./routers/wealthEngine";
 import { codeChatRouter } from "./routers/codeChat";
 import { calculatorEngineRouter } from "./routers/calculatorEngine";
+import { financialProfileRouter } from "./routers/financialProfile";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2114,6 +2115,7 @@ export const appRouter = router({
   wealthEngine: wealthEngineRouter,
   codeChat: codeChatRouter,
   calculatorEngine: calculatorEngineRouter,
+  financialProfile: financialProfileRouter,
   learning: learningRouter,
   ghlWebhook: ghlWebhookRouter,
   dripifyWebhook: dripifyWebhookRouter,
