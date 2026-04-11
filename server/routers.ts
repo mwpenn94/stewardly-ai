@@ -78,6 +78,7 @@ import { smsitWebhookRouter } from "./routers/smsitWebhook";
 import { audioRouter } from "./routers/audio";
 import { clientRouter } from "./routers/client";
 import { comparablesRouter } from "./routers/comparables";
+import { rebalancingRouter } from "./routers/rebalancing";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -2122,6 +2123,7 @@ export const appRouter = router({
   audio: audioRouter,
   clientPortal: clientRouter,
   comparables: comparablesRouter,
+  rebalancing: rebalancingRouter,
 });
 
 export type AppRouter = typeof appRouter;

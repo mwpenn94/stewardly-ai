@@ -27,6 +27,8 @@
 | P2  | Comparables catalog is DATA-ONLY in `data.ts`; scoring logic lives in `scoring.ts`          | Pass 1           |
 | P3  | Every comparable feature score is clamped to 0..3 rubric                                    | Pass 1           |
 | P4  | `/comparables` is `protectedProcedure` gated (not public) — strategy-sensitive notes        | Pass 1           |
+| P5  | Portfolio rebalancing math is PURE (no DB/fetch); tests run offline                          | Pass 2           |
+| P6  | Rebalance proposals are CASH-NEUTRAL (sum of buys = sum of sells)                            | Pass 2           |
 
 ---
 
@@ -49,8 +51,10 @@ Columns:
 
 | id                    | scope                                    | axis                 | status       | priority | added_by   | depth | last_commit | notes                                                                                     |
 | --------------------- | ---------------------------------------- | -------------------- | ------------ | -------- | ---------- | ----- | ----------- | ----------------------------------------------------------------------------------------- |
-| PARITY-SEED-0001      | Bootstrap comparables subsystem          | n/a                  | done         | P1       | build      | 3     | (Pass 1)    | Catalog, scoring, tests, router, page, nav, route — all shipped Pass 1.                    |
-| PARITY-REBAL-0001     | Portfolio rebalancing / drift alerts     | rebalancing          | open         | P1       | build      | 0     |             | Orion/Altruist/Wealthfront/Betterment ship this; Stewardly has 0. Largest gap on rubric.  |
+| PARITY-SEED-0001      | Bootstrap comparables subsystem          | n/a                  | done         | P1       | build      | 3     | 19a7b05     | Catalog, scoring, tests, router, page, nav, route — all shipped Pass 1.                    |
+| PARITY-REBAL-0001     | Portfolio rebalancing / drift alerts     | rebalancing          | in_progress  | P1       | build      | 1     | (Pass 2)    | Pass 2: pure drift engine + cash-neutral proposals + tax-aware sells + 35 tests. Live portfolio ingestion still pending — see PARITY-REBAL-0002. |
+| PARITY-REBAL-0002     | Live portfolio ingestion for rebalancer  | rebalancing          | open         | P1       | build      | 0     |             | Follow-up to PARITY-REBAL-0001. Wire Plaid/custodian feed → stored positions → cron that calls `computeDrift` and creates proactive_insights.    |
+| PARITY-REBAL-0003     | Rebalancer UI page                       | rebalancing          | open         | P2       | build      | 0     |             | Follow-up: new `/rebalancing` page that posts a snapshot to `rebalancing.simulate` and renders drift rows + proposals.                           |
 | PARITY-MEET-0001      | Automated meeting transcription + notes  | meeting_transcription | open         | P1       | build      | 1     |             | Jump/Zocks/Zeplyn/FinMate. Meetings router exists but no auto-transcribe + CRM push.       |
 | PARITY-PORT-0001      | Portfolio accounting ledger              | portfolio_mgmt       | open         | P2       | build      | 1     |             | Orion/Envestnet/Altruist/eMoney first-class. Stewardly only has Plaid perception snippets. |
 | PARITY-MOBILE-0001    | Native mobile app shell                  | mobile_app           | open         | P2       | build      | 0     |             | Wealthfront/Betterment/Farther all ship native. No Capacitor/RN shell in repo yet.         |
@@ -86,7 +90,8 @@ prior-pass-you did and didn't finish.
 
 | Pass | Angle            | Queue summary                                                            | Commit SHA | Items completed                                                                                                                                                            | Items deferred                                                                                                     |
 | ---- | ---------------- | ------------------------------------------------------------------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| 1    | fresh-assessment | Bootstrap comparables subsystem — catalog, scoring, router, page, nav   | (pending)  | data.ts (18 apps × 18 axes), scoring.ts (pure helpers), 46 unit tests, comparables tRPC router, `/comparables` page, AppShell + PersonaSidebar5 nav entry, PARITY.md scaffold | PARITY-REBAL/MEET/PORT/MOBILE/API/TAX/ESTATE/CATALOG rows added as OPEN gap items for future passes and assessment. |
+| 1    | fresh-assessment | Bootstrap comparables subsystem — catalog, scoring, router, page, nav   | 19a7b05    | data.ts (18 apps × 18 axes), scoring.ts (pure helpers), 46 unit tests, comparables tRPC router, `/comparables` page, AppShell + PersonaSidebar5 nav entry, PARITY.md scaffold | PARITY-REBAL/MEET/PORT/MOBILE/API/TAX/ESTATE/CATALOG rows added as OPEN gap items for future passes and assessment. |
+| 2    | correctness      | Portfolio rebalancing drift engine — pure math + tRPC simulate endpoint | (pending)  | rebalancing.ts (computeDrift + simulateWithNewCash + validateTargetAllocation + tax-aware sell ordering + cash buffer rule), 35 unit tests, rebalancing tRPC router, catalog bump from 0→1, PARITY-REBAL-0002 + PARITY-REBAL-0003 follow-up rows                   | Live portfolio ingestion (PARITY-REBAL-0002) and UI page (PARITY-REBAL-0003) deferred to later passes.                                                                                                                    |
 
 ---
 

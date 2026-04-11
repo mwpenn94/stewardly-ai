@@ -116,8 +116,8 @@ export const FEATURE_AXES: readonly FeatureAxis[] = [
     id: "rebalancing",
     label: "Rebalancing / drift alerts",
     description: "Detects portfolio drift vs target allocation and proposes trades.",
-    stewardlyScore: 0,
-    stewardlyEvidence: "Not implemented. Would live under server/services/improvement/ or a new rebalancing service.",
+    stewardlyScore: 1,
+    stewardlyEvidence: "server/services/portfolio/rebalancing.ts — pure drift engine + cash-neutral trade proposals + tax-aware sell ordering + cash-buffer rule (Pass 2). Live portfolio ingestion pending.",
   },
   {
     id: "tax_planning",
