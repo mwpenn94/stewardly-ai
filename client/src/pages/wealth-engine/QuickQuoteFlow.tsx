@@ -29,6 +29,9 @@ import {
   CheckCircle2,
   AlertCircle,
   ShieldAlert,
+  Sparkles,
+  Shield,
+  Building2,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -72,7 +75,7 @@ function scoreDomains(inputs: QuickQuoteInputs): Record<DomainKey, number> {
 
 export default function QuickQuoteFlowPage() {
   const [, navigate] = useLocation();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [inputs, setInputs] = useState<QuickQuoteInputs>({
     age: 40,
     income: 120_000,
@@ -92,6 +95,7 @@ export default function QuickQuoteFlowPage() {
   const max = DOMAINS.length * 3;
 
   const runPreset = trpc.wealthEngine.runPreset.useMutation();
+  const multiLine = trpc.wealthEngine.multiLineQuickQuote.useMutation();
 
   const onAdvanceToResults = () => {
     runPreset.mutate({
@@ -110,11 +114,24 @@ export default function QuickQuoteFlowPage() {
       },
       years: 30,
     });
+    // Kick off the multi-line bundle in parallel so step 4 lands instantly.
+    multiLine.mutate({
+      age: inputs.age,
+      income: inputs.income,
+      savings: inputs.savings,
+      monthlySavings: inputs.monthlySavings,
+      dependents: inputs.dependents,
+      netWorth: inputs.savings + inputs.income * 0.5,
+      hasHome: inputs.hasHomeownerInsurance,
+      homeValue: inputs.hasHomeownerInsurance ? 400_000 : undefined,
+      isBizOwner: inputs.isBizOwner,
+    });
     setStep(3);
   };
 
   const projection = runPreset.data?.data ?? [];
   const finalSnap = projection[projection.length - 1];
+  const bundle = multiLine.data?.data;
 
   return (
     <AppShell title="Quick Quote">
@@ -122,7 +139,14 @@ export default function QuickQuoteFlowPage() {
         <header className="space-y-1">
           <h1 className="text-2xl font-bold">Quick Quote</h1>
           <p className="text-sm text-muted-foreground">
-            Step {step} of 3 — {step === 1 ? "Tell us about you" : step === 2 ? "Your protection scorecard" : "Recommended plan"}
+            Step {step} of 4 —{" "}
+            {step === 1
+              ? "Tell us about you"
+              : step === 2
+                ? "Your protection scorecard"
+                : step === 3
+                  ? "Recommended plan"
+                  : "Your coverage bundle"}
           </p>
           <StepBar step={step} />
         </header>
@@ -218,9 +242,183 @@ export default function QuickQuoteFlowPage() {
                 <Button variant="outline" onClick={() => setStep(2)}>
                   <ChevronLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-                <Button onClick={() => navigate("/wealth-engine/strategy-comparison")}>
-                  Open full comparison <ChevronRight className="ml-2 h-4 w-4" />
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => navigate("/wealth-engine/strategy-comparison")}>
+                    Strategy comparison
+                  </Button>
+                  <Button onClick={() => setStep(4)}>
+                    See coverage bundle <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === 4 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="h-4 w-4" style={{ color: chartTokens.colors.wealthbridge }} />
+                Coverage bundle
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {multiLine.isPending && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Building your multi-line quote...
+                </div>
+              )}
+              {bundle && (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <BundleStat
+                      label="Lines"
+                      value={`${bundle.coverageLines.length}`}
+                      sub="Coverage recommendations"
+                    />
+                    <BundleStat
+                      label="Critical"
+                      value={formatCurrency(bundle.totals.annualPremiumCritical)}
+                      sub="Per year"
+                      emphasize
+                    />
+                    <BundleStat
+                      label="All lines"
+                      value={formatCurrency(bundle.totals.annualPremiumAll)}
+                      sub="Per year"
+                    />
+                    <BundleStat
+                      label="% of income"
+                      value={`${(bundle.totals.asPctOfIncome * 100).toFixed(1)}%`}
+                      sub="Total budget"
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                        <p className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">
+                          Coverage
+                        </p>
+                      </div>
+                      <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+                        {bundle.coverageLines.map((line, i) => (
+                          <div
+                            key={i}
+                            className="flex items-start justify-between gap-2 rounded-md border p-2.5"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <Badge
+                                  variant="outline"
+                                  className="h-4 text-[9px] px-1"
+                                  style={{
+                                    borderColor:
+                                      line.priority === "critical"
+                                        ? chartTokens.colors.danger
+                                        : line.priority === "recommended"
+                                          ? chartTokens.colors.wealthbridge
+                                          : undefined,
+                                    color:
+                                      line.priority === "critical"
+                                        ? chartTokens.colors.danger
+                                        : line.priority === "recommended"
+                                          ? chartTokens.colors.wealthbridge
+                                          : undefined,
+                                  }}
+                                >
+                                  {line.priority}
+                                </Badge>
+                                <p className="text-xs font-medium truncate">{line.product}</p>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground line-clamp-2">
+                                {line.rationale}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-xs font-semibold tabular-nums">
+                                {formatCurrency(line.annualPremium)}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {formatCurrency(line.monthlyPremium)}/mo
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <p className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">
+                          Planning actions
+                        </p>
+                      </div>
+                      <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+                        {bundle.planningActions.map((action, i) => (
+                          <div
+                            key={i}
+                            className="flex items-start gap-2 rounded-md border p-2.5"
+                          >
+                            <Badge
+                              variant="outline"
+                              className="h-4 text-[9px] px-1 shrink-0"
+                              style={{
+                                borderColor:
+                                  action.priority === "critical"
+                                    ? chartTokens.colors.danger
+                                    : chartTokens.colors.wealthbridge,
+                                color:
+                                  action.priority === "critical"
+                                    ? chartTokens.colors.danger
+                                    : chartTokens.colors.wealthbridge,
+                              }}
+                            >
+                              {action.priority}
+                            </Badge>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-medium">{action.action}</p>
+                              <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">
+                                {action.impact}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {bundle.warnings.length > 0 && (
+                    <div className="rounded-md border p-3 text-[11px] space-y-1" style={{ borderColor: chartTokens.colors.warning }}>
+                      {bundle.warnings.map((w, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <ShieldAlert
+                            className="h-3.5 w-3.5 mt-0.5 shrink-0"
+                            style={{ color: chartTokens.colors.warning }}
+                          />
+                          <span>{w}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className="flex justify-between pt-2">
+                <Button variant="outline" onClick={() => setStep(3)}>
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => navigate("/insurance-analysis")}>
+                    Insurance deep-dive
+                  </Button>
+                  <Button onClick={() => navigate("/wealth-engine/strategy-comparison")}>
+                    Full strategy comparison <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -230,10 +428,43 @@ export default function QuickQuoteFlowPage() {
   );
 }
 
-function StepBar({ step }: { step: 1 | 2 | 3 }) {
+function BundleStat({
+  label,
+  value,
+  sub,
+  emphasize,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  emphasize?: boolean;
+}) {
+  return (
+    <div
+      className="rounded-lg border p-3"
+      style={{
+        background: emphasize ? `${chartTokens.colors.wealthbridge}08` : undefined,
+        borderColor: emphasize ? `${chartTokens.colors.wealthbridge}40` : undefined,
+      }}
+    >
+      <div className="text-[10px] uppercase text-muted-foreground tracking-wide">{label}</div>
+      <div
+        className="text-lg font-bold mt-0.5 tabular-nums"
+        style={{
+          color: emphasize ? chartTokens.colors.wealthbridge : undefined,
+        }}
+      >
+        {value}
+      </div>
+      {sub && <div className="text-[10px] text-muted-foreground mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+function StepBar({ step }: { step: 1 | 2 | 3 | 4 }) {
   return (
     <div className="flex items-center gap-2 mt-2">
-      {[1, 2, 3].map((s) => (
+      {[1, 2, 3, 4].map((s) => (
         <div
           key={s}
           className="h-1 flex-1 rounded-full"
