@@ -160,4 +160,11 @@ describe("allChordLabels", () => {
     expect(vChord).toBeDefined();
     expect(vChord!.label).toContain("Dead");
   });
+
+  it("includes the g+m NPM chord added in Pass 260", () => {
+    const labels = allChordLabels();
+    const mChord = labels.find((l) => l.keys[1] === "m");
+    expect(mChord).toBeDefined();
+    expect(mChord!.label).toContain("NPM");
+  });
 });

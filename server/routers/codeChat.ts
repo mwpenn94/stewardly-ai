@@ -180,6 +180,14 @@ import {
   groupByPath as groupDeadByPath,
 } from "../services/codeChat/deadCode";
 import {
+  parseNpmOutdated,
+  parseNpmAudit,
+  filterOutdated,
+  filterVulns,
+  type UpdateSemver,
+  type VulnSeverity,
+} from "../services/codeChat/npmInspector";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -876,6 +884,91 @@ export const codeChatRouter = router({
     .mutation(async ({ input }) => {
       const ok = await deleteCheckpointFromDisk(WORKSPACE_ROOT, input.id);
       return { ok };
+    }),
+
+  // Pass 260: npm outdated + audit inspector
+  npmInspect: protectedProcedure
+    .input(
+      z
+        .object({
+          kind: z.enum(["outdated", "audit", "both"]).optional(),
+          outdatedFilter: z
+            .object({
+              severity: z.enum(["patch", "minor", "major", "none"]).optional(),
+              type: z.string().max(80).optional(),
+              search: z.string().max(200).optional(),
+            })
+            .optional(),
+          auditFilter: z
+            .object({
+              minSeverity: z
+                .enum(["info", "low", "moderate", "high", "critical"])
+                .optional(),
+              search: z.string().max(200).optional(),
+            })
+            .optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const kind = input?.kind ?? "both";
+
+      const runCmd = async (command: string) => {
+        const result = await dispatchCodeTool(
+          {
+            name: "run_bash",
+            args: { command },
+          } as CodeToolCall,
+          {
+            workspaceRoot: WORKSPACE_ROOT,
+            allowMutations: true,
+            bashTimeoutMs: 120_000,
+          },
+        );
+        if (result.kind === "bash") {
+          return result.result.stdout ?? "";
+        }
+        return "";
+      };
+
+      const promises: Promise<void>[] = [];
+      let outdatedRaw = "";
+      let auditRaw = "";
+      if (kind === "outdated" || kind === "both") {
+        promises.push(
+          runCmd("npm outdated --json 2>/dev/null || true").then((r) => {
+            outdatedRaw = r;
+          }),
+        );
+      }
+      if (kind === "audit" || kind === "both") {
+        promises.push(
+          runCmd("npm audit --json 2>/dev/null || true").then((r) => {
+            auditRaw = r;
+          }),
+        );
+      }
+      await Promise.all(promises);
+
+      const outdated = parseNpmOutdated(outdatedRaw);
+      const audit = parseNpmAudit(auditRaw);
+
+      const filteredOutdated = filterOutdated(outdated, {
+        severity: input?.outdatedFilter?.severity as UpdateSemver | undefined,
+        type: input?.outdatedFilter?.type,
+        search: input?.outdatedFilter?.search,
+      });
+      const filteredVulns = filterVulns(audit.entries, {
+        minSeverity: input?.auditFilter?.minSeverity as VulnSeverity | undefined,
+        search: input?.auditFilter?.search,
+      });
+
+      return {
+        outdated: filteredOutdated.slice(0, 500),
+        totalOutdated: outdated.length,
+        vulnerabilities: filteredVulns.slice(0, 500),
+        auditSummary: audit.summary,
+      };
     }),
 
   // Pass 259: dead code detector

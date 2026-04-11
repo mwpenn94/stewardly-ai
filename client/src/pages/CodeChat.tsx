@@ -148,6 +148,7 @@ import EnvInspectorPanel from "@/components/codeChat/EnvInspectorPanel";
 import CommitTimelinePanel from "@/components/codeChat/CommitTimelinePanel";
 import LicenseScannerPanel from "@/components/codeChat/LicenseScannerPanel";
 import DeadCodePanel from "@/components/codeChat/DeadCodePanel";
+import NpmInspectorPanel from "@/components/codeChat/NpmInspectorPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import {
   loadHistory,
@@ -2358,6 +2359,9 @@ export default function CodeChatPage() {
               <TabsTrigger value="dead" className="gap-1.5">
                 <X className="h-3.5 w-3.5" /> Dead
               </TabsTrigger>
+              <TabsTrigger value="npm" className="gap-1.5">
+                <Activity className="h-3.5 w-3.5" /> NPM
+              </TabsTrigger>
               <TabsTrigger value="imports" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> Imports
               </TabsTrigger>
@@ -2434,6 +2438,10 @@ export default function CodeChatPage() {
 
           <TabsContent value="dead">
             <div className="p-6"><DeadCodePanel /></div>
+          </TabsContent>
+
+          <TabsContent value="npm">
+            <div className="p-6"><NpmInspectorPanel /></div>
           </TabsContent>
 
           <TabsContent value="imports">
