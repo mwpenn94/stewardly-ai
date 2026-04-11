@@ -331,6 +331,60 @@ describe("Round B1 — codeChatExecutor", () => {
       expect(r.kind).toBe("todos");
       if (r.kind === "todos") expect(r.result.todos[0].status).toBe("pending");
     });
+
+    // Build-loop Pass 1: glob_files dispatcher
+    it("glob_files returns matching files", async () => {
+      await writeFile(sandboxRW(), "src/a.ts", "//");
+      await writeFile(sandboxRW(), "src/b.ts", "//");
+      await writeFile(sandboxRW(), "src/c.md", "#");
+      await writeFile(sandboxRW(), "other.txt", "");
+      const r = await dispatchCodeTool(
+        { name: "glob_files", args: { pattern: "src/*.ts" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("glob");
+      if (r.kind === "glob") {
+        expect(r.result.files).toEqual(
+          expect.arrayContaining(["src/a.ts", "src/b.ts"]),
+        );
+        expect(r.result.files).not.toContain("src/c.md");
+      }
+    });
+
+    it("glob_files rejects empty pattern", async () => {
+      const r = await dispatchCodeTool(
+        { name: "glob_files", args: { pattern: "" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("glob_files rejects non-string/non-array pattern", async () => {
+      const r = await dispatchCodeTool(
+        { name: "glob_files", args: { pattern: 123 as unknown as string } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("glob_files honors array patterns + negation", async () => {
+      await writeFile(sandboxRW(), "src/keep.ts", "//");
+      await writeFile(sandboxRW(), "src/skip.ts", "//");
+      const r = await dispatchCodeTool(
+        {
+          name: "glob_files",
+          args: { pattern: ["src/*.ts", "!src/skip.ts"] },
+        },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("glob");
+      if (r.kind === "glob") {
+        expect(r.result.files).toContain("src/keep.ts");
+        expect(r.result.files).not.toContain("src/skip.ts");
+      }
+    });
   });
 
   describe("executeCodeChat multi-turn", () => {

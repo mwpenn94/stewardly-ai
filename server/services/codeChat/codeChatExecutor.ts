@@ -41,6 +41,7 @@ export type CodeToolName =
   | "edit_file"
   | "list_directory"
   | "grep_search"
+  | "glob_files"
   | "run_bash"
   | "update_todos"
   | "find_symbol"
@@ -76,6 +77,7 @@ export type CodeToolResult =
   | { kind: "edit"; result: EditFileResult }
   | { kind: "list"; result: { path: string; entries: ListDirEntry[] } }
   | { kind: "grep"; result: { matches: Array<{ file: string; line: number; text: string }>; truncated: boolean } }
+  | { kind: "glob"; result: { pattern: string | string[]; path?: string; files: string[]; truncated: boolean; searched: number } }
   | { kind: "bash"; result: BashResult }
   | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
@@ -184,6 +186,37 @@ export async function dispatchCodeTool(
       case "run_bash": {
         const r = await runBash(sandbox, String(call.args.command ?? ""));
         return { kind: "bash", result: r };
+      }
+      case "glob_files": {
+        // Build-loop Pass 1: Claude-Code `Glob` parity. Pure-function
+        // brace/`*`/`**`/`?`/class matcher against the cached workspace
+        // file index. Read-only so non-admin sessions can use it.
+        const { globFiles } = await import("./globFiles");
+        const rawPattern = call.args.pattern;
+        if (
+          typeof rawPattern !== "string" &&
+          !Array.isArray(rawPattern)
+        ) {
+          return { kind: "error", error: "pattern required (string or string[])", code: "BAD_ARGS" };
+        }
+        const patternArg: string | string[] = Array.isArray(rawPattern)
+          ? rawPattern
+              .filter((p): p is string => typeof p === "string" && p.length > 0)
+          : rawPattern;
+        if (
+          (typeof patternArg === "string" && !patternArg.trim()) ||
+          (Array.isArray(patternArg) && patternArg.length === 0)
+        ) {
+          return { kind: "error", error: "pattern must not be empty", code: "BAD_ARGS" };
+        }
+        const result = await globFiles(sandbox.workspaceRoot, {
+          pattern: patternArg,
+          path: typeof call.args.path === "string" ? call.args.path : undefined,
+          limit: typeof call.args.limit === "number" ? call.args.limit : undefined,
+          caseInsensitive: Boolean(call.args.caseInsensitive),
+          dot: Boolean(call.args.dot),
+        });
+        return { kind: "glob", result };
       }
       case "find_symbol": {
         // Pass 242: regex-based symbol lookup against the workspace
@@ -438,6 +471,34 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
       properties: {
         pattern: { type: "string" },
         path: { type: "string", description: "Where to start searching (default '.')" },
+      },
+      required: ["pattern"],
+    },
+  },
+  {
+    name: "glob_files",
+    description:
+      "Find files by glob pattern (Claude Code `Glob` parity). Supports `*`, `**`, `?`, character classes `[abc]`/`[a-z]`, and brace alternation `{ts,tsx}`. Prefix a pattern with `!` to exclude. Pass a string for one pattern or a string[] for multiple. Optional `path` narrows the search to a subtree. Prefer this over `list_directory` when you know the filename shape, over `grep_search` when you care about paths not contents, and over `run_bash find` for speed (uses the cached workspace file index).",
+    parameters: {
+      type: "object",
+      properties: {
+        pattern: {
+          oneOf: [
+            { type: "string" },
+            { type: "array", items: { type: "string" } },
+          ],
+          description: "Glob pattern or array of patterns (`src/**/*.tsx`).",
+        },
+        path: {
+          type: "string",
+          description: "Subtree to search (optional, default = workspace root).",
+        },
+        limit: {
+          type: "number",
+          description: "Max matches (default 200, max 2000).",
+        },
+        caseInsensitive: { type: "boolean" },
+        dot: { type: "boolean", description: "Include dot-prefixed files (default false)." },
       },
       required: ["pattern"],
     },

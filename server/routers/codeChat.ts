@@ -188,7 +188,10 @@ const CodeToolCallSchema = z.object({
     "edit_file",
     "list_directory",
     "grep_search",
+    "glob_files",
     "run_bash",
+    "update_todos",
+    "find_symbol",
     "finish",
   ]),
   args: z.record(z.string(), z.any()),
@@ -598,6 +601,9 @@ export const codeChatRouter = router({
         "read_file",
         "list_directory",
         "grep_search",
+        "glob_files", // Build-loop Pass 1: Claude-Code Glob parity
+        "update_todos", // Pass 237: live progress reporter
+        "find_symbol", // Pass 242: workspace symbol index
       ]);
 
       // Shape the code chat tool definitions into the OpenAI
@@ -627,6 +633,8 @@ export const codeChatRouter = router({
         "You are a Claude-Code-style coding assistant inside Stewardly.",
         "Work step-by-step. Use the `code_list_directory` and `code_read_file` tools to explore the codebase",
         "before answering questions about it. Use `code_grep_search` to find specific symbols or strings.",
+        "Use `code_glob_files` to find files by pattern (e.g. `src/**/*.tsx`) — faster than `list_directory` when you know the filename shape.",
+        "Use `code_find_symbol` to jump to a function/class/interface definition by name.",
         allowMutations
           ? "You also have `code_write_file`, `code_edit_file`, and `code_run_bash` available — use them sparingly and explain every change."
           : "Write/edit/bash tools are disabled for this session. Return diffs as code blocks instead of attempting to apply them.",

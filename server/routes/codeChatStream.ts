@@ -33,6 +33,7 @@ const READ_ONLY_TOOLS = new Set([
   "read_file",
   "list_directory",
   "grep_search",
+  "glob_files", // Build-loop Pass 1: Claude-Code Glob parity
   "update_todos", // Pass 237: no-op progress reporter, safe for all roles
   "find_symbol", // Pass 242: workspace symbol index lookup
 ]);
@@ -138,6 +139,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "You are a Claude-Code-style coding assistant inside Stewardly.",
       "Work step-by-step. Use `code_list_directory` and `code_read_file` to explore.",
       "Use `code_grep_search` to find occurrences of text across the codebase.",
+      "Use `code_glob_files` to find files by pattern (e.g. `src/**/*.tsx`, `server/services/**/*.test.ts`). Prefer this over `code_list_directory` when you know the filename shape, and over shell `find` for speed.",
       "Use `code_find_symbol` when you know the name of a function/class/interface/type/const and want to jump to its DEFINITION (faster than grep, and returns only definition sites).",
       canMutate
         ? "You have `code_write_file`, `code_edit_file`, `code_run_bash` — use sparingly, explain every change."

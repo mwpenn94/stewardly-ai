@@ -43,6 +43,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
     mutation: false,
   },
   {
+    id: "glob_files",
+    label: "Glob files",
+    description:
+      "Find files by pattern like `src/**/*.tsx` (Claude Code Glob parity)",
+    mutation: false,
+  },
+  {
     id: "write_file",
     label: "Write file",
     description: "Create or overwrite a file (admin + write mode)",
@@ -78,6 +85,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "read_file",
   "list_directory",
   "grep_search",
+  "glob_files",
   "write_file",
   "edit_file",
   "run_bash",
