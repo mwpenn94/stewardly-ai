@@ -15,6 +15,12 @@ import {
   searchSessions,
   shouldCheckpoint,
   aggregateSessions,
+  importLibrary,
+  normalizeTag,
+  addTag,
+  removeTag,
+  allTags,
+  filterByTags,
   type SessionSnapshot,
 } from "./sessionLibrary";
 import type { CodeChatMessage } from "@/hooks/useCodeChatStream";
@@ -436,6 +442,190 @@ describe("aggregateSessions", () => {
     const s = aggregateSessions(lib);
     expect(s.totalToolCalls).toBe(0);
     expect(s.toolCallsByKind).toEqual({});
+  });
+});
+
+describe("importLibrary", () => {
+  const mkRaw = (sessions: SessionSnapshot[]): string =>
+    JSON.stringify({ version: 1, sessions });
+
+  const mkSession = (id: string, name: string): SessionSnapshot => ({
+    id,
+    name,
+    createdAt: 100,
+    updatedAt: 200,
+    messages: [],
+  });
+
+  it("returns ok:false for invalid JSON", () => {
+    const r = importLibrary(emptyLibrary(), "{bad", "merge");
+    expect(r.ok).toBe(false);
+    expect(r.imported).toBe(0);
+    expect(r.library).toEqual(emptyLibrary());
+  });
+
+  it("returns ok:false when there are no valid sessions", () => {
+    const r = importLibrary(emptyLibrary(), mkRaw([]), "merge");
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/No valid sessions/);
+  });
+
+  it("merges new sessions into the existing library", () => {
+    const existing = upsertSession(emptyLibrary(), mkSession("a", "A"));
+    const raw = mkRaw([mkSession("b", "B"), mkSession("c", "C")]);
+    const r = importLibrary(existing, raw, "merge");
+    expect(r.ok).toBe(true);
+    expect(r.imported).toBe(2);
+    expect(r.skipped).toBe(0);
+    expect(r.library.sessions).toHaveLength(3);
+  });
+
+  it("skips sessions whose id already exists in merge mode", () => {
+    const existing = upsertSession(emptyLibrary(), mkSession("a", "A-existing"));
+    const raw = mkRaw([mkSession("a", "A-imported"), mkSession("b", "B")]);
+    const r = importLibrary(existing, raw, "merge");
+    expect(r.imported).toBe(1);
+    expect(r.skipped).toBe(1);
+    // The existing "a" should not be overwritten
+    const a = r.library.sessions.find((s) => s.id === "a");
+    expect(a?.name).toBe("A-existing");
+  });
+
+  it("replaces the library entirely in replace mode", () => {
+    let existing = upsertSession(emptyLibrary(), mkSession("a", "A"));
+    existing = upsertSession(existing, mkSession("b", "B"));
+    const raw = mkRaw([mkSession("z", "Z")]);
+    const r = importLibrary(existing, raw, "replace");
+    expect(r.ok).toBe(true);
+    expect(r.imported).toBe(1);
+    expect(r.library.sessions).toHaveLength(1);
+    expect(r.library.sessions[0].id).toBe("z");
+  });
+
+  it("drops malformed sessions but still imports valid ones", () => {
+    // Build raw JSON manually with one valid + one bad session
+    const raw = JSON.stringify({
+      version: 1,
+      sessions: [
+        { id: "good", name: "Good", createdAt: 1, updatedAt: 1, messages: [] },
+        { id: "bad" }, // missing required fields
+      ],
+    });
+    const r = importLibrary(emptyLibrary(), raw, "merge");
+    expect(r.ok).toBe(true);
+    expect(r.imported).toBe(1);
+    expect(r.library.sessions[0].id).toBe("good");
+  });
+});
+
+describe("normalizeTag", () => {
+  it("trims + lowercases", () => {
+    expect(normalizeTag("  Bug  ")).toBe("bug");
+    expect(normalizeTag("REVIEW")).toBe("review");
+  });
+  it("strips a leading #", () => {
+    expect(normalizeTag("#refactor")).toBe("refactor");
+  });
+  it("rejects empty / whitespace-only tags", () => {
+    expect(normalizeTag("")).toBeNull();
+    expect(normalizeTag("   ")).toBeNull();
+    expect(normalizeTag("#")).toBeNull();
+  });
+  it("rejects tags with disallowed characters", () => {
+    expect(normalizeTag("has space")).toBeNull();
+    expect(normalizeTag("bad!")).toBeNull();
+    expect(normalizeTag("café")).toBeNull();
+  });
+  it("accepts alphanumeric + dashes + slashes", () => {
+    expect(normalizeTag("feat/auth")).toBe("feat/auth");
+    expect(normalizeTag("v1.2")).toBe("v1.2");
+    expect(normalizeTag("needs-review")).toBe("needs-review");
+  });
+});
+
+describe("addTag / removeTag", () => {
+  const mkSession = (tags?: string[]): SessionSnapshot => ({
+    id: "s1",
+    name: "Session",
+    createdAt: 100,
+    updatedAt: 100,
+    messages: [],
+    tags,
+  });
+
+  it("adds a tag to a session without tags", () => {
+    const s = addTag(mkSession(), "bug");
+    expect(s.tags).toEqual(["bug"]);
+    expect(s.updatedAt).toBeGreaterThan(100);
+  });
+
+  it("dedupes on add", () => {
+    const s1 = addTag(mkSession(["bug"]), "bug");
+    expect(s1.tags).toEqual(["bug"]);
+  });
+
+  it("normalizes on add", () => {
+    const s = addTag(mkSession(), "  Bug  ");
+    expect(s.tags).toEqual(["bug"]);
+  });
+
+  it("no-ops on invalid tags", () => {
+    const s = addTag(mkSession(["bug"]), "has space");
+    expect(s.tags).toEqual(["bug"]);
+  });
+
+  it("removes a tag", () => {
+    const s = removeTag(mkSession(["bug", "review"]), "bug");
+    expect(s.tags).toEqual(["review"]);
+  });
+
+  it("removeTag is idempotent", () => {
+    const s = removeTag(mkSession(["bug"]), "nope");
+    expect(s.tags).toEqual(["bug"]);
+  });
+});
+
+describe("allTags + filterByTags", () => {
+  const mkSession = (id: string, tags?: string[]): SessionSnapshot => ({
+    id,
+    name: id,
+    createdAt: 100,
+    updatedAt: 100,
+    messages: [],
+    tags,
+  });
+
+  const lib = (() => {
+    let l = emptyLibrary();
+    l = upsertSession(l, mkSession("a", ["bug", "urgent"]));
+    l = upsertSession(l, mkSession("b", ["bug"]));
+    l = upsertSession(l, mkSession("c", ["feat", "urgent"]));
+    l = upsertSession(l, mkSession("d"));
+    return l;
+  })();
+
+  it("allTags returns distinct tags sorted alphabetically", () => {
+    expect(allTags(lib)).toEqual(["bug", "feat", "urgent"]);
+  });
+
+  it("filterByTags returns the full list when no tags required", () => {
+    expect(filterByTags(lib, [])).toHaveLength(4);
+  });
+
+  it("filterByTags matches single-tag filter", () => {
+    const ids = filterByTags(lib, ["bug"]).map((s) => s.id);
+    expect(ids.sort()).toEqual(["a", "b"]);
+  });
+
+  it("filterByTags requires every tag to match (AND)", () => {
+    const ids = filterByTags(lib, ["bug", "urgent"]).map((s) => s.id);
+    expect(ids).toEqual(["a"]);
+  });
+
+  it("filterByTags excludes sessions without any tags", () => {
+    const ids = filterByTags(lib, ["feat"]).map((s) => s.id);
+    expect(ids).toEqual(["c"]);
+    expect(ids).not.toContain("d");
   });
 });
 

@@ -83,6 +83,8 @@ import {
   formatCost,
   evaluateBudget,
   DEFAULT_BUDGET_STATE,
+  evaluateContextWindow,
+  formatContextSize,
   type TokenUsage,
   type BudgetState,
 } from "@/components/codeChat/tokenEstimator";
@@ -491,6 +493,22 @@ function CodeChatInterface() {
     [sessionUsage.costUSD, budget],
   );
 
+  // Pass 230: evaluate context window usage vs the active model's limit.
+  // Resolves the model from the user's override (if set) or the most
+  // recent assistant message (what the server actually routed to).
+  const activeModel = useMemo(() => {
+    if (modelOverride) return modelOverride;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role === "assistant" && m.model) return m.model;
+    }
+    return undefined;
+  }, [modelOverride, messages]);
+  const contextEval = useMemo(
+    () => evaluateContextWindow(sessionUsage.totalTokens, activeModel),
+    [sessionUsage.totalTokens, activeModel],
+  );
+
   // Persist messages to localStorage
   useEffect(() => {
     if (messages.length > 0) {
@@ -796,6 +814,27 @@ function CodeChatInterface() {
               </span>
             )}
           </button>
+        )}
+        {/* Pass 230: context window usage meter */}
+        {messages.length > 0 && (
+          <div
+            className={`hidden md:flex items-center gap-1 text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded ${
+              contextEval.status === "critical"
+                ? "text-destructive bg-destructive/10"
+                : contextEval.status === "warning"
+                  ? "text-amber-500 bg-amber-500/10"
+                  : "text-muted-foreground"
+            }`}
+            title={
+              contextEval.modelKnown
+                ? `${formatContextSize(contextEval.used)} of ${formatContextSize(contextEval.limit)} context window — ${Math.round(contextEval.pct * 100)}%`
+                : `${formatContextSize(contextEval.used)} of ${formatContextSize(contextEval.limit)} (default — unknown model ${activeModel ?? ""})`
+            }
+            aria-label="Context window usage"
+          >
+            <span>ctx</span>
+            <span>{Math.round(contextEval.pct * 100)}%</span>
+          </div>
         )}
         <div className="flex-1" />
         {isAdmin && (

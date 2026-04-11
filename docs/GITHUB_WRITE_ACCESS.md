@@ -1,4 +1,4 @@
-# Code Chat Cloud Parity (Passes 201-227)
+# Code Chat Cloud Parity (Passes 201-231)
 
 Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 
@@ -73,6 +73,16 @@ Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
   popover (Pass 226)
 - **Vim-style chord shortcuts** — `g c` / `g f` / `g r` / `g d` /
   `g h` / `g w` / `g j` for instant tab navigation (Pass 227)
+- **Session library JSON import** — round-trip the sessions export
+  file back into the library with merge or replace modes (Pass 228)
+- **Session tags** — per-session tag chips with inline editing + a
+  top-level tag filter row for AND-combined filtering (Pass 229)
+- **Context window usage meter** — `ctx NN%` pill that flips amber
+  at 60% and red at 80% of the active model's context limit
+  (Pass 230)
+- **Prompt template JSON import/export** — share user templates
+  across teams/devices with merge (dedup by name+body) or replace
+  modes; built-ins are always re-hydrated from code (Pass 231)
 
 This document walks through the architecture, the tRPC surface, the
 safety model, and the UI. For setup (tokens, connection flow) see
@@ -752,6 +762,79 @@ pure function — 10 unit tests cover every chord, the wrong-second-
 key reset, the 1.5-second timeout, and ignore behavior for
 unrelated keys. The listener in `CodeChatPage` skips text fields so
 typing `g` as part of a prompt doesn't trigger the chord.
+
+## Sharing + organization + context awareness (Passes 228-231)
+
+### Session library JSON import (Pass 228)
+
+The Sessions popover footer now has an **Import** button alongside
+the existing Export library button. Clicking it prompts the user to
+pick a previously-exported `codechat-sessions-*.json` file, then
+asks whether to **merge** (skip duplicate ids) or **replace** (discard
+the current library entirely).
+
+`importLibrary()` is pure: it routes the incoming payload through
+the same `parseLibrary()` validator used for disk loads, so
+malformed sessions drop silently rather than corrupting state.
+6 unit tests cover both modes, the malformed-JSON path, the
+skip-duplicate rule, and the empty-library-on-garbage-in case.
+
+### Session tags (Pass 229)
+
+Sessions can now be tagged for organization. Each session row has a
+**Tag** button in the action bar that opens an inline input; typing
+a tag and pressing Enter adds it. Tags render as chips below the
+row title with per-chip unpin buttons.
+
+Above the session list, a tag-filter chip row shows every distinct
+tag in the library. Clicking a tag toggles it in the active filter;
+the session list then AND-combines the filter so a session must
+match *every* selected tag to appear. Sessions without tags are
+excluded from any filtered view.
+
+Tag normalization is strict (`normalizeTag` trims, lowercases,
+strips a leading `#`, and rejects whitespace / special chars
+except `_ - / .`) so tags stay URL- and filename-safe. 5+7+5
+unit tests cover normalization, add/remove idempotency, and the
+filter algebra.
+
+### Context window usage meter (Pass 230)
+
+A new `ctx NN%` pill in the config bar shows how much of the
+active model's context window the session has consumed. Thresholds:
+
+- Under 60% — neutral (no highlight)
+- 60–80% — amber warning
+- 80%+ — red critical (user should `/clear` or fork the conversation)
+
+`MODEL_CONTEXT_LIMITS` covers every model in `MODEL_PRICING` — Claude
+Opus 4.6 / Sonnet 4.6 at 1M tokens, Haiku 4.5 at 200K, GPT-5 at 400K,
+GPT-4o at 128K, Gemini 2.5 Pro at 2M, and so on. Unknown models
+fall back to `DEFAULT_CONTEXT_LIMIT = 128K` and surface
+`modelKnown: false` in the tooltip so users know the limit is
+approximate.
+
+The active model is resolved from `modelOverride` first, then from
+the most recent assistant message's `.model` field — so the meter
+always reflects what the server actually routed to, not just what's
+in the model picker. 9 unit tests cover the threshold buckets, the
+fallback limit, and the large-number formatting helper.
+
+### Prompt template JSON import/export (Pass 231)
+
+Templates are now portable. The **Export** button in the Templates
+popover footer dumps user templates (built-ins are skipped — they're
+re-hydrated on load from code) as a `{version, templates}` JSON
+wrapper. The **Import** button reverses the flow: it parses either
+the wrapper or a bare array (matching the localStorage format),
+strips any `builtin: true` overrides for safety, and prompts the
+user to merge (dedupe by `name + body`) or replace (keep built-ins,
+swap user templates).
+
+This closes the team-sharing loop — you can now email a templates
+file to a teammate and they can drop it straight into their Code
+Chat without any manual recreation. 3+5+5 unit tests cover
+export/parse/import with all edge cases.
 
 ## Known limitations
 

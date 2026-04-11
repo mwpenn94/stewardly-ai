@@ -131,3 +131,73 @@ export function evaluateBudget(
   if (pct >= state.warnAt) return { status: "warning", pct, remainingUSD };
   return { status: "ok", pct, remainingUSD };
 }
+
+// ─── Context window meter (Pass 230) ─────────────────────────────────────
+
+/**
+ * Context window limits by model (in tokens). Conservative defaults
+ * — actual limits may be higher on newer revisions but these are
+ * the publicly documented floors we can rely on.
+ */
+export const MODEL_CONTEXT_LIMITS: Record<string, number | undefined> = {
+  "claude-opus-4-6": 1_000_000,
+  "claude-sonnet-4-6": 1_000_000,
+  "claude-haiku-4-5": 200_000,
+  "gpt-5": 400_000,
+  "gpt-4o": 128_000,
+  "gpt-4o-mini": 128_000,
+  "gemini-2.5-pro": 2_000_000,
+  "gemini-2.5-flash": 1_000_000,
+};
+
+/** Fallback when the model isn't in the table — matches GPT-4o's 128K. */
+export const DEFAULT_CONTEXT_LIMIT = 128_000;
+
+export type ContextStatus = "ok" | "warning" | "critical";
+
+export interface ContextWindowEval {
+  /** Estimated tokens used so far */
+  used: number;
+  /** Context window for the active model */
+  limit: number;
+  /** Fraction used (0..1) */
+  pct: number;
+  /** Bucket: ok (<60%), warning (60-80%), critical (>80%) */
+  status: ContextStatus;
+  /** True when we had to fall back to the default limit */
+  modelKnown: boolean;
+}
+
+/**
+ * Evaluate token usage against the active model's context window.
+ *
+ * Thresholds:
+ *   - ok       — under 60% of the limit
+ *   - warning  — between 60% and 80%
+ *   - critical — at or above 80% (user should clear/fork/compact)
+ */
+export function evaluateContextWindow(
+  totalTokens: number,
+  model: string | undefined,
+): ContextWindowEval {
+  const configured = model ? MODEL_CONTEXT_LIMITS[model] : undefined;
+  const limit = configured ?? DEFAULT_CONTEXT_LIMIT;
+  const pct = limit > 0 ? totalTokens / limit : 0;
+  let status: ContextStatus = "ok";
+  if (pct >= 0.8) status = "critical";
+  else if (pct >= 0.6) status = "warning";
+  return {
+    used: totalTokens,
+    limit,
+    pct,
+    status,
+    modelKnown: configured !== undefined,
+  };
+}
+
+/** Format a large token count as a compact M/K suffix for display. */
+export function formatContextSize(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1000) return `${Math.round(n / 1000)}K`;
+  return String(n);
+}

@@ -13,6 +13,9 @@ import {
   filterTemplates,
   extractTemplateVariables,
   applyTemplateVariables,
+  exportTemplates,
+  parseTemplateExport,
+  importTemplates,
 } from "./promptTemplates";
 
 describe("BUILTIN_TEMPLATES", () => {
@@ -187,6 +190,122 @@ describe("applyTemplateVariables", () => {
 
   it("is a no-op when the template has no placeholders", () => {
     expect(applyTemplateVariables("plain", { file: "a.ts" })).toBe("plain");
+  });
+});
+
+describe("exportTemplates", () => {
+  it("serializes only user templates inside a version wrapper", () => {
+    const lib = addTemplate(emptyTemplateLibrary(), {
+      name: "Mine",
+      body: "content",
+    });
+    const raw = exportTemplates(lib);
+    const parsed = JSON.parse(raw);
+    expect(parsed.version).toBe(1);
+    expect(Array.isArray(parsed.templates)).toBe(true);
+    expect(parsed.templates).toHaveLength(1);
+    expect(parsed.templates[0].name).toBe("Mine");
+  });
+});
+
+describe("parseTemplateExport", () => {
+  it("parses the {version, templates} wrapper", () => {
+    const raw = JSON.stringify({
+      version: 1,
+      templates: [{ id: "u1", name: "A", body: "b" }],
+    });
+    const out = parseTemplateExport(raw);
+    expect(out).toHaveLength(1);
+    expect(out[0].name).toBe("A");
+  });
+
+  it("also accepts a bare array payload", () => {
+    const raw = JSON.stringify([{ id: "u1", name: "A", body: "b" }]);
+    const out = parseTemplateExport(raw);
+    expect(out).toHaveLength(1);
+  });
+
+  it("strips builtin: true overrides", () => {
+    const raw = JSON.stringify({
+      version: 1,
+      templates: [{ id: "builtin-review", name: "fake", body: "b", builtin: true }],
+    });
+    const out = parseTemplateExport(raw);
+    // The builtin flag is dropped; the entry is treated as a plain user template
+    expect(out).toHaveLength(1);
+    expect(out[0].name).toBe("fake");
+    expect(out[0].builtin).toBeUndefined();
+  });
+
+  it("drops entries missing required fields", () => {
+    const raw = JSON.stringify({
+      version: 1,
+      templates: [
+        { id: "u1", name: "A", body: "b" },
+        { id: "u2", name: "" },
+        null,
+      ],
+    });
+    expect(parseTemplateExport(raw)).toHaveLength(1);
+  });
+
+  it("returns empty on malformed JSON", () => {
+    expect(parseTemplateExport("{bad")).toEqual([]);
+  });
+});
+
+describe("importTemplates", () => {
+  const userA: { name: string; body: string } = { name: "A", body: "body A" };
+  const userB: { name: string; body: string } = { name: "B", body: "body B" };
+
+  it("returns ok:false when there are no valid templates", () => {
+    const r = importTemplates(emptyTemplateLibrary(), "{bad", "merge");
+    expect(r.ok).toBe(false);
+    expect(r.imported).toBe(0);
+  });
+
+  it("merges new user templates and preserves built-ins", () => {
+    const existing = addTemplate(emptyTemplateLibrary(), userA);
+    const raw = JSON.stringify({
+      version: 1,
+      templates: [userB],
+    });
+    const r = importTemplates(existing, raw, "merge");
+    expect(r.ok).toBe(true);
+    expect(r.imported).toBe(1);
+    const userCount = r.templates.filter((t) => !t.builtin).length;
+    expect(userCount).toBe(2);
+    // built-ins still present
+    expect(r.templates.filter((t) => t.builtin).length).toBe(
+      BUILTIN_TEMPLATES.length,
+    );
+  });
+
+  it("dedupes by (name, body) in merge mode", () => {
+    const existing = addTemplate(emptyTemplateLibrary(), userA);
+    const raw = JSON.stringify({
+      version: 1,
+      templates: [userA, userB],
+    });
+    const r = importTemplates(existing, raw, "merge");
+    expect(r.imported).toBe(1);
+    expect(r.skipped).toBe(1);
+  });
+
+  it("replace mode drops existing user templates but keeps built-ins", () => {
+    const existing = addTemplate(emptyTemplateLibrary(), userA);
+    const raw = JSON.stringify({ version: 1, templates: [userB] });
+    const r = importTemplates(existing, raw, "replace");
+    expect(r.ok).toBe(true);
+    expect(r.imported).toBe(1);
+    // Only the imported user template remains (A is gone)
+    const userTemplates = r.templates.filter((t) => !t.builtin);
+    expect(userTemplates).toHaveLength(1);
+    expect(userTemplates[0].name).toBe("B");
+    // Built-ins are still there
+    expect(r.templates.filter((t) => t.builtin).length).toBe(
+      BUILTIN_TEMPLATES.length,
+    );
   });
 });
 
