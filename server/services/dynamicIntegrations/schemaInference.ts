@@ -232,7 +232,7 @@ function deriveSemanticHints(
   if (/(phone|mobile|tel|cell)/.test(n)) hints.push("phone");
   if (/(url|link|website|site)/.test(n)) hints.push("url");
   if (/(first|last|full|display|given|family)_?name$/.test(n) || n === "name") hints.push("name");
-  if (/(address|street|city)/.test(n)) hints.push("address");
+  if (/(address|street|city)/.test(n) && !/email/.test(n)) hints.push("address");
   if (/^(country|country_code)$/.test(n)) hints.push("country");
   if (/^(state|province|region)$/.test(n)) hints.push("state");
   if (/^(zip|postal|postcode)(_code)?$/.test(n)) hints.push("zip");

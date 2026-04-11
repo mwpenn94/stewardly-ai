@@ -30,7 +30,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G7  | P2   | code-chat       | Schema inference exposed as a Code Chat tool                               | open        | build-loop-p1    | 0/10  | —       |
 | G8  | P2   | learning        | Continuous training — fold sample data into learning recommendations       | open        | build-loop-p1    | 0/10  | —       |
 | G9  | P2   | crm             | CRM field auto-map from inferred schema → canonical CRM shape              | open        | build-loop-p1    | 0/10  | —       |
-| G10 | P1   | continuous      | Schema drift detector — re-infer, diff, flag for review                    | open        | build-loop-p1    | 0/10  | —       |
+| G10 | P1   | continuous      | Schema drift detector — re-infer, diff, flag for review                    | done        | build-loop-p1    | 6/10  | pending |
 | G11 | P2   | model-training  | Cross-model distillation loop (learn from other models' outputs)           | open        | build-loop-p1    | 0/10  | —       |
 | G12 | P2   | agentic-ai      | Universal adapter DSL — declarative integration spec the agent can emit    | open        | build-loop-p1    | 0/10  | —       |
 
@@ -42,6 +42,8 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G18 | P0   | dynamic-crud    | Idempotent upsert — GET/404→POST / GET/200→PATCH semantics                  | done        | build-loop-p3    | 5/10  | pending |
 | G19 | P1   | pipelines       | 429/5xx retry with Retry-After header honoring + exponential backoff       | done        | build-loop-p3    | 5/10  | pending |
 | G20 | P1   | pipelines       | Field transforms at runtime (parse_currency/parse_date/parse_percent)      | done        | build-loop-p3    | 4/10  | pending |
+| G21 | P1   | continuous      | Field rename detection (heuristic: type + hint + sample-count match)       | done        | build-loop-p4    | 5/10  | pending |
+| G22 | P1   | continuous      | Drift severity classification (breaking/warning/info)                      | done        | build-loop-p4    | 5/10  | pending |
 
 ## Protected Improvements
 
@@ -89,4 +91,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 
 - Pass 1 · dynamic schema inference · [A1: schemaInference.ts, A2: tests, A3: PARITY.md] · 00ab579 · A1+A2+A3 done · G2-G12 deferred
 - Pass 2 · adapter generation · [R1: G2 adapter generator, G13 pagination probe, G14 collection path, G15 curl, G16 fingerprint] · 46c89ad · G2+G4+G13+G14+G15+G16 done · G3/G5-G12 deferred
-- Pass 3 · runtime executor · [F1 Pass 2 deferred exec, A1 listRecords/CRUD, A2 upsert] · pending · G17+G18+G19+G20 done · G3/G5-G12 deferred
+- Pass 3 · runtime executor · [F1 Pass 2 deferred exec, A1 listRecords/CRUD, A2 upsert] · 87ad53e · G17+G18+G19+G20 done · G3/G5-G12 deferred
+- Pass 4 · schema drift · [R1: G10 drift detector, R2: G5 drift-aware upsert, A1: rename heuristic] · pending · G10+G21+G22 done · G3/G5-G12 deferred
