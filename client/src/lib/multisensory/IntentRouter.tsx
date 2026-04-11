@@ -142,13 +142,22 @@ export function IntentRouter() {
           return;
 
         case "a11y.focus_main": {
+          // Chat.tsx uses #chat-main, AppShell uses #main-content; both
+          // are <main> landmarks. Pick whichever exists, then fall back
+          // to the first <main> on the page.
           const main =
             document.querySelector<HTMLElement>("#main-content") ||
+            document.querySelector<HTMLElement>("#chat-main") ||
             document.querySelector<HTMLElement>("main");
           if (main) {
-            main.setAttribute("tabindex", "-1");
+            // Ensure focusable even if the element predates tabIndex
+            if (!main.hasAttribute("tabindex")) {
+              main.setAttribute("tabindex", "-1");
+            }
             main.focus({ preventScroll: false });
             announce("Main content focused", "polite");
+          } else {
+            announce("No main content landmark found on this page", "assertive");
           }
           return;
         }

@@ -141,6 +141,50 @@ Dimension scores are 1–10 using the v2 Appendix A calibration.
 
 ## Changelog
 
+### Pass 4 (2026-04-11, Delight & Polish, composite 8.80 → 8.95, +0.15)
+
+Core function solid, robustness locked in. Time for the "it just feels
+right" layer.
+
+1. **VisualAnnouncer** (`VisualAnnouncer.tsx`) — the visible sibling of
+   LiveAnnouncer. Subscribes to the same `multisensory-announce` custom
+   event and renders a centered top-of-viewport toast with a gold-accent
+   info icon (polite) or a chart-3 volume icon (assertive). 2.5s fade
+   for polite, 3.5s for assertive. Safe-area-inset-top aware for iOS
+   notches. `aria-hidden="true"` so screen readers don't double-announce
+   (they already get the text via the sr-only LiveAnnouncer regions).
+   Only the most recent toast is shown — fast successions replace each
+   other. Mounted in `App.tsx` next to LiveAnnouncer inside AppContent.
+
+2. **Slash-command hint ribbon** in `ChatInputBar.tsx` — the moment
+   a user types "/" the input grows a pill-shaped ribbon above the
+   textarea showing `/go learning`, `/read`, `/hands-free`, `/help` as
+   clickable-looking `<kbd>` chips. `aria-hidden` so screen readers
+   don't double-announce (the commands are also discoverable via the
+   `?` shortcuts modal). Hides when the input starts with `//` so file
+   paths like `//usr/bin` don't trigger the ribbon.
+
+3. **`a11y.focus_main` selector hardening** — now tries `#main-content`
+   → `#chat-main` → bare `<main>` in order. Both Chat.tsx and AppShell.tsx
+   have their own `<main>` landmark with a `tabIndex={-1}`. Alt+M now
+   works on both. If NO main is found, announces "No main content
+   landmark found on this page" via assertive live region.
+
+4. **`tabIndex` auto-set on focus target** — the selector fallback in
+   `a11y.focus_main` now preserves existing `tabindex` attributes instead
+   of clobbering them, and only adds `tabindex="-1"` when missing. This
+   means pages that have a proper `tabIndex={0}` on their main landmark
+   stay keyboard-navigable after Alt+M focus.
+
+**Dimension scorecard delta:**
+- UI: 8.5 → 9.0 (+0.5) — VisualAnnouncer is a genuinely delightful touch
+- UX: 8.0 → 8.5 (+0.5) — slash-command ribbon teaches vocabulary
+- Digestibility: 8.5 → 9.0 (+0.5) — discoverability jumped
+- Delightfulness: 8.0 → 8.5 (+0.5) — centered toast, fade-in animations,
+  gold accents = "it flows"
+
+**Composite:** 8.95 / 10 (+0.15)
+
 ### Pass 3 (2026-04-11, Adversarial, composite 8.55 → 8.80, +0.25)
 
 Assumed everything contains hidden failure modes. Hunted silent regressions,
