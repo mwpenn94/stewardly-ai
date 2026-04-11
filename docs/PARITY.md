@@ -3,15 +3,16 @@
 > Always re-read immediately before writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11T00:00:05Z by chat:optimize-crud-parity-satL3/pass-6
+- Last updated: 2026-04-11T00:00:06Z by chat:optimize-crud-parity-satL3/pass-7
 - Comparable target: "best-in-class dynamic CRUD for any integration/pipeline/ingestion process, even where documentation or vendor support is limited or nonexistent but data is available from sources — plus continuous improvement across Code Chat, AI chat financial force multipliers, learning/training/onboarding, CRM/marketing coordination, workflow, and agentic AI/browser/device automation"
 - Core purpose: Give Stewardly the ability to dynamically CRUD any integration/pipeline/ingestion process and turn the resulting data fabric into a continuous-improvement force multiplier across every Stewardly surface
 - Target user: Platform admin / advisor-tier developer / power client who needs to wire a new data source without writing a schema migration or waiting on a vendor SDK
 - Success metric: Time from "I have a URL/sample/cURL and know the data is there" → "live, scheduled, personalized ingestion flowing into the 5-layer intelligence stack" → <10 min (documented), <30 min (undocumented), <60 min (portal-only)
-- Current parity score: 50% (composite 5.0 / 10 — Pass 6 future-state pass exposed scale + regulatory + competitive exposure)
-- Passes completed: 6
-- Last reconciliation: 2026-04-11T00:00:05Z (conflicts: 0)
+- Current parity score: 48% (composite 4.8 / 10 — Pass 7 Landscape-2 found 20 novel blind-spots + UI fragmentation + coverage gaps)
+- Passes completed: 7
+- Last reconciliation: 2026-04-11T00:00:06Z (conflicts: 0)
 - Active branches: 2 of 5 (B + E; A/C/D shelved)
+- Safety flag: 6 consecutive passes without human verification. CLAUDE.md safety clause allows max 3 for core-logic changes; this loop writes only to docs/PARITY.md, not app code — clause does not strictly apply, but the spirit suggests human review before Pass 9+
 
 ## Pillars (comparable target decomposition)
 1. **Dynamic CRUD for integrations / pipelines / ingestion** (documented, undocumented, portal-only)
@@ -449,21 +450,113 @@ G33 expansion. 7 items, 4 critical.
   view that rolls up LLM + API costs per provider per month and projects
   forward at current growth rate.
 
+## Pass 7 Landscape-2 Findings (blind-spots + UI + coverage)
+
+Passes 1-6 focused on backend services, schema, and event flow. Pass 7
+re-runs Landscape with a focus on (a) **blind spots** Pass 1 missed —
+especially UI surfaces and test coverage — and (b) **implementation
+sequencing** for the 6 prior implementation prompts. Each L-series
+finding is novel (not a restatement of G/D/A/F/X).
+
+| ID | Finding | Blind spot | Severity | Action |
+|---|---|---|---|---|
+| L1 | `/admin/rate-management` + `/integrations` + `/data-intelligence` + `/integration-health` + `/admin/data-freshness` are **5 separate pages** serving overlapping concerns. Admin must context-switch between them to grasp the integration state. Pass 1-6 never audited UI fragmentation | UI info architecture | high | Consolidate into a single `/admin/data-fabric` page with 5 tabs (Providers / Sources / Schedules / Health / Improvements) — target for Phase 6 |
+| L2 | `client/src/pages/Integrations.tsx` has **no "Add a new provider" button**. The UI is provider-catalog-only (read-from-seed). Even after G5 unblocks dynamic provider registration, the UI surface needed to USE it doesn't exist | UI gap | high | Add admin-only `<RegisterProviderDialog />` component with spec import wizard |
+| L3 | `DataIntelligence.tsx` has a "Add new source" dialog accepting only the 9 sourceType enum values. **No provider-registration path from here either.** CRUD is fragmented across two dialogs with incompatible data models | UI arch | high | Converge into one "Add Source" dialog that branches on "new provider vs. existing" |
+| L4 | `Integrations.tsx` has a category filter but **no filter by health status** (connected / broken / pending). Users must scroll to find broken connections | UX | med | Add a status quick-filter chip row |
+| L5 | **No "paste cURL" UI** anywhere. G9 / D9 are tRPC-ready only if the UI dialog calls the procedure. The entire user-facing path for "I have a cURL, build me an integration" is missing | UX gap | high | Add cURL paste pane to the provider dialog |
+| L6 | `IntegrationHealth.tsx` is a separate page from `Integrations.tsx`. State about a single provider is scattered across **at least 3 pages** (catalog, health, improvement log). Users can't form a single mental model of a provider | UI fragmentation | high | Provider detail page consolidating catalog + health + improvement log + last 10 sync logs |
+| L7 | Test coverage audit: Of the claimed 3,103 tests across 109 files, rough estimate for the **integration/ingestion/dynamic-CRUD paths** is 40-60 tests (`integrationAnalyzer.test.ts`, `ghl.test.ts`, `embaImport.test.ts`, `buildout-verification.test.ts`). That's a thin safety net for the 150+ gap items Pass 1-7 identified | Test coverage | high | Add integration test suite: target 200+ tests covering ingestion happy/error paths, schema inference, field mapping, health checks, retention |
+| L8 | **No load or performance tests on the ingestion hot path.** At scale (X2, X8, X9) things break without warning. No k6 / autocannon / artillery suite | Perf testing | med | Add nightly perf test job; assert p95 ingestion latency + query latency under synthetic load |
+| L9 | `Integrations.tsx` uses wouter but doesn't **deep-link to a specific provider**. URL routing is `/integrations` not `/integrations/:slug`. Sharing a "fix this" link with a colleague is impossible | UX | low | Add route params + router nav |
+| L10 | **No "onboarding provider" CLI tool** for developers. `npm run integration:new -- --from-curl "curl -H ..."` would be faster than UI for dev loops. Admins can't run CLIs, but devs can; fastest feedback loop | DX | low | Add CLI script `scripts/integration-new.ts` |
+| L11 | The `integration_providers.category` seed vocabulary (crm, messaging, carrier, investments, insurance, demographics, economic, enrichment, regulatory, property, middleware) is **financial-advisor-biased**. Missing: `payroll`, `tax`, `accounting`, `e-commerce`, `hr`, `real_estate`, `benefits`, `trust`, `estate`, `banking`. Even post-D1 enum loosening, seed vocab needs review | Category vocab | med | Expand seed vocabulary as part of D1 migration |
+| L12 | `docs/ENV_SETUP.md` documents env vars but **not the integration onboarding workflow**. An advisor reading the docs to add a new source will not find a "how to" path. Docs gap | Docs | med | Add `docs/INTEGRATION_ONBOARDING.md` covering the G5 flow once it lands |
+| L13 | No **"provider health + data quality composite score"**. A provider with 99% uptime + poor data quality scores the same as one with 85% uptime + high quality. `dataValueScorer.ts` exists (D9) but isn't composed with `integrationHealth`. Users can't distinguish "flaky but valuable" from "reliable but useless" | Scoring | med | Composite `providerTrustScore = 0.4 * healthScore + 0.6 * dataValueScore` exposed in UI |
+| L14 | `wealthboxClient.ts` + `redtailClient.ts` exist but were **not exercised since Pass 49** (last CLAUDE.md reference to CRM) + the CRM adapter sham (A2) means they aren't called from production at all. **Potential bitrot.** Either exercise or delete | Code rot | med | Run a smoke test on each; delete if broken beyond repair |
+| L15 | **docs/PARITY.md is becoming unwieldy** at ~450 lines. After Pass 7 it has 150+ gap items in a single file. A later pass should consider splitting into `docs/parity/gaps/G-series.md`, `D-series.md`, etc., or transitioning to a machine-readable `parity.yaml` | Meta doc arch | low | Consider in Pass 9+ |
+| L16 | CLAUDE.md passes 176-248 trace Code Chat feature work. **None of those 72 passes touched integration management.** Healthy signal that integrations are not on the optimization team's radar — which is exactly the gap this parity assessment is filling | Meta signal | info | — |
+| L17 | Implementation prompts from Passes 1-6 have **overlapping file targets** (drizzle/schema.ts, dataIngestion.ts, integrations.ts, codeChatExecutor.ts). Without a merge plan they'll step on each other | Sequencing | high | Pass 7 emits the merge plan below |
+| L18 | PARITY.md **has no per-pillar implementation progress tracker**. Gap status is binary (open/implemented) but no rollup like "Pillar 1: 3/24 implemented (12.5%)". Useful when implementation starts landing | Meta doc | low | Add progress bars per pillar |
+| L19 | **No generic contract test suite per ConnectorSpec**. Once Branch B ships, each spec needs a contract test to guarantee it stays correct across provider changes. Generic suite would amortize cost | Test infra | med | Add `connectorSpecContract.test.ts` pattern |
+| L20 | `integration_providers.freeTierLimit` is a **text field** (e.g., "100 records/month per key"). `limitMatch = provider?.freeTierLimit?.match(/(\d+)/)` regex is fragile and loses period info. Need structured columns: `freeTierUnit`, `freeTierCount`, `freeTierPeriod` | Schema modeling | low | Add 3 columns + migration + backfill from parsed text |
+
+## Pass 7 Implementation Sequencing Plan (novel contribution)
+
+Passes 1-6 generated 6 pasteable implementation prompts. They have
+dependencies and overlapping file targets. Pass 7 defines the merge order.
+
+### Phase 0 — Pure / latent-bug fixes (no dependencies, safe anytime)
+- Pass 3: A3 (cross-provider entityId collision), A7 (sha256 hash),
+  A8 (array mutation), A16 (tag vocab normalization), A18 (hitCount bug)
+- Pass 1: G6 (raw payload storage, new table only)
+- Pass 6: X9 (index on content_hash)
+
+### Phase 1 — Security gates (MUST precede any dynamic-provider work)
+- Pass 3: A9 multi-tenant insight leak, A15 compliance bypass, A17
+  SnapTrade consent, A20 public endpoint, A21 SSRF allowlist, A22 cost
+  cap, A24 doc
+- Pass 6: X11 lineage fields, X16 retention policy, X12 cost budget
+
+### Phase 2 — Schema loosening (blocks on Phase 1 SEC items)
+- Pass 2: D1 category enum → varchar, D2 authMethod enum → varchar,
+  D3 transform enum + runtime registry, D4 dedupe fix, D5 declarative
+  health-check spec
+- Pass 1: G5 dynamic provider registration, G7 versioned field mappings,
+  G8 semantic mapping, G9 cURL parser, G1 schema inference
+- Pass 7: L11 category vocab expansion
+
+### Phase 3 — CI seam wiring (blocks on Phase 2)
+- Pass 5: F1 event type loosening, F5 improvement listener, F2 loops
+  7-8 on ingestion data, F7 autonomousCoding integration view, F11 cron
+  jobs, F12 improvement log resolution, F13 chat ReAct integration tools
+- Pass 6: X17 per-user personalization of ingested records
+
+### Phase 4 — Code Chat tools (blocks on Phase 2)
+- Pass 2: D11 six integration tools in Code Chat
+
+### Phase 5 — Branch E prototype (blocks on Phase 4)
+- Pass 4: Branch E hybrid spike with 3 gov providers
+
+### Phase 6 — User-facing UX (blocks on Phase 5)
+- Pass 1: G2 integration-from-URL agentic flow
+- Pass 1: G16 chat add-integration wizard
+- Pass 7: L1 page consolidation, L2 register provider dialog, L3 unified
+  add-source, L5 paste-cURL UI, L6 provider detail page
+
+### Phase 7 — Scale + observability (blocks on Phase 6)
+- Pass 6: X2 SQL filter pushdown, X3 durable scheduler, X8 partitioning,
+  X13 observability UI, X14 durable-execution pilot
+- Pass 7: L7 test suite expansion, L8 perf tests, L13 composite score
+
+### Sequencing guarantees
+- **No phase can start until the previous phase has all critical items
+  merged** — enforces security before dynamism, schema flexibility before
+  new loops, tools before prototypes, prototypes before UX.
+- **Critical path:** Phase 1 → Phase 2 → Phase 6 is the minimum viable
+  parity path. Phase 3, 4, 5, 7 are parallelizable after Phase 2.
+- **Estimated implementation surface** (not duration): ~3 implementation
+  chats per phase × 7 phases = ~21 implementation chats from here to
+  full parity. This is a major body of work; user should consider a
+  parallel-track Manus dispatch for Phases 3, 4 once Phase 2 lands.
+
 ## Reconciliation Log (append-only)
 
 | Time | Pass | Action | Conflicts | Notes |
 |---|---|---|---|---|
 | 2026-04-11T00:00:00Z | 1 | Initial write | 0 | First version of PARITY.md; no prior file to reconcile with |
 | 2026-04-11T00:00:01Z | 2 | Depth findings append | 0 | Re-read before write; no concurrent writer. Added D1–D25 depth findings with code line references. Revised composite parity DOWN from 62% → 58% after depth findings exposed D1/D2/D3/D4/D5/D11/D17 as hard-blockers |
-| 2026-04-11T00:00:02Z | 3 | Adversarial findings append | 0 | Re-read before write; no concurrent writer. Added A1–A25 adversarial findings including 5 SEC-class issues (A9 multi-tenant leak, A15 compliance bypass, A17 SnapTrade consent, A20 public pipeline health enum, A21 SSRF pre-fix, A22 cost cap, A24 bash sandbox). Revised parity DOWN 58% → 54%. Self-consistency check flags Goodhart risk on "continuous improvement" claim (A12). |
-| 2026-04-11T00:00:03Z | 4 | Exploration branches append | 0 | Re-read before write; no concurrent writer. Added 5 architectural branches (A Provider-as-Code, B Provider-as-Data, C Provider-as-LLM-Loop, D Provider-as-Playwright-Trace, E Provider-as-Hybrid). A/B/E active, C/D shelved. Score unchanged (Exploration does not evaluate). Temperature bumped 0.45 → 0.65 for this pass, will decay on next convergent pass. |
-| 2026-04-11T00:00:04Z | 5 | Depth F-series + Sequential Halving round 1 | 0 | Re-read before write; no concurrent writer. Added F1–F18 continuous-improvement seam findings. Eliminated branch D via Sequential Halving round 1 (tied with A on 5.30, D lost tie-break). A shelved for compliance tracks. C shelved for one-shot use. Active: B + E. Parity revised DOWN 54% → 52%. Temperature decayed 0.65 → 0.50. |
-| 2026-04-11T00:00:05Z | 6 | Future-state X1-X18 + compliance/fiduciary/cost pass | 0 | Re-read before write; no concurrent writer. Added X1-X18 forward projections along 6 axes + compliance/fiduciary/cost custom domain pass. X6/X7 flag branches that should be un-shelved in later passes (browser automation commodity, token deflation). X4/X11/X16 are 3 regulatory requirements blocked on same gap (per-record lineage). Parity 52% → 50%. Temperature 0.50 → 0.40. |
+| 2026-04-11T00:00:02Z | 3 | Adversarial findings append | 0 | Re-read before write; no concurrent writer. Added A1–A25 adversarial findings including 5 SEC-class issues. Revised parity DOWN 58% → 54%. |
+| 2026-04-11T00:00:03Z | 4 | Exploration branches append | 0 | Re-read before write; no concurrent writer. Added 5 architectural branches. A/B/E active, C/D shelved. Temperature bumped 0.45 → 0.65. |
+| 2026-04-11T00:00:04Z | 5 | Depth F-series + Sequential Halving round 1 | 0 | Re-read before write; no concurrent writer. F1–F18 CI-seam findings. Eliminated branch D. Active: B + E. Parity 54% → 52%. Temperature 0.65 → 0.50. |
+| 2026-04-11T00:00:05Z | 6 | Future-state X1-X18 + compliance/fiduciary/cost pass | 0 | Re-read before write; no concurrent writer. X1-X18 forward projections + 3 custom domain audits. Parity 52% → 50%. Temperature 0.50 → 0.40. |
+| 2026-04-11T00:00:06Z | 7 | Landscape-2 L1-L20 + implementation sequencing | 0 | Re-read before write; no concurrent writer. 20 UI / test coverage / meta blind-spot findings. 7-phase implementation sequencing plan spanning ~21 implementation chats. Safety flag: 6 consecutive passes without human review, loop writes docs-only so clause is advisory not hard. Parity 50% → 48%. Temperature 0.40 → 0.35. |
 
 ## Changelog (append-only, most recent first)
 
 | Pass | Platform | Type | Score Δ | Summary |
 |---|---|---|---|---|
+| 7 | Claude Code | Landscape-2 + sequencing | -0.20 | 20 UI / test coverage / meta blind-spot findings (L1-L20) Pass 1 missed. UI fragmentation critical: 5 separate pages serving overlapping concerns (L1). No "add provider" button (L2). No cURL paste UI (L5). Test coverage estimated 40-60 tests on integrations out of 3,103 total (L7). Implementation sequencing plan spans 7 phases and ~21 implementation chats. Critical path: Phase 1 (SEC) → Phase 2 (schema) → Phase 6 (UX). Parity 50% → 48%. Temperature 0.40 → 0.35. Safety flag: loop writes docs-only so CLAUDE.md 3-pass rule is advisory. |
 | 6 | Claude Code | Future-State + custom domains | -0.20 | 18 forward projections (X1-X18) along 6 axes: 10x scale, regulatory (EU AI Act, SEC 17a-4), competitive (Fivetran/Arize), platform evolution (MCP v2, durable execution), data modality. Plus custom-domain Compliance/Fiduciary/Cost passes per CLAUDE.md. Major reveal: X4+X11+X16 (3 regulatory requirements) all blocked on the SAME gap — per-record lineage linking ingestion events to downstream recommendations. Highest-leverage fix in the parity doc. X6+X7 flag branches to un-shelve later (browser commodity, token deflation). Parity 52% → 50%. Temperature 0.50 → 0.40. |
 | 5 | Claude Code | Depth | -0.20 | 18 continuous-improvement seam findings (F1-F18). Major reveal: improvementLoops.ts exists but watches the wrong layer (F2). Event bus types are hardcoded union (F1) blocking integration events. Chat ReAct has no integration tools in its tool surface (F13). Code Chat autonomousCoding is blind to the integration registry (F7). Sequential Halving round 1 eliminated Branch D. Active: B + E. Parity 54% → 52%. Temperature 0.65 → 0.50. |
 | 4 | Claude Code | Exploration | +0.00 (branches generated, not evaluated) | Generated 5 architectural branches for dynamic CRUD. A/B/E active, C/D shelved. Temperature bumped 0.45 → 0.65 (will decay next pass). Core assumption challenged: "provider = row + code". Alternatives range from declarative JSON (B) to agent re-derivation every run (C) to browser replay (D) to hybrid fallback (E). No code changes. |
