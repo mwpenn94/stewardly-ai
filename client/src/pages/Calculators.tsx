@@ -192,7 +192,8 @@ export default function Calculators() {
               { label: "Strategy Comparison", path: "/wealth-engine/strategy-comparison", icon: <BarChart3 className="w-4 h-4" />, desc: "Compare 7 wealth strategies" },
               { label: "Retirement Planner", path: "/wealth-engine/retirement", icon: <PiggyBank className="w-4 h-4" />, desc: "Goal, smooth, guardrails" },
               { label: "Practice to Wealth", path: "/wealth-engine/practice-to-wealth", icon: <TrendingUp className="w-4 h-4" />, desc: "Practice growth modeling" },
-              { label: "Quick Quote", path: "/wealth-engine/quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Instant client proposal" },
+              { label: "Quick Quote (Client)", path: "/wealth-engine/quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Instant client proposal" },
+              { label: "Business Income Quote", path: "/wealth-engine/business-income-quote", icon: <Briefcase className="w-4 h-4" />, desc: "Advisor 30-year BIE projection" },
               { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
             ].map(tool => (
               <button
@@ -273,6 +274,12 @@ export default function Calculators() {
                 <CardDescription className="text-xs">Adjust parameters to see projected values</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <FinancialProfileBanner
+                  onPrefill={(p) => {
+                    if (p.age !== undefined) setIulAge(p.age);
+                  }}
+                  usesFields={["age"]}
+                />
                 <SliderInput label="Current Age" value={iulAge} onChange={setIulAge} min={18} max={70} suffix=" yrs" />
                 <SliderInput label="Annual Premium" value={iulPremium} onChange={setIulPremium} min={1000} max={100000} step={500} format={(v) => fmt(v)} />
                 <SliderInput label="Projection Years" value={iulYears} onChange={setIulYears} min={5} max={50} suffix=" yrs" />
@@ -280,7 +287,10 @@ export default function Calculators() {
                 <SliderInput label="Death Benefit" value={iulDB} onChange={setIulDB} min={50000} max={10000000} step={25000} format={(v) => fmt(v)} />
                 <Button
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-sm h-10 gap-2"
-                  onClick={() => iulCalc.mutate({ age: iulAge, annualPremium: iulPremium, years: iulYears, illustratedRate: iulRate, deathBenefit: iulDB })}
+                  onClick={() => {
+                    setSharedProfile({ age: iulAge }, "user");
+                    iulCalc.mutate({ age: iulAge, annualPremium: iulPremium, years: iulYears, illustratedRate: iulRate, deathBenefit: iulDB });
+                  }}
                   disabled={iulCalc.isPending}
                 >
                   {iulCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Projection</>}

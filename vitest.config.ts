@@ -21,6 +21,7 @@ export default defineConfig({
       "client/src/lib/wealth-engine/**/*.test.ts",
       "client/src/components/codeChat/**/*.test.ts",
       "client/src/stores/**/*.test.ts",
+      "client/src/pages/wealth-engine/**/*.test.ts",
     ],
   },
 });
