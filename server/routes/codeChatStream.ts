@@ -25,7 +25,12 @@ const codeChatStreamRouter = Router();
 const WORKSPACE_ROOT =
   process.env.CODE_CHAT_WORKSPACE_ROOT ?? path.resolve(process.cwd());
 
-const READ_ONLY_TOOLS = new Set(["read_file", "list_directory", "grep_search"]);
+const READ_ONLY_TOOLS = new Set([
+  "read_file",
+  "list_directory",
+  "grep_search",
+  "update_todos", // Pass 237: no-op progress reporter, safe for all roles
+]);
 
 function writeSse(res: any, data: Record<string, unknown>): void {
   if (!res.writableEnded) {
@@ -110,6 +115,8 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       canMutate
         ? "You have `code_write_file`, `code_edit_file`, `code_run_bash` — use sparingly, explain every change."
         : "Write/edit/bash disabled. Return diffs as code blocks.",
+      // Pass 237: expose the live todo tracker tool
+      "For any task with 3+ steps, call `code_update_todos` early with a pending list, then call it again after each step to flip status to in_progress/completed. Each item needs {id, content (imperative), activeForm (present-continuous), status}. This drives the live progress UI the user sees.",
       "Keep responses concise. Surface reasoning + tool calls.",
       layerOverlay ? `\n${layerOverlay}` : "",
     ].filter(Boolean).join("\n");
@@ -202,6 +209,16 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
           truncated,
           durationMs,
         });
+
+        // Pass 237: for update_todos, also emit a dedicated SSE event
+        // with the parsed todos payload so the client can render a
+        // live todo panel without waiting for the final response.
+        if (rawName === "update_todos" && (dispatchResult as any).kind === "todos") {
+          writeSse(res, {
+            type: "todos_updated",
+            todos: (dispatchResult as any).result.todos,
+          });
+        }
 
         return resultStr;
       },

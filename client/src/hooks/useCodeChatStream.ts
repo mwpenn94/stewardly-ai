@@ -6,6 +6,11 @@
  */
 
 import { useState, useCallback, useRef } from "react";
+import {
+  parseTodosPayload,
+  mergeTodoList,
+  type AgentTodoItem,
+} from "@/components/codeChat/agentTodos";
 
 export interface ToolEvent {
   stepIndex: number;
@@ -23,6 +28,8 @@ export interface CodeChatMessage {
   role: "user" | "assistant";
   content: string;
   toolEvents?: ToolEvent[];
+  /** Pass 237: final agent todo list snapshot captured at `done` time */
+  agentTodos?: AgentTodoItem[];
   model?: string;
   iterations?: number;
   toolCallCount?: number;
@@ -42,6 +49,8 @@ export function useCodeChatStream() {
   const [messages, setMessages] = useState<CodeChatMessage[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [currentTools, setCurrentTools] = useState<ToolEvent[]>([]);
+  /** Pass 237: live agent todo list, cleared at each new send */
+  const [currentTodos, setCurrentTodos] = useState<AgentTodoItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -50,6 +59,7 @@ export function useCodeChatStream() {
     setIsExecuting(true);
     setError(null);
     setCurrentTools([]);
+    setCurrentTodos([]);
 
     // Add user message
     const userMsg: CodeChatMessage = {
@@ -88,6 +98,7 @@ export function useCodeChatStream() {
       const decoder = new TextDecoder();
       let buffer = "";
       const toolEvents: ToolEvent[] = [];
+      let agentTodos: AgentTodoItem[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -126,12 +137,20 @@ export function useCodeChatStream() {
                 setCurrentTools([...toolEvents]);
                 break;
               }
+              case "todos_updated": {
+                // Pass 237: live todo tracker event
+                const parsed = parseTodosPayload(event.todos);
+                agentTodos = mergeTodoList(agentTodos, parsed);
+                setCurrentTodos([...agentTodos]);
+                break;
+              }
               case "done": {
                 const assistantMsg: CodeChatMessage = {
                   id: `a-${Date.now()}`,
                   role: "assistant",
                   content: event.response,
                   toolEvents: [...toolEvents],
+                  agentTodos: agentTodos.length > 0 ? [...agentTodos] : undefined,
                   model: event.model,
                   iterations: event.iterations,
                   toolCallCount: event.toolCallCount,
@@ -140,6 +159,8 @@ export function useCodeChatStream() {
                 };
                 setMessages(prev => [...prev, assistantMsg]);
                 setCurrentTools([]);
+                // Do NOT reset currentTodos — leave them visible until
+                // the next send for continuity
                 break;
               }
               case "error":
@@ -169,6 +190,7 @@ export function useCodeChatStream() {
   const clearHistory = useCallback(() => {
     setMessages([]);
     setCurrentTools([]);
+    setCurrentTodos([]);
     setError(null);
   }, []);
 
@@ -214,6 +236,7 @@ export function useCodeChatStream() {
   const loadMessages = useCallback((next: CodeChatMessage[]) => {
     setMessages(next);
     setCurrentTools([]);
+    setCurrentTodos([]);
     setError(null);
   }, []);
 
@@ -221,6 +244,7 @@ export function useCodeChatStream() {
     messages,
     isExecuting,
     currentTools,
+    currentTodos,
     error,
     sendMessage,
     abort,

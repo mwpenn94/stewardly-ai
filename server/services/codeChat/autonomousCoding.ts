@@ -211,5 +211,7 @@ export function summarizeStep(step: CodeChatStep): string {
       return `finish: ${result.result.summary.slice(0, 120)}`;
     case "error":
       return `error [${result.code}]: ${result.error.slice(0, 120)}`;
+    case "todos":
+      return `todos updated (${result.result.count} items, ${ms})`;
   }
 }
