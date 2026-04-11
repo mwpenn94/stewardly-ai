@@ -98,6 +98,7 @@
     "react-resizable-panels": "^3.0.6",
     "recharts": "^2.15.2",
     "remark-gfm": "4",
+    "shiki": "3",
     "snaptrade-typescript-sdk": "^9.0.173",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",

@@ -1,4 +1,4 @@
-# Code Chat Cloud Parity (Passes 201-206)
+# Code Chat Cloud Parity (Passes 201-211)
 
 Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 
@@ -20,6 +20,19 @@ Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 - **`@file` mentions** — workspace file autocomplete in the chat input,
   server-side file expansion so the LLM gets mentioned files as context
   without a round-trip (Pass 206)
+- **Shiki syntax highlighting** — lazy-loaded GitHub-dark-dimmed theme
+  with bundled grammars for ts/tsx/python/go/rust/etc (Pass 207)
+- **Message action bar** — hover-revealed Copy / Export-markdown /
+  Regenerate buttons on every assistant response (Pass 208)
+- **Input draft autosave + shortcuts overlay** — in-progress input
+  persists across refreshes; press `?` (or click the keyboard icon)
+  to see every shortcut + slash command (Pass 209)
+- **Token & cost telemetry** — per-message token counts + USD cost
+  for priced models + running session total in the config bar
+  (Pass 210)
+- **Error banner with Retry** — failed ReAct loops leave a sticky
+  banner with Retry / Dismiss instead of a fire-and-forget toast
+  (Pass 211)
 
 This document walks through the architecture, the tRPC surface, the
 safety model, and the UI. For setup (tokens, connection flow) see
@@ -312,6 +325,92 @@ attached.
 these three files" required three separate `code_read_file` tool
 calls. Now the agent gets all three file contents inline in the
 first message and can answer in a single turn.
+
+## Polish passes (207-211)
+
+### Shiki syntax highlighting (Pass 207)
+
+Code blocks inside assistant responses now render with GitHub-Dark-Dimmed
+syntax highlighting via [Shiki](https://shiki.style). Shiki is
+~1MB (highlighter + grammars + themes) so we lazy-load it on first use
+via `client/src/components/codeChat/shikiHighlight.ts` — the plain
+`<pre>` renders instantly, then the highlighted version swaps in as
+soon as the WASM loader resolves. Bundled languages cover the stack
+this app writes (ts/tsx/js/jsx/json/bash/sql/python/go/rust/yaml/html/
+css/diff/markdown/java/kotlin/swift/ruby/php). Aliases like
+`typescript`, `yml`, and `py` are normalized via a lookup table. A
+unit test file (`shikiHighlight.test.ts`, 5 tests) locks in the
+normalizer so future language additions don't break existing
+mappings.
+
+### Message action bar (Pass 208)
+
+Every assistant message grows a hover-revealed action row with:
+
+- **Copy** — writes `msg.content` to the clipboard
+- **Export** — downloads a markdown snapshot of that single turn
+  including trace + metadata (`exportSingleMessageAsMarkdown`)
+- **Regenerate** — only shown on the last assistant message; calls
+  `regenerateLast()` which trims back to the most-recent user turn
+  and re-sends with the current model override / iterations
+
+The config bar also grows a full-conversation **Export** button that
+dumps every turn as a single markdown file (`code-chat-YYYY-MM-DD.md`)
+via `exportConversationAsMarkdown`. Both exporters render tool calls
+as collapsible `<details>` blocks so the prose stays readable on
+GitHub, Slack, or email. 9 unit tests cover title rendering, metadata,
+trace inclusion/exclusion, truncation of long arg values, and the
+single-message variants.
+
+### Keyboard shortcuts overlay + draft autosave (Pass 209)
+
+Press `?` when the input is empty (or click the keyboard icon in the
+config bar) to open a modal listing every chat shortcut and every
+slash command. Arrow up/down history, `@`, `/`, Tab, Esc, Shift+Enter —
+all documented in one place so new users can see what's possible
+without hunting through docs.
+
+Alongside the overlay, the chat input draft is now autosaved to
+`localStorage['stewardly-codechat-draft']` on every keystroke and
+cleared when the input becomes empty. Refreshing the page restores
+whatever was half-typed, matching the muscle memory of most modern
+chat apps.
+
+### Token & cost telemetry (Pass 210)
+
+`tokenEstimator.ts` provides a client-side estimator using a
+conservative `chars / 3.8` ratio (most tokenizers average ~3.8 chars
+per token for English prose, and the accuracy at our "round to the
+nearest 100 tokens" display is plenty — an exact count would require
+shipping tiktoken/anthropic-tokenizer WASM which doesn't earn its
+~500KB at this resolution). A `MODEL_PRICING` table carries rough
+$/1M in/out prices for the 8 models we actively route to, with a
+`costUSD: null` fallback for unknown models.
+
+Per-message display: `3.4kt ($0.012)` alongside the existing
+model/iterations/duration meta line. Session total: a `12kt · $0.08`
+pill next to the Code Chat title in the config bar, with a
+`n in / m out` tooltip. 16 unit tests cover the ratio math,
+priced/unpriced mixed sums, and all formatter edge cases.
+
+### Error banner with Retry (Pass 211)
+
+When the ReAct loop errors (network failure, LLM timeout, tool
+crash) the previous behavior was a single fire-and-forget toast
+that vanished after a few seconds — leaving the user with no way
+to understand what happened or recover. Pass 211 replaces that
+with a persistent `AlertTriangle` banner above the input that:
+
+- Surfaces the full error message (not truncated)
+- Offers a **Retry** button that calls `regenerateLast()` with the
+  same prompt + config (model override, iterations, write mode)
+- Offers a **Dismiss** button that clears the banner without
+  retrying
+- Auto-clears when the user sends a new prompt
+
+Combined with the message-level Regenerate button from Pass 208,
+this gives three levels of recovery: reset the last turn, retry
+a failure, or clear everything with `/clear`.
 
 ## Known limitations
 

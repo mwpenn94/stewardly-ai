@@ -14,10 +14,11 @@
  * component.
  */
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Check, Copy } from "lucide-react";
+import { highlightCode, normalizeLanguage } from "./shikiHighlight";
 
 export default function MarkdownMessage({ content }: { content: string }) {
   return (
@@ -55,7 +56,7 @@ export default function MarkdownMessage({ content }: { content: string }) {
   );
 }
 
-// ─── Code block with Copy ────────────────────────────────────────────
+// ─── Code block with Copy + Shiki highlight (Pass 207) ──────────────
 
 function CodeBlock({
   language,
@@ -65,7 +66,22 @@ function CodeBlock({
   children: ReactNode;
 }) {
   const [copied, setCopied] = useState(false);
+  const [highlightedHtml, setHighlightedHtml] = useState<string | null>(null);
   const raw = typeof children === "string" ? children : String(children);
+  const normalizedLang = normalizeLanguage(language);
+
+  // Lazy-load Shiki on mount. Shiki is ~1MB so we ship highlighting
+  // as a progressive enhancement: the plain <pre> renders immediately,
+  // then Shiki swaps in as soon as the highlighter resolves.
+  useEffect(() => {
+    let cancelled = false;
+    highlightCode(raw, language).then((html) => {
+      if (!cancelled) setHighlightedHtml(html);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [raw, language]);
 
   const onCopy = async () => {
     try {
@@ -81,7 +97,7 @@ function CodeBlock({
     <div className="not-prose my-3 rounded-lg border border-border/40 bg-muted/30 overflow-hidden">
       <div className="flex items-center justify-between px-3 py-1 border-b border-border/30 bg-muted/40">
         <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-mono">
-          {language ?? "code"}
+          {normalizedLang === "text" ? (language ?? "code") : normalizedLang}
         </span>
         <button
           type="button"
@@ -100,11 +116,18 @@ function CodeBlock({
           )}
         </button>
       </div>
-      <pre
-        className={`overflow-x-auto text-xs font-mono p-3 leading-relaxed ${language ? `language-${language}` : ""}`}
-      >
-        <code className={language ? `language-${language}` : ""}>{raw}</code>
-      </pre>
+      {highlightedHtml ? (
+        <div
+          className="shiki-container overflow-x-auto text-xs leading-relaxed [&_pre]:m-0 [&_pre]:p-3 [&_pre]:bg-transparent [&_pre]:!bg-transparent"
+          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+        />
+      ) : (
+        <pre
+          className={`overflow-x-auto text-xs font-mono p-3 leading-relaxed ${language ? `language-${language}` : ""}`}
+        >
+          <code className={language ? `language-${language}` : ""}>{raw}</code>
+        </pre>
+      )}
     </div>
   );
 }
