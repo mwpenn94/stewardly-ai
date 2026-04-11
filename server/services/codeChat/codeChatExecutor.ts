@@ -42,6 +42,7 @@ export type CodeToolName =
   | "list_directory"
   | "grep_search"
   | "run_bash"
+  | "update_todos"
   | "finish";
 
 export interface CodeToolCall {
@@ -52,6 +53,13 @@ export interface CodeToolCall {
   reason?: string;
 }
 
+export interface AgentTodoItem {
+  id: string;
+  content: string;
+  activeForm: string;
+  status: "pending" | "in_progress" | "completed";
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -59,6 +67,7 @@ export type CodeToolResult =
   | { kind: "list"; result: { path: string; entries: ListDirEntry[] } }
   | { kind: "grep"; result: { matches: Array<{ file: string; line: number; text: string }>; truncated: boolean } }
   | { kind: "bash"; result: BashResult }
+  | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -164,6 +173,34 @@ export async function dispatchCodeTool(
       case "run_bash": {
         const r = await runBash(sandbox, String(call.args.command ?? ""));
         return { kind: "bash", result: r };
+      }
+      case "update_todos": {
+        // Validate + normalize the todos array. No file system side
+        // effect — this tool exists so the agent can stream progress
+        // updates to the UI without modifying state outside the loop.
+        const raw = call.args.todos;
+        if (!Array.isArray(raw)) {
+          return { kind: "error", error: "todos must be an array", code: "BAD_ARGS" };
+        }
+        const todos: AgentTodoItem[] = [];
+        for (let i = 0; i < raw.length; i++) {
+          const entry = raw[i];
+          if (!entry || typeof entry !== "object") continue;
+          const anyEntry = entry as Record<string, unknown>;
+          const content = typeof anyEntry.content === "string" ? anyEntry.content.trim() : "";
+          if (!content) continue;
+          const activeForm =
+            typeof anyEntry.activeForm === "string" && anyEntry.activeForm.trim()
+              ? anyEntry.activeForm.trim()
+              : content;
+          const rawStatus = typeof anyEntry.status === "string" ? anyEntry.status : "pending";
+          const status: AgentTodoItem["status"] =
+            rawStatus === "in_progress" || rawStatus === "completed" ? rawStatus : "pending";
+          const id = typeof anyEntry.id === "string" && anyEntry.id ? anyEntry.id : `todo-${i + 1}`;
+          todos.push({ id, content, activeForm, status });
+          if (todos.length >= 50) break;
+        }
+        return { kind: "todos", result: { todos, count: todos.length } };
       }
       case "finish": {
         return {
@@ -370,6 +407,30 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
       type: "object",
       properties: { command: { type: "string" } },
       required: ["command"],
+    },
+  },
+  {
+    name: "update_todos",
+    description:
+      "Update the live todo list for a multi-step task. Send the full list every time — items not in the new list are dropped. Each item has {id, content, activeForm, status}. Status is one of pending|in_progress|completed. Use activeForm as the present-continuous label ('Reading auth.ts') for the in-progress status display. Use this aggressively on any task with 3+ steps so the user sees progress.",
+    parameters: {
+      type: "object",
+      properties: {
+        todos: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              content: { type: "string", description: "Imperative form" },
+              activeForm: { type: "string", description: "Present-continuous form" },
+              status: { type: "string", enum: ["pending", "in_progress", "completed"] },
+            },
+            required: ["content", "activeForm", "status"],
+          },
+        },
+      },
+      required: ["todos"],
     },
   },
   {

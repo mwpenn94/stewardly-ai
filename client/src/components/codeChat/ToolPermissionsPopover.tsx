@@ -60,6 +60,12 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
     description: "Shell command with 30s timeout (admin + write mode)",
     mutation: true,
   },
+  {
+    id: "update_todos",
+    label: "Update todos",
+    description: "Emit live progress updates (Pass 237, read-only)",
+    mutation: false,
+  },
 ];
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
@@ -69,6 +75,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "write_file",
   "edit_file",
   "run_bash",
+  "update_todos",
 ];
 
 export default function ToolPermissionsPopover({

@@ -270,6 +270,67 @@ describe("Round B1 — codeChatExecutor", () => {
       );
       expect(r.kind).toBe("error");
     });
+
+    // Pass 237: update_todos tool
+    it("update_todos normalizes + returns a todos kind", async () => {
+      const r = await dispatchCodeTool(
+        {
+          name: "update_todos",
+          args: {
+            todos: [
+              { id: "a", content: "Read file", activeForm: "Reading file", status: "in_progress" },
+              { content: "Run tests", activeForm: "Running tests", status: "pending" },
+              { content: "" }, // dropped
+            ],
+          },
+        },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("todos");
+      if (r.kind === "todos") {
+        expect(r.result.count).toBe(2);
+        expect(r.result.todos[0].id).toBe("a");
+        expect(r.result.todos[0].status).toBe("in_progress");
+        expect(r.result.todos[1].id).toBe("todo-2");
+      }
+    });
+
+    it("update_todos rejects non-array payload", async () => {
+      const r = await dispatchCodeTool(
+        { name: "update_todos", args: { todos: "nope" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("update_todos caps at 50 items", async () => {
+      const bigList = Array.from({ length: 60 }, (_, i) => ({
+        content: `Item ${i}`,
+        activeForm: `Doing ${i}`,
+        status: "pending",
+      }));
+      const r = await dispatchCodeTool(
+        { name: "update_todos", args: { todos: bigList } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("todos");
+      if (r.kind === "todos") expect(r.result.count).toBe(50);
+    });
+
+    it("update_todos defaults invalid status to pending", async () => {
+      const r = await dispatchCodeTool(
+        {
+          name: "update_todos",
+          args: {
+            todos: [{ content: "A", activeForm: "Doing A", status: "nope" }],
+          },
+        },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("todos");
+      if (r.kind === "todos") expect(r.result.todos[0].status).toBe("pending");
+    });
   });
 
   describe("executeCodeChat multi-turn", () => {

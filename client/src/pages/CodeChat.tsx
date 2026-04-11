@@ -114,6 +114,7 @@ import {
   snapshotPlan,
   restorePlan,
 } from "@/components/codeChat/planMode";
+import AgentTodoPanel from "@/components/codeChat/AgentTodoPanel";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -360,7 +361,7 @@ function CodeChatInterface() {
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const { messages, isExecuting, currentTools, error, sendMessage, abort, clearHistory, regenerateLast, loadMessages } = useCodeChatStream();
+  const { messages, isExecuting, currentTools, currentTodos, error, sendMessage, abort, clearHistory, regenerateLast, loadMessages } = useCodeChatStream();
 
   // Pass 212: saved sessions library
   const [sessionsOpen, setSessionsOpen] = useState(false);
@@ -1002,9 +1003,9 @@ function CodeChatInterface() {
           onClick={() => setToolsOpen(true)}
           className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Tool permissions"
-          title={`Tool permissions (${enabledTools.length}/6 enabled)`}
+          title={`Tool permissions (${enabledTools.length}/7 enabled)`}
         >
-          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/6
+          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/7
         </button>
         <button
           onClick={() => setSessionsOpen(true)}
@@ -1218,6 +1219,10 @@ function CodeChatInterface() {
               </div>
             ) : (
               <div className="space-y-2 max-w-full">
+                {/* Pass 237: captured agent todo list */}
+                {msg.agentTodos && msg.agentTodos.length > 0 && (
+                  <AgentTodoPanel todos={msg.agentTodos} variant="card" />
+                )}
                 {/* Tool events from streaming */}
                 {msg.toolEvents && msg.toolEvents.length > 0 && (
                   <TraceView traces={msg.toolEvents.map(ev => ({
@@ -1418,6 +1423,11 @@ function CodeChatInterface() {
           </div>
           );
         })}
+
+        {/* Pass 237: live agent todo summary while executing */}
+        {isExecuting && currentTodos.length > 0 && (
+          <AgentTodoPanel todos={currentTodos} variant="live" />
+        )}
 
         {/* Live streaming tool events */}
         {isExecuting && currentTools.length > 0 && (
