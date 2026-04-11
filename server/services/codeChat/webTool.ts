@@ -18,9 +18,11 @@
 
 import { WebNavigator, type NavigationConfig } from "../../shared/automation/webNavigator";
 import { RobotsChecker } from "../../shared/automation/robotsPolicy";
+import { ResponseCache } from "../../shared/automation/responseCache";
 
 let _navigator: WebNavigator | null = null;
 let _robotsChecker: RobotsChecker | null = null;
+let _cache: ResponseCache | null = null;
 
 function parseList(v: string | undefined): string[] | undefined {
   if (!v) return undefined;
@@ -40,6 +42,8 @@ function parseInt0(v: string | undefined, fallback: number): number {
 export function buildNavigatorConfigFromEnv(env: NodeJS.ProcessEnv = process.env): NavigationConfig {
   const honorRobots = env.WEB_TOOL_HONOR_ROBOTS !== "false"; // default: true
   const checker = honorRobots ? getOrCreateRobotsChecker() : undefined;
+  const cacheEnabled = env.WEB_TOOL_CACHE !== "false"; // default: true
+  const cache = cacheEnabled ? getOrCreateCache(env) : undefined;
   return {
     allowHosts: parseList(env.WEB_TOOL_ALLOW_HOSTS),
     denyHosts: parseList(env.WEB_TOOL_DENY_HOSTS),
@@ -47,6 +51,7 @@ export function buildNavigatorConfigFromEnv(env: NodeJS.ProcessEnv = process.env
     maxBytes: parseInt0(env.WEB_TOOL_MAX_BYTES, 2_000_000),
     robotsChecker: checker,
     honorRobots,
+    cache,
   };
 }
 
@@ -55,6 +60,21 @@ function getOrCreateRobotsChecker(): RobotsChecker {
     _robotsChecker = new RobotsChecker();
   }
   return _robotsChecker;
+}
+
+function getOrCreateCache(env: NodeJS.ProcessEnv): ResponseCache {
+  if (!_cache) {
+    _cache = new ResponseCache({
+      maxEntries: parseInt0(env.WEB_TOOL_CACHE_MAX_ENTRIES, 256),
+      defaultMaxAgeMs: parseInt0(env.WEB_TOOL_CACHE_MAX_AGE_MS, 5 * 60 * 1000),
+      defaultStaleMs: parseInt0(env.WEB_TOOL_CACHE_STALE_MS, 10 * 60 * 1000),
+    });
+  }
+  return _cache;
+}
+
+export function getWebResponseCache(): ResponseCache | null {
+  return _cache;
 }
 
 /**
@@ -75,4 +95,5 @@ export function __setWebNavigator(nav: WebNavigator | null): void {
 export function __resetWebNavigator(): void {
   _navigator = null;
   _robotsChecker = null;
+  _cache = null;
 }

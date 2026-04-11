@@ -366,4 +366,82 @@ describe("WebNavigator", () => {
     const r = await nav.fetchPage("https://ex.com/public");
     expect(r.status).toBe(200);
   });
+
+  it("uses a ResponseCache: fresh hit skips network", async () => {
+    const { ResponseCache } = await import("./responseCache");
+    let fetches = 0;
+    const adapter: PageFetcher = {
+      async fetch(url) {
+        fetches++;
+        const body = "<html><title>Cached</title></html>";
+        return {
+          status: 200,
+          finalUrl: url,
+          headers: { "content-type": "text/html" },
+          body,
+          bytes: body.length,
+          truncated: false,
+          redirects: 0,
+        };
+      },
+    };
+    const cache = new ResponseCache({ defaultMaxAgeMs: 60_000, defaultStaleMs: 60_000 });
+    const nav = new WebNavigator({ adapter, rateLimitPerMin: 100, cache });
+    const r1 = await nav.fetchPage("https://ex.com/");
+    const r2 = await nav.fetchPage("https://ex.com/");
+    expect(fetches).toBe(1);
+    expect(r1.body).toBe(r2.body);
+    expect(cache.getStats().hitFresh).toBeGreaterThanOrEqual(1);
+  });
+
+  it("emits telemetry events across lifecycle", async () => {
+    const events: Array<{ type: string }> = [];
+    const nav = new WebNavigator({
+      adapter: stubAdapter({}),
+      rateLimitPerMin: 100,
+      telemetry: {
+        onEvent(e) {
+          events.push(e);
+        },
+      },
+    });
+    await nav.fetchPage("https://ex.com/");
+    const types = events.map((e) => e.type);
+    expect(types).toContain("request.start");
+    expect(types).toContain("request.network");
+  });
+
+  it("emits request.blocked when robots denies", async () => {
+    const events: Array<{ type: string }> = [];
+    const nav = new WebNavigator({
+      adapter: stubAdapter({}),
+      rateLimitPerMin: 100,
+      robotsChecker: {
+        async check() {
+          return { allowed: false, matchedRule: { type: "disallow", path: "/" } };
+        },
+      },
+      telemetry: {
+        onEvent(e) {
+          events.push(e);
+        },
+      },
+    });
+    await expect(nav.fetchPage("https://ex.com/private")).rejects.toThrow();
+    const blocked = events.find((e) => e.type === "request.blocked");
+    expect(blocked).toBeDefined();
+  });
+
+  it("swallows telemetry sink errors", async () => {
+    const nav = new WebNavigator({
+      adapter: stubAdapter({}),
+      rateLimitPerMin: 100,
+      telemetry: {
+        onEvent() {
+          throw new Error("oops");
+        },
+      },
+    });
+    await expect(nav.fetchPage("https://ex.com/")).resolves.toBeDefined();
+  });
 });

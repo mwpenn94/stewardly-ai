@@ -96,7 +96,35 @@ export interface NavigationConfig {
   robotsChecker?: { check: (url: string, userAgent: string) => Promise<{ allowed: boolean; matchedRule: { path: string; type: string } | null }> };
   /** Honor robots.txt decisions. Defaults to `true` when a checker is provided. */
   honorRobots?: boolean;
+  /** Optional in-memory response cache (ETag + stale-while-revalidate). */
+  cache?: {
+    lookup(url: string): { state: "miss" | "hit-fresh" | "hit-stale"; entry?: { body: string; bytes: number; headers: Record<string, string>; status: number; finalUrl: string } };
+    buildRevalidationHeaders(url: string): Record<string, string>;
+    absorbResponse(
+      url: string,
+      res: { status: number; finalUrl: string; headers: Record<string, string>; body: string; bytes: number },
+    ): unknown;
+    invalidate(url: string): boolean;
+  };
+  /** Optional step-level telemetry sink. Invoked synchronously before and after every fetch. */
+  telemetry?: NavigationTelemetrySink;
 }
+
+/**
+ * Per-step telemetry hook. Each event carries a rich payload so
+ * downstream observability (OTel, server logs, SSE) can render it.
+ * Implementations must be fast — events fire inline with the fetch.
+ */
+export interface NavigationTelemetrySink {
+  onEvent(event: NavigationTelemetryEvent): void;
+}
+
+export type NavigationTelemetryEvent =
+  | { type: "request.start"; url: string; host: string; at: number; cacheState?: "miss" | "hit-fresh" | "hit-stale"; revalidating?: boolean }
+  | { type: "request.blocked"; url: string; host: string; reason: "BAD_URL" | "BLOCKED_HOST" | "RATE_LIMITED" | "BLOCKED_BY_ROBOTS"; at: number; detail?: string }
+  | { type: "request.cached"; url: string; host: string; cacheState: "hit-fresh" | "hit-stale"; bytes: number; at: number }
+  | { type: "request.network"; url: string; host: string; status: number; bytes: number; fetchMs: number; at: number; revalidated: boolean }
+  | { type: "request.error"; url: string; host: string; code: string; message: string; at: number };
 
 /**
  * Pluggable page-fetcher adapter. Default implementation wraps
@@ -537,7 +565,14 @@ export class WebNavigator {
   private readonly cfg: Required<
     Omit<
       NavigationConfig,
-      "allowHosts" | "denyHosts" | "adapter" | "now" | "robotsChecker" | "honorRobots"
+      | "allowHosts"
+      | "denyHosts"
+      | "adapter"
+      | "now"
+      | "robotsChecker"
+      | "honorRobots"
+      | "cache"
+      | "telemetry"
     >
   > & {
     allowHosts?: string[];
@@ -548,6 +583,8 @@ export class WebNavigator {
   private readonly now: () => number;
   private readonly robotsChecker: NonNullable<NavigationConfig["robotsChecker"]> | null;
   private readonly honorRobots: boolean;
+  private readonly cache: NonNullable<NavigationConfig["cache"]> | null;
+  private readonly telemetry: NavigationTelemetrySink | null;
   private history: Array<{ url: string; finalUrl: string; status: number; at: number }> = [];
 
   constructor(cfg: NavigationConfig = {}) {
@@ -565,6 +602,18 @@ export class WebNavigator {
     this.rate = createRateLimiter(this.cfg.rateLimitPerMin);
     this.robotsChecker = cfg.robotsChecker ?? null;
     this.honorRobots = cfg.honorRobots ?? Boolean(cfg.robotsChecker);
+    this.cache = cfg.cache ?? null;
+    this.telemetry = cfg.telemetry ?? null;
+  }
+
+  private emit(event: NavigationTelemetryEvent): void {
+    if (this.telemetry) {
+      try {
+        this.telemetry.onEvent(event);
+      } catch {
+        /* never let a telemetry sink throw break navigation */
+      }
+    }
   }
 
   getHistory(): ReadonlyArray<{ url: string; finalUrl: string; status: number; at: number }> {
@@ -576,17 +625,78 @@ export class WebNavigator {
   }
 
   async fetchPage(url: string): Promise<RawFetchResult> {
-    const validated = validateUrl(url, {
-      allowHosts: this.cfg.allowHosts,
-      denyHosts: this.cfg.denyHosts,
-    });
+    let validated: URL;
+    try {
+      validated = validateUrl(url, {
+        allowHosts: this.cfg.allowHosts,
+        denyHosts: this.cfg.denyHosts,
+      });
+    } catch (err) {
+      if (err instanceof NavigationError) {
+        this.emit({
+          type: "request.blocked",
+          url,
+          host: "",
+          reason: err.code === "BAD_URL" || err.code === "BLOCKED_HOST" ? err.code : "BLOCKED_HOST",
+          at: this.now(),
+          detail: err.message,
+        });
+      }
+      throw err;
+    }
     const host = validated.hostname.toLowerCase();
+
+    // Cache lookup — fresh hit short-circuits every downstream check.
+    const cacheLookup = this.cache?.lookup(validated.toString());
+    if (cacheLookup?.state === "hit-fresh" && cacheLookup.entry) {
+      const entry = cacheLookup.entry;
+      this.emit({
+        type: "request.cached",
+        url,
+        host,
+        cacheState: "hit-fresh",
+        bytes: entry.bytes,
+        at: this.now(),
+      });
+      const cached: RawFetchResult = {
+        url,
+        finalUrl: entry.finalUrl,
+        status: entry.status,
+        headers: entry.headers,
+        contentType: entry.headers["content-type"] ?? "",
+        bytes: entry.bytes,
+        body: entry.body,
+        redirects: 0,
+        truncated: false,
+        fetchMs: 0,
+      };
+      this.history.push({ url, finalUrl: cached.finalUrl, status: cached.status, at: this.now() });
+      if (this.history.length > 500) this.history.shift();
+      return cached;
+    }
+
+    this.emit({
+      type: "request.start",
+      url,
+      host,
+      at: this.now(),
+      cacheState: cacheLookup?.state,
+      revalidating: cacheLookup?.state === "hit-stale",
+    });
 
     // Robots.txt gate (if configured). We check BEFORE rate-limiting so a
     // robots-blocked URL doesn't eat a token bucket slot.
     if (this.honorRobots && this.robotsChecker) {
       const decision = await this.robotsChecker.check(validated.toString(), this.cfg.userAgent);
       if (!decision.allowed) {
+        this.emit({
+          type: "request.blocked",
+          url,
+          host,
+          reason: "BLOCKED_BY_ROBOTS",
+          at: this.now(),
+          detail: `${decision.matchedRule?.type ?? "?"} ${decision.matchedRule?.path ?? "?"}`,
+        });
         throw new NavigationError(
           `blocked by robots.txt: ${host}${validated.pathname} (matched ${decision.matchedRule?.type ?? "?"} ${decision.matchedRule?.path ?? "?"})`,
           "BLOCKED_BY_ROBOTS",
@@ -595,22 +705,84 @@ export class WebNavigator {
     }
 
     if (!tryConsume(this.rate, host, this.now())) {
+      this.emit({
+        type: "request.blocked",
+        url,
+        host,
+        reason: "RATE_LIMITED",
+        at: this.now(),
+      });
       throw new NavigationError(
         `rate limit exceeded for host: ${host} (${this.cfg.rateLimitPerMin}/min)`,
         "RATE_LIMITED",
       );
     }
 
+    // Merge revalidation headers when we have a stale entry.
+    const extraHeaders = cacheLookup?.state === "hit-stale" && this.cache
+      ? this.cache.buildRevalidationHeaders(validated.toString())
+      : {};
+
     const started = this.now();
-    const result = await this.adapter.fetch(validated.toString(), {
-      headers: {
-        "User-Agent": this.cfg.userAgent,
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-      timeoutMs: this.cfg.timeoutMs,
-    });
+    let result;
+    try {
+      result = await this.adapter.fetch(validated.toString(), {
+        headers: {
+          "User-Agent": this.cfg.userAgent,
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+          ...extraHeaders,
+        },
+        timeoutMs: this.cfg.timeoutMs,
+      });
+    } catch (err) {
+      this.emit({
+        type: "request.error",
+        url,
+        host,
+        code: err instanceof NavigationError ? err.code : "FETCH_FAILED",
+        message: err instanceof Error ? err.message : String(err),
+        at: this.now(),
+      });
+      throw err;
+    }
     const fetchMs = this.now() - started;
+
+    // 304 Not Modified — serve the stale cache entry.
+    if (result.status === 304 && cacheLookup?.state === "hit-stale" && cacheLookup.entry) {
+      this.cache?.absorbResponse(validated.toString(), {
+        status: 304,
+        finalUrl: cacheLookup.entry.finalUrl,
+        headers: cacheLookup.entry.headers,
+        body: cacheLookup.entry.body,
+        bytes: cacheLookup.entry.bytes,
+      });
+      this.emit({
+        type: "request.network",
+        url,
+        host,
+        status: 304,
+        bytes: 0,
+        fetchMs,
+        at: this.now(),
+        revalidated: true,
+      });
+      const cached: RawFetchResult = {
+        url,
+        finalUrl: cacheLookup.entry.finalUrl,
+        status: 200,
+        headers: cacheLookup.entry.headers,
+        contentType: cacheLookup.entry.headers["content-type"] ?? "",
+        bytes: cacheLookup.entry.bytes,
+        body: cacheLookup.entry.body,
+        redirects: result.redirects,
+        truncated: false,
+        fetchMs,
+      };
+      this.history.push({ url, finalUrl: cached.finalUrl, status: 304, at: this.now() });
+      if (this.history.length > 500) this.history.shift();
+      return cached;
+    }
 
     let body = result.body;
     let bytes = result.bytes;
@@ -637,6 +809,28 @@ export class WebNavigator {
       truncated,
       fetchMs,
     };
+
+    // Store in cache (absorbResponse handles no-store / non-2xx / etc.)
+    if (this.cache && !truncated) {
+      this.cache.absorbResponse(validated.toString(), {
+        status: result.status,
+        finalUrl: result.finalUrl,
+        headers: result.headers,
+        body,
+        bytes,
+      });
+    }
+
+    this.emit({
+      type: "request.network",
+      url,
+      host,
+      status: result.status,
+      bytes,
+      fetchMs,
+      at: this.now(),
+      revalidated: cacheLookup?.state === "hit-stale",
+    });
 
     this.history.push({ url, finalUrl: result.finalUrl, status: result.status, at: this.now() });
     if (this.history.length > 500) this.history.shift();
