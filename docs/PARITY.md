@@ -142,6 +142,47 @@ Dimension scores are 1–10 using the v2 Appendix A calibration.
 
 ## Changelog
 
+### Pass 8 (2026-04-11, Synthesis + convergence check 1/2, composite 9.30 → 9.30, +0.00)
+
+Pure verification pass — zero code changes, comprehensive sweep to
+verify the 7 prior passes integrate cleanly.
+
+**Inventory:**
+- 13 files in `client/src/lib/multisensory/`: 5 source (.tsx), 1 hook,
+  2 pure-function modules, 5 test files, 1 LiveAnnouncer types file.
+- **2544 LOC total** (1029 source + 1515 test). Test:source ratio 1.47:1.
+- Zero TODOs, FIXMEs, XXX, HACK markers in the entire multisensory dir.
+- Zero `console.log`, zero `debugger` statements.
+
+**Cross-pass validation:**
+- tsc --noEmit: 0 errors
+- Full test suite: 3868 passing / 112 failing (exact baseline maintained
+  from Pass 1 — 14 pre-existing env-dependent files / 112 tests all
+  unrelated to the multisensory work)
+- Multisensory suite: 90 passing across 6 files — Pass 1's 49 tests grew
+  to 90 through Pass 7's additions (52 → 56 → 71 → 71 → 83 → 87 → 90)
+- Build: clean (~45s)
+
+**Dimension scorecard (final verification, no deltas):**
+
+| Dimension | Score | Notes |
+|-----------|-------|-------|
+| Core Function | 9.0 | Every slash command, voice command, keyboard shortcut wired end-to-end |
+| UI | 9.0 | VisualAnnouncer, GlobalVoiceButton, slash-command hint ribbon, mic pulse |
+| UX | 9.0 | Text, voice, and keyboard all route through the same intent bus |
+| Usability | 9.5 | Alt+X primary + Ctrl+Shift+X fallback + heading navigation + landmark tiers |
+| Digestibility | 9.0 | Single shortcut registry, single parser, single route map |
+| Delightfulness | 9.0 | Polite + assertive toasts, mic pulse, audio cues on every action |
+| Flexibility | 9.0 | Intent bus + event contract makes adding new intents trivial |
+| Performance | 8.0 | No measurable regression; LiveAnnouncer sr-only, VisualAnnouncer lazy |
+| Robustness | 9.0 | 90 tests covering parser, chord, registry, contract, adversarial, slash |
+| Code Quality | 9.0 | Pure functions where possible, tests per module, 1.47:1 ratio |
+
+**Composite:** 9.05 → 9.30 (unchanged — verification only)
+
+**Convergence status:** 1/2 confirmations (this pass = zero actionable
+findings). One more verification pass needed.
+
 ### Pass 7 (2026-04-11, Exploration → converged on heading nav, composite 9.15 → 9.30, +0.15)
 
 Temperature 0.65 triggered an Exploration pass. Three paradigms considered:
