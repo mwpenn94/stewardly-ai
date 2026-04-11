@@ -1,4 +1,4 @@
-# Code Chat Cloud Parity (Passes 201-211)
+# Code Chat Cloud Parity (Passes 201-215)
 
 Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 
@@ -33,6 +33,15 @@ Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 - **Error banner with Retry** — failed ReAct loops leave a sticky
   banner with Retry / Dismiss instead of a fire-and-forget toast
   (Pass 211)
+- **Saved sessions library** — name/save/rename/delete conversation
+  snapshots with localStorage persistence (Pass 212)
+- **Per-tool permission toggles** — fine-grained allowlist of the
+  6 Code Chat tools, intersected server-side with role gating
+  (Pass 213)
+- **Prompt template library** — 5 built-in templates + user-created
+  macros with save/search/insert (Pass 214)
+- **Hierarchical file tree + codebase stats** — collapsible workspace
+  tree with top-language pills in the Files tab (Pass 215)
 
 This document walks through the architecture, the tRPC surface, the
 safety model, and the UI. For setup (tokens, connection flow) see
@@ -411,6 +420,96 @@ with a persistent `AlertTriangle` banner above the input that:
 Combined with the message-level Regenerate button from Pass 208,
 this gives three levels of recovery: reset the last turn, retry
 a failure, or clear everything with `/clear`.
+
+## Session management & productivity (Passes 212-215)
+
+### Saved sessions library (Pass 212)
+
+The **Sessions** button in the config bar opens a modal listing every
+saved conversation snapshot. Each snapshot stores a name, the full
+message array, and created/updated timestamps. Users can:
+
+- Save the current conversation with a custom name (or accept the
+  auto-generated name derived from the first user prompt)
+- Click any saved session to restore its messages in place via
+  `loadMessages()` on the stream hook
+- Rename inline with a checkmark/cancel toggle
+- Delete (with confirm)
+- Export the entire library as a JSON file for backup/transfer
+
+Storage is localStorage-only by design — this is a developer tool,
+not a compliance-relevant audit surface. The `sessionLibrary.ts`
+module is pure functions + a thin localStorage adapter so the same
+API shape could migrate to a `code_chat_sessions` drizzle table if
+cross-device sync becomes a requirement. 21 unit tests cover the
+parser (invalid JSON, wrong version, malformed entries), upsert
+(dedup + sort), delete (idempotent), rename (trim + reject empty),
+auto-name (truncation + multi-line handling), and the 50-session
+overflow trim.
+
+### Per-tool permission toggles (Pass 213)
+
+Before Pass 213 the only tool-level gate was "all or nothing via
+write mode". Pass 213 adds a fine-grained allowlist — the
+**ShieldCheck** button in the config bar opens a modal with a
+checkbox for each of the 6 tools (read_file, list_directory,
+grep_search, write_file, edit_file, run_bash). Defaults to
+"everything on"; users can flip individual tools off or use the
+"Read-only preset" quick action.
+
+The `enabledTools: string[]` array flows through `useCodeChatStream`
+into the SSE POST body, and the server-side `codeChatStream.ts`
+endpoint intersects it with the role-based allowlist:
+
+```ts
+const toolDefs = CODE_CHAT_TOOL_DEFINITIONS
+  .filter((t) => canMutate || READ_ONLY_TOOLS.has(t.name))     // role gate
+  .filter((t) => (userAllowed ? userAllowed.has(t.name) : true)); // UI gate
+```
+
+This means a non-admin sending `enabledTools: ["run_bash"]` still
+gets bash stripped — the role gate runs first.
+
+### Prompt template library (Pass 214)
+
+The **Templates** button in the config bar opens a popover with:
+
+- 5 built-in templates (review recent changes, refactor a file,
+  explain a module, write tests, debug an error) — each uses
+  `@{path}` placeholders so users get a head start on how to
+  reference files
+- User-created templates with save/search/delete
+- A "Save current" shortcut that pre-fills the create form with
+  the current input
+- Search box that filters on both name and body
+
+Built-ins are flagged `builtin: true` and the parser explicitly
+refuses to let storage override them — a future schema change to
+a built-in is honored regardless of what's in localStorage.
+18 unit tests cover the parser, add/delete, filter, and the
+"built-ins can't be overridden" security property.
+
+### Hierarchical file tree + codebase stats (Pass 215)
+
+The Files tab Workspace card now has a **List ↔ Tree** toggle. Tree
+mode renders:
+
+- A stats strip: total files, total dirs, top-5 language pills with
+  counts + percentages
+- A collapsible tree rooted at the workspace root. Click folders to
+  expand/collapse, click files to open in the adjacent viewer.
+
+`buildFileTree` is a pure function that converts a flat POSIX path
+list into a sorted nested structure (directories before files at
+each level). `computeStats` computes language breakdown by extension
+and top-directory frequency. Both are fully unit-tested (13 tests
+covering nesting, sorting, dedup, extensionless files, and the topN
+cap).
+
+The server-side `codeChat.listWorkspaceFiles` tRPC query grew an
+`all: true` option that bypasses fuzzy filtering and returns the
+full 5000-file cap so the tree view has the whole workspace in one
+fetch. Indexing is cached for 60s so tab switching stays cheap.
 
 ## Known limitations
 

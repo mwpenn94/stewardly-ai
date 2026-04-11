@@ -281,12 +281,18 @@ export const codeChatRouter = router({
       z
         .object({
           query: z.string().max(200).optional(),
-          limit: z.number().min(1).max(50).optional(),
+          limit: z.number().min(1).max(5000).optional(),
+          /** Pass 215: bypass fuzzy filter and return the full file list */
+          all: z.boolean().optional(),
         })
         .optional(),
     )
     .query(async ({ input }) => {
       const files = await getWorkspaceFileIndex(WORKSPACE_ROOT);
+      if (input?.all) {
+        const limit = Math.min(input?.limit ?? 5000, files.length);
+        return { files: files.slice(0, limit), total: files.length };
+      }
       const filtered = fuzzyFilterFiles(
         files,
         input?.query ?? "",

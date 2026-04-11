@@ -25,7 +25,8 @@ import {
   CheckCircle2, AlertTriangle, Github, ExternalLink,
   Lock, Unlock, Terminal, Send, ChevronDown, ChevronRight,
   Activity, Save, Pencil, X, SplitSquareHorizontal,
-  Copy, RotateCw, Download, Keyboard,
+  Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
+  LibraryBig,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -35,6 +36,12 @@ import SlashCommandPopover from "@/components/codeChat/SlashCommandPopover";
 import MarkdownMessage from "@/components/codeChat/MarkdownMessage";
 import FileMentionPopover from "@/components/codeChat/FileMentionPopover";
 import KeyboardShortcutsOverlay from "@/components/codeChat/KeyboardShortcutsOverlay";
+import SessionsLibraryPopover from "@/components/codeChat/SessionsLibraryPopover";
+import ToolPermissionsPopover, {
+  DEFAULT_ENABLED_TOOLS,
+} from "@/components/codeChat/ToolPermissionsPopover";
+import PromptTemplatesPopover from "@/components/codeChat/PromptTemplatesPopover";
+import FileTreePanel from "@/components/codeChat/FileTreePanel";
 import {
   exportConversationAsMarkdown,
   exportSingleMessageAsMarkdown,
@@ -231,7 +238,20 @@ function CodeChatInterface() {
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const { messages, isExecuting, currentTools, error, sendMessage, abort, clearHistory, regenerateLast } = useCodeChatStream();
+  const { messages, isExecuting, currentTools, error, sendMessage, abort, clearHistory, regenerateLast, loadMessages } = useCodeChatStream();
+
+  // Pass 212: saved sessions library
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+  // Pass 213: per-tool permissions
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [enabledTools, setEnabledTools] = useState<string[]>(
+    DEFAULT_ENABLED_TOOLS,
+  );
+
+  // Pass 214: prompt template library
+  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   // Derive slash-command suggestions from the current input
   const slashSuggestions: SlashCommand[] = useMemo(() => {
@@ -347,7 +367,7 @@ function CodeChatInterface() {
     // sending a chat message (unless the handler returns a rewrite)
     if (text.startsWith("/")) {
       const result = await tryRunSlashCommand(text, {
-        clear: clearHistory,
+        clear: () => { clearHistory(); setCurrentSessionId(null); },
         cancel: abort,
         setInput,
         setAllowMutations,
@@ -389,6 +409,7 @@ function CodeChatInterface() {
       allowMutations: isAdmin && allowMutations,
       maxIterations,
       model: modelOverride,
+      enabledTools,
     });
     inputRef.current?.focus();
   }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride]);
@@ -508,6 +529,30 @@ function CodeChatInterface() {
         >
           {[1, 3, 5, 7, 10].map(n => <option key={n} value={n}>{n} steps</option>)}
         </select>
+        <button
+          onClick={() => setTemplatesOpen(true)}
+          className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Prompt templates"
+          title="Prompt templates"
+        >
+          <LibraryBig className="w-3 h-3" /> Templates
+        </button>
+        <button
+          onClick={() => setToolsOpen(true)}
+          className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Tool permissions"
+          title={`Tool permissions (${enabledTools.length}/6 enabled)`}
+        >
+          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/6
+        </button>
+        <button
+          onClick={() => setSessionsOpen(true)}
+          className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Saved sessions"
+          title="Saved sessions"
+        >
+          <BookMarked className="w-3 h-3" /> Sessions
+        </button>
         <button
           onClick={() => setShortcutsOpen(true)}
           className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
@@ -661,6 +706,7 @@ function CodeChatInterface() {
                             allowMutations: isAdmin && allowMutations,
                             maxIterations,
                             model: modelOverride,
+                            enabledTools,
                           });
                           if (!ok) toast.error("Nothing to regenerate");
                         }}
@@ -706,6 +752,7 @@ function CodeChatInterface() {
                   allowMutations: isAdmin && allowMutations,
                   maxIterations,
                   model: modelOverride,
+                  enabledTools,
                 });
                 if (ok) setLastErrorBanner(null);
                 else toast.info("No previous prompt to retry");
@@ -801,6 +848,34 @@ function CodeChatInterface() {
         open={shortcutsOpen}
         onClose={() => setShortcutsOpen(false)}
       />
+      <SessionsLibraryPopover
+        open={sessionsOpen}
+        onClose={() => setSessionsOpen(false)}
+        currentMessages={messages}
+        currentSessionId={currentSessionId}
+        onLoadSession={(snap) => {
+          loadMessages(snap.messages);
+          setCurrentSessionId(snap.id);
+          setSessionsOpen(false);
+        }}
+        onSaved={(id) => setCurrentSessionId(id)}
+      />
+      <ToolPermissionsPopover
+        open={toolsOpen}
+        onClose={() => setToolsOpen(false)}
+        enabled={enabledTools}
+        onChange={setEnabledTools}
+        canMutate={isAdmin && allowMutations}
+      />
+      <PromptTemplatesPopover
+        open={templatesOpen}
+        onClose={() => setTemplatesOpen(false)}
+        currentInput={input}
+        onInsert={(body) => {
+          setInput(body);
+          inputRef.current?.focus();
+        }}
+      />
     </div>
   );
 }
@@ -877,6 +952,7 @@ function FileBrowser() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const [pathInput, setPathInput] = useState(".");
+  const [viewMode, setViewMode] = useState<"list" | "tree">("list");
   const dispatch = trpc.codeChat.dispatch.useMutation();
   const [listing, setListing] = useState<{
     path: string;
@@ -943,11 +1019,35 @@ function FileBrowser() {
     <div className="grid md:grid-cols-2 gap-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <FolderOpen className="h-4 w-4" /> Workspace
+          <CardTitle className="text-base flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" /> Workspace
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant={viewMode === "list" ? "default" : "outline"}
+                onClick={() => setViewMode("list")}
+                className="h-6 text-[10px]"
+              >
+                List
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === "tree" ? "default" : "outline"}
+                onClick={() => setViewMode("tree")}
+                className="h-6 text-[10px]"
+              >
+                Tree
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {viewMode === "tree" ? (
+            <FileTreePanel onFileClick={(path) => onRead(path)} />
+          ) : (
+            <>
           <div className="flex gap-2">
             <Input
               value={pathInput}
@@ -987,6 +1087,8 @@ function FileBrowser() {
                 </tbody>
               </table>
             </div>
+          )}
+            </>
           )}
         </CardContent>
       </Card>

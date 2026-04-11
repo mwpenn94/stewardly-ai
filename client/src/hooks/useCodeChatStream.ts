@@ -34,6 +34,8 @@ interface StreamConfig {
   model?: string;
   allowMutations?: boolean;
   maxIterations?: number;
+  /** Pass 213: per-tool allowlist, e.g. ["read_file", "grep_search"] */
+  enabledTools?: string[];
 }
 
 export function useCodeChatStream() {
@@ -70,6 +72,7 @@ export function useCodeChatStream() {
           model: config.model,
           allowMutations: config.allowMutations ?? false,
           maxIterations: config.maxIterations ?? 5,
+          enabledTools: config.enabledTools,
         }),
         signal: controller.signal,
       });
@@ -204,6 +207,16 @@ export function useCodeChatStream() {
     [isExecuting, messages, sendMessage],
   );
 
+  /**
+   * Replace the entire message log. Used by the Sessions library
+   * (Pass 212) to restore a saved conversation into the live hook.
+   */
+  const loadMessages = useCallback((next: CodeChatMessage[]) => {
+    setMessages(next);
+    setCurrentTools([]);
+    setError(null);
+  }, []);
+
   return {
     messages,
     isExecuting,
@@ -213,5 +226,6 @@ export function useCodeChatStream() {
     abort,
     clearHistory,
     regenerateLast,
+    loadMessages,
   };
 }

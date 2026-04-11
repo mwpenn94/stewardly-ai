@@ -41,7 +41,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
     return;
   }
 
-  const { message, model, allowMutations = false, maxIterations = 5 } = req.body;
+  const { message, model, allowMutations = false, maxIterations = 5, enabledTools } = req.body;
   if (!message || typeof message !== "string") {
     res.status(400).json({ error: "message is required" });
     return;
@@ -49,6 +49,17 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
 
   const isAdmin = user.role === "admin";
   const canMutate = isAdmin && allowMutations;
+
+  // Pass 213: per-tool allowlist. `enabledTools` is an optional array
+  // of raw tool names (read_file, grep_search, write_file, ...). If
+  // omitted, every tool the caller's role allows stays available.
+  // If provided, we intersect it with the role-based allowlist so a
+  // non-admin can never enable write tools by passing `enabledTools`.
+  const userAllowed: Set<string> | null = Array.isArray(enabledTools)
+    ? new Set(
+        enabledTools.filter((t: unknown): t is string => typeof t === "string"),
+      )
+    : null;
 
   // SSE headers
   res.setHeader("Content-Type", "text/event-stream");
@@ -74,6 +85,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
     // Build tool definitions
     const toolDefs = CODE_CHAT_TOOL_DEFINITIONS
       .filter((t) => canMutate || READ_ONLY_TOOLS.has(t.name))
+      .filter((t) => (userAllowed ? userAllowed.has(t.name) : true))
       .map((t) => ({
         type: "function" as const,
         function: {
