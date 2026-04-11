@@ -598,6 +598,12 @@ export const codeChatRouter = router({
         "read_file",
         "list_directory",
         "grep_search",
+        "update_todos",
+        "find_symbol",
+        "infer_schema", // Pass 7 (dynamic-crud): pure schema inference
+        "generate_adapter", // Pass 7: pure adapter generation
+        "detect_schema_drift", // Pass 7: pure drift diff
+        "map_to_crm_contact", // Pass 7: pure canonical mapping
       ]);
 
       // Shape the code chat tool definitions into the OpenAI

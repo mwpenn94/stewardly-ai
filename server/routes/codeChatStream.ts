@@ -35,6 +35,10 @@ const READ_ONLY_TOOLS = new Set([
   "grep_search",
   "update_todos", // Pass 237: no-op progress reporter, safe for all roles
   "find_symbol", // Pass 242: workspace symbol index lookup
+  "infer_schema", // Pass 7 (dynamic-crud): pure schema inference, no file I/O
+  "generate_adapter", // Pass 7: pure adapter generation
+  "detect_schema_drift", // Pass 7: pure drift diff
+  "map_to_crm_contact", // Pass 7: pure canonical mapping
 ]);
 
 function writeSse(res: any, data: Record<string, unknown>): void {

@@ -44,6 +44,10 @@ export type CodeToolName =
   | "run_bash"
   | "update_todos"
   | "find_symbol"
+  | "infer_schema"
+  | "generate_adapter"
+  | "detect_schema_drift"
+  | "map_to_crm_contact"
   | "finish";
 
 export interface CodeToolCall {
@@ -79,6 +83,10 @@ export type CodeToolResult =
   | { kind: "bash"; result: BashResult }
   | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
+  | { kind: "schema_inference"; result: { summary: string; fieldCount: number; primaryKey: string | null; confidence: number; schema: unknown } }
+  | { kind: "adapter_spec"; result: { summary: string; ready: boolean; confidence: number; spec: unknown } }
+  | { kind: "schema_drift"; result: { summary: string; compatible: boolean; breaking: number; warning: number; info: number; changes: unknown } }
+  | { kind: "crm_mapping"; result: { summary: string; entityType: string; matchedCount: number; missingRequired: string[]; confidence: number; matches: unknown } }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -244,6 +252,105 @@ export async function dispatchCodeTool(
           if (todos.length >= 50) break;
         }
         return { kind: "todos", result: { todos, count: todos.length } };
+      }
+      case "infer_schema": {
+        // Dynamic CRUD integrations: infer schema from sample records
+        const { inferSchema, summarizeSchema } = await import("../dynamicIntegrations/schemaInference");
+        const records = Array.isArray(call.args.records) ? call.args.records : [];
+        if (records.length === 0) {
+          return { kind: "error", error: "records required (array)", code: "BAD_ARGS" };
+        }
+        const safeRecords = records
+          .filter((r: unknown) => r && typeof r === "object")
+          .slice(0, 2000);
+        const schema = inferSchema(safeRecords as Array<Record<string, unknown>>);
+        return {
+          kind: "schema_inference",
+          result: {
+            summary: summarizeSchema(schema),
+            fieldCount: schema.fields.length,
+            primaryKey: schema.primaryKey,
+            confidence: schema.confidence,
+            schema,
+          },
+        };
+      }
+      case "generate_adapter": {
+        const { inferSchema } = await import("../dynamicIntegrations/schemaInference");
+        const { generateAdapter, summarizeAdapter } = await import("../dynamicIntegrations/adapterGenerator");
+        const records = Array.isArray(call.args.records) ? call.args.records : [];
+        const name = typeof call.args.name === "string" ? call.args.name : "unnamed";
+        if (records.length === 0) {
+          return { kind: "error", error: "records required (array)", code: "BAD_ARGS" };
+        }
+        const safeRecords = records
+          .filter((r: unknown) => r && typeof r === "object")
+          .slice(0, 2000);
+        const schema = inferSchema(safeRecords as Array<Record<string, unknown>>);
+        const spec = generateAdapter(schema, {
+          name,
+          baseUrl: typeof call.args.baseUrl === "string" ? call.args.baseUrl : undefined,
+          listEndpoint: typeof call.args.listEndpoint === "string" ? call.args.listEndpoint : undefined,
+          authHint: typeof call.args.authType === "string"
+            ? { type: call.args.authType as "bearer" | "api_key_header" | "basic" | "oauth2" | "unknown" | "none" }
+            : undefined,
+        });
+        return {
+          kind: "adapter_spec",
+          result: {
+            summary: summarizeAdapter(spec),
+            ready: spec.readinessReport.ready,
+            confidence: spec.confidence,
+            spec,
+          },
+        };
+      }
+      case "detect_schema_drift": {
+        const { inferSchema } = await import("../dynamicIntegrations/schemaInference");
+        const { diffSchemas, summarizeDrift } = await import("../dynamicIntegrations/schemaDrift");
+        const baseline = Array.isArray(call.args.baselineRecords) ? call.args.baselineRecords : [];
+        const current = Array.isArray(call.args.currentRecords) ? call.args.currentRecords : [];
+        if (baseline.length === 0 || current.length === 0) {
+          return { kind: "error", error: "baselineRecords and currentRecords both required", code: "BAD_ARGS" };
+        }
+        const baselineSchema = inferSchema(baseline.filter((r: unknown) => r && typeof r === "object").slice(0, 2000) as Array<Record<string, unknown>>);
+        const currentSchema = inferSchema(current.filter((r: unknown) => r && typeof r === "object").slice(0, 2000) as Array<Record<string, unknown>>);
+        const report = diffSchemas(baselineSchema, currentSchema);
+        return {
+          kind: "schema_drift",
+          result: {
+            summary: summarizeDrift(report),
+            compatible: report.compatible,
+            breaking: report.summary.breaking,
+            warning: report.summary.warning,
+            info: report.summary.info,
+            changes: report.changes,
+          },
+        };
+      }
+      case "map_to_crm_contact": {
+        const { inferSchema } = await import("../dynamicIntegrations/schemaInference");
+        const { mapToCanonicalContact, summarizeMapping } = await import("../dynamicIntegrations/crmCanonicalMap");
+        const records = Array.isArray(call.args.records) ? call.args.records : [];
+        if (records.length === 0) {
+          return { kind: "error", error: "records required (array)", code: "BAD_ARGS" };
+        }
+        const safeRecords = records
+          .filter((r: unknown) => r && typeof r === "object")
+          .slice(0, 2000);
+        const schema = inferSchema(safeRecords as Array<Record<string, unknown>>);
+        const mapping = mapToCanonicalContact(schema);
+        return {
+          kind: "crm_mapping",
+          result: {
+            summary: summarizeMapping(mapping),
+            entityType: mapping.entityType,
+            matchedCount: mapping.matches.length,
+            missingRequired: mapping.missingRequired,
+            confidence: mapping.confidence,
+            matches: mapping.matches,
+          },
+        };
       }
       case "finish": {
         return {
@@ -488,6 +595,66 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         },
       },
       required: ["todos"],
+    },
+  },
+  {
+    name: "infer_schema",
+    description:
+      "Analyze sample records from any data source (JSON API, CSV export, DB dump) and infer a typed schema with field types, semantic hints (email/phone/currency/date/ssn/etc), primary-key candidates, and CRUD field roles. Use this when you need to onboard a third-party source that has limited or nonexistent documentation — sample data alone is enough. Safe read-only tool.",
+    parameters: {
+      type: "object",
+      properties: {
+        records: {
+          type: "array",
+          description: "Array of sample records (1-2000). Each record is an object with field name → value pairs.",
+          items: { type: "object" },
+        },
+      },
+      required: ["records"],
+    },
+  },
+  {
+    name: "generate_adapter",
+    description:
+      "Generate a declarative CRUD adapter spec from sample records + connection hints. Returns endpoints (list/get/create/update/delete), field mappings, auth, pagination, and a readiness report. Use after infer_schema when you want a full adapter contract, not just a schema. Safe read-only tool.",
+    parameters: {
+      type: "object",
+      properties: {
+        records: { type: "array", items: { type: "object" } },
+        name: { type: "string", description: "Human-readable name for the adapter" },
+        baseUrl: { type: "string", description: "Base URL of the source API (optional but needed for ready=true)" },
+        listEndpoint: { type: "string", description: "List endpoint path (defaults to '/')" },
+        authType: {
+          type: "string",
+          description: "Auth style: bearer / api_key_header / api_key_query / basic / oauth2 / none / unknown",
+        },
+      },
+      required: ["records", "name"],
+    },
+  },
+  {
+    name: "detect_schema_drift",
+    description:
+      "Compare two sets of sample records (baseline from last run, current from this run) and report schema drift: added/removed/renamed/type-changed fields with breaking/warning/info severity. Use in continuous monitoring loops to catch source-side changes before they break a pipeline. Safe read-only tool.",
+    parameters: {
+      type: "object",
+      properties: {
+        baselineRecords: { type: "array", items: { type: "object" } },
+        currentRecords: { type: "array", items: { type: "object" } },
+      },
+      required: ["baselineRecords", "currentRecords"],
+    },
+  },
+  {
+    name: "map_to_crm_contact",
+    description:
+      "Take sample records from any contact-like source and map the fields to Stewardly's canonical CRM contact shape (email/firstName/lastName/phone/company/etc). Returns match confidence per field and lists missing-required canonical fields. Use when onboarding a new lead source to Stewardly's CRM. Safe read-only tool.",
+    parameters: {
+      type: "object",
+      properties: {
+        records: { type: "array", items: { type: "object" } },
+      },
+      required: ["records"],
     },
   },
   {

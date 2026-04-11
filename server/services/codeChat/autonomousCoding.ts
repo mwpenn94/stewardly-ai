@@ -215,5 +215,13 @@ export function summarizeStep(step: CodeChatStep): string {
       return `todos updated (${result.result.count} items, ${ms})`;
     case "symbols":
       return `find_symbol ${result.result.query} → ${result.result.matches.length} matches (${ms})`;
+    case "schema_inference":
+      return `infer_schema → ${result.result.fieldCount} fields, pk=${result.result.primaryKey ?? "—"}, conf=${Math.round(result.result.confidence * 100)}% (${ms})`;
+    case "adapter_spec":
+      return `generate_adapter → ${result.result.summary} (${ms})`;
+    case "schema_drift":
+      return `detect_schema_drift → ${result.result.summary} (${ms})`;
+    case "crm_mapping":
+      return `map_to_crm_contact → ${result.result.matchedCount} matched, ${result.result.missingRequired.length} missing required (${ms})`;
   }
 }
