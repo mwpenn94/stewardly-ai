@@ -480,6 +480,34 @@ describe("Round B1 — codeChatExecutor", () => {
         expect(r.result.files[0].path).toContain("ok.txt");
       }
     });
+
+    // Build-loop Pass 3: web_fetch dispatcher
+    it("web_fetch rejects non-string url", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_fetch", args: { url: 42 as unknown as string } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_fetch rejects url outside allowlist", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_fetch", args: { url: "https://evil.example.com/" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("HOST_NOT_ALLOWED");
+    });
+
+    it("web_fetch rejects localhost", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_fetch", args: { url: "http://localhost/secret" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BLOCKED_HOST");
+    });
   });
 
   describe("executeCodeChat multi-turn", () => {

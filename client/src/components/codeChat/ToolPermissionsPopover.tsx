@@ -57,6 +57,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
     mutation: false,
   },
   {
+    id: "web_fetch",
+    label: "Web fetch",
+    description:
+      "Fetch an allowlisted URL and return cleaned text (Claude Code WebFetch parity)",
+    mutation: false,
+  },
+  {
     id: "write_file",
     label: "Write file",
     description: "Create or overwrite a file (admin + write mode)",
@@ -94,6 +101,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "list_directory",
   "grep_search",
   "glob_files",
+  "web_fetch",
   "write_file",
   "edit_file",
   "run_bash",

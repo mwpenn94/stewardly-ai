@@ -43,6 +43,7 @@ export type CodeToolName =
   | "list_directory"
   | "grep_search"
   | "glob_files"
+  | "web_fetch"
   | "run_bash"
   | "update_todos"
   | "find_symbol"
@@ -84,6 +85,7 @@ export interface MultiReadEntry {
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "multi_read"; result: { files: MultiReadEntry[]; totalBytes: number; errors: number } }
+  | { kind: "web_fetch"; result: { url: string; finalUrl: string; status: number; contentType: string; title?: string; text: string; truncated: boolean; bytes: number; elapsedMs: number } }
   | { kind: "write"; result: WriteFileResult }
   | { kind: "edit"; result: EditFileResult }
   | { kind: "list"; result: { path: string; entries: ListDirEntry[] } }
@@ -278,6 +280,36 @@ export async function dispatchCodeTool(
           dot: Boolean(call.args.dot),
         });
         return { kind: "glob", result };
+      }
+      case "web_fetch": {
+        // Build-loop Pass 3: Claude-Code `WebFetch` parity. Allowlist-
+        // gated HTTP fetch + HTML-to-text extraction so the agent can
+        // pull docs/READMEs/MDN pages/GitHub raw files into context.
+        const { webFetch, WebFetchError } = await import("./webFetch");
+        const rawUrl = call.args.url;
+        if (typeof rawUrl !== "string" || !rawUrl.trim()) {
+          return { kind: "error", error: "url required", code: "BAD_ARGS" };
+        }
+        try {
+          const result = await webFetch({
+            url: rawUrl.trim(),
+            timeoutMs:
+              typeof call.args.timeoutMs === "number" ? call.args.timeoutMs : undefined,
+            maxBytes:
+              typeof call.args.maxBytes === "number" ? call.args.maxBytes : undefined,
+            allowedHosts: Array.isArray(call.args.allowedHosts)
+              ? (call.args.allowedHosts as unknown[]).filter(
+                  (h): h is string => typeof h === "string",
+                )
+              : undefined,
+          });
+          return { kind: "web_fetch", result };
+        } catch (err) {
+          if (err instanceof WebFetchError) {
+            return { kind: "error", error: err.message, code: err.code };
+          }
+          throw err;
+        }
       }
       case "find_symbol": {
         // Pass 242: regex-based symbol lookup against the workspace
@@ -551,6 +583,26 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         path: { type: "string", description: "Where to start searching (default '.')" },
       },
       required: ["pattern"],
+    },
+  },
+  {
+    name: "web_fetch",
+    description:
+      "Fetch the content of a web URL and return the cleaned text (HTML → plaintext with link URLs preserved). Useful for reading docs pages, MDN, GitHub READMEs, package docs, regulatory sites (SEC/FINRA/IRS), and vendor changelogs. Allowlist-gated — private IPs, localhost, and cloud metadata endpoints are blocked. Returns up to 64KB of text per call.",
+    parameters: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "https:// URL to fetch" },
+        timeoutMs: {
+          type: "number",
+          description: "Fetch timeout in ms (default 10000)",
+        },
+        maxBytes: {
+          type: "number",
+          description: "Max extracted text bytes (default 65536, max 5242880)",
+        },
+      },
+      required: ["url"],
     },
   },
   {
