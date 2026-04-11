@@ -141,6 +141,7 @@ import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
 import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
 import TodoMarkerPanel from "@/components/codeChat/TodoMarkerPanel";
 import DiagnosticsPanel from "@/components/codeChat/DiagnosticsPanel";
+import TestRunnerPanel from "@/components/codeChat/TestRunnerPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import ToolAuditPopover from "@/components/codeChat/ToolAuditPopover";
 import CheckpointsPopover from "@/components/codeChat/CheckpointsPopover";
@@ -2774,6 +2775,9 @@ export default function CodeChatPage() {
               <TabsTrigger value="diagnostics" className="gap-1.5">
                 <AlertTriangle className="h-3.5 w-3.5" /> Diagnostics
               </TabsTrigger>
+              <TabsTrigger value="tests" className="gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Tests
+              </TabsTrigger>
               <TabsTrigger value="github" className="gap-1.5">
                 <Github className="h-3.5 w-3.5" /> GitHub
               </TabsTrigger>
@@ -2816,6 +2820,10 @@ export default function CodeChatPage() {
 
           <TabsContent value="diagnostics">
             <div className="p-6"><DiagnosticsPanel /></div>
+          </TabsContent>
+
+          <TabsContent value="tests">
+            <div className="p-6"><TestRunnerPanel /></div>
           </TabsContent>
 
           <TabsContent value="github">

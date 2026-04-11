@@ -134,6 +134,7 @@ import {
   type BatchOp,
 } from "../services/codeChat/batchApply";
 import { buildWorkspaceRenamePlan } from "../services/codeChat/renameSymbolRunner";
+import { runVitest } from "../services/codeChat/testRunner";
 import {
   validateRename,
   planToBatchOps,
@@ -386,6 +387,19 @@ export const codeChatRouter = router({
           skipped: plan.skipped.slice(0, 50),
         },
       };
+    }),
+
+  // Pass 258: vitest runner
+  runTests: protectedProcedure
+    .input(
+      z.object({
+        target: z.string().max(500).optional(),
+      }).optional(),
+    )
+    .mutation(async ({ input }) => {
+      return await runVitest(WORKSPACE_ROOT, input?.target ?? "", {
+        timeoutMs: input?.target ? 60_000 : 5 * 60_000,
+      });
     }),
 
   applyRenameSymbol: protectedProcedure

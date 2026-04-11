@@ -97,6 +97,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "tab:imports", label: "Go to Imports", category: "tab", keywords: ["dependencies", "graph"] },
   { id: "tab:todos", label: "Go to TODOs", category: "tab", keywords: ["fixme", "markers"] },
   { id: "tab:diagnostics", label: "Go to Diagnostics", category: "tab", keywords: ["tsc", "errors", "typescript"] },
+  { id: "tab:tests", label: "Go to Tests", category: "tab", keywords: ["vitest", "suite", "runner"] },
   // Popovers
   { id: "open:symbols", label: "Open symbol navigator", category: "popover", hint: "⌘T", keywords: ["goto", "definition"] },
   { id: "open:sessions", label: "Open sessions library", category: "popover", keywords: ["save", "load"] },
