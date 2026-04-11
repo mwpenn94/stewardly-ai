@@ -467,6 +467,64 @@ describe("Round B1 — codeChatExecutor", () => {
       expect(r.kind).toBe("error");
       if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
     });
+
+    it("web_crawl rejects missing startUrl", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_crawl", args: {} },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_crawl runs a 2-page BFS via stub adapter", async () => {
+      const { WebNavigator } = await import("../../shared/automation/webNavigator");
+      const { __setWebNavigator, __resetWebNavigator } = await import("./webTool");
+      const pages: Record<string, string> = {
+        "https://example.com/": `<html><head><title>Home</title></head><body><a href="/a">A</a></body></html>`,
+        "https://example.com/a": `<html><head><title>Inner A</title></head><body></body></html>`,
+      };
+      const nav = new WebNavigator({
+        adapter: {
+          async fetch(url) {
+            const body = pages[url] ?? "<html><title>404</title></html>";
+            return {
+              status: 200,
+              finalUrl: url,
+              headers: { "content-type": "text/html" },
+              body,
+              bytes: new TextEncoder().encode(body).length,
+              truncated: false,
+              redirects: 0,
+            };
+          },
+        },
+        rateLimitPerMin: 100,
+      });
+      __setWebNavigator(nav);
+      try {
+        const r = await dispatchCodeTool(
+          {
+            name: "web_crawl",
+            args: {
+              startUrl: "https://example.com/",
+              maxPages: 5,
+              maxDepth: 1,
+            },
+          },
+          sandboxRO(),
+        );
+        expect(r.kind).toBe("web_crawl");
+        if (r.kind === "web_crawl") {
+          expect(r.result.pagesSuccessful).toBeGreaterThanOrEqual(2);
+          const titles = r.result.pages.map((p) => p.title).sort();
+          expect(titles).toContain("Home");
+          expect(titles).toContain("Inner A");
+        }
+      } finally {
+        __resetWebNavigator();
+      }
+    });
   });
 
   describe("executeCodeChat multi-turn", () => {

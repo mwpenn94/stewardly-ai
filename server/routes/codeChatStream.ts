@@ -37,6 +37,7 @@ const READ_ONLY_TOOLS = new Set([
   "find_symbol", // Pass 242: workspace symbol index lookup
   "web_read", // Pass 1 (automation): read-only public web fetch
   "web_extract", // Pass 2 (automation): schema-guided structured extraction
+  "web_crawl", // Pass 4 (automation): bounded BFS crawl
 ]);
 
 function writeSse(res: any, data: Record<string, unknown>): void {
@@ -143,6 +144,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "Use `code_find_symbol` when you know the name of a function/class/interface/type/const and want to jump to its DEFINITION (faster than grep, and returns only definition sites).",
       "Use `code_web_read` to fetch a public URL and read it as structured content (title, headings, text, links, forms). Prefer this over quoting from memory when the user asks about current docs, regulation, news, or an external site. It is rate-limited per domain and will not navigate private/internal hosts.",
       "Use `code_web_extract` when you already know what structured fields you need from a URL. Pass a `schema` mapping each field to a selector ('title', 'h2', 'regex:PATTERN', 'css:TAG', 'link', 'table', etc.) and optionally a `type` ('number', 'number[]', 'date', 'url[]', 'table[]', ...). This returns typed data without forcing you to reread the raw page and is the right tool for pulling prices, limits, tables, or specific fields from a regulatory doc or data page.",
+      "Use `code_web_crawl` when the user wants a multi-page scan of a site (e.g. 'read every page under /docs/2026'). Returns a per-page summary — not full content — so budget remains bounded. Default limits are 10 pages / depth 2, cap 100 pages / depth 5. Stay same-origin unless the user explicitly says to cross.",
       canMutate
         ? "You have `code_write_file`, `code_edit_file`, `code_run_bash` — use sparingly, explain every change."
         : "Write/edit/bash disabled. Return diffs as code blocks.",

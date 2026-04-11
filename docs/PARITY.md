@@ -40,6 +40,8 @@ bottom. The Build Loop Pass Log at the very bottom is append-only.
 | G23 | SSE streaming of browser events to UI                      | Claude computer-use UI    |      0 |     0 | open         |         |                  |
 | G24 | Browser read result caching with ETag/stale-while-revalid  | performance               |      0 |     6 | done · P3    | build   | pass-3           |
 | G25 | Robots.txt honoring                                        | defensive infra           |      0 |     6 | done · P2    | build   | pass-2           |
+| G26 | Bounded crawl session (BFS + depth + dedupe + budget)      | browser-use / Manus       |      0 |     5 | done · P4    | build   | pass-4           |
+| G27 | Hostile-input resilience on URL inputs (found by build)    | security / SSRF           |      0 |     5 | done · P4    | build   | pass-4           |
 
 Legend: `open` = not started; `in-progress` = under active work by build or
 parallel process; `done · P<N>` = shipped in pass N. Depth scores are rough
@@ -79,6 +81,16 @@ process reading PARITY.md, not just next-pass-self).
   navigation (the emit helper wraps sinks in try/catch). File:
   `server/shared/automation/webNavigator.ts`. Do not remove the
   try/catch wrapper, do not drop the start→network lifecycle pairing.
+- **crawlSession primitive** — pass 4. Bounded BFS over any PageReader
+  shape (duck-typed so a future Playwright adapter can plug in). Hard
+  caps: maxPages=100, maxDepth=5. Canonicalizing dedupe (fragment,
+  trailing slash, query sort), same-origin guard, allowHosts suffix
+  check, include/exclude regex filters, SSRF-safe protocol filter
+  (http/https only — javascript:, file:, data: are refused), swallows
+  onPage callback errors. File:
+  `server/shared/automation/crawlSession.ts`. Do not drop the hard
+  caps, do not drop the non-http(s) protocol refusal, do not drop the
+  canonicalizing dedupe.
 
 ## Known-Bad
 
@@ -100,4 +112,5 @@ Append-only log of what each pass accomplished. Format:
 
 - Pass 1 · correctness-first · [bootstrap PARITY + G1..G6, G21] · 8baaeed · webNavigator service + 30 tests + code_web_read tool + client popover entry · deferred: G7 (playwright adapter), G9 (click/type layer), G22 (web_extract schema-guided), G25 (robots.txt)
 - Pass 2 · graceful-degradation + input-validation · [G22, G25, G20 partial] · d0a82b9 · webExtractor + robotsPolicy + code_web_extract tool + robotsChecker wired into WebNavigator + 35 new tests · deferred: G7 (playwright), G9 (click/type), G23 (SSE streaming of browser events), G17 (OTel spans for automation)
-- Pass 3 · observability + dead-code-prevention · [G17, G24] · (pending commit) · responseCache (LRU + ETag + SWR) + NavigationTelemetrySink + cache/telemetry wired through fetchPage + env-driven singletons in webTool · 25 new tests · deferred: G7, G9, G23, G16 (download files), G19 (multi-agent browser orchestration)
+- Pass 3 · observability + dead-code-prevention · [G17, G24] · afb47b5 · responseCache (LRU + ETag + SWR) + NavigationTelemetrySink + cache/telemetry wired through fetchPage + env-driven singletons in webTool · 25 new tests · deferred: G7, G9, G23, G16 (download files), G19 (multi-agent browser orchestration)
+- Pass 4 · accessibility + hostile-input-security · [G26+G27 new gaps, G19 groundwork] · (pending commit) · crawlSession primitive + code_web_crawl tool + canonicalizing dedupe + SSRF protocol filter + client popover entry · 23 new tests · deferred: G7 (playwright still not started), G9 (click/type layer), G14 (computer-use vision), G23 (SSE of browser events)

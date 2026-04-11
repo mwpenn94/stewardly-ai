@@ -86,6 +86,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
       "Fetch a URL and apply a schema-guided structured extraction (typed output, read-only)",
     mutation: false,
   },
+  {
+    id: "web_crawl",
+    label: "Web crawl",
+    description:
+      "Bounded BFS crawl of a site (dedupe+depth+budget, same-origin by default, read-only)",
+    mutation: false,
+  },
 ];
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
@@ -99,6 +106,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "find_symbol",
   "web_read",
   "web_extract",
+  "web_crawl",
 ];
 
 export default function ToolPermissionsPopover({

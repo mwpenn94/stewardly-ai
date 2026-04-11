@@ -46,6 +46,7 @@ export type CodeToolName =
   | "find_symbol"
   | "web_read"
   | "web_extract"
+  | "web_crawl"
   | "finish";
 
 export interface CodeToolCall {
@@ -97,6 +98,24 @@ export interface WebExtractResultPayload {
   fetchMs: number;
 }
 
+export interface WebCrawlResultPayload {
+  startUrl: string;
+  pagesAttempted: number;
+  pagesSuccessful: number;
+  pagesFailed: number;
+  totalMs: number;
+  pages: Array<{
+    url: string;
+    depth: number;
+    title: string;
+    wordCount: number;
+    links: number;
+    status: number;
+    error?: string;
+  }>;
+  skipped: Array<{ url: string; reason: string }>;
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -108,6 +127,7 @@ export type CodeToolResult =
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
   | { kind: "web"; result: WebReadResultPayload }
   | { kind: "web_extract"; result: WebExtractResultPayload }
+  | { kind: "web_crawl"; result: WebCrawlResultPayload }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -290,6 +310,65 @@ export async function dispatchCodeTool(
             kind: "error",
             error: err instanceof Error ? err.message : "web read failed",
             code,
+          };
+        }
+      }
+      case "web_crawl": {
+        // Pass 4: bounded BFS crawl using the shared crawlSession
+        // primitive. Enforces per-URL dedupe, depth+page budgets,
+        // same-origin-by-default, and SSRF-safe protocol filtering.
+        const startUrl = String(call.args.startUrl ?? call.args.url ?? "").trim();
+        if (!startUrl) {
+          return { kind: "error", error: "startUrl required", code: "BAD_ARGS" };
+        }
+        const maxPages = Number(call.args.maxPages ?? 10);
+        const maxDepth = Number(call.args.maxDepth ?? 2);
+        if (!Number.isFinite(maxPages) || !Number.isFinite(maxDepth)) {
+          return { kind: "error", error: "maxPages and maxDepth must be numbers", code: "BAD_ARGS" };
+        }
+        const { getWebNavigator } = await import("./webTool");
+        const { runCrawl } = await import("../../shared/automation/crawlSession");
+        try {
+          const result = await runCrawl(getWebNavigator(), {
+            startUrl,
+            maxPages,
+            maxDepth,
+            sameOriginOnly: call.args.sameOriginOnly !== false,
+            allowHosts: Array.isArray(call.args.allowHosts)
+              ? (call.args.allowHosts as unknown[]).filter((h): h is string => typeof h === "string")
+              : undefined,
+            includePatterns: Array.isArray(call.args.includePatterns)
+              ? (call.args.includePatterns as unknown[]).filter((p): p is string => typeof p === "string")
+              : undefined,
+            excludePatterns: Array.isArray(call.args.excludePatterns)
+              ? (call.args.excludePatterns as unknown[]).filter((p): p is string => typeof p === "string")
+              : undefined,
+          });
+          return {
+            kind: "web_crawl",
+            result: {
+              startUrl: result.startUrl,
+              pagesAttempted: result.pagesAttempted,
+              pagesSuccessful: result.pagesSuccessful,
+              pagesFailed: result.pagesFailed,
+              totalMs: result.totalMs,
+              pages: result.pages.slice(0, 100).map((p) => ({
+                url: p.url,
+                depth: p.depth,
+                title: p.title,
+                wordCount: p.wordCount,
+                links: p.links,
+                status: p.status,
+                error: p.error,
+              })),
+              skipped: result.skipped.slice(0, 100),
+            },
+          };
+        } catch (err) {
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : "web_crawl failed",
+            code: "CRAWL_FAILED",
           };
         }
       }
@@ -634,6 +713,24 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         url: { type: "string", description: "Absolute http(s) URL to read" },
       },
       required: ["url"],
+    },
+  },
+  {
+    name: "web_crawl",
+    description:
+      "Run a bounded breadth-first crawl starting at `startUrl`. Follows links up to `maxDepth` (default 2, cap 5) and reads at most `maxPages` unique pages (default 10, cap 100). Same-origin by default; pass sameOriginOnly=false + allowHosts=[...] to cross origins. includePatterns/excludePatterns are regex strings matched against full URLs. Returns a per-page summary (title, word count, link count) plus a skipped list. Use this for site research ('read every page under /docs/2026', 'find me every chapter in this book index') rather than for single-page reads.",
+    parameters: {
+      type: "object",
+      properties: {
+        startUrl: { type: "string", description: "Starting URL for the crawl" },
+        maxPages: { type: "number", description: "Max unique pages to read (default 10, cap 100)" },
+        maxDepth: { type: "number", description: "Max link depth (default 2, cap 5)" },
+        sameOriginOnly: { type: "boolean", description: "Restrict to the start URL's origin (default true)" },
+        allowHosts: { type: "array", items: { type: "string" }, description: "Extra host suffixes to allow when sameOriginOnly=false" },
+        includePatterns: { type: "array", items: { type: "string" }, description: "Regex patterns — URL must match at least one" },
+        excludePatterns: { type: "array", items: { type: "string" }, description: "Regex patterns — URLs matching any are skipped" },
+      },
+      required: ["startUrl"],
     },
   },
   {
