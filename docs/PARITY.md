@@ -8,7 +8,7 @@
 
 ## Meta
 
-- **Last updated:** 2026-04-11T00:00:04Z by parity-pass-3 (claude/optimize-app-parity-FRm86)
+- **Last updated:** 2026-04-11T00:00:06Z by parity-pass-4 (claude/optimize-app-parity-FRm86)
 - **Comparable (primary):** Claude Code CLI
 - **Comparable (adjacent):** Cursor Composer, Aider, Cline, Windsurf Cascade, Continue.dev, Codex CLI
 - **Core purpose:** Give Stewardly advisors + admins a Claude-Code-style agentic coding assistant that can read, understand, and (with permission) modify the Stewardly codebase from inside the web app, without leaving the advisory workflow.
@@ -240,6 +240,45 @@ Audit trail must be complete. Options:
 
 Recommendation: **Option A** for v1. Migration: `0013_codechat_tool_results.sql`. Retention: 6 months (FINRA standard) then archive to S3 cold storage.
 
+## Exploration branches (Pass 4)
+
+Exploration is divergent work and per v2 Rule protocol, branches are logged but not evaluated in the same pass. Branch resolution happens in a future Synthesis or Landscape pass.
+
+**Current approach (Branch 0):** Code Chat is a Claude-Code-style agentic chat embedded as a web page in the Stewardly advisor app; LLM-driven ReAct loop over a sandboxed tool set; wide tabs/popovers surface; per-user sessions; unified agent role.
+
+### Branch A — Terminal-in-a-tab (run real Claude Code in a container, proxied via xterm.js)
+
+- Ship xterm.js inside Code Chat; back it with a Docker container running `claude` CLI scoped to the Stewardly monorepo.
+- Compliance layer wraps the container at the stdin/stdout boundary — PII/URL guards + FINRA 17a-4 archiving on every byte.
+- **Advantage:** Instant 100% parity with Claude Code. Every Anthropic release = container image bump. Zero ongoing parity debt.
+- **Risk:** Heavy infra (Docker, WebSocket terminal, container isolation). Compliance at the byte level is harder than at the structured tool-call level. Loses all 20 beyond-parity wins.
+
+### Branch B — Planner / Executor / Synthesizer split (three-LLM architecture)
+
+- Replace the single-ReAct-LLM loop with: (1) **Planner** (Haiku-class, cheap) reads the user's request and produces a structured plan + tool call list; (2) **Executor** (programmatic, no LLM) runs tools; (3) **Synthesizer** (Opus-class) reads results and writes the user response.
+- Pass 236's Plan Mode is already the natural handoff point — this branch makes it the default.
+- **Advantage:** 3–5× cost reduction on well-specified tasks. Cleaner audit trail (plan is a structured log). Cleanly layers onto existing infra.
+- **Risk:** Breaks "just chat with me" mental model. Harder recovery from mid-task failure because the executor is dumb. Requires user training.
+
+### Branch C — Full-screen IDE with chat sidebar (Cursor/Windsurf model)
+
+- Replace the chat-primary UX with a Monaco-editor-based IDE pane + chat sidebar. Tabs (Files/Git Status/Imports/TODOs) become IDE panels, not chat tabs.
+- **Advantage:** Much higher power-user throughput. Matches where 2026 dev tools are heading.
+- **Risk:** Scope explosion — IDE features are multi-person-year. **Out of scope**: the target user is advisors, not developers.
+
+### Branch D — Invert the stack: Code Chat consumes Claude Code (Stewardly as compliance wrapper)
+
+- Ship a CLI wrapper `stewardly-code` that preflights the prompt through 5-layer AI config + PII + compliance, invokes Claude Code, post-filters for FINRA + URL hallucination, archives to 17a-4.
+- Web UI becomes a launcher — click, spawn terminal, watch transcript stream with compliance annotations.
+- **Advantage:** Zero ongoing parity work. Stewardly's unique value (5-layer context + audit) becomes the wrapper.
+- **Risk:** Couples Stewardly's roadmap to Anthropic's. Lose 20 beyond-parity wins. **Legal risk** — unclear whether Claude Code is redistributable inside a third-party product.
+
+### Non-binding recommendation for branch evaluation
+
+Branch 0 (incremental parity on the current architecture) is likely right for the stated core purpose because Branches A and D both sacrifice the "don't leave Stewardly" constraint and Branch C is out of scope for the advisor target user. **Branch B is the only divergent branch that could be adopted incrementally** and is worth a spike in a future pass. Branch B does NOT conflict with the 4 critical gaps from Pass 1 — those fixes improve Branch 0 AND would be reusable if Branch B is later adopted.
+
+**Divergence budget used: 1 of 15 (6.7%).** Starting temp 0.2 allows up to 15% divergent passes (1 of 7); we're inside budget.
+
 ## Reconciliation log
 
 (append-only, one line per merge event)
@@ -247,11 +286,13 @@ Recommendation: **Option A** for v1. Migration: `0013_codechat_tool_results.sql`
 - 2026-04-11T00:00:00Z — parity-pass-1 — initial creation, no prior version to merge.
 - 2026-04-11T00:00:02Z — parity-pass-2 — appended Implementation risk notes section covering G35, G29, G1, G9, G2, G3, G21. No conflicts with on-disk (single-process write). Pass 1 content preserved verbatim.
 - 2026-04-11T00:00:04Z — parity-pass-3 — appended Adversarial hazards section H1–H10. Amended G9 + G11 specs in-place via the hazards cross-reference (the original gap rows still point to the spec, but the hazards row overrides specific fields). No conflicts. Pass 1 + Pass 2 content preserved verbatim.
+- 2026-04-11T00:00:06Z — parity-pass-4 — appended Exploration branches section (Branch A/B/C/D), logged divergence budget (1 of 15 used). No conflicts. All prior content preserved.
 
 ## Changelog
 
 (append-only, one line per pass, most recent first)
 
+- Pass 4 (parity exploration, 2026-04-11, score 68.8% unchanged — divergent pass, no convergent work) — generated 4 architecturally-distinct branches (A terminal-in-tab, B planner/executor/synthesizer split, C full-screen IDE, D Stewardly-as-wrapper-over-Claude-Code). Non-binding recommendation: stay on Branch 0 for core-purpose alignment, but Branch B is a credible incremental architectural upgrade worth a future spike. Divergence budget: 1/15 used (6.7%). Temperature 0.4 (unchanged — divergent work doesn't change score).
 - Pass 3 (parity adversarial, 2026-04-11, score 72.0% → **68.8%**) — found 10 real hazards (H1–H10). 2 are critical (H6 cross-user permission leak in G9 spec, H9 under-specified rule DSL in G11 spec) and both are caught as spec amendments before ship. 3 high-severity live bugs (H3 localStorage quota, H4 subagent audit, H10 tool result capture hole) now open. Score drops 3.2 points: H3 is a live Pass 239 bug (−1.5), H10 is a compliance hole on an existing system (−1.5), H2/H7 are silent data-loss bugs on existing features (−0.2). Planning-only — no code changed. Temperature adjustment: score regressed (hazards discovered on existing surface) → raise temp by 0.20 to **0.4**.
 - Pass 2 (parity depth, 2026-04-11, score 72.0% unchanged) — added Implementation risk notes for all 4 critical gaps + 3 high-priority gaps. Depth pass is planning-only; no code changed, so score holds. Surfaced 30+ new edge cases across 7 gaps — biggest novel findings: (a) G35 binary-file detection + CRLF handling, (b) G29 LLM-must-be-instructed-to-parallelize prompt gap, (c) G1 read-only hard gate on subagents as compliance divergence, (d) G9 session-ID state bolt-on for approval flow. Temperature 0.2.
 - Pass 1 (parity landscape, 2026-04-11, score 72.0%) — initial parity audit against Claude Code + 6 adjacent comparables. Logged 40 gap-matrix rows, 20 beyond-parity wins, 8 anti-parity rejections. No file changes; planning-only pass. Discovered 4 critical gaps (G1 subagents, G9 per-call approval, G29 parallel tool calls, G35 line-range read). Temperature 0.2.
