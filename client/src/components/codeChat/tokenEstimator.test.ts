@@ -9,6 +9,8 @@ import {
   sumUsage,
   formatTokens,
   formatCost,
+  evaluateBudget,
+  DEFAULT_BUDGET_STATE,
   MODEL_PRICING,
 } from "./tokenEstimator";
 
@@ -76,6 +78,51 @@ describe("sumUsage", () => {
     const unpriced = estimateMessageUsage("hi", "hi", "unknown");
     const sum = sumUsage([priced, unpriced]);
     expect(sum.costUSD).toBeCloseTo(priced.costUSD ?? 0, 6);
+  });
+});
+
+describe("evaluateBudget", () => {
+  it("returns ok when no limit set", () => {
+    const r = evaluateBudget(100, DEFAULT_BUDGET_STATE);
+    expect(r.status).toBe("ok");
+    expect(r.remainingUSD).toBeNull();
+  });
+
+  it("returns ok when cost is null (unpriced model)", () => {
+    const r = evaluateBudget(null, { limitUSD: 1, warnAt: 0.5 });
+    expect(r.status).toBe("ok");
+  });
+
+  it("returns ok under the warn threshold", () => {
+    const r = evaluateBudget(0.1, { limitUSD: 1, warnAt: 0.5 });
+    expect(r.status).toBe("ok");
+    expect(r.pct).toBeCloseTo(0.1);
+    expect(r.remainingUSD).toBeCloseTo(0.9);
+  });
+
+  it("returns warning at the threshold", () => {
+    const r = evaluateBudget(0.5, { limitUSD: 1, warnAt: 0.5 });
+    expect(r.status).toBe("warning");
+  });
+
+  it("returns warning between threshold and limit", () => {
+    const r = evaluateBudget(0.75, { limitUSD: 1, warnAt: 0.5 });
+    expect(r.status).toBe("warning");
+  });
+
+  it("returns blocked at and above the limit", () => {
+    expect(evaluateBudget(1, { limitUSD: 1, warnAt: 0.5 }).status).toBe("blocked");
+    expect(evaluateBudget(1.5, { limitUSD: 1, warnAt: 0.5 }).status).toBe("blocked");
+  });
+
+  it("clamps remainingUSD at zero when over budget", () => {
+    const r = evaluateBudget(2, { limitUSD: 1, warnAt: 0.5 });
+    expect(r.remainingUSD).toBe(0);
+  });
+
+  it("treats limit <= 0 as no limit", () => {
+    expect(evaluateBudget(5, { limitUSD: 0, warnAt: 0.5 }).status).toBe("ok");
+    expect(evaluateBudget(5, { limitUSD: -1, warnAt: 0.5 }).status).toBe("ok");
   });
 });
 

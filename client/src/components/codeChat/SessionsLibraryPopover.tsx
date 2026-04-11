@@ -15,8 +15,10 @@ import {
   deleteSession,
   renameSession,
   autoName,
+  searchSessions,
   type SessionLibrary,
   type SessionSnapshot,
+  type SessionSearchHit,
 } from "./sessionLibrary";
 import type { CodeChatMessage } from "@/hooks/useCodeChatStream";
 import { Button } from "@/components/ui/button";
@@ -29,6 +31,7 @@ import {
   Download,
   X,
   Check,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,11 +54,20 @@ export default function SessionsLibraryPopover({
   const [newName, setNewName] = useState("");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
+  // Pass 221: cross-session full-text search
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchHits: SessionSearchHit[] = useMemo(
+    () => searchSessions(library, searchQuery, 50),
+    [library, searchQuery],
+  );
 
   // Reload from storage when the popover opens so cross-tab changes
   // show up.
   useEffect(() => {
-    if (open) setLibrary(loadLibrary());
+    if (open) {
+      setLibrary(loadLibrary());
+      setSearchQuery("");
+    }
   }, [open]);
 
   const canSave = currentMessages.length > 0;
@@ -159,6 +171,62 @@ export default function SessionsLibraryPopover({
           {!canSave && (
             <p className="text-[10px] text-muted-foreground italic">
               Send a message first to save a session.
+            </p>
+          )}
+        </div>
+
+        {/* Pass 221: cross-session search */}
+        <div className="mb-3">
+          <div className="relative">
+            <Search className="h-3 w-3 absolute left-2 top-2.5 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search across saved sessions…"
+              className="h-7 text-xs pl-7"
+            />
+          </div>
+          {searchQuery.trim() && searchHits.length > 0 && (
+            <div className="mt-2 space-y-1 max-h-40 overflow-y-auto rounded border border-border/40 p-2 bg-muted/10">
+              {searchHits.map((hit, i) => {
+                const session = library.sessions.find(
+                  (s) => s.id === hit.sessionId,
+                );
+                return (
+                  <button
+                    key={`${hit.sessionId}-${hit.messageIndex}-${i}`}
+                    type="button"
+                    className="w-full text-left px-2 py-1 rounded hover:bg-secondary/40 transition-colors"
+                    onClick={() => {
+                      if (!session) return;
+                      onLoadSession(session);
+                      toast.success(`Loaded "${hit.sessionName}"`);
+                    }}
+                  >
+                    <div className="text-[10px] text-accent font-medium truncate">
+                      {hit.sessionName}{" "}
+                      <span className="text-muted-foreground/60">
+                        · msg {hit.messageIndex + 1} ({hit.messageRole})
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono truncate">
+                      {hit.snippet.slice(0, hit.matchAt)}
+                      <span className="bg-accent/30 text-accent-foreground font-medium">
+                        {hit.snippet.slice(
+                          hit.matchAt,
+                          hit.matchAt + hit.matchLen,
+                        )}
+                      </span>
+                      {hit.snippet.slice(hit.matchAt + hit.matchLen)}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {searchQuery.trim() && searchHits.length === 0 && (
+            <p className="mt-2 text-[10px] text-muted-foreground italic">
+              No matches in any saved session.
             </p>
           )}
         </div>

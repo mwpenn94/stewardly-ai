@@ -158,6 +158,117 @@ export function autoName(messages: CodeChatMessage[]): string {
   return firstLine.slice(0, 57) + "…";
 }
 
+// ─── Auto-checkpoint (Pass 223) ──────────────────────────────────────────
+
+export interface AutoCheckpointState {
+  /** Last message count we saved at (so we don't re-save mid-turn) */
+  lastSavedCount: number;
+  /** Id of the auto-generated session, stable across saves */
+  sessionId: string;
+}
+
+/**
+ * Decide whether the current message list should trigger an
+ * auto-checkpoint. We save when:
+ *   1. We have at least one assistant message (avoid saving the
+ *      single-turn "user typed then nothing happened" case)
+ *   2. The message count has grown by at least `everyN` since the
+ *      last save
+ *   3. OR the message count is a round multiple of `everyN` (belt-
+ *      and-braces for users who prefer a predictable cadence)
+ *
+ * Returns `true` when the caller should persist a checkpoint. The
+ * caller is responsible for updating `lastSavedCount` after saving.
+ */
+export function shouldCheckpoint(
+  messages: CodeChatMessage[],
+  state: AutoCheckpointState,
+  everyN: number = 4,
+): boolean {
+  if (everyN <= 0) return false;
+  if (messages.length === 0) return false;
+  // Never save before we have at least one assistant reply
+  const hasAssistant = messages.some((m) => m.role === "assistant");
+  if (!hasAssistant) return false;
+  const delta = messages.length - state.lastSavedCount;
+  if (delta <= 0) return false;
+  return delta >= everyN;
+}
+
+// ─── Fork + search (Pass 220-221) ────────────────────────────────────────
+
+/**
+ * Fork a conversation at a given message — returns the messages up to
+ * and including the forked message. Callers typically save the result
+ * as a new SessionSnapshot so the original conversation is untouched.
+ *
+ * `forkAtMessageId` is inclusive: the forked message itself is kept.
+ * If the id isn't found, returns the entire list unchanged.
+ */
+export function forkMessagesAt(
+  messages: CodeChatMessage[],
+  forkAtMessageId: string,
+): CodeChatMessage[] {
+  const idx = messages.findIndex((m) => m.id === forkAtMessageId);
+  if (idx < 0) return messages;
+  return messages.slice(0, idx + 1);
+}
+
+export interface SessionSearchHit {
+  sessionId: string;
+  sessionName: string;
+  messageIndex: number;
+  messageRole: CodeChatMessage["role"];
+  snippet: string; // excerpt with the match surrounded
+  matchAt: number; // index of the match inside the snippet
+  matchLen: number;
+}
+
+/**
+ * Full-text search across every saved session. Returns hits ordered
+ * by session updated-time (newest first), capped at `limit`. Case-
+ * insensitive substring match on message content.
+ *
+ * `snippet` is a ~120-char window around the match for display.
+ */
+export function searchSessions(
+  library: SessionLibrary,
+  query: string,
+  limit = 30,
+): SessionSearchHit[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const hits: SessionSearchHit[] = [];
+  const sorted = [...library.sessions].sort(
+    (a, b) => b.updatedAt - a.updatedAt,
+  );
+  for (const session of sorted) {
+    for (let i = 0; i < session.messages.length; i++) {
+      if (hits.length >= limit) break;
+      const msg = session.messages[i];
+      const lower = msg.content.toLowerCase();
+      const matchAt = lower.indexOf(q);
+      if (matchAt < 0) continue;
+      const start = Math.max(0, matchAt - 40);
+      const end = Math.min(msg.content.length, matchAt + q.length + 80);
+      const prefix = start > 0 ? "…" : "";
+      const suffix = end < msg.content.length ? "…" : "";
+      const snippet = prefix + msg.content.slice(start, end) + suffix;
+      hits.push({
+        sessionId: session.id,
+        sessionName: session.name,
+        messageIndex: i,
+        messageRole: msg.role,
+        snippet,
+        matchAt: matchAt - start + prefix.length,
+        matchLen: q.length,
+      });
+    }
+    if (hits.length >= limit) break;
+  }
+  return hits;
+}
+
 // ─── localStorage adapter (thin — not unit tested, manually verified) ───
 
 export function loadLibrary(): SessionLibrary {

@@ -26,7 +26,7 @@ import {
   Lock, Unlock, Terminal, Send, ChevronDown, ChevronRight,
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
-  LibraryBig,
+  LibraryBig, GitFork,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -37,6 +37,15 @@ import MarkdownMessage from "@/components/codeChat/MarkdownMessage";
 import FileMentionPopover from "@/components/codeChat/FileMentionPopover";
 import KeyboardShortcutsOverlay from "@/components/codeChat/KeyboardShortcutsOverlay";
 import SessionsLibraryPopover from "@/components/codeChat/SessionsLibraryPopover";
+import {
+  forkMessagesAt,
+  upsertSession,
+  loadLibrary,
+  saveLibrary,
+  autoName,
+  shouldCheckpoint,
+  type SessionSnapshot,
+} from "@/components/codeChat/sessionLibrary";
 import ToolPermissionsPopover, {
   DEFAULT_ENABLED_TOOLS,
 } from "@/components/codeChat/ToolPermissionsPopover";
@@ -57,7 +66,10 @@ import {
   sumUsage,
   formatTokens,
   formatCost,
+  evaluateBudget,
+  DEFAULT_BUDGET_STATE,
   type TokenUsage,
+  type BudgetState,
 } from "@/components/codeChat/tokenEstimator";
 import {
   filterCommands,
@@ -264,6 +276,59 @@ function CodeChatInterface() {
   // Pass 219: gist export mutation
   const gistExportMutation = trpc.codeChat.exportToGist.useMutation();
 
+  // Pass 222: cost budget guardrail — persists across refreshes
+  const BUDGET_KEY = "stewardly-codechat-budget";
+  const [budget, setBudget] = useState<BudgetState>(() => {
+    try {
+      const raw = localStorage.getItem(BUDGET_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          (parsed.limitUSD === null || typeof parsed.limitUSD === "number") &&
+          typeof parsed.warnAt === "number"
+        ) {
+          return parsed as BudgetState;
+        }
+      }
+    } catch { /* fall through */ }
+    return DEFAULT_BUDGET_STATE;
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(BUDGET_KEY, JSON.stringify(budget));
+    } catch { /* quota */ }
+  }, [budget]);
+
+  // Pass 220: fork conversation at a specific message
+  const handleForkAt = useCallback(
+    (forkMessageId: string) => {
+      const truncated = forkMessagesAt(messages, forkMessageId);
+      if (truncated.length === 0) {
+        toast.error("Cannot fork an empty conversation");
+        return;
+      }
+      const now = Date.now();
+      const snapshot: SessionSnapshot = {
+        id: crypto.randomUUID(),
+        name: `Fork: ${autoName(truncated)}`.slice(0, 80),
+        createdAt: now,
+        updatedAt: now,
+        messages: truncated,
+      };
+      const lib = upsertSession(loadLibrary(), snapshot);
+      saveLibrary(lib);
+      // Load the fork into the live hook — user continues from here
+      loadMessages(truncated);
+      setCurrentSessionId(snapshot.id);
+      toast.success(
+        `Forked into "${snapshot.name}" (${truncated.length} messages)`,
+      );
+    },
+    [messages, loadMessages],
+  );
+
   // Derive slash-command suggestions from the current input
   const slashSuggestions: SlashCommand[] = useMemo(() => {
     if (!input.startsWith("/")) return [];
@@ -317,12 +382,60 @@ function CodeChatInterface() {
     [messageUsages],
   );
 
+  // Pass 222: evaluate budget against current session total
+  const budgetEval = useMemo(
+    () => evaluateBudget(sessionUsage.costUSD, budget),
+    [sessionUsage.costUSD, budget],
+  );
+
   // Persist messages to localStorage
   useEffect(() => {
     if (messages.length > 0) {
       try { localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages.slice(-50))); } catch { /* quota */ }
     }
   }, [messages]);
+
+  // Pass 223: silent auto-checkpoint — persist the current conversation
+  // to the sessions library every 4 new messages once there's an
+  // assistant reply. Survives refresh + crash without manual saving.
+  const checkpointStateRef = useRef({
+    lastSavedCount: 0,
+    sessionId: "" as string,
+  });
+  useEffect(() => {
+    if (messages.length === 0) {
+      // New conversation or cleared — reset checkpoint state so the
+      // next session starts fresh
+      checkpointStateRef.current = { lastSavedCount: 0, sessionId: "" };
+      return;
+    }
+    if (isExecuting) return; // wait for the turn to finish
+    if (!shouldCheckpoint(messages, checkpointStateRef.current, 4)) return;
+
+    const now = Date.now();
+    // Reuse the currently-loaded session id if there is one (so
+    // saved sessions stay attached to their existing row). Otherwise
+    // allocate a stable auto-id that persists across checkpoint
+    // saves so we don't spam the library with new rows.
+    let id = currentSessionId ?? checkpointStateRef.current.sessionId;
+    if (!id) {
+      id = `auto-${crypto.randomUUID()}`;
+      checkpointStateRef.current.sessionId = id;
+      setCurrentSessionId(id);
+    }
+    const lib = loadLibrary();
+    const existing = lib.sessions.find((s) => s.id === id);
+    const name = existing?.name ?? `Auto: ${autoName(messages)}`;
+    const snapshot: SessionSnapshot = {
+      id,
+      name,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+      messages,
+    };
+    saveLibrary(upsertSession(lib, snapshot));
+    checkpointStateRef.current.lastSavedCount = messages.length;
+  }, [messages, isExecuting, currentSessionId]);
 
   // Pass 209: persist the in-progress draft to localStorage on every
   // change, and clear it as soon as the draft becomes empty.
@@ -417,6 +530,14 @@ function CodeChatInterface() {
       }
     }
 
+    // Pass 222: hard-block if the session cost has hit the budget
+    if (budgetEval.status === "blocked") {
+      toast.error(
+        `Session cost budget exceeded (${formatCost(sessionUsage.costUSD)} / ${formatCost(budget.limitUSD)}). Raise the limit or start a new session.`,
+      );
+      return;
+    }
+
     // Save to command history
     const newHistory = [text, ...commandHistory.filter(h => h !== text)].slice(0, 50);
     setCommandHistory(newHistory);
@@ -431,7 +552,7 @@ function CodeChatInterface() {
       enabledTools,
     });
     inputRef.current?.focus();
-  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride]);
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD]);
 
   const handleSlashSelect = useCallback((cmd: SlashCommand) => {
     // Pre-fill the input with the command so the user can type args
@@ -523,14 +644,52 @@ function CodeChatInterface() {
           <span className="font-medium">Code Chat</span>
         </div>
         {messages.length > 0 && (
-          <div
-            className="hidden md:flex items-center gap-1 text-[10px] text-muted-foreground font-mono tabular-nums"
-            title={`${sessionUsage.inputTokens} in / ${sessionUsage.outputTokens} out`}
+          <button
+            type="button"
+            onClick={() => {
+              const current = budget.limitUSD === null ? "" : String(budget.limitUSD);
+              const next = prompt(
+                `Session budget (USD). Empty = no limit. Current: ${current || "no limit"}`,
+                current,
+              );
+              if (next === null) return;
+              const trimmed = next.trim();
+              if (!trimmed) {
+                setBudget({ ...budget, limitUSD: null });
+                toast.success("Budget cleared");
+                return;
+              }
+              const parsed = parseFloat(trimmed);
+              if (!Number.isFinite(parsed) || parsed < 0) {
+                toast.error("Enter a non-negative number or leave empty");
+                return;
+              }
+              setBudget({ ...budget, limitUSD: parsed });
+              toast.success(`Budget set to $${parsed.toFixed(2)}`);
+            }}
+            className={`hidden md:flex items-center gap-1 text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded transition-colors ${
+              budgetEval.status === "blocked"
+                ? "text-destructive bg-destructive/10 hover:bg-destructive/20"
+                : budgetEval.status === "warning"
+                  ? "text-amber-500 bg-amber-500/10 hover:bg-amber-500/20"
+                  : "text-muted-foreground hover:text-foreground"
+            }`}
+            title={
+              budget.limitUSD === null
+                ? `${sessionUsage.inputTokens} in / ${sessionUsage.outputTokens} out — click to set a budget`
+                : `${formatCost(sessionUsage.costUSD)} of ${formatCost(budget.limitUSD)} used · ${Math.round(budgetEval.pct * 100)}%`
+            }
+            aria-label="Session token usage and cost budget"
           >
             <span>{formatTokens(sessionUsage.totalTokens)}</span>
             <span className="text-muted-foreground/40">·</span>
             <span>{formatCost(sessionUsage.costUSD)}</span>
-          </div>
+            {budget.limitUSD !== null && (
+              <span className="text-muted-foreground/60">
+                /{formatCost(budget.limitUSD)}
+              </span>
+            )}
+          </button>
         )}
         <div className="flex-1" />
         {isAdmin && (
@@ -799,6 +958,15 @@ function CodeChatInterface() {
                       }}
                     >
                       <Download className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      className="hover:text-foreground transition-colors p-1 rounded"
+                      aria-label="Fork conversation from this message"
+                      title="Fork — save as new session trimmed here"
+                      onClick={() => handleForkAt(msg.id)}
+                    >
+                      <GitFork className="w-3 h-3" />
                     </button>
                     {isLastAssistant && (
                       <button

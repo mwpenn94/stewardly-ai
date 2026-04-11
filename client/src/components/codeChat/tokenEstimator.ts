@@ -97,3 +97,37 @@ export function formatCost(cost: number | null): string {
   if (cost < 1) return `$${cost.toFixed(3)}`;
   return `$${cost.toFixed(2)}`;
 }
+
+// ─── Budget guardrail (Pass 222) ─────────────────────────────────────────
+
+export type BudgetStatus = "ok" | "warning" | "blocked";
+
+export interface BudgetState {
+  /** USD limit; null means no cap */
+  limitUSD: number | null;
+  /** Fraction 0..1 at which the "warning" state kicks in (default 0.5) */
+  warnAt: number;
+}
+
+export const DEFAULT_BUDGET_STATE: BudgetState = {
+  limitUSD: null,
+  warnAt: 0.5,
+};
+
+export function evaluateBudget(
+  totalCostUSD: number | null,
+  state: BudgetState,
+): { status: BudgetStatus; pct: number; remainingUSD: number | null } {
+  if (state.limitUSD === null || state.limitUSD <= 0) {
+    return { status: "ok", pct: 0, remainingUSD: null };
+  }
+  if (totalCostUSD === null) {
+    // Session uses an unpriced model — we can't evaluate, stay neutral
+    return { status: "ok", pct: 0, remainingUSD: state.limitUSD };
+  }
+  const pct = totalCostUSD / state.limitUSD;
+  const remainingUSD = Math.max(0, state.limitUSD - totalCostUSD);
+  if (pct >= 1) return { status: "blocked", pct, remainingUSD };
+  if (pct >= state.warnAt) return { status: "warning", pct, remainingUSD };
+  return { status: "ok", pct, remainingUSD };
+}
