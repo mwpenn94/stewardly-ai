@@ -43,6 +43,7 @@ export type CodeToolName =
   | "grep_search"
   | "run_bash"
   | "update_todos"
+  | "find_symbol"
   | "finish";
 
 export interface CodeToolCall {
@@ -60,6 +61,15 @@ export interface AgentTodoItem {
   status: "pending" | "in_progress" | "completed";
 }
 
+export interface SymbolLookupHit {
+  name: string;
+  kind: string;
+  path: string;
+  line: number;
+  snippet: string;
+  exported: boolean;
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -68,6 +78,7 @@ export type CodeToolResult =
   | { kind: "grep"; result: { matches: Array<{ file: string; line: number; text: string }>; truncated: boolean } }
   | { kind: "bash"; result: BashResult }
   | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
+  | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -173,6 +184,38 @@ export async function dispatchCodeTool(
       case "run_bash": {
         const r = await runBash(sandbox, String(call.args.command ?? ""));
         return { kind: "bash", result: r };
+      }
+      case "find_symbol": {
+        // Pass 242: regex-based symbol lookup against the workspace
+        // symbol index. Read-only tool so it works even without
+        // admin/write mode. The cache lives in symbolIndexCache.ts
+        // and rebuilds every 60s.
+        const { getSymbolIndex } = await import("./symbolIndexCache");
+        const { findSymbols, findExactName } = await import("./symbolIndex");
+        const name = String(call.args.name ?? "").trim();
+        if (!name) {
+          return { kind: "error", error: "name required", code: "BAD_ARGS" };
+        }
+        const exact = Boolean(call.args.exact);
+        const limit = Math.min(Math.max(Number(call.args.limit ?? 20), 1), 100);
+        const index = await getSymbolIndex(sandbox.workspaceRoot);
+        const raw = exact ? findExactName(index, name) : findSymbols(index, name, limit);
+        const matches = raw.slice(0, limit).map((s) => ({
+          name: s.name,
+          kind: s.kind,
+          path: s.path,
+          line: s.line,
+          snippet: s.snippet,
+          exported: s.exported,
+        }));
+        return {
+          kind: "symbols",
+          result: {
+            query: name,
+            matches,
+            truncated: raw.length > limit,
+          },
+        };
       }
       case "update_todos": {
         // Validate + normalize the todos array. No file system side
@@ -407,6 +450,20 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
       type: "object",
       properties: { command: { type: "string" } },
       required: ["command"],
+    },
+  },
+  {
+    name: "find_symbol",
+    description:
+      "Find where a symbol (function, class, interface, type, const, enum) is defined in the workspace. Use this instead of grep when you know the symbol name — it's faster and returns only definition sites, not call sites. Set `exact: true` to match the name exactly, or leave it off for fuzzy substring matching.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Symbol name or query" },
+        exact: { type: "boolean", description: "Require exact name match" },
+        limit: { type: "number", description: "Max results (default 20, max 100)" },
+      },
+      required: ["name"],
     },
   },
   {

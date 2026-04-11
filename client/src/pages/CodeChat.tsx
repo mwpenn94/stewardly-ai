@@ -132,6 +132,7 @@ import {
   buildMemoryOverlay,
   type MemoryEntry,
 } from "@/components/codeChat/agentMemory";
+import SymbolNavigatorPopover from "@/components/codeChat/SymbolNavigatorPopover";
 import {
   loadHistory,
   saveHistory,
@@ -441,6 +442,9 @@ function CodeChatInterface() {
     window.addEventListener("codechat-remember", handler);
     return () => window.removeEventListener("codechat-remember", handler);
   }, []);
+
+  // Pass 242: symbol navigator (Ctrl+T / Cmd+T)
+  const [symbolNavOpen, setSymbolNavOpen] = useState(false);
   const handleScratchpadInsert = useCallback((text: string) => {
     setInput((prev) => {
       if (!prev) return text;
@@ -913,6 +917,12 @@ function CodeChatInterface() {
         setHistoryOpen(true);
         return;
       }
+      // Pass 242: Ctrl+T / Cmd+T → symbol navigator
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "t") {
+        e.preventDefault();
+        setSymbolNavOpen(true);
+        return;
+      }
       // Ctrl+Z / Ctrl+Shift+Z → edit undo/redo
       // Only fire outside text fields so in-textarea undo still works
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !isTextField) {
@@ -1227,9 +1237,9 @@ function CodeChatInterface() {
           onClick={() => setToolsOpen(true)}
           className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Tool permissions"
-          title={`Tool permissions (${enabledTools.length}/7 enabled)`}
+          title={`Tool permissions (${enabledTools.length}/8 enabled)`}
         >
-          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/7
+          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/8
         </button>
         {(() => {
           const s = summarizeHistory(editHistory);
@@ -1245,6 +1255,14 @@ function CodeChatInterface() {
             </button>
           );
         })()}
+        <button
+          onClick={() => setSymbolNavOpen(true)}
+          className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Symbol navigator"
+          title="Symbol navigator (⌘T / Ctrl+T) — jump to function/class/type definition"
+        >
+          <Sparkles className="w-3 h-3" /> Symbols
+        </button>
         <button
           onClick={() => setMemoryOpen(true)}
           className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
@@ -1949,6 +1967,10 @@ function CodeChatInterface() {
         onClose={() => setMemoryOpen(false)}
         entries={memoryEntries}
         onChange={setMemoryEntries}
+      />
+      <SymbolNavigatorPopover
+        open={symbolNavOpen}
+        onClose={() => setSymbolNavOpen(false)}
       />
       {/* Pass 233: bookmarks popover */}
       {bookmarksOpen && (

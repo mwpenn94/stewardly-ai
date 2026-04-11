@@ -213,5 +213,7 @@ export function summarizeStep(step: CodeChatStep): string {
       return `error [${result.code}]: ${result.error.slice(0, 120)}`;
     case "todos":
       return `todos updated (${result.result.count} items, ${ms})`;
+    case "symbols":
+      return `find_symbol ${result.result.query} → ${result.result.matches.length} matches (${ms})`;
   }
 }
