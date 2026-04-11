@@ -43,6 +43,129 @@ function writeSse(res: any, data: Record<string, unknown>): void {
   }
 }
 
+// ─── Pass 249: server-side hook matcher ──────────────────────────────────
+// Mirrors the client-side pure matcher in
+// client/src/components/codeChat/hooks.ts. Kept deliberately small —
+// glob + OR groups + optional `tool:arg` split. Any change here must
+// also land on the client.
+
+function escapeRegexServer(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function globToRegexServer(glob: string): RegExp {
+  if (!glob || glob === "*") return /^.*$/i;
+  let out = "";
+  let i = 0;
+  while (i < glob.length) {
+    const ch = glob[i];
+    if (ch === "[") {
+      const closeAt = glob.indexOf("]", i);
+      if (closeAt > i) {
+        const inside = glob.slice(i + 1, closeAt);
+        const parts = inside
+          .split("|")
+          .map((p) => p.trim())
+          .filter(Boolean)
+          .map(escapeRegexServer);
+        out += parts.length > 0 ? `(${parts.join("|")})` : "";
+        i = closeAt + 1;
+        continue;
+      }
+    }
+    if (ch === "*") {
+      out += ".*";
+      i++;
+      continue;
+    }
+    if (ch === "?") {
+      out += ".";
+      i++;
+      continue;
+    }
+    out += escapeRegexServer(ch);
+    i++;
+  }
+  return new RegExp(`^${out}$`, "i");
+}
+
+function compilePatternServer(pattern: string): { tool: string; arg: string | null } | null {
+  if (typeof pattern !== "string") return null;
+  const trimmed = pattern.trim();
+  if (!trimmed) return null;
+  let colonAt = -1;
+  for (let i = 0; i < trimmed.length; i++) {
+    if (trimmed[i] === "\\" && trimmed[i + 1] === ":") {
+      i++;
+      continue;
+    }
+    if (trimmed[i] === ":") {
+      colonAt = i;
+      break;
+    }
+  }
+  if (colonAt === -1) {
+    return { tool: trimmed, arg: null };
+  }
+  const tool = trimmed.slice(0, colonAt).replace(/\\:/g, ":").trim();
+  const arg = trimmed.slice(colonAt + 1).replace(/\\:/g, ":").trim();
+  return { tool: tool || "*", arg: arg || null };
+}
+
+function matchHookServer(
+  pattern: string,
+  toolName: string,
+  args: Record<string, unknown>,
+): boolean {
+  const compiled = compilePatternServer(pattern);
+  if (!compiled) return false;
+  if (!globToRegexServer(compiled.tool).test(toolName)) return false;
+  if (!compiled.arg) return true;
+  const argRegex = globToRegexServer(compiled.arg);
+  for (const v of Object.values(args)) {
+    if (typeof v === "string" && argRegex.test(v)) return true;
+  }
+  return false;
+}
+
+export interface ServerToolHookOutcome {
+  blocked: boolean;
+  blockMessage?: string;
+  warnings: Array<{ pattern: string; message: string }>;
+}
+
+export function evaluateToolHooks(
+  rules: Array<{
+    event: "PreToolUse" | "PostToolUse";
+    pattern: string;
+    action: "block" | "warn" | "inject_prompt" | "inject_system";
+    message?: string;
+  }>,
+  event: "PreToolUse" | "PostToolUse",
+  toolName: string,
+  args: Record<string, unknown>,
+): ServerToolHookOutcome {
+  const outcome: ServerToolHookOutcome = { blocked: false, warnings: [] };
+  for (const rule of rules) {
+    if (rule.event !== event) continue;
+    if (!matchHookServer(rule.pattern, toolName, args)) continue;
+    if (rule.action === "block" && !outcome.blocked) {
+      outcome.blocked = true;
+      outcome.blockMessage =
+        rule.message || `Blocked by user hook: ${rule.pattern}`;
+    } else if (rule.action === "warn") {
+      outcome.warnings.push({
+        pattern: rule.pattern,
+        message: rule.message || `Hook '${rule.pattern}' matched`,
+      });
+    }
+    // inject_* actions are evaluated at prompt-build time on the client
+    // and surfaced via hookSystemOverlay / prompt text. The server
+    // never needs to touch them again inside the loop.
+  }
+  return outcome;
+}
+
 codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
   // Auth is handled by the caller (index.ts passes authenticated user)
   const user = (req as any).__user;
@@ -51,11 +174,44 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
     return;
   }
 
-  const { message, model, allowMutations = false, maxIterations = 5, enabledTools, includeProjectInstructions = true, memoryOverlay } = req.body;
+  const { message, model, allowMutations = false, maxIterations = 5, enabledTools, includeProjectInstructions = true, memoryOverlay, toolHookRules, hookSystemOverlay } = req.body;
   if (!message || typeof message !== "string") {
     res.status(400).json({ error: "message is required" });
     return;
   }
+
+  // Pass 249: parse + sanitize client-supplied tool hook rules.
+  // The server owns the eval loop (Pre/Post ToolUse) because the
+  // client has no way to interrupt the ReAct loop mid-stream.
+  type ToolHookRule = {
+    event: "PreToolUse" | "PostToolUse";
+    pattern: string;
+    action: "block" | "warn" | "inject_prompt" | "inject_system";
+    message?: string;
+  };
+  const sanitizedHookRules: ToolHookRule[] = Array.isArray(toolHookRules)
+    ? toolHookRules
+        .filter((r: any) => r && typeof r === "object")
+        .filter(
+          (r: any) =>
+            (r.event === "PreToolUse" || r.event === "PostToolUse") &&
+            typeof r.pattern === "string" &&
+            r.pattern.trim().length > 0 &&
+            ["block", "warn", "inject_prompt", "inject_system"].includes(
+              r.action,
+            ),
+        )
+        .slice(0, 100) // hard cap
+        .map((r: any) => ({
+          event: r.event,
+          pattern: String(r.pattern).trim().slice(0, 500),
+          action: r.action,
+          message:
+            typeof r.message === "string"
+              ? r.message.slice(0, 2000)
+              : "",
+        }))
+    : [];
 
   const isAdmin = user.role === "admin";
   const canMutate = isAdmin && allowMutations;
@@ -134,6 +290,14 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         ? memoryOverlay.trim().slice(0, 8192) // hard cap for safety
         : "";
 
+    // Pass 249: client-built overlay from UserPromptSubmit/SessionStart
+    // inject_system hooks. Hard-capped at 8KB.
+    const hookSnippet =
+      typeof hookSystemOverlay === "string" &&
+      hookSystemOverlay.trim().length > 0
+        ? hookSystemOverlay.trim().slice(0, 8192)
+        : "";
+
     const systemPrompt = [
       "You are a Claude-Code-style coding assistant inside Stewardly.",
       "Work step-by-step. Use `code_list_directory` and `code_read_file` to explore.",
@@ -148,6 +312,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       layerOverlay ? `\n${layerOverlay}` : "",
       projectInstructionsOverlay ? `\n${projectInstructionsOverlay}` : "",
       memorySnippet ? `\n${memorySnippet}` : "",
+      hookSnippet ? `\n${hookSnippet}` : "",
     ].filter(Boolean).join("\n");
 
     // Pass 238: tell the client which instruction files landed in the
@@ -220,6 +385,55 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
           ),
         });
 
+        // Pass 249: PreToolUse hook evaluation. Runs before the
+        // mutation check so a "block" hook can short-circuit even
+        // read-only calls the user wants to audit.
+        if (sanitizedHookRules.length > 0) {
+          const pre = evaluateToolHooks(
+            sanitizedHookRules,
+            "PreToolUse",
+            rawName,
+            args,
+          );
+          for (const warn of pre.warnings) {
+            writeSse(res, {
+              type: "hook_fired",
+              stepIndex,
+              toolName: rawName,
+              action: "warn",
+              message: warn.message,
+              pattern: warn.pattern,
+            });
+          }
+          if (pre.blocked) {
+            const blockMsg =
+              pre.blockMessage || `Tool '${rawName}' blocked by user hook.`;
+            writeSse(res, {
+              type: "hook_fired",
+              stepIndex,
+              toolName: rawName,
+              action: "block",
+              message: blockMsg,
+            });
+            writeSse(res, {
+              type: "tool_result",
+              stepIndex,
+              toolName: rawName,
+              kind: "error",
+              preview: JSON.stringify({ error: blockMsg, blockedBy: "user_hook" }),
+              truncated: false,
+              durationMs: 0,
+            });
+            // Return a synthetic observation so the ReAct loop sees
+            // the refusal and can choose a different next step.
+            return JSON.stringify({
+              kind: "error",
+              error: blockMsg,
+              code: "USER_HOOK_BLOCKED",
+            });
+          }
+        }
+
         const mutation = ["write_file", "edit_file", "run_bash"].includes(rawName);
         if (mutation && !canMutate) {
           const errResult = JSON.stringify({ error: `${rawName} requires admin + write mode` });
@@ -256,6 +470,47 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
             type: "todos_updated",
             todos: (dispatchResult as any).result.todos,
           });
+        }
+
+        // Pass 249: PostToolUse hook evaluation. Warnings are the
+        // main use case — "remind me to run tests after edit_file",
+        // "note when grep returns 0 results", etc. Block actions on
+        // PostToolUse abort the rest of the turn by throwing a
+        // synthetic error back into the loop.
+        if (sanitizedHookRules.length > 0) {
+          const post = evaluateToolHooks(
+            sanitizedHookRules,
+            "PostToolUse",
+            rawName,
+            args,
+          );
+          for (const warn of post.warnings) {
+            writeSse(res, {
+              type: "hook_fired",
+              stepIndex,
+              toolName: rawName,
+              action: "warn",
+              message: warn.message,
+              pattern: warn.pattern,
+            });
+          }
+          if (post.blocked) {
+            const blockMsg =
+              post.blockMessage ||
+              `Tool '${rawName}' flagged by post-use hook.`;
+            writeSse(res, {
+              type: "hook_fired",
+              stepIndex,
+              toolName: rawName,
+              action: "block",
+              message: blockMsg,
+            });
+            return JSON.stringify({
+              kind: "error",
+              error: blockMsg,
+              code: "USER_HOOK_POST_BLOCKED",
+            });
+          }
         }
 
         return resultStr;

@@ -27,7 +27,7 @@ import {
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
-  BookOpen, History, StickyNote, Brain, BarChart3,
+  BookOpen, History, StickyNote, Brain, BarChart3, Webhook,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -133,6 +133,17 @@ import {
   type MemoryEntry,
 } from "@/components/codeChat/agentMemory";
 import SymbolNavigatorPopover from "@/components/codeChat/SymbolNavigatorPopover";
+import HooksPopover from "@/components/codeChat/HooksPopover";
+import {
+  loadHooks,
+  saveHooks,
+  summarizeHooks,
+  enabledHooks,
+  evaluatePrompt as evaluateHookPrompt,
+  applyPromptInjections as applyHookPromptInjections,
+  buildHookSystemOverlay,
+  type HookRule,
+} from "@/components/codeChat/hooks";
 import SessionAnalyticsPopover from "@/components/codeChat/SessionAnalyticsPopover";
 import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
 import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
@@ -335,18 +346,38 @@ function LiveToolEvents({ events }: { events: ToolEvent[] }) {
   return (
     <div className="space-y-1 my-2">
       {events.map(ev => (
-        <div key={ev.stepIndex} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/30 bg-card/20 text-xs">
-          {ev.status === "running" ? (
-            <Loader2 className="w-3 h-3 animate-spin text-accent" />
-          ) : ev.status === "error" ? (
-            <AlertTriangle className="w-3 h-3 text-destructive" />
-          ) : (
-            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+        <div key={ev.stepIndex} className="space-y-1">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/30 bg-card/20 text-xs">
+            {ev.status === "running" ? (
+              <Loader2 className="w-3 h-3 animate-spin text-accent" />
+            ) : ev.status === "error" ? (
+              <AlertTriangle className="w-3 h-3 text-destructive" />
+            ) : (
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+            )}
+            <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-mono">{ev.toolName}</Badge>
+            {ev.args?.path != null && <span className="text-muted-foreground truncate">{String(ev.args.path)}</span>}
+            {ev.args?.pattern != null && <span className="text-muted-foreground truncate">&quot;{String(ev.args.pattern)}&quot;</span>}
+            {ev.hookFired && (
+              <Badge
+                variant="outline"
+                className={`text-[9px] h-4 px-1.5 font-mono ${
+                  ev.hookFired.action === "block"
+                    ? "border-destructive/40 text-destructive bg-destructive/5"
+                    : "border-chart-3/40 text-chart-3 bg-chart-3/5"
+                }`}
+                title={ev.hookFired.message}
+              >
+                hook {ev.hookFired.action}
+              </Badge>
+            )}
+            {ev.durationMs != null && <span className="text-muted-foreground/50 tabular-nums ml-auto">{ev.durationMs}ms</span>}
+          </div>
+          {ev.hookFired?.message && (
+            <p className="pl-8 text-[10px] text-muted-foreground italic">
+              {ev.hookFired.message}
+            </p>
           )}
-          <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-mono">{ev.toolName}</Badge>
-          {ev.args?.path != null && <span className="text-muted-foreground truncate">{String(ev.args.path)}</span>}
-          {ev.args?.pattern != null && <span className="text-muted-foreground truncate">&quot;{String(ev.args.pattern)}&quot;</span>}
-          {ev.durationMs != null && <span className="text-muted-foreground/50 tabular-nums ml-auto">{ev.durationMs}ms</span>}
         </div>
       ))}
     </div>
@@ -454,6 +485,96 @@ function CodeChatInterface() {
   // Pass 243: session analytics popover
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
 
+  // Pass 249: user-defined hooks (Claude Code parity)
+  const [hooks, setHooks] = useState<HookRule[]>(() => loadHooks());
+  const [hooksOpen, setHooksOpen] = useState(false);
+  useEffect(() => {
+    saveHooks(hooks);
+  }, [hooks]);
+  const hooksSummary = useMemo(() => summarizeHooks(hooks), [hooks]);
+
+  /**
+   * Serialized tool-level hook rules forwarded to the server. Only
+   * PreToolUse/PostToolUse rules are sent — prompt-level hooks are
+   * evaluated client-side into the prompt text / system overlay.
+   */
+  const toolHookRules = useMemo(
+    () =>
+      enabledHooks(hooks)
+        .filter(
+          (h) => h.event === "PreToolUse" || h.event === "PostToolUse",
+        )
+        .map((h) => ({
+          event: h.event as "PreToolUse" | "PostToolUse",
+          pattern: h.pattern,
+          action: h.action,
+          message: h.message,
+        })),
+    [hooks],
+  );
+
+  /**
+   * Apply UserPromptSubmit + SessionStart `inject_prompt` /
+   * `inject_system` hooks to a user message before sending. Returns
+   * the (possibly modified) prompt and the system overlay string to
+   * forward to the server.
+   *
+   * Returns `null` from the `blocked` branch so the caller can abort.
+   */
+  const applyHooksToPrompt = useCallback(
+    (
+      prompt: string,
+      isFirstMessage: boolean,
+    ): {
+      prompt: string;
+      systemOverlay: string;
+      blocked: boolean;
+      blockReason?: string;
+      warnings: string[];
+    } => {
+      const out = {
+        prompt,
+        systemOverlay: "",
+        blocked: false,
+        blockReason: undefined as string | undefined,
+        warnings: [] as string[],
+      };
+      const enabled = enabledHooks(hooks);
+      if (enabled.length === 0) return out;
+      // UserPromptSubmit always runs. SessionStart only on first send.
+      const userEval = evaluateHookPrompt(enabled, "UserPromptSubmit", prompt);
+      const sessionEval = isFirstMessage
+        ? evaluateHookPrompt(enabled, "SessionStart", prompt)
+        : null;
+      if (userEval.blocked) {
+        out.blocked = true;
+        out.blockReason = userEval.blockReason;
+        return out;
+      }
+      if (sessionEval?.blocked) {
+        out.blocked = true;
+        out.blockReason = sessionEval.blockReason;
+        return out;
+      }
+      const promptInjections = [
+        ...userEval.promptInjections,
+        ...(sessionEval?.promptInjections ?? []),
+      ];
+      const systemInjections = [
+        ...userEval.systemInjections,
+        ...(sessionEval?.systemInjections ?? []),
+      ];
+      out.prompt = applyHookPromptInjections(prompt, promptInjections);
+      out.systemOverlay = buildHookSystemOverlay(systemInjections);
+      out.warnings = [
+        ...userEval.warnings,
+        ...(sessionEval?.warnings ?? []),
+      ];
+      return out;
+    },
+    [hooks],
+  );
+
   // Pass 248: listen for palette-dispatched actions
   useEffect(() => {
     const openHandler = (e: Event) => {
@@ -488,6 +609,9 @@ function CodeChatInterface() {
           break;
         case "analytics":
           setAnalyticsOpen(true);
+          break;
+        case "hooks":
+          setHooksOpen(true);
           break;
         case "shortcuts":
           setShortcutsOpen(true);
@@ -813,9 +937,10 @@ function CodeChatInterface() {
         enabledTools,
         includeProjectInstructions: projectInstructionsOn,
         memoryOverlay,
+        toolHookRules,
       });
     },
-    [sendMessage, user, allowMutations, maxIterations, modelOverride, enabledTools, projectInstructionsOn, memoryOverlay],
+    [sendMessage, user, allowMutations, maxIterations, modelOverride, enabledTools, projectInstructionsOn, memoryOverlay, toolHookRules],
   );
 
   // Pass 220: fork conversation at a specific message
@@ -1122,16 +1247,30 @@ function CodeChatInterface() {
     // Pass 224: inject pinned files as @-mentions so the server-side
     // expander picks them up as auto-context
     const messageWithPinned = applyPinnedToMessage(pinned, text);
-    await sendMessage(messageWithPinned, {
+    // Pass 249: evaluate user-defined hook rules against the outgoing
+    // prompt. `isFirstMessage` is derived from current messages so
+    // SessionStart hooks only fire once per conversation.
+    const isFirstMessage = messages.length === 0;
+    const hookOutcome = applyHooksToPrompt(messageWithPinned, isFirstMessage);
+    if (hookOutcome.blocked) {
+      toast.error(hookOutcome.blockReason || "Blocked by user hook");
+      return;
+    }
+    for (const warning of hookOutcome.warnings) {
+      toast.warning(warning);
+    }
+    await sendMessage(hookOutcome.prompt, {
       allowMutations: isAdmin && allowMutations,
       maxIterations,
       model: modelOverride,
       enabledTools,
       includeProjectInstructions: projectInstructionsOn,
       memoryOverlay,
+      toolHookRules,
+      hookSystemOverlay: hookOutcome.systemOverlay,
     });
     inputRef.current?.focus();
-  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages, projectInstructionsOn, memoryOverlay]);
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages, projectInstructionsOn, memoryOverlay, toolHookRules, applyHooksToPrompt]);
 
   const handleSlashSelect = useCallback((cmd: SlashCommand) => {
     // Pre-fill the input with the command so the user can type args
@@ -1370,6 +1509,23 @@ function CodeChatInterface() {
           }
         >
           <Brain className="w-3 h-3" /> {memoryEntries.length > 0 ? memoryEntries.length : "Mem"}
+        </button>
+        <button
+          onClick={() => setHooksOpen(true)}
+          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
+            hooksSummary.enabled > 0
+              ? "border-accent/40 bg-accent/5 text-accent"
+              : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Hook rules"
+          title={
+            hooksSummary.enabled > 0
+              ? `${hooksSummary.enabled} hook${hooksSummary.enabled === 1 ? "" : "s"} active · ${hooksSummary.total} total`
+              : "Hook rules (empty)"
+          }
+        >
+          <Webhook className="w-3 h-3" />
+          {hooksSummary.enabled > 0 ? hooksSummary.enabled : "Hooks"}
         </button>
         <button
           onClick={() => setInstructionsOpen(true)}
@@ -1816,6 +1972,7 @@ function CodeChatInterface() {
                             enabledTools,
                             includeProjectInstructions: projectInstructionsOn,
                             memoryOverlay,
+                            toolHookRules,
                           });
                           if (!ok) toast.error("Nothing to regenerate");
                         }}
@@ -1869,6 +2026,7 @@ function CodeChatInterface() {
                   enabledTools,
                   includeProjectInstructions: projectInstructionsOn,
                   memoryOverlay,
+                  toolHookRules,
                 });
                 if (ok) setLastErrorBanner(null);
                 else toast.info("No previous prompt to retry");
@@ -2069,6 +2227,12 @@ function CodeChatInterface() {
         onClose={() => setAnalyticsOpen(false)}
         messages={messages}
         onJumpToMessage={scrollToMessage}
+      />
+      <HooksPopover
+        open={hooksOpen}
+        onClose={() => setHooksOpen(false)}
+        hooks={hooks}
+        onChange={setHooks}
       />
       {/* Pass 233: bookmarks popover */}
       {bookmarksOpen && (

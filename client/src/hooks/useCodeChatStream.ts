@@ -21,6 +21,11 @@ export interface ToolEvent {
   truncated?: boolean;
   durationMs?: number;
   status: "running" | "complete" | "error";
+  /** Pass 249: set if any PreToolUse/PostToolUse hook fired on this step */
+  hookFired?: {
+    action: "block" | "warn" | "inject_prompt" | "inject_system";
+    message?: string;
+  };
 }
 
 export interface CodeChatMessage {
@@ -37,6 +42,19 @@ export interface CodeChatMessage {
   timestamp: Date;
 }
 
+/**
+ * Serialized pre/post tool hook rules forwarded to the server.
+ * The server evaluates PreToolUse/PostToolUse against this list
+ * before each dispatch. See components/codeChat/hooks.ts for the
+ * rule shape.
+ */
+export interface StreamHookRule {
+  event: "PreToolUse" | "PostToolUse";
+  pattern: string;
+  action: "block" | "warn" | "inject_prompt" | "inject_system";
+  message?: string;
+}
+
 interface StreamConfig {
   model?: string;
   allowMutations?: boolean;
@@ -47,6 +65,18 @@ interface StreamConfig {
   includeProjectInstructions?: boolean;
   /** Pass 241: serialized agent memory overlay to inject */
   memoryOverlay?: string;
+  /**
+   * Pass 249: user-defined hook rules the server should evaluate
+   * before/after every tool call. Prompt/Session hooks are handled
+   * client-side via the `hookSystemOverlay` field instead.
+   */
+  toolHookRules?: StreamHookRule[];
+  /**
+   * Pass 249: system-prompt overlay built client-side from
+   * SessionStart + UserPromptSubmit `inject_system` rules. Appended
+   * to the server's base system prompt.
+   */
+  hookSystemOverlay?: string;
 }
 
 export function useCodeChatStream() {
@@ -91,6 +121,8 @@ export function useCodeChatStream() {
           enabledTools: config.enabledTools,
           includeProjectInstructions: config.includeProjectInstructions ?? true,
           memoryOverlay: config.memoryOverlay,
+          toolHookRules: config.toolHookRules,
+          hookSystemOverlay: config.hookSystemOverlay,
         }),
         signal: controller.signal,
       });
@@ -150,6 +182,23 @@ export function useCodeChatStream() {
                 const parsed = parseTodosPayload(event.todos);
                 agentTodos = mergeTodoList(agentTodos, parsed);
                 setCurrentTodos([...agentTodos]);
+                break;
+              }
+              case "hook_fired": {
+                // Pass 249: server is reporting a hook rule matched
+                // during tool execution. The event has {stepIndex,
+                // toolName, action, message} so the UI can show a
+                // badge on the trace step + a toast.
+                const step = toolEvents.find(
+                  (t) => t.stepIndex === event.stepIndex,
+                );
+                if (step) {
+                  step.hookFired = {
+                    action: event.action,
+                    message: event.message,
+                  };
+                  setCurrentTools([...toolEvents]);
+                }
                 break;
               }
               case "instructions_loaded": {

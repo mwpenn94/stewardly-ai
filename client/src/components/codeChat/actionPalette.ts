@@ -107,6 +107,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "open:history", label: "Open edit history", category: "popover", hint: "⌃Z / ⌃⇧Z", keywords: ["undo", "redo"] },
   { id: "open:scratchpad", label: "Toggle scratchpad", category: "popover", keywords: ["notes"] },
   { id: "open:analytics", label: "Open session analytics", category: "popover", keywords: ["cost", "stats"] },
+  { id: "open:hooks", label: "Open hook rules", category: "popover", keywords: ["guard", "block", "warn", "pre-tool", "post-tool"] },
   { id: "open:shortcuts", label: "Open keyboard shortcuts", category: "popover", hint: "?", keywords: ["help"] },
   { id: "open:search", label: "Search command history", category: "popover", hint: "⌃R", keywords: ["reverse"] },
   // Workspace actions
