@@ -32,17 +32,17 @@ Legend: Priority P0 (ship-blocker) → P3 (polish). Effort: S (≤1 day) / M (1�
 | ID | Feature | Present? | Depth | Priority | Effort | Aligned | Owner | Status |
 |----|---------|----------|-------|----------|--------|---------|-------|--------|
 | G1 | Multisensory feedback layer actually triggered | ⚠ partial — Chat + PIL wired (Build Loop P1) | 4/10 | P0 | M | Yes | Build Loop | in_progress |
-| G2 | Theme actually switchable (light / dark / system) | ⚠ UI exists but hard-locked to dark | 2/10 | P0 | M | Yes | — | open |
+| G2 | Theme actually switchable (light / dark / system) | ✓ fixed (Build Loop P4) | 9/10 | P0 | M | Yes | Build Loop | done |
 | G3 | aria-live announces actual streamed content (not just "AI is responding") | ⚠ stub only | 2/10 | P0 | S | Yes | — | open |
 | G4 | Captions / visible transcript during TTS playback (WCAG 1.2.1-A) | ❌ | 0/10 | P0 | S | Yes | — | open |
 | G5 | Voice command dispatch beyond navigation (send, new chat, bookmark, open palette, cancel, stop, undo) | ⚠ partial | 4/10 | P0 | M | Yes | — | open |
 | G6 | Realtime conversational voice mode (full-duplex, interruptible) | ❌ | 0/10 | P1 | XL | Yes | — | open |
 | G7 | Push-to-talk / hold-to-dictate one-shot mode | ❌ | 0/10 | P1 | S | Yes | — | open |
 | G8 | PIL context consumed anywhere in app | ❌ | 0/10 | P0 | S | Yes | — | open |
-| G9 | Light theme CSS tokens | ❌ | 0/10 | P1 | M | Yes | — | open |
-| G10 | `@media (prefers-contrast: more)` override | ❌ | 0/10 | P1 | S | Yes | — | open |
-| G11 | `@media (forced-colors: active)` override (Windows HC mode) | ❌ | 0/10 | P1 | S | Yes | — | open |
-| G12 | User-adjustable text size / zoom / density | ❌ | 0/10 | P1 | M | Yes | — | open |
+| G9 | Light theme CSS tokens | ✓ fixed (Build Loop P4) | 9/10 | P1 | M | Yes | Build Loop | done |
+| G10 | `@media (prefers-contrast: more)` override | ✓ fixed (Build Loop P4) | 7/10 | P1 | S | Yes | Build Loop | done |
+| G11 | `@media (forced-colors: active)` override (Windows HC mode) | ✓ fixed (Build Loop P4) | 7/10 | P1 | S | Yes | Build Loop | done |
+| G12 | User-adjustable text size / zoom / density | ✓ fixed (Build Loop P4) | 8/10 | P1 | M | Yes | Build Loop | done |
 | G13 | Color-blind friendly mode / color-independent state indicators | ❌ | 0/10 | P2 | M | Partial | — | open |
 | G14 | ROUTE_MAP covers every major destination | ⚠ 25 entries / 40+ pages | 6/10 | P1 | S | Yes | — | open |
 | G15 | Global "read this page aloud" keyboard shortcut | ⚠ function exists, no hotkey | 3/10 | P1 | S | Yes | — | open |
@@ -81,13 +81,13 @@ Legend: Priority P0 (ship-blocker) → P3 (polish). Effort: S (≤1 day) / M (1�
 | G48 | `::selection` color styling in brand palette | ❌ | 0/10 | P3 | S | No | — | open |
 | G49 | Error boundary audio cue + "reload" voice command | ⚠ visible only | 5/10 | P3 | S | Yes | — | open |
 | G50 | Voice onboarding tutorial inside OnboardingFlow | ❌ | 0/10 | P2 | M | Yes | — | open |
-| G51 | AppearanceTab Potemkin UI — 6 controls save to `wb_*` keys that nothing reads (`AppearanceTab.tsx:47-55`) | ❌ all inert | 0/10 | P0 | M | Yes | — | open |
+| G51 | AppearanceTab Potemkin UI — 6 controls save to `wb_*` keys that nothing reads (`AppearanceTab.tsx:47-55`) | ✓ fixed (Build Loop P4) | 9/10 | P0 | M | Yes | Build Loop | done |
 | G52 | CommandPalette `PAGES` list drifts from `navigation.ts` — missing ~15 routes (/financial-twin, /code-chat, /learning, /workflows, /consensus, /achievements, /my-work, /settings/* subroutes) (`CommandPalette.tsx:45-67`) | ⚠ 21/40+ | 5/10 | P1 | S | Yes | — | open |
 | G53 | CommandPalette shows "G R / G M / G D / G N / G A" shortcut hints (`CommandPalette.tsx:50-55`) but only `g+h / g+s / g+c / g+i / g+l / g+o` are wired in `useKeyboardShortcuts.ts:20-32` — **hints are lies** | ⚠ 3/8 wired | 3/10 | P1 | S | Yes | — | open |
 | G54 | PIL bypasses its own dispatcher — `PlatformIntelligence.tsx:333-348` calls `SOUNDS.mode_activate()` + `speakShort()` directly instead of `dispatchFeedback("handsfree.activated")`; architecturally inconsistent (provider consumes itself but not via the public API) | ✓ fixed (Build Loop P1) | 8/10 | P1 | S | Yes | Build Loop | done |
 | G55 | Dual chord handlers — `useKeyboardShortcuts.ts:57-61` AND `AppShell.tsx:185-215` both watch for "g" chords; should consolidate into `useCustomShortcuts` (which is customizable) | ⚠ redundant | 5/10 | P2 | M | Yes | — | open |
 | G56 | `AppShell.tsx` has ~200 lines of `sidebarContent` / `renderNavItem` render code (lines 322-528) that's unreachable because `PersonaSidebar5` replaced it at line 552 — dead code | ⚠ dead | 4/10 | P2 | S | No | — | open |
-| G57 | Accent color selector offers 6 colors (`AppearanceTab.tsx:10-17`) that don't exist in the Stewardship Gold theme — selecting "Rose" does nothing | ❌ | 0/10 | P1 | S | No | — | open |
+| G57 | Accent color selector offers 6 colors (`AppearanceTab.tsx:10-17`) that don't exist in the Stewardship Gold theme — selecting "Rose" does nothing | ✓ removed in Build Loop P4 (brand-locked) | 10/10 | P1 | S | No | Build Loop | done |
 | G58 | No keyboard shortcut to open CommandPalette documented in `useKeyboardShortcuts.ts` — Ctrl+K is wired inside `CommandPalette.tsx:147` only; not listed in the `?` help overlay as a chord | ⚠ wired, undocumented | 6/10 | P2 | S | Yes | — | open |
 | G59 | **CRITICAL — Firefox has zero SpeechRecognition support; Safari iOS blocks `recognition.continuous=true`** (`useVoiceRecognition.ts:147-150` silently returns; `PlatformIntelligence.tsx:290-291` silently returns; `LiveChatMode.tsx:96-99` sets internal error but no toast/banner for users) — hands-free button in Firefox is a dead button | ✓ fixed Chat surface (Build Loop P2) · other consumers still need update | 7/10 | P0 | M | Yes | Build Loop | in_progress |
 | G60 | **CRITICAL — Keyboard focus is not restored to `#main-content` after route change** (`AppShell.tsx:131-134` closes mobile sidebar + records page visit but never calls `document.getElementById("main-content")?.focus()`); SR users navigating via g-chord hear nothing about the new page — WCAG 2.4.3 Focus Order failure | ✓ fixed (Build Loop P3) | 9/10 | P0 | S | Yes | Build Loop | done |
@@ -178,6 +178,24 @@ _(append-only, one line per merge event)_
 These behaviours must not be weakened without explicit user approval. Each line
 references the pass that shipped it.
 
+- **Build Loop Pass 4 — appearance settings as the single source of truth:**
+  - All five appearance knobs (theme / fontScale / chatDensity /
+    reducedMotion / sidebarCompact) MUST flow through
+    `client/src/lib/appearanceSettings.ts`. Do not add parallel
+    localStorage writes, do not add separate `useState` shadow copies in
+    other components, do not re-introduce the `wb_accent_color` key —
+    the Stewardship Gold brand accent is intentional and brand-locked.
+  - The `.light` CSS token block in `index.css` must remain a *neutrals
+    flip only*: background, card, popover, secondary, muted, border,
+    input, sidebar. The semantic accents (primary/accent/destructive/
+    chart-*) stay in the same family so the brand identity is
+    unmistakable across modes.
+  - `@media (prefers-contrast: more)` and `@media (forced-colors: active)`
+    overrides must remain (G10/G11 regression guard — Windows HC mode
+    users cannot operate the app without them).
+  - `AppearanceTab` must NOT reintroduce a "Save Preferences" button.
+    Instant-apply is the fix for G51 — a save button creates false
+    confidence even when the code is correct.
 - **Build Loop Pass 3 — focus-on-route-change (WCAG 2.4.3):**
   - `useFocusOnRouteChange` must remain wired into both AppShell (`main-content`) and Chat.tsx (`chat-main`). Removing either breaks
     keyboard + SR users who navigate via g-chord.
@@ -219,7 +237,9 @@ Append one line per pass: `Pass N · angle · queue · commit SHA · shipped · 
 Pass 1 · angle: delightfulness + architectural-consistency · queue: G1 (PIL consumer pattern), G54 (PIL self-bypass) · commit SHA: 2d3fe3d · shipped: Chat.tsx 5 feedback dispatch sites + PlatformIntelligence.tsx 5 dispatcher-routed call sites + seed PARITY.md onto multisensory branch · deferred: G2–G68 remainder
 Pass 2 · angle: cross-browser robustness + graceful degradation · queue: G59 (Firefox/Safari iOS STT silent-fail) · commit SHA: aa7c449 · shipped: `client/src/lib/sttSupport.ts` capability probe (chrome/firefox/edge/safari_ios/safari_desktop/unknown bucketing, 22 pure-function tests covering 8 real-world UA strings) + `client/src/components/VoiceSupportBanner.tsx` dismissible fallback banner (full + compact variants, role=status + aria-live=polite) + `useVoiceRecognition` hook returns `capabilities` + `isAvailable` + sets `continuous`/`interimResults` from capability probe + defence-in-depth warn-on-unsupported + `Chat.tsx` banner rendered above input bar, mic button rejects hands-free-activation on unsupported, warns once on PTT-only · deferred: PlatformIntelligence.tsx bare STT path (needs same guard), LiveSession/LiveChatMode consumers (still silent-fail), `MobileChatLayout` dead mic icon (OI5)
 
-Pass 3 · angle: keyboard + screen-reader accessibility · queue: G60 (WCAG 2.4.3 focus restoration after nav) · commit SHA: TBD · shipped: `client/src/hooks/useFocusOnRouteChange.ts` pure-function helpers (describePath with longest-prefix match across 27 routes, focusMainRegion with active-input protection + SSR safety, announceRoute with lazy live-region creation + reuse) + React hook wired via `useLocation` + `requestAnimationFrame` defer so it fires after the new page mounts. Wired into AppShell.tsx (mainId="main-content") and Chat.tsx (mainId="chat-main"). `client/src/hooks/useFocusOnRouteChange.test.ts` — 15 unit tests with DI fakes for Document/active element/live region (pure-function hook helpers are testable without jsdom) · deferred: mobile route audit at 44px+ touch targets (G39), role=tablist audit (G36)
+Pass 3 · angle: keyboard + screen-reader accessibility · queue: G60 (WCAG 2.4.3 focus restoration after nav) · commit SHA: fb63ce2 · shipped: `client/src/hooks/useFocusOnRouteChange.ts` pure-function helpers (describePath with longest-prefix match across 27 routes, focusMainRegion with active-input protection + SSR safety, announceRoute with lazy live-region creation + reuse) + React hook wired via `useLocation` + `requestAnimationFrame` defer so it fires after the new page mounts. Wired into AppShell.tsx (mainId="main-content") and Chat.tsx (mainId="chat-main"). `client/src/hooks/useFocusOnRouteChange.test.ts` — 15 unit tests with DI fakes for Document/active element/live region (pure-function hook helpers are testable without jsdom) · deferred: mobile route audit at 44px+ touch targets (G39), role=tablist audit (G36)
+
+Pass 4 · angle: flexibility + customization (Potemkin UI fix) · queue: G2 / G9 / G10 / G11 / G12 / G51 / G57 · commit SHA: TBD · shipped: `client/src/lib/appearanceSettings.ts` pure module (load/save/apply + computeBodyClassList pure helper + subscribeSystemTheme for prefers-color-scheme tracking) · `client/src/lib/appearanceSettings.test.ts` (9 tests covering system-resolved theme, explicit theme override, per-flag class list, combined flags, no duplication) · `client/src/contexts/ThemeContext.tsx` full rewrite — now consumes `wb_theme` key AppearanceTab actually writes, exposes settings/updateSettings/setTheme/preference, subscribes to OS dark-mode toggles for `system` preference · `client/src/pages/settings/AppearanceTab.tsx` full rewrite — every control is now directly wired to updateSettings, no save button lies, accent color selector deleted, every option has aria-label + aria-pressed via role="radio"/aria-checked, X-Large font scale added for low-vision users · `client/src/index.css` light-theme token block (cream background, deeper gold accent for contrast vs white, rewired chart-1..5, sidebar overrides, gold-tinted body gradient) + font-scale body classes (compact/default/comfortable/large/xlarge via calc(16px * var(--font-scale))) + chat-density body classes + reduced-motion-user class + @media (prefers-contrast: more) border/muted bumps + @media (forced-colors: active) override using CanvasText/Canvas/Highlight · deferred: PersonaSidebar5 compact mode CSS consumption (currently only AppShell-collapsed key is read by the old sidebar path; PersonaSidebar5 has its own collapsed prop), OS-level reduced-motion + user-level merge validation
 
 <!-- PASS_LOG_APPEND_HERE -->
 
@@ -227,6 +247,7 @@ Pass 3 · angle: keyboard + screen-reader accessibility · queue: G60 (WCAG 2.4.
 
 _(append-only, most recent first)_
 
+- **Build Loop Pass 4** (claude/multisensory-accessible-ui-zmjLP) · AppearanceTab is no longer a Potemkin UI. `appearanceSettings.ts` centralizes load/save/apply for all 5 user knobs; ThemeContext rewritten to consume it; AppearanceTab rewrites to live-update on click; `.light` theme + font-scale + chat-density + reduced-motion + contrast/forced-colors media overrides added to `index.css`. G2/G9/G10/G11/G12/G51/G57 all flip to done. Accent color selector deleted (brand-locked gold). OS dark-mode toggles now propagate live to users on "system" preference via `subscribeSystemTheme`. +9 new pure-function tests.
 - **Build Loop Pass 3** (claude/multisensory-accessible-ui-zmjLP) · G60 WCAG 2.4.3 resolved. Every route change now focuses the main content region AND announces the new page name via an aria-live=polite region that's lazily created on first use. Added 15 unit tests for pure-function helpers (DI-testable Document fake). describePath uses longest-prefix matching so `/settings/audio` → "Audio Preferences" (not "Settings"). focusMainRegion refuses to steal focus from an active input to protect the chat caret + HMR flows.
 - **Build Loop Pass 2** (claude/multisensory-accessible-ui-zmjLP) · Cross-browser STT silent-fail fixed. `sttSupport.ts` capability probe module (22 tests, 8 real-world UA strings) centralizes the Firefox/Safari iOS/desktop Safari bucketing. `VoiceSupportBanner.tsx` + `Chat.tsx` integration + `useVoiceRecognition` hook upgrade now give Firefox + iOS Safari users a visible "why doesn't this work" banner with recovery copy. G59 depth 0→7; now properly in_progress (PIL + LiveSession consumers still need the same guard, deferred to a later pass). Added `client/src/lib/sttSupport.test.ts` + `client/src/lib/feedbackSpecs.test.ts` to `vitest.config.ts` include array so the ever-growing client-side shared lib can carry its own tests.
 - **Build Loop Pass 1** (claude/multisensory-accessible-ui-zmjLP) · PIL dispatcher consumer pattern now live in Chat + PlatformIntelligence. G1 depth 1→4 (Chat.tsx is the single highest-volume call site in the app; hooking it up alone unblocks ~70% of user-facing feedback). G54 resolved (dispatcher self-consistency). Seeded PARITY.md onto the multisensory branch from the parity-accessibility branch so the build loop and assessment loop share a single doc going forward.
