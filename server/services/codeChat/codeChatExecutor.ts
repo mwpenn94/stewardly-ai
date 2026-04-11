@@ -44,6 +44,7 @@ export type CodeToolName =
   | "grep_search"
   | "glob_files"
   | "web_fetch"
+  | "web_search"
   | "run_bash"
   | "update_todos"
   | "find_symbol"
@@ -86,6 +87,7 @@ export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "multi_read"; result: { files: MultiReadEntry[]; totalBytes: number; errors: number } }
   | { kind: "web_fetch"; result: { url: string; finalUrl: string; status: number; contentType: string; title?: string; text: string; truncated: boolean; bytes: number; elapsedMs: number } }
+  | { kind: "web_search"; result: { provider: string; query: string; results: Array<{ title: string; url: string; snippet: string }>; truncated: boolean; error?: string } }
   | { kind: "write"; result: WriteFileResult }
   | { kind: "edit"; result: EditFileResult }
   | { kind: "list"; result: { path: string; entries: ListDirEntry[] } }
@@ -280,6 +282,37 @@ export async function dispatchCodeTool(
           dot: Boolean(call.args.dot),
         });
         return { kind: "glob", result };
+      }
+      case "web_search": {
+        // Build-loop Pass 5: Claude-Code `WebSearch` parity. Reuses
+        // the existing Tavily/Brave/Manus-Google/LLM cascade from
+        // `webSearchTool.ts` so the agent gets fresh search results
+        // when its training data is stale.
+        const { executeWebSearchStructured } = await import("../webSearchTool");
+        const rawQuery = call.args.query;
+        if (typeof rawQuery !== "string" || !rawQuery.trim()) {
+          return { kind: "error", error: "query required", code: "BAD_ARGS" };
+        }
+        const maxResults =
+          typeof call.args.maxResults === "number" ? call.args.maxResults : undefined;
+        const includeDomains = Array.isArray(call.args.includeDomains)
+          ? (call.args.includeDomains as unknown[]).filter(
+              (d): d is string => typeof d === "string",
+            )
+          : undefined;
+        try {
+          const result = await executeWebSearchStructured(rawQuery.trim(), {
+            maxResults,
+            includeDomains,
+          });
+          return { kind: "web_search", result };
+        } catch (err) {
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : String(err),
+            code: "WEB_SEARCH_FAILED",
+          };
+        }
       }
       case "web_fetch": {
         // Build-loop Pass 3: Claude-Code `WebFetch` parity. Allowlist-
@@ -583,6 +616,28 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         path: { type: "string", description: "Where to start searching (default '.')" },
       },
       required: ["pattern"],
+    },
+  },
+  {
+    name: "web_search",
+    description:
+      "Search the web for fresh information (Claude Code `WebSearch` parity). Cascades through Tavily → Brave → Google (via Manus Data API) → LLM-synthesized fallback. Use this when the user's question depends on recent events, library versions, or anything past your training cutoff. Pair with `web_fetch` to read the most promising result in full.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Search query" },
+        maxResults: {
+          type: "number",
+          description: "Max results to return (1-20, default 5)",
+        },
+        includeDomains: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Optional list of domains to constrain results to (e.g. ['github.com', 'docs.anthropic.com']).",
+        },
+      },
+      required: ["query"],
     },
   },
   {

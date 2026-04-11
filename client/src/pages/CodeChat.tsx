@@ -312,7 +312,7 @@ function GrepResultView({
               <span className="text-accent tabular-nums shrink-0 w-10 text-right">
                 {m.line}
               </span>
-              <span className="truncate text-foreground/110">{m.text}</span>
+              <span className="truncate text-foreground/120">{m.text}</span>
             </button>
           ))}
         </div>
@@ -1252,9 +1252,9 @@ function CodeChatInterface() {
             }}
             className={`hidden md:flex items-center gap-1 text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded transition-colors ${
               budgetEval.status === "blocked"
-                ? "text-destructive bg-destructive/11 hover:bg-destructive/20"
+                ? "text-destructive bg-destructive/12 hover:bg-destructive/20"
                 : budgetEval.status === "warning"
-                  ? "text-amber-500 bg-amber-500/11 hover:bg-amber-500/20"
+                  ? "text-amber-500 bg-amber-500/12 hover:bg-amber-500/20"
                   : "text-muted-foreground hover:text-foreground"
             }`}
             title={
@@ -1279,9 +1279,9 @@ function CodeChatInterface() {
           <div
             className={`hidden md:flex items-center gap-1 text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded ${
               contextEval.status === "critical"
-                ? "text-destructive bg-destructive/11"
+                ? "text-destructive bg-destructive/12"
                 : contextEval.status === "warning"
-                  ? "text-amber-500 bg-amber-500/11"
+                  ? "text-amber-500 bg-amber-500/12"
                   : "text-muted-foreground"
             }`}
             title={
@@ -1323,9 +1323,9 @@ function CodeChatInterface() {
           onClick={() => setToolsOpen(true)}
           className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Tool permissions"
-          title={`Tool permissions (${enabledTools.length}/11 enabled)`}
+          title={`Tool permissions (${enabledTools.length}/12 enabled)`}
         >
-          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/11
+          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/12
         </button>
         {(() => {
           const s = summarizeHistory(editHistory);
@@ -1418,7 +1418,7 @@ function CodeChatInterface() {
           onClick={() => setOutlineOpen((v) => !v)}
           className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
             outlineOpen
-              ? "bg-accent/11 border-accent/30 text-accent"
+              ? "bg-accent/12 border-accent/30 text-accent"
               : "border-border text-muted-foreground hover:text-foreground"
           }`}
           aria-label="Toggle outline"
@@ -1506,7 +1506,7 @@ function CodeChatInterface() {
           onClick={() => setScratchpadOpen((v) => !v)}
           className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
             scratchpadOpen
-              ? "bg-accent/11 border-accent/30 text-accent"
+              ? "bg-accent/12 border-accent/30 text-accent"
               : scratchpad.content
                 ? "border-accent/30 text-accent/80"
                 : "border-border text-muted-foreground hover:text-foreground"
@@ -1522,7 +1522,7 @@ function CodeChatInterface() {
         </button>
         <button
           onClick={() => setShowFiles(!showFiles)}
-          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${showFiles ? "bg-accent/11 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
+          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${showFiles ? "bg-accent/12 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
           aria-label="Toggle file panel"
         >
           <FolderOpen className="w-3 h-3" /> Files
@@ -1623,7 +1623,7 @@ function CodeChatInterface() {
             className={`${msg.role === "user" ? "flex justify-end" : "group"}`}
           >
             {msg.role === "user" ? (
-              <div className="bg-accent/11 text-foreground px-4 py-2.5 rounded-2xl rounded-br-md max-w-[85%] text-sm">
+              <div className="bg-accent/12 text-foreground px-4 py-2.5 rounded-2xl rounded-br-md max-w-[85%] text-sm">
                 {msg.content}
               </div>
             ) : (
@@ -1678,7 +1678,7 @@ function CodeChatInterface() {
                               ? "border-destructive/50 text-destructive bg-destructive/5"
                               : c.variant === "warn"
                                 ? "border-amber-500/40 text-amber-500 bg-amber-500/5"
-                                : "border-border/60 text-muted-foreground bg-muted/11"
+                                : "border-border/60 text-muted-foreground bg-muted/12"
                           }`}
                         >
                           {c.label} {c.count}
@@ -1864,7 +1864,7 @@ function CodeChatInterface() {
           <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
-              className="px-2 py-0.5 rounded border border-destructive/40 text-destructive hover:bg-destructive/11 transition-colors"
+              className="px-2 py-0.5 rounded border border-destructive/40 text-destructive hover:bg-destructive/12 transition-colors"
               onClick={async () => {
                 const ok = await regenerateLast({
                   allowMutations: isAdmin && allowMutations,
@@ -1894,7 +1894,7 @@ function CodeChatInterface() {
 
       {/* Pass 224: pinned files working set */}
       {pinned.length > 0 && (
-        <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-border/30 bg-muted/11 text-[10px]">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-border/30 bg-muted/12 text-[10px]">
           <span className="text-muted-foreground font-mono shrink-0">
             Pinned ({pinned.length}):
           </span>
@@ -1967,7 +1967,7 @@ function CodeChatInterface() {
               size="icon"
               onClick={handleSend}
               disabled={!input.trim()}
-              className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/110 shrink-0"
+              className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/120 shrink-0"
               aria-label="Send message"
             >
               <Send className="w-4 h-4" />

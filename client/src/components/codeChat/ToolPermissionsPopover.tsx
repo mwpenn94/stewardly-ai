@@ -64,6 +64,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
     mutation: false,
   },
   {
+    id: "web_search",
+    label: "Web search",
+    description:
+      "Search the web (Tavily → Brave → Google → LLM fallback) (Claude Code WebSearch parity)",
+    mutation: false,
+  },
+  {
     id: "write_file",
     label: "Write file",
     description: "Create or overwrite a file (admin + write mode)",
@@ -102,6 +109,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "grep_search",
   "glob_files",
   "web_fetch",
+  "web_search",
   "write_file",
   "edit_file",
   "run_bash",

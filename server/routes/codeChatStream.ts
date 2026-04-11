@@ -36,6 +36,7 @@ const READ_ONLY_TOOLS = new Set([
   "grep_search",
   "glob_files", // Build-loop Pass 1: Claude-Code Glob parity
   "web_fetch", // Build-loop Pass 3: Claude-Code WebFetch parity
+  "web_search", // Build-loop Pass 5: Claude-Code WebSearch parity
   "update_todos", // Pass 237: no-op progress reporter, safe for all roles
   "find_symbol", // Pass 242: workspace symbol index lookup
 ]);
@@ -143,6 +144,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "Use `code_grep_search` to find occurrences of text across the codebase.",
       "Use `code_multi_read` to read up to 10 files in ONE call whenever you already know 2+ files you need to inspect — it saves round-trips (the slowest part of a session).",
       "Use `code_glob_files` to find files by pattern (e.g. `src/**/*.tsx`, `server/services/**/*.test.ts`). Prefer this over `code_list_directory` when you know the filename shape, and over shell `find` for speed.",
+      "Use `code_web_search` when you need fresh information beyond your training cutoff (recent library releases, current events, vendor pricing changes). Pair with `code_web_fetch` to read the most promising result in full.",
       "Use `code_web_fetch` to pull external docs (MDN, React, Node, GitHub READMEs, SEC/FINRA/IRS regulatory pages) into context when the user's question depends on up-to-date vendor documentation. Host allowlist is enforced.",
       "Use `code_find_symbol` when you know the name of a function/class/interface/type/const and want to jump to its DEFINITION (faster than grep, and returns only definition sites).",
       canMutate

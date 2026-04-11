@@ -191,6 +191,7 @@ const CodeToolCallSchema = z.object({
     "grep_search",
     "glob_files",
     "web_fetch",
+    "web_search",
     "run_bash",
     "update_todos",
     "find_symbol",
@@ -606,6 +607,7 @@ export const codeChatRouter = router({
         "grep_search",
         "glob_files", // Build-loop Pass 1: Claude-Code Glob parity
         "web_fetch", // Build-loop Pass 3: Claude-Code WebFetch parity
+        "web_search", // Build-loop Pass 5: Claude-Code WebSearch parity
         "update_todos", // Pass 237: live progress reporter
         "find_symbol", // Pass 242: workspace symbol index
       ]);
@@ -639,6 +641,7 @@ export const codeChatRouter = router({
         "before answering questions about it. Use `code_grep_search` to find specific symbols or strings.",
         "Use `code_glob_files` to find files by pattern (e.g. `src/**/*.tsx`) — faster than `list_directory` when you know the filename shape.",
         "Use `code_multi_read` to read up to 10 files in one call whenever you already know 2+ files you need to inspect.",
+        "Use `code_web_search` for fresh information beyond your training cutoff; pair with `code_web_fetch` to read top results in full.",
         "Use `code_web_fetch` to pull external docs (MDN, React, Node, GitHub READMEs, regulatory sites) into context when the question depends on vendor documentation.",
         "Use `code_find_symbol` to jump to a function/class/interface definition by name.",
         allowMutations

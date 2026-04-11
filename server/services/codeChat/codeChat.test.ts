@@ -508,6 +508,25 @@ describe("Round B1 — codeChatExecutor", () => {
       expect(r.kind).toBe("error");
       if (r.kind === "error") expect(r.code).toBe("BLOCKED_HOST");
     });
+
+    // Build-loop Pass 5: web_search dispatcher
+    it("web_search rejects non-string query", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_search", args: { query: 42 as unknown as string } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_search rejects empty query", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_search", args: { query: "   " } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
   });
 
   describe("executeCodeChat multi-turn", () => {

@@ -221,5 +221,7 @@ export function summarizeStep(step: CodeChatStep): string {
       return `multi_read ${result.result.files.length} files (${result.result.totalBytes}B, ${result.result.errors} error${result.result.errors === 1 ? "" : "s"}, ${ms})`;
     case "web_fetch":
       return `web_fetch ${result.result.finalUrl} → ${result.result.bytes}B${result.result.truncated ? " (truncated)" : ""} (${ms})`;
+    case "web_search":
+      return `web_search [${result.result.provider}] "${result.result.query.slice(0, 60)}" → ${result.result.results.length} result${result.result.results.length === 1 ? "" : "s"} (${ms})`;
   }
 }
