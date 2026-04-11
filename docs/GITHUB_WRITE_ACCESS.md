@@ -1,4 +1,4 @@
-# Code Chat Cloud Parity (Passes 201-231)
+# Code Chat Cloud Parity (Passes 201-235)
 
 Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 
@@ -83,6 +83,14 @@ Stewardly's Code Chat ships full Claude-Code-style terminal cloud parity:
 - **Prompt template JSON import/export** — share user templates
   across teams/devices with merge (dedup by name+body) or replace
   modes; built-ins are always re-hydrated from code (Pass 231)
+- **`/compact` slash command** — collapse older turns into a single
+  summary message to free up context (Pass 232)
+- **Message bookmarks** — star individual messages, jump back to
+  them later via the Bookmarks popover (Pass 233)
+- **Message outline rail** — toggleable left column listing every
+  user prompt with click-to-scroll (Pass 234)
+- **Thumbs up/down reactions** — per-message feedback persisted
+  to localStorage (Pass 235)
 
 This document walks through the architecture, the tRPC surface, the
 safety model, and the UI. For setup (tokens, connection flow) see
@@ -835,6 +843,81 @@ This closes the team-sharing loop — you can now email a templates
 file to a teammate and they can drop it straight into their Code
 Chat without any manual recreation. 3+5+5 unit tests cover
 export/parse/import with all edge cases.
+
+## Conversation controls + message interactions (Passes 232-235)
+
+### `/compact` slash command (Pass 232)
+
+Matches Claude Code's terminal `/compact` convention. Collapses the
+older half of the conversation into a single synthetic assistant
+message whose body is a markdown summary:
+
+- Bulleted list of every user prompt (truncated to 100 chars)
+- Aggregate tool-call counts via `summarizeToolEvents` (read N,
+  grep M, edit K, errors L)
+- Distinct files touched (up to 10, with "+X more" overflow)
+- Total wall-clock duration across all collapsed turns
+
+The summary message is stamped with `model: "[compacted]"` so the
+meta bar shows it as a compacted turn. `keepRecent` defaults to 4
+(last 2 user/assistant pairs preserved verbatim) and is overridable
+via `/compact <n>`. Pure function — no LLM round-trip needed.
+
+12 unit tests cover: no-op under threshold, full-collapse, the
+`keepRecent = 0` edge, negative clamping, the recent-window
+preservation invariant, and every field in the generated summary
+(prompt bullets, tool aggregates, files touched, duration).
+
+### Message bookmarks (Pass 233)
+
+Every assistant message has a **Star** button in its hover action
+bar that toggles a per-message bookmark. Bookmarks persist to
+`localStorage['stewardly-codechat-bookmarks']` as a deduped string
+array (capped at 500 entries with oldest-drops-first overflow).
+
+A new **Bookmarks** button in the config bar opens a modal listing
+every bookmarked message that's still present in the current
+session. Clicking a bookmark smooth-scrolls to the matching DOM
+node (keyed via `data-message-id`) and briefly highlights it with
+a Stewardship-Gold background pulse so the user can spot it.
+
+Unlike Pass 220's fork (which creates a new session), bookmarks
+are annotations that stay attached to messages across `/clear`
+and session reloads — they're purely a view-layer convenience.
+
+### Message outline rail (Pass 234)
+
+A toggleable 240px-wide left column that shows every user prompt
+in the current session as a click-to-scroll list. Each entry
+shows "turn N" as a small label and the first 80 chars of the
+prompt as a preview.
+
+Clicking an entry smooth-scrolls the chat column to the
+corresponding message with the same highlight pulse Pass 233 uses.
+The rail is hidden by default and toggled via the **Outline**
+button in the config bar.
+
+Purely rendering-only over the existing `messages` array — no new
+state to persist, no server round-trip.
+
+### Message reactions (Pass 235)
+
+Thumbs-up and thumbs-down buttons in the assistant message action
+bar for per-message feedback. `setReaction` implements the
+standard semantics:
+
+- Clicking the same reaction twice clears it
+- Clicking the opposite reaction replaces the first
+- Other messages' reactions are untouched
+
+Reactions persist to `localStorage['stewardly-codechat-reactions']`
+as a `{messageId → "up"|"down"}` map, with a `countReactions`
+aggregator for future stats dashboards. Active reactions flip the
+button color (emerald for up, red for down).
+
+19 unit tests cover the bookmark store, the reaction store,
+parsing invalid JSON / reaction values, the toggle-off-on-same
+rule, and the counting aggregator.
 
 ## Known limitations
 
