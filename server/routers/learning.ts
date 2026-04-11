@@ -27,6 +27,7 @@ import {
   getDueItems,
   getMasterySummary,
   assessTrackReadiness,
+  parseItemKey,
 } from "../services/learning/mastery";
 
 import {
@@ -60,6 +61,8 @@ import {
   createPracticeQuestion,
   listFlashcardsForTrack,
   createFlashcard,
+  getFlashcardsByIds,
+  getQuestionsByIds,
   searchContent,
   explainConcept,
   getContentHistory,
@@ -136,6 +139,73 @@ const masteryRouter = router({
     .input(z.object({ limit: z.number().min(1).max(500).default(50) }).optional())
     .query(async ({ ctx, input }) => {
       return getDueItems(ctx.user.id, input?.limit ?? 50);
+    }),
+
+  /**
+   * Returns a ready-to-render mixed-modality review session: the user's
+   * overdue flashcards and practice questions, hydrated into the shape the
+   * LearningReview UI expects. If nothing is due, returns an empty session
+   * and the UI should fall back to "everything caught up".
+   *
+   * The returned items are interleaved server-side so the client doesn't
+   * need to know the ordering heuristic.
+   */
+  dueReview: protectedProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().int().min(1).max(100).default(20),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 20;
+      const due = await getDueItems(ctx.user.id, limit * 2);
+
+      const flashcardIds: number[] = [];
+      const questionIds: number[] = [];
+      const keyMeta: { key: string; kind: "flashcard" | "question"; id: number }[] = [];
+      for (const row of due) {
+        const parsed = parseItemKey(row.itemKey);
+        if (parsed.kind === "flashcard" && parsed.id != null) {
+          flashcardIds.push(parsed.id);
+          keyMeta.push({ key: row.itemKey, kind: "flashcard", id: parsed.id });
+        } else if (parsed.kind === "question" && parsed.id != null) {
+          questionIds.push(parsed.id);
+          keyMeta.push({ key: row.itemKey, kind: "question", id: parsed.id });
+        }
+      }
+
+      const [flashcards, questions] = await Promise.all([
+        getFlashcardsByIds(flashcardIds),
+        getQuestionsByIds(questionIds),
+      ]);
+
+      const flashcardById = new Map(flashcards.map((f: any) => [f.id, f]));
+      const questionById = new Map(questions.map((q: any) => [q.id, q]));
+
+      // Interleave flashcards and questions 1:1 while preserving
+      // most-overdue-first order from `keyMeta`.
+      const items: Array<
+        | { kind: "flashcard"; itemKey: string; flashcard: any }
+        | { kind: "question"; itemKey: string; question: any }
+      > = [];
+      for (const meta of keyMeta) {
+        if (items.length >= limit) break;
+        if (meta.kind === "flashcard") {
+          const fc = flashcardById.get(meta.id);
+          if (fc) items.push({ kind: "flashcard", itemKey: meta.key, flashcard: fc });
+        } else {
+          const q = questionById.get(meta.id);
+          if (q) items.push({ kind: "question", itemKey: meta.key, question: q });
+        }
+      }
+
+      return {
+        items,
+        total: items.length,
+        dueTotal: due.length,
+      };
     }),
 
   assessReadiness: protectedProcedure

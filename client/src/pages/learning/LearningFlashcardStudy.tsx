@@ -15,7 +15,7 @@
  * learners could never see the cards.
  */
 
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
@@ -30,6 +30,7 @@ import {
   RotateCw,
   Sparkles,
   Trophy,
+  Flame,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCelebration } from "@/lib/CelebrationEngine";
@@ -57,6 +58,8 @@ export default function LearningFlashcardStudy() {
   const [flipped, setFlipped] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
   const [complete, setComplete] = useState(false);
 
   // Reset when the deck changes.
@@ -65,6 +68,8 @@ export default function LearningFlashcardStudy() {
     setFlipped(false);
     setCorrectCount(0);
     setIncorrectCount(0);
+    setStreak(0);
+    setBestStreak(0);
     setComplete(false);
   }, [trackQ.data?.id]);
 
@@ -72,39 +77,86 @@ export default function LearningFlashcardStudy() {
   const total = cards.length;
   const progress = total > 0 ? ((index + (complete ? 1 : 0)) / total) * 100 : 0;
 
-  const mark = async (correct: boolean) => {
-    if (!current) return;
-    // Fire-and-forget SRS update — if it fails we still advance, but we
-    // surface the error via toast so learners know their progress may
-    // not have been saved (e.g. DB unavailable).
-    recordReview
-      .mutateAsync({
-        itemKey: `flashcard:${current.id}`,
-        itemType: "flashcard",
-        correct,
-      })
-      .catch((err) => {
-        toast.error(`Review not saved: ${err.message ?? "network error"}`);
-      });
+  const mark = useCallback(
+    (correct: boolean) => {
+      if (!current) return;
+      // Fire-and-forget SRS update — if it fails we still advance, but we
+      // surface the error via toast so learners know their progress may
+      // not have been saved (e.g. DB unavailable).
+      recordReview
+        .mutateAsync({
+          itemKey: `flashcard:${current.id}`,
+          itemType: "flashcard",
+          correct,
+        })
+        .catch((err) => {
+          toast.error(`Review not saved: ${err.message ?? "network error"}`);
+        });
 
-    if (correct) setCorrectCount((c) => c + 1);
-    else setIncorrectCount((c) => c + 1);
+      if (correct) {
+        setCorrectCount((c) => c + 1);
+        setStreak((s) => {
+          const next = s + 1;
+          setBestStreak((b) => Math.max(b, next));
+          return next;
+        });
+      } else {
+        setIncorrectCount((c) => c + 1);
+        setStreak(0);
+      }
 
-    if (index + 1 >= total) {
-      setComplete(true);
-    } else {
-      setIndex((i) => i + 1);
-      setFlipped(false);
-    }
-  };
+      if (index + 1 >= total) {
+        setComplete(true);
+      } else {
+        setIndex((i) => i + 1);
+        setFlipped(false);
+      }
+    },
+    // recordReview mutation identity is stable within a session
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current, index, total],
+  );
 
   const restart = () => {
     setIndex(0);
     setFlipped(false);
     setCorrectCount(0);
     setIncorrectCount(0);
+    setStreak(0);
+    setBestStreak(0);
     setComplete(false);
   };
+
+  // Keyboard shortcuts: Space to flip, 1/W wrong, 2/R right, Esc to exit.
+  useEffect(() => {
+    if (complete || !current) return;
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        navigate(`/learning/tracks/${slug}`);
+        return;
+      }
+      if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        setFlipped((f) => !f);
+        return;
+      }
+      if (!flipped) return;
+      if (e.key === "1" || e.key.toLowerCase() === "w") {
+        e.preventDefault();
+        mark(false);
+      } else if (e.key === "2" || e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        mark(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [complete, current, flipped, mark, navigate, slug]);
 
   if (trackQ.isLoading || flashcardsQ.isLoading) {
     return (
@@ -176,6 +228,15 @@ export default function LearningFlashcardStudy() {
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to {track.name}
           </Button>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {streak >= 3 && (
+              <Badge
+                variant="outline"
+                className="text-accent border-accent/50 animate-pulse"
+                aria-label={`Streak: ${streak} in a row`}
+              >
+                <Flame className="h-3 w-3 mr-1" /> {streak}
+              </Badge>
+            )}
             <Badge variant="outline" className="text-emerald-600">
               ✓ {correctCount}
             </Badge>
@@ -199,6 +260,7 @@ export default function LearningFlashcardStudy() {
           <CompletionCard
             correct={correctCount}
             incorrect={incorrectCount}
+            bestStreak={bestStreak}
             onRestart={restart}
             trackSlug={track.slug}
           />
@@ -242,6 +304,7 @@ export default function LearningFlashcardStudy() {
                   disabled={!flipped || recordReview.isPending}
                 >
                   <X className="h-4 w-4 mr-2" /> Got it wrong
+                  <span className="ml-1 text-[10px] opacity-70">(1)</span>
                 </Button>
                 <Button
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -249,13 +312,14 @@ export default function LearningFlashcardStudy() {
                   disabled={!flipped || recordReview.isPending}
                 >
                   <Check className="h-4 w-4 mr-2" /> Got it right
+                  <span className="ml-1 text-[10px] opacity-70">(2)</span>
                 </Button>
               </div>
-              {!flipped && (
-                <p className="text-[11px] text-muted-foreground text-center">
-                  Reveal the answer before scoring yourself.
-                </p>
-              )}
+              <p className="text-[11px] text-muted-foreground text-center">
+                {flipped
+                  ? "Space to flip · 1 wrong · 2 right · Esc to exit"
+                  : "Reveal the answer before scoring yourself (Space)"}
+              </p>
             </div>
           )
         )}
@@ -267,11 +331,13 @@ export default function LearningFlashcardStudy() {
 function CompletionCard({
   correct,
   incorrect,
+  bestStreak,
   onRestart,
   trackSlug,
 }: {
   correct: number;
   incorrect: number;
+  bestStreak: number;
   onRestart: () => void;
   trackSlug: string;
 }) {
@@ -312,6 +378,12 @@ function CompletionCard({
           </p>
           <p className="text-sm text-muted-foreground">
             {correct} of {total} correct ({pct}%)
+            {bestStreak >= 3 && (
+              <>
+                {" · "}
+                <span className="text-accent">best streak: {bestStreak}</span>
+              </>
+            )}
           </p>
           <p className="text-sm text-muted-foreground/80 max-w-xs mx-auto">
             {getMessage()}

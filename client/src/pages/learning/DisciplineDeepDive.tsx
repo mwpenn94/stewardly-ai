@@ -81,21 +81,33 @@ export default function DisciplineDeepDive() {
 
   const [activeTab, setActiveTab] = useState<Tab>("definitions");
 
-  // Fetch definitions from the learning content API
-  const defsQ = trpc.learning.content.listDefinitions.useQuery(
-    { limit: 200 },
-    { enabled: true },
+  // Resolve the slug into a real track first so the Definitions tab can
+  // show the flashcards that actually belong to this track — prior to this
+  // pass the page pulled EVERY definition in the DB regardless of slug, so
+  // clicking any track's "Deep Dive" tile showed the same 200 definitions.
+  const trackQ = trpc.learning.content.getTrackBySlug.useQuery(
+    { slug },
+    { enabled: !!slug },
+  );
+
+  // Flashcards are the canonical "track vocabulary" — every term imported
+  // from mwpenn94/emba_modules under a track is already tagged with the
+  // trackId, so this query returns exactly the definitions the learner
+  // should see when they click into this track's Deep Dive.
+  const flashcardsQ = trpc.learning.content.listFlashcards.useQuery(
+    { trackId: trackQ.data?.id ?? 0 },
+    { enabled: !!trackQ.data?.id },
   );
 
   const definitions: DefinitionItem[] = useMemo(() => {
-    return (defsQ.data ?? []).map((d: any) => ({
-      id: d.id,
-      term: d.term,
-      definition: d.definition,
-      category: d.category ?? null,
-      audioScript: `${d.term}. ${d.definition}`,
+    return (flashcardsQ.data ?? []).map((f: any) => ({
+      id: f.id,
+      term: f.term,
+      definition: f.definition,
+      category: f.sourceLabel ?? null,
+      audioScript: `${f.term}. ${f.definition}`,
     }));
-  }, [defsQ.data]);
+  }, [flashcardsQ.data]);
 
   // Static formula metadata that maps to FORMULA_REGISTRY
   const formulas: FormulaItem[] = useMemo(
@@ -199,15 +211,22 @@ export default function DisciplineDeepDive() {
     { key: "fs-applications", label: "FS Applications", icon: <FileText className="h-4 w-4" />, count: fsApps.length },
   ];
 
+  const track = trackQ.data;
+
   return (
-    <AppShell title="Deep Dive">
+    <AppShell title={track ? `${track.name} · Deep Dive` : "Deep Dive"}>
       <div className="mx-auto max-w-5xl p-6 space-y-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/learning")}>
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Learning
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(track ? `/learning/tracks/${track.slug}` : "/learning")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" /> {track ? `Back to ${track.name}` : "Back to Learning"}
           </Button>
           <h1 className="text-xl font-heading font-semibold tracking-tight">
-            Deep Dive
+            {track?.emoji ?? "📘"} {track ? track.name : "Deep Dive"}
+            <span className="text-sm font-normal text-muted-foreground ml-2">Deep Dive</span>
           </h1>
         </div>
 

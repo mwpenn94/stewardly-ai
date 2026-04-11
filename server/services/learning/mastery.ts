@@ -8,7 +8,7 @@
 
 import { getDb } from "../../db";
 import { learningMasteryProgress, type LearningMastery } from "../../../drizzle/schema";
-import { and, eq, lte, desc, sql } from "drizzle-orm";
+import { and, asc, eq, lte } from "drizzle-orm";
 import { logger } from "../../_core/logger";
 
 const log = logger.child({ module: "learning/mastery" });
@@ -125,6 +125,13 @@ export async function batchUpsertMastery(
   return ok;
 }
 
+/**
+ * Returns mastery rows whose `nextDue` is at or before now, ordered by
+ * `nextDue` ASC — the most-overdue item first. This is the correct SRS
+ * behavior: when the learner opens a review session, the item their memory
+ * has been decaying on the longest should be reviewed first. The previous
+ * implementation sorted DESC which surfaced the near-future items first.
+ */
 export async function getDueItems(userId: number, limit = 50): Promise<LearningMastery[]> {
   const db = await getDb();
   if (!db) return [];
@@ -138,12 +145,24 @@ export async function getDueItems(userId: number, limit = 50): Promise<LearningM
           lte(learningMasteryProgress.nextDue, new Date()),
         ),
       )
-      .orderBy(desc(learningMasteryProgress.nextDue))
+      .orderBy(asc(learningMasteryProgress.nextDue))
       .limit(limit);
   } catch (err) {
     log.warn({ err: String(err) }, "getDueItems failed");
     return [];
   }
+}
+
+/**
+ * Pure: given a mastery row's `itemKey`, parse it into a stable shape the
+ * review-session UI can use to route the item to the flashcard renderer or
+ * the quiz renderer. Keys follow the convention `<type>:<id>` set by the
+ * flashcard / quiz study pages.
+ */
+export function parseItemKey(itemKey: string): { kind: "flashcard" | "question" | "unknown"; id: number | null } {
+  const m = /^(flashcard|question):(\d+)$/.exec(itemKey);
+  if (!m) return { kind: "unknown", id: null };
+  return { kind: m[1] as "flashcard" | "question", id: Number(m[2]) };
 }
 
 export interface MasterySummary {

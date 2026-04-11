@@ -112,6 +112,8 @@ const ContentStudio = lazy(() => import("./pages/learning/ContentStudio"));
 const LearningTrackDetail = lazy(() => import("./pages/learning/LearningTrackDetail"));
 const LearningFlashcardStudy = lazy(() => import("./pages/learning/LearningFlashcardStudy"));
 const LearningQuizRunner = lazy(() => import("./pages/learning/LearningQuizRunner"));
+const LearningReview = lazy(() => import("./pages/learning/LearningReview"));
+const ExamSimulatorRoute = lazy(() => import("./pages/learning/ExamSimulatorRoute"));
 // Pass 120+ new components
 const NewLanding = lazy(() => import("./pages/NewLanding"));
 const MyWork = lazy(() => import("./pages/MyWork"));
@@ -222,8 +224,10 @@ function Router() {
         <Route path="/learning/tracks/:slug" component={LearningTrackDetail} />
         <Route path="/learning/tracks/:slug/study" component={LearningFlashcardStudy} />
         <Route path="/learning/tracks/:slug/quiz" component={LearningQuizRunner} />
+        {/* SRS-targeted mixed review session — the "Start review" CTA lands here */}
+        <Route path="/learning/review" component={LearningReview} />
         {/* Pass 120+ learning extensions */}
-        <Route path="/learning/exam/:moduleSlug">{() => <ExamSimulator />}</Route>
+        <Route path="/learning/exam/:moduleSlug" component={ExamSimulatorRoute} />
         <Route path="/learning/discipline/:slug">{() => <DisciplineDeepDive />}</Route>
         <Route path="/learning/case/:caseId">{() => <CaseStudySimulator />}</Route>
         <Route path="/learning/connections">{() => <ConnectionMap />}</Route>

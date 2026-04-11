@@ -12,6 +12,7 @@
  * regulatory review queue.
  */
 
+import { useMemo } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
@@ -19,15 +20,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale } from "lucide-react";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame } from "lucide-react";
 import { Link } from "wouter";
+import { getRecentCalculators } from "@/lib/recentCalculators";
 
 export default function LearningHome() {
+  // Read the per-device recent-calculators list once per mount. This feeds
+  // the server's cross-system study recommendation engine — without it the
+  // "recentCalculators" input was always an empty array and the
+  // calculator-informed branch of `fuseRecommendations` never fired.
+  const recentCalculators = useMemo(() => getRecentCalculators(), []);
+
   const meQ = trpc.auth.me.useQuery();
   const summaryQ = trpc.learning.mastery.summary.useQuery();
   const licensesQ = trpc.learning.licenses.list.useQuery();
   const alertsQ = trpc.learning.licenses.alerts.useQuery();
-  const recsQ = trpc.learning.recommendations.forMe.useQuery(undefined);
+  const recsQ = trpc.learning.recommendations.forMe.useQuery(
+    recentCalculators.length > 0 ? { recentCalculators } : undefined,
+  );
   const tracksQ = trpc.learning.content.listTracks.useQuery(undefined);
 
   const role = meQ.data?.role ?? "user";
@@ -90,19 +100,37 @@ export default function LearningHome() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={summary && summary.dueNow > 0 ? "border-accent/40" : undefined}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Due Now</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                Due Now
+                {summary && summary.dueNow > 0 && (
+                  <Flame className="h-3 w-3 text-accent" aria-hidden />
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-semibold">{summary?.dueNow ?? 0}</div>
-              <div className="text-xs text-muted-foreground mt-2">items ready for review</div>
-              {tracks.length > 0 && (
-                <Link href={`/learning/tracks/${tracks[0].slug}/study`}>
-                  <Button variant="link" size="sm" className="px-0 mt-1">
-                    Start review →
+              <div className="text-xs text-muted-foreground mt-2">
+                {summary && summary.dueNow > 0
+                  ? "items decaying — review now"
+                  : "nothing due — study ahead"}
+              </div>
+              {summary && summary.dueNow > 0 ? (
+                <Link href="/learning/review">
+                  <Button size="sm" className="mt-2">
+                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                    Start review ({summary.dueNow})
                   </Button>
                 </Link>
+              ) : (
+                tracks.length > 0 && (
+                  <Link href={`/learning/tracks/${tracks[0].slug}`}>
+                    <Button variant="link" size="sm" className="px-0 mt-1">
+                      Browse tracks →
+                    </Button>
+                  </Link>
+                )
               )}
             </CardContent>
           </Card>

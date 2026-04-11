@@ -12,7 +12,7 @@
  * mwpenn94/emba_modules could actually be answered.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
@@ -27,6 +27,7 @@ import {
   RotateCw,
   Trophy,
   HelpCircle,
+  Flame,
 } from "lucide-react";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { toast } from "sonner";
@@ -54,6 +55,8 @@ export default function LearningQuizRunner() {
   const [revealed, setRevealed] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
   const [complete, setComplete] = useState(false);
 
   useEffect(() => {
@@ -62,6 +65,8 @@ export default function LearningQuizRunner() {
     setRevealed(false);
     setCorrectCount(0);
     setIncorrectCount(0);
+    setStreak(0);
+    setBestStreak(0);
     setComplete(false);
   }, [trackQ.data?.id]);
 
@@ -69,12 +74,21 @@ export default function LearningQuizRunner() {
   const total = questions.length;
   const progress = total > 0 ? ((index + (complete ? 1 : 0)) / total) * 100 : 0;
 
-  const submit = async () => {
+  const submit = useCallback(() => {
     if (selected == null || !current) return;
     setRevealed(true);
     const correct = selected === current.correctIndex;
-    if (correct) setCorrectCount((c) => c + 1);
-    else setIncorrectCount((c) => c + 1);
+    if (correct) {
+      setCorrectCount((c) => c + 1);
+      setStreak((s) => {
+        const next = s + 1;
+        setBestStreak((b) => Math.max(b, next));
+        return next;
+      });
+    } else {
+      setIncorrectCount((c) => c + 1);
+      setStreak(0);
+    }
 
     recordReview
       .mutateAsync({
@@ -85,9 +99,10 @@ export default function LearningQuizRunner() {
       .catch((err) => {
         toast.error(`Review not saved: ${err.message ?? "network error"}`);
       });
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, current]);
 
-  const next = () => {
+  const next = useCallback(() => {
     if (index + 1 >= total) {
       setComplete(true);
       return;
@@ -95,7 +110,7 @@ export default function LearningQuizRunner() {
     setIndex((i) => i + 1);
     setSelected(null);
     setRevealed(false);
-  };
+  }, [index, total]);
 
   const restart = () => {
     setIndex(0);
@@ -103,8 +118,48 @@ export default function LearningQuizRunner() {
     setRevealed(false);
     setCorrectCount(0);
     setIncorrectCount(0);
+    setStreak(0);
+    setBestStreak(0);
     setComplete(false);
   };
+
+  // Keyboard shortcuts: 1-6 select, Enter submit/advance, Esc exit.
+  useEffect(() => {
+    if (complete || !current) return;
+    const options: string[] = Array.isArray(current?.options)
+      ? (current.options as string[])
+      : [];
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        navigate(`/learning/tracks/${slug}`);
+        return;
+      }
+      if (!revealed) {
+        const digit = Number(e.key);
+        if (Number.isFinite(digit) && digit >= 1 && digit <= options.length) {
+          e.preventDefault();
+          setSelected(digit - 1);
+          return;
+        }
+        if (e.key === "Enter" && selected != null) {
+          e.preventDefault();
+          submit();
+        }
+        return;
+      }
+      if (e.key === "Enter" || e.key === "ArrowRight") {
+        e.preventDefault();
+        next();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [complete, current, revealed, selected, submit, next, navigate, slug]);
 
   if (trackQ.isLoading || questionsQ.isLoading) {
     return (
@@ -180,6 +235,15 @@ export default function LearningQuizRunner() {
             <ArrowLeft className="h-4 w-4 mr-2" /> Back to {track.name}
           </Button>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {streak >= 3 && (
+              <Badge
+                variant="outline"
+                className="text-accent border-accent/50 animate-pulse"
+                aria-label={`Streak: ${streak} in a row`}
+              >
+                <Flame className="h-3 w-3 mr-1" /> {streak}
+              </Badge>
+            )}
             <Badge variant="outline" className="text-emerald-600">
               ✓ {correctCount}
             </Badge>
@@ -203,6 +267,7 @@ export default function LearningQuizRunner() {
           <CompletionCard
             correct={correctCount}
             total={total}
+            bestStreak={bestStreak}
             onRestart={restart}
             trackSlug={track.slug}
           />
@@ -273,16 +338,24 @@ export default function LearningQuizRunner() {
                       disabled={selected == null || recordReview.isPending}
                     >
                       Submit answer
+                      <span className="ml-1 text-[10px] opacity-70">(⏎)</span>
                     </Button>
                   ) : (
                     <Button onClick={next}>
                       {index + 1 >= total ? "Finish" : "Next question"}
+                      <span className="ml-1 text-[10px] opacity-70">(⏎)</span>
                     </Button>
                   )}
                 </div>
               </CardContent>
             </Card>
           )
+        )}
+        {!complete && (
+          <p className="text-[11px] text-muted-foreground text-center">
+            1–{Math.max(4, Array.isArray(current?.options) ? (current!.options as string[]).length : 4)} select
+            · Enter submit/next · Esc exit
+          </p>
         )}
       </div>
     </AppShell>
@@ -292,11 +365,13 @@ export default function LearningQuizRunner() {
 function CompletionCard({
   correct,
   total,
+  bestStreak,
   onRestart,
   trackSlug,
 }: {
   correct: number;
   total: number;
+  bestStreak: number;
   onRestart: () => void;
   trackSlug: string;
 }) {
@@ -335,6 +410,12 @@ function CompletionCard({
           </p>
           <p className="text-sm text-muted-foreground">
             {correct} of {total} correct ({pct}%)
+            {bestStreak >= 3 && (
+              <>
+                {" · "}
+                <span className="text-accent">best streak: {bestStreak}</span>
+              </>
+            )}
           </p>
           <p className="text-sm text-muted-foreground/80 max-w-xs mx-auto">
             {getMessage()}
