@@ -153,4 +153,11 @@ describe("allChordLabels", () => {
     expect(nChord).toBeDefined();
     expect(nChord!.label).toContain("Licenses");
   });
+
+  it("includes the g+v Dead Code chord added in Pass 259", () => {
+    const labels = allChordLabels();
+    const vChord = labels.find((l) => l.keys[1] === "v");
+    expect(vChord).toBeDefined();
+    expect(vChord!.label).toContain("Dead");
+  });
 });

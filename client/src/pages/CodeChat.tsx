@@ -147,6 +147,7 @@ import TestRunnerPanel from "@/components/codeChat/TestRunnerPanel";
 import EnvInspectorPanel from "@/components/codeChat/EnvInspectorPanel";
 import CommitTimelinePanel from "@/components/codeChat/CommitTimelinePanel";
 import LicenseScannerPanel from "@/components/codeChat/LicenseScannerPanel";
+import DeadCodePanel from "@/components/codeChat/DeadCodePanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import {
   loadHistory,
@@ -2354,6 +2355,9 @@ export default function CodeChatPage() {
               <TabsTrigger value="licenses" className="gap-1.5">
                 <BookMarked className="h-3.5 w-3.5" /> Licenses
               </TabsTrigger>
+              <TabsTrigger value="dead" className="gap-1.5">
+                <X className="h-3.5 w-3.5" /> Dead
+              </TabsTrigger>
               <TabsTrigger value="imports" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> Imports
               </TabsTrigger>
@@ -2426,6 +2430,10 @@ export default function CodeChatPage() {
 
           <TabsContent value="licenses">
             <div className="p-6"><LicenseScannerPanel /></div>
+          </TabsContent>
+
+          <TabsContent value="dead">
+            <div className="p-6"><DeadCodePanel /></div>
           </TabsContent>
 
           <TabsContent value="imports">

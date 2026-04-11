@@ -175,6 +175,11 @@ import {
   type LicenseCategory,
 } from "../services/codeChat/licenseScanner";
 import {
+  detectDeadCode,
+  summarizeDeadCode,
+  groupByPath as groupDeadByPath,
+} from "../services/codeChat/deadCode";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -871,6 +876,31 @@ export const codeChatRouter = router({
     .mutation(async ({ input }) => {
       const ok = await deleteCheckpointFromDisk(WORKSPACE_ROOT, input.id);
       return { ok };
+    }),
+
+  // Pass 259: dead code detector
+  detectDeadCode: protectedProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(2000).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const [symbolIndex, importData] = await Promise.all([
+        getSymbolIndex(WORKSPACE_ROOT),
+        getImportGraph(WORKSPACE_ROOT),
+      ]);
+      const report = detectDeadCode(symbolIndex, importData.graph, {
+        limit: input?.limit ?? 500,
+      });
+      return {
+        entries: report.entries,
+        groups: groupDeadByPath(report.entries).slice(0, 200),
+        orphanFiles: report.orphanFiles,
+        summary: summarizeDeadCode(report),
+      };
     }),
 
   // Pass 258: dependency license scanner
