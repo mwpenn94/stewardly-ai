@@ -92,6 +92,15 @@ import {
   summarizeGitStatus,
 } from "../services/codeChat/gitStatus";
 import {
+  getImportGraph,
+  clearImportGraphCache,
+} from "../services/codeChat/importGraphCache";
+import {
+  getFileDependencies,
+  findHotFiles,
+  graphStats,
+} from "../services/codeChat/importGraph";
+import {
   getWorkspaceFileIndex,
   fuzzyFilterFiles,
 } from "../services/codeChat/fileIndex";
@@ -389,6 +398,30 @@ export const codeChatRouter = router({
       );
       return { diff };
     }),
+
+  // Pass 245: import graph
+  fileDependencies: protectedProcedure
+    .input(z.object({ path: z.string().max(500) }))
+    .query(async ({ input }) => {
+      const { graph } = await getImportGraph(WORKSPACE_ROOT);
+      return getFileDependencies(graph, input.path);
+    }),
+
+  importGraphHotFiles: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(100).optional() }).optional())
+    .query(async ({ input }) => {
+      const { graph, knownFiles } = await getImportGraph(WORKSPACE_ROOT);
+      return {
+        hot: findHotFiles(graph, input?.limit ?? 10),
+        stats: graphStats(graph, knownFiles),
+      };
+    }),
+
+  rebuildImportGraph: protectedProcedure.mutation(async () => {
+    clearImportGraphCache();
+    const { graph, knownFiles } = await getImportGraph(WORKSPACE_ROOT);
+    return graphStats(graph, knownFiles);
+  }),
 
   // ─── Synthesizer procedures ────────────────────────────────────
   diffResponses: protectedProcedure
