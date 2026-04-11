@@ -188,6 +188,22 @@ export const BUILT_IN_COMMANDS: SlashCommand[] = [
       return { compact: true, keepRecent: Number.isFinite(keepRecent) ? keepRecent : 4 };
     },
   },
+  {
+    name: "plan",
+    aliases: ["p"],
+    description: "Generate a step-by-step plan before executing (Pass 236)",
+    args: "<task>",
+    handler: (_ctx, args) => {
+      const task = args.trim();
+      if (!task) return;
+      // Instruct the model to output a structured numbered list with
+      // no execution. The client-side plan parser reads the response
+      // and renders it as an interactive PlanReviewPanel.
+      return {
+        rewrite: `Generate a step-by-step plan for the following task. Output ONLY a numbered list of concrete, actionable steps — do NOT execute any tools and do NOT write any files yet. Each step should be one line, starting with a number like "1.", "2.", etc. Keep steps small and testable.\n\nTask: ${task}`,
+      };
+    },
+  },
 ];
 
 // ─── Parser + lookup ─────────────────────────────────────────────────────

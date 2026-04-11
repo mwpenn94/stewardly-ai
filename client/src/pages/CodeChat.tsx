@@ -105,6 +105,15 @@ import {
   tryRunSlashCommand,
   type SlashCommand,
 } from "@/components/codeChat/slashCommands";
+import PlanReviewPanel from "@/components/codeChat/PlanReviewPanel";
+import {
+  parsePlanFromText,
+  buildExecutionPrompt,
+  type Plan,
+  type PlanSnapshot,
+  snapshotPlan,
+  restorePlan,
+} from "@/components/codeChat/planMode";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -401,6 +410,57 @@ function CodeChatInterface() {
   // Pass 235: message reactions (thumbs up/down)
   const [reactions, setReactions] = useState<ReactionMap>(() => loadReactions());
   useEffect(() => { saveReactions(reactions); }, [reactions]);
+
+  // Pass 236: Plan Mode — per-assistant-message plan state, persisted
+  // across refreshes via localStorage. When the user runs `/plan <task>`
+  // the response gets auto-parsed into a structured Plan and rendered
+  // inline via PlanReviewPanel, where they can edit/reorder/approve.
+  const PLANS_KEY = "stewardly-codechat-plans";
+  const [plans, setPlans] = useState<Record<string, Plan>>(() => {
+    try {
+      const raw = localStorage.getItem(PLANS_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as Record<string, PlanSnapshot>;
+      const out: Record<string, Plan> = {};
+      for (const [k, v] of Object.entries(parsed)) {
+        try {
+          out[k] = restorePlan(v);
+        } catch { /* skip malformed */ }
+      }
+      return out;
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    try {
+      const snapshots: Record<string, PlanSnapshot> = {};
+      for (const [k, v] of Object.entries(plans)) {
+        snapshots[k] = snapshotPlan(v);
+      }
+      localStorage.setItem(PLANS_KEY, JSON.stringify(snapshots));
+    } catch { /* quota */ }
+  }, [plans]);
+  const [planExpecting, setPlanExpecting] = useState(false);
+
+  // Auto-parse any new assistant response into a Plan when we're
+  // expecting one (the user just ran /plan <task>). Only attaches when
+  // the response actually parses into a multi-step plan.
+  useEffect(() => {
+    if (!planExpecting) return;
+    // Look at the last assistant message
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== "assistant") continue;
+      if (plans[m.id]) return; // already have a plan for this msg
+      const parsed = parsePlanFromText(m.content);
+      if (parsed && parsed.steps.length >= 2) {
+        setPlans((prev) => ({ ...prev, [m.id]: parsed }));
+        setPlanExpecting(false);
+      }
+      return;
+    }
+  }, [messages, planExpecting, plans]);
   const handleUnpin = useCallback((path: string) => {
     setPinned((prev) => removePinned(prev, path));
   }, []);
@@ -444,6 +504,23 @@ function CodeChatInterface() {
       localStorage.setItem(BUDGET_KEY, JSON.stringify(budget));
     } catch { /* quota */ }
   }, [budget]);
+
+  // Pass 236: execute an approved plan by sending the built execution
+  // prompt through the ReAct loop
+  const handleExecutePlan = useCallback(
+    async (plan: Plan) => {
+      const prompt = buildExecutionPrompt(plan);
+      const admin = user?.role === "admin";
+      toast.success(`Executing ${plan.steps.length}-step plan…`);
+      await sendMessage(prompt, {
+        allowMutations: admin && allowMutations,
+        maxIterations: Math.max(maxIterations, plan.steps.length),
+        model: modelOverride,
+        enabledTools,
+      });
+    },
+    [sendMessage, user, allowMutations, maxIterations, modelOverride, enabledTools],
+  );
 
   // Pass 220: fork conversation at a specific message
   const handleForkAt = useCallback(
@@ -690,6 +767,13 @@ function CodeChatInterface() {
             return;
           }
           if ("rewrite" in result && result.rewrite) {
+            // Pass 236: if this is a /plan or /p command, set the
+            // "expecting a plan" flag so the next assistant response
+            // gets parsed into an interactive PlanReviewPanel instead
+            // of just a plain markdown reply.
+            if (text.toLowerCase().startsWith("/plan") || text.toLowerCase().startsWith("/p ")) {
+              setPlanExpecting(true);
+            }
             // The command expanded the input into a longer prompt —
             // put it in the textarea for the user to review, don't auto-send
             setInput(result.rewrite);
@@ -1149,6 +1233,22 @@ function CodeChatInterface() {
                 <div className="bg-card/60 border border-border/30 px-4 py-3 rounded-xl text-sm leading-relaxed">
                   <MarkdownMessage content={msg.content} />
                 </div>
+                {/* Pass 236: inline Plan review panel */}
+                {plans[msg.id] && (
+                  <PlanReviewPanel
+                    plan={plans[msg.id]}
+                    onChange={(next) =>
+                      setPlans((prev) => ({ ...prev, [msg.id]: next }))
+                    }
+                    onApprove={(approved) => {
+                      // Fire-and-forget; handleExecutePlan handles toasts
+                      handleExecutePlan(approved);
+                    }}
+                    onReject={() => {
+                      toast.info("Plan rejected");
+                    }}
+                  />
+                )}
                 {/* Pass 217: tool-call summary chips */}
                 {(() => {
                   const summary = summarizeToolEvents(msg.toolEvents);

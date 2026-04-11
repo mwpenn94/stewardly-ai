@@ -223,4 +223,28 @@ describe("tryRunSlashCommand — built-ins", () => {
     expect(r).toMatchObject({ handled: true });
     if (r && "compact" in r) expect(r.compact).toBeUndefined();
   });
+
+  it("/plan rewrites into a plan-generation prompt (Pass 236)", async () => {
+    const r = await tryRunSlashCommand("/plan refactor auth layer", mockCtx());
+    expect(r).toMatchObject({ handled: true });
+    if (r && "rewrite" in r && r.rewrite) {
+      expect(r.rewrite).toContain("step-by-step plan");
+      expect(r.rewrite).toContain("refactor auth layer");
+      expect(r.rewrite).toContain("do NOT execute");
+    }
+  });
+
+  it("/p alias also expands the plan prompt", async () => {
+    const r = await tryRunSlashCommand("/p add feature flag to chat", mockCtx());
+    expect(r).toMatchObject({ handled: true });
+    if (r && "rewrite" in r && r.rewrite) {
+      expect(r.rewrite).toContain("add feature flag to chat");
+    }
+  });
+
+  it("/plan with empty body is a no-op", async () => {
+    const r = await tryRunSlashCommand("/plan   ", mockCtx());
+    expect(r).toEqual({ handled: true });
+    if (r && "rewrite" in r) expect(r.rewrite).toBeUndefined();
+  });
 });
