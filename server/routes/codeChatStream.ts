@@ -18,6 +18,10 @@ import {
 } from "../services/codeChat/codeChatExecutor";
 import { extractFileMentions } from "../services/codeChat/fileIndex";
 import { readFile as sandboxReadFile } from "../services/codeChat/fileTools";
+import {
+  loadProjectInstructions,
+  buildInstructionsPromptOverlay,
+} from "../services/codeChat/projectInstructions";
 import { logger } from "../_core/logger";
 
 const codeChatStreamRouter = Router();
@@ -46,7 +50,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
     return;
   }
 
-  const { message, model, allowMutations = false, maxIterations = 5, enabledTools } = req.body;
+  const { message, model, allowMutations = false, maxIterations = 5, enabledTools, includeProjectInstructions = true } = req.body;
   if (!message || typeof message !== "string") {
     res.status(400).json({ error: "message is required" });
     return;
@@ -108,6 +112,19 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       if (resolved) layerOverlay = buildLayerOverlayPrompt(resolved);
     } catch { /* config resolution is optional */ }
 
+    // Pass 238: auto-load CLAUDE.md / .stewardly/instructions.md /
+    // AGENTS.md from the workspace root and inject into the system
+    // prompt so the agent always sees the project's house rules.
+    let projectInstructionsOverlay = "";
+    let loadedInstructionFiles: string[] = [];
+    if (includeProjectInstructions) {
+      try {
+        const instructions = await loadProjectInstructions(WORKSPACE_ROOT);
+        projectInstructionsOverlay = buildInstructionsPromptOverlay(instructions);
+        loadedInstructionFiles = instructions.entries.map((e) => e.path);
+      } catch { /* instructions are best-effort */ }
+    }
+
     const systemPrompt = [
       "You are a Claude-Code-style coding assistant inside Stewardly.",
       "Work step-by-step. Use `code_list_directory` and `code_read_file` to explore.",
@@ -119,7 +136,17 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "For any task with 3+ steps, call `code_update_todos` early with a pending list, then call it again after each step to flip status to in_progress/completed. Each item needs {id, content (imperative), activeForm (present-continuous), status}. This drives the live progress UI the user sees.",
       "Keep responses concise. Surface reasoning + tool calls.",
       layerOverlay ? `\n${layerOverlay}` : "",
+      projectInstructionsOverlay ? `\n${projectInstructionsOverlay}` : "",
     ].filter(Boolean).join("\n");
+
+    // Pass 238: tell the client which instruction files landed in the
+    // prompt so the UI can show a badge / hover preview
+    if (loadedInstructionFiles.length > 0) {
+      writeSse(res, {
+        type: "instructions_loaded",
+        files: loadedInstructionFiles,
+      });
+    }
 
     // ─── Pass 206: @file mention expansion ────────────────────────
     //

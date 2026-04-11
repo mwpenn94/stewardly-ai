@@ -73,6 +73,11 @@ import {
 } from "../services/codeChat/backgroundJobs";
 import { runAutonomousCoding } from "../services/codeChat/autonomousCoding";
 import {
+  loadProjectInstructions,
+  manifestForUI as projectInstructionsManifest,
+  clearProjectInstructionsCache,
+} from "../services/codeChat/projectInstructions";
+import {
   getWorkspaceFileIndex,
   fuzzyFilterFiles,
 } from "../services/codeChat/fileIndex";
@@ -301,6 +306,21 @@ export const codeChatRouter = router({
       );
       return { files: filtered, total: files.length };
     }),
+
+  // Pass 238: Project Instructions panel
+  // Returns a manifest of auto-loaded instruction files (CLAUDE.md,
+  // .stewardly/instructions.md, AGENTS.md) with a preview but without
+  // the full content — keeps the tRPC payload small.
+  projectInstructions: protectedProcedure.query(async () => {
+    const result = await loadProjectInstructions(WORKSPACE_ROOT);
+    return projectInstructionsManifest(result);
+  }),
+
+  reloadProjectInstructions: protectedProcedure.mutation(async () => {
+    clearProjectInstructionsCache();
+    const result = await loadProjectInstructions(WORKSPACE_ROOT);
+    return projectInstructionsManifest(result);
+  }),
 
   // ─── Synthesizer procedures ────────────────────────────────────
   diffResponses: protectedProcedure

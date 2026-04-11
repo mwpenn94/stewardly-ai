@@ -27,6 +27,7 @@ import {
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -115,6 +116,7 @@ import {
   restorePlan,
 } from "@/components/codeChat/planMode";
 import AgentTodoPanel from "@/components/codeChat/AgentTodoPanel";
+import ProjectInstructionsPopover from "@/components/codeChat/ProjectInstructionsPopover";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -361,7 +363,25 @@ function CodeChatInterface() {
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const { messages, isExecuting, currentTools, currentTodos, error, sendMessage, abort, clearHistory, regenerateLast, loadMessages } = useCodeChatStream();
+  const { messages, isExecuting, currentTools, currentTodos, loadedInstructionFiles, error, sendMessage, abort, clearHistory, regenerateLast, loadMessages } = useCodeChatStream();
+
+  // Pass 238: project instructions toggle — persisted so toggling
+  // off sticks across refreshes for users who prefer a clean slate
+  const INSTR_TOGGLE_KEY = "stewardly-codechat-instructions-on";
+  const [projectInstructionsOn, setProjectInstructionsOn] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem(INSTR_TOGGLE_KEY);
+      return raw === null ? true : raw === "true";
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(INSTR_TOGGLE_KEY, String(projectInstructionsOn));
+    } catch { /* quota */ }
+  }, [projectInstructionsOn]);
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
 
   // Pass 212: saved sessions library
   const [sessionsOpen, setSessionsOpen] = useState(false);
@@ -518,9 +538,10 @@ function CodeChatInterface() {
         maxIterations: Math.max(maxIterations, plan.steps.length),
         model: modelOverride,
         enabledTools,
+        includeProjectInstructions: projectInstructionsOn,
       });
     },
-    [sendMessage, user, allowMutations, maxIterations, modelOverride, enabledTools],
+    [sendMessage, user, allowMutations, maxIterations, modelOverride, enabledTools, projectInstructionsOn],
   );
 
   // Pass 220: fork conversation at a specific message
@@ -813,9 +834,10 @@ function CodeChatInterface() {
       maxIterations,
       model: modelOverride,
       enabledTools,
+      includeProjectInstructions: projectInstructionsOn,
     });
     inputRef.current?.focus();
-  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages]);
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages, projectInstructionsOn]);
 
   const handleSlashSelect = useCallback((cmd: SlashCommand) => {
     // Pre-fill the input with the command so the user can type args
@@ -1006,6 +1028,29 @@ function CodeChatInterface() {
           title={`Tool permissions (${enabledTools.length}/7 enabled)`}
         >
           <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/7
+        </button>
+        <button
+          onClick={() => setInstructionsOpen(true)}
+          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
+            projectInstructionsOn && loadedInstructionFiles.length > 0
+              ? "border-accent/40 bg-accent/5 text-accent"
+              : projectInstructionsOn
+                ? "border-border text-muted-foreground hover:text-foreground"
+                : "border-border/40 text-muted-foreground/60 line-through"
+          }`}
+          aria-label="Project instructions"
+          title={
+            projectInstructionsOn
+              ? loadedInstructionFiles.length > 0
+                ? `Project instructions loaded: ${loadedInstructionFiles.join(", ")}`
+                : "Project instructions (no files found)"
+              : "Project instructions disabled for this session"
+          }
+        >
+          <BookOpen className="w-3 h-3" />
+          {projectInstructionsOn && loadedInstructionFiles.length > 0
+            ? loadedInstructionFiles.length
+            : "Rules"}
         </button>
         <button
           onClick={() => setSessionsOpen(true)}
@@ -1409,6 +1454,7 @@ function CodeChatInterface() {
                             maxIterations,
                             model: modelOverride,
                             enabledTools,
+                            includeProjectInstructions: projectInstructionsOn,
                           });
                           if (!ok) toast.error("Nothing to regenerate");
                         }}
@@ -1460,6 +1506,7 @@ function CodeChatInterface() {
                   maxIterations,
                   model: modelOverride,
                   enabledTools,
+                  includeProjectInstructions: projectInstructionsOn,
                 });
                 if (ok) setLastErrorBanner(null);
                 else toast.info("No previous prompt to retry");
@@ -1620,6 +1667,12 @@ function CodeChatInterface() {
           setHistoryOpen(false);
           inputRef.current?.focus();
         }}
+      />
+      <ProjectInstructionsPopover
+        open={instructionsOpen}
+        onClose={() => setInstructionsOpen(false)}
+        enabled={projectInstructionsOn}
+        onToggle={setProjectInstructionsOn}
       />
       {/* Pass 233: bookmarks popover */}
       {bookmarksOpen && (
