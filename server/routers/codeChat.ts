@@ -101,6 +101,15 @@ import {
   graphStats,
 } from "../services/codeChat/importGraph";
 import {
+  getTodoMarkers,
+  clearTodoMarkersCache,
+} from "../services/codeChat/todoMarkersCache";
+import {
+  groupMarkers,
+  filterMarkers,
+  type MarkerKind,
+} from "../services/codeChat/todoMarkers";
+import {
   getWorkspaceFileIndex,
   fuzzyFilterFiles,
 } from "../services/codeChat/fileIndex";
@@ -421,6 +430,51 @@ export const codeChatRouter = router({
     clearImportGraphCache();
     const { graph, knownFiles } = await getImportGraph(WORKSPACE_ROOT);
     return graphStats(graph, knownFiles);
+  }),
+
+  // Pass 246: TODO marker scanner
+  scanTodoMarkers: protectedProcedure
+    .input(
+      z
+        .object({
+          kinds: z.array(z.string()).optional(),
+          author: z.string().optional(),
+          pathPrefix: z.string().optional(),
+          search: z.string().optional(),
+          limit: z.number().min(1).max(5000).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const all = await getTodoMarkers(WORKSPACE_ROOT);
+      const filtered = filterMarkers(all, {
+        kinds: input?.kinds as MarkerKind[] | undefined,
+        author: input?.author,
+        pathPrefix: input?.pathPrefix,
+        search: input?.search,
+      });
+      const limit = input?.limit ?? 500;
+      const groups = groupMarkers(all);
+      return {
+        markers: filtered.slice(0, limit),
+        total: filtered.length,
+        totalUnfiltered: all.length,
+        byKind: groups.byKind,
+        topAuthors: Array.from(groups.byAuthor.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([author, count]) => ({ author, count })),
+        topFiles: Array.from(groups.byFile.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([path, count]) => ({ path, count })),
+      };
+    }),
+
+  rebuildTodoMarkers: protectedProcedure.mutation(async () => {
+    clearTodoMarkersCache();
+    const markers = await getTodoMarkers(WORKSPACE_ROOT);
+    return { count: markers.length };
   }),
 
   // ─── Synthesizer procedures ────────────────────────────────────
