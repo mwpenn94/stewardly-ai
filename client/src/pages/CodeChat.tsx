@@ -134,6 +134,7 @@ import {
 } from "@/components/codeChat/agentMemory";
 import SymbolNavigatorPopover from "@/components/codeChat/SymbolNavigatorPopover";
 import SessionAnalyticsPopover from "@/components/codeChat/SessionAnalyticsPopover";
+import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
 import {
   loadHistory,
   saveHistory,
@@ -2163,6 +2164,9 @@ export default function CodeChatPage() {
               <TabsTrigger value="diff" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> Diff
               </TabsTrigger>
+              <TabsTrigger value="gitstatus" className="gap-1.5">
+                <GitBranch className="h-3.5 w-3.5" /> Git Status
+              </TabsTrigger>
               <TabsTrigger value="github" className="gap-1.5">
                 <Github className="h-3.5 w-3.5" /> GitHub
               </TabsTrigger>
@@ -2189,6 +2193,10 @@ export default function CodeChatPage() {
 
           <TabsContent value="diff">
             <div className="p-6"><DiffPanel /></div>
+          </TabsContent>
+
+          <TabsContent value="gitstatus">
+            <div className="p-6"><GitStatusPanel /></div>
           </TabsContent>
 
           <TabsContent value="github">

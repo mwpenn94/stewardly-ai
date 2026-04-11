@@ -86,6 +86,12 @@ import {
   symbolIndexStats,
 } from "../services/codeChat/symbolIndex";
 import {
+  getWorkspaceGitStatus,
+  getWorkspaceGitDiff,
+  getWorkspaceGitHead,
+  summarizeGitStatus,
+} from "../services/codeChat/gitStatus";
+import {
   getWorkspaceFileIndex,
   fuzzyFilterFiles,
 } from "../services/codeChat/fileIndex";
@@ -354,6 +360,35 @@ export const codeChatRouter = router({
     const index = await getSymbolIndex(WORKSPACE_ROOT);
     return symbolIndexStats(index);
   }),
+
+  // Pass 244: workspace git status
+  gitWorkspaceStatus: protectedProcedure.query(async () => {
+    const [entries, head] = await Promise.all([
+      getWorkspaceGitStatus(WORKSPACE_ROOT),
+      getWorkspaceGitHead(WORKSPACE_ROOT),
+    ]);
+    return {
+      entries,
+      summary: summarizeGitStatus(entries),
+      head,
+    };
+  }),
+
+  gitWorkspaceDiff: protectedProcedure
+    .input(
+      z.object({
+        path: z.string().max(500),
+        staged: z.boolean().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const diff = await getWorkspaceGitDiff(
+        WORKSPACE_ROOT,
+        input.path,
+        input.staged ?? false,
+      );
+      return { diff };
+    }),
 
   // ─── Synthesizer procedures ────────────────────────────────────
   diffResponses: protectedProcedure
