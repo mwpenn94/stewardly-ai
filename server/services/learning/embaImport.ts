@@ -41,6 +41,7 @@ import {
   listQuestionsForTrack,
   listFlashcardsForTrack,
 } from "./content";
+import { recordImportRun } from "./importHistory";
 
 const log = logger.child({ module: "learning/embaImport" });
 
@@ -546,5 +547,16 @@ export async function importEMBAFromGitHub(): Promise<EMBAImportResult> {
 
   result.durationMs = Date.now() - started;
   log.info(result, "importEMBAFromGitHub complete");
+
+  // Pass 4 (build loop) — persist the run to .stewardly/learning_import_history.json
+  // so admins can see "last successful import" + per-run counts in the
+  // Content Studio UI without redeploying. Best-effort: a failed
+  // persist must NOT cause the import call to fail.
+  try {
+    await recordImportRun(result);
+  } catch (err) {
+    log.warn({ err: String(err) }, "recordImportRun failed (history not persisted)");
+  }
+
   return result;
 }

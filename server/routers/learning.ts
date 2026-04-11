@@ -80,6 +80,10 @@ import {
 import { recommendStudyContent } from "../services/learning/recommendations";
 import { seedLearningContent } from "../services/learning/seed";
 import { importEMBAFromGitHub } from "../services/learning/embaImport";
+import {
+  loadImportHistory,
+  summarizeHistory,
+} from "../services/learning/importHistory";
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -596,5 +600,22 @@ export const learningRouter = router({
       throw new TRPCError({ code: "FORBIDDEN", message: "Import is admin-only" });
     }
     return importEMBAFromGitHub();
+  }),
+
+  // Pass 4 (build loop) — observability for admin Content Studio.
+  //
+  // Returns the persisted import-run history (newest first, capped at
+  // 50 runs) plus an aggregate summary. Reads from
+  // `.stewardly/learning_import_history.json` so it works whether or
+  // not the DB is available.
+  importHistory: adminProcedure.query(async ({ ctx }) => {
+    if (!canSeedContent({ id: ctx.user.id, role: (ctx.user.role as any) ?? "user" })) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "History is admin-only" });
+    }
+    const history = await loadImportHistory();
+    return {
+      runs: history.runs,
+      summary: summarizeHistory(history),
+    };
   }),
 });
