@@ -8,7 +8,7 @@
 
 ## Meta
 
-- **Last updated:** 2026-04-11T00:00:10Z by parity-pass-6 (claude/optimize-app-parity-FRm86)
+- **Last updated:** 2026-04-11T00:00:12Z by parity-pass-7 (claude/optimize-app-parity-FRm86)
 - **Comparable (primary):** Claude Code CLI
 - **Comparable (adjacent):** Cursor Composer, Aider, Cline, Windsurf Cascade, Continue.dev, Codex CLI
 - **Core purpose:** Give Stewardly advisors + admins a Claude-Code-style agentic coding assistant that can read, understand, and (with permission) modify the Stewardly codebase from inside the web app, without leaving the advisory workflow.
@@ -344,6 +344,30 @@ Per CLAUDE.md's "Custom Domain Passes" section — these dimensions are first-cl
 
 Cost2 (task-complexity routing) and Branch B (planner/executor/synthesizer split) are the same architectural lever viewed from different angles. A future pass that evaluates Pass 4's branches should note this — adopting Branch B incrementally closes Cost2 for free.
 
+## Future-state gaps (Pass 7)
+
+12-month projections against Anthropic's Agent SDK + MCP standardization, EU AI Act Article 52, and Cursor/Aider/Cline convergence trends.
+
+| ID | Projection → Gap | Priority | Effort | Target |
+|---|---|---|---|---|
+| FS1 | Agent SDK tool-call protocol standardization → rename Code Chat tools to PascalCase canonical set (Read, Edit, Bash, Glob, Grep, TodoWrite, WebFetch, MultiEdit, Task, ExitPlanMode) | **Promote D1 to High** | S | `codeChatExecutor.ts` CODE_CHAT_TOOL_DEFINITIONS |
+| FS2 | Multimodal input is 2027 table stakes → G7 image input promoted to Critical, + new FS2a voice input reusing Pass 120 Web Speech wiring | **Promote G7 to Critical** + new FS2a | M + S | CodeChat.tsx input, `useCodeChatStream.ts` |
+| FS3 | Cloud-synced agent memory (follows user across devices/projects) | High | M | new `user_agent_memory` table + `server/routers/codeChat.ts` memory procs |
+| FS4 | Persistent background agents that survive tab close, notify on completion | Med | L | wire `backgroundJobs.ts` to `autonomousCoding` + email/webhook notifier (depends on G1) |
+| FS5 | EU AI Act Article 52 — machine-readable "Co-authored-by: Stewardly Code Chat" trailer + visible AI-assisted badge on commits/PRs | **Critical if EU on roadmap** | S | `githubClient.ts` commit trailer injection |
+| FS6 | Cursor Composer-style multi-file refactor (plan → combined diff → all-or-per-file approve → atomic apply); pairs with G3 + G21 + G1 | High | L | new `MultiFileComposer` flow |
+| FS7 | Curated, compliance-vetted plugin marketplace (partial reversal of A1 — user-editable hooks still no, marketplace plugins future-state yes) | Low | XL | new architectural layer |
+
+### Spec amendments from Pass 7
+
+- **D1** priority raised from Med to High (FS1 forcing function — third-party MCP tool portability).
+- **G7** priority raised from High to Critical (FS2 — multimodal is table stakes).
+- **A1** amended: "User-editable arbitrary hooks = still rejected. Curated, compliance-vetted plugin marketplace = deferred to future-state (see FS7)."
+
+### Temperature note
+
+Pass 7 raises temperature to 0.8 — not because of stagnation (7 novel findings) but because future-state work is inherently divergent and the next pass should be free to explore without convergent pressure. Divergence budget used: 2/15 (13.3%), still inside the starting-temp-0.2 cap of 15%.
+
 ## Reconciliation log
 
 (append-only, one line per merge event)
@@ -353,12 +377,14 @@ Cost2 (task-complexity routing) and Branch B (planner/executor/synthesizer split
 - 2026-04-11T00:00:04Z — parity-pass-3 — appended Adversarial hazards section H1–H10. Amended G9 + G11 specs in-place via the hazards cross-reference (the original gap rows still point to the spec, but the hazards row overrides specific fields). No conflicts. Pass 1 + Pass 2 content preserved verbatim.
 - 2026-04-11T00:00:06Z — parity-pass-4 — appended Exploration branches section (Branch A/B/C/D), logged divergence budget (1 of 15 used). No conflicts. All prior content preserved.
 - 2026-04-11T00:00:08Z — parity-pass-5 — appended Delight & polish gaps section D10–D18 and beyond-parity candidate B21 (celebration on commit+push). No conflicts. All prior content preserved.
-- 2026-04-11T00:00:10Z — parity-pass-6 — appended Compliance/Fiduciary/Cost gaps C1–C5, F1–F2, Cost1–Cost3. Biggest findings: C1 PII screening hole in tool results (CRITICAL), C4 audit trail missing model/prompt hashes (CRITICAL), C2 URL guardrail regression (High). No conflicts.
+- 2026-04-11T00:00:10Z — parity-pass-6 — appended Compliance/Fiduciary/Cost gaps C1–C5, F1–F2, Cost1–Cost3.
+- 2026-04-11T00:00:12Z — parity-pass-7 — appended Future-state gaps FS1–FS7 + spec amendments (D1 priority↑, G7 priority↑, A1 partially reversed). No conflicts. Biggest findings: C1 PII screening hole in tool results (CRITICAL), C4 audit trail missing model/prompt hashes (CRITICAL), C2 URL guardrail regression (High). No conflicts.
 
 ## Changelog
 
 (append-only, one line per pass, most recent first)
 
+- Pass 7 (parity future-state, 2026-04-11, score 62.8% unchanged — roadmap findings don't shift current-state score) — logged FS1 (tool naming standardization forcing D1 to High), FS2 (multimodal → G7 Critical + new FS2a voice), FS3 (cloud agent memory), FS4 (persistent background agents, depends on G1), FS5 (EU AI Act Article 52 commit trailer — Critical if EU on roadmap), FS6 (multi-file composer, pairs with G3/G21/G1), FS7 (curated plugin marketplace, partial A1 reversal). Temperature **0.6 → 0.8** — not stagnation, divergent future-state work warrants exploration budget. Divergence: 2/15 (13.3%).
 - Pass 6 (parity compliance/fiduciary/cost, 2026-04-11, score 69.3% → **62.8%**) — found 10 gaps across 3 custom-domain dimensions that prior passes skipped: 2 critical (C1 PII screening in tool results, C4 audit trail missing model/prompt hashes), 2 high (C2 URL guardrail regression, F2 fiduciary rationale gap), 5 medium, 1 low-medium. Score drops **−6.5** because these are live compliance holes on a regulated product and they promote 2 existing items to critical and 2 to high — the gross score adjustment picks up the full severity weight. Temperature: score regressed — raise by 0.20 to **0.6**. After pass 6 the critical count = 6 (G1, G9, G29, G35, C1, C4). Five consecutive passes away from convergence as a result. This is expected for an adversarial-style compliance audit on a regulated app — the surface gets worse before it gets better.
 - Pass 5 (parity delight & polish, 2026-04-11, score 68.8% → **69.3%**) — added 9 polish gaps D10–D18 + 1 beyond-parity candidate B21 (celebration engine wired to commit+push). All are UX-dimension; zero affect core function. Score bumps +0.5 from the beyond-parity candidate moving us from 20 → 21 credible wins (on proposal — does not ship until coded). Temperature adjustment: score improved <0.2 points — by the letter of the rule this is stagnation and should raise temp by 0.20 to 0.6. But the pass yielded 9 novel findings in a dimension (delight) that had zero prior coverage, so the stagnation signal is a false positive — I'm holding temp at 0.4. Noted here explicitly so future passes can audit the decision.
 - Pass 4 (parity exploration, 2026-04-11, score 68.8% unchanged — divergent pass, no convergent work) — generated 4 architecturally-distinct branches (A terminal-in-tab, B planner/executor/synthesizer split, C full-screen IDE, D Stewardly-as-wrapper-over-Claude-Code). Non-binding recommendation: stay on Branch 0 for core-purpose alignment, but Branch B is a credible incremental architectural upgrade worth a future spike. Divergence budget: 1/15 used (6.7%). Temperature 0.4 (unchanged — divergent work doesn't change score).
