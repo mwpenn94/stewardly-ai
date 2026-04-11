@@ -102,8 +102,14 @@ export function IntentRouter() {
 
         case "audio.stop_speech":
           audioCompanion.pause();
-          if (typeof window !== "undefined" && window.speechSynthesis) {
-            window.speechSynthesis.cancel();
+          // Guard against older browsers that expose `speechSynthesis` but
+          // not `.cancel()`, and against SSR (no window).
+          if (typeof window !== "undefined") {
+            try {
+              window.speechSynthesis?.cancel?.();
+            } catch {
+              /* cancel can throw on some Safari builds — fail silent */
+            }
           }
           announce("Speech stopped", "assertive");
           return;

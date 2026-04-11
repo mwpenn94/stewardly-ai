@@ -274,11 +274,17 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, voiceListening: false }));
   }, []);
 
-  /* Pass 2: single-utterance recognition for push-to-talk (Alt+V). */
+  /* Pass 2: single-utterance recognition for push-to-talk (Alt+V).
+   * Pass 3: also no-op if another listenOnce is already mid-flight so a
+   * user hammering Alt+V twice doesn't start two overlapping recognizers.
+   */
   const listenOnce = useCallback(async () => {
     // If hands-free is already running, don't interfere with its loop —
     // let it handle the next utterance naturally.
     if (state.handsFreeActive) return;
+    // Race guard: a recognizer is already active (from a prior listenOnce
+    // that hasn't finished). Bail out silently.
+    if (recognitionRef.current) return;
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;

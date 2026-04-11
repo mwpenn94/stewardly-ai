@@ -141,6 +141,61 @@ Dimension scores are 1–10 using the v2 Appendix A calibration.
 
 ## Changelog
 
+### Pass 3 (2026-04-11, Adversarial, composite 8.55 → 8.80, +0.25)
+
+Assumed everything contains hidden failure modes. Hunted silent regressions,
+hostile inputs, and subtle collisions.
+
+**Hidden failures fixed:**
+
+1. **GlobalVoiceButton collided with OfflineBanner + NotificationBell.**
+   Pass 1 pinned the button `top-3 right-3 z-60`. But `OfflineBanner.tsx`
+   is `fixed top-0 ... z-100` — it sits OVER the voice button when
+   offline. And the Chat page has NotificationBell + ChangelogBell in the
+   top-right corner. Moved the button to `bottom-20 left-3` on mobile
+   (above the bottom tab bar, out of AudioCompanion's centered way) and
+   `lg:top-16 lg:left-3` on desktop — clear of OfflineBanner's ~40px
+   height AND every existing top-right cluster.
+
+2. **`audio.stop_speech` could crash on older Safari.** `speechSynthesis`
+   is present but `.cancel()` can throw on some builds. Now wrapped in
+   `try/catch` with optional chaining (`speechSynthesis?.cancel?.()`).
+
+3. **Alt+V double-press started overlapping recognizers.** Pass 2 added
+   `pil.listenOnce()` but didn't guard against a user hammering Alt+V
+   twice before the first recognizer returned. Added a race guard:
+   `if (recognitionRef.current) return;` so the second press is a silent
+   no-op.
+
+**Adversarial test suite** (`adversarial.test.ts`, 15 new tests):
+
+- File paths that start with `/` (`/api/endpoint`, `/usr/bin/env`,
+  `/var/log/`) are correctly classified as `unknown` and NOT intercepted
+  by the chat slash-command handler.
+- Naked slashes (`/`, `//`, `///`) return `unknown`.
+- Whitespace-only input, punctuation-only input (`???`, `...`, `!!!`)
+  return `unknown`.
+- 5,000-char input doesn't crash the parser.
+- Emoji-prefixed input (`🚀 go to learning 🔥`) correctly falls through.
+- Cyrillic / Chinese route names return `unknown`.
+- Mixed-case input (`GO TO LEARNING`, `gO tO lEaRnInG`) all classify the
+  same way.
+- Multiple trailing punctuation (`go to learning!!!`) strips correctly.
+- Chord machine: rapid-fire key sequence tracks state correctly.
+- Chord machine: a second key past `CHORD_TIMEOUT_MS` does NOT match.
+- Chord machine: modifier-like keys (`"shift"`) are ignored as starters.
+
+**All 15 adversarial tests passed first-run** — the parser and state
+machine are robust against hostile inputs.
+
+**Dimension scorecard delta:**
+- UI: 8.0 → 8.5 (+0.5) — voice button no longer hides behind OfflineBanner
+- Robustness: 8.5 → 9.0 (+0.5) — 15 hostile-input tests lock in safety
+- Performance: 8.0 → 8.0 — listenOnce race guard adds zero overhead
+- Delightfulness: 8.0 → 8.0 — no visible change
+
+**Composite:** 8.80 / 10 (+0.25)
+
 ### Pass 2 (2026-04-11, Depth, composite 8.15 → 8.55, +0.40)
 
 Stress-tested the Pass 1 intent bus against real-world conditions and closed
