@@ -135,6 +135,7 @@ import {
 } from "../services/codeChat/batchApply";
 import { buildWorkspaceRenamePlan } from "../services/codeChat/renameSymbolRunner";
 import { runVitest } from "../services/codeChat/testRunner";
+import { inspectPackages } from "../services/codeChat/packageInspector";
 import {
   validateRename,
   planToBatchOps,
@@ -388,6 +389,11 @@ export const codeChatRouter = router({
         },
       };
     }),
+
+  // Pass 261: package.json dependency inspector
+  inspectPackages: protectedProcedure.query(async () => {
+    return await inspectPackages(WORKSPACE_ROOT);
+  }),
 
   // Pass 258: vitest runner
   runTests: protectedProcedure
