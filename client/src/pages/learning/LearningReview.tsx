@@ -286,6 +286,47 @@ export default function LearningReview() {
     );
   }
 
+  // Error state — surface the failure instead of rendering "all caught
+  // up" which would be misleading. Pass 7 adversarial find: without
+  // this branch, a DB / network error would show the same UI as
+  // "nothing is due" and the user would think their progress was wiped.
+  if (dueQ.isError) {
+    return (
+      <AppShell title="Review">
+        <SEOHead title="Review" description="SRS review session" />
+        <div className="mx-auto max-w-2xl p-6 space-y-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/learning")}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Learning
+          </Button>
+          <Card>
+            <CardContent className="p-8 text-center space-y-4">
+              <div className="mx-auto w-16 h-16 rounded-full bg-rose-500/15 flex items-center justify-center">
+                <X className="h-8 w-8 text-rose-500" />
+              </div>
+              <p className="text-lg font-heading font-semibold">
+                Couldn&rsquo;t load your review session
+              </p>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                {dueQ.error?.message ?? "The server returned an error."}
+                <br />
+                Your progress is safe. Try again in a moment.
+              </p>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={() => dueQ.refetch()}>
+                  <RotateCw className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+                <Link href="/learning">
+                  <Button variant="outline">Back to tracks</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AppShell>
+    );
+  }
+
   // Nothing due — caught up. Offer a study-ahead path when there are
   // new cards the user has never seen, otherwise route back to the
   // track browser.

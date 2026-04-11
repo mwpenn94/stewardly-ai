@@ -130,6 +130,33 @@ export default function ExamSimulatorRoute() {
     );
   }
 
+  // Pass 7 adversarial fix: if the track query errored, surface the
+  // failure instead of rendering "Exam not found" (which would imply
+  // the track was deleted). A DB error and a missing row look the
+  // same to the caller without this branch.
+  if (trackQ.isError) {
+    return (
+      <AppShell title="Exam">
+        <div className="mx-auto max-w-2xl p-6 space-y-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/learning")}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Learning
+          </Button>
+          <Card>
+            <CardContent className="p-6 text-center space-y-3">
+              <p className="font-medium">Couldn&rsquo;t load the exam</p>
+              <p className="text-sm text-muted-foreground">
+                {trackQ.error?.message ?? "The server returned an error."}
+              </p>
+              <Button onClick={() => trackQ.refetch()} variant="outline" size="sm">
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppShell>
+    );
+  }
+
   if (!track) {
     return (
       <AppShell title="Exam not found">
