@@ -137,6 +137,11 @@ import { buildWorkspaceRenamePlan } from "../services/codeChat/renameSymbolRunne
 import { runVitest } from "../services/codeChat/testRunner";
 import { inspectPackages } from "../services/codeChat/packageInspector";
 import {
+  parseDiffStats,
+  composeMessage,
+  formatMessage,
+} from "../services/codeChat/commitComposer";
+import {
   validateRename,
   planToBatchOps,
 } from "../services/codeChat/renameSymbol";
@@ -394,6 +399,42 @@ export const codeChatRouter = router({
   inspectPackages: protectedProcedure.query(async () => {
     return await inspectPackages(WORKSPACE_ROOT);
   }),
+
+  // Pass 262: commit message composer (pure stats-based draft)
+  composeCommitMessage: protectedProcedure
+    .input(
+      z.object({
+        staged: z.boolean().optional().default(true),
+      }).optional(),
+    )
+    .query(async ({ input }) => {
+      const { spawn } = await import("node:child_process");
+      const args = input?.staged === false ? ["diff"] : ["diff", "--cached"];
+      const diff = await new Promise<string>((resolve) => {
+        const child = spawn("git", args, {
+          cwd: WORKSPACE_ROOT,
+          shell: false,
+        });
+        let out = "";
+        const timer = setTimeout(() => {
+          try { child.kill("SIGKILL"); } catch {}
+          resolve(out);
+        }, 15_000);
+        child.stdout.on("data", (b: Buffer) => {
+          if (out.length < 5 * 1024 * 1024) out += b.toString("utf8");
+        });
+        child.on("close", () => { clearTimeout(timer); resolve(out); });
+        child.on("error", () => { clearTimeout(timer); resolve(""); });
+      });
+      const stats = parseDiffStats(diff);
+      const message = composeMessage(stats);
+      return {
+        stats,
+        message,
+        formatted: formatMessage(message),
+        diffLength: diff.length,
+      };
+    }),
 
   // Pass 258: vitest runner
   runTests: protectedProcedure
