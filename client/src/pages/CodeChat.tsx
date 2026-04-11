@@ -135,6 +135,7 @@ import {
 } from "@/components/codeChat/agentMemory";
 import SymbolNavigatorPopover from "@/components/codeChat/SymbolNavigatorPopover";
 import FindReferencesPopover from "@/components/codeChat/FindReferencesPopover";
+import RenameSymbolPopover from "@/components/codeChat/RenameSymbolPopover";
 import SessionAnalyticsPopover from "@/components/codeChat/SessionAnalyticsPopover";
 import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
 import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
@@ -592,6 +593,9 @@ function CodeChatInterface() {
   const [referencesOpen, setReferencesOpen] = useState(false);
   const [referencesQuery, setReferencesQuery] = useState("");
 
+  // Pass 257: rename symbol popover (F2)
+  const [renameOpen, setRenameOpen] = useState(false);
+
   // Pass 253: workspace checkpoints (named snapshots for rollback)
   const [checkpoints, setCheckpoints] = useState<WorkspaceCheckpoint[]>(() => loadCheckpoints());
   useEffect(() => { saveCheckpoints(checkpoints); }, [checkpoints]);
@@ -761,6 +765,9 @@ function CodeChatInterface() {
         case "references":
           setReferencesQuery("");
           setReferencesOpen(true);
+          break;
+        case "rename":
+          setRenameOpen(true);
           break;
         case "checkpoints":
           setCheckpointsOpen(true);
@@ -1323,6 +1330,12 @@ function CodeChatInterface() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "t") {
         e.preventDefault();
         setSymbolNavOpen(true);
+        return;
+      }
+      // Pass 257: F2 → rename symbol (VS Code convention)
+      if (e.key === "F2" && !e.shiftKey) {
+        e.preventDefault();
+        setRenameOpen(true);
         return;
       }
       // Pass 252: Shift+F12 → find references. Uses selected text or
@@ -2492,6 +2505,11 @@ function CodeChatInterface() {
         open={referencesOpen}
         onClose={() => setReferencesOpen(false)}
         initialQuery={referencesQuery}
+      />
+      <RenameSymbolPopover
+        open={renameOpen}
+        onClose={() => setRenameOpen(false)}
+        isAdmin={isAdmin}
       />
       <SessionAnalyticsPopover
         open={analyticsOpen}

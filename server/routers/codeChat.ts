@@ -133,6 +133,11 @@ import {
   validateBatch,
   type BatchOp,
 } from "../services/codeChat/batchApply";
+import { buildWorkspaceRenamePlan } from "../services/codeChat/renameSymbolRunner";
+import {
+  validateRename,
+  planToBatchOps,
+} from "../services/codeChat/renameSymbol";
 import {
   groupReferences,
   summarizeReferences,
@@ -332,6 +337,105 @@ export const codeChatRouter = router({
     .query(({ input }) => {
       // Pure validation — doesn't touch the filesystem
       return validateBatch(input.ops as BatchOp[]);
+    }),
+
+  // Pass 257: rename-symbol refactor
+  planRenameSymbol: protectedProcedure
+    .input(
+      z.object({
+        oldName: z.string().min(2).max(120),
+        newName: z.string().min(2).max(120),
+        includeComments: z.boolean().optional(),
+        pathPrefix: z.string().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const validation = validateRename(input.oldName, input.newName);
+      if (!validation.ok) {
+        return {
+          ok: false,
+          issues: validation.issues,
+          plan: null,
+        };
+      }
+      const plan = await buildWorkspaceRenamePlan(
+        WORKSPACE_ROOT,
+        input.oldName,
+        input.newName,
+        {
+          includeComments: input.includeComments,
+          pathPrefix: input.pathPrefix,
+        },
+      );
+      return {
+        ok: true,
+        issues: [],
+        plan: {
+          oldName: plan.oldName,
+          newName: plan.newName,
+          summary: plan.summary,
+          filesScanned: plan.filesScanned,
+          // Truncate per-entry preview to 1KB each to keep the response small
+          entries: plan.entries.map((e) => ({
+            path: e.path,
+            replacements: e.replacements,
+            beforePreview: e.before.slice(0, 4096),
+            afterPreview: e.after.slice(0, 4096),
+            hits: e.hits.slice(0, 50),
+          })),
+          skipped: plan.skipped.slice(0, 50),
+        },
+      };
+    }),
+
+  applyRenameSymbol: protectedProcedure
+    .input(
+      z.object({
+        oldName: z.string().min(2).max(120),
+        newName: z.string().min(2).max(120),
+        includeComments: z.boolean().optional(),
+        pathPrefix: z.string().optional(),
+        confirmDangerous: z.boolean(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin") {
+        return { ok: false, error: "rename requires admin role" };
+      }
+      if (!input.confirmDangerous) {
+        return { ok: false, error: "set confirmDangerous: true to commit" };
+      }
+      const validation = validateRename(input.oldName, input.newName);
+      if (!validation.ok) {
+        return { ok: false, error: validation.issues.join(", ") };
+      }
+      const plan = await buildWorkspaceRenamePlan(
+        WORKSPACE_ROOT,
+        input.oldName,
+        input.newName,
+        {
+          includeComments: input.includeComments,
+          pathPrefix: input.pathPrefix,
+        },
+      );
+      if (plan.entries.length === 0) {
+        return {
+          ok: false,
+          error: `no files matched "${input.oldName}"`,
+          plan: { summary: plan.summary, filesScanned: plan.filesScanned },
+        };
+      }
+      const ops = planToBatchOps(plan);
+      const result = await applyBatch(
+        { workspaceRoot: WORKSPACE_ROOT, allowMutations: true },
+        ops as BatchOp[],
+      );
+      return {
+        ok: result.ok,
+        totalReplacements: plan.summary.totalReplacements,
+        fileCount: plan.summary.fileCount,
+        batchResult: result,
+      };
     }),
 
   // ─── Roadmap procedures ────────────────────────────────────────
