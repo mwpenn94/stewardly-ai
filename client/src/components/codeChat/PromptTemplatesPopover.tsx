@@ -3,7 +3,7 @@
  * (Pass 214).
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   loadTemplates,
   saveTemplates,
@@ -12,6 +12,8 @@ import {
   filterTemplates,
   extractTemplateVariables,
   applyTemplateVariables,
+  exportTemplates,
+  importTemplates,
   type PromptTemplate,
 } from "./promptTemplates";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,8 @@ import {
   X,
   Search,
   FileText,
+  Upload,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,6 +56,8 @@ export default function PromptTemplatesPopover({
     null,
   );
   const [pendingVars, setPendingVars] = useState<Record<string, string>>({});
+  // Pass 231: import file picker ref
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -348,10 +354,80 @@ export default function PromptTemplatesPopover({
           )}
         </div>
 
-        <div className="mt-4 pt-3 border-t border-border/30 text-[10px] text-muted-foreground">
-          {templates.length} template{templates.length === 1 ? "" : "s"} ·{" "}
-          {templates.filter((t) => t.builtin).length} built-in /{" "}
-          {templates.filter((t) => !t.builtin).length} custom
+        <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground">
+            {templates.length} template{templates.length === 1 ? "" : "s"} ·{" "}
+            {templates.filter((t) => t.builtin).length} built-in /{" "}
+            {templates.filter((t) => !t.builtin).length} custom
+          </span>
+          <div className="flex items-center gap-3">
+            {/* Pass 231: import templates from JSON file */}
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  const text = await file.text();
+                  const mode = confirm(
+                    "OK = merge (dedupe by name+body)\nCancel = replace user templates",
+                  )
+                    ? "merge"
+                    : "replace";
+                  const result = importTemplates(templates, text, mode);
+                  if (!result.ok) {
+                    toast.error(result.error ?? "Template import failed");
+                    return;
+                  }
+                  setTemplates(result.templates);
+                  saveTemplates(result.templates);
+                  toast.success(
+                    mode === "replace"
+                      ? `Replaced user templates (${result.imported})`
+                      : `Merged ${result.imported} templates${result.skipped > 0 ? `, skipped ${result.skipped} duplicate${result.skipped === 1 ? "" : "s"}` : ""}`,
+                  );
+                } catch (err) {
+                  toast.error(`Import failed: ${(err as Error).message}`);
+                } finally {
+                  if (e.target) e.target.value = "";
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+              onClick={() => importInputRef.current?.click()}
+              aria-label="Import templates from JSON"
+            >
+              <Upload className="h-3 w-3" /> Import
+            </button>
+            {templates.some((t) => !t.builtin) && (
+              <button
+                type="button"
+                className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+                onClick={() => {
+                  const payload = exportTemplates(templates);
+                  const blob = new Blob([payload], {
+                    type: "application/json",
+                  });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `codechat-templates-${new Date().toISOString().slice(0, 10)}.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                aria-label="Export user templates as JSON"
+              >
+                <Download className="h-3 w-3" /> Export
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

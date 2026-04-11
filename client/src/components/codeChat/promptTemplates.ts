@@ -196,6 +196,130 @@ export function applyTemplateVariables(
   );
 }
 
+// ─── Import / export (Pass 231) ─────────────────────────────────────────
+
+export type TemplateImportMode = "merge" | "replace";
+
+export interface TemplateImportResult {
+  ok: boolean;
+  error?: string;
+  imported: number;
+  skipped: number;
+  templates: PromptTemplate[];
+}
+
+/**
+ * Serialize the user templates as a portable JSON payload.
+ * Built-ins are omitted because they're re-hydrated on load from
+ * BUILTIN_TEMPLATES and will vary between app versions.
+ */
+export function exportTemplates(templates: PromptTemplate[]): string {
+  const userOnly = templates.filter((t) => !t.builtin);
+  return JSON.stringify(
+    { version: 1, templates: userOnly },
+    null,
+    2,
+  );
+}
+
+/**
+ * Parse an exported template JSON payload. Tolerates both the
+ * `{version, templates}` wrapper and a raw `PromptTemplate[]` array
+ * (which is what `serializeTemplates` produces for localStorage).
+ * Returns a cleaned `PromptTemplate[]` with all `builtin: true`
+ * overrides stripped out.
+ */
+export function parseTemplateExport(raw: string): PromptTemplate[] {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    let arr: unknown[];
+    if (Array.isArray(parsed)) {
+      arr = parsed;
+    } else if (
+      parsed &&
+      typeof parsed === "object" &&
+      Array.isArray((parsed as { templates?: unknown }).templates)
+    ) {
+      arr = (parsed as { templates: unknown[] }).templates;
+    } else {
+      return [];
+    }
+    const out: PromptTemplate[] = [];
+    for (const t of arr) {
+      if (!t || typeof t !== "object") continue;
+      const tpl = t as Partial<PromptTemplate>;
+      if (typeof tpl.name !== "string" || !tpl.name.trim()) continue;
+      if (typeof tpl.body !== "string" || !tpl.body.trim()) continue;
+      const id =
+        typeof tpl.id === "string" && tpl.id ? tpl.id : `user-imported-${Math.random().toString(36).slice(2, 10)}`;
+      out.push({
+        id,
+        name: tpl.name.slice(0, 80),
+        body: tpl.body,
+        createdAt:
+          typeof tpl.createdAt === "number" ? tpl.createdAt : Date.now(),
+      });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+export function importTemplates(
+  existing: PromptTemplate[],
+  raw: string,
+  mode: TemplateImportMode = "merge",
+): TemplateImportResult {
+  const incoming = parseTemplateExport(raw);
+  if (incoming.length === 0) {
+    return {
+      ok: false,
+      error: "No valid templates found in import payload",
+      imported: 0,
+      skipped: 0,
+      templates: existing,
+    };
+  }
+  if (mode === "replace") {
+    // Keep built-ins, replace user templates
+    const builtins = existing.filter((t) => t.builtin);
+    return {
+      ok: true,
+      imported: incoming.length,
+      skipped: 0,
+      templates: [...builtins, ...incoming],
+    };
+  }
+  // Merge: dedupe by (name, body) pair so re-importing the same file
+  // twice doesn't produce duplicates
+  const existingKeys = new Set(
+    existing.filter((t) => !t.builtin).map((t) => `${t.name}::${t.body}`),
+  );
+  const nextUserTemplates: PromptTemplate[] = existing.filter(
+    (t) => !t.builtin,
+  );
+  let imported = 0;
+  let skipped = 0;
+  for (const tpl of incoming) {
+    const key = `${tpl.name}::${tpl.body}`;
+    if (existingKeys.has(key)) {
+      skipped++;
+      continue;
+    }
+    existingKeys.add(key);
+    nextUserTemplates.push(tpl);
+    imported++;
+  }
+  const builtins = existing.filter((t) => t.builtin);
+  return {
+    ok: true,
+    imported,
+    skipped,
+    templates: [...builtins, ...nextUserTemplates],
+  };
+}
+
 // ─── localStorage adapter ────────────────────────────────────────────────
 
 export function loadTemplates(): PromptTemplate[] {

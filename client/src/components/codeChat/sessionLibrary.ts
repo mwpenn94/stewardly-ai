@@ -32,6 +32,8 @@ export interface SessionSnapshot {
   createdAt: number; // epoch ms
   updatedAt: number;
   messages: CodeChatMessage[];
+  /** Pass 229: optional tags for organization */
+  tags?: string[];
 }
 
 export interface SessionLibrary {
@@ -70,12 +72,20 @@ export function parseLibrary(raw: string | null): SessionLibrary {
       if (typeof snap.createdAt !== "number") continue;
       if (typeof snap.updatedAt !== "number") continue;
       if (!Array.isArray(snap.messages)) continue;
+      // Pass 229: tolerate + normalize tags
+      const tags =
+        Array.isArray(snap.tags)
+          ? (snap.tags as unknown[])
+              .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+              .map((t) => t.trim().toLowerCase())
+          : undefined;
       cleaned.push({
         id: snap.id,
         name: snap.name,
         createdAt: snap.createdAt,
         updatedAt: snap.updatedAt,
         messages: snap.messages as CodeChatMessage[],
+        ...(tags && tags.length > 0 ? { tags: Array.from(new Set(tags)) } : {}),
       });
     }
     return { version: 1, sessions: cleaned };
@@ -215,6 +225,163 @@ export function aggregateSessions(library: SessionLibrary): LibraryStats {
   }
   stats.modelsUsed = Array.from(modelSet).sort();
   return stats;
+}
+
+// ─── Tags (Pass 229) ─────────────────────────────────────────────────────
+
+/**
+ * Normalize a tag string — trim + lowercase + strip leading #.
+ * Empty input returns null so the caller can skip it.
+ */
+export function normalizeTag(tag: string): string | null {
+  const trimmed = tag.replace(/^#/, "").trim().toLowerCase();
+  if (!trimmed) return null;
+  // Reject tags with whitespace or special chars so they stay URL/filename safe
+  if (!/^[a-z0-9][a-z0-9_\-/.]*$/.test(trimmed)) return null;
+  return trimmed;
+}
+
+/**
+ * Add a tag to a session snapshot. Returns a new object with the
+ * tag deduped and normalized. No-op when the tag is invalid.
+ */
+export function addTag(
+  session: SessionSnapshot,
+  tag: string,
+): SessionSnapshot {
+  const normalized = normalizeTag(tag);
+  if (!normalized) return session;
+  const existing = session.tags ?? [];
+  if (existing.includes(normalized)) return session;
+  return {
+    ...session,
+    tags: [...existing, normalized],
+    updatedAt: Date.now(),
+  };
+}
+
+/** Remove a tag from a session snapshot. */
+export function removeTag(
+  session: SessionSnapshot,
+  tag: string,
+): SessionSnapshot {
+  const normalized = normalizeTag(tag);
+  if (!normalized) return session;
+  const existing = session.tags ?? [];
+  if (!existing.includes(normalized)) return session;
+  return {
+    ...session,
+    tags: existing.filter((t) => t !== normalized),
+    updatedAt: Date.now(),
+  };
+}
+
+/** Distinct tags across the library, sorted alphabetically. */
+export function allTags(library: SessionLibrary): string[] {
+  const set = new Set<string>();
+  for (const s of library.sessions) {
+    if (!s.tags) continue;
+    for (const t of s.tags) set.add(t);
+  }
+  return Array.from(set).sort();
+}
+
+/**
+ * Filter sessions by required tags (all must match). Sessions
+ * without any tags are excluded from the result when `requiredTags`
+ * is non-empty. Empty `requiredTags` returns the full session list.
+ */
+export function filterByTags(
+  library: SessionLibrary,
+  requiredTags: string[],
+): SessionSnapshot[] {
+  if (requiredTags.length === 0) return library.sessions;
+  const required = requiredTags
+    .map((t) => normalizeTag(t))
+    .filter((t): t is string => t !== null);
+  if (required.length === 0) return library.sessions;
+  return library.sessions.filter((s) => {
+    if (!s.tags || s.tags.length === 0) return false;
+    return required.every((t) => s.tags!.includes(t));
+  });
+}
+
+// ─── Import (Pass 228) ──────────────────────────────────────────────────
+
+export type ImportMode = "merge" | "replace";
+
+export interface ImportResult {
+  ok: boolean;
+  error?: string;
+  /** Number of sessions imported (after dedup when merging) */
+  imported: number;
+  /** Number of incoming sessions that were skipped (duplicate ids) */
+  skipped: number;
+  library: SessionLibrary;
+}
+
+/**
+ * Import a saved session library from a JSON string.
+ *
+ * Modes:
+ *   - "replace": discard the existing library and use the imported one
+ *   - "merge": upsert every imported session into the existing library.
+ *     Sessions with matching ids are replaced by the imported version
+ *     (last-write-wins — if users want to keep both, they should
+ *     export and rename first).
+ *
+ * Malformed input → `{ ok: false, error }`.
+ * Every entry is routed through `parseLibrary()` so malformed
+ * sessions are dropped silently rather than corrupting the library.
+ */
+export function importLibrary(
+  existing: SessionLibrary,
+  raw: string,
+  mode: ImportMode = "merge",
+): ImportResult {
+  let parsed: SessionLibrary;
+  try {
+    parsed = parseLibrary(raw);
+  } catch {
+    return {
+      ok: false,
+      error: "Invalid JSON",
+      imported: 0,
+      skipped: 0,
+      library: existing,
+    };
+  }
+  if (parsed.sessions.length === 0) {
+    return {
+      ok: false,
+      error: "No valid sessions found in import payload",
+      imported: 0,
+      skipped: 0,
+      library: existing,
+    };
+  }
+  if (mode === "replace") {
+    return {
+      ok: true,
+      imported: parsed.sessions.length,
+      skipped: 0,
+      library: parsed,
+    };
+  }
+  // Merge: upsert each parsed session
+  let next = existing;
+  let imported = 0;
+  let skipped = 0;
+  const existingIds = new Set(existing.sessions.map((s) => s.id));
+  for (const session of parsed.sessions) {
+    if (existingIds.has(session.id)) {
+      skipped++;
+      continue;
+    }
+    next = upsertSession(next, session);
+    imported++;
+  }
+  return { ok: true, imported, skipped, library: next };
 }
 
 // ─── Auto-checkpoint (Pass 223) ──────────────────────────────────────────

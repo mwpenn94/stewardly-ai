@@ -12,6 +12,10 @@ import {
   evaluateBudget,
   DEFAULT_BUDGET_STATE,
   MODEL_PRICING,
+  evaluateContextWindow,
+  formatContextSize,
+  MODEL_CONTEXT_LIMITS,
+  DEFAULT_CONTEXT_LIMIT,
 } from "./tokenEstimator";
 
 describe("estimateTokens", () => {
@@ -123,6 +127,60 @@ describe("evaluateBudget", () => {
   it("treats limit <= 0 as no limit", () => {
     expect(evaluateBudget(5, { limitUSD: 0, warnAt: 0.5 }).status).toBe("ok");
     expect(evaluateBudget(5, { limitUSD: -1, warnAt: 0.5 }).status).toBe("ok");
+  });
+});
+
+describe("evaluateContextWindow", () => {
+  it("returns ok when well under the limit", () => {
+    const r = evaluateContextWindow(1000, "claude-sonnet-4-6");
+    expect(r.status).toBe("ok");
+    expect(r.pct).toBeCloseTo(0.001);
+    expect(r.modelKnown).toBe(true);
+  });
+
+  it("returns warning between 60% and 80%", () => {
+    // 60% of claude-sonnet-4-6 = 600K tokens
+    const r = evaluateContextWindow(650_000, "claude-sonnet-4-6");
+    expect(r.status).toBe("warning");
+  });
+
+  it("returns critical at 80%+", () => {
+    const r = evaluateContextWindow(900_000, "claude-sonnet-4-6");
+    expect(r.status).toBe("critical");
+  });
+
+  it("falls back to DEFAULT_CONTEXT_LIMIT for unknown model", () => {
+    const r = evaluateContextWindow(50_000, "unknown-model");
+    expect(r.limit).toBe(DEFAULT_CONTEXT_LIMIT);
+    expect(r.modelKnown).toBe(false);
+  });
+
+  it("falls back to DEFAULT_CONTEXT_LIMIT when model is undefined", () => {
+    const r = evaluateContextWindow(50_000, undefined);
+    expect(r.limit).toBe(DEFAULT_CONTEXT_LIMIT);
+    expect(r.modelKnown).toBe(false);
+  });
+
+  it("uses the exact limit for known models", () => {
+    const claude = evaluateContextWindow(1, "claude-sonnet-4-6");
+    expect(claude.limit).toBe(MODEL_CONTEXT_LIMITS["claude-sonnet-4-6"]);
+    const gpt = evaluateContextWindow(1, "gpt-4o");
+    expect(gpt.limit).toBe(MODEL_CONTEXT_LIMITS["gpt-4o"]);
+  });
+});
+
+describe("formatContextSize", () => {
+  it("formats millions with M suffix", () => {
+    expect(formatContextSize(1_000_000)).toBe("1.0M");
+    expect(formatContextSize(2_500_000)).toBe("2.5M");
+  });
+  it("formats thousands with K suffix", () => {
+    expect(formatContextSize(1000)).toBe("1K");
+    expect(formatContextSize(128_000)).toBe("128K");
+  });
+  it("shows small values verbatim", () => {
+    expect(formatContextSize(500)).toBe("500");
+    expect(formatContextSize(0)).toBe("0");
   });
 });
 
