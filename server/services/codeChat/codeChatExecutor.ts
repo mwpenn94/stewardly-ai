@@ -45,6 +45,7 @@ export type CodeToolName =
   | "update_todos"
   | "find_symbol"
   | "web_fetch"
+  | "web_search"
   | "finish";
 
 export interface CodeToolCall {
@@ -81,6 +82,19 @@ export interface WebFetchLookupResult {
   durationMs: number;
 }
 
+export interface WebSearchHitResult {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+export interface WebSearchLookupResult {
+  query: string;
+  provider: string;
+  fromFallback: boolean;
+  results: WebSearchHitResult[];
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -91,6 +105,7 @@ export type CodeToolResult =
   | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
   | { kind: "webfetch"; result: WebFetchLookupResult }
+  | { kind: "websearch"; result: WebSearchLookupResult }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -228,6 +243,42 @@ export async function dispatchCodeTool(
             truncated: raw.length > limit,
           },
         };
+      }
+      case "web_search": {
+        // Pass 251: cascading provider chain (Tavily → Brave →
+        // Manus Google → LLM) wrapped for structured results.
+        const { runWebSearchForCodeChat, WebSearchError } = await import(
+          "./webSearch"
+        );
+        const { executeWebSearch, getSearchProvider } = await import(
+          "../webSearchTool"
+        );
+        const query = String(call.args.query ?? "").trim();
+        const maxResults = Number(call.args.maxResults ?? 5);
+        if (!query) {
+          return { kind: "error", error: "query required", code: "BAD_ARGS" };
+        }
+        try {
+          const res = await runWebSearchForCodeChat(
+            query,
+            { executeSearchBlob: executeWebSearch, getSearchProvider },
+            { maxResults: Number.isFinite(maxResults) ? maxResults : 5 },
+          );
+          return {
+            kind: "websearch",
+            result: {
+              query: res.query,
+              provider: res.provider,
+              fromFallback: res.fromFallback,
+              results: res.results,
+            },
+          };
+        } catch (err) {
+          if (err instanceof WebSearchError) {
+            return { kind: "error", error: err.message, code: err.code };
+          }
+          throw err;
+        }
       }
       case "web_fetch": {
         // Pass 250: fetch a URL and return HTML-converted markdown.
@@ -483,6 +534,22 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
       type: "object",
       properties: { command: { type: "string" } },
       required: ["command"],
+    },
+  },
+  {
+    name: "web_search",
+    description:
+      "Search the public web for a query and return ranked {title, url, snippet} results. Uses the platform's cascading provider chain (Tavily → Brave → Google → LLM fallback). Prefer this over web_fetch when you don't already know the URL — it will surface candidates you can then pass to web_fetch for full content. Max 10 results, snippets clamped at 500 chars.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Search query" },
+        maxResults: {
+          type: "number",
+          description: "Max results (1-10, default 5)",
+        },
+      },
+      required: ["query"],
     },
   },
   {

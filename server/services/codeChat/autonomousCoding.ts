@@ -217,5 +217,7 @@ export function summarizeStep(step: CodeChatStep): string {
       return `find_symbol ${result.result.query} → ${result.result.matches.length} matches (${ms})`;
     case "webfetch":
       return `web_fetch ${result.result.url} → ${result.result.status} (${result.result.byteLength}B, ${ms})`;
+    case "websearch":
+      return `web_search ${result.result.query} → ${result.result.results.length} hits (${result.result.provider}, ${ms})`;
   }
 }

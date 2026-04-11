@@ -6,10 +6,10 @@
 > also write to this file — always re-read before editing and use the
 > Reconciliation Log to resolve conflicts.
 
-**Last updated:** 2026-04-11 (Pass 250 — WebFetch tool)
-**Current composite score:** 9.4 / 10 (self-assessed, conservative)
-**Passes completed:** 250+ cumulative across all platforms
-**Test surface:** codeChat **810 passing across 34 files** (+37 new this pass)
+**Last updated:** 2026-04-11 (Pass 251 — WebSearch tool)
+**Current composite score:** 9.5 / 10 (self-assessed, conservative)
+**Passes completed:** 251+ cumulative across all platforms
+**Test surface:** codeChat **832 passing across 35 files** (+22 new this pass)
 **Full suite:** 3,840+ passing (baseline 3,103/109 — 14 pre-existing env-dependent failing files unchanged)
 
 ---
@@ -33,7 +33,7 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 |  | run_bash | ✅ | ✅ | 8 | 30s timeout, denylist, but no interactive prompts |
 |  | find_symbol (Go to Symbol) | ✅ | ✅ | 9 | Pass 242 — regex index, 8 kinds, 4-tier ranking |
 |  | update_todos | ✅ | ✅ | 9 | Pass 237 |
-|  | WebSearch | ✅ | 🔶 | 4 | Available at platform level (tavily/brave) but not in Code Chat tool definitions |
+|  | WebSearch | ✅ | ✅ | 9 | Pass 251 — cascading search (Tavily/Brave/Google/LLM), structured {title,url,snippet} results, chain into web_fetch |
 |  | WebFetch | ✅ | ✅ | 9 | Pass 250 — URL fetch + HTML→markdown, SSRF-guarded (loopback/RFC-1918/IMDS blocked), 2MB/32KB caps |
 |  | NotebookEdit (.ipynb) | ✅ | ❌ | 0 | Not implemented |
 |  | @file mention expansion | ✅ | ✅ | 9 | Pass 206 — auto-inlines file contents |
@@ -92,14 +92,15 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 
 ---
 
-## Current focus areas (Pass 250+)
+## Current focus areas (Pass 251+)
 
 1. ~~**Hooks system**~~ — ✅ Pass 249
 2. ~~**WebFetch tool**~~ — ✅ Pass 250
-3. **WebSearch tool** — Add to Code Chat tool definitions (platform infra already exists)
+3. ~~**WebSearch tool**~~ — ✅ Pass 251
 4. **Custom subagents** — Agent definition files + inline spawn
 5. **MCP tool provider** — Consume external MCP servers as additional tools
 6. **NotebookEdit** — Jupyter notebook editing tool
+7. **Image paste in prompt** — Paste screenshots directly into Code Chat
 
 ---
 
@@ -107,6 +108,7 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 
 | Pass | Date | Feature | Tests |
 |---|---|---|---|
+| 251 | 2026-04-11 | WebSearch tool (cascading providers, structured results) | +22 |
 | 250 | 2026-04-11 | WebFetch tool (URL → markdown, SSRF-guarded) | +37 |
 | 249 | 2026-04-11 | Hooks system (PreToolUse/PostToolUse/SessionStart/UserPromptSubmit) | +62 |
 | 248 | 2026-04-11 | Action palette (⌘K unified launcher) | +21 |

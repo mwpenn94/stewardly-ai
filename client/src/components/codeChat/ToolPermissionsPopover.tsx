@@ -79,6 +79,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
       "Fetch a public http/https URL and return markdown (Pass 250, read-only, sandboxed)",
     mutation: false,
   },
+  {
+    id: "web_search",
+    label: "Web search",
+    description:
+      "Cascading provider search (Tavily/Brave/Google/LLM fallback) returning ranked hits (Pass 251, read-only)",
+    mutation: false,
+  },
 ];
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
@@ -91,6 +98,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "update_todos",
   "find_symbol",
   "web_fetch",
+  "web_search",
 ];
 
 export default function ToolPermissionsPopover({
