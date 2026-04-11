@@ -43,6 +43,8 @@ import { ProgressiveMessage } from "@/components/ProgressiveMessage";
 import RichMediaEmbed, { type MediaEmbed } from "@/components/RichMediaEmbed";
 import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
 import { useTTS } from "@/hooks/useTTS";
+import { detectStt, type SttCapabilities } from "@/lib/sttSupport";
+import { VoiceSupportBanner } from "@/components/VoiceSupportBanner";
 import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
@@ -231,6 +233,13 @@ export default function Chat() {
 
   // ─── HANDS-FREE & VOICE STATE ──────────────────────────────────
   const [handsFreeActive, setHandsFreeActive] = useState(false);
+  // Pass 2 (G59 — cross-browser STT silent-fail): probe capabilities on
+  // mount so we know whether to offer continuous listening, PTT-only, or
+  // nothing at all. Users of Firefox / Safari iOS deserve an actual banner
+  // explaining why the mic button won't work hands-free, not silent failure.
+  const sttCaps = useMemo<SttCapabilities>(() => detectStt(), []);
+  const sttFullSupport = sttCaps.mode === "full";
+  const sttAnySupport = sttCaps.mode !== "unsupported";
   const [ttsEnabled, setTtsEnabled] = useState(() => {
     const stored = localStorage.getItem("tts-enabled");
     return stored !== "false"; // Default ON
@@ -577,6 +586,28 @@ export default function Chat() {
 
   // ─── HANDS-FREE TOGGLE ────────────────────────────────────────
   const toggleHandsFree = useCallback(() => {
+    // Pass 2 (G59): refuse to silently fail on unsupported browsers.
+    // Users with no SpeechRecognition constructor (Firefox, pre-iOS-14.5
+    // Safari, in-app WebViews) now see an explicit toast naming their
+    // browser + offering keyboard as an alternative. The banner will
+    // already be rendered above the input so this is the second-chance
+    // path for users who click the mic anyway.
+    if (!handsFreeActive && !sttAnySupport) {
+      toast.error(sttCaps.userMessage, {
+        description: sttCaps.recoveryHint,
+        duration: 8000,
+      });
+      return;
+    }
+    // On PTT-only browsers (Safari iOS, Safari desktop) continuous
+    // listening isn't reliable — still allow activation but warn once per
+    // session so the user understands why the mic might cut out.
+    if (!handsFreeActive && !sttFullSupport) {
+      toast.info("Continuous hands-free isn't supported on this browser.", {
+        description: sttCaps.recoveryHint,
+        duration: 6000,
+      });
+    }
     if (handsFreeActive) {
       // Deactivate
       setHandsFreeActive(false);
@@ -588,7 +619,7 @@ export default function Chat() {
       setTtsEnabled(true); // Force TTS on in hands-free
       tts.speak("Hands-free mode active.");
     }
-  }, [handsFreeActive, voice, tts]);
+  }, [handsFreeActive, voice, tts, sttAnySupport, sttFullSupport, sttCaps]);
 
    // ─── SEND MESSAGE ───────────────────────────────────────────
   const handleSendWithText = async (text: string) => {
@@ -2177,6 +2208,14 @@ export default function Chat() {
         {/* ─── INPUT AREA (Copilot-style condensed) ────────────── */}
         <div className="p-3 sm:p-4 shrink-0">
           <div className="max-w-3xl mx-auto">
+            {/* Pass 2 (G59): user-visible fallback banner whenever the
+                browser can't do full continuous STT. Dismissible, persists
+                per browser family so returning Safari users aren't nagged. */}
+            {!sttFullSupport && (
+              <div className="mb-2">
+                <VoiceSupportBanner caps={sttCaps} />
+              </div>
+            )}
             {/* Attachment chips */}
             {attachments.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2 px-1">

@@ -19,6 +19,8 @@ export default defineConfig({
       "server/**/*.spec.ts",
       "shared/**/*.test.ts",
       "client/src/lib/wealth-engine/**/*.test.ts",
+      "client/src/lib/sttSupport.test.ts",
+      "client/src/lib/feedbackSpecs.test.ts",
       "client/src/components/codeChat/**/*.test.ts",
     ],
   },

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { detectStt, type SttCapabilities } from "@/lib/sttSupport";
 
 /**
  * Financial term dictionary for post-processing corrections.
@@ -66,6 +67,10 @@ export interface VoiceRecognitionReturn {
   interimText: string;
   start: () => void;
   stop: () => void;
+  /** Pass 2 (G59) — capability probe result so callers can fall back to PTT / keyboard. */
+  capabilities: SttCapabilities;
+  /** Convenience: true only when start() will actually do anything. */
+  isAvailable: boolean;
 }
 
 export function useVoiceRecognition({
@@ -78,6 +83,10 @@ export function useVoiceRecognition({
 }: VoiceRecognitionOptions): VoiceRecognitionReturn {
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState("");
+  // Pass 2 (G59): probe once on mount. We use useMemo (not useRef) so
+  // SSR-safe: detectStt() returns an "unsupported" shape when window is
+  // undefined and the memo recomputes on the client.
+  const capabilities = useMemo<SttCapabilities>(() => detectStt(), []);
 
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -144,15 +153,28 @@ export function useVoiceRecognition({
     // Clean up any existing instance first
     destroyRecognition();
 
+    // Pass 2 (G59): every caller gets the capability hint via the return
+    // value now, but we still guard here as a defence in depth. If the
+    // probe says "unsupported", log a structured warning instead of a
+    // blank silent return so devs can actually see the failure in prod.
+    if (capabilities.mode === "unsupported") {
+      console.warn("[Voice] Speech recognition unsupported:", capabilities.browserFamily, capabilities.userMessage);
+      return;
+    }
+
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
-      console.warn("[Voice] SpeechRecognition API not available");
+      console.warn("[Voice] SpeechRecognition constructor missing despite capability probe — ", capabilities);
       return;
     }
 
     const recognition = new SR();
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    // Pass 2 (G59): Safari desktop + iOS silently ignore `continuous=true`,
+    // so we set it only when the capability probe reports full support.
+    // On PTT-only browsers we get a single final-result burst per start(),
+    // which is the correct push-to-talk semantic anyway.
+    recognition.continuous = capabilities.supportsContinuous;
+    recognition.interimResults = capabilities.supportsInterim;
     recognition.lang = lang;
     recognition.maxAlternatives = 1;
 
@@ -263,7 +285,7 @@ export function useVoiceRecognition({
       stateRef.current = "IDLE";
       setIsListening(false);
     }
-  }, [lang, guardRef, clearSilenceTimer, destroyRecognition, silenceTimeout]);
+  }, [lang, guardRef, clearSilenceTimer, destroyRecognition, silenceTimeout, capabilities]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -278,5 +300,12 @@ export function useVoiceRecognition({
     if (!enabled) stop();
   }, [enabled, stop]);
 
-  return { isListening, interimText, start, stop };
+  return {
+    isListening,
+    interimText,
+    start,
+    stop,
+    capabilities,
+    isAvailable: capabilities.mode !== "unsupported",
+  };
 }
