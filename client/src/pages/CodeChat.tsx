@@ -133,6 +133,7 @@ import {
   type MemoryEntry,
 } from "@/components/codeChat/agentMemory";
 import SymbolNavigatorPopover from "@/components/codeChat/SymbolNavigatorPopover";
+import FindReferencesPopover from "@/components/codeChat/FindReferencesPopover";
 import SessionAnalyticsPopover from "@/components/codeChat/SessionAnalyticsPopover";
 import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
 import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
@@ -540,11 +541,28 @@ function CodeChatInterface() {
     return () => window.removeEventListener("codechat-remember", handler);
   }, []);
 
+  // /refs slash command broadcasts a window event (Pass 252)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ name: string }>).detail;
+      if (detail?.name) {
+        setReferencesQuery(detail.name);
+        setReferencesOpen(true);
+      }
+    };
+    window.addEventListener("codechat-find-references", handler);
+    return () => window.removeEventListener("codechat-find-references", handler);
+  }, []);
+
   // Pass 242: symbol navigator (Ctrl+T / Cmd+T)
   const [symbolNavOpen, setSymbolNavOpen] = useState(false);
 
   // Pass 243: session analytics popover
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+
+  // Pass 252: find references popover (Shift+F12)
+  const [referencesOpen, setReferencesOpen] = useState(false);
+  const [referencesQuery, setReferencesQuery] = useState("");
 
   // Pass 249: tool audit rules + trail
   const [auditState, setAuditState] = useState<AuditState>(() => loadAuditState());
@@ -623,6 +641,10 @@ function CodeChatInterface() {
           break;
         case "audit":
           setAuditOpen(true);
+          break;
+        case "references":
+          setReferencesQuery("");
+          setReferencesOpen(true);
           break;
         case "shortcuts":
           setShortcutsOpen(true);
@@ -1138,6 +1160,23 @@ function CodeChatInterface() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "t") {
         e.preventDefault();
         setSymbolNavOpen(true);
+        return;
+      }
+      // Pass 252: Shift+F12 → find references. Uses selected text or
+      // the word under the caret as the initial query when the focus
+      // is in a text field.
+      if (e.shiftKey && e.key === "F12") {
+        e.preventDefault();
+        let initial = "";
+        if (isTextField && target) {
+          const el = target as HTMLInputElement | HTMLTextAreaElement;
+          const sel = el.value.slice(el.selectionStart ?? 0, el.selectionEnd ?? 0);
+          initial = sel.trim();
+        } else if (window.getSelection) {
+          initial = window.getSelection()?.toString().trim() ?? "";
+        }
+        setReferencesQuery(initial);
+        setReferencesOpen(true);
         return;
       }
       // Ctrl+Z / Ctrl+Shift+Z → edit undo/redo
@@ -2219,6 +2258,11 @@ function CodeChatInterface() {
       <SymbolNavigatorPopover
         open={symbolNavOpen}
         onClose={() => setSymbolNavOpen(false)}
+      />
+      <FindReferencesPopover
+        open={referencesOpen}
+        onClose={() => setReferencesOpen(false)}
+        initialQuery={referencesQuery}
       />
       <SessionAnalyticsPopover
         open={analyticsOpen}

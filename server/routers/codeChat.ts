@@ -121,6 +121,13 @@ import {
   getDiagnostics,
   clearDiagnosticsCache,
 } from "../services/codeChat/diagnosticsRunner";
+import { findReferencesInWorkspace } from "../services/codeChat/findReferencesRunner";
+import {
+  groupReferences,
+  summarizeReferences,
+  filterReferences,
+  type ReferenceKind,
+} from "../services/codeChat/findReferences";
 import {
   summarizeDiagnostics,
   filterDiagnostics,
@@ -544,6 +551,46 @@ export const codeChatRouter = router({
       fatalError: run.fatalError,
     };
   }),
+
+  // Pass 252: find-references across the workspace
+  findReferences: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(2).max(120),
+        includeComments: z.boolean().optional(),
+        pathPrefix: z.string().optional(),
+        kinds: z
+          .array(
+            z.enum(["import", "definition", "call", "property", "reference"]),
+          )
+          .optional(),
+        limit: z.number().min(1).max(2000).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const result = await findReferencesInWorkspace(
+        WORKSPACE_ROOT,
+        input.name,
+        {
+          includeComments: input.includeComments,
+          pathPrefix: input.pathPrefix,
+        },
+      );
+      const filtered = filterReferences(result.hits, {
+        kinds: input.kinds as ReferenceKind[] | undefined,
+      });
+      const limit = input.limit ?? 500;
+      return {
+        query: result.query,
+        hits: filtered.slice(0, limit),
+        total: filtered.length,
+        totalUnfiltered: result.hits.length,
+        filesScanned: result.filesScanned,
+        truncated: result.truncated,
+        summary: summarizeReferences(result.hits),
+        groups: groupReferences(filtered.slice(0, limit)),
+      };
+    }),
 
   // ─── Synthesizer procedures ────────────────────────────────────
   diffResponses: protectedProcedure
