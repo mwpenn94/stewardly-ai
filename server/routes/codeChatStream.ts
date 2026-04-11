@@ -308,8 +308,8 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "Use `code_web_fetch` to pull a public URL (http/https only) when the user asks about external docs, API references, release notes, or any other content the workspace doesn't have. HTML is converted to markdown automatically.",
       "Use `code_web_search` when you need to find URLs first — it runs a cascading search (Tavily → Brave → Google → LLM fallback) and returns ranked {title, url, snippet} hits you can chain into `code_web_fetch` for the full content.",
       canMutate
-        ? "You have `code_write_file`, `code_edit_file`, `code_run_bash` — use sparingly, explain every change."
-        : "Write/edit/bash disabled. Return diffs as code blocks.",
+        ? "You have `code_write_file`, `code_edit_file`, `code_run_bash`, `code_notebook_edit` — use sparingly, explain every change. For .ipynb files ALWAYS use `code_notebook_edit` — generic `code_edit_file` corrupts the JSON."
+        : "Write/edit/bash/notebook disabled. Return diffs as code blocks.",
       // Pass 237: expose the live todo tracker tool
       "For any task with 3+ steps, call `code_update_todos` early with a pending list, then call it again after each step to flip status to in_progress/completed. Each item needs {id, content (imperative), activeForm (present-continuous), status}. This drives the live progress UI the user sees.",
       "Keep responses concise. Surface reasoning + tool calls.",
@@ -438,7 +438,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
           }
         }
 
-        const mutation = ["write_file", "edit_file", "run_bash"].includes(rawName);
+        const mutation = ["write_file", "edit_file", "run_bash", "notebook_edit"].includes(rawName);
         if (mutation && !canMutate) {
           const errResult = JSON.stringify({ error: `${rawName} requires admin + write mode` });
           writeSse(res, { type: "tool_result", stepIndex, toolName: rawName, kind: "error", truncated: false, durationMs: 0 });

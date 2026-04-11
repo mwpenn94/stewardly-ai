@@ -219,5 +219,7 @@ export function summarizeStep(step: CodeChatStep): string {
       return `web_fetch ${result.result.url} → ${result.result.status} (${result.result.byteLength}B, ${ms})`;
     case "websearch":
       return `web_search ${result.result.query} → ${result.result.results.length} hits (${result.result.provider}, ${ms})`;
+    case "notebook":
+      return `notebook_edit ${result.result.path} [${result.result.operation}] → ${result.result.cellCount} cells (${ms})`;
   }
 }

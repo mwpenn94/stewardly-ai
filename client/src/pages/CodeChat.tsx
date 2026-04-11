@@ -1458,9 +1458,9 @@ function CodeChatInterface() {
           onClick={() => setToolsOpen(true)}
           className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Tool permissions"
-          title={`Tool permissions (${enabledTools.length}/10 enabled)`}
+          title={`Tool permissions (${enabledTools.length}/11 enabled)`}
         >
-          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/10
+          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/11
         </button>
         {(() => {
           const s = summarizeHistory(editHistory);

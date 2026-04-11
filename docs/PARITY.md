@@ -6,10 +6,10 @@
 > also write to this file — always re-read before editing and use the
 > Reconciliation Log to resolve conflicts.
 
-**Last updated:** 2026-04-11 (Pass 251 — WebSearch tool)
+**Last updated:** 2026-04-11 (Pass 252 — NotebookEdit tool)
 **Current composite score:** 9.5 / 10 (self-assessed, conservative)
-**Passes completed:** 251+ cumulative across all platforms
-**Test surface:** codeChat **832 passing across 35 files** (+22 new this pass)
+**Passes completed:** 252+ cumulative across all platforms
+**Test surface:** codeChat **871 passing across 36 files** (+39 new this pass)
 **Full suite:** 3,840+ passing (baseline 3,103/109 — 14 pre-existing env-dependent failing files unchanged)
 
 ---
@@ -35,7 +35,7 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 |  | update_todos | ✅ | ✅ | 9 | Pass 237 |
 |  | WebSearch | ✅ | ✅ | 9 | Pass 251 — cascading search (Tavily/Brave/Google/LLM), structured {title,url,snippet} results, chain into web_fetch |
 |  | WebFetch | ✅ | ✅ | 9 | Pass 250 — URL fetch + HTML→markdown, SSRF-guarded (loopback/RFC-1918/IMDS blocked), 2MB/32KB caps |
-|  | NotebookEdit (.ipynb) | ✅ | ❌ | 0 | Not implemented |
+|  | NotebookEdit (.ipynb) | ✅ | ✅ | 9 | Pass 252 — 4 structured ops (insert/replace/delete/edit_source), nbformat 4+ validation, unknown-field preservation |
 |  | @file mention expansion | ✅ | ✅ | 9 | Pass 206 — auto-inlines file contents |
 |  | MCP server tool provider | ✅ | 🔶 | 4 | Stewardly has MCP server at platform level but Code Chat doesn't consume external MCP servers as tools |
 | **Session** | Save/load conversation | ✅ | ✅ | 9 | Pass 212 — SessionsLibraryPopover + 50-entry cap |
@@ -92,14 +92,14 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 
 ---
 
-## Current focus areas (Pass 251+)
+## Current focus areas (Pass 252+)
 
 1. ~~**Hooks system**~~ — ✅ Pass 249
 2. ~~**WebFetch tool**~~ — ✅ Pass 250
 3. ~~**WebSearch tool**~~ — ✅ Pass 251
-4. **Custom subagents** — Agent definition files + inline spawn
-5. **MCP tool provider** — Consume external MCP servers as additional tools
-6. **NotebookEdit** — Jupyter notebook editing tool
+4. ~~**NotebookEdit**~~ — ✅ Pass 252
+5. **Custom subagents** — Agent definition files + inline spawn
+6. **MCP tool provider** — Consume external MCP servers as additional tools
 7. **Image paste in prompt** — Paste screenshots directly into Code Chat
 
 ---
@@ -108,6 +108,7 @@ Legend: ✅ complete • 🔶 partial / design-preview • ❌ missing • ⭐ b
 
 | Pass | Date | Feature | Tests |
 |---|---|---|---|
+| 252 | 2026-04-11 | NotebookEdit tool (Jupyter .ipynb structured edits) | +39 |
 | 251 | 2026-04-11 | WebSearch tool (cascading providers, structured results) | +22 |
 | 250 | 2026-04-11 | WebFetch tool (URL → markdown, SSRF-guarded) | +37 |
 | 249 | 2026-04-11 | Hooks system (PreToolUse/PostToolUse/SessionStart/UserPromptSubmit) | +62 |

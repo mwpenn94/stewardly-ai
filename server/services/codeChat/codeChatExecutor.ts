@@ -46,6 +46,7 @@ export type CodeToolName =
   | "find_symbol"
   | "web_fetch"
   | "web_search"
+  | "notebook_edit"
   | "finish";
 
 export interface CodeToolCall {
@@ -95,6 +96,17 @@ export interface WebSearchLookupResult {
   results: WebSearchHitResult[];
 }
 
+export interface NotebookEditLookupResult {
+  path: string;
+  operation: "insert" | "replace" | "delete" | "edit_source";
+  cellCount: number;
+  byteLength: number;
+  before?: string;
+  after?: string;
+  diffTruncated?: boolean;
+  replacements?: number;
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -106,6 +118,7 @@ export type CodeToolResult =
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
   | { kind: "webfetch"; result: WebFetchLookupResult }
   | { kind: "websearch"; result: WebSearchLookupResult }
+  | { kind: "notebook"; result: NotebookEditLookupResult }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -243,6 +256,60 @@ export async function dispatchCodeTool(
             truncated: raw.length > limit,
           },
         };
+      }
+      case "notebook_edit": {
+        // Pass 252: structured Jupyter notebook editing
+        const { editNotebook, NotebookError } = await import("./notebookTools");
+        const relPath = String(call.args.path ?? "").trim();
+        const op = String(call.args.operation ?? "").trim();
+        if (!relPath || !op) {
+          return { kind: "error", error: "path and operation required", code: "BAD_ARGS" };
+        }
+        try {
+          let operation: any;
+          switch (op) {
+            case "insert":
+              operation = {
+                kind: "insert",
+                position: call.args.position ?? "end",
+                cellType: String(call.args.cellType ?? "code"),
+                source: String(call.args.source ?? ""),
+                id: call.args.id ? String(call.args.id) : undefined,
+              };
+              break;
+            case "replace":
+              operation = {
+                kind: "replace",
+                index: Number(call.args.index),
+                source: String(call.args.source ?? ""),
+              };
+              break;
+            case "delete":
+              operation = { kind: "delete", index: Number(call.args.index) };
+              break;
+            case "edit_source":
+              operation = {
+                kind: "edit_source",
+                index: Number(call.args.index),
+                oldString: String(call.args.oldString ?? ""),
+                newString: String(call.args.newString ?? ""),
+                replaceAll: Boolean(call.args.replaceAll),
+              };
+              break;
+            default:
+              return { kind: "error", error: `unknown notebook operation: ${op}`, code: "BAD_ARGS" };
+          }
+          const result = await editNotebook(sandbox, relPath, operation);
+          return { kind: "notebook", result };
+        } catch (err) {
+          if (err instanceof NotebookError) {
+            return { kind: "error", error: err.message, code: err.code };
+          }
+          if (err instanceof SandboxError) {
+            return { kind: "error", error: err.message, code: err.code };
+          }
+          return { kind: "error", error: err instanceof Error ? err.message : "unknown", code: "EXEC_FAILED" };
+        }
       }
       case "web_search": {
         // Pass 251: cascading provider chain (Tavily → Brave →
@@ -534,6 +601,56 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
       type: "object",
       properties: { command: { type: "string" } },
       required: ["command"],
+    },
+  },
+  {
+    name: "notebook_edit",
+    description:
+      "Edit a Jupyter notebook (.ipynb) with structured cell operations. Use this instead of `edit_file` or `write_file` on .ipynb files — generic text edits corrupt the JSON and Jupyter refuses to open the notebook. Operations: `insert` (add a new cell at position/start/end), `replace` (replace a cell's source by index), `delete` (remove a cell by index), `edit_source` (find+replace inside a specific cell — unique match required or set replaceAll). Requires admin + write mode.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Path to .ipynb file" },
+        operation: {
+          type: "string",
+          enum: ["insert", "replace", "delete", "edit_source"],
+          description: "Which notebook mutation to perform",
+        },
+        position: {
+          type: ["number", "string"],
+          description: "insert only: 0-based index, 'start', or 'end'",
+        },
+        cellType: {
+          type: "string",
+          enum: ["code", "markdown", "raw"],
+          description: "insert only: new cell type",
+        },
+        index: {
+          type: "number",
+          description: "replace/delete/edit_source only: target cell index",
+        },
+        source: {
+          type: "string",
+          description: "insert/replace only: new cell source code",
+        },
+        oldString: {
+          type: "string",
+          description: "edit_source only: substring to find",
+        },
+        newString: {
+          type: "string",
+          description: "edit_source only: substring to replace with",
+        },
+        replaceAll: {
+          type: "boolean",
+          description: "edit_source only: allow multi-match replacement",
+        },
+        id: {
+          type: "string",
+          description: "insert only: optional cell id",
+        },
+      },
+      required: ["path", "operation"],
     },
   },
   {

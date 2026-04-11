@@ -86,6 +86,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
       "Cascading provider search (Tavily/Brave/Google/LLM fallback) returning ranked hits (Pass 251, read-only)",
     mutation: false,
   },
+  {
+    id: "notebook_edit",
+    label: "Notebook edit",
+    description:
+      "Structured Jupyter .ipynb cell editing (insert/replace/delete/edit_source) — Pass 252, admin + write mode",
+    mutation: true,
+  },
 ];
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
@@ -99,6 +106,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "find_symbol",
   "web_fetch",
   "web_search",
+  "notebook_edit",
 ];
 
 export default function ToolPermissionsPopover({
