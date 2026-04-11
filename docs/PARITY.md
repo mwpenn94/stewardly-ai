@@ -8,7 +8,7 @@
 
 ## Meta
 
-- **Last updated:** 2026-04-11T00:00:00Z by parity-pass-1 (claude/optimize-app-parity-FRm86)
+- **Last updated:** 2026-04-11T00:00:02Z by parity-pass-2 (claude/optimize-app-parity-FRm86)
 - **Comparable (primary):** Claude Code CLI
 - **Comparable (adjacent):** Cursor Composer, Aider, Cline, Windsurf Cascade, Continue.dev, Codex CLI
 - **Core purpose:** Give Stewardly advisors + admins a Claude-Code-style agentic coding assistant that can read, understand, and (with permission) modify the Stewardly codebase from inside the web app, without leaving the advisory workflow.
@@ -145,16 +145,77 @@ These are features where Stewardly Code Chat credibly **exceeds** Claude Code. E
 | A7 | Output styles that change assistant personality per session | The 5-layer AI config already owns persona resolution. A separate layer duplicates state. |
 | A8 | Destructive git shortcuts (`git reset --hard`, `git restore --staged`, force-push macros) | Destructive ops must go through review per CLAUDE.md safety protocol. Not suitable for one-key binds. |
 
+## Implementation risk notes (Pass 2 — Depth)
+
+Per-gap hazards the naïve implementation will hit. Each gap's implementation prompt must answer these questions before any code is written.
+
+### G35 — File read with offset/limit
+- CRLF vs LF: split on `/\r?\n/`, not `/\n/`.
+- Binary file detection: scan first 8KB for `\0`, return `{binary: true}` and abort read.
+- Line-number column width: `Math.max(6, ceil(log10(totalLines)))`, right-aligned, tab separator to match `cat -n`.
+- 256KB byte cap is honored BEFORE line slicing, so huge files still truncate at byte boundary — document this so the agent doesn't mis-interpret partial results.
+- `limit=undefined` = no limit; `limit=0` = zero lines (empty); `limit<0` or `offset<0` = `BAD_ARGS`.
+- Tool description must tell the LLM to prefer offset/limit for large files — add to `codeChatStream.ts` system prompt.
+
+### G29 — Parallel tool dispatch
+- stepIndex assigned BEFORE dispatch so tool_start/tool_result pairing survives parallel arrival.
+- Audit log order = LLM-issued order (compliance); UI render order = arrival order. These diverge; document the divergence.
+- Parallelism ONLY when ALL calls in the turn are in `READ_ONLY_TOOLS`. Mixed or any-write = forced serial.
+- New `maxToolCalls` cap separate from `maxIterations` (default 40) so parallelism doesn't bypass budget.
+- LLM must be instructed to parallelize — system prompt addition required.
+- Partial failure: return all results (including errors) as one observation block; LLM decides next step.
+- Event loop yield (`await new Promise(r=>setTimeout(r,0))`) between SSE writes to avoid back-pressure.
+
+### G1 — Subagents / Task tool
+- **Subagents are HARD-GATED to read-only**, regardless of parent's `allowMutations`. Intentional divergence from Claude Code, documented as a compliance win.
+- Depth-1 only: subagents cannot spawn subagents. Prevents exponential blow-up.
+- Budget: 3 concurrent per parent turn, 50 total tool calls across all nested subagents per parent turn, $0.10 per subagent.
+- Return shape: `{summary, filesTouched[], toolCallCount, durationMs, costUSD}`. Parent only sees `summary` in its context; rest lives in SSE events for the UI.
+- Cost rolls up into parent session telemetry but is annotated as subagent-origin so `SessionAnalyticsPopover` can break out.
+- Parent abort → all subagents abort. Subagent abort → parent receives error, decides next step.
+- Reuse project instructions + memory overlay; do NOT inherit parent conversation history.
+
+### G9 — Interactive per-tool-call approval
+- Session ID required — generate client-side on stream open, include in stream POST + approval POST.
+- Approval POST endpoint: `POST /api/codechat/stream/approve` with `{sessionId, stepIndex, decision, rulePersistence}`.
+- Pending approvals live in an in-memory `Map<string, Promise resolver>` with TTL eviction. Redis punt to future-state.
+- Default approval timeout: 60s. Timeout → auto-deny. Agent receives "timed out" and can retry.
+- Rule persistence scopes: "call" / "session" / "user" (30-day TTL for "user"). Cross-session persistence (`user_codechat_permission_rules` DB table) is an opt-in escape hatch, not default.
+- Rule DSL (G11 partial): `{toolName, argGlob}`, e.g., `{"Bash", "git status:*"}` or `{"write_file", "src/**"}`. Matcher uses minimatch-style globs.
+- Approval popover shows a diff preview for write/edit (reuse `DiffView.tsx` with Pass 205 before/after snapshots).
+- **Every approval + denial + rule creation logs to `codechat_approvals` table** — FINRA 17a-4 non-negotiable.
+- Esc on popover = deny. Click outside = ambiguous, re-prompt.
+- Streaming continues for non-mutation events during the wait — only mutation dispatch blocks.
+
+### G2 — Glob tool
+- Reuse `fileIndex.ts` walker (already exists with exclusion list) — do not add a new dep.
+- Cap at 500 results, sort by mtime descending.
+- Add to `READ_ONLY_TOOLS` set.
+
+### G3 — MultiEdit tool
+- Sequential in-memory application, single write at end.
+- Any edit failure → abort entire batch, leave file unchanged.
+- Supports chained edits (edit N+1's oldString introduced by edit N).
+- One entry in edit history ring buffer for the whole batch (not one per sub-edit).
+
+### G21 — Per-hunk diff approval
+- Extend `shared/lineDiff.ts` to expose a hunk array (it already formats unified diff; the hunk structure is internal — just export it).
+- Guard against hunk drift: re-read file at apply-time, re-generate diff, verify hunks applicable, prompt if any drifted.
+- Apply-selected reconstructs file content from `(original + selected added hunks − selected removed hunks)` and dispatches one `write_file`.
+- Integration point: tool call intercepted when "Review hunks before apply" flag is on.
+
 ## Reconciliation log
 
 (append-only, one line per merge event)
 
 - 2026-04-11T00:00:00Z — parity-pass-1 — initial creation, no prior version to merge.
+- 2026-04-11T00:00:02Z — parity-pass-2 — appended Implementation risk notes section covering G35, G29, G1, G9, G2, G3, G21. No conflicts with on-disk (single-process write). Pass 1 content preserved verbatim.
 
 ## Changelog
 
 (append-only, one line per pass, most recent first)
 
+- Pass 2 (parity depth, 2026-04-11, score 72.0% unchanged) — added Implementation risk notes for all 4 critical gaps + 3 high-priority gaps. Depth pass is planning-only; no code changed, so score holds. Surfaced 30+ new edge cases across 7 gaps — biggest novel findings: (a) G35 binary-file detection + CRLF handling, (b) G29 LLM-must-be-instructed-to-parallelize prompt gap, (c) G1 read-only hard gate on subagents as compliance divergence, (d) G9 session-ID state bolt-on for approval flow. Temperature 0.2.
 - Pass 1 (parity landscape, 2026-04-11, score 72.0%) — initial parity audit against Claude Code + 6 adjacent comparables. Logged 40 gap-matrix rows, 20 beyond-parity wins, 8 anti-parity rejections. No file changes; planning-only pass. Discovered 4 critical gaps (G1 subagents, G9 per-call approval, G29 parallel tool calls, G35 line-range read). Temperature 0.2.
 
 ## Known-bad approaches
