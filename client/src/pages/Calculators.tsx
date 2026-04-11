@@ -194,6 +194,7 @@ export default function Calculators() {
               { label: "Practice to Wealth", path: "/wealth-engine/practice-to-wealth", icon: <TrendingUp className="w-4 h-4" />, desc: "Practice growth modeling" },
               { label: "Quick Quote (Client)", path: "/wealth-engine/quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Instant client proposal" },
               { label: "Business Income Quote", path: "/wealth-engine/business-income-quote", icon: <Briefcase className="w-4 h-4" />, desc: "Advisor 30-year BIE projection" },
+              { label: "Holistic Comparison", path: "/wealth-engine/holistic-comparison", icon: <Scale className="w-4 h-4" />, desc: "Side-by-side strategy delta" },
               { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
             ].map(tool => (
               <button

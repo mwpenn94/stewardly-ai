@@ -38,6 +38,9 @@ const WeQuickQuote = lazy(() => import("./pages/wealth-engine/QuickQuoteFlow"));
 const WeBusinessIncomeQuickQuote = lazy(
   () => import("./pages/wealth-engine/BusinessIncomeQuickQuote"),
 );
+const WeHolisticComparison = lazy(
+  () => import("./pages/wealth-engine/HolisticComparison"),
+);
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 // Consensus (Round C3 — multi-model consensus stream UI)
@@ -150,6 +153,10 @@ function Router() {
         <Route
           path={"/wealth-engine/business-income-quote"}
           component={WeBusinessIncomeQuickQuote}
+        />
+        <Route
+          path={"/wealth-engine/holistic-comparison"}
+          component={WeHolisticComparison}
         />
         {/* Code Chat (admin foundation) */}
         <Route path={"/code-chat"} component={CodeChatPage} />
