@@ -3,16 +3,16 @@
 > Always re-read immediately before writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11T00:00:09Z by chat:optimize-crud-parity-satL3/pass-10
+- Last updated: 2026-04-11T00:00:10Z by chat:optimize-crud-parity-satL3/pass-11
 - Comparable target: "best-in-class dynamic CRUD for any integration/pipeline/ingestion process, even where documentation or vendor support is limited or nonexistent but data is available from sources — plus continuous improvement across Code Chat, AI chat financial force multipliers, learning/training/onboarding, CRM/marketing coordination, workflow, and agentic AI/browser/device automation"
 - Core purpose: Give Stewardly the ability to dynamically CRUD any integration/pipeline/ingestion process and turn the resulting data fabric into a continuous-improvement force multiplier across every Stewardly surface
 - Target user: Platform admin / advisor-tier developer / power client who needs to wire a new data source without writing a schema migration or waiting on a vendor SDK
 - Success metric: Time from "I have a URL/sample/cURL and know the data is there" → "live, scheduled, personalized ingestion flowing into the 5-layer intelligence stack" → <10 min (documented), <30 min (undocumented), <60 min (portal-only)
-- Current parity score: 43% (composite 4.3 / 10 — Pass 10 adversarial-2 exposed prompt injection surface in context assembler + latency/cost gaps)
-- Passes completed: 10
-- Last reconciliation: 2026-04-11T00:00:09Z (conflicts: 0)
+- Current parity score: 43% (unchanged — Pass 11 Future-State-2 adds economic + moat dimensions that aren't scored inline)
+- Passes completed: 11
+- Last reconciliation: 2026-04-11T00:00:10Z (conflicts: 0)
 - Active branches: 2 of 5 (B + E; A/C/D shelved)
-- Convergence status: **NOT CONVERGED** — Pass 10 produced 20 novel findings
+- Convergence status: **NOT CONVERGED** — Pass 11 produced 18 novel E-series and M-series findings
 
 ## Pillars (comparable target decomposition)
 1. **Dynamic CRUD for integrations / pipelines / ingestion** (documented, undocumented, portal-only)
@@ -789,6 +789,68 @@ timeout / cost blow-up. Plus: cross-platform continuity check per v2 rules.
 - **Pass 10 produced 20 novel findings**, same rate as Pass 9. Temperature
   should stay flat or slightly decay. Non-convergence extended.
 
+## Pass 11 Future-State-2 — Economics + Beyond-Parity Moats
+
+Pass 11 drills two axes Pass 6 skimmed: (1) the **economics** of dynamic
+CRUD at scale (who pays, how to allocate scarce resources, what business
+model supports "free-tier integrations for any source"), and (2) **concrete
+moat designs** for the 12 beyond-parity opportunities we've been tracking
+but never shaped into buildable plans.
+
+### Economics findings (E-series)
+
+| ID | Finding | Axis | Severity | Implication |
+|---|---|---|---|---|
+| E1 | **Free-tier exhaustion asymmetry** — provider free tiers (FRED 120/min, Census 500/day, PDL 100/month) are PER-API-KEY. In a multi-tenant app, the platform burns the free tier serving all tenants. At 10x tenant count, free tiers are useless. Need per-tenant API keys (platform-owned across all customers), or pass-through "bring your own key" (shifts cost to customer but complicates UX) | Cost allocation | high | 3 options: (a) platform-pays + cost passthrough, (b) per-tenant BYOK, (c) hybrid with platform-owned keys as fallback for paying customers |
+| E2 | **Extraction LLM cost is hidden from the buyer** — an advisor adds a new source, schedules hourly ingestion; each run costs $0.01-$0.50 in extraction. At 24 runs/day × 30 days × 10 sources = 7200 runs × $0.10 avg = $720/month. Stewardly eats this in every SaaS pricing tier that advertises "unlimited integrations". Unsustainable | Business model | critical | Must cap extraction cost OR meter per-source usage OR tier by source count |
+| E3 | **Scrape volume economics** — a daily full-site scrape of a 1000-page carrier portal is 1000 extraction calls × $0.10 = $100/day/source. 10 such sources → $30K/month. No pricing model can absorb this at advisor-tier prices | Cost blow-up | critical | Incremental scraping + delta detection + Playwright-cached HTML — reduce 99% of unchanged pages from hitting LLM |
+| E4 | **Per-user personalization budget vs per-user LTV mismatch** — if Pass 9 P1 + P2 land, each user's assembled prompt grows by 500-2000 tokens of their personal ingested data. At 100 turns/day × 365 days × $0.03 = $1100/user/year in personalization tax alone. Advisor tier LTV is ~$1200-3000/year. Razor-thin | Personalization math | critical | Aggressively cache + prefix-caching + only inject when query relevance > threshold |
+| E5 | **Consensus mode is a cost multiplier** — 3-model consensus at $0.10/call = $0.30/call. Used on high-stakes ingestion (X4 EU AI Act requirement for regulatory content), cost multiplies. Need tiered consensus: 3-model only when confidence-divergence > 10% | Cost architecture | high | Smart consensus triggering |
+| E6 | **Reverse cost model — ingested data AS a product** — Stewardly could resell pre-cleaned, pre-normalized financial data feeds to OTHER platforms (non-competitors). The ingestion layer becomes a profit center, not a cost center. 10 providers × 1000 customers × $10/customer/month = $100K/month. **Meta-moat** | Business model | beyond-parity | Explore data-brokerage-as-product with explicit per-feed consent + revenue share |
+| E7 | **Browser automation minute costs** — Playwright in Browserbase is ~$0.20/minute. A daily portal scrape taking 5 min = $1/day = $30/month/portal. At 20 advisor users × 5 portals = 100 runs/day = $600/month. Needs per-run cost estimate shown to the admin before enabling | Cost transparency | high | Pre-run cost estimator UI |
+| E8 | **Cold-start ingestion cost** — new advisor onboarding today costs ~$0 in integrations (nothing configured). With dynamic CRUD in place, an eager advisor could add 10 sources on day 1, generating $50+ in extraction cost before the free trial ends. Onboarding funnel has a cost bomb | Acquisition economics | med | Trial-tier hard cap + "paid features" markers on high-cost sources |
+| E9 | **Cost observability parity** — X13 competitors (Braintrust, Humanloop) ship per-user cost dashboards. Stewardly currently shows per-integration usage but NOT rolled-up per-user monthly cost. Admins can't answer "which user is burning my margin?" | Observability | high | Per-user cost rollup view |
+
+### Beyond-parity moat designs (M-series — concrete plans)
+
+These are **buildable** moats where Stewardly can exceed the comparable
+target. Pass 1 listed 10 opportunities; Pass 11 turns them into actionable
+designs with rough effort + risk.
+
+| ID | Moat | Pass 1 opportunity # | Concrete design | Effort | Risk |
+|---|---|---|---|---|---|
+| M1 | **Financial-domain-aware schema inference** | #1 | Schema inferrer uses a Zod registry of financial priors: account_number (9 digits, routing-number-like), holdings[] (ticker + units + avg_cost), FINRA-2210-regulated fields (suitability markers). The LLM's schema suggestion is validated + enhanced by the prior registry. Fork of Fivetran / Airbyte's generic schema detection | M | low |
+| M2 | **5-layer tier-aware data routing** | #2 | Each ingested record auto-classified via a pure function into platform/org/mgr/pro/user tier based on content pattern. Regulatory → platform; campaign analytics → org; client portfolio → user. Routing is a first-class property, surfacing in all downstream queries. Horizontal ETL tools can't do this without a separate taxonomy layer | M | low |
+| M3 | **Compliance-gated extraction by default** | #3 | All extractor paths route through `compliance.screen()` BEFORE surface. Adversary content never leaves the quarantine queue. A15 fix becomes infrastructure, not a one-off patch | S | low |
+| M4 | **Chat-native "add integration" via natural language** | #4 | New Chat mode "Integration" that runs an agent loop: probe → infer → suggest mapping → test → schedule → report. User never sees forms. Pass 4 Branch C + Pass 5 F13 tools + D11 Code Chat tools fuse here | L | med |
+| M5 | **Continuous-improvement loop from every failed extraction** | #5 | Failure signal → ragTrainer → next extraction attempt has a better prompt. Failure signal → improvementLoops.ts → adjust retry policy, switch model, warn user. Failure signal → learning.flashcards → advisor gets "how to handle this carrier" SRS card. Three destinations, one source | M | med |
+| M6 | **Recursive optimization passes ON integrations themselves** | #6 | The same toolkit that drives Stewardly's CLAUDE.md recursion runs per-integration: Pass 1 Landscape → Pass 3 Adversarial → Pass 5 Depth — each integration converges over time. `node toolkit.js integration:optimize fred --passes=5` | L | med |
+| M7 | **Integration Recipe as first-class learning content** | #7 | A well-tested ConnectorSpec becomes a chapter in `learning_tracks.content-studio`. Advisors earn mastery points for understanding each integration. Cross-product flywheel: more integrations → more learning content → more mastery → more confident advisors using integrations | M | low |
+| M8 | **Wealth Engine auto-hydration from ingested data** | #8 | Ingested portfolio data (Plaid, SnapTrade, manual uploads) → retirement/strategy/Monte Carlo calculators. Click a calculator → it's already filled from the freshest data. Already partially wired; needs the P1-P2 ingested-records plumbing to complete | M | low |
+| M9 | **Consensus-LLM validation on high-stakes extraction** | #9 | For `recordType IN (regulatory_update, compliance_review, advisory_opinion)`, the consensus stream (Round C/D/E) cross-checks extraction. Single-model hallucinations fail the consensus check and get quarantined. Precedes X4 EU AI Act compliance | M | med |
+| M10 | **Agentic personalization shard per user** | #10 | Each user has a personalization shard: {interests[], recent_calculations[], integration_preferences, query_patterns}. Stored in `user_profiles.personalizationShard` JSON. Every contextualLLM call reads it; every ingested record is relevance-scored against it. Pass 9 P1 + Pass 11 M10 compose | M | med |
+| M11 | **Learning-as-integration (new — Pass 5 F9 promoted)** | — | Integration engineering "mastery" becomes a concept: advisors earn SRS cards on "when does FRED update CPI?", "how does SnapTrade OAuth work?", "what compliance applies to this data source?". Closes the training gap between IT team and advisor team | M | low |
+| M12 | **X17 per-user personalization moat (Pass 6 promoted)** | — | See Pass 9 P1 findings. The biggest unrealized win in the parity doc — the infrastructure exists; ingested records just need to be plugged into the assembler | M | low |
+
+### Business-model recommendation (Pass 11 Synthesis contribution)
+
+Given E1-E9 economic reality, Stewardly's dynamic-CRUD offering must
+pick one of three business models:
+
+1. **BYOK-only** (simplest) — every advisor provides their own API keys.
+   Platform passes through costs. Free, but complex UX.
+2. **Metered pay-per-run** — platform owns keys, charges per ingestion run
+   via a credits system. Predictable, scales, but requires billing
+   infrastructure.
+3. **Tier-capped with overage** — included source count per tier, overage
+   charges. Combines simplicity + predictability. **Recommended** — it
+   matches how Fivetran and Airbyte price, and it caps cold-start cost
+   (E8).
+
+**Pass 11 recommends Option 3** with hard caps: free tier 3 sources,
+advisor tier 15 sources, manager tier 50 sources, platform tier
+unlimited (but subject to E2/E3 review).
+
 ## Reconciliation Log (append-only)
 
 | Time | Pass | Action | Conflicts | Notes |
@@ -803,12 +865,14 @@ timeout / cost blow-up. Plus: cross-platform continuity check per v2 rules.
 | 2026-04-11T00:00:07Z | 8 | Synthesis — consolidate + convergence check | 0 | Consolidated 150 items. NOT CONVERGED. Score unchanged 48%. |
 | 2026-04-11T00:00:08Z | 9 | Depth — P1-P20 personalization layer | 0 | Found deepContextAssembler personalization orphan. Parity 48% → 45%. Temperature 0.35 → 0.30. |
 | 2026-04-11T00:00:09Z | 10 | Adversarial-2 — context assembler stress test | 0 | Re-read before write; no concurrent writer. 20 AA-series findings. AA6/AA7/AA8 systemic prompt-injection surface. AA12/AA16 cost bombs. AA10/AA11 v2 handoff gaps. Fix-order dependency: AA8 sanitization MUST precede P1 personalization wiring. Parity 45% → 43%. Temperature 0.30 → 0.28. |
+| 2026-04-11T00:00:10Z | 11 | Future-State-2 — economics + moat designs | 0 | Re-read before write; no concurrent writer. 9 E-series economic findings + 12 M-series concrete moat designs. E2/E3/E4 identify the $30K-$50K/month cost bomb at 10x scale. E6 surfaces beyond-parity business-model moat (data brokerage). M1-M12 turn Pass 1 beyond-parity opportunities into buildable designs. Business-model recommendation: Option 3 (tier-capped with overage). Parity 43% (unchanged — economics are scored separately as a new dimension to consider). Temperature 0.28 → 0.25. |
 
 ## Changelog (append-only, most recent first)
 
 | Pass | Platform | Type | Score Δ | Summary |
 |---|---|---|---|---|
-| 10 | Claude Code | Adversarial-2 | -0.20 | 20 AA-series findings stress-testing the Pass 9-discovered `deepContextAssembler`. AA6/AA7/AA8 expose systemic prompt-injection surface — EVERY string assembled into `fullContextPrompt` is un-sanitized, including calculator scenario names, insight descriptions, activity log entries, client profiles. AA12 + AA16 identify the assembler as a cost bomb at 10x scale (no caching, no global budget). AA10/AA11 flag v2 handoff gaps — manifest has gap IDs but not implementation-prompt archive. **Critical sequencing constraint: AA8 sanitization MUST ship BEFORE Pass 9 P1 personalization wiring**, or we ship a prompt-injection vector. Parity 45% → 43%. Temperature 0.30 → 0.28. Non-convergence extended. |
+| 11 | Claude Code | Future-State-2 | +0.00 | 9 E-series economic findings + 12 M-series concrete beyond-parity moat designs. E2/E3/E4 reveal a $30K-$50K/month cost bomb at 10x scale if the personalization + ingestion layers ship naively. E6 surfaces a potential reverse-revenue moat (Stewardly becomes a data broker). E8 flags cold-start cost bombs in the onboarding funnel. M1-M12 turn the Pass 1 beyond-parity wish-list into buildable plans with effort + risk. **Business-model recommendation: tier-capped with overage (Option 3)** with free=3/advisor=15/manager=50/platform=unlimited source caps. Parity 43% (unchanged — Future-State-2 adds new dimensions, doesn't re-score existing ones). Temperature 0.28 → 0.25. Non-convergence extended. |
+| 10 | Claude Code | Adversarial-2 | -0.20 | 20 AA-series findings stress-testing the Pass 9-discovered `deepContextAssembler`. AA6/AA7/AA8 expose systemic prompt-injection surface — EVERY string assembled into `fullContextPrompt` is un-sanitized. AA12 + AA16 identify the assembler as a cost bomb at 10x scale. AA10/AA11 flag v2 handoff gaps. **Critical sequencing: AA8 sanitization MUST ship BEFORE Pass 9 P1 personalization wiring**. Parity 45% → 43%. Temperature 0.30 → 0.28. |
 | 9 | Claude Code | Depth | -0.30 | **Major discovery: deepContextAssembler.ts** — the "central nervous system for all AI context" passes 1-8 never inspected. It assembles 14 data source types into every `contextualLLM` call, BUT entirely ignores `ingestedRecords`, `webScrapeResults`, and `documentExtractions`. The entire dynamic-CRUD output fabric is orphaned from the personalization layer. X17 beyond-parity moat is far more broken than Pass 6 stated. 20 novel findings (P1-P20). Parity 48% → 45%. Temperature 0.35 → 0.30. |
 | 8 | Claude Code | Synthesis | +0.00 | Consolidated 150 items into highest-leverage bundles: (1) lineage unblocks 6 regulatory gaps; (2) schema loosening unblocks 10 dynamic-registration gaps; (3) ConnectorSpec Branch B unblocks 8 provider gaps; (4) event-bus + improvement loops make continuous-improvement real (10+ gap closures); (5) security gate bundle is critical-path; (6) Code Chat tools are a force multiplier. Re-synthesized dimension scorecard unchanged from Pass 7 (4.8/10). **Convergence check: NOT CONVERGED** — 0 of 7 criteria met. Still need ~3 passes of novel findings, 1 branch elimination, implementation start, dimension scores above 7.0. Parity 48% (unchanged). Temperature 0.35. |
 | 7 | Claude Code | Landscape-2 + sequencing | -0.20 | 20 UI / test coverage / meta blind-spot findings (L1-L20) Pass 1 missed. UI fragmentation critical: 5 separate pages serving overlapping concerns (L1). No "add provider" button (L2). No cURL paste UI (L5). Test coverage estimated 40-60 tests on integrations out of 3,103 total (L7). Implementation sequencing plan spans 7 phases and ~21 implementation chats. Critical path: Phase 1 (SEC) → Phase 2 (schema) → Phase 6 (UX). Parity 50% → 48%. Temperature 0.40 → 0.35. Safety flag: loop writes docs-only so CLAUDE.md 3-pass rule is advisory. |
