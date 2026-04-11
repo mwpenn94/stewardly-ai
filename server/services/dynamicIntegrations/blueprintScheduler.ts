@@ -26,6 +26,7 @@ let tickHandle: ReturnType<typeof setInterval> | null = null;
 let running = false;
 
 const TICK_INTERVAL_MS = 60 * 1000; // 1 minute
+const MAX_CONCURRENT_RUNS = 4; // cap fan-out per tick to avoid stampede
 
 /** Start the global scheduler tick. Idempotent. */
 export function startBlueprintScheduler(): void {
@@ -69,25 +70,45 @@ export async function schedulerTick(now: Date = new Date()): Promise<{
       ),
     );
 
-  let triggered = 0;
-  let failed = 0;
+  // Collect all due blueprints first, then run them with a concurrency cap
+  // so a big tick doesn't stampede the DB + outbound network.
+  const due: Array<ReturnType<typeof rowToBlueprint>> = [];
   for (const row of rows) {
     const bp = rowToBlueprint(row as unknown as Record<string, unknown>);
     if (!bp.scheduleCron) continue;
     if (!isDue(bp.scheduleCron, now, bp.lastRunAt ?? null)) continue;
-    try {
-      await executeBlueprint(bp, {
-        dryRun: false,
-        triggeredBy: bp.createdBy,
-        triggerSource: "schedule",
-      });
-      triggered++;
-    } catch (e: unknown) {
-      failed++;
-      logger.warn(
-        { operation: "blueprintScheduler", blueprintId: bp.id, err: (e as Error).message },
-        `scheduled blueprint ${bp.slug} failed`,
-      );
+    due.push(bp);
+  }
+
+  let triggered = 0;
+  let failed = 0;
+  // Process in chunks of MAX_CONCURRENT_RUNS.
+  for (let i = 0; i < due.length; i += MAX_CONCURRENT_RUNS) {
+    const chunk = due.slice(i, i + MAX_CONCURRENT_RUNS);
+    const results = await Promise.allSettled(
+      chunk.map((bp) =>
+        executeBlueprint(bp, {
+          dryRun: false,
+          triggeredBy: bp.createdBy,
+          triggerSource: "schedule",
+        }),
+      ),
+    );
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j];
+      if (result.status === "fulfilled") {
+        triggered++;
+      } else {
+        failed++;
+        logger.warn(
+          {
+            operation: "blueprintScheduler",
+            blueprintId: chunk[j].id,
+            err: String(result.reason),
+          },
+          `scheduled blueprint ${chunk[j].slug} failed`,
+        );
+      }
     }
   }
   return { considered: rows.length, triggered, failed };

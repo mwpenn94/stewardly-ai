@@ -197,6 +197,13 @@ async function writeLeadPipeline(
   return result;
 }
 
+const USER_MEMORY_CATEGORIES = new Set([
+  "fact", "preference", "episodic", "amp_engagement", "ho_domain_trajectory",
+]);
+const PROACTIVE_CATEGORIES = new Set([
+  "compliance", "portfolio", "tax", "engagement", "spending", "life_event",
+]);
+
 async function writeUserMemories(
   blueprint: BlueprintDefinition,
   records: Record<string, unknown>[],
@@ -210,7 +217,14 @@ async function writeUserMemories(
     result.warnings.push("user_memories sink: no userId available on blueprint or trigger");
     return result;
   }
-  const category = (sink.target || "fact") as "fact" | "preference" | "episodic" | "amp_engagement" | "ho_domain_trajectory";
+  // Whitelist the category — blueprint can set any target string but we only
+  // forward known enum values to avoid a DB error on insert.
+  const raw = sink.target || "fact";
+  const category = (USER_MEMORY_CATEGORIES.has(raw) ? raw : "fact") as
+    | "fact" | "preference" | "episodic" | "amp_engagement" | "ho_domain_trajectory";
+  if (raw !== category) {
+    result.warnings.push(`user_memories: unknown category "${raw}" → fallback to "fact"`);
+  }
   for (const record of records) {
     try {
       const content = asString(
@@ -253,8 +267,12 @@ async function writeProactiveInsights(
     result.warnings.push("proactive_insights sink: no userId available on blueprint or trigger");
     return result;
   }
-  const category = (sink.target || "engagement") as
+  const rawCat = sink.target || "engagement";
+  const category = (PROACTIVE_CATEGORIES.has(rawCat) ? rawCat : "engagement") as
     | "compliance" | "portfolio" | "tax" | "engagement" | "spending" | "life_event";
+  if (rawCat !== category) {
+    result.warnings.push(`proactive_insights: unknown category "${rawCat}" → fallback to "engagement"`);
+  }
   for (const record of records) {
     try {
       const title = asString(

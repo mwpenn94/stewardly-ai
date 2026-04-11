@@ -32,6 +32,8 @@ import { inferSchema, schemaToPersisted } from "./schemaInference";
 import { runPipeline, type Record_ } from "./transformEngine";
 import { dispatchToSink, type SinkWriteResult } from "./sinkDispatcher";
 import { recordRunStats } from "./blueprintRegistry";
+import { assertUrlSafe, scrubSensitiveText } from "./urlGuard";
+import { checkAndConsumeRate } from "./rateLimiter";
 import type { BlueprintDefinition, BlueprintRunSummary } from "./types";
 
 const MAX_RESPONSE_BYTES = 5_000_000; // 5 MB ceiling on fetch body.
@@ -143,6 +145,12 @@ async function fetchUrl(
   url: string,
   init: RequestInit,
 ): Promise<{ body: string; contentType: string; status: number } | { error: string }> {
+  // SSRF guard — blocks loopback, private CIDR, metadata hosts, file:// etc.
+  try {
+    assertUrlSafe(url);
+  } catch (e: unknown) {
+    return { error: scrubSensitiveText((e as Error).message) };
+  }
   try {
     const response = await fetch(url, init);
     const contentType = response.headers.get("content-type") ?? "";
@@ -153,7 +161,7 @@ async function fetchUrl(
     const body = Buffer.from(buffer).toString("utf-8");
     return { body, contentType, status: response.status };
   } catch (e: unknown) {
-    return { error: (e as Error).message || "fetch failed" };
+    return { error: scrubSensitiveText((e as Error).message || "fetch failed") };
   }
 }
 
@@ -374,6 +382,33 @@ export async function executeBlueprint(
   const runId = randomUUID();
   const startedAt = nowMs();
   const warnings: string[] = [];
+
+  // ── Rate-limit check (skip for dry-runs so UI previews aren't throttled)
+  if (!options.dryRun && blueprint.rateLimitPerMin && blueprint.rateLimitPerMin > 0) {
+    const decision = checkAndConsumeRate(blueprint.id, blueprint.rateLimitPerMin, startedAt);
+    if (!decision.allowed) {
+      return {
+        runId,
+        blueprintId: blueprint.id,
+        blueprintVersion: blueprint.currentVersion,
+        status: "failed",
+        recordsFetched: 0,
+        recordsParsed: 0,
+        recordsTransformed: 0,
+        recordsValidated: 0,
+        recordsWritten: 0,
+        recordsSkipped: 0,
+        recordsErrored: 0,
+        durationMs: 0,
+        error: `rate limited: retry in ${decision.retryInMs ?? 1000}ms`,
+        warnings: [`rate limit ${blueprint.rateLimitPerMin}/min exceeded`],
+        sample: [],
+        startedAt,
+        completedAt: startedAt,
+      };
+    }
+  }
+
   let status: BlueprintRunSummary["status"] = "running";
   let recordsFetched = 0;
   let recordsParsed = 0;

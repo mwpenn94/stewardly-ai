@@ -134,6 +134,12 @@ export const dynamicIntegrationsRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
+      // SSRF guard: block loopback, private CIDR, metadata hosts, etc.
+      const { checkUrlSafety } = await import("../services/dynamicIntegrations/urlGuard");
+      const safety = checkUrlSafety(input.url);
+      if (!safety.ok) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `unsafe URL: ${safety.reason}` });
+      }
       try {
         const resp = await fetch(input.url, {
           method: input.method ?? "GET",

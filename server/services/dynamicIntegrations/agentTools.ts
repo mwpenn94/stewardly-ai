@@ -12,6 +12,7 @@ import { executeBlueprint } from "./blueprintExecutor";
 import { draftBlueprint, type DraftRequest } from "./aiBlueprintDrafter";
 import { probeBody } from "./sourceProber";
 import { inferSchema, schemaToPersisted } from "./schemaInference";
+import { checkUrlSafety } from "./urlGuard";
 
 const SAMPLE_FETCH_BYTES = 200_000;
 
@@ -40,6 +41,10 @@ export async function executeBlueprintTool(
         let body = inlineSample ?? "";
         let contentType = "";
         if (url) {
+          const safety = checkUrlSafety(url);
+          if (!safety.ok) {
+            return JSON.stringify({ error: `unsafe URL: ${safety.reason}` });
+          }
           try {
             const resp = await fetch(url, {
               headers: { "User-Agent": "Stewardly-BlueprintAgent/1.0" },

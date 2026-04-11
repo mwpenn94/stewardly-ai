@@ -5,7 +5,7 @@
 > writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11 (Pass 2) by `claude-code @ claude/dynamic-crud-integrations-3hNOR`
+- Last updated: 2026-04-11 (Pass 3) by `claude-code @ claude/dynamic-crud-integrations-3hNOR`
 - Comparable: "best existing and planned comparables overall to Stewardly repo"
   (informal — Stewardly sits at the intersection of advisor CRM/pipeline tools
   like Wealthbox/Redtail, planning engines like eMoney/MoneyGuide, ingestion
@@ -13,7 +13,7 @@
 - Core purpose (from v2 scope lock): 5-layer financial advisory AI platform
   that makes every layer — consumer → advisor → firm → compliance → data —
   smarter and faster through shared, governed, grounded intelligence.
-- Current parity score: 83% (up from 74% after Pass 2)
+- Current parity score: 86% (up from 83% after Pass 3 adversarial hardening)
 
 ## Gap Matrix
 
@@ -83,6 +83,34 @@ Legend: ✅ present  ⚠️ partial  ❌ missing
 
 (append-only, one line per pass, most recent first)
 
+- 2026-04-11 — Pass 3 (Adversarial, claude-code, branch
+  `claude/dynamic-crud-integrations-3hNOR`): hardened the feature against
+  silent failure modes + security holes. Added `urlGuard.ts` — pure-function
+  SSRF guard blocking non-http(s) schemes, loopback, private IPv4 ranges
+  (RFC 1918 + link-local + carrier-grade NAT + reserved), IPv6 loopback +
+  ULA + link-local, cloud metadata hosts (169.254.169.254 +
+  metadata.google.internal), userinfo in URL, suspicious localhost.*
+  prefixes, and non-standard ports — wired into `fetchUrl` in the executor,
+  `probeUrl` in the tRPC router, `aiBlueprintDrafter.fetch`, and the
+  `blueprint_probe` ReAct agent tool so every single network entrypoint
+  goes through the same gate. Added `scrubSensitiveHeaders` +
+  `scrubSensitiveText` to redact Authorization / Bearer / Cookie / api_key
+  / access_token before they land in run-row errorLogs or warnings.
+  Added `rateLimiter.ts` — in-memory per-blueprint token-bucket
+  (capacity=rateLimitPerMin, refill=rate/60000 per ms, 10k ceiling)
+  wired into `executeBlueprint` so a rogue blueprint can't burst past its
+  configured rpm — dry-runs bypass for UI responsiveness. Hardened the
+  transform `regex` step against ReDoS — nested-quantifier detection
+  ((a+)+, (a*)*, (a{m,n})+), >10 open-paren limit, 200-char pattern cap,
+  safe-flag whitelist. Added concurrency cap (MAX_CONCURRENT_RUNS=4) to
+  `schedulerTick` so a batch of 50 due-at-once blueprints runs in 4-wide
+  chunks via `Promise.allSettled` instead of stampeding the DB + network.
+  Whitelisted user_memories and proactive_insights category strings so an
+  LLM-drafted blueprint can't cause an enum-insert DB error. 37 new tests
+  (25 urlGuard + 8 rateLimiter + 4 regex hardening) pushing the
+  dynamicIntegrations surface to 149 passing. TS clean, build 53.93s,
+  full suite 3,927 passing / 112 pre-existing failures (0 regressions).
+  Parity score: 86%.
 - 2026-04-11 — Pass 2 (Depth, claude-code, branch
   `claude/dynamic-crud-integrations-3hNOR`): closed D07/D09/D10/D11/D12/D16/D17/D18.
   Added 3 new sinks (lead_pipeline dedup by emailHash, user_memories tagged

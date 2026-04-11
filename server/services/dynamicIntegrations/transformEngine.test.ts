@@ -105,6 +105,28 @@ describe("applyStep", () => {
     const r = applyStep({ v: "x" }, { kind: "regex", field: "v", pattern: "[invalid", replace: "" });
     if (r.ok) expect((r.record as any).v).toBe("x");
   });
+  it("regex blocks nested-quantifier ReDoS pattern (a+)+", () => {
+    const r = applyStep({ v: "aaaaaa" }, { kind: "regex", field: "v", pattern: "(a+)+", replace: "x" });
+    if (r.ok) expect((r.record as any).v).toBe("aaaaaa"); // no-op
+  });
+  it("regex blocks (a*)* ReDoS pattern", () => {
+    const r = applyStep({ v: "bbbbbb" }, { kind: "regex", field: "v", pattern: "(b*)*", replace: "x" });
+    if (r.ok) expect((r.record as any).v).toBe("bbbbbb");
+  });
+  it("regex blocks patterns with too many open parens", () => {
+    const r = applyStep(
+      { v: "abc" },
+      { kind: "regex", field: "v", pattern: "(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)", replace: "x" },
+    );
+    if (r.ok) expect((r.record as any).v).toBe("abc");
+  });
+  it("regex blocks patterns longer than 200 chars", () => {
+    const r = applyStep(
+      { v: "xxx" },
+      { kind: "regex", field: "v", pattern: "a".repeat(250), replace: "y" },
+    );
+    if (r.ok) expect((r.record as any).v).toBe("xxx");
+  });
   it("jsonPath extracts nested value", () => {
     const r = applyStep(
       { payload: { a: { b: "deep" } } },

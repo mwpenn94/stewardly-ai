@@ -18,6 +18,7 @@
 
 import { contextualLLM } from "../../shared/stewardlyWiring";
 import { probeBody } from "./sourceProber";
+import { checkUrlSafety } from "./urlGuard";
 import { inferSchema, schemaToPersisted, type InferredSchema } from "./schemaInference";
 import type {
   BlueprintDraftInput,
@@ -58,6 +59,13 @@ export async function draftBlueprint(req: DraftRequest): Promise<DraftResult> {
     body = req.inlineSample;
     notes.push("using inline sample (no network fetch)");
   } else if (req.url) {
+    const safety = checkUrlSafety(req.url);
+    if (!safety.ok) {
+      notes.push(`url blocked: ${safety.reason}`);
+      req.url = undefined;
+    }
+  }
+  if (req.url && !body) {
     try {
       const resp = await fetch(req.url, {
         headers: { "User-Agent": "Stewardly-BlueprintDrafter/1.0" },

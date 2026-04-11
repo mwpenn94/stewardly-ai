@@ -141,10 +141,27 @@ function coerce(value: unknown, to: string): unknown {
   }
 }
 
+/**
+ * Build a regex, rejecting patterns with known catastrophic-backtracking
+ * shapes. This is heuristic-only — a complete ReDoS detector is out of
+ * scope — but it blocks the most common user-submitted footguns:
+ *   - nested quantifiers like `(a+)+` or `(a*)*`
+ *   - overlapping alternations with quantifiers like `(a|a)+`
+ *   - very long or deeply-parenthesized patterns
+ */
 function safeRegex(pattern: string, flags?: string): RegExp | null {
   try {
-    // Strip unsafe flags and cap pattern length to avoid catastrophic backtracking fuel.
-    if (pattern.length > 256) return null;
+    if (!pattern || pattern.length > 200) return null;
+    // Count parens — cap group depth/count.
+    let openParens = 0;
+    for (let i = 0; i < pattern.length; i++) {
+      if (pattern[i] === "(" && pattern[i - 1] !== "\\") openParens++;
+    }
+    if (openParens > 10) return null;
+    // Nested quantifier detector: (X+)+ / (X*)* / (X*)+ / (X+)* / (X{n,m})+
+    if (/\([^)]*[+*][^)]*\)[+*]/.test(pattern)) return null;
+    if (/\([^)]*\{\d+,?\d*\}[^)]*\)[+*]/.test(pattern)) return null;
+    // Strip unsafe flags.
     const safeFlags = (flags ?? "").replace(/[^gimsu]/g, "");
     return new RegExp(pattern, safeFlags);
   } catch {
