@@ -3,16 +3,16 @@
 > Always re-read immediately before writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11T00:00:07Z by chat:optimize-crud-parity-satL3/pass-8
+- Last updated: 2026-04-11T00:00:08Z by chat:optimize-crud-parity-satL3/pass-9
 - Comparable target: "best-in-class dynamic CRUD for any integration/pipeline/ingestion process, even where documentation or vendor support is limited or nonexistent but data is available from sources — plus continuous improvement across Code Chat, AI chat financial force multipliers, learning/training/onboarding, CRM/marketing coordination, workflow, and agentic AI/browser/device automation"
 - Core purpose: Give Stewardly the ability to dynamically CRUD any integration/pipeline/ingestion process and turn the resulting data fabric into a continuous-improvement force multiplier across every Stewardly surface
 - Target user: Platform admin / advisor-tier developer / power client who needs to wire a new data source without writing a schema migration or waiting on a vendor SDK
 - Success metric: Time from "I have a URL/sample/cURL and know the data is there" → "live, scheduled, personalized ingestion flowing into the 5-layer intelligence stack" → <10 min (documented), <30 min (undocumented), <60 min (portal-only)
-- Current parity score: 48% (composite 4.8 / 10 — Pass 8 Synthesis does not change score; consolidates 7 prior passes)
-- Passes completed: 8
-- Last reconciliation: 2026-04-11T00:00:07Z (conflicts: 0)
+- Current parity score: 45% (composite 4.5 / 10 — Pass 9 found the deepContextAssembler personalization orphan + 19 related novel findings)
+- Passes completed: 9
+- Last reconciliation: 2026-04-11T00:00:08Z (conflicts: 0)
 - Active branches: 2 of 5 (B + E; A/C/D shelved)
-- Convergence status: **NOT CONVERGED** — see Pass 8 Synthesis convergence check
+- Convergence status: **NOT CONVERGED** — Pass 9 produced 20 novel findings
 
 ## Pillars (comparable target decomposition)
 1. **Dynamic CRUD for integrations / pipelines / ingestion** (documented, undocumented, portal-only)
@@ -703,6 +703,49 @@ Parallelizable: 3, 4, 5 can run concurrently after 2
 Deferred: 7 is a separate track and can start anytime after 2
 ```
 
+## Pass 9 Depth — Personalization Layer (deepContextAssembler)
+
+Pass 9 discovered `server/services/deepContextAssembler.ts` — the "central
+nervous system for all AI context" that every `contextualLLM` call routes
+through. Passes 1-8 never inspected it. **It is the single most important
+missing piece for the beyond-parity personalization moat.** The assembler
+claims 14 data sources (per its header comment) but actually orphans the
+entire dynamic-CRUD output fabric.
+
+| ID | Finding | Layer | Severity | Code Evidence | Effort |
+|---|---|---|---|---|---|
+| P1 | **`deepContextAssembler` ignores `ingestedRecords`** — the entire dynamic-CRUD output fabric (every `data_ingestion` job's results) is invisible to every downstream LLM call. X17 was far understated | Personalization core | critical | `server/services/deepContextAssembler.ts` L29-36 imports schema but NOT `ingestedRecords` | M — add `assembleIngestedRecordsContext()` that reads relevance-ranked records per user + query |
+| P2 | `deepContextAssembler` also ignores `webScrapeResults` + `documentExtractions`. 2 more output fabrics orphaned. The "14 data sources" header comment is aspirational | Personalization | critical | same file | M — add 2 more assemblers |
+| P3 | `enrichmentCache` IS imported and read, but **only its presence is checked**, not its enriched fields surfaced into the prompt. Cache is a black box to the LLM | Personalization | high | same file | S — unpack cached fields into prompt |
+| P4 | `contextType: "ingestion"` exists in the ContextType enum at L76 but the ingestion-side flow (`extractWithLLM`, `processDocument`, `extractEntities`) sets this contextType **without** actually leveraging the assembler — the ingestion side is also orphaned. **Bidirectional personalization gap** | Bidirectional | high | `contextualLLM.ts` + `dataIngestion.ts` | M — wire ingestion to consume assembler output for "what does this user's profile say about this page?" |
+| P5 | The integration context section (Plaid / SnapTrade, L818+) is rendered as **flat text with no structured fields**. LLM has to do string parsing to compare Plaid balance to SnapTrade positions to market data | Prompt structure | med | `deepContextAssembler.ts` L568-571 `<financial_accounts>` | S — use JSON-in-markdown with typed schema |
+| P6 | `integration_providers.description` is a text field but the assembler doesn't feed descriptions into prompts. A user asking "what data sources are feeding my advice?" won't get a natural answer | Prompt explainability | low | missing read | S — add description to assembled context |
+| P7 | `conversationContext` + `integrationContext` are concatenated string blobs with **no per-source confidence weighting**. 1-day-stale Plaid data is presented identically to 1-hour-fresh SnapTrade data | Prompt trust | med | `deepContextAssembler.ts` fullContextPrompt assembly | S — inject a trust preamble per source |
+| P8 | `maxTokenBudget: 8000` default. At 10x integration count, a single connections summary could exceed 1000 tokens. **No smart truncation per-source** | Prompt efficiency | high | `deepContextAssembler.ts` L48 | S — per-source byte cap + priority-based truncation |
+| P9 | `conversationId` is optional in `ContextRequest` but the cross-conversation history behavior is unclear. If the assembler reads OTHER conversations by default, a multi-advisor user could leak one advisor's conversation history to another. **Privacy boundary needs explicit check** | Privacy | high | `server/services/deepContextAssembler.ts` conversation section | S — explicit scope enforcement |
+| P10 | `specificDocIds` forces inclusion of specific documents, but there's **no equivalent `specificIntegrationRecordIds`**. Once an agent decides "this record is relevant", it can't force-include it in the next context | Force-include API | med | ContextRequest interface | S — add `specificIntegrationRecordIds?: number[]` |
+| P11 | Document category filter exists; **no equivalent for ingestion records by recordType**. `.filter(r => r.recordType === 'regulatory_update')` is impossible from the assembler's API | Filter API | med | ContextRequest interface | S — add `recordTypeFilter?: string[]` |
+| P12 | Improvement loops (`improvementLoops.ts`, pass 5 F2) run on batch windows — they **don't read `contextRequest.query`**. Loops are batch-adapted, not request-adapted. Missed personalization opportunity: can't tune retrieval for the user's current task | Loop personalization | low | `improvementLoops.ts` | M — add online variant of a loop |
+| P13 | `assembleMemoryContext` reads from `memoryEngine.ts` but memories are **not categorized by integration source**. An advisor's memory "this carrier's phone numbers are in E.164 with US prefix" can't be retrieved when next working with that carrier | Memory organization | med | `memoryEngine.ts` category enum | S — add `source_provider` as a memory category attribute |
+| P14 | `assembleGraphContext` (knowledgeGraph) — **integration records don't enter the graph**. 10 documents from 3 different providers mentioning the same company could cluster in the graph but don't today. Missing force-multiplier | Graph | med | `knowledgeGraph.ts` ingestion path | M — add ingestion → graph ingest |
+| P15 | `retrievalQuality: "high" \| "medium" \| "low"` is a **self-reported metric with no empirical validation**. Another Goodhart-style gap (like A12 on "continuous improvement") — the metric is not independently verified | Meta metric | low | `AssembledContext` type | M — add eval harness to validate retrieval quality against synthetic questions |
+| P16 | `includeFinancialData` / `includeIntegrations` etc. are **boolean toggles at the callsite**. No smart default based on user role + contextType. An advisor asking a compliance question shouldn't auto-include calculator history; a client asking about retirement shouldn't auto-include integration credential status | Smart defaults | med | ContextRequest interface | S — add a default-matrix by (role, contextType) |
+| P17 | Assembler uses `Promise.allSettled` so partial failures fall back to empty. **A user asking a question critically dependent on integration data might get a generic answer because the integration fetcher failed silently.** Need failure signaling so the LLM knows "integration data is missing" | Partial-failure UX | high | `Promise.allSettled` pattern | S — emit failure metadata into the prompt |
+| P18 | `enhancedSearchChunks` stop word list (L126-137) is **hardcoded English** and includes terms like "for", "with", "of" that are often present in technical provider docs. Integration records are often in technical jargon and the TF-IDF path may incorrectly filter out meaningful terms | TF-IDF accuracy | low | `deepContextAssembler.ts` L126 | S — add a technical-term whitelist |
+| P19 | `maxTokenBudget: 8000` is checked per-section but not **enforced globally**. If 6 sections each claim their full budget, the prompt goes 2-3x over and the last section gets truncated unpredictably | Budget enforcement | med | token budget logic | S — add a global cap + prioritized trimming |
+| P20 | For advisor users, `clientContext` (L90) doesn't scope to which client is **currently in focus**. An advisor with 50 clients gets 50 clients' data injected on every turn — both a privacy risk (multi-tenant mixing, similar to A9) and a cost issue (prompt size) | Privacy + cost | high | clientContext assembly | S — require explicit `focusedClientId` param |
+
+### Pass 9 self-consistency check
+- **P1 + P2 + P4 are the single biggest miss of Passes 1-8.** The parity
+  assessment was scoring dynamic CRUD against an invisible personalization
+  gap. Score correction is WARRANTED.
+- **P1 alone unlocks the X17 beyond-parity moat.** The infrastructure
+  already exists (`deepContextAssembler` as a central nervous system); the
+  ingestion output fabric just needs to plug into it. This is the single
+  biggest unrealized win in the parity doc.
+- Pass 9 produced 20 novel findings. This **extends** the non-convergence
+  signal from Pass 8. At least 2 more passes expected.
+
 ## Reconciliation Log (append-only)
 
 | Time | Pass | Action | Conflicts | Notes |
@@ -714,12 +757,14 @@ Deferred: 7 is a separate track and can start anytime after 2
 | 2026-04-11T00:00:04Z | 5 | Depth F-series + Sequential Halving round 1 | 0 | F1–F18, branch D eliminated. 54% → 52%. Temperature 0.65 → 0.50. |
 | 2026-04-11T00:00:05Z | 6 | Future-state + custom domains | 0 | X1-X18 + compliance/fiduciary/cost audits. 52% → 50%. Temperature 0.50 → 0.40. |
 | 2026-04-11T00:00:06Z | 7 | Landscape-2 + sequencing | 0 | L1-L20 + 7-phase plan. 50% → 48%. Temperature 0.40 → 0.35. |
-| 2026-04-11T00:00:07Z | 8 | Synthesis — consolidate + convergence check | 0 | Re-read before write; no concurrent writer. Consolidated 150 items into highest-leverage bundles. Convergence check: NOT CONVERGED (temp 0.35, still finding novel gaps, 2 active branches, all dimension scores <7). Score unchanged 48%. Temperature unchanged 0.35 (Synthesis is neutral). |
+| 2026-04-11T00:00:07Z | 8 | Synthesis — consolidate + convergence check | 0 | Consolidated 150 items. NOT CONVERGED. Score unchanged 48%. |
+| 2026-04-11T00:00:08Z | 9 | Depth — P1-P20 personalization layer | 0 | Re-read before write; no concurrent writer. Found `deepContextAssembler` — passes 1-8 missed it entirely. 20 novel findings. P1 reveals that the ENTIRE dynamic-CRUD output fabric is orphaned from the central personalization layer. X17 is MORE broken than Pass 6 stated. Parity 48% → 45%. Temperature 0.35 → 0.30. Non-convergence extended. |
 
 ## Changelog (append-only, most recent first)
 
 | Pass | Platform | Type | Score Δ | Summary |
 |---|---|---|---|---|
+| 9 | Claude Code | Depth | -0.30 | **Major discovery: deepContextAssembler.ts** — the "central nervous system for all AI context" passes 1-8 never inspected. It assembles 14 data source types into every `contextualLLM` call, BUT entirely ignores `ingestedRecords`, `webScrapeResults`, and `documentExtractions`. The entire dynamic-CRUD output fabric is orphaned from the personalization layer. X17 beyond-parity moat is far more broken than Pass 6 stated. 20 novel findings (P1-P20): P1 assembler misses ingestedRecords, P2 misses scraped+extracted, P3 enrichmentCache presence-check only, P4 bidirectional ingestion-side orphan, P8 no smart truncation, P9 conversation privacy scope, P17 silent partial failures, P20 advisor client-context no focus scope. Parity 48% → 45%. Temperature 0.35 → 0.30. Non-convergence extended — Pass 10+ expected to find more. |
 | 8 | Claude Code | Synthesis | +0.00 | Consolidated 150 items into highest-leverage bundles: (1) lineage unblocks 6 regulatory gaps; (2) schema loosening unblocks 10 dynamic-registration gaps; (3) ConnectorSpec Branch B unblocks 8 provider gaps; (4) event-bus + improvement loops make continuous-improvement real (10+ gap closures); (5) security gate bundle is critical-path; (6) Code Chat tools are a force multiplier. Re-synthesized dimension scorecard unchanged from Pass 7 (4.8/10). **Convergence check: NOT CONVERGED** — 0 of 7 criteria met. Still need ~3 passes of novel findings, 1 branch elimination, implementation start, dimension scores above 7.0. Parity 48% (unchanged). Temperature 0.35. |
 | 7 | Claude Code | Landscape-2 + sequencing | -0.20 | 20 UI / test coverage / meta blind-spot findings (L1-L20) Pass 1 missed. UI fragmentation critical: 5 separate pages serving overlapping concerns (L1). No "add provider" button (L2). No cURL paste UI (L5). Test coverage estimated 40-60 tests on integrations out of 3,103 total (L7). Implementation sequencing plan spans 7 phases and ~21 implementation chats. Critical path: Phase 1 (SEC) → Phase 2 (schema) → Phase 6 (UX). Parity 50% → 48%. Temperature 0.40 → 0.35. Safety flag: loop writes docs-only so CLAUDE.md 3-pass rule is advisory. |
 | 6 | Claude Code | Future-State + custom domains | -0.20 | 18 forward projections (X1-X18) along 6 axes: 10x scale, regulatory (EU AI Act, SEC 17a-4), competitive (Fivetran/Arize), platform evolution (MCP v2, durable execution), data modality. Plus custom-domain Compliance/Fiduciary/Cost passes per CLAUDE.md. Major reveal: X4+X11+X16 (3 regulatory requirements) all blocked on the SAME gap — per-record lineage linking ingestion events to downstream recommendations. Highest-leverage fix in the parity doc. X6+X7 flag branches to un-shelve later (browser commodity, token deflation). Parity 52% → 50%. Temperature 0.50 → 0.40. |
