@@ -95,6 +95,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "tab:jobs", label: "Go to Jobs", category: "tab", keywords: ["background"] },
   { id: "tab:gitstatus", label: "Go to Git Status", category: "tab", keywords: ["status", "dirty"] },
   { id: "tab:search", label: "Find anywhere", category: "tab", hint: "g s", keywords: ["search", "grep", "symbol", "todo", "find"] },
+  { id: "tab:replace", label: "Find & replace across files", category: "tab", hint: "g p", keywords: ["replace", "refactor", "rename", "apply"] },
   { id: "tab:imports", label: "Go to Imports", category: "tab", keywords: ["dependencies", "graph"] },
   { id: "tab:todos", label: "Go to TODOs", category: "tab", keywords: ["fixme", "markers"] },
   // Popovers

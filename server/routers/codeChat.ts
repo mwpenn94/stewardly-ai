@@ -109,6 +109,15 @@ import {
   type UnifiedResultKind,
 } from "../services/codeChat/workspaceSearch";
 import {
+  previewFile,
+  aggregateWorkspacePreview,
+  buildApplyPlan,
+  DEFAULT_WORKSPACE_LIMIT,
+  DEFAULT_MAX_FILES,
+  type FindReplaceOptions,
+  type FilePreview,
+} from "../services/codeChat/findReplace";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -509,6 +518,149 @@ export const codeChatRouter = router({
       });
 
       return output;
+    }),
+
+  // Pass 250: multi-file find & replace — preview step
+  findReplacePreview: protectedProcedure
+    .input(
+      z.object({
+        find: z.string().min(1).max(500),
+        replace: z.string().max(2000),
+        regex: z.boolean().optional(),
+        caseSensitive: z.boolean().optional(),
+        wholeWord: z.boolean().optional(),
+        /** Optional path prefix to narrow the sweep */
+        pathPrefix: z.string().max(500).optional(),
+        perFileLimit: z.number().min(1).max(1000).optional(),
+        totalLimit: z.number().min(1).max(10000).optional(),
+        maxFiles: z.number().min(1).max(2000).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const options: FindReplaceOptions = {
+        find: input.find,
+        replace: input.replace,
+        regex: input.regex,
+        caseSensitive: input.caseSensitive,
+        wholeWord: input.wholeWord,
+        perFileLimit: input.perFileLimit,
+      };
+
+      // Validate the pattern up-front so a bad regex comes back as a
+      // structured error instead of 500-ing deep inside previewFile.
+      try {
+        const { compilePattern } = await import(
+          "../services/codeChat/findReplace"
+        );
+        compilePattern(options);
+      } catch (err) {
+        return {
+          error:
+            err instanceof Error ? err.message : "invalid find pattern",
+          preview: null,
+        };
+      }
+
+      const allFiles = await getWorkspaceFileIndex(WORKSPACE_ROOT);
+      const maxFiles = Math.min(input.maxFiles ?? DEFAULT_MAX_FILES, 2000);
+      const prefix = (input.pathPrefix ?? "").trim();
+      const candidates = allFiles
+        .filter((f) => !prefix || f.startsWith(prefix))
+        .slice(0, maxFiles);
+
+      const previews: Array<FilePreview | null> = [];
+      let filesScanned = 0;
+      for (const rel of candidates) {
+        filesScanned++;
+        try {
+          const abs = path.resolve(WORKSPACE_ROOT, rel);
+          const stat = await fs.promises.stat(abs);
+          if (!stat.isFile()) continue;
+          if (stat.size > 1_000_000) continue; // skip files > 1MB
+          const content = await fs.promises.readFile(abs, "utf-8");
+          const p = previewFile(rel, content, options);
+          previews.push(p);
+        } catch {
+          /* unreadable / binary — skip silently */
+        }
+      }
+
+      const preview = aggregateWorkspacePreview(
+        options,
+        previews,
+        filesScanned,
+        input.totalLimit ?? DEFAULT_WORKSPACE_LIMIT,
+      );
+
+      return { error: null, preview };
+    }),
+
+  // Pass 250: multi-file find & replace — apply step (admin-gated)
+  findReplaceApply: adminProcedure
+    .input(
+      z.object({
+        confirmDangerous: z.literal(true),
+        acceptPaths: z.array(z.string().max(500)).min(1).max(2000),
+        /** Re-send the preview so we don't trust stale client state */
+        preview: z.object({
+          options: z.object({
+            find: z.string(),
+            replace: z.string(),
+            regex: z.boolean().optional(),
+            caseSensitive: z.boolean().optional(),
+            wholeWord: z.boolean().optional(),
+            perFileLimit: z.number().optional(),
+          }),
+          files: z.array(
+            z.object({
+              path: z.string(),
+              newContent: z.string(),
+              matches: z.array(z.any()),
+              truncated: z.boolean(),
+              delta: z.object({
+                removed: z.number(),
+                added: z.number(),
+              }),
+            }),
+          ),
+          totals: z.object({
+            filesMatched: z.number(),
+            filesScanned: z.number(),
+            totalMatches: z.number(),
+            workspaceTruncated: z.boolean(),
+            filesTruncated: z.number(),
+          }),
+        }),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const plan = buildApplyPlan({
+        acceptPaths: input.acceptPaths,
+        preview: input.preview as unknown as Parameters<typeof buildApplyPlan>[0]["preview"],
+      });
+
+      const writtenPaths: string[] = [];
+      const failed: Array<{ path: string; error: string }> = [];
+      for (const w of plan.writes) {
+        const result = await dispatchCodeTool(
+          {
+            name: "write_file",
+            args: { path: w.path, content: w.content },
+          } as CodeToolCall,
+          { workspaceRoot: WORKSPACE_ROOT, allowMutations: true },
+        );
+        if (result.kind === "error") {
+          failed.push({ path: w.path, error: result.error });
+        } else {
+          writtenPaths.push(w.path);
+        }
+      }
+
+      return {
+        writtenPaths,
+        failed,
+        skippedUnknown: plan.skippedUnknown,
+      };
     }),
 
   // Pass 246: TODO marker scanner

@@ -97,4 +97,11 @@ describe("allChordLabels", () => {
     expect(findChord).toBeDefined();
     expect(findChord!.label).toContain("Find");
   });
+
+  it("includes the g+p Replace chord added in Pass 250", () => {
+    const labels = allChordLabels();
+    const replaceChord = labels.find((l) => l.keys[1] === "p");
+    expect(replaceChord).toBeDefined();
+    expect(replaceChord!.label).toContain("Replace");
+  });
 });

@@ -138,6 +138,7 @@ import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
 import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
 import TodoMarkerPanel from "@/components/codeChat/TodoMarkerPanel";
 import WorkspaceSearchPanel from "@/components/codeChat/WorkspaceSearchPanel";
+import FindReplacePanel from "@/components/codeChat/FindReplacePanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import {
   loadHistory,
@@ -2295,6 +2296,9 @@ export default function CodeChatPage() {
               <TabsTrigger value="search" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> Find
               </TabsTrigger>
+              <TabsTrigger value="replace" className="gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" /> Replace
+              </TabsTrigger>
               <TabsTrigger value="imports" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> Imports
               </TabsTrigger>
@@ -2335,6 +2339,10 @@ export default function CodeChatPage() {
 
           <TabsContent value="search">
             <div className="p-6"><WorkspaceSearchPanel /></div>
+          </TabsContent>
+
+          <TabsContent value="replace">
+            <div className="p-6"><FindReplacePanel /></div>
           </TabsContent>
 
           <TabsContent value="imports">
