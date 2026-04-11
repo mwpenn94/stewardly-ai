@@ -132,4 +132,11 @@ describe("allChordLabels", () => {
     expect(tChord).toBeDefined();
     expect(tChord!.label).toContain("Tests");
   });
+
+  it("includes the g+e Env chord added in Pass 256", () => {
+    const labels = allChordLabels();
+    const eChord = labels.find((l) => l.keys[1] === "e");
+    expect(eChord).toBeDefined();
+    expect(eChord!.label).toContain("Env");
+  });
 });

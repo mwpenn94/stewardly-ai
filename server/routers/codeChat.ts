@@ -154,6 +154,11 @@ import {
   type TestStatus,
 } from "../services/codeChat/testRunner";
 import {
+  buildEnvSnapshot,
+  filterEntries as filterEnvEntries,
+  type EnvCategory,
+} from "../services/codeChat/envInspector";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -850,6 +855,53 @@ export const codeChatRouter = router({
     .mutation(async ({ input }) => {
       const ok = await deleteCheckpointFromDisk(WORKSPACE_ROOT, input.id);
       return { ok };
+    }),
+
+  // Pass 256: environment variable inspector (admin-only, masked values)
+  inspectEnv: adminProcedure
+    .input(
+      z
+        .object({
+          category: z
+            .enum([
+              "database",
+              "api_key",
+              "auth",
+              "feature_flag",
+              "service_url",
+              "aws",
+              "mail",
+              "observability",
+              "general",
+            ])
+            .optional(),
+          onlyMissing: z.boolean().optional(),
+          search: z.string().max(200).optional(),
+        })
+        .optional(),
+    )
+    .query(({ input }) => {
+      const snapshot = buildEnvSnapshot(process.env, {
+        additionalExpected: [
+          "GITHUB_TOKEN",
+          "INTEGRATION_ENCRYPTION_KEY",
+          "FRED_API_KEY",
+          "CENSUS_API_KEY",
+        ],
+        includeMissing: true,
+      });
+      const filtered = filterEnvEntries(snapshot.entries, {
+        category: input?.category as EnvCategory | undefined,
+        onlyMissing: input?.onlyMissing,
+        search: input?.search,
+      });
+      return {
+        entries: filtered.slice(0, 500),
+        byCategory: snapshot.byCategory,
+        totalPresent: snapshot.totalPresent,
+        missingCount: snapshot.missingCount,
+        requiredMissing: snapshot.requiredMissing,
+      };
     }),
 
   // Pass 252: workspace diagnostics (tsc --noEmit + parse)

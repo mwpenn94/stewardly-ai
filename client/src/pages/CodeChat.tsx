@@ -144,6 +144,7 @@ import CheckpointsPanel from "@/components/codeChat/CheckpointsPanel";
 import DiagnosticsPanel from "@/components/codeChat/DiagnosticsPanel";
 import PRDrafterPanel from "@/components/codeChat/PRDrafterPanel";
 import TestRunnerPanel from "@/components/codeChat/TestRunnerPanel";
+import EnvInspectorPanel from "@/components/codeChat/EnvInspectorPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
 import {
   loadHistory,
@@ -2342,6 +2343,9 @@ export default function CodeChatPage() {
               <TabsTrigger value="tests" className="gap-1.5">
                 <Activity className="h-3.5 w-3.5" /> Tests
               </TabsTrigger>
+              <TabsTrigger value="env" className="gap-1.5">
+                <Lock className="h-3.5 w-3.5" /> Env
+              </TabsTrigger>
               <TabsTrigger value="imports" className="gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" /> Imports
               </TabsTrigger>
@@ -2402,6 +2406,10 @@ export default function CodeChatPage() {
 
           <TabsContent value="tests">
             <div className="p-6"><TestRunnerPanel /></div>
+          </TabsContent>
+
+          <TabsContent value="env">
+            <div className="p-6"><EnvInspectorPanel /></div>
           </TabsContent>
 
           <TabsContent value="imports">
