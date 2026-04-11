@@ -61,6 +61,10 @@ export interface ShortcutDef {
   description: string;
   /** Screen-reader hint — defaults to description. */
   ariaLabel?: string;
+  /** Pass 6: a secondary binding for the SAME intent. Hidden from the
+   *  primary display modal but still active in the hook. Used to paper
+   *  over browser menu conflicts (Firefox Alt+H = History menu, etc.). */
+  fallback?: boolean;
 }
 
 export type ShortcutIntent =
@@ -245,6 +249,11 @@ export const GLOBAL_SHORTCUTS: ShortcutDef[] = [
   },
 
   // ── Audio & Voice ──────────────────────────────────────────────────
+  // Pass 6: every Alt+X multisensory shortcut ALSO has a Ctrl+Shift+X
+  // fallback registered so users on browsers where Alt+letter is bound
+  // to a menu (Firefox on Windows: Alt+H = History) still have a path.
+  // The fallback shortcuts share the same intent id but are hidden from
+  // the display modal via a `fallback: true` flag on the shortcut def.
   {
     id: "voice.toggle_hands_free",
     label: "Toggle hands-free mode",
@@ -257,6 +266,17 @@ export const GLOBAL_SHORTCUTS: ShortcutDef[] = [
     ariaLabel: "Toggle hands-free voice mode",
   },
   {
+    id: "voice.toggle_hands_free.fallback",
+    label: "Toggle hands-free mode (fallback)",
+    category: "Audio & Voice",
+    mods: ["ctrl", "shift"],
+    key: "h",
+    intent: "voice.toggle_hands_free",
+    display: ["Ctrl", "Shift", "H"],
+    description: "Fallback for browsers where Alt+H is reserved",
+    fallback: true,
+  },
+  {
     id: "voice.toggle_listening",
     label: "Listen for one voice command",
     category: "Audio & Voice",
@@ -265,6 +285,17 @@ export const GLOBAL_SHORTCUTS: ShortcutDef[] = [
     intent: "voice.toggle_listening",
     display: ["Alt", "V"],
     description: "Listen for a single voice command without entering hands-free",
+  },
+  {
+    id: "voice.toggle_listening.fallback",
+    label: "Listen for one voice command (fallback)",
+    category: "Audio & Voice",
+    mods: ["ctrl", "shift"],
+    key: "v",
+    intent: "voice.toggle_listening",
+    display: ["Ctrl", "Shift", "V"],
+    description: "Fallback for browsers where Alt+V is reserved",
+    fallback: true,
   },
   {
     id: "audio.read_page",
@@ -277,6 +308,17 @@ export const GLOBAL_SHORTCUTS: ShortcutDef[] = [
     description: "Narrate the visible content of the current page",
   },
   {
+    id: "audio.read_page.fallback",
+    label: "Read current page aloud (fallback)",
+    category: "Audio & Voice",
+    mods: ["ctrl", "shift"],
+    key: "r",
+    intent: "audio.read_page",
+    display: ["Ctrl", "Shift", "R"],
+    description: "Fallback for browsers where Alt+R is reserved",
+    fallback: true,
+  },
+  {
     id: "audio.stop_speech",
     label: "Stop all speech",
     category: "Audio & Voice",
@@ -285,6 +327,17 @@ export const GLOBAL_SHORTCUTS: ShortcutDef[] = [
     intent: "audio.stop_speech",
     display: ["Alt", "X"],
     description: "Immediately stop any TTS playback",
+  },
+  {
+    id: "audio.stop_speech.fallback",
+    label: "Stop all speech (fallback)",
+    category: "Audio & Voice",
+    mods: ["ctrl", "shift"],
+    key: "x",
+    intent: "audio.stop_speech",
+    display: ["Ctrl", "Shift", "X"],
+    description: "Fallback for browsers where Alt+X is reserved",
+    fallback: true,
   },
 
   // ── Accessibility ──────────────────────────────────────────────────
@@ -297,6 +350,17 @@ export const GLOBAL_SHORTCUTS: ShortcutDef[] = [
     intent: "a11y.focus_main",
     display: ["Alt", "M"],
     description: "Move focus to the #main-content landmark",
+  },
+  {
+    id: "a11y.focus_main.fallback",
+    label: "Jump to main content (fallback)",
+    category: "Accessibility",
+    mods: ["ctrl", "shift"],
+    key: "m",
+    intent: "a11y.focus_main",
+    display: ["Ctrl", "Shift", "M"],
+    description: "Fallback for browsers where Alt+M is reserved",
+    fallback: true,
   },
   {
     id: "a11y.focus_nav",
@@ -414,9 +478,14 @@ export function stepChord(
   return { kind: "ignore" };
 }
 
-/** Group shortcuts by category for the display modal. */
+/** Group shortcuts by category for the display modal.
+ *
+ *  Pass 6: hides `fallback: true` shortcuts by default so the display
+ *  modal shows ONE canonical binding per intent. Pass `{ includeFallbacks: true }`
+ *  to see every binding (useful for admin debug views). */
 export function groupShortcutsByCategory(
   shortcuts: ShortcutDef[] = GLOBAL_SHORTCUTS,
+  opts: { includeFallbacks?: boolean } = {},
 ): Record<ShortcutCategory, ShortcutDef[]> {
   const groups: Record<ShortcutCategory, ShortcutDef[]> = {
     Navigation: [],
@@ -425,6 +494,9 @@ export function groupShortcutsByCategory(
     Accessibility: [],
     General: [],
   };
-  for (const s of shortcuts) groups[s.category].push(s);
+  for (const s of shortcuts) {
+    if (s.fallback && !opts.includeFallbacks) continue;
+    groups[s.category].push(s);
+  }
   return groups;
 }

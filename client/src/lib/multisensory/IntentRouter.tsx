@@ -153,19 +153,30 @@ export function IntentRouter() {
           return;
 
         case "a11y.focus_main": {
-          // Chat.tsx uses #chat-main, AppShell uses #main-content; both
-          // are <main> landmarks. Pick whichever exists, then fall back
-          // to the first <main> on the page.
-          const main =
-            document.querySelector<HTMLElement>("#main-content") ||
-            document.querySelector<HTMLElement>("#chat-main") ||
-            document.querySelector<HTMLElement>("main");
-          if (main) {
-            // Ensure focusable even if the element predates tabIndex
-            if (!main.hasAttribute("tabindex")) {
-              main.setAttribute("tabindex", "-1");
+          // Pass 6: tiered landmark discovery. Tries the strongest
+          // landmark signals first, then degrades through less specific
+          // selectors, finally falling back to the first focusable
+          // element under #root if a page genuinely has no landmark.
+          // This guarantees Alt+M does *something* on every page even
+          // if the page author forgot to add <main>.
+          const tiers = [
+            "#main-content", // AppShell convention (pass 91)
+            "#chat-main", // Chat.tsx convention
+            "main", // HTML5 landmark
+            "[role='main']", // ARIA landmark
+            "[data-main]", // Custom annotation
+            "#root > :first-child", // SPA root fallback
+          ];
+          let target: HTMLElement | null = null;
+          for (const sel of tiers) {
+            target = document.querySelector<HTMLElement>(sel);
+            if (target) break;
+          }
+          if (target) {
+            if (!target.hasAttribute("tabindex")) {
+              target.setAttribute("tabindex", "-1");
             }
-            main.focus({ preventScroll: false });
+            target.focus({ preventScroll: false });
             announce("Main content focused", "polite");
           } else {
             announce("No main content landmark found on this page", "assertive");

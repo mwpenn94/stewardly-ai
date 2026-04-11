@@ -40,13 +40,22 @@ export interface IntentDetail {
  * The subset of shortcut IDs that this hook actively handles. Keep in sync
  * with the registry so drift is impossible — any new Alt+X multisensory
  * shortcut added to shortcuts.ts should be added here too.
+ *
+ * Pass 6: the `.fallback` variants are ALSO handled because they share
+ * intent IDs with their primary — users on browsers where Alt+H is the
+ * History menu key can still fire the intent via Ctrl+Shift+H.
  */
 const HANDLED_IDS = new Set<string>([
   "voice.toggle_hands_free",
+  "voice.toggle_hands_free.fallback",
   "voice.toggle_listening",
+  "voice.toggle_listening.fallback",
   "audio.read_page",
+  "audio.read_page.fallback",
   "audio.stop_speech",
+  "audio.stop_speech.fallback",
   "a11y.focus_main",
+  "a11y.focus_main.fallback",
   "a11y.focus_nav",
 ]);
 

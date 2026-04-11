@@ -88,6 +88,44 @@ describe("GLOBAL_SHORTCUTS registry integrity", () => {
     expect(grouped["Audio & Voice"].length).toBeGreaterThanOrEqual(4);
     expect(grouped.Accessibility.length).toBeGreaterThanOrEqual(3);
   });
+
+  it("hides fallback shortcuts from the default display groups", () => {
+    const grouped = groupShortcutsByCategory();
+    const allDisplayed = Object.values(grouped).flat();
+    for (const s of allDisplayed) {
+      expect(s.fallback).not.toBe(true);
+    }
+  });
+
+  it("includes fallback shortcuts when requested", () => {
+    const grouped = groupShortcutsByCategory(GLOBAL_SHORTCUTS, {
+      includeFallbacks: true,
+    });
+    const allDisplayed = Object.values(grouped).flat();
+    const fallbacks = allDisplayed.filter((s) => s.fallback === true);
+    expect(fallbacks.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("every fallback shortcut shares its intent id with a primary", () => {
+    const fallbacks = GLOBAL_SHORTCUTS.filter((s) => s.fallback);
+    const primaries = GLOBAL_SHORTCUTS.filter((s) => !s.fallback);
+    for (const f of fallbacks) {
+      const primary = primaries.find((p) => p.intent === f.intent);
+      expect(
+        primary,
+        `fallback ${f.id} has no matching primary with intent ${f.intent}`,
+      ).toBeTruthy();
+    }
+  });
+
+  it("fallback shortcuts use Ctrl+Shift+ not Alt+", () => {
+    const fallbacks = GLOBAL_SHORTCUTS.filter((s) => s.fallback);
+    for (const f of fallbacks) {
+      expect(f.mods).toContain("ctrl");
+      expect(f.mods).toContain("shift");
+      expect(f.mods).not.toContain("alt");
+    }
+  });
 });
 
 describe("matchesShortcut — single-key + modifier matching", () => {
