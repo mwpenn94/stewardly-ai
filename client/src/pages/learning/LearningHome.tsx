@@ -107,37 +107,61 @@ export default function LearningHome() {
             </CardContent>
           </Card>
 
-          <Card className={summary && summary.dueNow > 0 ? "border-accent/40" : undefined}>
+          <Card className={summary && (summary.dueNow > 0 || (summary as any).newTotal > 0) ? "border-accent/40" : undefined}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                Due Now
-                {summary && summary.dueNow > 0 && (
+                {summary && summary.dueNow > 0 ? "Due Now" : "Ready to study"}
+                {summary && (summary.dueNow > 0 || (summary as any).newTotal > 0) && (
                   <Flame className="h-3 w-3 text-accent" aria-hidden />
                 )}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-semibold">{summary?.dueNow ?? 0}</div>
-              <div className="text-xs text-muted-foreground mt-2">
-                {summary && summary.dueNow > 0
-                  ? "items decaying — review now"
-                  : "nothing due — study ahead"}
-              </div>
               {summary && summary.dueNow > 0 ? (
-                <Link href="/learning/review">
-                  <Button size="sm" className="mt-2">
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                    Start review ({summary.dueNow})
-                  </Button>
-                </Link>
-              ) : (
-                tracks.length > 0 && (
-                  <Link href={`/learning/tracks/${tracks[0].slug}`}>
-                    <Button variant="link" size="sm" className="px-0 mt-1">
-                      Browse tracks →
+                <>
+                  <div className="text-3xl font-semibold">{summary.dueNow}</div>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    items decaying — review now
+                  </div>
+                  <Link href="/learning/review">
+                    <Button size="sm" className="mt-2">
+                      <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                      Start review ({summary.dueNow})
                     </Button>
                   </Link>
-                )
+                </>
+              ) : summary && (summary as any).newTotal > 0 ? (
+                // First-time path: nothing due yet, but there are new cards
+                // that have never been seen. This used to be a dead end —
+                // the Home said "nothing due" and the Review page said "all
+                // caught up" even though 366 flashcards were sitting in the
+                // DB waiting to be studied. Adversarial pass 3 fix.
+                <>
+                  <div className="text-3xl font-semibold">{(summary as any).newTotal}</div>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    new items to learn
+                  </div>
+                  <Link href="/learning/review">
+                    <Button size="sm" className="mt-2">
+                      <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                      Start learning
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="text-3xl font-semibold">0</div>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    caught up — browse tracks to pick up a new topic
+                  </div>
+                  {tracks.length > 0 && (
+                    <Link href={`/learning/tracks/${tracks[0].slug}`}>
+                      <Button variant="link" size="sm" className="px-0 mt-1">
+                        Browse tracks →
+                      </Button>
+                    </Link>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>

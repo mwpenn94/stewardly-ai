@@ -54,6 +54,7 @@ type SessionItem =
   | {
       kind: "flashcard";
       itemKey: string;
+      isNew: boolean;
       flashcard: {
         id: number;
         term: string;
@@ -63,6 +64,7 @@ type SessionItem =
   | {
       kind: "question";
       itemKey: string;
+      isNew: boolean;
       question: {
         id: number;
         prompt: string;
@@ -74,8 +76,16 @@ type SessionItem =
     };
 
 export default function LearningReview() {
-  const [, navigate] = useLocation();
-  const dueQ = trpc.learning.mastery.dueReview.useQuery({ limit: 20 });
+  const [location, navigate] = useLocation();
+  const studyAhead = useMemo(
+    () => typeof location === "string" && location.includes("studyAhead"),
+    [location],
+  );
+  const dueQ = trpc.learning.mastery.dueReview.useQuery({
+    limit: 20,
+    newQuota: 10,
+    studyAhead,
+  });
   const recordReview = trpc.learning.mastery.recordReview.useMutation();
   const celebrate = useCelebration();
 
@@ -247,7 +257,9 @@ export default function LearningReview() {
     );
   }
 
-  // Nothing due — caught up
+  // Nothing due — caught up. Offer a study-ahead path when there are
+  // new cards the user has never seen, otherwise route back to the
+  // track browser.
   if (total === 0) {
     return (
       <AppShell title="Review">
@@ -264,14 +276,21 @@ export default function LearningReview() {
               <p className="text-2xl font-heading font-semibold">All caught up</p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                 Nothing is due for review right now. Your next item will surface
-                here once its memory window opens. Pick up any track to study
-                ahead.
+                here once its memory window opens.
               </p>
               <div className="flex gap-2 justify-center">
+                <Button onClick={() => navigate("/learning/review?studyAhead=1")}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Study ahead (new cards)
+                </Button>
                 <Link href="/learning">
-                  <Button>Browse tracks</Button>
+                  <Button variant="outline">Browse tracks</Button>
                 </Link>
               </div>
+              <p className="text-[11px] text-muted-foreground/80">
+                Study-ahead pulls cards you've never seen and queues them for
+                the SRS on the 0-5 confidence ladder.
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -279,9 +298,15 @@ export default function LearningReview() {
     );
   }
 
+  const newCount = items.filter((i) => i.isNew).length;
+  const reviewCount = items.length - newCount;
+
   return (
-    <AppShell title="Review">
-      <SEOHead title="Review due items" description="SRS review session" />
+    <AppShell title={studyAhead ? "Study Ahead" : "Review"}>
+      <SEOHead
+        title={studyAhead ? "Study new cards" : "Review due items"}
+        description="SRS review session"
+      />
       <div className="mx-auto max-w-2xl p-6 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -293,7 +318,21 @@ export default function LearningReview() {
           >
             <ArrowLeft className="h-4 w-4 mr-2" /> Exit (Esc)
           </Button>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap justify-end">
+            {newCount > 0 && (
+              <Badge
+                variant="outline"
+                className="text-accent border-accent/50"
+                aria-label={`${newCount} new items in this session`}
+              >
+                <Sparkles className="h-3 w-3 mr-1" /> {newCount} new
+              </Badge>
+            )}
+            {reviewCount > 0 && (
+              <Badge variant="outline" className="text-muted-foreground">
+                ↻ {reviewCount} review
+              </Badge>
+            )}
             {streak >= 3 && (
               <Badge
                 variant="outline"
@@ -334,6 +373,7 @@ export default function LearningReview() {
         ) : current?.kind === "flashcard" ? (
           <FlashcardView
             card={current.flashcard}
+            isNew={current.isNew}
             flipped={flipped}
             onFlip={() => setFlipped((f) => !f)}
             onMark={markFlashcard}
@@ -342,6 +382,7 @@ export default function LearningReview() {
         ) : current?.kind === "question" ? (
           <QuestionView
             q={current.question}
+            isNew={current.isNew}
             selected={selected}
             revealed={revealed}
             onSelect={setSelected}
@@ -369,12 +410,14 @@ export default function LearningReview() {
 
 function FlashcardView({
   card,
+  isNew,
   flipped,
   onFlip,
   onMark,
   disabled,
 }: {
   card: { term: string; definition: string };
+  isNew: boolean;
   flipped: boolean;
   onFlip: () => void;
   onMark: (correct: boolean) => void;
@@ -391,10 +434,17 @@ function FlashcardView({
         aria-label={flipped ? "Showing definition — click to hide" : "Showing term — click to reveal definition"}
         tabIndex={0}
       >
-        <CardContent className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
-          <Badge variant="outline" className="absolute top-2 right-2 text-[10px]">
-            <Sparkles className="h-3 w-3 mr-1" /> Flashcard
-          </Badge>
+        <CardContent className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center relative">
+          <div className="absolute top-2 right-2 flex gap-1">
+            {isNew && (
+              <Badge variant="outline" className="text-[10px] text-accent border-accent/50">
+                NEW
+              </Badge>
+            )}
+            <Badge variant="outline" className="text-[10px]">
+              <Sparkles className="h-3 w-3 mr-1" /> Flashcard
+            </Badge>
+          </div>
           {flipped ? (
             <>
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
@@ -441,6 +491,7 @@ function FlashcardView({
 
 function QuestionView({
   q,
+  isNew,
   selected,
   revealed,
   onSelect,
@@ -456,6 +507,7 @@ function QuestionView({
     explanation: string | null;
     difficulty: "easy" | "medium" | "hard";
   };
+  isNew: boolean;
   selected: number | null;
   revealed: boolean;
   onSelect: (i: number) => void;
@@ -474,6 +526,11 @@ function QuestionView({
           <Badge variant="outline" className="text-[10px]">
             <HelpCircle className="h-3 w-3 mr-1" /> Question
           </Badge>
+          {isNew && (
+            <Badge variant="outline" className="text-[10px] text-accent border-accent/50">
+              NEW
+            </Badge>
+          )}
         </div>
         <p className="text-base font-medium leading-relaxed">{q.prompt}</p>
 

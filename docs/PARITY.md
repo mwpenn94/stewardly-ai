@@ -236,6 +236,76 @@ Not yet addressed: G10 (dynamic cases/FSApps).
   if nothing is due the Review page shows "all caught up" but doesn't
   let the user manually queue up tomorrow's items
 
+### Pass 3 — Adversarial (2026-04-11, Claude Code)
+**Pass type:** Adversarial
+**Temperature in:** 0.32
+**Temperature out:** 0.22
+
+**Critical adversarial find:** A fresh user who just imported 366
+flashcards + 100 practice questions sees the LearningHome's "Due Now"
+card show `0` because `learning_mastery_progress` is empty (no review
+rows yet → `getDueItems` returns nothing → `summary.dueNow = 0`). The
+"Start review" CTA disappears, and clicking through to `/learning/review`
+shows "all caught up" even though hundreds of cards are sitting in the
+DB unseen. The first-time path is completely broken without this fix.
+
+**Addressed:**
+- First-time user broken path: extended the SRS mastery service with
+  `getSeenItemKeys`, `listNewFlashcards`, `listNewQuestions`, and
+  `getNewItemCount` — pure DB helpers that return published content
+  items the user has never reviewed. `dueReview` tRPC procedure now
+  pads the session with new cards up to `newQuota` (default 10) when
+  the due queue is shorter than `limit`, mirroring Anki's new-card
+  queue. `summary` tRPC procedure now returns `newFlashcards` +
+  `newQuestions` + `newTotal` alongside the existing mastery fields.
+- LearningHome now renders a 3-state "Due Now" card:
+  - `dueNow > 0` → "X items decaying" + "Start review" button
+  - `dueNow == 0 && newTotal > 0` → "X new items to learn" + "Start
+    learning" button (first-time path)
+  - `dueNow == 0 && newTotal == 0` → "caught up — browse tracks"
+- LearningReview now honors a `studyAhead` query param — when passed,
+  the API call requests only new cards and skips the due queue
+  entirely. The "all caught up" state now offers a "Study ahead (new
+  cards)" button that navigates to `?studyAhead=1`.
+- LearningReview header now shows separate `N new` + `N review`
+  badges so the user knows the mix, and each flashcard/question
+  carries a "NEW" pill in its top-right corner when `isNew`.
+- TrackDetail resume cursor now guards against stale chapter ids: if
+  the last-read chapter no longer exists (e.g. embaImport re-ran and
+  regenerated rows), falls back to the first chapter instead of
+  setting a dead `expandedChapterId`.
+
+**Deferred (not a regression — just out of scope for this pass):**
+- G10 CaseStudySimulator routing: the component still uses a hardcoded
+  DEMO_CASE fallback and ignores the `:caseId` URL param. Fixing this
+  correctly requires either a client-side case registry OR server-side
+  case CRUD wiring, both of which are larger scope than this adversarial
+  pass's critical-path fix. Noted in OPEN_ISSUES.
+
+**Dimension deltas (self-rated, conservative):**
+- Core Function: 7.5 → 8.5 (first-time path now works — this was a
+  blocker for 100% of new-user sessions)
+- UX / Interaction: 8 → 8.5 (Study ahead affordance + state-aware CTA
+  on Home)
+- Robustness: 6 → 7 (deleted-chapter cursor guard + new-card queue
+  prevents empty sessions)
+
+**Composite:** 7.4 → 7.8
+
+**Build + test state (end of Pass 3):**
+- TS check: 0 errors
+- Build: clean in 19.06s
+- Full suite: 3,823 passing / 113 env-dependent failing (baseline
+  unchanged — 0 regressions; no new tests added this pass because
+  the new mastery helpers require DB context to exercise meaningfully)
+
+**Remaining / OPEN_ISSUES:**
+- G10 Replace DisciplineDeepDive + CaseStudySimulator mock content
+  with DB-backed equivalents (needs content.listCases CRUD wiring +
+  a CaseStudySimulatorRoute wrapper)
+- Streak persistence across sessions
+- Localized content — only English today
+
 ## Reconciliation Log
 
 (parallel passes write here if they conflict with a landing commit)

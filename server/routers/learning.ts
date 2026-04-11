@@ -28,6 +28,9 @@ import {
   getMasterySummary,
   assessTrackReadiness,
   parseItemKey,
+  listNewFlashcards,
+  listNewQuestions,
+  getNewItemCount,
 } from "../services/learning/mastery";
 
 import {
@@ -97,7 +100,21 @@ const masteryRouter = router({
   }),
 
   summary: protectedProcedure.query(async ({ ctx }) => {
-    return getMasterySummary(ctx.user.id);
+    // Augment the mastery summary with a "new items" count so the
+    // Learning Home can show a first-time "Start learning" CTA even
+    // when the SRS due-count is 0 — without this, a fresh user who
+    // just imported 366 flashcards sees "nothing due" and never finds
+    // the review path.
+    const [core, newItems] = await Promise.all([
+      getMasterySummary(ctx.user.id),
+      getNewItemCount(ctx.user.id),
+    ]);
+    return {
+      ...core,
+      newFlashcards: newItems.newFlashcards,
+      newQuestions: newItems.newQuestions,
+      newTotal: newItems.total,
+    };
   }),
 
   recordReview: protectedProcedure
@@ -142,25 +159,36 @@ const masteryRouter = router({
     }),
 
   /**
-   * Returns a ready-to-render mixed-modality review session: the user's
-   * overdue flashcards and practice questions, hydrated into the shape the
-   * LearningReview UI expects. If nothing is due, returns an empty session
-   * and the UI should fall back to "everything caught up".
+   * Returns a ready-to-render mixed-modality review session.
    *
-   * The returned items are interleaved server-side so the client doesn't
-   * need to know the ordering heuristic.
+   * Shape: the user's overdue flashcards + practice questions
+   * (hydrated), interleaved most-overdue-first, OPTIONALLY padded
+   * with "new cards" (items the user has never seen) up to `limit`
+   * when the due queue is shorter than `limit`. The padding is what
+   * turns this from "review only what's overdue" into a classical
+   * Anki-style mixed queue that also works for first-time users.
+   *
+   * Pass `newQuota=0` to opt out of the new-card queue (strict
+   * review-only mode).
    */
   dueReview: protectedProcedure
     .input(
       z
         .object({
           limit: z.number().int().min(1).max(100).default(20),
+          /** Max new-card items to include when the due queue is short. */
+          newQuota: z.number().int().min(0).max(100).default(10),
+          /** If true, ONLY return new cards (ignore due items). */
+          studyAhead: z.boolean().default(false),
         })
         .optional(),
     )
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? 20;
-      const due = await getDueItems(ctx.user.id, limit * 2);
+      const newQuota = input?.newQuota ?? 10;
+      const studyAhead = input?.studyAhead ?? false;
+
+      const due = studyAhead ? [] : await getDueItems(ctx.user.id, limit * 2);
 
       const flashcardIds: number[] = [];
       const questionIds: number[] = [];
@@ -187,17 +215,53 @@ const masteryRouter = router({
       // Interleave flashcards and questions 1:1 while preserving
       // most-overdue-first order from `keyMeta`.
       const items: Array<
-        | { kind: "flashcard"; itemKey: string; flashcard: any }
-        | { kind: "question"; itemKey: string; question: any }
+        | { kind: "flashcard"; itemKey: string; flashcard: any; isNew: boolean }
+        | { kind: "question"; itemKey: string; question: any; isNew: boolean }
       > = [];
       for (const meta of keyMeta) {
         if (items.length >= limit) break;
         if (meta.kind === "flashcard") {
           const fc = flashcardById.get(meta.id);
-          if (fc) items.push({ kind: "flashcard", itemKey: meta.key, flashcard: fc });
+          if (fc) items.push({ kind: "flashcard", itemKey: meta.key, flashcard: fc, isNew: false });
         } else {
           const q = questionById.get(meta.id);
-          if (q) items.push({ kind: "question", itemKey: meta.key, question: q });
+          if (q) items.push({ kind: "question", itemKey: meta.key, question: q, isNew: false });
+        }
+      }
+
+      // Pad with new cards if the due queue was smaller than the limit.
+      // Alternate flashcard → question → flashcard → question so the
+      // session has a rhythm instead of front-loading one modality.
+      const needed = studyAhead ? limit : Math.min(newQuota, limit - items.length);
+      if (needed > 0) {
+        const fcHalf = Math.ceil(needed / 2);
+        const qHalf = needed - fcHalf;
+        const [newFcs, newQs] = await Promise.all([
+          listNewFlashcards(ctx.user.id, fcHalf),
+          listNewQuestions(ctx.user.id, qHalf),
+        ]);
+        const maxPair = Math.max(newFcs.length, newQs.length);
+        for (let i = 0; i < maxPair; i++) {
+          if (items.length >= limit) break;
+          if (i < newFcs.length) {
+            const fc = newFcs[i];
+            items.push({
+              kind: "flashcard",
+              itemKey: `flashcard:${fc.id}`,
+              flashcard: fc,
+              isNew: true,
+            });
+          }
+          if (items.length >= limit) break;
+          if (i < newQs.length) {
+            const q = newQs[i];
+            items.push({
+              kind: "question",
+              itemKey: `question:${q.id}`,
+              question: q,
+              isNew: true,
+            });
+          }
         }
       }
 
@@ -205,6 +269,8 @@ const masteryRouter = router({
         items,
         total: items.length,
         dueTotal: due.length,
+        newItems: items.filter((i) => i.isNew).length,
+        reviewItems: items.filter((i) => !i.isNew).length,
       };
     }),
 

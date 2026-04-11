@@ -7,8 +7,13 @@
  */
 
 import { getDb } from "../../db";
-import { learningMasteryProgress, type LearningMastery } from "../../../drizzle/schema";
-import { and, asc, eq, lte } from "drizzle-orm";
+import {
+  learningMasteryProgress,
+  learningFlashcards,
+  learningPracticeQuestions,
+  type LearningMastery,
+} from "../../../drizzle/schema";
+import { and, asc, eq, lte, notInArray, sql } from "drizzle-orm";
 import { logger } from "../../_core/logger";
 
 const log = logger.child({ module: "learning/mastery" });
@@ -163,6 +168,153 @@ export function parseItemKey(itemKey: string): { kind: "flashcard" | "question" 
   const m = /^(flashcard|question):(\d+)$/.exec(itemKey);
   if (!m) return { kind: "unknown", id: null };
   return { kind: m[1] as "flashcard" | "question", id: Number(m[2]) };
+}
+
+/**
+ * Returns the set of `itemKey`s already in the user's mastery table.
+ * Used by the `listNewFlashcards` / `listNewQuestions` helpers below to
+ * exclude items the user has already seen, so the Review session's
+ * "new card queue" only surfaces genuinely new material.
+ */
+export async function getSeenItemKeys(userId: number): Promise<Set<string>> {
+  const db = await getDb();
+  if (!db) return new Set();
+  try {
+    const rows = await db
+      .select({ itemKey: learningMasteryProgress.itemKey })
+      .from(learningMasteryProgress)
+      .where(eq(learningMasteryProgress.userId, userId));
+    return new Set(rows.map((r) => r.itemKey));
+  } catch (err) {
+    log.warn({ err: String(err) }, "getSeenItemKeys failed");
+    return new Set();
+  }
+}
+
+/**
+ * Returns at most `limit` published flashcards the user has NEVER
+ * reviewed. This powers the "new card queue" in the Review session —
+ * without it, a fresh user with 366 imported flashcards sees nothing
+ * to review because the mastery table is empty and `getDueItems`
+ * only surfaces items that already have a past `nextDue`. Anki and
+ * every other SRS ships with a new-card queue; this brings Stewardly
+ * to parity.
+ */
+export async function listNewFlashcards(userId: number, limit = 10) {
+  const db = await getDb();
+  if (!db) return [] as Array<{ id: number; term: string; definition: string; trackId: number | null }>;
+  try {
+    const seen = await getSeenItemKeys(userId);
+    const seenFlashcardIds = Array.from(seen)
+      .map((k) => parseItemKey(k))
+      .filter((p) => p.kind === "flashcard" && p.id != null)
+      .map((p) => p.id as number);
+
+    const conds: any[] = [eq(learningFlashcards.status, "published")];
+    if (seenFlashcardIds.length > 0) {
+      conds.push(notInArray(learningFlashcards.id, seenFlashcardIds));
+    }
+    return await db
+      .select({
+        id: learningFlashcards.id,
+        term: learningFlashcards.term,
+        definition: learningFlashcards.definition,
+        trackId: learningFlashcards.trackId,
+      })
+      .from(learningFlashcards)
+      .where(and(...conds))
+      .orderBy(asc(learningFlashcards.id))
+      .limit(limit);
+  } catch (err) {
+    log.warn({ err: String(err) }, "listNewFlashcards failed");
+    return [];
+  }
+}
+
+/** Mirror of `listNewFlashcards` for practice questions. */
+export async function listNewQuestions(userId: number, limit = 10) {
+  const db = await getDb();
+  if (!db) return [] as Array<{
+    id: number;
+    prompt: string;
+    options: unknown;
+    correctIndex: number | null;
+    explanation: string | null;
+    difficulty: "easy" | "medium" | "hard";
+    trackId: number | null;
+  }>;
+  try {
+    const seen = await getSeenItemKeys(userId);
+    const seenQuestionIds = Array.from(seen)
+      .map((k) => parseItemKey(k))
+      .filter((p) => p.kind === "question" && p.id != null)
+      .map((p) => p.id as number);
+
+    const conds: any[] = [eq(learningPracticeQuestions.status, "published")];
+    if (seenQuestionIds.length > 0) {
+      conds.push(notInArray(learningPracticeQuestions.id, seenQuestionIds));
+    }
+    return await db
+      .select({
+        id: learningPracticeQuestions.id,
+        prompt: learningPracticeQuestions.prompt,
+        options: learningPracticeQuestions.options,
+        correctIndex: learningPracticeQuestions.correctIndex,
+        explanation: learningPracticeQuestions.explanation,
+        difficulty: learningPracticeQuestions.difficulty,
+        trackId: learningPracticeQuestions.trackId,
+      })
+      .from(learningPracticeQuestions)
+      .where(and(...conds))
+      .orderBy(asc(learningPracticeQuestions.id))
+      .limit(limit);
+  } catch (err) {
+    log.warn({ err: String(err) }, "listNewQuestions failed");
+    return [];
+  }
+}
+
+/**
+ * Returns the count of "new" items (flashcards + questions) the user
+ * has never seen. Used by the Learning Home to surface a first-time
+ * "Start learning" CTA when the SRS due-count is 0.
+ */
+export async function getNewItemCount(userId: number): Promise<{ newFlashcards: number; newQuestions: number; total: number }> {
+  const db = await getDb();
+  if (!db) return { newFlashcards: 0, newQuestions: 0, total: 0 };
+  try {
+    const seen = await getSeenItemKeys(userId);
+    const seenFlashcardIds = Array.from(seen)
+      .map((k) => parseItemKey(k))
+      .filter((p) => p.kind === "flashcard" && p.id != null)
+      .map((p) => p.id as number);
+    const seenQuestionIds = Array.from(seen)
+      .map((k) => parseItemKey(k))
+      .filter((p) => p.kind === "question" && p.id != null)
+      .map((p) => p.id as number);
+
+    const fcConds: any[] = [eq(learningFlashcards.status, "published")];
+    if (seenFlashcardIds.length > 0) fcConds.push(notInArray(learningFlashcards.id, seenFlashcardIds));
+    const qConds: any[] = [eq(learningPracticeQuestions.status, "published")];
+    if (seenQuestionIds.length > 0) qConds.push(notInArray(learningPracticeQuestions.id, seenQuestionIds));
+
+    const [[{ c: fcCount }], [{ c: qCount }]] = await Promise.all([
+      db
+        .select({ c: sql<number>`count(*)` })
+        .from(learningFlashcards)
+        .where(and(...fcConds)),
+      db
+        .select({ c: sql<number>`count(*)` })
+        .from(learningPracticeQuestions)
+        .where(and(...qConds)),
+    ]);
+    const newFlashcards = Number(fcCount ?? 0);
+    const newQuestions = Number(qCount ?? 0);
+    return { newFlashcards, newQuestions, total: newFlashcards + newQuestions };
+  } catch (err) {
+    log.warn({ err: String(err) }, "getNewItemCount failed");
+    return { newFlashcards: 0, newQuestions: 0, total: 0 };
+  }
 }
 
 export interface MasterySummary {

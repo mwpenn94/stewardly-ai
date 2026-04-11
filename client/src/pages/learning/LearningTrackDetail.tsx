@@ -108,7 +108,12 @@ export default function LearningTrackDetail() {
   useEffect(() => {
     if (expandedChapterId != null) return;
     if (chapters.length === 0) return;
-    const target = lastRead ?? chapters[0]?.id ?? null;
+    // Guard against a stale cursor. If the last-read chapter id was
+    // deleted (e.g. embaImport re-ran and regenerated chapter rows),
+    // fall back to the first chapter instead of setting a dead id.
+    const lastReadIsLive =
+      lastRead != null && chapters.some((c: any) => c.id === lastRead);
+    const target = lastReadIsLive ? lastRead : chapters[0]?.id ?? null;
     if (target != null) setExpandedChapterId(target);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapters.length, lastRead]);
