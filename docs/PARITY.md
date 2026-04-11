@@ -29,7 +29,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G6  | P1   | pipelines       | Rate limiting + exponential backoff honored per-source                     | open        | build-loop-p1    | 0/10  | —       |
 | G7  | P2   | code-chat       | Schema inference exposed as a Code Chat tool                               | open        | build-loop-p1    | 0/10  | —       |
 | G8  | P2   | learning        | Continuous training — fold sample data into learning recommendations       | open        | build-loop-p1    | 0/10  | —       |
-| G9  | P2   | crm             | CRM field auto-map from inferred schema → canonical CRM shape              | open        | build-loop-p1    | 0/10  | —       |
+| G9  | P2   | crm             | CRM field auto-map from inferred schema → canonical CRM shape              | done        | build-loop-p1    | 6/10  | pending |
 | G10 | P1   | continuous      | Schema drift detector — re-infer, diff, flag for review                    | done        | build-loop-p1    | 6/10  | pending |
 | G11 | P2   | model-training  | Cross-model distillation loop (learn from other models' outputs)           | open        | build-loop-p1    | 0/10  | —       |
 | G12 | P2   | agentic-ai      | Universal adapter DSL — declarative integration spec the agent can emit    | open        | build-loop-p1    | 0/10  | —       |
@@ -95,4 +95,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 - Pass 2 · adapter generation · [R1: G2 adapter generator, G13 pagination probe, G14 collection path, G15 curl, G16 fingerprint] · 46c89ad · G2+G4+G13+G14+G15+G16 done · G3/G5-G12 deferred
 - Pass 3 · runtime executor · [F1 Pass 2 deferred exec, A1 listRecords/CRUD, A2 upsert] · 87ad53e · G17+G18+G19+G20 done · G3/G5-G12 deferred
 - Pass 4 · schema drift · [R1: G10 drift detector, R2: G5 drift-aware upsert, A1: rename heuristic] · 3dc33cc · G10+G21+G22 done · G3/G5-G12 deferred
-- Pass 5 · field overrides · [R1: G3 override layer, A1: pinned rehydrate, A2: diffOverrideSets] · pending · G3+G23+G24 done · G5-G9/G11/G12 deferred
+- Pass 5 · field overrides · [R1: G3 override layer, A1: pinned rehydrate, A2: diffOverrideSets] · b8d9b04 · G3+G23+G24 done · G5-G9/G11/G12 deferred
+- Pass 6 · CRM canonical map · [R1: G9 CRM auto-map, A1: synonym tables, A2: value-pattern + semantic-hint scoring] · pending · G9 done · G5-G8/G11/G12 deferred
