@@ -8,13 +8,13 @@
 
 ## Meta
 
-- **Last updated:** 2026-04-11T00:00:08Z by parity-pass-5 (claude/optimize-app-parity-FRm86)
+- **Last updated:** 2026-04-11T00:00:10Z by parity-pass-6 (claude/optimize-app-parity-FRm86)
 - **Comparable (primary):** Claude Code CLI
 - **Comparable (adjacent):** Cursor Composer, Aider, Cline, Windsurf Cascade, Continue.dev, Codex CLI
 - **Core purpose:** Give Stewardly advisors + admins a Claude-Code-style agentic coding assistant that can read, understand, and (with permission) modify the Stewardly codebase from inside the web app, without leaving the advisory workflow.
 - **Target user:** Primarily Stewardly admins (full write access), secondarily advisor-role power users (read-only exploration, PR review), tertiarily developer contributors shipping features against the same product their firm runs on.
 - **Success metric:** An admin can complete a typical development task — "fix a bug in the X router and push a PR" — start-to-finish inside Code Chat, without falling back to a terminal, without a regression, in comparable wall-clock time to Claude Code.
-- **Current parity score:** **69.3%** (Pass 5 added beyond-parity candidate B21 on commit+push celebration)
+- **Current parity score:** **62.8%** (Pass 6 compliance/fiduciary audit surfaced 2 critical live compliance holes — C1 PII and C4 forensic reconstruction gap)
 
 ## Parity score breakdown
 
@@ -304,6 +304,46 @@ Polish-level gaps vs. Claude Code. None of these block the core-purpose success 
 - **Usability:** D14 (keyboard discoverability), D18 (responsive).
 - **Delightfulness:** D17, B21 — the two that would make a user smile.
 
+## Compliance / Fiduciary / Cost gaps (Pass 6)
+
+Per CLAUDE.md's "Custom Domain Passes" section — these dimensions are first-class for a financial app and prior parity passes missed them. Code Chat is the most regulation-adjacent surface in Stewardly (direct file read/write + shell access), so gaps here are high-leverage.
+
+### Compliance
+
+| ID | Gap | Severity | Priority | Target |
+|---|---|---|---|---|
+| C1 | PII screening NOT run on `read_file` / `grep_search` tool results — LLM sees unredacted user emails/SSNs from source files like `server/routers/users.ts` | **Critical** | Critical | `codeChatExecutor.ts` dispatchCodeTool |
+| C2 | URL hallucination guard NOT wired into Code Chat's `done` event — main Chat has it, Code Chat does not | High | High | `codeChatStream.ts` |
+| C3 | No compliance-sensitive-path allowlist — admin can freely edit `server/services/compliance/*`, `guardrails/*`, audit-log writer | Medium | Med | new `.stewardly/compliance-sensitive.json` + G9 special case |
+| C4 | Audit trail lacks model + system prompt + user prompt hashes — forensic reconstruction of "why did the agent do X?" is impossible | **Critical** | Critical | extend `codechat_tool_results` (from H10) |
+| C5 | No per-org compliance policy — single compliance model for all tenants | Medium | Med | new `organization_codechat_policies` table |
+
+### Fiduciary
+
+| ID | Gap | Severity | Priority | Target |
+|---|---|---|---|---|
+| F1 | No fiduciary-relevant-path check — admin can ship code that weakens suitability/fee-disclosure logic without a prompt | Medium (soft gap) | Med | fiduciary allowlist + special approval prompt |
+| F2 | No audit row captures fiduciary rationale for a compliance-adjacent code change — git blame gives committer, not reasoning | High | High | new `fiduciary_review_log` table |
+
+### Cost
+
+| ID | Gap | Severity | Priority | Target |
+|---|---|---|---|---|
+| Cost1 | Per-session cost cap is localStorage-only — bypassable via devtools | Medium | Med | new `user_codechat_usage` table, server-side enforcement |
+| Cost2 | No task-complexity-based model routing — user manually picks tier | Low | Low | cheap Haiku classifier before main loop (maps to Branch B) |
+| Cost3 | No semantic cache on tool results across users — same file re-read N times | Low-Medium | Low | Redis/in-memory `(toolName, argsHash, mtime)` cache, 10m TTL |
+
+### Dimensional impact
+
+- **Core Function:** C1, C4, F2 land squarely on core function because they break the auditable tool-calling guarantee.
+- **Robustness:** C2, C3, Cost1 — defense in depth for a regulated product.
+- **UX:** F1 — fiduciary prompt is a trust moment.
+- **Code Quality:** Cost2 — routing layer is an architectural improvement.
+
+### Note on Branch B connection
+
+Cost2 (task-complexity routing) and Branch B (planner/executor/synthesizer split) are the same architectural lever viewed from different angles. A future pass that evaluates Pass 4's branches should note this — adopting Branch B incrementally closes Cost2 for free.
+
 ## Reconciliation log
 
 (append-only, one line per merge event)
@@ -313,11 +353,13 @@ Polish-level gaps vs. Claude Code. None of these block the core-purpose success 
 - 2026-04-11T00:00:04Z — parity-pass-3 — appended Adversarial hazards section H1–H10. Amended G9 + G11 specs in-place via the hazards cross-reference (the original gap rows still point to the spec, but the hazards row overrides specific fields). No conflicts. Pass 1 + Pass 2 content preserved verbatim.
 - 2026-04-11T00:00:06Z — parity-pass-4 — appended Exploration branches section (Branch A/B/C/D), logged divergence budget (1 of 15 used). No conflicts. All prior content preserved.
 - 2026-04-11T00:00:08Z — parity-pass-5 — appended Delight & polish gaps section D10–D18 and beyond-parity candidate B21 (celebration on commit+push). No conflicts. All prior content preserved.
+- 2026-04-11T00:00:10Z — parity-pass-6 — appended Compliance/Fiduciary/Cost gaps C1–C5, F1–F2, Cost1–Cost3. Biggest findings: C1 PII screening hole in tool results (CRITICAL), C4 audit trail missing model/prompt hashes (CRITICAL), C2 URL guardrail regression (High). No conflicts.
 
 ## Changelog
 
 (append-only, one line per pass, most recent first)
 
+- Pass 6 (parity compliance/fiduciary/cost, 2026-04-11, score 69.3% → **62.8%**) — found 10 gaps across 3 custom-domain dimensions that prior passes skipped: 2 critical (C1 PII screening in tool results, C4 audit trail missing model/prompt hashes), 2 high (C2 URL guardrail regression, F2 fiduciary rationale gap), 5 medium, 1 low-medium. Score drops **−6.5** because these are live compliance holes on a regulated product and they promote 2 existing items to critical and 2 to high — the gross score adjustment picks up the full severity weight. Temperature: score regressed — raise by 0.20 to **0.6**. After pass 6 the critical count = 6 (G1, G9, G29, G35, C1, C4). Five consecutive passes away from convergence as a result. This is expected for an adversarial-style compliance audit on a regulated app — the surface gets worse before it gets better.
 - Pass 5 (parity delight & polish, 2026-04-11, score 68.8% → **69.3%**) — added 9 polish gaps D10–D18 + 1 beyond-parity candidate B21 (celebration engine wired to commit+push). All are UX-dimension; zero affect core function. Score bumps +0.5 from the beyond-parity candidate moving us from 20 → 21 credible wins (on proposal — does not ship until coded). Temperature adjustment: score improved <0.2 points — by the letter of the rule this is stagnation and should raise temp by 0.20 to 0.6. But the pass yielded 9 novel findings in a dimension (delight) that had zero prior coverage, so the stagnation signal is a false positive — I'm holding temp at 0.4. Noted here explicitly so future passes can audit the decision.
 - Pass 4 (parity exploration, 2026-04-11, score 68.8% unchanged — divergent pass, no convergent work) — generated 4 architecturally-distinct branches (A terminal-in-tab, B planner/executor/synthesizer split, C full-screen IDE, D Stewardly-as-wrapper-over-Claude-Code). Non-binding recommendation: stay on Branch 0 for core-purpose alignment, but Branch B is a credible incremental architectural upgrade worth a future spike. Divergence budget: 1/15 used (6.7%). Temperature 0.4 (unchanged — divergent work doesn't change score).
 - Pass 3 (parity adversarial, 2026-04-11, score 72.0% → **68.8%**) — found 10 real hazards (H1–H10). 2 are critical (H6 cross-user permission leak in G9 spec, H9 under-specified rule DSL in G11 spec) and both are caught as spec amendments before ship. 3 high-severity live bugs (H3 localStorage quota, H4 subagent audit, H10 tool result capture hole) now open. Score drops 3.2 points: H3 is a live Pass 239 bug (−1.5), H10 is a compliance hole on an existing system (−1.5), H2/H7 are silent data-loss bugs on existing features (−0.2). Planning-only — no code changed. Temperature adjustment: score regressed (hazards discovered on existing surface) → raise temp by 0.20 to **0.4**.
@@ -345,10 +387,10 @@ This score is a *navigational instrument*, not a benchmark. It moves up when gap
 
 ## Open parity gaps — count by severity
 
-- Critical: **4** (G1, G9, G29, G35) + 2 spec-amendment criticals from Pass 3 (H6, H9 already folded into G9/G11)
-- High: **7** (G2, G3, G4, G7, G11, G13, G21) + 3 Pass 3 live hazards (H3 Pass 239 quota, H4 audit, H10 compliance capture)
-- Medium: **12** (G5, G8, G10, G14, G15, G22, G26, G27, G30, G34, G37, D1/D4) + 4 Pass 3 live hazards (H1, H2, H5, H7)
-- Low: **13** (G6, G19, G20, G23, G24, G25, G31, G32, G33, G36, G38, G39, G40) + 1 Pass 3 hazard (H8)
-- **Total open: 46** (36 feature gaps + 10 hazards, with no double-counting)
+- Critical: **6** (G1, G9, G29, G35, C1, C4) + 2 spec-amendment criticals from Pass 3 (H6, H9 folded into G9/G11)
+- High: **11** (G2, G3, G4, G7, G11, G13, G21, C2, F2, plus H3, H4, H10)
+- Medium: **18** (G5, G8, G10, G14, G15, G22, G26, G27, G30, G34, G37, D1, D4, C3, C5, F1, Cost1, plus H1, H2, H5, H7)
+- Low: **23** (G6, G19, G20, G23, G24, G25, G31, G32, G33, G36, G38, G39, G40, D10–D18, H8, Cost2, Cost3)
+- **Total open: 58** (36 feature gaps + 10 Pass-3 hazards + 9 Pass-5 polish + 10 Pass-6 compliance, minor overlap ignored)
 - **Anti-parity rejected: 8**
-- **Features already present at full or partial depth: 44** (27 feature-matrix + 20 beyond-parity, with overlap)
+- **Features already present at full or partial depth: 44** (27 feature-matrix + 20 beyond-parity + 21 candidate B21, with overlap)
