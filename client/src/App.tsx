@@ -124,6 +124,8 @@ const ConnectionMap = lazy(() => import("./pages/learning/ConnectionMap"));
 const AudioPreferences = lazy(() => import("./pages/settings/AudioPreferences"));
 // Comparables — competitive gap dashboard (hybrid build loop, pass 1)
 const ComparablesPage = lazy(() => import("./pages/Comparables"));
+// Rebalancing — portfolio drift preview (hybrid build loop, pass 3)
+const RebalancingPage = lazy(() => import("./pages/Rebalancing"));
 
 function Router() {
   return (
@@ -234,6 +236,8 @@ function Router() {
         {/* Consolidated Hub Pages */}
         {/* Comparables — competitive gap dashboard (hybrid build loop pass 1) */}
         <Route path={"/comparables"} component={ComparablesPage} />
+        {/* Rebalancing — portfolio drift preview (hybrid build loop pass 3) */}
+        <Route path={"/rebalancing"} component={RebalancingPage} />
 
         <Route path={"/operations"} component={OperationsHub} />
         <Route path={"/agents"} component={AgentManager} />

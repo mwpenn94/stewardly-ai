@@ -16,7 +16,7 @@ import {
   Cog, Brain, Activity,
   GraduationCap, Settings, HelpCircle,
   Search, Plus, PanelLeftClose, PanelLeft,
-  ChevronDown, Pin, Compass,
+  ChevronDown, Pin, Compass, Scale,
 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
@@ -73,6 +73,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "Compliance", icon: ShieldCheck, path: "/compliance-audit", match: ["/compliance-audit"] },
       { label: "Market Data", icon: TrendingUp, path: "/market-data", match: ["/market-data"] },
       { label: "Calculators", icon: Calculator, path: "/calculators", match: ["/calculators", "/wealth-engine"] },
+      { label: "Rebalancing", icon: Scale, path: "/rebalancing", match: ["/rebalancing"] },
     ],
   },
   {

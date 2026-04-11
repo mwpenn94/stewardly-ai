@@ -88,8 +88,8 @@ export const FEATURE_AXES: readonly FeatureAxis[] = [
     id: "meeting_transcription",
     label: "Meeting transcription + AI notes",
     description: "Records advisor-client calls, transcribes, extracts action items, pushes to CRM.",
-    stewardlyScore: 1,
-    stewardlyEvidence: "server/routers/meetings.ts exists; transcription + structured note extraction not yet automated.",
+    stewardlyScore: 2,
+    stewardlyEvidence: "server/routers/meetings.ts + meetings.extractNotesOffline (Pass 3) — pure regex/heuristic extractor for action items, decisions, concerns, dates, participants, compliance flags (no LLM cost). LLM summary path still available via meetings.generateSummary. Live audio transcription not yet wired.",
   },
   {
     id: "crm_sync",
