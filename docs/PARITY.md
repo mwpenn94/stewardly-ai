@@ -162,6 +162,80 @@ Not yet addressed: G7, G9, G10 (deferred to future passes).
 - No progress indicator on the TrackDetail page showing which chapters are
   "read" vs "unread"
 
+### Pass 2 — Depth (2026-04-11, Claude Code)
+**Pass type:** Depth
+**Temperature in:** 0.40
+**Temperature out:** 0.32
+
+**Addressed:** G7 (Resume-where-you-left-off in TrackDetail), G9 (Audio
+narration of subsections in TrackDetail), NEW — per-track read progress
+indicator on LearningHome track cards + per-chapter checkmark in
+TrackDetail chapter list + read-progress bar on the track header.
+
+Not yet addressed: G10 (dynamic cases/FSApps).
+
+**Files changed:**
+- `client/src/lib/trackReadState.ts` — NEW. Pure-function state machine
+  + localStorage wrapper for per-track chapter read history. Exports
+  `getTrackReadState` / `recordChapterRead` / `isChapterRead` /
+  `chaptersReadCount` / `lastReadChapter` / `trackProgressPct` /
+  `clearTrack`. Handles stringified track keys for numeric ids, deep
+  validation of localStorage payloads, 200-chapter sanity cap, pure
+  helpers fully unit-tested.
+- `client/src/lib/trackReadState.test.ts` — NEW. 25 tests covering
+  every pure helper + malformed-payload handling.
+- `client/src/pages/learning/LearningTrackDetail.tsx` — reads read-state
+  on mount, auto-expands the most-recently-read chapter as a "Resume"
+  affordance, records every chapter click into localStorage via
+  write-through, shows a progress bar once at least one chapter has
+  been read, per-chapter green check icon + emerald border for read
+  chapters. Subsections now include a Listen / Stop button per section
+  powered by `useAudioCompanion` — tapping plays the full subsection
+  narration through the existing AudioCompanion (Edge TTS with Web
+  Speech fallback). Extracted a `SubsectionView` helper component so
+  the narration state stays scoped per subsection.
+- `client/src/pages/learning/LearningHome.tsx` — new `TrackCard` sub-
+  component that fetches chapter count via `listChapters` (only when
+  the track has at least one read chapter, gated on `enabled`) and
+  renders a progress bar + "N of M chapters read" subtitle + a green
+  `N%` badge on the card corner. Unread tracks render unchanged.
+- `vitest.config.ts` — added `client/src/lib/trackReadState.test.ts` to
+  the include list.
+
+**Dimension deltas (self-rated, conservative):**
+- Core Function: 7.5 → 7.5 (no change — Pass 2 is additive delight work)
+- UI / Visual: 7 → 7.5 (progress bars + checkmarks make state visible)
+- UX / Interaction: 7 → 8 (Resume where you left off — no more restarting
+  from chapter 1 every session)
+- Usability: 7 → 7.5 (audio narration opens the content to auditory
+  learners + commuters)
+- Digestibility: 6 → 7 (read-state badges let you see where you are at
+  a glance across tracks)
+- Delightfulness: 6.5 → 7.5 (audio narration + progress bars + check
+  marks are pure delight adds)
+- Flexibility: 7 → 7.5 (trackReadState is a reusable pure store)
+- Code Quality: 7 → 7.5 (+25 unit tests, 0 regressions, clean TS)
+
+**Composite:** 7.0 → 7.4
+
+**Build + test state (end of Pass 2):**
+- TS check: 0 errors
+- Build: clean in 18.84s
+- Full suite: 3,823 passing / 113 env-dependent failing (+25 new vs Pass 1)
+- New tests: +25 `trackReadState` (total 46 new across both passes)
+
+**Remaining / OPEN_ISSUES:**
+- G10 Replace DisciplineDeepDive mock cases + FSApps with DB-backed data
+  (deferred — the learning_cases / learning_fs_applications tables exist
+  but no CRUD procedures are wired into the router and no content has
+  been imported)
+- No streak persistence across sessions (each new session's streak
+  resets — intentional for now, tracked as a possible future-state
+  feature)
+- Adaptive review sessions have no "can I study ahead?" mode — today
+  if nothing is due the Review page shows "all caught up" but doesn't
+  let the user manually queue up tomorrow's items
+
 ## Reconciliation Log
 
 (parallel passes write here if they conflict with a landing commit)

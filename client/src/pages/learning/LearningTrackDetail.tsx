@@ -17,7 +17,7 @@
  * which in turn read from the DB tables populated by embaImport.ts.
  */
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   BookOpen,
   Layers,
@@ -39,7 +40,19 @@ import {
   Play,
   Sparkles,
   FileText,
+  Check,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import {
+  getTrackReadState,
+  recordChapterRead,
+  isChapterRead,
+  chaptersReadCount,
+  lastReadChapter,
+  trackProgressPct,
+} from "@/lib/trackReadState";
+import { useAudioCompanion } from "@/components/AudioCompanion";
 
 export default function LearningTrackDetail() {
   const params = useParams<{ slug: string }>();
@@ -68,9 +81,37 @@ export default function LearningTrackDetail() {
   const questions = questionsQ.data ?? [];
   const flashcards = flashcardsQ.data ?? [];
 
+  // Load per-device read state ONCE per mount so the list + cursor don't
+  // thrash every render. We intentionally do NOT re-pull localStorage on
+  // every chapter toggle — the `markChapterRead` call writes through, so
+  // the derived counts + `readSet` below stay in sync with what's on disk.
+  const [readState, setReadState] = useState(() => getTrackReadState());
+  const trackKey = track?.id ?? track?.slug ?? "";
+
+  const readSet = useMemo(() => {
+    if (!trackKey) return new Set<number>();
+    const entry = readState[String(trackKey)];
+    return new Set<number>(entry?.chapterIds ?? []);
+  }, [readState, trackKey]);
+  const readCount = trackKey ? chaptersReadCount(readState, trackKey) : 0;
+  const totalChapters = chapters.length;
+  const progressPct = trackKey ? trackProgressPct(readState, trackKey, totalChapters) : 0;
+  const lastRead = trackKey ? lastReadChapter(readState, trackKey) : null;
+
+  // Expand the most-recently-read chapter on mount (Resume where you
+  // left off). Falls back to the first chapter when there's no cursor
+  // so first-time visitors still see a chapter open.
   const [expandedChapterId, setExpandedChapterId] = useState<number | null>(
     null,
   );
+
+  useEffect(() => {
+    if (expandedChapterId != null) return;
+    if (chapters.length === 0) return;
+    const target = lastRead ?? chapters[0]?.id ?? null;
+    if (target != null) setExpandedChapterId(target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapters.length, lastRead]);
 
   if (trackQ.isLoading) {
     return (
@@ -174,6 +215,22 @@ export default function LearningTrackDetail() {
               {track.description}
             </p>
           )}
+
+          {/* Read-progress bar — only renders once chapters are loaded AND
+              at least one chapter has been read. First-time visitors see a
+              clean header without a visually empty 0% bar. */}
+          {totalChapters > 0 && readCount > 0 && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3 w-3 text-emerald-500" />
+                  {readCount} of {totalChapters} chapter{totalChapters === 1 ? "" : "s"} read
+                </span>
+                <span className="tabular-nums">{progressPct}%</span>
+              </div>
+              <Progress value={progressPct} />
+            </div>
+          )}
         </div>
 
         {/* Chapters */}
@@ -183,7 +240,14 @@ export default function LearningTrackDetail() {
               <Layers className="h-4 w-4" /> Chapters
             </CardTitle>
             <CardDescription className="text-xs">
-              Click a chapter to read its subsections.
+              {lastRead != null && readCount > 0 ? (
+                <>
+                  <span className="text-accent">Resumed</span> at your last read
+                  chapter. Click any other chapter to jump.
+                </>
+              ) : (
+                "Click a chapter to read its subsections."
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -198,11 +262,15 @@ export default function LearningTrackDetail() {
                     key={ch.id}
                     chapter={ch}
                     expanded={expandedChapterId === ch.id}
-                    onToggle={() =>
-                      setExpandedChapterId(
-                        expandedChapterId === ch.id ? null : ch.id,
-                      )
-                    }
+                    read={readSet.has(ch.id)}
+                    onToggle={() => {
+                      const willOpen = expandedChapterId !== ch.id;
+                      setExpandedChapterId(willOpen ? ch.id : null);
+                      if (willOpen && trackKey) {
+                        recordChapterRead(trackKey, ch.id);
+                        setReadState(getTrackReadState());
+                      }
+                    }}
                   />
                 ))}
               </ul>
@@ -265,10 +333,12 @@ export default function LearningTrackDetail() {
 function ChapterRow({
   chapter,
   expanded,
+  read,
   onToggle,
 }: {
   chapter: { id: number; title: string; intro?: string | null };
   expanded: boolean;
+  read: boolean;
   onToggle: () => void;
 }) {
   const subsQ = trpc.learning.content.listSubsections.useQuery(
@@ -278,22 +348,33 @@ function ChapterRow({
   const subs = subsQ.data ?? [];
 
   return (
-    <li className="border rounded-md">
+    <li className={`border rounded-md ${read ? "border-emerald-500/30" : ""}`}>
       <button
         type="button"
         onClick={onToggle}
         className="w-full text-left p-3 flex items-center justify-between hover:bg-muted/40"
+        aria-expanded={expanded}
       >
-        <div className="flex-1">
-          <p className="text-sm font-medium">{chapter.title}</p>
-          {chapter.intro && (
-            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-              {chapter.intro}
-            </p>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {read ? (
+            <Check
+              className="h-4 w-4 text-emerald-500 shrink-0"
+              aria-label="Read"
+            />
+          ) : (
+            <div className="h-4 w-4 rounded-full border border-muted-foreground/30 shrink-0" aria-hidden />
           )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{chapter.title}</p>
+            {chapter.intro && (
+              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                {chapter.intro}
+              </p>
+            )}
+          </div>
         </div>
         <ChevronRight
-          className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-90" : ""}`}
+          className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${expanded ? "rotate-90" : ""}`}
         />
       </button>
       {expanded && (
@@ -314,29 +395,91 @@ function ChapterRow({
           ) : (
             <div className="space-y-4">
               {subs.map((s: any) => (
-                <div key={s.id} className="space-y-1.5">
-                  {s.title && (
-                    <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                      <FileText className="h-3 w-3 text-muted-foreground" />
-                      {s.title}
-                    </h3>
-                  )}
-                  {Array.isArray(s.paragraphs) &&
-                    s.paragraphs.map((p: string, i: number) => (
-                      <p
-                        key={i}
-                        className="text-sm leading-relaxed text-muted-foreground"
-                      >
-                        {p}
-                      </p>
-                    ))}
-                </div>
+                <SubsectionView key={s.id} subsection={s} chapterTitle={chapter.title} />
               ))}
             </div>
           )}
         </div>
       )}
     </li>
+  );
+}
+
+// ─── Subsection view with optional audio narration ───────────────────────
+
+function SubsectionView({
+  subsection,
+  chapterTitle,
+}: {
+  subsection: { id: number; title?: string | null; paragraphs?: unknown };
+  chapterTitle: string;
+}) {
+  const audio = useAudioCompanion();
+  const paragraphs: string[] = Array.isArray(subsection.paragraphs)
+    ? (subsection.paragraphs as unknown[]).filter((p): p is string => typeof p === "string")
+    : [];
+
+  // Narration script = subsection title (if any) + every paragraph joined.
+  const script = useMemo(() => {
+    const title = subsection.title ? `${subsection.title}. ` : "";
+    return `${title}${paragraphs.join(" ")}`.trim();
+  }, [subsection.title, paragraphs]);
+
+  const isThisItem = audio.currentItem?.id === `subsection-${subsection.id}`;
+  const playing = isThisItem && audio.playing;
+
+  const toggle = () => {
+    if (playing) {
+      audio.pause();
+      return;
+    }
+    if (!script) return;
+    audio.play({
+      id: `subsection-${subsection.id}`,
+      type: "chapter",
+      title: subsection.title ?? chapterTitle,
+      script,
+    });
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5">
+        {subsection.title && (
+          <h3 className="text-sm font-semibold flex items-center gap-1.5 flex-1">
+            <FileText className="h-3 w-3 text-muted-foreground" />
+            {subsection.title}
+          </h3>
+        )}
+        {script.length > 0 && (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2 shrink-0"
+            onClick={toggle}
+            aria-label={playing ? "Stop narration" : "Play narration"}
+          >
+            {playing ? (
+              <>
+                <VolumeX className="h-3.5 w-3.5 mr-1" />
+                <span className="text-[11px]">Stop</span>
+              </>
+            ) : (
+              <>
+                <Volume2 className="h-3.5 w-3.5 mr-1" />
+                <span className="text-[11px]">Listen</span>
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+      {paragraphs.map((p, i) => (
+        <p key={i} className="text-sm leading-relaxed text-muted-foreground">
+          {p}
+        </p>
+      ))}
+    </div>
   );
 }
 

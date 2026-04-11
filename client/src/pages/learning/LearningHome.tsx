@@ -20,9 +20,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame } from "lucide-react";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame, Check } from "lucide-react";
 import { Link } from "wouter";
 import { getRecentCalculators } from "@/lib/recentCalculators";
+import { getTrackReadState, chaptersReadCount } from "@/lib/trackReadState";
 
 export default function LearningHome() {
   // Read the per-device recent-calculators list once per mount. This feeds
@@ -30,6 +31,12 @@ export default function LearningHome() {
   // "recentCalculators" input was always an empty array and the
   // calculator-informed branch of `fuseRecommendations` never fired.
   const recentCalculators = useMemo(() => getRecentCalculators(), []);
+
+  // Pass 2 — per-device chapter read-state powers the progress ring + "X
+  // of Y chapters read" subtitle rendered on every track card below. This
+  // is a zero-cost cache hydrate (localStorage, no network) so it's safe
+  // to read once per mount without debouncing.
+  const readState = useMemo(() => getTrackReadState(), []);
 
   const meQ = trpc.auth.me.useQuery();
   const summaryQ = trpc.learning.mastery.summary.useQuery();
@@ -213,20 +220,7 @@ export default function LearningHome() {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {tracks.map((t: any) => (
-                  <Link key={t.id} href={`/learning/tracks/${t.slug}`}>
-                    <Card className="card-lift cursor-pointer h-full">
-                      <CardContent className="p-4">
-                        <div className="text-2xl">{t.emoji ?? "📘"}</div>
-                        <div className="font-semibold mt-2">{t.name}</div>
-                        <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {t.subtitle ?? t.description ?? ""}
-                        </div>
-                        <Badge variant="outline" className="mt-2 text-[10px]">
-                          {t.category}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                  <TrackCard key={t.id} track={t} readCount={chaptersReadCount(readState, t.id)} />
                 ))}
               </div>
             )}
@@ -318,5 +312,60 @@ export default function LearningHome() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+// ─── Track card with progress indicator ──────────────────────────────────
+
+function TrackCard({
+  track,
+  readCount,
+}: {
+  track: { id: number; slug: string; name: string; emoji?: string | null; subtitle?: string | null; description?: string | null; category: string };
+  readCount: number;
+}) {
+  // Fetch the chapter count lazily — this query is cheap (only a count
+  // per track) and the LearningHome only renders 4–12 tracks. The enabled
+  // flag skips the query for tracks that have never been opened so we
+  // don't hammer the DB on first paint.
+  const chaptersQ = trpc.learning.content.listChapters.useQuery(
+    { trackId: track.id },
+    { enabled: readCount > 0 }, // only fetch when there's progress to show
+  );
+  const totalChapters = chaptersQ.data?.length ?? 0;
+  const hasProgress = readCount > 0 && totalChapters > 0;
+  const pct = hasProgress ? Math.min(100, Math.round((readCount / totalChapters) * 100)) : 0;
+
+  return (
+    <Link href={`/learning/tracks/${track.slug}`}>
+      <Card className="card-lift cursor-pointer h-full">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between">
+            <div className="text-2xl">{track.emoji ?? "📘"}</div>
+            {hasProgress && (
+              <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/30">
+                <Check className="h-3 w-3 mr-1" />
+                {pct}%
+              </Badge>
+            )}
+          </div>
+          <div className="font-semibold mt-2">{track.name}</div>
+          <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+            {track.subtitle ?? track.description ?? ""}
+          </div>
+          <Badge variant="outline" className="mt-2 text-[10px]">
+            {track.category}
+          </Badge>
+          {hasProgress && (
+            <div className="mt-2">
+              <Progress value={pct} className="h-1" />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {readCount} of {totalChapters} chapter{totalChapters === 1 ? "" : "s"} read
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
