@@ -66,6 +66,12 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
     description: "Emit live progress updates (Pass 237, read-only)",
     mutation: false,
   },
+  {
+    id: "find_symbol",
+    label: "Find symbol",
+    description: "Look up where a symbol is defined (Pass 242, read-only)",
+    mutation: false,
+  },
 ];
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
@@ -76,6 +82,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "edit_file",
   "run_bash",
   "update_todos",
+  "find_symbol",
 ];
 
 export default function ToolPermissionsPopover({

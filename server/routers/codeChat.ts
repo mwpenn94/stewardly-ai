@@ -78,6 +78,14 @@ import {
   clearProjectInstructionsCache,
 } from "../services/codeChat/projectInstructions";
 import {
+  getSymbolIndex,
+  clearSymbolIndexCache,
+} from "../services/codeChat/symbolIndexCache";
+import {
+  findSymbols as findSymbolsPure,
+  symbolIndexStats,
+} from "../services/codeChat/symbolIndex";
+import {
   getWorkspaceFileIndex,
   fuzzyFilterFiles,
 } from "../services/codeChat/fileIndex";
@@ -320,6 +328,31 @@ export const codeChatRouter = router({
     clearProjectInstructionsCache();
     const result = await loadProjectInstructions(WORKSPACE_ROOT);
     return projectInstructionsManifest(result);
+  }),
+
+  // Pass 242: workspace symbol navigation
+  findSymbols: protectedProcedure
+    .input(
+      z.object({
+        query: z.string().max(200),
+        limit: z.number().min(1).max(100).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const index = await getSymbolIndex(WORKSPACE_ROOT);
+      const matches = findSymbolsPure(index, input.query, input.limit ?? 20);
+      return { matches, total: index.symbols.length };
+    }),
+
+  symbolIndexStats: protectedProcedure.query(async () => {
+    const index = await getSymbolIndex(WORKSPACE_ROOT);
+    return symbolIndexStats(index);
+  }),
+
+  rebuildSymbolIndex: protectedProcedure.mutation(async () => {
+    clearSymbolIndexCache();
+    const index = await getSymbolIndex(WORKSPACE_ROOT);
+    return symbolIndexStats(index);
   }),
 
   // ─── Synthesizer procedures ────────────────────────────────────
