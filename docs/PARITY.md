@@ -70,7 +70,7 @@ Columns:
 | G18 | tests       | End-to-end Playwright test for the full Code Chat flow (send → stream → tool → done).              | —                                | P1       | open       | 0     | build  |       |
 | G19 | docs        | CODE_CHAT.md user guide: slash commands, chords, shortcuts, workflows.                             | Claude Code `README`             | P2       | open       | 0     | build  |       |
 | G20 | security    | CSP / XSS audit of MarkdownMessage rendering for user-supplied tool output.                        | —                                | P1       | open       | 0     | build  |       |
-| G21 | ergonomics  | `/undo` slash command wired to edit-history ring buffer.                                           | Claude Code                      | P2       | open       | 0     | build  |       |
+| G21 | ergonomics  | `/undo` slash command wired to edit-history ring buffer.                                           | Claude Code                      | P2       | done (pass 4) | 4     | build  | Shipped pass 4 with `/redo` for symmetry. Both reuse the existing `handleUndoEdit`/`handleRedoEdit` callbacks added in Pass 239 so the chord shortcut and the slash command operate on the same ring buffer. Action palette entries added. 6 new slash tests. |
 | G22 | ergonomics  | Quick-switch prior conversation w/ Ctrl+P (palette-style).                                         | VS Code, Cursor                  | P2       | open       | 0     | build  | Partially covered by ⌘K. |
 | G23 | client      | Inline `@symbol` mention (jump to definition popup, not just files).                               | Cursor                           | P2       | open       | 0     | build  | Reuses symbolIndex. |
 | G24 | client      | Paste image to include as model input (multimodal).                                                | Cursor, Claude Code              | P2       | open       | 0     | build  | Needs model routing. |
@@ -93,6 +93,7 @@ Append one line per pass: `Pass N · angle · queue · commit SHA · shipped · 
 Pass 1 · angle: correctness + tool parity · queue: G1 (glob_files) · 8bae6a0 · shipped: globMatcher.ts + globFiles.ts + executor dispatch + stream/router wiring + 36 new tests · deferred: G2–G24
 
 Pass 2 · angle: performance / round-trip reduction · queue: G2 (multi_read) · 37976cd · shipped: multi_read tool + dispatcher + stream/router wiring + 6 new tests · deferred: G3–G24
-Pass 3 · angle: feature completeness · queue: G3 (web_fetch) · shipped: webFetch.ts (SSRF-safe allowlist, HTML-to-text, size cap, timeout) + dispatcher + 32 new tests · deferred: G4–G24
+Pass 3 · angle: feature completeness · queue: G3 (web_fetch) · 06961b5 · shipped: webFetch.ts (SSRF-safe allowlist, HTML-to-text, size cap, timeout) + dispatcher + 32 new tests · deferred: G4–G24
+Pass 4 · angle: ergonomics / discoverability · queue: G21 (/undo /redo slash) · shipped: /undo + /redo slash commands wired to edit-history ring buffer + action palette entries + 6 new tests · deferred: G4–G20, G22–G24
 
 <!-- PASS_LOG_APPEND_HERE -->

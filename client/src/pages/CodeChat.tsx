@@ -1063,6 +1063,10 @@ function CodeChatInterface() {
           else toast.info(message);
         },
         isAdmin,
+        // Build-loop Pass 4: /undo + /redo slash commands wired to the
+        // edit-history ring buffer added in Pass 239.
+        undoEdit: handleUndoEdit,
+        redoEdit: handleRedoEdit,
       });
       if (result !== null) {
         if (result.handled) {
@@ -1131,7 +1135,7 @@ function CodeChatInterface() {
       memoryOverlay,
     });
     inputRef.current?.focus();
-  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages, projectInstructionsOn, memoryOverlay]);
+  }, [input, isExecuting, sendMessage, allowMutations, maxIterations, isAdmin, commandHistory, clearHistory, abort, modelOverride, enabledTools, budgetEval, sessionUsage.costUSD, budget.limitUSD, pinned, messages, loadMessages, projectInstructionsOn, memoryOverlay, handleUndoEdit, handleRedoEdit]);
 
   const handleSlashSelect = useCallback((cmd: SlashCommand) => {
     // Pre-fill the input with the command so the user can type args

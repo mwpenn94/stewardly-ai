@@ -46,6 +46,10 @@ export interface SlashCommandContext {
   setModel: (id: string | undefined) => void;
   toast: (kind: "success" | "error" | "info", message: string) => void;
   isAdmin: boolean;
+  /** Pass 4 (build-loop): undo the most-recent edit via the history ring buffer. */
+  undoEdit?: () => void | Promise<void>;
+  /** Pass 4 (build-loop): redo the most-recently undone edit. */
+  redoEdit?: () => void | Promise<void>;
 }
 
 // ─── Built-in commands ───────────────────────────────────────────────────
@@ -202,6 +206,30 @@ export const BUILT_IN_COMMANDS: SlashCommand[] = [
       return {
         rewrite: `Generate a step-by-step plan for the following task. Output ONLY a numbered list of concrete, actionable steps — do NOT execute any tools and do NOT write any files yet. Each step should be one line, starting with a number like "1.", "2.", etc. Keep steps small and testable.\n\nTask: ${task}`,
       };
+    },
+  },
+  {
+    name: "undo",
+    aliases: ["u"],
+    description: "Revert the most-recent edit from the history ring buffer",
+    handler: async (ctx) => {
+      if (!ctx.undoEdit) {
+        ctx.toast("error", "Undo is only available when the edit history is loaded");
+        return;
+      }
+      await ctx.undoEdit();
+    },
+  },
+  {
+    name: "redo",
+    aliases: ["r"],
+    description: "Re-apply the most-recently undone edit",
+    handler: async (ctx) => {
+      if (!ctx.redoEdit) {
+        ctx.toast("error", "Redo is only available when the edit history is loaded");
+        return;
+      }
+      await ctx.redoEdit();
     },
   },
   {

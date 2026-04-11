@@ -272,4 +272,55 @@ describe("tryRunSlashCommand — built-ins", () => {
       expect.stringContaining("drizzle"),
     );
   });
+
+  // Build-loop Pass 4: /undo + /redo wired to the edit-history ring buffer.
+  it("/undo invokes the undoEdit callback", async () => {
+    const undoEdit = vi.fn();
+    const ctx = mockCtx({ undoEdit });
+    const result = await tryRunSlashCommand("/undo", ctx);
+    expect(result).toEqual({ handled: true });
+    expect(undoEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it("/u alias for /undo also works", async () => {
+    const undoEdit = vi.fn();
+    const ctx = mockCtx({ undoEdit });
+    await tryRunSlashCommand("/u", ctx);
+    expect(undoEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it("/undo errors politely when no edit-history is loaded", async () => {
+    const ctx = mockCtx({ undoEdit: undefined });
+    const result = await tryRunSlashCommand("/undo", ctx);
+    expect(result).toEqual({ handled: true });
+    expect(ctx.toast).toHaveBeenCalledWith(
+      "error",
+      expect.stringMatching(/edit history/i),
+    );
+  });
+
+  it("/redo invokes the redoEdit callback", async () => {
+    const redoEdit = vi.fn();
+    const ctx = mockCtx({ redoEdit });
+    const result = await tryRunSlashCommand("/redo", ctx);
+    expect(result).toEqual({ handled: true });
+    expect(redoEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it("/r alias for /redo also works", async () => {
+    const redoEdit = vi.fn();
+    const ctx = mockCtx({ redoEdit });
+    await tryRunSlashCommand("/r", ctx);
+    expect(redoEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it("/redo errors politely when no edit-history is loaded", async () => {
+    const ctx = mockCtx({ redoEdit: undefined });
+    const result = await tryRunSlashCommand("/redo", ctx);
+    expect(result).toEqual({ handled: true });
+    expect(ctx.toast).toHaveBeenCalledWith(
+      "error",
+      expect.stringMatching(/edit history/i),
+    );
+  });
 });
