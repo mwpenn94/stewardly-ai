@@ -181,11 +181,12 @@ export default function SessionAnalyticsPopover({
                 <button
                   key={turn.messageId}
                   type="button"
-                  className="w-full flex items-start justify-between gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-secondary/20 transition-colors"
+                  className="w-full flex items-start justify-between gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-secondary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                   onClick={() => {
                     onJumpToMessage?.(turn.messageId);
                     onClose();
                   }}
+                  aria-label={`Jump to expensive turn #${idx + 1}: ${turn.promptPreview || "(empty prompt)"}`}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
