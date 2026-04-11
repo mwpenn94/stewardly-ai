@@ -137,6 +137,12 @@ import SymbolNavigatorPopover from "@/components/codeChat/SymbolNavigatorPopover
 import FindReferencesPopover from "@/components/codeChat/FindReferencesPopover";
 import RenameSymbolPopover from "@/components/codeChat/RenameSymbolPopover";
 import WorkspaceBookmarksPopover from "@/components/codeChat/WorkspaceBookmarksPopover";
+import PresetWorkspacesPopover from "@/components/codeChat/PresetWorkspacesPopover";
+import {
+  loadPresets,
+  savePresets,
+  type PresetWorkspace,
+} from "@/components/codeChat/presetWorkspaces";
 import {
   loadBookmarks as loadWorkspaceBookmarks,
   saveBookmarks as saveWorkspaceBookmarks,
@@ -610,6 +616,19 @@ function CodeChatInterface() {
   useEffect(() => { saveWorkspaceBookmarks(workspaceBookmarks); }, [workspaceBookmarks]);
   const [workspaceBookmarksOpen, setWorkspaceBookmarksOpen] = useState(false);
 
+  // Pass 260: preset workspaces (saved runtime bundles)
+  const [presets, setPresets] = useState<PresetWorkspace[]>(() => loadPresets());
+  useEffect(() => { savePresets(presets); }, [presets]);
+  const [presetsOpen, setPresetsOpen] = useState(false);
+  const handleApplyPreset = useCallback((preset: PresetWorkspace) => {
+    setEnabledTools(preset.enabledTools);
+    setMaxIterations(preset.maxIterations);
+    setAllowMutations(preset.allowMutations);
+    setProjectInstructionsOn(preset.includeProjectInstructions);
+    if (preset.modelOverride) setModelOverride(preset.modelOverride);
+    toast.success(`Applied preset: ${preset.name}`);
+  }, []);
+
   // Pass 253: workspace checkpoints (named snapshots for rollback)
   const [checkpoints, setCheckpoints] = useState<WorkspaceCheckpoint[]>(() => loadCheckpoints());
   useEffect(() => { saveCheckpoints(checkpoints); }, [checkpoints]);
@@ -785,6 +804,9 @@ function CodeChatInterface() {
           break;
         case "workspace-bookmarks":
           setWorkspaceBookmarksOpen(true);
+          break;
+        case "presets":
+          setPresetsOpen(true);
           break;
         case "checkpoints":
           setCheckpointsOpen(true);
@@ -2533,6 +2555,20 @@ function CodeChatInterface() {
         onClose={() => setWorkspaceBookmarksOpen(false)}
         bookmarks={workspaceBookmarks}
         onChange={setWorkspaceBookmarks}
+      />
+      <PresetWorkspacesPopover
+        open={presetsOpen}
+        onClose={() => setPresetsOpen(false)}
+        presets={presets}
+        onChange={setPresets}
+        onApply={handleApplyPreset}
+        currentRuntime={{
+          modelOverride,
+          enabledTools,
+          maxIterations,
+          allowMutations,
+          includeProjectInstructions: projectInstructionsOn,
+        }}
       />
       <SessionAnalyticsPopover
         open={analyticsOpen}
