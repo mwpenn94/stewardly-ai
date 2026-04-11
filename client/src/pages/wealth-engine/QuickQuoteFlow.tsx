@@ -11,7 +11,7 @@
  * snapshot in step 3.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,9 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import type { FinancialProfile } from "@/stores/financialProfile";
 
 interface QuickQuoteInputs {
   age: number;
@@ -70,10 +73,27 @@ function scoreDomains(inputs: QuickQuoteInputs): Record<DomainKey, number> {
   };
 }
 
+function profileToQuickQuote(p: FinancialProfile): Partial<QuickQuoteInputs> {
+  const q: Partial<QuickQuoteInputs> = {};
+  if (p.age !== undefined) q.age = p.age;
+  if (p.income !== undefined) q.income = p.income;
+  if (p.savings !== undefined) q.savings = p.savings;
+  if (p.monthlySavings !== undefined) q.monthlySavings = p.monthlySavings;
+  if (p.dependents !== undefined) q.dependents = p.dependents;
+  if (p.isBizOwner !== undefined) q.isBizOwner = p.isBizOwner;
+  if (p.hasHomeowner !== undefined) q.hasHomeownerInsurance = p.hasHomeowner;
+  if (p.lifeInsuranceCoverage !== undefined && p.lifeInsuranceCoverage > 0) {
+    q.hasLifeInsurance = true;
+  }
+  return q;
+}
+
 export default function QuickQuoteFlowPage() {
   const [, navigate] = useLocation();
+  const { profile, setProfile, hasProfile } = useFinancialProfile();
+
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [inputs, setInputs] = useState<QuickQuoteInputs>({
+  const [inputs, setInputs] = useState<QuickQuoteInputs>(() => ({
     age: 40,
     income: 120_000,
     savings: 50_000,
@@ -82,7 +102,22 @@ export default function QuickQuoteFlowPage() {
     hasLifeInsurance: false,
     hasHomeownerInsurance: true,
     isBizOwner: false,
-  });
+    ...profileToQuickQuote(profile),
+  }));
+
+  // If the profile is loaded async (e.g., late localStorage hydration),
+  // apply it once the next time this component mounts.
+  const didInitialPrefillRef = useRef(hasProfile);
+  useEffect(() => {
+    if (!didInitialPrefillRef.current && hasProfile) {
+      didInitialPrefillRef.current = true;
+      setInputs((prev) => ({ ...prev, ...profileToQuickQuote(profile) }));
+    }
+  }, [hasProfile, profile]);
+
+  const handleBannerPrefill = (p: FinancialProfile) => {
+    setInputs((prev) => ({ ...prev, ...profileToQuickQuote(p) }));
+  };
 
   const scores = useMemo(() => scoreDomains(inputs), [inputs]);
   const total = useMemo(
@@ -94,6 +129,25 @@ export default function QuickQuoteFlowPage() {
   const runPreset = trpc.wealthEngine.runPreset.useMutation();
 
   const onAdvanceToResults = () => {
+    // Persist the latest quick-quote answers to the shared profile so
+    // every downstream calculator can reuse them without re-asking.
+    setProfile(
+      {
+        age: inputs.age,
+        income: inputs.income,
+        savings: inputs.savings,
+        monthlySavings: inputs.monthlySavings,
+        dependents: inputs.dependents,
+        netWorth: inputs.savings + inputs.income * 0.5,
+        mortgage: inputs.hasHomeownerInsurance ? 250_000 : 0,
+        debts: 30_000,
+        marginalRate: 0.25,
+        isBizOwner: inputs.isBizOwner,
+        hasHomeowner: inputs.hasHomeownerInsurance,
+        lifeInsuranceCoverage: inputs.hasLifeInsurance ? 500_000 : 0,
+      },
+      "quick_quote",
+    );
     runPreset.mutate({
       preset: "wealthbridgeClient",
       profile: {
@@ -132,7 +186,20 @@ export default function QuickQuoteFlowPage() {
             <CardHeader>
               <CardTitle className="text-base">About you</CardTitle>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-2 gap-4">
+            <CardContent className="space-y-4">
+              <FinancialProfileBanner
+                onPrefill={handleBannerPrefill}
+                usesFields={[
+                  "age",
+                  "income",
+                  "savings",
+                  "monthlySavings",
+                  "dependents",
+                  "isBizOwner",
+                  "hasHomeowner",
+                ]}
+              />
+              <div className="grid md:grid-cols-2 gap-4">
               <NumberField label="Age" value={inputs.age} onChange={(v) => setInputs({ ...inputs, age: v })} min={18} max={85} />
               <NumberField label="Annual income" value={inputs.income} onChange={(v) => setInputs({ ...inputs, income: v })} step={5000} />
               <NumberField label="Current savings" value={inputs.savings} onChange={(v) => setInputs({ ...inputs, savings: v })} step={5000} />
@@ -145,6 +212,7 @@ export default function QuickQuoteFlowPage() {
                 <Button onClick={() => setStep(2)}>
                   Continue <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
+              </div>
               </div>
             </CardContent>
           </Card>

@@ -18,6 +18,9 @@ import {
   HandCoins, Briefcase, ListChecks,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import type { FinancialProfile } from "@/stores/financialProfile";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -110,9 +113,11 @@ export default function Calculators() {
   useAuth();
   const [, navigate] = useLocation();
   const [activeCalc, setActiveCalc] = useState<string>("iul");
+  const { profile: sharedProfile, setProfile: setSharedProfile } = useFinancialProfile();
 
-  // IUL state
-  const [iulAge, setIulAge] = useState(35);
+  // IUL state — seed from the shared profile when present so users
+  // don't re-enter age every time they switch calculators.
+  const [iulAge, setIulAge] = useState(sharedProfile.age ?? 35);
   const [iulPremium, setIulPremium] = useState(12000);
   const [iulYears, setIulYears] = useState(30);
   const [iulRate, setIulRate] = useState(6.5);
@@ -125,13 +130,37 @@ export default function Calculators() {
   const [pfYears, setPfYears] = useState(10);
   const [pfCollateral, setPfCollateral] = useState(2.0);
 
-  // Retirement state
-  const [retAge, setRetAge] = useState(35);
-  const [retTarget, setRetTarget] = useState(65);
-  const [retSavings, setRetSavings] = useState(50000);
-  const [retMonthly, setRetMonthly] = useState(1500);
+  // Retirement state — seed from the shared profile
+  const [retAge, setRetAge] = useState(sharedProfile.age ?? 35);
+  const [retTarget, setRetTarget] = useState(sharedProfile.retirementAge ?? 65);
+  const [retSavings, setRetSavings] = useState(sharedProfile.savings ?? 50000);
+  const [retMonthly, setRetMonthly] = useState(sharedProfile.monthlySavings ?? 1500);
   const [retReturn, setRetReturn] = useState(7.0);
   const [retInflation, setRetInflation] = useState(3.0);
+
+  // When user clicks "Use saved profile" on the banner, push the shared
+  // profile values into the retirement calculator local state. Also
+  // available as a helper so the IUL panel can reuse it.
+  const prefillRetirementFromProfile = (p: FinancialProfile) => {
+    if (p.age !== undefined) setRetAge(p.age);
+    if (p.retirementAge !== undefined) setRetTarget(p.retirementAge);
+    if (p.savings !== undefined) setRetSavings(p.savings);
+    if (p.monthlySavings !== undefined) setRetMonthly(p.monthlySavings);
+  };
+
+  // After any retirement calc run, push the new values back to the
+  // shared profile so downstream calculators see them.
+  const persistRetirementToProfile = () => {
+    setSharedProfile(
+      {
+        age: retAge,
+        retirementAge: retTarget,
+        savings: retSavings,
+        monthlySavings: retMonthly,
+      },
+      "user",
+    );
+  };
 
   const iulCalc = trpc.calculators.iulProjection.useMutation({ onError: (e) => toast.error(e.message) });
   const pfCalc = trpc.calculators.premiumFinance.useMutation({ onError: (e) => toast.error(e.message) });
@@ -451,6 +480,10 @@ export default function Calculators() {
                 <CardDescription className="text-xs">Wealth accumulation with inflation adjustment</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <FinancialProfileBanner
+                  onPrefill={prefillRetirementFromProfile}
+                  usesFields={["age", "retirementAge", "savings", "monthlySavings"]}
+                />
                 <SliderInput label="Current Age" value={retAge} onChange={setRetAge} min={18} max={70} suffix=" yrs" />
                 <SliderInput label="Retirement Age" value={retTarget} onChange={setRetTarget} min={50} max={85} suffix=" yrs" />
                 <SliderInput label="Current Savings" value={retSavings} onChange={setRetSavings} min={0} max={5000000} step={5000} format={(v) => fmt(v)} />
@@ -459,7 +492,10 @@ export default function Calculators() {
                 <SliderInput label="Inflation Rate" value={retInflation} onChange={setRetInflation} min={0} max={8} step={0.5} suffix="%" />
                 <Button
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-sm h-10 gap-2"
-                  onClick={() => retCalc.mutate({ currentAge: retAge, retirementAge: retTarget, currentSavings: retSavings, monthlyContribution: retMonthly, expectedReturn: retReturn, inflationRate: retInflation })}
+                  onClick={() => {
+                    persistRetirementToProfile();
+                    retCalc.mutate({ currentAge: retAge, retirementAge: retTarget, currentSavings: retSavings, monthlyContribution: retMonthly, expectedReturn: retReturn, inflationRate: retInflation });
+                  }}
                   disabled={retCalc.isPending}
                 >
                   {retCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Projection</>}
