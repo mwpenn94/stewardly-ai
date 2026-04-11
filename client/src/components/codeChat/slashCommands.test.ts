@@ -247,4 +247,29 @@ describe("tryRunSlashCommand — built-ins", () => {
     expect(r).toEqual({ handled: true });
     if (r && "rewrite" in r) expect(r.rewrite).toBeUndefined();
   });
+
+  it("/remember with a fact calls toast success (Pass 241)", async () => {
+    const ctx = mockCtx();
+    const r = await tryRunSlashCommand("/remember use pnpm", ctx);
+    expect(r).toEqual({ handled: true });
+    expect(ctx.toast).toHaveBeenCalledWith(
+      "success",
+      expect.stringContaining("use pnpm"),
+    );
+  });
+
+  it("/remember without a fact shows an error", async () => {
+    const ctx = mockCtx();
+    await tryRunSlashCommand("/remember   ", ctx);
+    expect(ctx.toast).toHaveBeenCalledWith("error", expect.stringMatching(/usage/));
+  });
+
+  it("/mem alias also works", async () => {
+    const ctx = mockCtx();
+    await tryRunSlashCommand("/mem always use drizzle", ctx);
+    expect(ctx.toast).toHaveBeenCalledWith(
+      "success",
+      expect.stringContaining("drizzle"),
+    );
+  });
 });

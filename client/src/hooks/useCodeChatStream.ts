@@ -45,6 +45,8 @@ interface StreamConfig {
   enabledTools?: string[];
   /** Pass 238: auto-load CLAUDE.md and friends into the system prompt */
   includeProjectInstructions?: boolean;
+  /** Pass 241: serialized agent memory overlay to inject */
+  memoryOverlay?: string;
 }
 
 export function useCodeChatStream() {
@@ -88,6 +90,7 @@ export function useCodeChatStream() {
           maxIterations: config.maxIterations ?? 5,
           enabledTools: config.enabledTools,
           includeProjectInstructions: config.includeProjectInstructions ?? true,
+          memoryOverlay: config.memoryOverlay,
         }),
         signal: controller.signal,
       });

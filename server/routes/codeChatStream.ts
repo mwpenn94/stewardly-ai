@@ -50,7 +50,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
     return;
   }
 
-  const { message, model, allowMutations = false, maxIterations = 5, enabledTools, includeProjectInstructions = true } = req.body;
+  const { message, model, allowMutations = false, maxIterations = 5, enabledTools, includeProjectInstructions = true, memoryOverlay } = req.body;
   if (!message || typeof message !== "string") {
     res.status(400).json({ error: "message is required" });
     return;
@@ -125,6 +125,14 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       } catch { /* instructions are best-effort */ }
     }
 
+    // Pass 241: agent memory overlay from the client (the client
+    // owns the memory store in localStorage and serializes it into
+    // a system-prompt block per request)
+    const memorySnippet =
+      typeof memoryOverlay === "string" && memoryOverlay.trim().length > 0
+        ? memoryOverlay.trim().slice(0, 8192) // hard cap for safety
+        : "";
+
     const systemPrompt = [
       "You are a Claude-Code-style coding assistant inside Stewardly.",
       "Work step-by-step. Use `code_list_directory` and `code_read_file` to explore.",
@@ -137,6 +145,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "Keep responses concise. Surface reasoning + tool calls.",
       layerOverlay ? `\n${layerOverlay}` : "",
       projectInstructionsOverlay ? `\n${projectInstructionsOverlay}` : "",
+      memorySnippet ? `\n${memorySnippet}` : "",
     ].filter(Boolean).join("\n");
 
     // Pass 238: tell the client which instruction files landed in the
