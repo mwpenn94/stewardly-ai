@@ -217,5 +217,7 @@ export function summarizeStep(step: CodeChatStep): string {
       return `find_symbol ${result.result.query} → ${result.result.matches.length} matches (${ms})`;
     case "web":
       return `web_read ${result.result.url} → ${result.result.status} · ${result.result.wordCount} words (${ms})`;
+    case "web_extract":
+      return `web_extract ${result.result.url} → ${result.result.fieldCount} fields${result.result.warnings.length > 0 ? ` (${result.result.warnings.length} warnings)` : ""} (${ms})`;
   }
 }

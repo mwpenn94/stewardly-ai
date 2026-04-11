@@ -17,8 +17,10 @@
  */
 
 import { WebNavigator, type NavigationConfig } from "../../shared/automation/webNavigator";
+import { RobotsChecker } from "../../shared/automation/robotsPolicy";
 
 let _navigator: WebNavigator | null = null;
+let _robotsChecker: RobotsChecker | null = null;
 
 function parseList(v: string | undefined): string[] | undefined {
   if (!v) return undefined;
@@ -36,12 +38,23 @@ function parseInt0(v: string | undefined, fallback: number): number {
 }
 
 export function buildNavigatorConfigFromEnv(env: NodeJS.ProcessEnv = process.env): NavigationConfig {
+  const honorRobots = env.WEB_TOOL_HONOR_ROBOTS !== "false"; // default: true
+  const checker = honorRobots ? getOrCreateRobotsChecker() : undefined;
   return {
     allowHosts: parseList(env.WEB_TOOL_ALLOW_HOSTS),
     denyHosts: parseList(env.WEB_TOOL_DENY_HOSTS),
     rateLimitPerMin: parseInt0(env.WEB_TOOL_RATE_LIMIT_PER_MIN, 30),
     maxBytes: parseInt0(env.WEB_TOOL_MAX_BYTES, 2_000_000),
+    robotsChecker: checker,
+    honorRobots,
   };
+}
+
+function getOrCreateRobotsChecker(): RobotsChecker {
+  if (!_robotsChecker) {
+    _robotsChecker = new RobotsChecker();
+  }
+  return _robotsChecker;
 }
 
 /**
@@ -61,4 +74,5 @@ export function __setWebNavigator(nav: WebNavigator | null): void {
 
 export function __resetWebNavigator(): void {
   _navigator = null;
+  _robotsChecker = null;
 }

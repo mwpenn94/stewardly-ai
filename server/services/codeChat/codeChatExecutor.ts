@@ -45,6 +45,7 @@ export type CodeToolName =
   | "update_todos"
   | "find_symbol"
   | "web_read"
+  | "web_extract"
   | "finish";
 
 export interface CodeToolCall {
@@ -86,6 +87,16 @@ export interface WebReadResultPayload {
   fetchMs: number;
 }
 
+export interface WebExtractResultPayload {
+  url: string;
+  finalUrl: string;
+  status: number;
+  data: Record<string, unknown>;
+  warnings: string[];
+  fieldCount: number;
+  fetchMs: number;
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -96,6 +107,7 @@ export type CodeToolResult =
   | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
   | { kind: "web"; result: WebReadResultPayload }
+  | { kind: "web_extract"; result: WebExtractResultPayload }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -277,6 +289,64 @@ export async function dispatchCodeTool(
           return {
             kind: "error",
             error: err instanceof Error ? err.message : "web read failed",
+            code,
+          };
+        }
+      }
+      case "web_extract": {
+        // Pass 2 (automation scope): fetch a URL then apply a
+        // schema-guided extraction so the agent gets typed structured
+        // data back instead of raw text.
+        const url = String(call.args.url ?? "").trim();
+        if (!url) {
+          return { kind: "error", error: "url required", code: "BAD_ARGS" };
+        }
+        const rawSchema = call.args.schema;
+        if (!rawSchema || typeof rawSchema !== "object") {
+          return {
+            kind: "error",
+            error: "schema required (object of {fieldName: {selector, type?}})",
+            code: "BAD_ARGS",
+          };
+        }
+        const { getWebNavigator } = await import("./webTool");
+        const { extractFromPageView, validateSchema } = await import(
+          "../../shared/automation/webExtractor"
+        );
+        const schemaForValidation = rawSchema as Parameters<typeof validateSchema>[0];
+        const validationErrors = validateSchema(schemaForValidation);
+        if (validationErrors.length > 0) {
+          return {
+            kind: "error",
+            error:
+              "schema validation failed: " +
+              validationErrors.map((e) => `${e.field}: ${e.message}`).join("; "),
+            code: "BAD_ARGS",
+          };
+        }
+        try {
+          const view = await getWebNavigator().readPage(url);
+          const extraction = extractFromPageView(view, rawSchema as any, {
+            rawHtml: view.raw?.body,
+          });
+          const payload: WebExtractResultPayload = {
+            url: view.url,
+            finalUrl: view.finalUrl,
+            status: view.status,
+            data: extraction.data,
+            warnings: extraction.warnings,
+            fieldCount: extraction.fieldCount,
+            fetchMs: view.fetchMs,
+          };
+          return { kind: "web_extract", result: payload };
+        } catch (err) {
+          const code =
+            err && typeof err === "object" && "code" in err
+              ? String((err as { code: unknown }).code)
+              : "WEB_FAILED";
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : "web_extract failed",
             code,
           };
         }
@@ -564,6 +634,23 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         url: { type: "string", description: "Absolute http(s) URL to read" },
       },
       required: ["url"],
+    },
+  },
+  {
+    name: "web_extract",
+    description:
+      "Fetch a URL and apply a schema-guided extraction. Returns structured typed data without forcing you to re-read the raw page. Prefer this over web_read whenever you already know what fields you want. The schema is an object keyed by field name: each value has {selector, type?, where?, fallback?, limit?}. Selectors: 'title' | 'description' | 'text' | 'h1'..'h6' | 'heading' | 'link' | 'image' | 'form' | 'table' | 'tables' | 'regex:<PATTERN>' | 'css:<TAG>'. Types: string | string[] | number | number[] | boolean | date | url | url[] | table | table[]. Regex patterns capture group 1 if provided. Honors the same rate limits and host allow/deny list as web_read.",
+    parameters: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Absolute http(s) URL to read" },
+        schema: {
+          type: "object",
+          description:
+            "Field map { name: { selector, type?, where?, fallback?, limit? } }",
+        },
+      },
+      required: ["url", "schema"],
     },
   },
   {

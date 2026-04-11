@@ -36,10 +36,10 @@ bottom. The Build Loop Pass Log at the very bottom is append-only.
 | G19 | Multi-agent browser orchestration                          | AutoGen / Manus           |      0 |     0 | open         |         |                  |
 | G20 | Compliance guardrails on web-retrieved content             | Stewardly-specific        |      0 |     0 | open         |         |                  |
 | G21 | Chat agent exposes `web_read` tool end-to-end              | parity w/ Manus chat      |      0 |     5 | done · P1    | build   | pass-1           |
-| G22 | Chat agent exposes `web_extract` structured extraction     | parity w/ Manus chat      |      0 |     0 | open         |         |                  |
+| G22 | Chat agent exposes `web_extract` structured extraction     | parity w/ Manus chat      |      0 |     6 | done · P2    | build   | pass-2           |
 | G23 | SSE streaming of browser events to UI                      | Claude computer-use UI    |      0 |     0 | open         |         |                  |
 | G24 | Browser read result caching with ETag/stale-while-revalid  | performance               |      0 |     0 | open         |         |                  |
-| G25 | Robots.txt honoring                                        | defensive infra           |      0 |     0 | open         |         |                  |
+| G25 | Robots.txt honoring                                        | defensive infra           |      0 |     6 | done · P2    | build   | pass-2           |
 
 Legend: `open` = not started; `in-progress` = under active work by build or
 parallel process; `done · P<N>` = shipped in pass N. Depth scores are rough
@@ -57,6 +57,16 @@ process reading PARITY.md, not just next-pass-self).
   `server/shared/automation/webNavigator.ts`. Tests:
   `server/shared/automation/webNavigator.test.ts`. Do not inline an HTTP
   library, do not drop the adapter interface, do not remove rate limits.
+- **webExtractor service** — pass 2. Schema-guided structured extraction
+  over PageView. Supports `title`/`description`/`h1..h6`/`heading`/`link`/
+  `image`/`form`/`table`/`regex:`/`css:` selectors with string|number|
+  date|url|boolean|table coercion. File: `server/shared/automation/
+  webExtractor.ts`. Do not collapse into webNavigator, do not drop
+  schema validation.
+- **robotsPolicy service** — pass 2. REP parser + RobotsChecker with a
+  TTL-cached per-host policy store. WebNavigator honors policy decisions
+  when given a checker. File: `server/shared/automation/robotsPolicy.ts`.
+  Do not remove the `honorRobots` default-true path.
 
 ## Known-Bad
 
@@ -76,4 +86,5 @@ _(empty)_
 Append-only log of what each pass accomplished. Format:
 `Pass N · angle · queue · commit SHA · items completed · items deferred`
 
-- Pass 1 · correctness-first · [bootstrap PARITY + G1..G6, G21] · (pending commit) · webNavigator service + tests + chat tool wire-up · deferred: G7 (playwright adapter), G9 (click/type layer)
+- Pass 1 · correctness-first · [bootstrap PARITY + G1..G6, G21] · 8baaeed · webNavigator service + 30 tests + code_web_read tool + client popover entry · deferred: G7 (playwright adapter), G9 (click/type layer), G22 (web_extract schema-guided), G25 (robots.txt)
+- Pass 2 · graceful-degradation + input-validation · [G22, G25, G20 partial] · (pending commit) · webExtractor + robotsPolicy + code_web_extract tool + robotsChecker wired into WebNavigator + 35 new tests · deferred: G7 (playwright), G9 (click/type), G23 (SSE streaming of browser events), G17 (OTel spans for automation)

@@ -390,6 +390,83 @@ describe("Round B1 — codeChatExecutor", () => {
       expect(r.kind).toBe("error");
       if (r.kind === "error") expect(r.code).toBe("BLOCKED_HOST");
     });
+
+    it("web_extract rejects missing schema", async () => {
+      const { __resetWebNavigator } = await import("./webTool");
+      __resetWebNavigator();
+      const r = await dispatchCodeTool(
+        { name: "web_extract", args: { url: "https://example.com/" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_extract returns typed fields via stub adapter", async () => {
+      const { WebNavigator } = await import("../../shared/automation/webNavigator");
+      const { __setWebNavigator, __resetWebNavigator } = await import("./webTool");
+      const nav = new WebNavigator({
+        adapter: {
+          async fetch(url) {
+            const body = `<html><head><title>Doc</title></head><body>
+<h2>A</h2><h2>B</h2>
+<p>Price: $99.99</p>
+</body></html>`;
+            return {
+              status: 200,
+              finalUrl: url,
+              headers: { "content-type": "text/html" },
+              body,
+              bytes: new TextEncoder().encode(body).length,
+              truncated: false,
+              redirects: 0,
+            };
+          },
+        },
+        rateLimitPerMin: 100,
+      });
+      __setWebNavigator(nav);
+      try {
+        const r = await dispatchCodeTool(
+          {
+            name: "web_extract",
+            args: {
+              url: "https://example.com/",
+              schema: {
+                t: { selector: "title" },
+                subs: { selector: "h2", type: "string[]" },
+                price: { selector: "regex:\\$([0-9.]+)", type: "number" },
+              },
+            },
+          },
+          sandboxRO(),
+        );
+        expect(r.kind).toBe("web_extract");
+        if (r.kind === "web_extract") {
+          expect(r.result.data.t).toBe("Doc");
+          expect(r.result.data.subs).toEqual(["A", "B"]);
+          expect(r.result.data.price).toBe(99.99);
+          expect(r.result.fieldCount).toBe(3);
+        }
+      } finally {
+        __resetWebNavigator();
+      }
+    });
+
+    it("web_extract surfaces schema validation errors", async () => {
+      const r = await dispatchCodeTool(
+        {
+          name: "web_extract",
+          args: {
+            url: "https://example.com/",
+            schema: { bad: { selector: "regex:(unclosed" } },
+          },
+        },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
   });
 
   describe("executeCodeChat multi-turn", () => {

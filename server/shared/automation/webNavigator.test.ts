@@ -339,4 +339,31 @@ describe("WebNavigator", () => {
     nav.clearHistory();
     expect(nav.getHistory()).toHaveLength(0);
   });
+
+  it("honors a robots checker decision (blocked)", async () => {
+    const nav = new WebNavigator({
+      adapter: stubAdapter({}),
+      rateLimitPerMin: 100,
+      robotsChecker: {
+        async check() {
+          return { allowed: false, matchedRule: { type: "disallow", path: "/" } };
+        },
+      },
+    });
+    await expect(nav.fetchPage("https://ex.com/private")).rejects.toThrow(/robots/);
+  });
+
+  it("allows a request when the robots checker says allowed", async () => {
+    const nav = new WebNavigator({
+      adapter: stubAdapter({}),
+      rateLimitPerMin: 100,
+      robotsChecker: {
+        async check() {
+          return { allowed: true, matchedRule: null };
+        },
+      },
+    });
+    const r = await nav.fetchPage("https://ex.com/public");
+    expect(r.status).toBe(200);
+  });
 });

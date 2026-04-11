@@ -79,6 +79,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
       "Fetch a public URL and return title/text/links/forms (rate-limited per domain, read-only)",
     mutation: false,
   },
+  {
+    id: "web_extract",
+    label: "Web extract",
+    description:
+      "Fetch a URL and apply a schema-guided structured extraction (typed output, read-only)",
+    mutation: false,
+  },
 ];
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
@@ -91,6 +98,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "update_todos",
   "find_symbol",
   "web_read",
+  "web_extract",
 ];
 
 export default function ToolPermissionsPopover({

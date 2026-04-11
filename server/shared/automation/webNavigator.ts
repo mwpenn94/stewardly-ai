@@ -92,6 +92,10 @@ export interface NavigationConfig {
   adapter?: PageFetcher;
   /** Optional clock for deterministic tests. */
   now?: () => number;
+  /** Optional robots.txt checker (default: no-op = allow all). */
+  robotsChecker?: { check: (url: string, userAgent: string) => Promise<{ allowed: boolean; matchedRule: { path: string; type: string } | null }> };
+  /** Honor robots.txt decisions. Defaults to `true` when a checker is provided. */
+  honorRobots?: boolean;
 }
 
 /**
@@ -123,7 +127,8 @@ export class NavigationError extends Error {
       | "FETCH_FAILED"
       | "TIMEOUT"
       | "TOO_LARGE"
-      | "NON_HTML",
+      | "NON_HTML"
+      | "BLOCKED_BY_ROBOTS",
   ) {
     super(message);
     this.name = "NavigationError";
@@ -530,7 +535,10 @@ export function parseHtmlToPageView(
 
 export class WebNavigator {
   private readonly cfg: Required<
-    Omit<NavigationConfig, "allowHosts" | "denyHosts" | "adapter" | "now">
+    Omit<
+      NavigationConfig,
+      "allowHosts" | "denyHosts" | "adapter" | "now" | "robotsChecker" | "honorRobots"
+    >
   > & {
     allowHosts?: string[];
     denyHosts?: string[];
@@ -538,6 +546,8 @@ export class WebNavigator {
   private readonly adapter: PageFetcher;
   private readonly rate: RateLimiterState;
   private readonly now: () => number;
+  private readonly robotsChecker: NonNullable<NavigationConfig["robotsChecker"]> | null;
+  private readonly honorRobots: boolean;
   private history: Array<{ url: string; finalUrl: string; status: number; at: number }> = [];
 
   constructor(cfg: NavigationConfig = {}) {
@@ -553,6 +563,8 @@ export class WebNavigator {
     this.adapter = cfg.adapter ?? new DefaultFetchAdapter();
     this.now = cfg.now ?? (() => Date.now());
     this.rate = createRateLimiter(this.cfg.rateLimitPerMin);
+    this.robotsChecker = cfg.robotsChecker ?? null;
+    this.honorRobots = cfg.honorRobots ?? Boolean(cfg.robotsChecker);
   }
 
   getHistory(): ReadonlyArray<{ url: string; finalUrl: string; status: number; at: number }> {
@@ -569,6 +581,19 @@ export class WebNavigator {
       denyHosts: this.cfg.denyHosts,
     });
     const host = validated.hostname.toLowerCase();
+
+    // Robots.txt gate (if configured). We check BEFORE rate-limiting so a
+    // robots-blocked URL doesn't eat a token bucket slot.
+    if (this.honorRobots && this.robotsChecker) {
+      const decision = await this.robotsChecker.check(validated.toString(), this.cfg.userAgent);
+      if (!decision.allowed) {
+        throw new NavigationError(
+          `blocked by robots.txt: ${host}${validated.pathname} (matched ${decision.matchedRule?.type ?? "?"} ${decision.matchedRule?.path ?? "?"})`,
+          "BLOCKED_BY_ROBOTS",
+        );
+      }
+    }
+
     if (!tryConsume(this.rate, host, this.now())) {
       throw new NavigationError(
         `rate limit exceeded for host: ${host} (${this.cfg.rateLimitPerMin}/min)`,
