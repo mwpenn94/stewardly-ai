@@ -77,6 +77,7 @@ import { dripifyWebhookRouter } from "./routers/dripifyWebhook";
 import { smsitWebhookRouter } from "./routers/smsitWebhook";
 import { audioRouter } from "./routers/audio";
 import { clientRouter } from "./routers/client";
+import { dynamicIntegrationsRouter } from "./routers/dynamicIntegrations";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -2120,6 +2121,7 @@ export const appRouter = router({
   smsitWebhook: smsitWebhookRouter,
   audio: audioRouter,
   clientPortal: clientRouter,
+  dynamicIntegrations: dynamicIntegrationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

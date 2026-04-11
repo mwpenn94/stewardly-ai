@@ -32,7 +32,7 @@ import {
   Menu, X, ChevronDown, Keyboard, BookOpen,
   GraduationCap, Sparkles, Shield, Bot, Terminal,
   Calculator, LayoutDashboard, Users2, Database, Target, Search,
-  Fingerprint, Award, GitBranch,
+  Fingerprint, Award, GitBranch, Plug,
 } from "lucide-react";
 
 // ─── Icon lookup ─────────────────────────────────────────────────────────────
@@ -50,6 +50,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   TrendingUp: <TrendingUp className="w-4 h-4" />,
   FileText: <FileText className="w-4 h-4" />,
   Link2: <Link2 className="w-4 h-4" />,
+  Plug: <Plug className="w-4 h-4" />,
   HeartPulse: <HeartPulse className="w-4 h-4" />,
   RefreshCw: <RefreshCw className="w-4 h-4" />,
   Activity: <Activity className="w-4 h-4" />,
