@@ -29,6 +29,8 @@ import {
   assessTrackReadiness,
 } from "../services/learning/mastery";
 
+import { getDueReviewDeck } from "../services/learning/dueReview";
+
 import {
   getUserLicenses,
   addLicense,
@@ -142,6 +144,33 @@ const masteryRouter = router({
     .input(z.object({ trackSlug: z.string().min(1).max(128) }))
     .query(async ({ ctx, input }) => {
       return assessTrackReadiness(ctx.user.id, input.trackSlug);
+    }),
+
+  /**
+   * Cross-track due-review deck.
+   *
+   * Returns a hydrated mixed deck of flashcards + practice questions
+   * whose SRS `nextDue` is in the past for the current user. Ranked
+   * most-overdue-first with confidence-tie breaking.
+   *
+   * The client uses this to power `/learning/review` — a single
+   * session UI where learners can work through everything due across
+   * every track they've touched, rather than hopping between tracks.
+   */
+  dueReview: protectedProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().int().min(1).max(200).optional(),
+          kind: z.enum(["flashcard", "question"]).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      return getDueReviewDeck(ctx.user.id, {
+        limit: input?.limit,
+        kind: input?.kind,
+      });
     }),
 });
 

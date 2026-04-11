@@ -96,14 +96,24 @@ export default function LearningHome() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-semibold">{summary?.dueNow ?? 0}</div>
-              <div className="text-xs text-muted-foreground mt-2">items ready for review</div>
-              {tracks.length > 0 && (
-                <Link href={`/learning/tracks/${tracks[0].slug}/study`}>
-                  <Button variant="link" size="sm" className="px-0 mt-1">
-                    Start review →
-                  </Button>
-                </Link>
-              )}
+              <div className="text-xs text-muted-foreground mt-2">
+                items ready for review across all tracks
+              </div>
+              <Link href="/learning/review">
+                <Button
+                  variant={summary?.dueNow ? "default" : "link"}
+                  size="sm"
+                  className={summary?.dueNow ? "mt-2" : "px-0 mt-1"}
+                >
+                  {summary?.dueNow ? (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" /> Start review session
+                    </>
+                  ) : (
+                    <>Browse review →</>
+                  )}
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
