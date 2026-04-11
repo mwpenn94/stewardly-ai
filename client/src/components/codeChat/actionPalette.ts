@@ -99,6 +99,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "tab:checkpoints", label: "Workspace checkpoints", category: "tab", hint: "g k", keywords: ["stash", "snapshot", "restore", "rollback"] },
   { id: "tab:diagnostics", label: "Problems / diagnostics", category: "tab", hint: "g x", keywords: ["errors", "tsc", "typescript", "lint", "problems"] },
   { id: "tab:prdraft", label: "Draft a pull request", category: "tab", hint: "g u", keywords: ["pr", "pull request", "draft", "summary"] },
+  { id: "tab:tests", label: "Run tests (vitest)", category: "tab", hint: "g t", keywords: ["test", "vitest", "spec", "run"] },
   { id: "tab:imports", label: "Go to Imports", category: "tab", keywords: ["dependencies", "graph"] },
   { id: "tab:todos", label: "Go to TODOs", category: "tab", keywords: ["fixme", "markers"] },
   // Popovers

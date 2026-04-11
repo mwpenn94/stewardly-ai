@@ -125,4 +125,11 @@ describe("allChordLabels", () => {
     expect(uChord).toBeDefined();
     expect(uChord!.label).toContain("PR");
   });
+
+  it("includes the g+t Tests chord added in Pass 255", () => {
+    const labels = allChordLabels();
+    const tChord = labels.find((l) => l.keys[1] === "t");
+    expect(tChord).toBeDefined();
+    expect(tChord!.label).toContain("Tests");
+  });
 });

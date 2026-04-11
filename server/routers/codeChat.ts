@@ -148,6 +148,12 @@ import {
   type ChangedFile,
 } from "../services/codeChat/prDrafter";
 import {
+  parseVitestOutput,
+  filterFileResults,
+  sortFileResults,
+  type TestStatus,
+} from "../services/codeChat/testRunner";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -941,6 +947,90 @@ export const codeChatRouter = router({
     clearDiagnosticsCache();
     return { ok: true };
   }),
+
+  // Pass 255: test runner integration — run vitest + parse output
+  runTests: protectedProcedure
+    .input(
+      z
+        .object({
+          /** Optional glob/path to narrow which tests run (e.g. "server/services/codeChat") */
+          pattern: z.string().max(500).optional(),
+          status: z.array(z.enum(["passed", "failed", "skipped", "todo"])).optional(),
+          search: z.string().max(200).optional(),
+          /** Limit tests to a single file for speed */
+          singleFile: z.string().max(500).optional(),
+        })
+        .optional(),
+    )
+    .mutation(async ({ input }) => {
+      const t0 = Date.now();
+      const startedAt = new Date().toISOString();
+
+      // Build a safe vitest command: --no-coverage, --reporter default
+      // (we parse the default reporter output). The single-file and
+      // pattern inputs are sanitized to prevent command injection.
+      const safeArg = (raw: string): string =>
+        raw.replace(/[^a-zA-Z0-9._/\-*@]/g, "").slice(0, 500);
+      const args: string[] = [
+        "--no-install",
+        "vitest",
+        "run",
+        "--no-coverage",
+        "--reporter=default",
+      ];
+      if (input?.singleFile) {
+        args.push(safeArg(input.singleFile));
+      } else if (input?.pattern) {
+        args.push(safeArg(input.pattern));
+      }
+      const command = `npx ${args.join(" ")} 2>&1 | head -n 3000`;
+
+      const result = await dispatchCodeTool(
+        {
+          name: "run_bash",
+          args: { command },
+        } as CodeToolCall,
+        {
+          workspaceRoot: WORKSPACE_ROOT,
+          allowMutations: true,
+          bashTimeoutMs: 300_000,
+        },
+      );
+
+      let stdout = "";
+      let exitCode = -1;
+      let stderrTail = "";
+      if (result.kind === "bash") {
+        stdout = result.result.stdout ?? "";
+        stderrTail = (result.result.stderr ?? "").slice(-2000);
+        exitCode = result.result.exitCode ?? 0;
+      } else if (result.kind === "error") {
+        stderrTail = result.error.slice(-2000);
+        exitCode = -1;
+      }
+
+      const { files, summary } = parseVitestOutput(stdout);
+      const filtered = filterFileResults(files, {
+        status: input?.status as TestStatus[] | undefined,
+        search: input?.search,
+      });
+      const sorted = sortFileResults(filtered);
+
+      return {
+        files: sorted.slice(0, 200),
+        summary: {
+          ...summary,
+          exitCode,
+          rawTail: stderrTail,
+        },
+        meta: {
+          startedAt,
+          finishedAt: new Date().toISOString(),
+          durationMs: Date.now() - t0,
+          command: command.slice(0, 200),
+        },
+      };
+    }),
 
   // Pass 253: draft a PR body from the current branch delta
   draftPullRequest: protectedProcedure
