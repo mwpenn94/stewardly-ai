@@ -189,6 +189,7 @@ export default function Calculators() {
           <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">Wealth Engine</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
+              { label: "Quick Quote Hub", path: "/wealth-engine/hub", icon: <Sparkles className="w-4 h-4" />, desc: "All product lines · ranked by you" },
               { label: "Strategy Comparison", path: "/wealth-engine/strategy-comparison", icon: <BarChart3 className="w-4 h-4" />, desc: "Compare 7 wealth strategies" },
               { label: "Retirement Planner", path: "/wealth-engine/retirement", icon: <PiggyBank className="w-4 h-4" />, desc: "Goal, smooth, guardrails" },
               { label: "Practice to Wealth", path: "/wealth-engine/practice-to-wealth", icon: <TrendingUp className="w-4 h-4" />, desc: "Practice growth modeling" },

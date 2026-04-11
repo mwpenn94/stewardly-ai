@@ -41,6 +41,7 @@ const WeBusinessIncomeQuickQuote = lazy(
 const WeHolisticComparison = lazy(
   () => import("./pages/wealth-engine/HolisticComparison"),
 );
+const WeQuickQuoteHub = lazy(() => import("./pages/wealth-engine/QuickQuoteHub"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 // Consensus (Round C3 — multi-model consensus stream UI)
@@ -158,6 +159,11 @@ function Router() {
           path={"/wealth-engine/holistic-comparison"}
           component={WeHolisticComparison}
         />
+        <Route
+          path={"/wealth-engine/hub"}
+          component={WeQuickQuoteHub}
+        />
+        <Route path={"/quick-quotes"} component={WeQuickQuoteHub} />
         {/* Code Chat (admin foundation) */}
         <Route path={"/code-chat"} component={CodeChatPage} />
         {/* Consensus (Round C — multi-model consensus stream) */}
