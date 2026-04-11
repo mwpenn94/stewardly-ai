@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { toast } from "sonner";
+import { recordStudyEvent } from "@/lib/dailyStreak";
 
 export default function LearningQuizRunner() {
   const params = useParams<{ slug: string }>();
@@ -77,6 +78,8 @@ export default function LearningQuizRunner() {
   const submit = useCallback(() => {
     if (selected == null || !current) return;
     setRevealed(true);
+    // Persistent daily streak — idempotent same-day.
+    recordStudyEvent();
     const correct = selected === current.correctIndex;
     if (correct) {
       setCorrectCount((c) => c + 1);

@@ -34,6 +34,7 @@ import {
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { FORMULA_REGISTRY } from "@/lib/formulaRegistry";
 import { trpc } from "@/lib/trpc";
+import { listCaseStudies } from "@/lib/caseStudyRegistry";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -180,15 +181,21 @@ export default function DisciplineDeepDive() {
     [],
   );
 
-  // Placeholder cases (would be fetched from API in production)
+  // Pass 5 — source cases from the shared case study registry instead
+  // of hardcoded placeholders. Every entry now links into the actual
+  // CaseStudySimulator via the registry id, so clicking a case in the
+  // Deep Dive opens the real branching-decision flow instead of a
+  // dead read-only card. The UI shape is mapped here rather than in
+  // the registry so the Deep Dive's CaseItem type stays local.
   const cases: CaseItem[] = useMemo(
-    () => [
-      { id: "estate-high-net-worth", title: "High Net Worth Estate Plan", description: "A couple with $12M in assets needs an estate plan that minimizes federal estate taxes while ensuring liquidity for surviving spouse.", difficulty: "advanced", tags: ["estate", "tax", "trust"] },
-      { id: "retirement-gap", title: "Retirement Income Gap Analysis", description: "Client retiring in 5 years with a $400K shortfall. Evaluate annuity vs. systematic withdrawal strategies.", difficulty: "intermediate", tags: ["retirement", "income", "annuity"] },
-      { id: "young-professional", title: "Young Professional Financial Plan", description: "28-year-old with $80K income, $35K student loans, and $0 savings. Build a comprehensive plan.", difficulty: "beginner", tags: ["planning", "debt", "savings"] },
-      { id: "business-succession", title: "Business Succession Planning", description: "Owner of a $5M manufacturing firm wants to retire in 3 years. Evaluate buy-sell agreements and transition strategies.", difficulty: "advanced", tags: ["business", "succession", "insurance"] },
-      { id: "insurance-review", title: "Life Insurance Policy Review", description: "Client has 3 overlapping policies totaling $2M. Evaluate coverage adequacy and cost optimization.", difficulty: "intermediate", tags: ["insurance", "review", "optimization"] },
-    ],
+    () =>
+      listCaseStudies().map((c) => ({
+        id: c.id,
+        title: c.title,
+        description: c.situation,
+        difficulty: (c.difficulty ?? "intermediate") as "beginner" | "intermediate" | "advanced",
+        tags: [c.moduleSlug, c.discipline ?? ""].filter(Boolean),
+      })),
     [],
   );
 
@@ -548,7 +555,7 @@ function CasesTab({ cases }: { cases: CaseItem[] }) {
         Select a case study to enter the branching scenario simulator.
       </p>
       {cases.map((c) => (
-        <Link key={c.id} href={`/learning/cases/${c.id}`}>
+        <Link key={c.id} href={`/learning/case/${c.id}`}>
           <Card className="cursor-pointer hover:border-primary/50 transition-colors">
             <CardContent className="p-4 flex items-start gap-3">
               <Briefcase className="h-5 w-5 text-accent mt-0.5 flex-none" />

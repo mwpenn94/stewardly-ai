@@ -24,6 +24,7 @@ import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, Cl
 import { Link } from "wouter";
 import { getRecentCalculators } from "@/lib/recentCalculators";
 import { getTrackReadState, chaptersReadCount } from "@/lib/trackReadState";
+import { getDailyStreak, isStreakLive, toLocalDateKey } from "@/lib/dailyStreak";
 
 export default function LearningHome() {
   // Read the per-device recent-calculators list once per mount. This feeds
@@ -37,6 +38,14 @@ export default function LearningHome() {
   // is a zero-cost cache hydrate (localStorage, no network) so it's safe
   // to read once per mount without debouncing.
   const readState = useMemo(() => getTrackReadState(), []);
+
+  // Pass 5 — persistent daily streak (localStorage, local-date-keyed).
+  // The session-scoped streaks in Flashcard/Quiz/Review pages now push
+  // through to this store on every answer, and we read it here to
+  // render a sticky Flame badge beside the page title.
+  const streak = useMemo(() => getDailyStreak(), []);
+  const todayKey = useMemo(() => toLocalDateKey(new Date()), []);
+  const streakLive = isStreakLive(streak, todayKey);
 
   const meQ = trpc.auth.me.useQuery();
   const summaryQ = trpc.learning.mastery.summary.useQuery();
@@ -64,14 +73,36 @@ export default function LearningHome() {
     <AppShell title="Learning">
       <SEOHead title="Learning & Licensing" description="Track exam mastery, manage licenses, and access study tools" />
       <div className="mx-auto max-w-6xl p-6 space-y-6">
-        <header className="flex items-center justify-between">
+        <header className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
               <GraduationCap className="h-8 w-8 text-accent" />
               Learning &amp; Licensing
+              {streak.current > 0 && (
+                <Badge
+                  variant="outline"
+                  className={`text-xs ml-1 ${
+                    streakLive
+                      ? "text-accent border-accent/50 animate-pulse"
+                      : "text-muted-foreground"
+                  }`}
+                  aria-label={`Daily streak: ${streak.current} day${streak.current === 1 ? "" : "s"}${streakLive ? "" : " (study today to keep it)"}`}
+                  title={
+                    streakLive
+                      ? `${streak.current}-day streak (best: ${streak.best})`
+                      : `${streak.current}-day streak at risk — study today to keep it. Best: ${streak.best}`
+                  }
+                >
+                  <Flame className={`h-3.5 w-3.5 mr-1 ${streakLive ? "text-accent" : ""}`} />
+                  {streak.current} day{streak.current === 1 ? "" : "s"}
+                </Badge>
+              )}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               Track your progress across {tracks.length} exam tracks and {licenses.length} licenses.
+              {streak.best >= 7 && (
+                <span className="ml-1 text-accent">Best streak: {streak.best} days.</span>
+              )}
             </p>
           </div>
           <div className="flex gap-2">

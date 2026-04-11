@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCelebration } from "@/lib/CelebrationEngine";
+import { recordStudyEvent } from "@/lib/dailyStreak";
 
 export default function LearningFlashcardStudy() {
   const params = useParams<{ slug: string }>();
@@ -80,6 +81,11 @@ export default function LearningFlashcardStudy() {
   const mark = useCallback(
     (correct: boolean) => {
       if (!current) return;
+      // Bump the persistent daily streak — this is per-device and
+      // survives across sessions, separate from the in-session
+      // streak counter above. Idempotent same-day, so calling it on
+      // every card is safe.
+      recordStudyEvent();
       // Fire-and-forget SRS update — if it fails we still advance, but we
       // surface the error via toast so learners know their progress may
       // not have been saved (e.g. DB unavailable).

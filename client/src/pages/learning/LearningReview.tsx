@@ -49,6 +49,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCelebration } from "@/lib/CelebrationEngine";
+import { recordStudyEvent } from "@/lib/dailyStreak";
 
 type SessionItem =
   | {
@@ -124,6 +125,8 @@ export default function LearningReview() {
   const applyOutcome = useCallback(
     (correct: boolean) => {
       if (!current) return;
+      // Persistent per-device streak — idempotent same-day.
+      recordStudyEvent();
       recordReview
         .mutateAsync({
           itemKey: current.itemKey,

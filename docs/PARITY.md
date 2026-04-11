@@ -379,6 +379,74 @@ is exactly what Depth passes are for.
   page (server-side `assessTrackReadiness` exists but is unused in
   the UI)
 
+### Pass 5 — Delight & Polish (2026-04-11, Claude Code)
+**Pass type:** Delight & Polish
+**Temperature in:** 0.18
+**Temperature out:** 0.14
+
+The core is solid (8.0 composite, first-time path works, full content
+flow end-to-end). Pass 5 focuses on the moments that separate good
+from great: persistent motivation via a daily streak that survives
+across sessions, visible progress via an objective exam-readiness
+indicator, and closing the last hardcoded-mock surface inside
+DisciplineDeepDive.
+
+**Addressed:**
+- **Daily streak persistence** (NEW — `client/src/lib/dailyStreak.ts`):
+  Per-device local-date-keyed streak store. Bumps on every successful
+  SRS update in Flashcard / Quiz / Review sessions. Pure helpers:
+  `toLocalDateKey` (format Date → YYYY-MM-DD), `daysBetween` (DST-safe
+  noon-UTC anchor), `recordStudyEventPure` (same-day / consecutive /
+  gap / backfill semantics), `parseDailyStreak` (defensive malformed
+  payload handling), `isStreakLive` (savable-today check). 25 unit
+  tests locking every transition including DST boundaries.
+- **LearningHome streak badge**: persistent Flame pill next to the
+  page title, color-coded (accent + pulse when live, muted when the
+  streak is at risk from a missed day), tooltip showing current + best,
+  `aria-label` carrying the same info. A "Best streak: N days"
+  microcopy line renders under the page subtitle once the user has
+  ever hit a 7+ day streak.
+- **TrackDetail exam-readiness badge**: wired the existing
+  `learning.mastery.assessReadiness` tRPC procedure (built during the
+  original EMBA integration but never consumed in the UI) into the
+  track header. Renders a color-coded "Exam ready: N%" pill —
+  emerald ≥80%, amber ≥50%, rose <50% — with a title showing the
+  underlying mastered/tracked counts. Only renders when there's
+  tracked progress, so first-time visitors don't see a confusing
+  "0%" state.
+- **DisciplineDeepDive Cases tab wired to the registry**: before
+  Pass 5 the Cases tab rendered a hardcoded 5-entry array with dead
+  `/learning/cases/:id` links (note the plural — doubly broken). Now
+  it maps `listCaseStudies()` into `CaseItem[]` and routes to the
+  real `/learning/case/:id` (singular) so clicking a case actually
+  opens the branching-decision simulator built in Pass 4.
+
+**Dimension deltas (self-rated, conservative):**
+- Core Function: 8.5 → 8.5 (no net change)
+- UI / Visual: 7.5 → 8 (readiness badge + streak badge add visible
+  progress signals)
+- UX / Interaction: 8.5 → 8.5
+- Delightfulness: 7.5 → 8.5 (persistent streak is the canonical
+  motivator for spaced-practice apps — Duolingo / Anki / WaniKani /
+  every habit app ships this. Stewardly now matches parity.)
+- Code Quality: 8 → 8 (25 new tests, 0 regressions)
+
+**Composite:** 8.0 → 8.3
+
+**Build + test state (end of Pass 5):**
+- TS check: 0 errors
+- Build: clean in 31.47s
+- Full suite: 3,878 passing / 113 env-dependent failing (+25 new from
+  Pass 5, baseline unchanged, 0 regressions)
+- Total new tests across Passes 1-5: +101 (21 + 25 + 0 + 30 + 25)
+
+**Remaining / OPEN_ISSUES (carried forward):**
+- DisciplineDeepDive `fsApps` tab still uses hardcoded content — no
+  FS application registry built yet (lower priority than cases,
+  lower user visibility)
+- Localized content — English only
+- No "Share your streak" / social affordance (Future-State)
+
 ## Reconciliation Log
 
 (parallel passes write here if they conflict with a landing commit)

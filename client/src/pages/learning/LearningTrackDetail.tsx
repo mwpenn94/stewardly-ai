@@ -75,6 +75,14 @@ export default function LearningTrackDetail() {
     { trackId: trackQ.data?.id ?? 0 },
     { enabled: !!trackQ.data?.id },
   );
+  // Pass 5 — wire the server-side `assessTrackReadiness` helper into
+  // the track header. This was built in Pass 1 (of the original EMBA
+  // integration) but no UI consumed it, so learners couldn't see their
+  // objective exam readiness. Now they do.
+  const readinessQ = trpc.learning.mastery.assessReadiness.useQuery(
+    { trackSlug: slug },
+    { enabled: !!slug },
+  );
 
   const track = trackQ.data;
   const chapters = chaptersQ.data ?? [];
@@ -181,7 +189,7 @@ export default function LearningTrackDetail() {
                     {track.subtitle}
                   </p>
                 )}
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <Badge variant="outline">{track.category}</Badge>
                   <Badge variant="outline">{chapters.length} chapters</Badge>
                   <Badge variant="outline">
@@ -190,6 +198,21 @@ export default function LearningTrackDetail() {
                   <Badge variant="outline">
                     {questions.length} practice questions
                   </Badge>
+                  {readinessQ.data && readinessQ.data.itemsTracked > 0 && (
+                    <Badge
+                      variant="outline"
+                      className={
+                        readinessQ.data.readiness >= 0.8
+                          ? "text-emerald-600 border-emerald-500/40"
+                          : readinessQ.data.readiness >= 0.5
+                            ? "text-amber-600 border-amber-500/40"
+                            : "text-rose-600 border-rose-500/40"
+                      }
+                      title={`${readinessQ.data.mastered} of ${readinessQ.data.itemsTracked} tracked items mastered`}
+                    >
+                      Exam ready: {Math.round(readinessQ.data.readiness * 100)}%
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
