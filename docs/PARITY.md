@@ -38,6 +38,10 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G14 | P1   | dynamic-crud    | Collection-path probe — detect where records live in response body        | done        | build-loop-p2    | 5/10  | pending |
 | G15 | P2   | dynamic-crud    | Curl example generator for human verification                              | done        | build-loop-p2    | 4/10  | pending |
 | G16 | P2   | dynamic-crud    | Schema fingerprint-based version derivation                                | done        | build-loop-p2    | 4/10  | pending |
+| G17 | P0   | dynamic-crud    | Adapter runtime — execute a spec against real HTTP (mockable)              | done        | build-loop-p3    | 6/10  | pending |
+| G18 | P0   | dynamic-crud    | Idempotent upsert — GET/404→POST / GET/200→PATCH semantics                  | done        | build-loop-p3    | 5/10  | pending |
+| G19 | P1   | pipelines       | 429/5xx retry with Retry-After header honoring + exponential backoff       | done        | build-loop-p3    | 5/10  | pending |
+| G20 | P1   | pipelines       | Field transforms at runtime (parse_currency/parse_date/parse_percent)      | done        | build-loop-p3    | 4/10  | pending |
 
 ## Protected Improvements
 
@@ -60,6 +64,14 @@ commit that first shipped it.
   semantics: `baseUrl` and `auth.type` are both required for `ready=true`.
   Must keep get/update/delete endpoints conditional on primary-key presence.
 
+- **P3 → adapter runtime** (server/services/dynamicIntegrations/
+  adapterRuntime.ts) — executes an AdapterSpec against live HTTP with 37
+  unit tests (mock fetchImpl injected). Must keep `listRecords`, `getRecord`,
+  `createRecord`, `updateRecord`, `deleteRecord`, `upsertRecord` as exported
+  surfaces. Must NOT depend on global fetch singleton — every call must
+  accept a fetchImpl so tests stay offline. Must keep 429/5xx retry honoring
+  Retry-After header. Must keep upsertRecord 404-fallback-to-create semantics.
+
 ## Known-Bad (dead ends — do NOT retry)
 
 *(none yet)*
@@ -76,4 +88,5 @@ a date stamp + evidence-recency resolution.
 One line per pass. Format: `Pass N · angle · queue · commit · done · deferred`
 
 - Pass 1 · dynamic schema inference · [A1: schemaInference.ts, A2: tests, A3: PARITY.md] · 00ab579 · A1+A2+A3 done · G2-G12 deferred
-- Pass 2 · adapter generation · [R1: G2 adapter generator, G13 pagination probe, G14 collection path, G15 curl, G16 fingerprint] · pending · G2+G4+G13+G14+G15+G16 done · G3/G5-G12 deferred
+- Pass 2 · adapter generation · [R1: G2 adapter generator, G13 pagination probe, G14 collection path, G15 curl, G16 fingerprint] · 46c89ad · G2+G4+G13+G14+G15+G16 done · G3/G5-G12 deferred
+- Pass 3 · runtime executor · [F1 Pass 2 deferred exec, A1 listRecords/CRUD, A2 upsert] · pending · G17+G18+G19+G20 done · G3/G5-G12 deferred
