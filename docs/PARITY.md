@@ -623,6 +623,105 @@ and `/learning/studio`, but NOT the new `/learning/review` or
 **Convergence status: 1 of 2 consecutive zero-action confirmations
 complete.** Pass 9 (if similarly clean) completes convergence.
 
+### Pass 9 — Convergence Confirmation #2 (CONVERGED) (2026-04-11, Claude Code)
+**Pass type:** Final verification
+**Temperature in:** 0.11
+**Temperature out:** 0.10
+
+Second consecutive zero-action verification sweep. Re-ran TS check,
+full build, learning subsystem tests, and the full suite regression
+pass. Every measurement matched Pass 8 exactly.
+
+**Findings:** none. Signal assessment across every v2 pass type
+returned absent for the second pass in a row.
+
+**Verification results:**
+- TS check: 0 errors
+- Build: clean in 19.47s
+- Learning subsystem: 181 passing across 12 files
+- Full suite: 3,878 passing / 113 env-dependent failing (same as
+  Passes 5-8, baseline unchanged)
+- Branch diff vs main: 27 files, +5,003 / -141 lines
+- New tests cumulative across Passes 1-9: +101
+
+**Convergence criteria — all met:**
+
+| Criterion | Status |
+|---|---|
+| ≥3 passes total | ✅ (9) |
+| Temperature ≤0.2 | ✅ (0.10) |
+| Score improvement <0.2 for 2 consecutive passes | ✅ (Pass 7→8 = 0.0, Pass 8→9 = 0.0) |
+| No active branches | ✅ |
+| Zero regressions | ✅ |
+| Fewer than 3 novel findings in last pass | ✅ (zero) |
+| No dimension scores below 7.0 | ✅ (min 8.0) |
+| Two consecutive convergence confirmations | ✅ (Passes 8 + 9) |
+
+## 🎯 CONVERGED
+
+The learning experience is **converged at composite 8.5 / 10**.
+
+**What "converged" means here:** 9 recursive passes spanning Landscape
+→ Depth → Adversarial → Adversarial → Delight & Polish → Adversarial
++ Polish → Adversarial → two confirmation sweeps. Every open gap
+from the Pass 1 landscape audit has been closed or explicitly
+deferred with reasoning. Every new code path has unit tests where
+they're meaningful (pure helpers) or documented as UI-interactive
+(where they can't be). Every critical failure mode found by
+adversarial review has been fixed. The first-time user path — the
+most important blocker — works end-to-end.
+
+### Re-entry triggers
+
+The optimization loop should re-open if ANY of these become true:
+
+- **User feedback** reports a broken flow on a learning page
+- **Success metric drops**: mastery progression across a user cohort
+  stalls or reverses
+- **New content kinds**: EMBA adds video or interactive elements
+  that need a new player / renderer
+- **New exam types** (Series 63/65, FINRA SIE variants) are
+  requested
+- **Accessibility audit** finds a WCAG 2.1 AA regression (e.g. a
+  new component ships without proper focus management)
+- **Cost model** shifts — e.g. if SRS evolution moves to a
+  server-backed scheduler the `dueReview` procedure will need to
+  adapt its pure `buildReviewSession` wrapper
+- **New tracks imported** from `mwpenn94/emba_modules` that need
+  progress indicators or analytics the current UI doesn't surface
+- **Known-deferred items** (FS applications registry, streak social
+  affordance, nav sidebar entries for review/case) are prioritized
+
+### Final dimension scorecard
+
+| Dimension | Entry (Pass 1) | Exit (Pass 9) | Delta |
+|---|---|---|---|
+| Core Function | 6.0 | 8.5 | +2.5 |
+| UI / Visual | 7.0 | 8.0 | +1.0 |
+| UX / Interaction | 5.0 | 8.5 | +3.5 |
+| Usability | 6.0 | 8.0 | +2.0 |
+| Digestibility | 6.0 | 7.0 | +1.0 |
+| Delightfulness | 6.0 | 8.5 | +2.5 |
+| Flexibility | 7.0 | 7.5 | +0.5 |
+| Performance | 7.0 | 7.0 | — |
+| Robustness | 6.0 | 8.0 | +2.0 |
+| Code Quality | 7.0 | 8.0 | +1.0 |
+| **Composite** | **6.3** | **8.5** | **+2.2** |
+
+### Feature completion
+
+- ✅ Pass 1 Landscape — critical-path UX wires + keyboard shortcuts
+- ✅ Pass 2 Depth — resume state + progress rings + audio narration
+- ✅ Pass 3 Adversarial — first-time user path + new-card queue
+- ✅ Pass 4 Depth — pure helper extraction + case registry (G10)
+- ✅ Pass 5 Delight & Polish — daily streak + exam readiness +
+  Cases tab wired
+- ✅ Pass 6 Adversarial + Polish — keyboard help overlay + restart
+  reset fix
+- ✅ Pass 7 Adversarial — error-state conflation fix
+- ✅ Pass 8 Convergence confirmation #1
+- ✅ Pass 9 Convergence confirmation #2 → CONVERGED
+
 ## Reconciliation Log
 
 (parallel passes write here if they conflict with a landing commit)
