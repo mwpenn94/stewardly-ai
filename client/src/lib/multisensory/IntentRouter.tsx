@@ -120,8 +120,11 @@ export function IntentRouter() {
           return;
 
         case "voice.toggle_listening":
-          window.dispatchEvent(new CustomEvent("voice:listen-once"));
+          // Pass 2: push-to-talk — listens for a single utterance, routes
+          // it through PIL.processIntent, then stops. No-ops if hands-free
+          // is already running so we don't interrupt the continuous loop.
           announce("Listening for one command", "polite");
+          void pil.listenOnce();
           return;
 
         // ── Accessibility ──

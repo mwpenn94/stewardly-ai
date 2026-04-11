@@ -15,6 +15,12 @@ import { useLocation } from "wouter";
 import { useAudioCompanion } from "./AudioCompanion";
 import { dispatchFeedback } from "@/lib/FeedbackDispatcher";
 import { useCelebration } from "@/lib/CelebrationEngine";
+// Pass 2 (multisensory): delegate intent classification to the shared
+// parser — same function handles text slash-commands AND voice commands,
+// same ROUTE_MAP is used by navigation keyboard chords, /go slash commands,
+// and PIL voice dispatch. One source of truth.
+import { parseIntent, friendlyRouteName } from "@/lib/multisensory/intentParser";
+import { announce } from "@/lib/multisensory/LiveAnnouncer";
 
 /* ── Types ──────────────────────────────────────────────────────── */
 
@@ -35,47 +41,20 @@ interface PILActions {
   setModalityPref: (pref: ModalityPref) => void;
   enterHandsFree: () => void;
   exitHandsFree: () => void;
+  /** Pass 2: listen for one utterance, process it through `processIntent`,
+   *  then stop. Used by the Alt+V global shortcut for push-to-talk.
+   *  Returns a promise that resolves when recognition ends. */
+  listenOnce: () => Promise<void>;
   speak: (text: string) => void;
   playSound: (soundId: string) => void;
 }
 
 type PILContext = PILState & PILActions;
 
-/* ── Route map for intent → navigation ─────────────────────────── */
-
-const ROUTE_MAP: Record<string, string> = {
-  "chat": "/chat",
-  "clients": "/relationships",
-  "my clients": "/relationships",
-  "cases": "/my-work",
-  "my work": "/my-work",
-  "work": "/my-work",
-  "compliance": "/compliance-audit",
-  "market data": "/market-data",
-  "market": "/market-data",
-  "calculators": "/wealth-engine",
-  "calculator": "/wealth-engine",
-  "wealth engine": "/wealth-engine",
-  "learn": "/learning",
-  "learning": "/learning",
-  "study": "/learning",
-  "settings": "/settings",
-  "help": "/help",
-  "documents": "/documents",
-  "my documents": "/documents",
-  "progress": "/progress",
-  "my progress": "/progress",
-  "team": "/manager",
-  "team dashboard": "/manager",
-  "admin": "/admin",
-  "platform admin": "/admin",
-  "financial twin": "/financial-twin",
-  "my financial twin": "/financial-twin",
-  "suitability": "/suitability",
-  "recommendations": "/recommendations",
-  "audio": "/settings/audio",
-  "audio settings": "/settings/audio",
-};
+/* Pass 2: ROUTE_MAP + friendlyName were moved to
+ * `@/lib/multisensory/intentParser` so voice, text slash commands, and the
+ * keyboard intent router all share one source of truth. The parser's
+ * ROUTE_MAP is broader than what lived here before — see intentParser.ts. */
 
 /* ── Sound effects (Web Audio API) ─────────────────────────────── */
 
@@ -127,29 +106,8 @@ export function usePlatformIntelligence() {
   return ctx;
 }
 
-/* ── Helpers ───────────────────────────────────────────────────── */
-
-function friendlyName(path: string): string {
-  const names: Record<string, string> = {
-    "/chat": "Chat",
-    "/relationships": "Clients",
-    "/my-work": "My Work",
-    "/compliance-audit": "Compliance",
-    "/market-data": "Market Data",
-    "/wealth-engine": "Calculators",
-    "/learning": "Learning Center",
-    "/settings": "Settings",
-    "/help": "Help",
-    "/documents": "Documents",
-    "/progress": "My Progress",
-    "/manager": "Team Dashboard",
-    "/admin": "Platform Admin",
-    "/financial-twin": "Financial Twin",
-    "/suitability": "Suitability",
-    "/recommendations": "Recommendations",
-  };
-  return names[path] || path.split("/").pop() || "page";
-}
+/* Pass 2: `friendlyName` was moved to `friendlyRouteName` in
+ * `@/lib/multisensory/intentParser` (already imported above). */
 
 /* ── Provider ──────────────────────────────────────────────────── */
 
@@ -201,87 +159,81 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
 
   /* ── Intent processing ───────────────────────────────────── */
 
+  // Pass 2: delegated to `lib/multisensory/intentParser.parseIntent`.
+  // Bare words ("learning") are only permitted in voice / hands-free mode
+  // so that a user typing plain prose in some future text intake doesn't
+  // accidentally navigate away.
   const processIntent = useCallback(async (source: IntentSource, input: string) => {
-    const normalized = input.toLowerCase().trim();
+    const allowBareNav = source === "voice" || state.handsFreeActive;
+    const parsed = parseIntent(input, { allowBareNav });
 
-    // Level 1: Navigation intent (bare words only match in voice/hands-free mode)
-    const navPatterns: RegExp[] = [
-      /^(?:go to|open|show me|navigate to|show)\s+(.+)$/i,
-    ];
-    if (source === "voice" || state.handsFreeActive) {
-      navPatterns.push(/^(.+)$/i);
-    }
-
-    for (const pattern of navPatterns) {
-      const match = normalized.match(pattern);
-      if (match) {
-        const target = match[1].trim();
-        const route = ROUTE_MAP[target];
-        if (route) {
-          navigate(route);
-          if (state.modalityPref !== "visual_only") {
-            speakShort(friendlyName(route));
-          }
-          SOUNDS.navigate?.();
-          return;
+    switch (parsed.kind) {
+      case "navigate":
+        navigate(parsed.route);
+        if (state.modalityPref !== "visual_only") {
+          speakShort(parsed.label || friendlyRouteName(parsed.route));
         }
+        announce(`Navigated to ${parsed.label}`, "polite");
+        SOUNDS.navigate?.();
+        return;
+
+      case "audio":
+        if (parsed.action === "pause") {
+          audioCompanion.pause();
+        } else if (parsed.action === "resume") {
+          audioCompanion.resume();
+        } else if (parsed.action === "speed_up") {
+          audioCompanion.adjustSpeed(0.25);
+          speakShort(`${(audioCompanion.speed + 0.25).toFixed(1)}x`);
+        } else if (parsed.action === "slow_down") {
+          audioCompanion.adjustSpeed(-0.25);
+          speakShort(`${Math.max(0.5, audioCompanion.speed - 0.25).toFixed(1)}x`);
+        }
+        return;
+
+      case "read_page":
+        audioCompanion.readCurrentPage();
+        return;
+
+      case "hands_free":
+        if (parsed.action === "enter") actions.enterHandsFree();
+        else actions.exitHandsFree();
+        return;
+
+      case "learning": {
+        const detail: Record<string, unknown> = { action: parsed.action };
+        if (parsed.action === "rate" && parsed.rating) {
+          detail.rating = parsed.rating;
+        }
+        document.dispatchEvent(new CustomEvent("pil:learning", { detail }));
+        return;
       }
-    }
 
-    // Level 2: Audio commands
-    if (/^(pause|stop|hold on)$/i.test(normalized)) {
-      audioCompanion.pause();
-      return;
-    }
-    if (/^(resume|continue|play|keep going)$/i.test(normalized)) {
-      audioCompanion.resume();
-      return;
-    }
-    if (/^(speed up|faster)$/i.test(normalized)) {
-      audioCompanion.adjustSpeed(0.25);
-      speakShort(`${(audioCompanion.speed + 0.25).toFixed(1)}x`);
-      return;
-    }
-    if (/^(slow down|slower)$/i.test(normalized)) {
-      audioCompanion.adjustSpeed(-0.25);
-      speakShort(`${Math.max(0.5, audioCompanion.speed - 0.25).toFixed(1)}x`);
-      return;
-    }
-    if (/^read this|read (?:this )?(?:page|aloud)/i.test(normalized)) {
-      audioCompanion.readCurrentPage();
-      return;
-    }
+      case "focus_chat":
+        window.dispatchEvent(
+          new CustomEvent("multisensory-intent", {
+            detail: { intent: "chat.focus_input", source: "voice" },
+          }),
+        );
+        return;
 
-    // Level 3: Hands-free mode
-    if (/^(?:enter|start|activate) hands[- ]?free/i.test(normalized)) {
-      actions.enterHandsFree();
-      return;
-    }
-    if (/^(?:exit|stop|deactivate|leave) hands[- ]?free/i.test(normalized)) {
-      actions.exitHandsFree();
-      return;
-    }
+      case "open_palette":
+        window.dispatchEvent(new CustomEvent("toggle-command-palette"));
+        return;
 
-    // Level 4: Learning commands
-    if (/^next|next (?:card|flashcard|question)/i.test(normalized)) {
-      document.dispatchEvent(new CustomEvent("pil:learning", { detail: { action: "next" } }));
-      return;
-    }
-    if (/^(?:show|flip|reveal)(?: (?:the )?answer)?/i.test(normalized)) {
-      document.dispatchEvent(new CustomEvent("pil:learning", { detail: { action: "reveal" } }));
-      return;
-    }
-    if (/^(?:rate |mark )?(?:as )?(easy|good|hard|again)$/i.test(normalized)) {
-      const rating = normalized.match(/(easy|good|hard|again)/i)?.[1];
-      document.dispatchEvent(new CustomEvent("pil:learning", { detail: { action: "rate", rating } }));
-      return;
-    }
+      case "help":
+        window.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "?", bubbles: true }),
+        );
+        return;
 
-    // Level 5: If nothing matched and source is voice
-    if (source === "voice") {
-      speakShort("I didn't catch that. Try again?");
+      case "unknown":
+        if (source === "voice") {
+          speakShort("I didn't catch that. Try again?");
+        }
+        return;
     }
-  }, [navigate, state.modalityPref, audioCompanion]);
+  }, [navigate, state.modalityPref, state.handsFreeActive, audioCompanion]);
 
   /* ── Voice listening ─────────────────────────────────────── */
 
@@ -322,6 +274,60 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, voiceListening: false }));
   }, []);
 
+  /* Pass 2: single-utterance recognition for push-to-talk (Alt+V). */
+  const listenOnce = useCallback(async () => {
+    // If hands-free is already running, don't interfere with its loop —
+    // let it handle the next utterance naturally.
+    if (state.handsFreeActive) return;
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      speakShort("Voice input isn't supported in this browser.");
+      return;
+    }
+
+    return new Promise<void>((resolve) => {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-US";
+
+        let finalized = false;
+        const cleanup = () => {
+          recognitionRef.current = null;
+          setState((prev) => ({ ...prev, voiceListening: false }));
+          resolve();
+        };
+
+        recognition.onresult = (event: any) => {
+          finalized = true;
+          const last = event.results[event.results.length - 1];
+          if (last.isFinal) {
+            processIntent("voice", last[0].transcript.trim());
+          }
+        };
+        recognition.onerror = () => {
+          if (!finalized) speakShort("Sorry, I didn't catch that.");
+          cleanup();
+        };
+        recognition.onend = cleanup;
+
+        recognitionRef.current = recognition;
+        recognition.start();
+        setState((prev) => ({ ...prev, voiceListening: true }));
+        SOUNDS.mic_on?.();
+      } catch {
+        // Recognition.start() can throw if a prior instance is still running,
+        // or on a permission denial. Fail silent — the user will simply not
+        // see the mic-pulse animation.
+        setState((prev) => ({ ...prev, voiceListening: false }));
+        resolve();
+      }
+    });
+  }, [processIntent, state.handsFreeActive]);
+
   /* ── Actions ─────────────────────────────────────────────── */
 
   const actions: PILActions = {
@@ -346,6 +352,8 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
       setState(prev => ({ ...prev, handsFreeActive: false, modalityPref: "both" }));
       speakShort("Hands-free mode off.");
     },
+
+    listenOnce,
 
     speak: speakShort,
     playSound: (soundId) => SOUNDS[soundId]?.(),

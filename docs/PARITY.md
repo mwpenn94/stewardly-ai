@@ -141,6 +141,60 @@ Dimension scores are 1–10 using the v2 Appendix A calibration.
 
 ## Changelog
 
+### Pass 2 (2026-04-11, Depth, composite 8.15 → 8.55, +0.40)
+
+Stress-tested the Pass 1 intent bus against real-world conditions and closed
+every broken promise found:
+
+1. **ROUTE_MAP reachability test** (`routeMap.test.ts`, 3 new tests) —
+   asserts every destination in `ROUTE_MAP` resolves to a real
+   `<Route path=>` in `App.tsx`. Walks up the path with a prefix check so
+   `/settings/audio` matches the `/settings/:tab` parent. Broke the build
+   first run, catching THREE broken phrasings that would have produced 404s:
+   - `"calculators" → /wealth-engine` (no such bare route — fixed to
+     `/calculators`)
+   - `"calculator" → /wealth-engine` (same)
+   - `"wealth engine" → /wealth-engine` (same)
+
+   Also fixed `/learning/flashcards`, `/learning/exam`,
+   `/learning/connection-map` — all non-existent — remapped to real routes
+   `/learning`, `/learning/connections`. Added new entries for
+   `strategy comparison`, `practice to wealth`, `quick quote`, `licenses`,
+   `content studio`, `achievements`.
+
+2. **PlatformIntelligence.processIntent** — replaced 80 lines of duplicated
+   regex with a single `parseIntent()` call from the shared parser. PIL no
+   longer has its own stale `ROUTE_MAP` or `friendlyName`. Voice commands,
+   text slash commands, and keyboard intents all hit the same parser now.
+   Every nav via PIL now announces to the LiveAnnouncer too.
+
+3. **Alt+V push-to-talk** — Pass 1 dispatched `voice:listen-once` to no
+   listener. Pass 2 added `pil.listenOnce(): Promise<void>` — a genuine
+   single-utterance recognizer with onresult/onerror/onend cleanup,
+   `mic_on` sound cue, and a permission-denial fallback that does not
+   leave the UI stuck in a "listening" state. IntentRouter calls it
+   directly.
+
+4. **dispatchIntent contract test** (`dispatchIntent.test.ts`, 4 new tests)
+   — verifies the `multisensory-intent` CustomEvent contract with a fake
+   `window.dispatchEvent` sink, SSR safety (no `window`), and every
+   `source` kind.
+
+**Feature completion:** 60% → 80% (1 row still PARTIAL: SR-6 semantic
+landmark coverage on non-chat / non-AppShell pages).
+
+**Dimension scorecard delta:**
+- Core Function: 8.0 → 8.5 (+0.5) — broken ROUTE_MAP entries would have
+  sent users to 404s
+- Usability: 8.5 → 8.5 (0) — already strong
+- Digestibility: 8.0 → 8.5 (+0.5) — single source of truth eliminates
+  silent drift
+- Robustness: 8.0 → 8.5 (+0.5) — contract tests + reachability test +
+  listenOnce error recovery
+- Code Quality: 8.5 → 9.0 (+0.5) — 80-line duplication eliminated
+
+**Composite:** 8.55 / 10 (+0.40)
+
 ### Pass 1 (2026-04-11, Landscape, composite 7.3 → 8.15, +0.85)
 
 **Feature goal:** ultimate delightful multisensory UI/UX with max accessibility via conversational hands-free and text navigation.
