@@ -3,15 +3,15 @@
 > Always re-read immediately before writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11T00:00:03Z by chat:optimize-crud-parity-satL3/pass-4
+- Last updated: 2026-04-11T00:00:04Z by chat:optimize-crud-parity-satL3/pass-5
 - Comparable target: "best-in-class dynamic CRUD for any integration/pipeline/ingestion process, even where documentation or vendor support is limited or nonexistent but data is available from sources — plus continuous improvement across Code Chat, AI chat financial force multipliers, learning/training/onboarding, CRM/marketing coordination, workflow, and agentic AI/browser/device automation"
 - Core purpose: Give Stewardly the ability to dynamically CRUD any integration/pipeline/ingestion process and turn the resulting data fabric into a continuous-improvement force multiplier across every Stewardly surface
 - Target user: Platform admin / advisor-tier developer / power client who needs to wire a new data source without writing a schema migration or waiting on a vendor SDK
 - Success metric: Time from "I have a URL/sample/cURL and know the data is there" → "live, scheduled, personalized ingestion flowing into the 5-layer intelligence stack" → <10 min (documented), <30 min (undocumented), <60 min (portal-only)
-- Current parity score: 54% (unchanged — Exploration pass generates branches, does not evaluate)
-- Passes completed: 4
-- Last reconciliation: 2026-04-11T00:00:03Z (conflicts: 0)
-- Active branches: 3 of 5 (see Pass 4 Exploration section)
+- Current parity score: 52% (composite 5.2 / 10 — Pass 5 found 18 novel continuous-improvement seam findings)
+- Passes completed: 5
+- Last reconciliation: 2026-04-11T00:00:04Z (conflicts: 0)
+- Active branches: 2 of 5 (A eliminated via Sequential Halving round 1; see Pass 5 Branch Resolution)
 
 ## Pillars (comparable target decomposition)
 1. **Dynamic CRUD for integrations / pipelines / ingestion** (documented, undocumented, portal-only)
@@ -305,6 +305,62 @@ subsystems means one bad change can break all three.
 - **No branch is scored** in this pass. Scoring is convergent work for
   Pass 5+ (Depth or Synthesis) using Sequential Halving.
 
+## Pass 5 Depth Findings (continuous-improvement seams)
+
+These F-series findings drill into the seams between the ingestion layer and
+every other continuous-improvement surface (Code Chat, Chat, Workflow,
+Learning, Memory, Events, Autonomy, Tracing). Each reveals a place where the
+promise "continuous improvement across the app" is unbacked by code.
+
+| ID | Finding | Seam | Severity | Code Evidence | Effort |
+|---|---|---|---|---|---|
+| F1 | `eventBus.EventType` is a hardcoded TypeScript union of 8 values. Adding `ingestion.completed`, `integration.connected`, `schema.drifted`, `provider.registered` requires a **code change AND redeploy**. G38 / D10 were surface-level; the real gap is that the type system prevents runtime extensibility | Events → everything | high | `server/shared/events/eventBus.ts` L6-14 | S — either relax to `string` with a runtime registry, or add all ingestion types now and re-ship |
+| F2 | `improvementLoops.ts` has 6 loops (calibration / recommendation quality / sensitivity / trigger tuning / behavior clustering / competitive feature track) — **none touch ingestion or integration data**. The continuous-improvement infrastructure exists but is pointed at the wrong layer. Every loop reads `ComputationLog[]` which comes from `model_runs`, not `ingestion_jobs` or `integration_sync_logs` | Improvement engine → integrations | critical | `server/services/improvement/improvementLoops.ts` L1-45 + file structure | M — add loops 7-10: schema-stability loop, cost-per-extraction loop, cross-provider reconciliation loop, retry-success loop |
+| F3 | `workflow.ts` ships ONLY `ONBOARDING_STEPS` (4 hardcoded flows). There is no `INTEGRATION_ONBOARDING` flow, no `DATA_FRESHNESS_ENFORCEMENT` flow, no `SCHEMA_DRIFT_TRIAGE` flow. G40 / D13 confirmed: adding a new ingestion-centric workflow = code change to a static const | Workflow → integrations | high | `server/routers/workflow.ts` L8-37 | S — add 3 new ONBOARDING_STEPS entries |
+| F4 | **Two workflow table systems** — `workflowChecklist` (per-user step tracking) vs `workflowInstances` (multi-step workflow engine from Pass 61). They don't share step definitions or UX. Pass 5 cannot tell which one is authoritative for ingestion-related flows | Workflow arch | med | `workflowChecklist` vs `workflowInstances` in schema | M — unify or document the split |
+| F5 | `eventBus` has a `compliance.flagged` → `proactive_insights` listener (good). **No listener on `improvement.signal`**. Improvement signals are silently emitted and die. G26 confirmed: the force multiplier has no subscriber | Events → insights | high | `server/shared/events/eventBus.ts` L54-71 | S — add one listener that converts improvement signals to insight rows |
+| F6 | Even if ingestion events existed (F1), the **workflow engine has no event subscribers** — workflows are initiated by explicit user action (`workflowInstances.start`), never by an event. "Ingestion completed → trigger client annual review" is architecturally blocked | Workflow → events | high | grep for eventBus.on in workflow routers — 0 hits | M — wire event-driven workflow triggers |
+| F7 | Code Chat `autonomousCoding` service exists (CLAUDE.md Round B5) for Code Chat to propose its own improvements, but **it has no knowledge of the integration registry**. Code Chat cannot say "provider X is returning 4xx; I'll rewrite its extractor". The integration pipeline is invisible to the self-improvement loop | Code Chat → integrations | high | `server/services/codeChat/autonomousCoding.ts` tool scope | M — expose integration health as an input to the autonomous planner |
+| F8 | Chat `autonomousProcessing.start()` diverge/converge loop has 5 foci (`discovery/apply/connect/critique/general`) — **none are ingestion-focused**. Loop mode can't naturally iterate "improve this integration's field mapping by trying 3 variations and picking the winner". The force-multiplier loop doesn't reach integrations | Chat → integrations | med | `server/services/autonomousProcessing/*` focus enum | S — add a `integrate` focus |
+| F9 | `learning.mastery.recordReview` is only invoked from flashcard/quiz runners. **Integration engineering "mastery" is not a concept** — we can't track which advisors understand which integrations. Beyond-parity opportunity: integrations should BE learning content, with SRS reviews on "when does FRED update CPI?" | Learning → integrations | med (BP opportunity) | `server/routers/learning.ts` mastery | M — add integration-type flashcard seeds on provider registration |
+| F10 | Graduated autonomy (DB-backed `agent_autonomy_levels`) is wired into 8 agentic execution contexts. **Ingestion ops are not one of those contexts**. Adding ingestion means new autonomy enum values + graduation criteria + a feedback surface. D23 confirmed: non-trivial integration | Autonomy → ingestion | high | `agent_autonomy_levels` schema vs ingestion routers | M — new context + criteria |
+| F11 | CLAUDE.md claims **37 cron jobs** including "SRS daily due-review reminder" + "weekly EMBA auto-import" — but no **"daily integration health recap"** or **"weekly schema-drift audit"**. Continuous improvement on integrations is not on the cron calendar. | Scheduler → integrations | med | CLAUDE.md cron list vs `scheduler.ts` registered jobs | S — add 2 new cron jobs |
+| F12 | `integrationImprovementLog` is **append-only with no resolved/acted-upon status** for non-recovery events. An advisor who manually fixes a mapping has no way to close the loop. The improvement log grows monotonically and buries useful signal in stale noise | Improvement log UX | med | schema.integrationImprovementLog | S — add `resolvedAt`, `resolvedBy`, `resolution_note` columns |
+| F13 | `chat.send` ReAct loop has tool-calling infrastructure, but **integration management tools are not in the tool surface**. D11 + G23 confirmed: Chat's ReAct loop needs the 6 integration tools (probe_api / infer_schema / register_integration / map_fields / replay_ingestion / diff_schema) as chat-callable tools, not just Code-Chat-callable | Chat → integrations | high | grep for chat ReAct tools — 0 integration tools | M — wire tools into chat.send's tool surface |
+| F14 | Improvement engine's 6h schedule reads from `signal_detection` with **hardcoded signal types**. Adding `schema_drift_detected`, `new_provider_available`, `cost_spike_detected` signals = code + migration. G10 depth | Improvement → events | med | `server/services/improvement/*` signal types | S — relax signal type to string |
+| F15 | `ragTrainer` (Pass 48 fix) learns from every LLM response, but **nothing ingestion-related is routed through it**. A failed schema extraction doesn't make the agent smarter next time. The learning loop is decoupled from the failure signal | RAG → extraction | high | `ragTrainer` call sites | S — route extractor responses through ragTrainer |
+| F16 | Memory engine has 6 categories. **None are "integration learnings"** or "provider quirks". An advisor's memory could include "Wealthbox returns phone as +1XXXX"; today it doesn't | Memory → integrations | med | memory category enum | S — add `integration_lore` category |
+| F17 | OpenTelemetry GenAI spans wrap every `contextualLLM` call. **Spans don't carry ingestion job context** — traces can't link LLM extractions to the ingestion job that triggered them. Debugging a bad extraction requires cross-referencing by timestamp | Tracing → ingestion | med | contextualLLM span attrs | S — pass `ingestionJobId` through to span attrs |
+| F18 | Client-side `PlatformIntelligence` (Pass 120) adapts UI to user intent. It doesn't watch "admin is exploring integrations" to proactively suggest "shall I generate a ConnectorSpec for this URL?". Personalization opportunity missed | Client intelligence → integrations | low | `client/src/services/platformIntelligence/*` | S — add an intent pattern |
+
+### Self-Consistency Check
+- A9/A15/A17 SEC items remain open. Pass 5 didn't touch implementation.
+- F2 is a **structural reveal**: the `improvementLoops.ts` module is what people point at when claiming "continuous improvement". Pass 5 says it doesn't even watch the integration layer. This is a Goodhart-style gap (we built the infrastructure but pointed it at the wrong data).
+- F7 + F13 + F15 are the three places where "integrations should feed the self-improvement loop" is structurally blocked. Fixing just one doesn't fix the seam — all three need to land together for the continuous-improvement claim to become real.
+
+## Pass 5 Branch Resolution (Sequential Halving Round 1)
+
+Evaluating the 5 Pass 4 architectural branches against 4 weighted criteria:
+
+| Criterion | Weight | A Code | B Data | C LLM-Loop | D Playwright | E Hybrid |
+|---|---|---|---|---|---|---|
+| Time-to-value (<10 min) | 0.35 | 2 | 9 | 7 | 3 | 9 |
+| Undocumented-source fit | 0.30 | 4 | 6 | 9 | 8 | 9 |
+| Cost per scheduled run | 0.20 | 10 | 9 | 3 | 5 | 7 |
+| Safety (review, rollback, guardrails) | 0.15 | 9 | 7 | 4 | 5 | 6 |
+| **Weighted score** | — | **5.30** | **7.75** | **6.55** | **5.30** | **7.95** |
+
+**Elimination (Sequential Halving round 1):** Branch A (5.30) and Branch D
+(5.30) are tied for lowest. Per v2 rules, drop the single weakest. Tie-break
+by "fit to core purpose" — A serves high-compliance providers better than D
+serves portal-only sources. **Eliminate D this round.** Branch A moves to
+SHELVED status for compliance-sensitive tracks. Branch C moves to SHELVED
+for one-shot onboarding usage. **Active branches after Round 1: B + E.**
+
+Sequential Halving Round 2 will evaluate B vs E on implementation spike
+results from Pass 4's pasteable implementation prompt (if that prototype
+ships before the next Depth pass).
+
 ## Reconciliation Log (append-only)
 
 | Time | Pass | Action | Conflicts | Notes |
@@ -313,11 +369,13 @@ subsystems means one bad change can break all three.
 | 2026-04-11T00:00:01Z | 2 | Depth findings append | 0 | Re-read before write; no concurrent writer. Added D1–D25 depth findings with code line references. Revised composite parity DOWN from 62% → 58% after depth findings exposed D1/D2/D3/D4/D5/D11/D17 as hard-blockers |
 | 2026-04-11T00:00:02Z | 3 | Adversarial findings append | 0 | Re-read before write; no concurrent writer. Added A1–A25 adversarial findings including 5 SEC-class issues (A9 multi-tenant leak, A15 compliance bypass, A17 SnapTrade consent, A20 public pipeline health enum, A21 SSRF pre-fix, A22 cost cap, A24 bash sandbox). Revised parity DOWN 58% → 54%. Self-consistency check flags Goodhart risk on "continuous improvement" claim (A12). |
 | 2026-04-11T00:00:03Z | 4 | Exploration branches append | 0 | Re-read before write; no concurrent writer. Added 5 architectural branches (A Provider-as-Code, B Provider-as-Data, C Provider-as-LLM-Loop, D Provider-as-Playwright-Trace, E Provider-as-Hybrid). A/B/E active, C/D shelved. Score unchanged (Exploration does not evaluate). Temperature bumped 0.45 → 0.65 for this pass, will decay on next convergent pass. |
+| 2026-04-11T00:00:04Z | 5 | Depth F-series + Sequential Halving round 1 | 0 | Re-read before write; no concurrent writer. Added F1–F18 continuous-improvement seam findings. Eliminated branch D via Sequential Halving round 1 (tied with A on 5.30, D lost tie-break). A shelved for compliance tracks. C shelved for one-shot use. Active: B + E. Parity revised DOWN 54% → 52%. Temperature decayed 0.65 → 0.50. |
 
 ## Changelog (append-only, most recent first)
 
 | Pass | Platform | Type | Score Δ | Summary |
 |---|---|---|---|---|
+| 5 | Claude Code | Depth | -0.20 | 18 continuous-improvement seam findings (F1-F18). Major reveal: improvementLoops.ts exists but watches the wrong layer (F2). Event bus types are hardcoded union (F1) blocking integration events. Chat ReAct has no integration tools in its tool surface (F13). Code Chat autonomousCoding is blind to the integration registry (F7). Sequential Halving round 1 eliminated Branch D. Active: B + E. Parity 54% → 52%. Temperature 0.65 → 0.50. |
 | 4 | Claude Code | Exploration | +0.00 (branches generated, not evaluated) | Generated 5 architectural branches for dynamic CRUD. A/B/E active, C/D shelved. Temperature bumped 0.45 → 0.65 (will decay next pass). Core assumption challenged: "provider = row + code". Alternatives range from declarative JSON (B) to agent re-derivation every run (C) to browser replay (D) to hybrid fallback (E). No code changes. |
 | 3 | Claude Code | Adversarial | -0.40 | Added 25 adversarial findings (A1–A25). 5 critical SEC-class items: A9 multi-tenant insight leakage, A15 ingested content bypasses compliance pipeline, A17 SnapTrade no consent check, A20 public pipelineHealth enumerable, A21 SSRF pre-fix for future G5, A22 extraction cost cap missing, A24 run_bash no sandbox. Goodhart alert (A12) on "continuous improvement" claim. Parity 58% → 54%. No code changes. |
 | 2 | Claude Code | Depth | -0.45 | Added 25 depth findings (D1–D25) with code line references. Revised parity DOWN to 58%. Exposed hard blockers: enum-closed category (D1), enum-closed authMethod (D2), enum-closed transform (D3), Date.now() defeating dedup (D4), hardcoded PROVIDER_TEST_CONFIGS (D5), 0 integration-aware Code Chat tools (D11), prompt-injection exposure in extractors (D17). Score down is GOOD — we found deeper problems. No code changes. |
