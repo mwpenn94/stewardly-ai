@@ -136,6 +136,12 @@ import {
 import SymbolNavigatorPopover from "@/components/codeChat/SymbolNavigatorPopover";
 import FindReferencesPopover from "@/components/codeChat/FindReferencesPopover";
 import RenameSymbolPopover from "@/components/codeChat/RenameSymbolPopover";
+import WorkspaceBookmarksPopover from "@/components/codeChat/WorkspaceBookmarksPopover";
+import {
+  loadBookmarks as loadWorkspaceBookmarks,
+  saveBookmarks as saveWorkspaceBookmarks,
+  type WorkspaceBookmark,
+} from "@/components/codeChat/workspaceBookmarks";
 import SessionAnalyticsPopover from "@/components/codeChat/SessionAnalyticsPopover";
 import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
 import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
@@ -597,6 +603,13 @@ function CodeChatInterface() {
   // Pass 257: rename symbol popover (F2)
   const [renameOpen, setRenameOpen] = useState(false);
 
+  // Pass 259: workspace bookmarks (file favorites)
+  const [workspaceBookmarks, setWorkspaceBookmarks] = useState<WorkspaceBookmark[]>(
+    () => loadWorkspaceBookmarks(),
+  );
+  useEffect(() => { saveWorkspaceBookmarks(workspaceBookmarks); }, [workspaceBookmarks]);
+  const [workspaceBookmarksOpen, setWorkspaceBookmarksOpen] = useState(false);
+
   // Pass 253: workspace checkpoints (named snapshots for rollback)
   const [checkpoints, setCheckpoints] = useState<WorkspaceCheckpoint[]>(() => loadCheckpoints());
   useEffect(() => { saveCheckpoints(checkpoints); }, [checkpoints]);
@@ -769,6 +782,9 @@ function CodeChatInterface() {
           break;
         case "rename":
           setRenameOpen(true);
+          break;
+        case "workspace-bookmarks":
+          setWorkspaceBookmarksOpen(true);
           break;
         case "checkpoints":
           setCheckpointsOpen(true);
@@ -2511,6 +2527,12 @@ function CodeChatInterface() {
         open={renameOpen}
         onClose={() => setRenameOpen(false)}
         isAdmin={isAdmin}
+      />
+      <WorkspaceBookmarksPopover
+        open={workspaceBookmarksOpen}
+        onClose={() => setWorkspaceBookmarksOpen(false)}
+        bookmarks={workspaceBookmarks}
+        onChange={setWorkspaceBookmarks}
       />
       <SessionAnalyticsPopover
         open={analyticsOpen}

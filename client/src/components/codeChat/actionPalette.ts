@@ -112,6 +112,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "open:audit", label: "Open tool audit", category: "popover", keywords: ["hooks", "rules", "safety", "compliance"] },
   { id: "open:references", label: "Find references", category: "popover", hint: "⇧F12", keywords: ["usages", "xrefs", "lookup"] },
   { id: "open:rename", label: "Rename symbol", category: "popover", hint: "F2", keywords: ["refactor", "replace"] },
+  { id: "open:workspace-bookmarks", label: "Workspace bookmarks", category: "popover", keywords: ["favorites", "starred files"] },
   { id: "open:checkpoints", label: "Open workspace checkpoints", category: "popover", keywords: ["snapshot", "rollback", "stash", "restore"] },
   { id: "open:snippets", label: "Open code snippets", category: "popover", keywords: ["library", "boilerplate", "starter"] },
   { id: "open:shortcuts", label: "Open keyboard shortcuts", category: "popover", hint: "?", keywords: ["help"] },
