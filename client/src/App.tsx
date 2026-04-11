@@ -114,13 +114,13 @@ const LearningFlashcardStudy = lazy(() => import("./pages/learning/LearningFlash
 const LearningQuizRunner = lazy(() => import("./pages/learning/LearningQuizRunner"));
 const LearningReview = lazy(() => import("./pages/learning/LearningReview"));
 const ExamSimulatorRoute = lazy(() => import("./pages/learning/ExamSimulatorRoute"));
+const CaseStudySimulatorRoute = lazy(() => import("./pages/learning/CaseStudySimulatorRoute"));
 // Pass 120+ new components
 const NewLanding = lazy(() => import("./pages/NewLanding"));
 const MyWork = lazy(() => import("./pages/MyWork"));
 const MyFinancialTwin = lazy(() => import("./pages/MyFinancialTwin"));
 const ExamSimulator = lazy(() => import("./pages/learning/ExamSimulator"));
 const DisciplineDeepDive = lazy(() => import("./pages/learning/DisciplineDeepDive"));
-const CaseStudySimulator = lazy(() => import("./pages/learning/CaseStudySimulator"));
 const AchievementSystem = lazy(() => import("./pages/learning/AchievementSystem"));
 const ConnectionMap = lazy(() => import("./pages/learning/ConnectionMap"));
 const AudioPreferences = lazy(() => import("./pages/settings/AudioPreferences"));
@@ -229,7 +229,8 @@ function Router() {
         {/* Pass 120+ learning extensions */}
         <Route path="/learning/exam/:moduleSlug" component={ExamSimulatorRoute} />
         <Route path="/learning/discipline/:slug">{() => <DisciplineDeepDive />}</Route>
-        <Route path="/learning/case/:caseId">{() => <CaseStudySimulator />}</Route>
+        <Route path="/learning/case" component={CaseStudySimulatorRoute} />
+        <Route path="/learning/case/:caseId" component={CaseStudySimulatorRoute} />
         <Route path="/learning/connections">{() => <ConnectionMap />}</Route>
         <Route path="/learning/achievements">{() => <AchievementSystem />}</Route>
 

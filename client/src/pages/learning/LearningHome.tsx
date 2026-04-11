@@ -283,17 +283,15 @@ export default function LearningHome() {
                   </Card>
                 </Link>
               )}
-              {tracks.length > 0 && (
-                <Link href={`/learning/case/${tracks[0].slug}`}>
-                  <Card className="card-lift cursor-pointer h-full">
-                    <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                      <Scale className="h-6 w-6 text-primary" />
-                      <div className="text-sm font-medium">Case Studies</div>
-                      <div className="text-[10px] text-muted-foreground">Branching scenario decisions</div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              )}
+              <Link href="/learning/case">
+                <Card className="card-lift cursor-pointer h-full">
+                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                    <Scale className="h-6 w-6 text-primary" />
+                    <div className="text-sm font-medium">Case Studies</div>
+                    <div className="text-[10px] text-muted-foreground">Branching scenario decisions</div>
+                  </CardContent>
+                </Card>
+              </Link>
               <Link href="/learning/connections">
                 <Card className="card-lift cursor-pointer h-full">
                   <CardContent className="p-4 flex flex-col items-center text-center gap-2">

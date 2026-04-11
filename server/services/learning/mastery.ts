@@ -170,6 +170,123 @@ export function parseItemKey(itemKey: string): { kind: "flashcard" | "question" 
   return { kind: m[1] as "flashcard" | "question", id: Number(m[2]) };
 }
 
+// ─── Pure review-session builder ─────────────────────────────────────────
+// Pass 4 extracted the `dueReview` tRPC procedure's core logic into a
+// pure function so it can be unit-tested without spinning up a DB. The
+// function takes already-hydrated due items + already-listed new items
+// and produces the final interleaved + padded session list. The router
+// in `server/routers/learning.ts` is now a thin DB shim around this.
+
+export interface ReviewSessionFlashcard {
+  id: number;
+  term: string;
+  definition: string;
+}
+
+export interface ReviewSessionQuestion {
+  id: number;
+  prompt: string;
+  options: unknown;
+  correctIndex: number | null;
+  explanation: string | null;
+  difficulty: "easy" | "medium" | "hard";
+}
+
+export type ReviewSessionItem =
+  | { kind: "flashcard"; itemKey: string; flashcard: ReviewSessionFlashcard; isNew: boolean }
+  | { kind: "question"; itemKey: string; question: ReviewSessionQuestion; isNew: boolean };
+
+export interface BuildReviewSessionInput {
+  /** Mastery rows sorted most-overdue-first. */
+  due: Array<{ itemKey: string }>;
+  /** Hydrated flashcards keyed by id — must include every flashcard referenced by `due`. */
+  flashcardById: Map<number, ReviewSessionFlashcard>;
+  /** Hydrated questions keyed by id — must include every question referenced by `due`. */
+  questionById: Map<number, ReviewSessionQuestion>;
+  /** Candidate new flashcards the user has never seen (empty when studyAhead=false + due is full). */
+  newFlashcards: ReviewSessionFlashcard[];
+  /** Candidate new questions the user has never seen. */
+  newQuestions: ReviewSessionQuestion[];
+  /** Maximum number of items in the final session. */
+  limit: number;
+  /** Maximum number of new items to pad in when `studyAhead=false` and due is short. */
+  newQuota: number;
+  /** If true, ONLY return new items (ignore due). */
+  studyAhead: boolean;
+}
+
+/**
+ * Pure: assemble the final review session list. First drains the due
+ * queue (if not `studyAhead`), then pads with new cards interleaved
+ * flashcard → question → flashcard → question so the session has a
+ * rhythm instead of front-loading one modality. Total is capped at
+ * `limit`. In `studyAhead` mode, the due queue is ignored and the
+ * full `limit` is filled from new cards.
+ */
+export function buildReviewSession(input: BuildReviewSessionInput): {
+  items: ReviewSessionItem[];
+  reviewItems: number;
+  newItems: number;
+} {
+  const { due, flashcardById, questionById, newFlashcards, newQuestions, limit, newQuota, studyAhead } = input;
+  const items: ReviewSessionItem[] = [];
+
+  if (!studyAhead) {
+    for (const row of due) {
+      if (items.length >= limit) break;
+      const parsed = parseItemKey(row.itemKey);
+      if (parsed.kind === "flashcard" && parsed.id != null) {
+        const fc = flashcardById.get(parsed.id);
+        if (fc) items.push({ kind: "flashcard", itemKey: row.itemKey, flashcard: fc, isNew: false });
+      } else if (parsed.kind === "question" && parsed.id != null) {
+        const q = questionById.get(parsed.id);
+        if (q) items.push({ kind: "question", itemKey: row.itemKey, question: q, isNew: false });
+      }
+    }
+  }
+
+  const canAddNew = studyAhead
+    ? Math.max(0, limit - items.length)
+    : Math.max(0, Math.min(newQuota, limit - items.length));
+  if (canAddNew > 0) {
+    const maxPair = Math.max(newFlashcards.length, newQuestions.length);
+    let newAdded = 0;
+    for (let i = 0; i < maxPair; i++) {
+      if (newAdded >= canAddNew) break;
+      if (items.length >= limit) break;
+      if (i < newFlashcards.length) {
+        const fc = newFlashcards[i];
+        items.push({
+          kind: "flashcard",
+          itemKey: `flashcard:${fc.id}`,
+          flashcard: fc,
+          isNew: true,
+        });
+        newAdded += 1;
+        if (newAdded >= canAddNew) break;
+        if (items.length >= limit) break;
+      }
+      if (i < newQuestions.length) {
+        const q = newQuestions[i];
+        items.push({
+          kind: "question",
+          itemKey: `question:${q.id}`,
+          question: q,
+          isNew: true,
+        });
+        newAdded += 1;
+      }
+    }
+  }
+
+  const newItems = items.filter((i) => i.isNew).length;
+  return {
+    items,
+    reviewItems: items.length - newItems,
+    newItems,
+  };
+}
+
 /**
  * Returns the set of `itemKey`s already in the user's mastery table.
  * Used by the `listNewFlashcards` / `listNewQuestions` helpers below to

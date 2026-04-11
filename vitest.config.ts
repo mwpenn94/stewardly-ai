@@ -21,6 +21,7 @@ export default defineConfig({
       "client/src/lib/wealth-engine/**/*.test.ts",
       "client/src/lib/recentCalculators.test.ts",
       "client/src/lib/trackReadState.test.ts",
+      "client/src/lib/caseStudyRegistry.test.ts",
       "client/src/components/codeChat/**/*.test.ts",
     ],
   },

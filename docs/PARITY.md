@@ -306,6 +306,79 @@ DB unseen. The first-time path is completely broken without this fix.
 - Streak persistence across sessions
 - Localized content — only English today
 
+### Pass 4 — Depth (2026-04-11, Claude Code)
+**Pass type:** Depth
+**Temperature in:** 0.22
+**Temperature out:** 0.18
+
+**Caught a regression bug** that slipped through Pass 3: `buildReviewSession`'s
+`canAddNew` cap wasn't being enforced inside the loop (only the overall
+`limit` was), so a session with `newQuota=4` would add up to 6 new
+items before hitting the limit. The new unit tests caught it on first
+run and a one-line fix (explicit `newAdded` counter) closed it. This
+is exactly what Depth passes are for.
+
+**Addressed:**
+- **Extracted pure `buildReviewSession` helper** from the `dueReview`
+  tRPC procedure into `server/services/learning/mastery.ts`. The router
+  is now a thin DB shim around the pure helper — hydrate + fetch new
+  candidates + delegate to the pure function + wrap the result.
+- **+13 new unit tests** for `buildReviewSession`:
+  empty session, due-only, hydration misses, unknown itemKey shapes,
+  pad-with-new (respecting newQuota), due-queue-fills-limit, hard cap,
+  studyAhead mode, fc→q interleaving, uneven lists, isNew propagation,
+  newQuota=0 disables padding, itemKey format preservation. Exported
+  `ReviewSessionFlashcard`, `ReviewSessionQuestion`, `ReviewSessionItem`,
+  `BuildReviewSessionInput` types for consumer safety.
+- **G10 closed** (minimum-viable path): added
+  `client/src/lib/caseStudyRegistry.ts` — a typed client-side catalog
+  of 3 curated case studies (High Net Worth Estate Plan, Retirement
+  Income Gap, Premium Financing for Life Insurance) with pure lookup
+  helpers `getCaseStudyById`, `listCaseStudies`,
+  `pickDefaultForTrackSlug`. Built
+  `client/src/pages/learning/CaseStudySimulatorRoute.tsx` wrapper
+  that reads `:caseId`, looks it up, and either mounts
+  `<CaseStudySimulator caseStudy={...} />` OR renders a picker grid
+  when no id is provided. Added `/learning/case` (picker) +
+  `/learning/case/:caseId` (direct) routes; removed the orphaned lazy
+  import. LearningHome's Case Studies tile now routes to the picker
+  (previously encoded a track slug the component ignored).
+- **+17 new unit tests** for `caseStudyRegistry`: registry integrity
+  (unique ids, valid fields, decision options ≥ 2, unique option keys
+  per decision, score range, valid nextDecisionIndex), getCaseStudyById
+  (null on missing/empty/unknown, case-insensitive), listCaseStudies
+  (clone isolation), pickDefaultForTrackSlug (fallback, substring
+  match, bidirectional match).
+
+**Dimension deltas (self-rated, conservative):**
+- Core Function: 8.5 → 8.5 (no net change — bug found + fixed inside pass)
+- Code Quality: 7.5 → 8 (pure helper extracted + 30 new tests + 1 bug
+  caught and fixed)
+- Flexibility: 7.5 → 7.5
+- Robustness: 7 → 7.5 (buildReviewSession test coverage hardens the
+  critical path against future regressions)
+
+**Composite:** 7.8 → 8.0
+
+**Build + test state (end of Pass 4):**
+- TS check: 0 errors
+- Build: clean in 19.55s
+- Full suite: 3,853 passing / 113 env-dependent failing (+30 new from
+  Pass 4, baseline unchanged, 0 regressions)
+- Total new tests across Passes 1-4: +76 (21 Pass 1 + 25 Pass 2 +
+  0 Pass 3 + 30 Pass 4)
+
+**Remaining / OPEN_ISSUES (carried forward):**
+- Streak persistence across sessions
+- DisciplineDeepDive `cases` + `fsApps` tabs still use hardcoded
+  arrays inside the page (the Case Studies tab now has a full
+  catalog, but the Deep Dive page's Cases tab predates the registry
+  and would need to be rewired to use `listCaseStudies()`)
+- Localized content — only English today
+- No per-track exam-readiness estimate visible on the track detail
+  page (server-side `assessTrackReadiness` exists but is unused in
+  the UI)
+
 ## Reconciliation Log
 
 (parallel passes write here if they conflict with a landing commit)

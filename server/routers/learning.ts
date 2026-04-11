@@ -31,6 +31,7 @@ import {
   listNewFlashcards,
   listNewQuestions,
   getNewItemCount,
+  buildReviewSession,
 } from "../services/learning/mastery";
 
 import {
@@ -188,89 +189,52 @@ const masteryRouter = router({
       const newQuota = input?.newQuota ?? 10;
       const studyAhead = input?.studyAhead ?? false;
 
+      // 1. Hydrate the due queue (or skip it in studyAhead mode).
       const due = studyAhead ? [] : await getDueItems(ctx.user.id, limit * 2);
-
       const flashcardIds: number[] = [];
       const questionIds: number[] = [];
-      const keyMeta: { key: string; kind: "flashcard" | "question"; id: number }[] = [];
       for (const row of due) {
         const parsed = parseItemKey(row.itemKey);
-        if (parsed.kind === "flashcard" && parsed.id != null) {
-          flashcardIds.push(parsed.id);
-          keyMeta.push({ key: row.itemKey, kind: "flashcard", id: parsed.id });
-        } else if (parsed.kind === "question" && parsed.id != null) {
-          questionIds.push(parsed.id);
-          keyMeta.push({ key: row.itemKey, kind: "question", id: parsed.id });
-        }
+        if (parsed.kind === "flashcard" && parsed.id != null) flashcardIds.push(parsed.id);
+        else if (parsed.kind === "question" && parsed.id != null) questionIds.push(parsed.id);
       }
-
       const [flashcards, questions] = await Promise.all([
         getFlashcardsByIds(flashcardIds),
         getQuestionsByIds(questionIds),
       ]);
+      const flashcardById = new Map<number, any>(flashcards.map((f: any) => [f.id, f]));
+      const questionById = new Map<number, any>(questions.map((q: any) => [q.id, q]));
 
-      const flashcardById = new Map(flashcards.map((f: any) => [f.id, f]));
-      const questionById = new Map(questions.map((q: any) => [q.id, q]));
+      // 2. Fetch new-card candidates. Worst case we fetch more than we
+      //    need (when `due` already fills the limit), which is acceptable
+      //    because both helpers have their own `limit` parameter and we
+      //    cap at the right size inside `buildReviewSession`.
+      const padTarget = studyAhead ? limit : Math.min(newQuota, limit);
+      const [newFcs, newQs] = padTarget > 0
+        ? await Promise.all([
+            listNewFlashcards(ctx.user.id, Math.ceil(padTarget / 2)),
+            listNewQuestions(ctx.user.id, Math.floor(padTarget / 2)),
+          ])
+        : [[], []];
 
-      // Interleave flashcards and questions 1:1 while preserving
-      // most-overdue-first order from `keyMeta`.
-      const items: Array<
-        | { kind: "flashcard"; itemKey: string; flashcard: any; isNew: boolean }
-        | { kind: "question"; itemKey: string; question: any; isNew: boolean }
-      > = [];
-      for (const meta of keyMeta) {
-        if (items.length >= limit) break;
-        if (meta.kind === "flashcard") {
-          const fc = flashcardById.get(meta.id);
-          if (fc) items.push({ kind: "flashcard", itemKey: meta.key, flashcard: fc, isNew: false });
-        } else {
-          const q = questionById.get(meta.id);
-          if (q) items.push({ kind: "question", itemKey: meta.key, question: q, isNew: false });
-        }
-      }
-
-      // Pad with new cards if the due queue was smaller than the limit.
-      // Alternate flashcard → question → flashcard → question so the
-      // session has a rhythm instead of front-loading one modality.
-      const needed = studyAhead ? limit : Math.min(newQuota, limit - items.length);
-      if (needed > 0) {
-        const fcHalf = Math.ceil(needed / 2);
-        const qHalf = needed - fcHalf;
-        const [newFcs, newQs] = await Promise.all([
-          listNewFlashcards(ctx.user.id, fcHalf),
-          listNewQuestions(ctx.user.id, qHalf),
-        ]);
-        const maxPair = Math.max(newFcs.length, newQs.length);
-        for (let i = 0; i < maxPair; i++) {
-          if (items.length >= limit) break;
-          if (i < newFcs.length) {
-            const fc = newFcs[i];
-            items.push({
-              kind: "flashcard",
-              itemKey: `flashcard:${fc.id}`,
-              flashcard: fc,
-              isNew: true,
-            });
-          }
-          if (items.length >= limit) break;
-          if (i < newQs.length) {
-            const q = newQs[i];
-            items.push({
-              kind: "question",
-              itemKey: `question:${q.id}`,
-              question: q,
-              isNew: true,
-            });
-          }
-        }
-      }
+      // 3. Assemble the final session via the pure helper (unit-tested).
+      const session = buildReviewSession({
+        due,
+        flashcardById,
+        questionById,
+        newFlashcards: newFcs as any,
+        newQuestions: newQs as any,
+        limit,
+        newQuota,
+        studyAhead,
+      });
 
       return {
-        items,
-        total: items.length,
+        items: session.items,
+        total: session.items.length,
         dueTotal: due.length,
-        newItems: items.filter((i) => i.isNew).length,
-        reviewItems: items.filter((i) => !i.isNew).length,
+        newItems: session.newItems,
+        reviewItems: session.reviewItems,
       };
     }),
 
