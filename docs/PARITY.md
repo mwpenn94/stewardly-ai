@@ -23,7 +23,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 |-----|------|-----------------|-----------------------------------------------------------------------------|-------------|------------------|-------|---------|
 | G1  | P0   | dynamic-crud    | Schema inference from arbitrary sample records (docless integrations)      | done        | build-loop-p1    | 5/10  | 00ab579 |
 | G2  | P0   | dynamic-crud    | Adapter generator — turn inferred schema into a read/write CRUD adapter    | done        | build-loop-p1    | 4/10  | pending |
-| G3  | P1   | dynamic-crud    | Field mapping overrides UI (accept or edit inferred semantic hints)        | open        | build-loop-p1    | 0/10  | —       |
+| G3  | P1   | dynamic-crud    | Field mapping overrides UI (accept or edit inferred semantic hints)        | done        | build-loop-p1    | 6/10  | pending |
 | G4  | P1   | dynamic-crud    | Auth-shape probe — detect api-key/oauth/basic/bearer from a sample request | done        | build-loop-p1    | 4/10  | pending |
 | G5  | P1   | pipelines       | Idempotent upsert with drift detection (schema changed since last run)     | open        | build-loop-p1    | 0/10  | —       |
 | G6  | P1   | pipelines       | Rate limiting + exponential backoff honored per-source                     | open        | build-loop-p1    | 0/10  | —       |
@@ -44,6 +44,8 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G20 | P1   | pipelines       | Field transforms at runtime (parse_currency/parse_date/parse_percent)      | done        | build-loop-p3    | 4/10  | pending |
 | G21 | P1   | continuous      | Field rename detection (heuristic: type + hint + sample-count match)       | done        | build-loop-p4    | 5/10  | pending |
 | G22 | P1   | continuous      | Drift severity classification (breaking/warning/info)                      | done        | build-loop-p4    | 5/10  | pending |
+| G23 | P1   | dynamic-crud    | Pinned overrides survive re-inference (rehydratePinnedOverrides)           | done        | build-loop-p5    | 5/10  | pending |
+| G24 | P2   | dynamic-crud    | Override diff + audit trail (diffOverrideSets)                             | done        | build-loop-p5    | 4/10  | pending |
 
 ## Protected Improvements
 
@@ -92,4 +94,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 - Pass 1 · dynamic schema inference · [A1: schemaInference.ts, A2: tests, A3: PARITY.md] · 00ab579 · A1+A2+A3 done · G2-G12 deferred
 - Pass 2 · adapter generation · [R1: G2 adapter generator, G13 pagination probe, G14 collection path, G15 curl, G16 fingerprint] · 46c89ad · G2+G4+G13+G14+G15+G16 done · G3/G5-G12 deferred
 - Pass 3 · runtime executor · [F1 Pass 2 deferred exec, A1 listRecords/CRUD, A2 upsert] · 87ad53e · G17+G18+G19+G20 done · G3/G5-G12 deferred
-- Pass 4 · schema drift · [R1: G10 drift detector, R2: G5 drift-aware upsert, A1: rename heuristic] · pending · G10+G21+G22 done · G3/G5-G12 deferred
+- Pass 4 · schema drift · [R1: G10 drift detector, R2: G5 drift-aware upsert, A1: rename heuristic] · 3dc33cc · G10+G21+G22 done · G3/G5-G12 deferred
+- Pass 5 · field overrides · [R1: G3 override layer, A1: pinned rehydrate, A2: diffOverrideSets] · pending · G3+G23+G24 done · G5-G9/G11/G12 deferred
