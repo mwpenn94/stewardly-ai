@@ -42,6 +42,11 @@ const TRPC_MAP: Record<string, string> = {
   we_monte_carlo: "wealthEngine.monteCarloSim",
   we_detect_opportunities: "agent.calculatorOrchestrator.detectOpportunities",
 
+  // Force multiplier additions — bundled quote + owner comp + valuation
+  we_multi_line_quote: "wealthEngine.multiLineQuickQuote",
+  we_owner_comp_compare: "wealthEngine.ownerCompCompareEntities",
+  we_value_business: "wealthEngine.valueBusiness",
+
   // Phase 6A — chat tools (no direct tRPC, dispatched via aiToolCalling)
   chat_explain_number: "wealthChat.explainNumber",
   chat_modify_and_rerun: "wealthChat.modifyAndRerun",

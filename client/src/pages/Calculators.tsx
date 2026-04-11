@@ -157,23 +157,43 @@ export default function Calculators() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {/* Wealth Engine — advanced multi-engine comparison tools */}
         <div className="mb-6">
-          <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">Wealth Engine</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">Wealth Engine</h2>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-[11px] gap-1"
+              onClick={() => navigate("/wealth-engine")}
+            >
+              <Sparkles className="w-3 h-3 text-accent" />
+              Unified hub
+              <ChevronRight className="w-3 h-3" />
+            </Button>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
-              { label: "Strategy Comparison", path: "/wealth-engine/strategy-comparison", icon: <BarChart3 className="w-4 h-4" />, desc: "Compare 7 wealth strategies" },
-              { label: "Retirement Planner", path: "/wealth-engine/retirement", icon: <PiggyBank className="w-4 h-4" />, desc: "Goal, smooth, guardrails" },
-              { label: "Practice to Wealth", path: "/wealth-engine/practice-to-wealth", icon: <TrendingUp className="w-4 h-4" />, desc: "Practice growth modeling" },
-              { label: "Quick Quote", path: "/wealth-engine/quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Instant client proposal" },
-              { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
+              { label: "Wealth Engine Hub", path: "/wealth-engine", icon: <Sparkles className="w-4 h-4" />, desc: "All engines in one place", isNew: true },
+              { label: "Quick Bundle", path: "/wealth-engine/quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Multi-line proposal" },
+              { label: "Strategy Comparison", path: "/wealth-engine/strategy-comparison", icon: <BarChart3 className="w-4 h-4" />, desc: "Compare 7 strategies" },
+              { label: "Owner Comp", path: "/wealth-engine/owner-comp", icon: <Building2 className="w-4 h-4" />, desc: "Entity + QBI + retirement", isNew: true },
+              { label: "Business Valuation", path: "/wealth-engine/business-valuation", icon: <TrendingUp className="w-4 h-4" />, desc: "SDE + exit projection", isNew: true },
+              { label: "Retirement Planner", path: "/wealth-engine/retirement", icon: <PiggyBank className="w-4 h-4" />, desc: "Goal + guardrails" },
+              { label: "Practice to Wealth", path: "/wealth-engine/practice-to-wealth", icon: <TrendingUp className="w-4 h-4" />, desc: "Practice growth" },
+              { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "UWE/BIE/HE/SCUI" },
             ].map(tool => (
               <button
-                key={tool.path}
+                key={tool.path + tool.label}
                 onClick={() => navigate(tool.path)}
-                className="card-lift p-3 rounded-lg border border-border bg-card/60 hover:bg-secondary/40 transition-colors text-left group"
+                className="card-lift p-3 rounded-lg border border-border bg-card/60 hover:bg-secondary/40 transition-colors text-left group relative"
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-accent">{tool.icon}</span>
                   <span className="text-xs font-medium">{tool.label}</span>
+                  {tool.isNew && (
+                    <Badge variant="outline" className="h-3.5 text-[8px] px-1 border-accent/40 text-accent">
+                      New
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-[10px] text-muted-foreground">{tool.desc}</p>
               </button>

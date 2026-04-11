@@ -550,6 +550,87 @@ export const WEALTH_ENGINE_TOOLS: Tool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "we_multi_line_quote",
+      description:
+        "Generate a bundled multi-line quick quote for a client: term life, disability, LTC, HDHP + HSA, homeowners/renters, auto, umbrella, and (for business owners) BOP + key person + group benefits. Also returns planning actions (Roth, 529, emergency fund, trust, S-Corp election). Use this when the user asks for a full protection bundle, 'one proposal', 'what should I buy', or 'quote everything'.",
+      parameters: {
+        type: "object",
+        properties: {
+          age: { type: "number" },
+          income: { type: "number" },
+          netWorth: { type: "number" },
+          savings: { type: "number" },
+          dependents: { type: "number" },
+          hasHome: { type: "boolean" },
+          homeValue: { type: "number" },
+          isBizOwner: { type: "boolean" },
+          businessRevenue: { type: "number" },
+          numEmployees: { type: "number" },
+          stateCode: { type: "string", description: "Two-letter US state code" },
+        },
+        required: ["age", "income", "dependents"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "we_owner_comp_compare",
+      description:
+        "Compare Sole Prop / LLC / S-Corp / C-Corp entity structures for a business owner. Returns net take-home, effective tax rate, recommended owner salary, QBI deduction, retirement plan stack, and ranking. Use this when the user asks about entity choice, S-Corp election, LLC vs Corp, QBI, 199A, or reasonable compensation.",
+      parameters: {
+        type: "object",
+        properties: {
+          netBusinessProfit: { type: "number" },
+          filingStatus: { type: "string", enum: ["single", "mfj", "hoh"] },
+          age: { type: "number" },
+          hasEmployees: { type: "boolean" },
+          isSstb: {
+            type: "boolean",
+            description: "Specified Service Trade or Business (law, health, finance, consulting, etc.)",
+          },
+          stateRate: { type: "number", description: "Flat state income tax rate (e.g. 0.05)" },
+          targetYearsToRetire: { type: "number" },
+        },
+        required: ["netBusinessProfit", "filingStatus", "age"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "we_value_business",
+      description:
+        "Value a business using the SDE (Seller's Discretionary Earnings) multiple method and project exit value forward over a horizon. Returns current value, projected exit value, applied multiple, SDE, CAGR, and a narrative. Use when the user asks 'what's my business worth' or about exit planning / succession / sale.",
+      parameters: {
+        type: "object",
+        properties: {
+          annualRevenue: { type: "number" },
+          annualEbitda: { type: "number" },
+          ownerAddBack: {
+            type: "number",
+            description: "Owner salary + benefits + one-time costs added back to EBITDA to get SDE",
+          },
+          growthRate: {
+            type: "number",
+            description: "Annual growth rate (e.g. 0.08 for 8%)",
+          },
+          industryMultiple: {
+            type: "number",
+            description: "Override default SDE multiple if the user has industry-specific data",
+          },
+          exitYears: { type: "number" },
+        },
+        required: ["annualRevenue", "annualEbitda"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ─── Chat-level Wealth Tools (Phase 6A) ───────────────────────────
@@ -1370,6 +1451,91 @@ export async function executeAITool(name: string, args: Record<string, any>): Pr
           opportunities: opps,
           count: opps.length,
         });
+      }
+
+      // ─── Force multiplier additions ────────────────────────────
+      case "we_multi_line_quote": {
+        const mod = await import("./services/wealthChat/multiLineQuote");
+        const result = mod.generateMultiLineQuickQuote({
+          age: Number(args.age ?? 40),
+          income: Number(args.income ?? 120_000),
+          netWorth: args.netWorth !== undefined ? Number(args.netWorth) : undefined,
+          savings: args.savings !== undefined ? Number(args.savings) : undefined,
+          dependents: Number(args.dependents ?? 0),
+          hasHome: args.hasHome === true,
+          homeValue: args.homeValue !== undefined ? Number(args.homeValue) : undefined,
+          isBizOwner: args.isBizOwner === true,
+          businessRevenue: args.businessRevenue !== undefined ? Number(args.businessRevenue) : undefined,
+          numEmployees: args.numEmployees !== undefined ? Number(args.numEmployees) : undefined,
+          stateCode: args.stateCode as string | undefined,
+        });
+        return JSON.stringify({
+          profileSummary: result.profileSummary,
+          totals: result.totals,
+          coverageLines: result.coverageLines.map((l) => ({
+            category: l.category,
+            product: l.product,
+            coverageAmount: l.coverageAmount,
+            annualPremium: l.annualPremium,
+            monthlyPremium: l.monthlyPremium,
+            priority: l.priority,
+            rationale: l.rationale,
+          })),
+          planningActions: result.planningActions,
+          warnings: result.warnings,
+        });
+      }
+
+      case "we_owner_comp_compare": {
+        const mod = await import("./shared/calculators");
+        const result = mod.compareEntities({
+          netBusinessProfit: Number(args.netBusinessProfit ?? 250_000),
+          filingStatus: (args.filingStatus as "single" | "mfj" | "hoh") ?? "single",
+          age: Number(args.age ?? 40),
+          hasEmployees: args.hasEmployees === true,
+          isSstb: args.isSstb === true,
+          stateRate: args.stateRate !== undefined ? Number(args.stateRate) : 0.05,
+          targetYearsToRetire:
+            args.targetYearsToRetire !== undefined
+              ? Number(args.targetYearsToRetire)
+              : undefined,
+        });
+        return JSON.stringify({
+          recommended: result.recommended,
+          savings: result.savings,
+          results: result.results.map((r) => ({
+            entity: r.entity,
+            ownerSalary: r.ownerSalary,
+            selfEmploymentTax: r.selfEmploymentTax,
+            payrollTax: r.employeePayrollTax + r.employerPayrollTax,
+            qbiDeduction: r.qbi.deduction,
+            retirementPlan: r.retirementPlan.plan,
+            retirementTotal: r.retirementPlan.total,
+            federalTax: r.federalIncomeTax,
+            stateTax: r.stateTax,
+            totalTaxes: r.totalTaxes,
+            netTakeHome: r.netTakeHome,
+            effectiveRate: r.effectiveRate,
+            notes: r.notes,
+          })),
+        });
+      }
+
+      case "we_value_business": {
+        const mod = await import("./shared/calculators");
+        const result = mod.valueBusiness({
+          annualRevenue: Number(args.annualRevenue ?? 0),
+          annualEbitda: Number(args.annualEbitda ?? 0),
+          ownerAddBack:
+            args.ownerAddBack !== undefined ? Number(args.ownerAddBack) : undefined,
+          growthRate: args.growthRate !== undefined ? Number(args.growthRate) : undefined,
+          industryMultiple:
+            args.industryMultiple !== undefined
+              ? Number(args.industryMultiple)
+              : undefined,
+          exitYears: args.exitYears !== undefined ? Number(args.exitYears) : undefined,
+        });
+        return JSON.stringify(result);
       }
 
       // ─── Wealth Chat dispatch (Phase 6A) ───────────────────────
