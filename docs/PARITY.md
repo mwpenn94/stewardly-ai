@@ -3,14 +3,15 @@
 > Always re-read immediately before writing. Merge, don't overwrite.
 
 ## Meta
-- Last updated: 2026-04-11T00:00:02Z by chat:optimize-crud-parity-satL3/pass-3
+- Last updated: 2026-04-11T00:00:03Z by chat:optimize-crud-parity-satL3/pass-4
 - Comparable target: "best-in-class dynamic CRUD for any integration/pipeline/ingestion process, even where documentation or vendor support is limited or nonexistent but data is available from sources — plus continuous improvement across Code Chat, AI chat financial force multipliers, learning/training/onboarding, CRM/marketing coordination, workflow, and agentic AI/browser/device automation"
 - Core purpose: Give Stewardly the ability to dynamically CRUD any integration/pipeline/ingestion process and turn the resulting data fabric into a continuous-improvement force multiplier across every Stewardly surface
 - Target user: Platform admin / advisor-tier developer / power client who needs to wire a new data source without writing a schema migration or waiting on a vendor SDK
 - Success metric: Time from "I have a URL/sample/cURL and know the data is there" → "live, scheduled, personalized ingestion flowing into the 5-layer intelligence stack" → <10 min (documented), <30 min (undocumented), <60 min (portal-only)
-- Current parity score: 54% (composite 5.4 / 10 — revised DOWN again after Pass 3 adversarial exposed silent-failure + security gaps)
-- Passes completed: 3
-- Last reconciliation: 2026-04-11T00:00:02Z (conflicts: 0)
+- Current parity score: 54% (unchanged — Exploration pass generates branches, does not evaluate)
+- Passes completed: 4
+- Last reconciliation: 2026-04-11T00:00:03Z (conflicts: 0)
+- Active branches: 3 of 5 (see Pass 4 Exploration section)
 
 ## Pillars (comparable target decomposition)
 1. **Dynamic CRUD for integrations / pipelines / ingestion** (documented, undocumented, portal-only)
@@ -192,6 +193,118 @@ marked **SEC** are security-adjacent; **GH** is Goodhart's-law / gaming detectio
 - **Are we optimizing for scores or user value?** Pass 2 and Pass 3 both *lowered* the composite score by finding deeper problems. This is the **opposite** of score-gaming and should be considered a healthy audit.
 - **Goodhart alert (A12)** — the "continuous improvement" claim throughout CLAUDE.md is partially aspirational. We should either define concrete improvement KPIs (repair time, schema-recovery time, cost-per-insight trend) or soften the claim. **Flagged for later docs revision outside this parity loop.**
 
+## Pass 4 Exploration — Architectural Branches
+
+**Core assumption being challenged:** "A provider must be a row in
+`integration_providers` mapping to either (a) a hardcoded health check +
+extractor function, or (b) a generic scraper that LLM-extracts whatever it
+finds." This is the current paradigm. Pass 4 generates 5 alternatives.
+
+Per v2 Exploration rules, this pass does NOT evaluate. A later pass will
+progressively eliminate branches using the Sequential Halving algorithm
+(drop weakest first).
+
+### Branch A — Provider-as-Code (status quo improved)
+**Paradigm:** Every provider is a TypeScript file under
+`server/services/integrations/providers/<slug>.ts` that exports a typed
+adapter implementing a `ConnectorInterface`. A registry scans the directory
+on boot and populates `integration_providers` automatically. Code Chat
+generates the file via its new tools (G23).
+
+**Key advantage:** Full TS type safety, reviewable in PRs, testable per
+provider, compiler catches mistakes.
+
+**Key risk:** Requires redeploy to register a new provider. Violates the
+<10 min success metric. Violates the "limited/nonexistent docs" target
+because every variation still needs human review of the generated code.
+
+**Status: ACTIVE (candidate 1 of 3)**
+
+### Branch B — Provider-as-Data (declarative JSON spec)
+**Paradigm:** Every provider is a row in `integration_providers` with a
+JSON `connectorSpec` column describing endpoint templates, auth mode, pagination rules,
+field mapping suggestions, rate limits, and a declarative health-check
+condition. A generic runtime interpreter (`connectorRuntime.ts`) executes
+any `ConnectorSpec` without code changes.
+
+**Key advantage:** Zero-code registration. Database-native. Hot-reload on
+any spec change. Enables the <10 min success metric. Aligns with G5 dynamic
+provider registration. Works for documented and semi-documented APIs.
+
+**Key risk:** The spec is a mini-DSL that accrues complexity over time
+(pagination styles, auth variants, error shapes). Expressiveness vs. safety
+tradeoff. Debugging a spec mis-config is opaque to non-technical admins.
+Doesn't solve the purely-undocumented case (no spec to write).
+
+**Status: ACTIVE (candidate 2 of 3)**
+
+### Branch C — Provider-as-LLM-Loop (agent re-derives contract every run)
+**Paradigm:** No stored provider spec. At ingestion time, an agent receives
+`{url, goal, credentials, schedule}` and runs a ReAct loop: probe → sample
+→ infer schema → extract → normalize → persist. Each run re-discovers the
+contract from current sample data.
+
+**Key advantage:** Maximum flexibility. Handles undocumented sources
+natively. No provider schema at all. Self-healing against upstream changes.
+Best match to "limited/nonexistent docs" target.
+
+**Key risk:** Non-deterministic — two runs may produce different shapes.
+Expensive (10–100× cost of spec-based). Slow (multi-second latency per
+run). Debugging an agent loop is hard. Cron schedules with hundreds of
+sources becomes cost-prohibitive. LLM hallucination on edge cases.
+
+**Status: SHELVED (candidate 4 of 5)** — too expensive for scheduled runs
+but worth keeping as a one-shot tool for integration onboarding.
+
+### Branch D — Provider-as-Playwright-Trace (record-replay browser)
+**Paradigm:** Admin records a Playwright trace once (login, navigate,
+export download, logout). The trace + credentials are stored. Scheduled
+runs replay the trace in a headless browser worker and parse the exported
+file.
+
+**Key advantage:** Solves portal-only sources (G17) — the largest
+unserved segment (carrier portals, regulatory UIs, legacy DBs behind web
+interfaces). No API required at all.
+
+**Key risk:** Brittle to UI changes. Captcha / MFA / rotating auth breaks
+replay. Large storage (traces + artifacts). Requires a headless browser
+worker pool. Abuse risk (could be weaponized as a crawler). Legal gray
+area for ToS.
+
+**Status: SHELVED (candidate 5 of 5)** — valuable but orthogonal to
+Branches A/B/E; should be treated as a separate track after core dynamic
+CRUD ships.
+
+### Branch E — Provider-as-Hybrid (spec-first, LLM fallback, browser escape)
+**Paradigm:** Branch B (declarative spec) is the default path. If a
+spec-based run fails with shape mismatch / auth error / unexpected 4xx, a
+Branch C LLM loop runs as fallback to re-derive the contract and propose a
+spec patch (reviewed by an admin under graduated autonomy). If neither
+works, Branch D browser trace is the escape hatch. Every successful LLM
+fallback automatically updates the stored spec + version-bumps it.
+
+**Key advantage:** Gets best of all branches. Adaptive and self-improving.
+Cost-efficient default with expensive fallback only on failure. Aligns
+perfectly with CLAUDE.md's "continuous improvement" claim.
+
+**Key risk:** Complexity. Error handling across three execution paths is
+intricate. Which branch "won" a given ingestion is non-obvious for
+debugging — needs explicit lineage per run. Tight coupling of three
+subsystems means one bad change can break all three.
+
+**Status: ACTIVE (candidate 3 of 3)**
+
+### Pass 4 self-notes (not for evaluation)
+- Branch A is closest to what we have today. Pass 5 or later should decide
+  whether to keep it as the "PR-reviewed provider track" for
+  high-stakes/compliance-sensitive sources.
+- Branch B and E are complementary — B is the foundation, E is the
+  wrap-around strategy. If B ships first, E becomes additive.
+- Branches C and D are shelved, not rejected — they remain valuable for
+  specific niches (one-shot onboarding, portal-only sources).
+- **No branch is scored** in this pass. Scoring is convergent work for
+  Pass 5+ (Depth or Synthesis) using Sequential Halving.
+
 ## Reconciliation Log (append-only)
 
 | Time | Pass | Action | Conflicts | Notes |
@@ -199,11 +312,13 @@ marked **SEC** are security-adjacent; **GH** is Goodhart's-law / gaming detectio
 | 2026-04-11T00:00:00Z | 1 | Initial write | 0 | First version of PARITY.md; no prior file to reconcile with |
 | 2026-04-11T00:00:01Z | 2 | Depth findings append | 0 | Re-read before write; no concurrent writer. Added D1–D25 depth findings with code line references. Revised composite parity DOWN from 62% → 58% after depth findings exposed D1/D2/D3/D4/D5/D11/D17 as hard-blockers |
 | 2026-04-11T00:00:02Z | 3 | Adversarial findings append | 0 | Re-read before write; no concurrent writer. Added A1–A25 adversarial findings including 5 SEC-class issues (A9 multi-tenant leak, A15 compliance bypass, A17 SnapTrade consent, A20 public pipeline health enum, A21 SSRF pre-fix, A22 cost cap, A24 bash sandbox). Revised parity DOWN 58% → 54%. Self-consistency check flags Goodhart risk on "continuous improvement" claim (A12). |
+| 2026-04-11T00:00:03Z | 4 | Exploration branches append | 0 | Re-read before write; no concurrent writer. Added 5 architectural branches (A Provider-as-Code, B Provider-as-Data, C Provider-as-LLM-Loop, D Provider-as-Playwright-Trace, E Provider-as-Hybrid). A/B/E active, C/D shelved. Score unchanged (Exploration does not evaluate). Temperature bumped 0.45 → 0.65 for this pass, will decay on next convergent pass. |
 
 ## Changelog (append-only, most recent first)
 
 | Pass | Platform | Type | Score Δ | Summary |
 |---|---|---|---|---|
+| 4 | Claude Code | Exploration | +0.00 (branches generated, not evaluated) | Generated 5 architectural branches for dynamic CRUD. A/B/E active, C/D shelved. Temperature bumped 0.45 → 0.65 (will decay next pass). Core assumption challenged: "provider = row + code". Alternatives range from declarative JSON (B) to agent re-derivation every run (C) to browser replay (D) to hybrid fallback (E). No code changes. |
 | 3 | Claude Code | Adversarial | -0.40 | Added 25 adversarial findings (A1–A25). 5 critical SEC-class items: A9 multi-tenant insight leakage, A15 ingested content bypasses compliance pipeline, A17 SnapTrade no consent check, A20 public pipelineHealth enumerable, A21 SSRF pre-fix for future G5, A22 extraction cost cap missing, A24 run_bash no sandbox. Goodhart alert (A12) on "continuous improvement" claim. Parity 58% → 54%. No code changes. |
 | 2 | Claude Code | Depth | -0.45 | Added 25 depth findings (D1–D25) with code line references. Revised parity DOWN to 58%. Exposed hard blockers: enum-closed category (D1), enum-closed authMethod (D2), enum-closed transform (D3), Date.now() defeating dedup (D4), hardcoded PROVIDER_TEST_CONFIGS (D5), 0 integration-aware Code Chat tools (D11), prompt-injection exposure in extractors (D17). Score down is GOOD — we found deeper problems. No code changes. |
 | 1 | Claude Code | Landscape | +0.00 (baseline) | Created docs/PARITY.md with 44-row gap matrix across 4 pillars, 10 beyond-parity opportunities, 7 anti-parity rejections. Scoped integration/ingestion surface to 14 parsers, 11 scraping primitives, 30+ learning tables, 4 gov pipelines, SnapTrade, CRM adapters (GHL/Wealthbox/Redtail), EMBA GitHub importer, chrome-extension (LinkedIn/Gmail only). Composite parity score 62%. No code changes. |
