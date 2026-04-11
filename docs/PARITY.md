@@ -63,7 +63,7 @@ Columns:
 | G11 | client      | Diff 3-way merge UI when two tools touch the same file in one session.                             | JetBrains, VS Code               | P2       | open       | 0     | build  |       |
 | G12 | client      | Model comparison mode — run the same prompt against 2+ models side-by-side, pick winner.           | Cursor Composer, LMSYS           | P2       | open       | 0     | build  | Uses existing consensus. |
 | G13 | client      | Voice input for the prompt bar — browser SpeechRecognition.                                        | Cursor Composer voice            | P2       | open       | 0     | build  |       |
-| G14 | observability | Per-turn latency histogram in session analytics (p50/p95/p99).                                   | LangSmith                        | P2       | open       | 0     | build  |       |
+| G14 | observability | Per-turn latency histogram in session analytics (p50/p95/p99).                                   | LangSmith                        | P2       | done (pass 6) | 4     | build  | Shipped pass 6. Pure `percentile` (linear interpolation) + `latencyHistogram` (9 fixed buckets, p50/p95/p99/min/max/mean), drops corrupt samples (NaN/negative/Infinity), wired into `analyzeSession` and rendered as a sortable strip + colored bar chart in `SessionAnalyticsPopover`. 15 new tests. |
 | G15 | a11y        | High-contrast + focus-visible rings on every code-chat button. Verified w/ axe.                    | WCAG 2.4.7                       | P1       | open       | 0     | build  | Audit pass needed. |
 | G16 | perf        | Virtualize message list when >100 messages.                                                        | Cursor, VS Code                  | P2       | open       | 0     | build  | react-window. |
 | G17 | perf        | Lazy-load codeChat popovers (currently all import eagerly into CodeChat.tsx).                      | —                                | P1       | open       | 0     | build  | Code-split. |
@@ -95,6 +95,7 @@ Pass 1 · angle: correctness + tool parity · queue: G1 (glob_files) · 8bae6a0 
 Pass 2 · angle: performance / round-trip reduction · queue: G2 (multi_read) · 37976cd · shipped: multi_read tool + dispatcher + stream/router wiring + 6 new tests · deferred: G3–G24
 Pass 3 · angle: feature completeness · queue: G3 (web_fetch) · 06961b5 · shipped: webFetch.ts (SSRF-safe allowlist, HTML-to-text, size cap, timeout) + dispatcher + 32 new tests · deferred: G4–G24
 Pass 4 · angle: ergonomics / discoverability · queue: G21 (/undo /redo slash) · 814745a · shipped: /undo + /redo slash commands wired to edit-history ring buffer + action palette entries + 6 new tests · deferred: G4–G20, G22–G24
-Pass 5 · angle: feature completeness · queue: G4 (web_search) · shipped: executeWebSearchStructured wrapper + dispatcher case + read-only allowlist wiring + 9 new tests · deferred: G5–G20, G22–G24
+Pass 5 · angle: feature completeness · queue: G4 (web_search) · f3392aa · shipped: executeWebSearchStructured wrapper + dispatcher case + read-only allowlist wiring + 9 new tests · deferred: G5–G20, G22–G24
+Pass 6 · angle: observability · queue: G14 (latency histogram) · shipped: percentile + latencyHistogram pure functions + analyzeSession integration + SessionAnalyticsPopover Latency section with bar chart + 15 new tests · deferred: G5–G13, G15–G20, G22–G24
 
 <!-- PASS_LOG_APPEND_HERE -->
