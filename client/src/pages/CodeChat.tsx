@@ -138,6 +138,16 @@ import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
 import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
 import TodoMarkerPanel from "@/components/codeChat/TodoMarkerPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
+import ToolAuditPopover from "@/components/codeChat/ToolAuditPopover";
+import {
+  loadState as loadAuditState,
+  saveState as saveAuditState,
+  evaluateTool as evaluateAuditRules,
+  recordMatches as recordAuditMatches,
+  strongestVerdict,
+  summarizeTrail,
+  type AuditState,
+} from "@/components/codeChat/toolAudit";
 import {
   loadHistory,
   saveHistory,
@@ -454,6 +464,46 @@ function CodeChatInterface() {
   // Pass 243: session analytics popover
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
 
+  // Pass 249: tool audit rules + trail
+  const [auditState, setAuditState] = useState<AuditState>(() => loadAuditState());
+  useEffect(() => { saveAuditState(auditState); }, [auditState]);
+  const [auditOpen, setAuditOpen] = useState(false);
+  const auditedToolEventsRef = useRef<Set<string>>(new Set());
+  const auditSummary = useMemo(() => summarizeTrail(auditState.entries), [auditState.entries]);
+
+  // Watch every tool event across the live + saved message history
+  // and evaluate it against the current rule set. Dedupe via a Set
+  // of "<messageId>:<stepIndex>" keys so edits to rules don't
+  // re-audit the same historical event.
+  useEffect(() => {
+    const evaluateSet = (toolName: string, args: Record<string, unknown> | undefined, key: string, stepIndex: number) => {
+      if (auditedToolEventsRef.current.has(key)) return;
+      auditedToolEventsRef.current.add(key);
+      const matches = evaluateAuditRules(auditState.rules, toolName, args);
+      if (matches.length > 0) {
+        setAuditState((prev) => recordAuditMatches(prev, toolName, stepIndex, matches));
+        const verdict = strongestVerdict(matches);
+        if (verdict === "block" || verdict === "warn") {
+          const label = matches.find((m) => m.verdict === verdict)?.rule.label ?? "rule";
+          toast.warning(`Audit ${verdict}: ${label} (${toolName})`, { duration: 3500 });
+        }
+      }
+    };
+    // Live tools
+    for (const ev of currentTools) {
+      if (ev.status !== "complete" && ev.status !== "error") continue;
+      evaluateSet(ev.toolName, ev.args, `live:${ev.stepIndex}`, ev.stepIndex);
+    }
+    // Saved messages
+    for (const msg of messages) {
+      if (!msg.toolEvents) continue;
+      for (const ev of msg.toolEvents) {
+        evaluateSet(ev.toolName, ev.args, `${msg.id}:${ev.stepIndex}`, ev.stepIndex);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTools, messages, auditState.rules]);
+
   // Pass 248: listen for palette-dispatched actions
   useEffect(() => {
     const openHandler = (e: Event) => {
@@ -488,6 +538,9 @@ function CodeChatInterface() {
           break;
         case "analytics":
           setAnalyticsOpen(true);
+          break;
+        case "audit":
+          setAuditOpen(true);
           break;
         case "shortcuts":
           setShortcutsOpen(true);
@@ -1355,6 +1408,27 @@ function CodeChatInterface() {
             <BarChart3 className="w-3 h-3" /> Stats
           </button>
         )}
+        {(() => {
+          const flagged = auditSummary.byVerdict.warn + auditSummary.byVerdict.block;
+          return (
+            <button
+              onClick={() => setAuditOpen(true)}
+              className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
+                flagged > 0
+                  ? "border-amber-500/40 bg-amber-500/5 text-amber-500"
+                  : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label="Tool audit rules"
+              title={
+                flagged > 0
+                  ? `${flagged} audit event${flagged === 1 ? "" : "s"} flagged (${auditState.rules.length} rules)`
+                  : `Tool audit (${auditState.rules.length} rules)`
+              }
+            >
+              <ShieldCheck className="w-3 h-3" /> {flagged > 0 ? flagged : "Audit"}
+            </button>
+          );
+        })()}
         <button
           onClick={() => setMemoryOpen(true)}
           className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
@@ -2069,6 +2143,12 @@ function CodeChatInterface() {
         onClose={() => setAnalyticsOpen(false)}
         messages={messages}
         onJumpToMessage={scrollToMessage}
+      />
+      <ToolAuditPopover
+        open={auditOpen}
+        onClose={() => setAuditOpen(false)}
+        state={auditState}
+        onChange={setAuditState}
       />
       {/* Pass 233: bookmarks popover */}
       {bookmarksOpen && (
