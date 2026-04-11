@@ -128,6 +128,12 @@ import {
   statFile,
 } from "../services/codeChat/fileWatcher";
 import {
+  applyBatch,
+  previewBatch,
+  validateBatch,
+  type BatchOp,
+} from "../services/codeChat/batchApply";
+import {
   groupReferences,
   summarizeReferences,
   filterReferences,
@@ -260,6 +266,72 @@ export const codeChatRouter = router({
         workspaceRoot: WORKSPACE_ROOT,
         allowMutations: input.allowMutations,
       });
+    }),
+
+  // Pass 256: multi-file atomic batch apply (admin-only, rollback on failure)
+  batchApply: protectedProcedure
+    .input(
+      z.object({
+        ops: z.array(
+          z.union([
+            z.object({
+              kind: z.literal("write"),
+              path: z.string().min(1),
+              content: z.string(),
+            }),
+            z.object({
+              kind: z.literal("edit"),
+              path: z.string().min(1),
+              oldString: z.string().min(1),
+              newString: z.string(),
+              replaceAll: z.boolean().optional(),
+            }),
+          ]),
+        ).max(100),
+        dryRun: z.boolean().optional(),
+        confirmDangerous: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin") {
+        return {
+          ok: false,
+          dryRun: Boolean(input.dryRun),
+          operations: [],
+          totalBytes: 0,
+          durationMs: 0,
+          error: "batch apply requires admin role",
+        };
+      }
+      // Mutations without dryRun require explicit confirmation
+      if (!input.dryRun && !input.confirmDangerous) {
+        return {
+          ok: false,
+          dryRun: false,
+          operations: [],
+          totalBytes: 0,
+          durationMs: 0,
+          error: "set confirmDangerous: true to commit a batch apply",
+        };
+      }
+      const sandbox = {
+        workspaceRoot: WORKSPACE_ROOT,
+        allowMutations: true as const,
+      };
+      return await applyBatch(sandbox, input.ops as BatchOp[], {
+        dryRun: input.dryRun,
+      });
+    }),
+
+  previewBatchApply: protectedProcedure
+    .input(
+      z.object({
+        ops: z.array(z.any()).max(100),
+      }),
+    )
+    .query(({ input }) => {
+      // Pure validation — doesn't touch the filesystem
+      return validateBatch(input.ops as BatchOp[]);
     }),
 
   // ─── Roadmap procedures ────────────────────────────────────────
