@@ -4,6 +4,7 @@ import TypingIndicator from "@/components/TypingIndicator";
 import { EmptyConversations } from "@/components/EmptyStates";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { useSoundCues } from "@/hooks/useSoundCues";
+import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -116,6 +117,11 @@ const MODE_OPTIONS: { value: AdvisoryMode; label: string; desc: string; minRole:
 export default function Chat() {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
   const soundCues = useSoundCues();
+  // Pass 1 (multisensory build loop): wire PIL dispatcher into Chat so every
+  // send / stream start / stream end / error actually fires the designed
+  // multimodal feedback specs (visual toast + haptic + audio earcon/tts).
+  // Prior to this the 30 feedbackSpecs were defined but had zero consumers.
+  const pil = usePlatformIntelligence();
   const [location, navigate] = useLocation();
   const [matchChat, paramsChat] = useRoute("/chat/:id");
   const utils = trpc.useUtils();
@@ -594,8 +600,12 @@ export default function Chat() {
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     soundCues.play("sent");
+    // PIL: designed "chat.sent" feedback — haptic light + send earcon + send animation
+    pil.giveFeedback("chat.sent");
     setFollowUpSuggestions([]);
     setIsStreaming(true);
+    // PIL: begin streaming — fires typing-start animation + aria-live "thinking"
+    pil.giveFeedback("chat.streaming_start");
 
     try {
       // ─── ANONYMOUS PATH ───
@@ -657,6 +667,8 @@ export default function Chat() {
           setConversationId(activeConvId);
           navigate(`/chat/${activeConvId}`, { replace: true });
           utils.conversations.list.invalidate();
+          // PIL: designed "chat.new_conversation" feedback
+          pil.giveFeedback("chat.new_conversation");
         } catch (err) {
           creatingConversationRef.current = false;
           throw err;
@@ -1054,11 +1066,26 @@ export default function Chat() {
         }
       }
     } catch (err: any) {
-      toast.error(err.message || "Your message couldn't be sent — check your connection and try again");
+      // PIL: designed "chat.error" feedback — dispatches Steward-personality
+      // error toast + haptic error pattern + spoken recovery text. Categorize
+      // the failure by message so the spec can pick the right copy.
+      const raw = (err?.message || "").toLowerCase();
+      const code = raw.includes("fetch") || raw.includes("network") || raw.includes("connection")
+        ? "NETWORK"
+        : raw.includes("rate") || raw.includes("429")
+        ? "RATE_LIMIT"
+        : raw.includes("401") || raw.includes("403") || raw.includes("unauth") || raw.includes("expired")
+        ? "AUTH_EXPIRED"
+        : "GENERIC";
+      pil.giveFeedback("chat.error", { code });
+      // Keep the legacy toast for users who disabled visual feedback: the
+      // dispatcher already runs it, but sonner dedupes identical titles.
     } finally {
       setIsStreaming(false);
       setAttachments([]);
       soundCues.play("received");
+      // PIL: end of the streaming lifecycle — fires typing-end animation
+      pil.giveFeedback("chat.streaming_end");
       // If hands-free is active and TTS is NOT about to speak (no ttsEnabled or error path),
       // release the guard and restart listening.
       // If TTS IS enabled, the guard stays on until tts.onEnd releases it and restarts listening.

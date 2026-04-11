@@ -277,11 +277,12 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Level 5: If nothing matched and source is voice
+    // Level 5: If nothing matched and source is voice — dispatch the
+    // designed "voice.not_understood" spec (toast + gentle spoken retry).
     if (source === "voice") {
-      speakShort("I didn't catch that. Try again?");
+      giveFeedback("voice.not_understood");
     }
-  }, [navigate, state.modalityPref, audioCompanion]);
+  }, [navigate, state.modalityPref, audioCompanion, giveFeedback]);
 
   /* ── Voice listening ─────────────────────────────────────── */
 
@@ -312,15 +313,27 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setState(prev => ({ ...prev, voiceListening: true }));
-  }, [processIntent, state.handsFreeActive]);
+    try {
+      recognition.start();
+      setState(prev => ({ ...prev, voiceListening: true }));
+      // Pass 1: dispatch designed "voice.listening_started" spec so the
+      // mic-pulse animation + earcon actually fire for PIL hands-free path.
+      giveFeedback("voice.listening_started");
+    } catch (startErr) {
+      // start() can throw in some Safari versions or when a prior instance
+      // hasn't fully released the mic — fail safe instead of crashing.
+      console.warn("[PIL] voice start failed:", startErr);
+      recognitionRef.current = null;
+    }
+  }, [processIntent, state.handsFreeActive, giveFeedback]);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
     recognitionRef.current = null;
     setState(prev => ({ ...prev, voiceListening: false }));
-  }, []);
+    // Pass 1: dispatch designed "voice.listening_stopped" spec.
+    giveFeedback("voice.listening_stopped");
+  }, [giveFeedback]);
 
   /* ── Actions ─────────────────────────────────────────────── */
 
@@ -331,7 +344,13 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     setModalityPref: (pref) => setState(prev => ({ ...prev, modalityPref: pref })),
 
     enterHandsFree: () => {
-      SOUNDS.mode_activate();
+      // Pass 1 (multisensory build loop — G54): route through the dispatcher
+      // instead of calling SOUNDS/speakShort directly so the designed
+      // multimodal feedback spec ("handsfree.activated") is consistent with
+      // every other feedback path in the app. Keep the "onboarding" prompt
+      // line as a dedicated speak call because the spec is a short earcon
+      // only; users need the verbal affordance the first time they activate.
+      giveFeedback("handsfree.activated");
       setState(prev => ({ ...prev, handsFreeActive: true, modalityPref: "both" }));
       startListening();
       setTimeout(() => {
@@ -340,7 +359,7 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     },
 
     exitHandsFree: () => {
-      SOUNDS.mode_deactivate();
+      giveFeedback("handsfree.deactivated");
       stopListening();
       audioCompanion.pause();
       setState(prev => ({ ...prev, handsFreeActive: false, modalityPref: "both" }));
