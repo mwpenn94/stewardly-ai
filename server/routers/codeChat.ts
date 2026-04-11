@@ -167,6 +167,14 @@ import {
   filterCommits,
 } from "../services/codeChat/gitLog";
 import {
+  classifyDependencies,
+  summarizeLicenses,
+  filterDependencies as filterLicenseDeps,
+  extractLicense,
+  type DependencyEntry,
+  type LicenseCategory,
+} from "../services/codeChat/licenseScanner";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -863,6 +871,162 @@ export const codeChatRouter = router({
     .mutation(async ({ input }) => {
       const ok = await deleteCheckpointFromDisk(WORKSPACE_ROOT, input.id);
       return { ok };
+    }),
+
+  // Pass 258: dependency license scanner
+  scanLicenses: protectedProcedure
+    .input(
+      z
+        .object({
+          /** Only look at direct deps in root package.json (fast) */
+          rootOnly: z.boolean().optional(),
+          category: z
+            .enum([
+              "permissive",
+              "weak_copyleft",
+              "strong_copyleft",
+              "commercial",
+              "unknown",
+            ])
+            .optional(),
+          minRisk: z.number().min(0).max(3).optional(),
+          search: z.string().max(200).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const rootPkgPath = path.join(WORKSPACE_ROOT, "package.json");
+      const deps: DependencyEntry[] = [];
+      let rootName = "";
+      try {
+        const rootRaw = await fs.promises.readFile(rootPkgPath, "utf-8");
+        const rootPkg = JSON.parse(rootRaw);
+        rootName = rootPkg.name ?? "";
+        const collect = (map: Record<string, string> | undefined) => {
+          if (!map) return [];
+          return Object.entries(map).map(([name, version]) => ({
+            name,
+            version: String(version),
+          }));
+        };
+        const directDeps = [
+          ...collect(rootPkg.dependencies),
+          ...collect(rootPkg.devDependencies),
+          ...collect(rootPkg.optionalDependencies),
+        ];
+        const nodeModulesRoot = path.join(WORKSPACE_ROOT, "node_modules");
+        const rootOnly = input?.rootOnly !== false;
+
+        for (const d of directDeps) {
+          const depPath = path.join(nodeModulesRoot, d.name, "package.json");
+          try {
+            const raw = await fs.promises.readFile(depPath, "utf-8");
+            const parsed = JSON.parse(raw);
+            deps.push({
+              name: d.name,
+              version: parsed.version ?? d.version,
+              license: extractLicense(parsed),
+              path: path.relative(WORKSPACE_ROOT, depPath),
+            });
+          } catch {
+            // Missing or unreadable — fall back to the declared version
+            // with a blank license (will be flagged as unknown)
+            deps.push({
+              name: d.name,
+              version: d.version,
+              license: "",
+            });
+          }
+        }
+
+        // If not rootOnly, walk the top-level node_modules folders to
+        // include direct + transitive (but we skip nested node_modules
+        // to keep the count bounded)
+        if (!rootOnly) {
+          try {
+            const names = await fs.promises.readdir(nodeModulesRoot);
+            const seen = new Set(deps.map((d) => d.name));
+            for (const name of names) {
+              if (name.startsWith(".") || seen.has(name)) continue;
+              // Handle scoped packages
+              if (name.startsWith("@")) {
+                try {
+                  const scoped = await fs.promises.readdir(
+                    path.join(nodeModulesRoot, name),
+                  );
+                  for (const sub of scoped) {
+                    const full = `${name}/${sub}`;
+                    if (seen.has(full)) continue;
+                    const depPath = path.join(
+                      nodeModulesRoot,
+                      name,
+                      sub,
+                      "package.json",
+                    );
+                    try {
+                      const raw = await fs.promises.readFile(depPath, "utf-8");
+                      const parsed = JSON.parse(raw);
+                      deps.push({
+                        name: full,
+                        version: parsed.version ?? "",
+                        license: extractLicense(parsed),
+                        path: path.relative(WORKSPACE_ROOT, depPath),
+                      });
+                      seen.add(full);
+                    } catch {
+                      /* skip */
+                    }
+                    if (deps.length >= 2000) break;
+                  }
+                } catch {
+                  /* skip */
+                }
+              } else {
+                const depPath = path.join(nodeModulesRoot, name, "package.json");
+                try {
+                  const raw = await fs.promises.readFile(depPath, "utf-8");
+                  const parsed = JSON.parse(raw);
+                  deps.push({
+                    name,
+                    version: parsed.version ?? "",
+                    license: extractLicense(parsed),
+                    path: path.relative(WORKSPACE_ROOT, depPath),
+                  });
+                  seen.add(name);
+                } catch {
+                  /* skip */
+                }
+              }
+              if (deps.length >= 2000) break;
+            }
+          } catch {
+            /* node_modules unreadable */
+          }
+        }
+      } catch (err) {
+        return {
+          error:
+            err instanceof Error ? err.message : "failed to read package.json",
+          deps: [],
+          summary: null,
+          rootName,
+        };
+      }
+
+      const classified = classifyDependencies(deps);
+      const filtered = filterLicenseDeps(classified, {
+        category: input?.category as LicenseCategory | undefined,
+        minRisk: input?.minRisk as 0 | 1 | 2 | 3 | undefined,
+        search: input?.search,
+      });
+      const summary = summarizeLicenses(classified);
+
+      return {
+        error: null,
+        rootName,
+        deps: filtered.slice(0, 1000),
+        summary,
+      };
     }),
 
   // Pass 257: commit history timeline

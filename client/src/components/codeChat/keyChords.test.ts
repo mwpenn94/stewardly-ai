@@ -146,4 +146,11 @@ describe("allChordLabels", () => {
     expect(lChord).toBeDefined();
     expect(lChord!.label).toContain("Log");
   });
+
+  it("includes the g+n Licenses chord added in Pass 258", () => {
+    const labels = allChordLabels();
+    const nChord = labels.find((l) => l.keys[1] === "n");
+    expect(nChord).toBeDefined();
+    expect(nChord!.label).toContain("Licenses");
+  });
 });

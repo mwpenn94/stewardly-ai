@@ -52,6 +52,7 @@ const CHORD_MAP: Record<string, Record<string, ChordMatch>> = {
     t: { tab: "tests", label: "Tests" },
     e: { tab: "env", label: "Env" },
     l: { tab: "log", label: "Log" },
+    n: { tab: "licenses", label: "Licenses" },
   },
 };
 

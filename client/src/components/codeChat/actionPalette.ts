@@ -102,6 +102,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "tab:tests", label: "Run tests (vitest)", category: "tab", hint: "g t", keywords: ["test", "vitest", "spec", "run"] },
   { id: "tab:env", label: "Env variables inspector", category: "tab", hint: "g e", keywords: ["env", "secrets", "variables", "config"] },
   { id: "tab:log", label: "Commit history timeline", category: "tab", hint: "g l", keywords: ["git log", "history", "commits", "timeline"] },
+  { id: "tab:licenses", label: "Dependency licenses", category: "tab", hint: "g n", keywords: ["license", "legal", "npm", "packages", "spdx"] },
   { id: "tab:imports", label: "Go to Imports", category: "tab", keywords: ["dependencies", "graph"] },
   { id: "tab:todos", label: "Go to TODOs", category: "tab", keywords: ["fixme", "markers"] },
   // Popovers
