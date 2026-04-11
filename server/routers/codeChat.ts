@@ -117,6 +117,16 @@ import {
   getWorkspaceFileIndex,
   fuzzyFilterFiles,
 } from "../services/codeChat/fileIndex";
+import {
+  getDiagnostics,
+  clearDiagnosticsCache,
+} from "../services/codeChat/diagnosticsRunner";
+import {
+  summarizeDiagnostics,
+  filterDiagnostics,
+  groupByFile as groupDiagnosticsByFile,
+  type DiagnosticSeverity,
+} from "../services/codeChat/diagnostics";
 import { contextualLLM, executeReActLoop } from "../shared/stewardlyWiring";
 import { logger } from "../_core/logger";
 
@@ -489,6 +499,50 @@ export const codeChatRouter = router({
     clearTodoMarkersCache();
     const markers = await getTodoMarkers(WORKSPACE_ROOT);
     return { count: markers.length };
+  }),
+
+  // Pass 251: TypeScript diagnostics
+  getTsDiagnostics: protectedProcedure
+    .input(
+      z
+        .object({
+          severity: z.enum(["error", "warning", "info", "all"]).optional(),
+          pathPrefix: z.string().optional(),
+          search: z.string().optional(),
+          limit: z.number().min(1).max(5000).optional(),
+          force: z.boolean().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const run = await getDiagnostics(WORKSPACE_ROOT, { force: input?.force });
+      const filtered = filterDiagnostics(run.diagnostics, {
+        severity: input?.severity as DiagnosticSeverity | "all" | undefined,
+        pathPrefix: input?.pathPrefix,
+        search: input?.search,
+      });
+      const limit = input?.limit ?? 500;
+      return {
+        diagnostics: filtered.slice(0, limit),
+        total: filtered.length,
+        totalUnfiltered: run.diagnostics.length,
+        summary: summarizeDiagnostics(run.diagnostics),
+        groups: groupDiagnosticsByFile(filtered.slice(0, limit)),
+        startedAt: run.startedAt,
+        durationMs: run.durationMs,
+        cached: run.cached,
+        fatalError: run.fatalError,
+      };
+    }),
+
+  rebuildTsDiagnostics: protectedProcedure.mutation(async () => {
+    clearDiagnosticsCache();
+    const run = await getDiagnostics(WORKSPACE_ROOT, { force: true });
+    return {
+      total: run.diagnostics.length,
+      durationMs: run.durationMs,
+      fatalError: run.fatalError,
+    };
   }),
 
   // ─── Synthesizer procedures ────────────────────────────────────
