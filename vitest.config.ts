@@ -20,6 +20,7 @@ export default defineConfig({
       "shared/**/*.test.ts",
       "client/src/lib/wealth-engine/**/*.test.ts",
       "client/src/components/codeChat/**/*.test.ts",
+      "client/src/pages/learning/lib/**/*.test.ts",
     ],
   },
 });
