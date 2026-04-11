@@ -204,6 +204,32 @@ describe("parseIntent — navigation", () => {
   });
 });
 
+describe("parseIntent — heading navigation (Pass 7)", () => {
+  it("next heading variants", () => {
+    const r = parseIntent("next heading");
+    expect(r.kind).toBe("heading");
+    if (r.kind === "heading") expect(r.direction).toBe("next");
+
+    expect(parseIntent("jump to next heading").kind).toBe("heading");
+    expect(parseIntent("heading next").kind).toBe("heading");
+  });
+
+  it("previous heading variants", () => {
+    const r = parseIntent("previous heading");
+    expect(r.kind).toBe("heading");
+    if (r.kind === "heading") expect(r.direction).toBe("prev");
+
+    expect(parseIntent("prev heading").kind).toBe("heading");
+    expect(parseIntent("heading back").kind).toBe("heading");
+    expect(parseIntent("jump to previous heading").kind).toBe("heading");
+  });
+
+  it("slash-command form works", () => {
+    expect(parseIntent("/next heading").kind).toBe("heading");
+    expect(parseIntent("/previous heading").kind).toBe("heading");
+  });
+});
+
 describe("parseIntent — read/focus/palette/help", () => {
   it("read page variants", () => {
     expect(parseIntent("read this").kind).toBe("read_page");

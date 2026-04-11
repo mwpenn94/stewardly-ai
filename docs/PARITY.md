@@ -142,6 +142,45 @@ Dimension scores are 1–10 using the v2 Appendix A calibration.
 
 ## Changelog
 
+### Pass 7 (2026-04-11, Exploration → converged on heading nav, composite 9.15 → 9.30, +0.15)
+
+Temperature 0.65 triggered an Exploration pass. Three paradigms considered:
+
+1. **LLM-based intent classification** — rejected: adds latency + cost
+   for marginal gain over the deterministic parser.
+2. **Keyboard spatial gestures** — rejected: duplicates native Tab
+   behavior without adding new value.
+3. **Heading navigation (JAWS/NVDA/VoiceOver convention)** — **CHOSEN.**
+   Universal screen reader pattern that blind users already know.
+
+**Implemented heading navigation:**
+
+- New shortcuts: `Alt+J` (next heading), `Alt+Shift+J` (prev heading)
+- New intent kinds: `a11y.next_heading`, `a11y.prev_heading`
+- New parser shape: `{ kind: "heading", direction: "next" | "prev" }`
+- IntentRouter handler: walks `h1–h6` elements in DOM order, filters
+  hidden/aria-hidden, finds the heading after (or before) the current
+  focus, sets `tabindex="-1"`, focuses it, smooth-scrolls into view,
+  announces `"H2: Retirement Planning"` to the live region.
+- Parser phrases: `/next heading`, `/previous heading`, `/heading back`,
+  `/jump to next heading`, `/prev heading` all recognized.
+- Chat slash-command wiring + PIL processIntent wiring for voice.
+- Chat.tsx also wired the `learning` kind that was already defined in
+  the parser but missing from the Chat switch.
+
+**Tests:** +3 intentParser tests for heading variants (including slash
+forms). Total multisensory test count now 90.
+
+**Dimension scorecard delta:**
+- Usability: 9.0 → 9.5 (+0.5) — blind users get the convention they
+  already expect
+- Delightfulness: 9.0 → 9.0 — neutral
+- Flexibility: 8.5 → 9.0 (+0.5) — new intent kind slots into the
+  existing bus without touching any infrastructure
+- Core Function: 9.0 → 9.0 — neutral
+
+**Composite:** 9.30 / 10 (+0.15)
+
 ### Pass 6 (2026-04-11, Synthesis, composite 9.05 → 9.15, +0.10)
 
 Synthesis pass — converged the first 5 passes' work, closed the last

@@ -163,6 +163,7 @@ export type ParsedIntent =
   | { kind: "focus_chat" }
   | { kind: "open_palette" }
   | { kind: "help" }
+  | { kind: "heading"; direction: "next" | "prev" }
   | { kind: "unknown"; input: string };
 
 export type AudioAction =
@@ -207,6 +208,12 @@ const NEXT_PATTERNS = [/^(?:next|next (?:card|flashcard|question|item))$/i];
 const REVEAL_PATTERNS = [/^(?:show(?: the)?(?: answer)?|flip|reveal(?: answer)?|turn over)$/i];
 const RATE_PATTERNS = [/^(?:rate |mark )?(?:as )?(easy|good|hard|again)$/i];
 
+// Pass 7: heading navigation (JAWS/NVDA/VoiceOver convention).
+const NEXT_HEADING_PATTERNS = [/^(?:next heading|heading next|jump to next heading)$/i];
+const PREV_HEADING_PATTERNS = [
+  /^(?:previous heading|prev heading|heading back|heading previous|jump to previous heading)$/i,
+];
+
 const HELP_PATTERNS = [/^(?:help|what can (?:you|i) (?:do|say)|shortcuts|what can you do)$/i];
 
 /**
@@ -236,6 +243,10 @@ export function parseIntent(raw: string, opts: ParseOptions = { allowBareNav: fa
   if (matchesAny(normalized, FOCUS_CHAT)) return { kind: "focus_chat" };
   if (matchesAny(normalized, OPEN_PALETTE)) return { kind: "open_palette" };
   if (matchesAny(normalized, HELP_PATTERNS)) return { kind: "help" };
+  if (matchesAny(normalized, NEXT_HEADING_PATTERNS))
+    return { kind: "heading", direction: "next" };
+  if (matchesAny(normalized, PREV_HEADING_PATTERNS))
+    return { kind: "heading", direction: "prev" };
 
   // 3. Hands-free mode toggles
   if (matchesAny(normalized, ENTER_HF)) return { kind: "hands_free", action: "enter" };

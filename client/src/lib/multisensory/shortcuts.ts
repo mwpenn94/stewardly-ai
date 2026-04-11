@@ -97,6 +97,9 @@ export type ShortcutIntent =
   | "a11y.show_shortcuts"
   | "a11y.focus_main"
   | "a11y.focus_nav"
+  // Pass 7: heading navigation (JAWS/NVDA/VoiceOver convention)
+  | "a11y.next_heading"
+  | "a11y.prev_heading"
   // General
   | "palette.open";
 
@@ -380,6 +383,26 @@ export const GLOBAL_SHORTCUTS: ShortcutDef[] = [
     intent: "a11y.show_shortcuts",
     display: ["?"],
     description: "Open the keyboard shortcuts reference",
+  },
+  {
+    id: "a11y.next_heading",
+    label: "Jump to next heading",
+    category: "Accessibility",
+    mods: ["alt"],
+    key: "j",
+    intent: "a11y.next_heading",
+    display: ["Alt", "J"],
+    description: "Move focus to the next heading (h1-h6) on the page",
+  },
+  {
+    id: "a11y.prev_heading",
+    label: "Jump to previous heading",
+    category: "Accessibility",
+    mods: ["alt", "shift"],
+    key: "j",
+    intent: "a11y.prev_heading",
+    display: ["Alt", "Shift", "J"],
+    description: "Move focus to the previous heading (h1-h6) on the page",
   },
 
   // ── General ────────────────────────────────────────────────────────

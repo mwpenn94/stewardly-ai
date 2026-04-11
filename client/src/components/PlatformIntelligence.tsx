@@ -227,6 +227,22 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
         );
         return;
 
+      case "heading":
+        // Pass 7: heading navigation delegated to IntentRouter which
+        // walks the DOM headings and focuses the next/prev one.
+        window.dispatchEvent(
+          new CustomEvent("multisensory-intent", {
+            detail: {
+              intent:
+                parsed.direction === "next"
+                  ? "a11y.next_heading"
+                  : "a11y.prev_heading",
+              source: "voice",
+            },
+          }),
+        );
+        return;
+
       case "unknown":
         if (source === "voice") {
           speakShort("I didn't catch that. Try again?");

@@ -197,6 +197,55 @@ export function IntentRouter() {
           return;
         }
 
+        case "a11y.next_heading":
+        case "a11y.prev_heading": {
+          // Pass 7: JAWS/NVDA/VoiceOver-style heading navigation. Walks
+          // every h1–h6 element in DOM order, finds the one after (or
+          // before) the currently-focused element, and moves focus to
+          // it. Skips headings that are display:none or visibility:hidden.
+          const forward = detail.intent === "a11y.next_heading";
+          const headings = Array.from(
+            document.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6"),
+          ).filter((el) => {
+            const style = window.getComputedStyle(el);
+            if (style.display === "none" || style.visibility === "hidden") return false;
+            // Skip headings inside aria-hidden containers
+            if (el.closest("[aria-hidden='true']")) return false;
+            return true;
+          });
+          if (headings.length === 0) {
+            announce("No headings found on this page", "assertive");
+            return;
+          }
+          // Find the index of the heading nearest the current focus
+          const current = document.activeElement as HTMLElement | null;
+          let startIdx = -1;
+          if (current) {
+            startIdx = headings.findIndex(
+              (h) => h === current || h.contains(current),
+            );
+          }
+          let nextIdx: number;
+          if (startIdx === -1) {
+            // No current heading — jump to first (forward) or last (backward)
+            nextIdx = forward ? 0 : headings.length - 1;
+          } else if (forward) {
+            nextIdx = (startIdx + 1) % headings.length;
+          } else {
+            nextIdx = (startIdx - 1 + headings.length) % headings.length;
+          }
+          const target = headings[nextIdx];
+          if (!target.hasAttribute("tabindex")) {
+            target.setAttribute("tabindex", "-1");
+          }
+          target.focus({ preventScroll: false });
+          target.scrollIntoView({ block: "start", behavior: "smooth" });
+          const level = target.tagName.toLowerCase();
+          const text = (target.textContent || "").trim().slice(0, 80);
+          announce(`${level.toUpperCase()}: ${text}`, "polite");
+          return;
+        }
+
         // ── General ──
         case "palette.open":
           window.dispatchEvent(new CustomEvent("toggle-command-palette"));

@@ -57,6 +57,8 @@ const HANDLED_IDS = new Set<string>([
   "a11y.focus_main",
   "a11y.focus_main.fallback",
   "a11y.focus_nav",
+  "a11y.next_heading",
+  "a11y.prev_heading",
 ]);
 
 export function dispatchIntent(detail: IntentDetail) {

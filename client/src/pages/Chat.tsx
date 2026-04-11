@@ -643,6 +643,29 @@ export default function Chat() {
               dispatchIntent({ intent: "audio.toggle_tts", source: "chat" });
             announce(`Audio ${parsed.action}`, "polite");
             return;
+          case "heading":
+            dispatchIntent({
+              intent:
+                parsed.direction === "next"
+                  ? "a11y.next_heading"
+                  : "a11y.prev_heading",
+              source: "chat",
+            });
+            return;
+          case "learning":
+            // Pass 7: learning slash commands delegate to the PIL's
+            // pil:learning custom event bus used by the learning pages.
+            document.dispatchEvent(
+              new CustomEvent("pil:learning", {
+                detail: {
+                  action: parsed.action,
+                  ...(parsed.action === "rate" && parsed.rating
+                    ? { rating: parsed.rating }
+                    : {}),
+                },
+              }),
+            );
+            return;
         }
       }
       // Unknown slash command — fall through and let the LLM handle it.
