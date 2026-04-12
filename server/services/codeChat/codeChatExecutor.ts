@@ -516,6 +516,97 @@ export async function dispatchCodeTool(
           result: { summary: String(call.args.summary ?? "Task completed.") },
         };
       }
+      case "infer_schema": {
+        const records = Array.isArray(call.args.records) ? call.args.records : null;
+        if (!records) {
+          return { kind: "error", error: "records array required", code: "BAD_ARGS" };
+        }
+        const validRecords = records.filter(
+          (r): r is Record<string, unknown> => r !== null && typeof r === "object" && !Array.isArray(r),
+        );
+        const { inferSchema, summarizeSchema } = await import("../dynamicIntegrations/schemaInference");
+        const schema = inferSchema(validRecords);
+        return {
+          kind: "schema_inference" as const,
+          result: {
+            fieldCount: schema.fields.length,
+            primaryKey: schema.primaryKey ?? null,
+            confidence: schema.fields.length > 0
+              ? schema.fields.reduce((s, f) => s + f.confidence, 0) / schema.fields.length
+              : 0,
+            summary: summarizeSchema(schema),
+          },
+        } as any;
+      }
+      case "generate_adapter": {
+        const records = Array.isArray(call.args.records) ? call.args.records : null;
+        if (!records || records.length === 0) {
+          return { kind: "error", error: "records array required", code: "BAD_ARGS" };
+        }
+        const validRecords = records.filter(
+          (r): r is Record<string, unknown> => r !== null && typeof r === "object" && !Array.isArray(r),
+        );
+        const { inferSchema } = await import("../dynamicIntegrations/schemaInference");
+        const { generateAdapter, summarizeAdapter } = await import("../dynamicIntegrations/adapterGenerator");
+        const schema = inferSchema(validRecords);
+        const spec = generateAdapter(schema, {
+          name: String(call.args.name ?? "Unnamed"),
+          baseUrl: call.args.baseUrl ? String(call.args.baseUrl) : undefined,
+          listEndpoint: call.args.listEndpoint ? String(call.args.listEndpoint) : undefined,
+          authHint: call.args.authType ? { type: String(call.args.authType) as any } : undefined,
+        });
+        return {
+          kind: "adapter_spec" as const,
+          result: {
+            summary: summarizeAdapter(spec),
+            ready: spec.readinessReport.ready,
+            endpointCount: Object.keys(spec.endpoints).filter(k => (spec.endpoints as any)[k]).length,
+          },
+        } as any;
+      }
+      case "detect_schema_drift": {
+        const baseline = Array.isArray(call.args.baselineRecords) ? call.args.baselineRecords : [];
+        const current = Array.isArray(call.args.currentRecords) ? call.args.currentRecords : [];
+        if (baseline.length === 0 || current.length === 0) {
+          return { kind: "error", error: "both baselineRecords and currentRecords required", code: "BAD_ARGS" };
+        }
+        const { inferSchema } = await import("../dynamicIntegrations/schemaInference");
+        const { diffSchemas, summarizeDrift } = await import("../dynamicIntegrations/schemaDrift");
+        const baseSchema = inferSchema(baseline.filter((r): r is Record<string, unknown> => r !== null && typeof r === "object"));
+        const currSchema = inferSchema(current.filter((r): r is Record<string, unknown> => r !== null && typeof r === "object"));
+        const drift = diffSchemas(baseSchema, currSchema);
+        return {
+          kind: "schema_drift" as const,
+          result: {
+            compatible: drift.summary.breaking === 0,
+            breaking: drift.summary.breaking,
+            warning: drift.summary.warning,
+            info: drift.summary.info,
+            summary: summarizeDrift(drift),
+          },
+        } as any;
+      }
+      case "map_to_crm_contact": {
+        const records = Array.isArray(call.args.records) ? call.args.records : null;
+        if (!records || records.length === 0) {
+          return { kind: "error", error: "records array required", code: "BAD_ARGS" };
+        }
+        const validRecords = records.filter(
+          (r): r is Record<string, unknown> => r !== null && typeof r === "object" && !Array.isArray(r),
+        );
+        const { inferSchema } = await import("../dynamicIntegrations/schemaInference");
+        const { mapToCanonicalContact } = await import("../dynamicIntegrations/crmCanonicalMap");
+        const schema = inferSchema(validRecords);
+        const mapping = mapToCanonicalContact(schema);
+        return {
+          kind: "crm_mapping" as const,
+          result: {
+            entityType: "contact",
+            matchedCount: mapping.matches.length,
+            unmatchedCount: mapping.unmappedSourceFields.length,
+          },
+        } as any;
+      }
       default:
         return {
           kind: "error",

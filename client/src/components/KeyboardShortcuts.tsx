@@ -32,6 +32,12 @@ const SHORTCUTS: Shortcut[] = [
   { keys: ["G", "then", "I"], description: "Go to Intelligence Hub", category: "Navigation" },
   { keys: ["G", "then", "L"], description: "Go to Lead Pipeline", category: "Navigation" },
   { keys: ["G", "then", "O"], description: "Go to Operations", category: "Navigation" },
+  { keys: ["G", "then", "A"], description: "Go to Advisory", category: "Navigation" },
+  { keys: ["G", "then", "R"], description: "Go to Relationships", category: "Navigation" },
+  { keys: ["G", "then", "M"], description: "Go to Market Data", category: "Navigation" },
+  { keys: ["G", "then", "D"], description: "Go to Documents", category: "Navigation" },
+  { keys: ["G", "then", "N"], description: "Go to Integrations", category: "Navigation" },
+  { keys: ["G", "then", "P"], description: "Go to Help", category: "Navigation" },
 
   // ── Voice & Multisensory (Pass 6: G15 / G25 / G26) ──
   { keys: ["Shift", "V"], description: "Toggle hands-free voice mode", category: "Voice & Audio" },

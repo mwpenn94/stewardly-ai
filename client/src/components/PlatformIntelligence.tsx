@@ -37,6 +37,7 @@ interface PILActions {
   exitHandsFree: () => void;
   speak: (text: string) => void;
   playSound: (soundId: string) => void;
+  listenOnce: () => void;
 }
 
 type PILContext = PILState & PILActions;
@@ -417,6 +418,10 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
 
     speak: speakShort,
     playSound: (soundId) => SOUNDS[soundId]?.(),
+    listenOnce: () => {
+      SOUNDS.mic_on?.();
+      startListening();
+    },
   };
 
   // Pass 6: keep the ref in sync so window-event handlers always hit

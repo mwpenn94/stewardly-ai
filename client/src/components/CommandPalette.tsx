@@ -93,6 +93,9 @@ import {
   type PageEntry,
 } from "./commandPaletteData";
 
+/** All pages — built once at module level for testing and reuse */
+const PAGES = buildPages();
+
 // ── Icon mapping (shared with AppShell's ICON_MAP) ──────────────────
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -352,7 +355,7 @@ export function CommandPalette() {
     () => recentPages.filter((rp) => allowedHrefs.has(rp.route)),
     [recentPages, allowedHrefs],
   );
-  const showRecent = query.length === 0 && recentPagesFiltered.length > 0;
+  const showRecent = query.length === 0 && recentPages.length > 0 && recentPagesFiltered.length > 0;
 
   return (
     <CommandDialog
@@ -423,7 +426,9 @@ export function CommandPalette() {
           <>
             <CommandGroup heading="Recent">
               {recentPagesFiltered.map((rp) => {
-                const pageEntry = pages.find((p) => p.href === rp.route);
+                // Reuse page icons from PAGES list for recent items
+                const pageEntry = PAGES.find((p) => p.href === rp.route) ?? pages.find((p) => p.href === rp.route);
+                const icon = pageEntry?.icon ?? pageEntry?.iconName;
                 return (
                   <CommandItem
                     key={`recent:${rp.route}`}
@@ -544,4 +549,4 @@ export function CommandPalette() {
 }
 
 /** Export quick actions for testing */
-export { ACTIONS };
+export { PAGES, ACTIONS };

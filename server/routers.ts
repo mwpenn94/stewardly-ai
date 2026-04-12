@@ -83,6 +83,7 @@ import { taxRouter } from "./routers/tax";
 import { portfolioLedgerRouter } from "./routers/portfolioLedger";
 import { estateRouter } from "./routers/estate";
 import { reportsFiduciaryRouter } from "./routers/reportsFiduciary";
+import { dynamicIntegrationsRouter } from "./routers/dynamicIntegrations";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -2238,6 +2239,7 @@ export const appRouter = router({
   portfolioLedger: portfolioLedgerRouter,
   estate: estateRouter,
   reportsFiduciary: reportsFiduciaryRouter,
+  dynamicIntegrations: dynamicIntegrationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

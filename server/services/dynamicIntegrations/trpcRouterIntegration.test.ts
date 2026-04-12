@@ -243,6 +243,6 @@ describe("integrationsRouter.inferSchema (regression check)", () => {
     });
     expect(result.schema.primaryKey).toBe("id");
     expect(result.schema.fields.length).toBe(2);
-    expect(result.summary).toContain("pk=id");
+    expect(result.summary).toContain("Primary key: id");
   });
 });

@@ -22,14 +22,15 @@ const ALL_TOOL_NAMES = [
   "read_file",
   "write_file",
   "edit_file",
-  "multi_edit",
   "list_directory",
   "grep_search",
   "run_bash",
   "update_todos",
   "find_symbol",
-  "web_fetch",
-  "git_blame",
+  "web_read",
+  "web_search",
+  "web_crawl",
+  "web_extract",
   "finish",
 ] as const satisfies readonly CodeToolName[];
 
@@ -90,15 +91,14 @@ describe("Tool name coverage", () => {
     // Known mutation tools that must survive refactors
     expect(writeNames).toContain("write_file");
     expect(writeNames).toContain("edit_file");
-    expect(writeNames).toContain("multi_edit");
     expect(shellNames).toContain("run_bash");
   });
 
-  it("network tools contain web_fetch", () => {
+  it("network tools contain web_read", () => {
     const network = ALL_TOOL_NAMES.filter(
       (n) => classifyToolKind(n) === "network",
     );
-    expect(network).toContain("web_fetch");
+    expect(network).toContain("web_read");
   });
 
   it("meta tools contain update_todos and finish", () => {

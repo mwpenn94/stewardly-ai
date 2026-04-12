@@ -170,7 +170,7 @@ function InlineQuickBundle() {
   });
 
   const bundleMut = trpc.wealthEngine.multiLineQuickQuote.useMutation({
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const result = bundleMut.data?.data;
@@ -288,7 +288,7 @@ function InlineQuickBundle() {
               <div className="space-y-1.5">
                 <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Coverage Lines</p>
                 <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-                  {result.coverageLines.map((line, i) => (
+                  {result.coverageLines.map((line: any, i: number) => (
                     <div key={i} className="flex items-center justify-between gap-2 text-[11px] rounded-md border border-border/40 p-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
@@ -320,7 +320,7 @@ function InlineQuickBundle() {
               <div className="space-y-1.5">
                 <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Planning Actions</p>
                 <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-                  {result.planningActions.map((action, i) => (
+                  {result.planningActions.map((action: any, i: number) => (
                     <div key={i} className="flex items-start gap-2 text-[11px] rounded-md border border-border/40 p-2">
                       <Badge
                         variant="outline"

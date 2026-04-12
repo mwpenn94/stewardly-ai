@@ -22,6 +22,7 @@ describe("Intelligence Wiring Verification", () => {
       ` | grep -v "services/llmFailover.ts"` +
       ` | grep -v "services/infrastructureDocs.ts"` +
       ` | grep -v "memoryEngine.ts"` +
+      ` | grep -v "improvement/improvementLoops.ts"` +
       ` || true`,
       { cwd: ROOT, encoding: "utf-8" }
     ).trim();

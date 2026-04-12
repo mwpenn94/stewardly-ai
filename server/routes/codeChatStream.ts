@@ -469,4 +469,84 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
   }
 });
 
+// ─── Hook evaluator (exported for tests) ─────────────────────────────────
+
+interface ToolHookRule {
+  event: "PreToolUse" | "PostToolUse";
+  pattern: string;
+  action: "block" | "warn";
+  message: string;
+}
+
+interface ToolHookOutcome {
+  blocked: boolean;
+  blockMessage?: string;
+  warnings: Array<{ message: string }>;
+}
+
+function matchPattern(
+  pattern: string,
+  toolName: string,
+  args: Record<string, unknown>,
+): boolean {
+  // Split pattern into tool part and optional arg part (separated by ':')
+  const colonIdx = pattern.indexOf(":");
+  const toolPattern = colonIdx >= 0 ? pattern.slice(0, colonIdx) : pattern;
+  const argPattern = colonIdx >= 0 ? pattern.slice(colonIdx + 1) : null;
+
+  // Match tool name
+  if (!matchGlob(toolPattern, toolName)) return false;
+
+  // If there's an arg pattern, check string arg values
+  if (argPattern !== null) {
+    const stringArgValues = Object.values(args).filter(
+      (v): v is string => typeof v === "string",
+    );
+    if (stringArgValues.length === 0) return false;
+    return stringArgValues.some((v) => matchGlob(argPattern, v));
+  }
+
+  return true;
+}
+
+function matchGlob(pattern: string, value: string): boolean {
+  // Handle OR groups: [a|b|c]
+  if (pattern.startsWith("[") && pattern.endsWith("]")) {
+    const alternatives = pattern.slice(1, -1).split("|");
+    return alternatives.some((alt) => matchGlob(alt, value));
+  }
+  // Convert glob pattern to regex
+  const escaped = pattern.replace(/[.+^${}()|\\]/g, "\\$&");
+  const regex = new RegExp(
+    "^" + escaped.replace(/\*/g, ".*") + "$",
+  );
+  return regex.test(value);
+}
+
+export function evaluateToolHooks(
+  rules: ToolHookRule[],
+  event: "PreToolUse" | "PostToolUse",
+  toolName: string,
+  args: Record<string, unknown>,
+): ToolHookOutcome {
+  const outcome: ToolHookOutcome = { blocked: false, warnings: [] };
+
+  for (const rule of rules) {
+    if (rule.event !== event) continue;
+    if (!matchPattern(rule.pattern, toolName, args)) continue;
+
+    if (rule.action === "block") {
+      if (!outcome.blocked) {
+        outcome.blocked = true;
+        outcome.blockMessage =
+          rule.message || `Blocked tool call: ${toolName}`;
+      }
+    } else if (rule.action === "warn") {
+      outcome.warnings.push({ message: rule.message });
+    }
+  }
+
+  return outcome;
+}
+
 export default codeChatStreamRouter;

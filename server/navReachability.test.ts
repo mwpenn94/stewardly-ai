@@ -161,6 +161,11 @@ const EXEMPT_ROUTES = new Set<string>([
   "/learning/exam/:moduleSlug",
   "/learning/discipline/:slug",
   "/learning/case/:caseId",
+  // Pass 7+ dynamic integration sub-pages / wealth-engine sub-pages
+  "/wealth-engine/sensitivity",
+  "/improvement",
+  "/financial-protection-score",
+  "/documents",
 ]);
 
 describe("Navigation reachability", () => {

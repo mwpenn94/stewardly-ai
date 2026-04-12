@@ -70,8 +70,17 @@ export function FinancialProfileBanner({
 
   if (!hasProfile && hideWhenEmpty) return null;
 
-  const tone = TONE_STYLE[completenessStatus.tone];
-  const pct = Math.round(completeness * 100);
+  // completenessStatus is a string: 'complete' | 'partial' | 'minimal'
+  const toneKey: keyof typeof TONE_STYLE =
+    completenessStatus === 'complete' ? 'full' :
+    completenessStatus === 'partial' ? 'partial' :
+    hasProfile ? 'sparse' : 'empty';
+  const toneLabel =
+    completenessStatus === 'complete' ? 'Profile complete' :
+    completenessStatus === 'partial' ? 'Profile partially filled' :
+    hasProfile ? 'Profile started' : 'No saved profile';
+  const tone = TONE_STYLE[toneKey];
+  const pct = Math.round(completeness);
 
   const missingCount =
     usesFields.length > 0
@@ -93,7 +102,7 @@ export function FinancialProfileBanner({
         <span className={cn("flex-shrink-0", tone.text)}>{tone.icon}</span>
         <div className="flex items-center gap-2 min-w-0">
           <span className={cn("font-medium", tone.text)}>
-            {completenessStatus.label}
+            {toneLabel}
           </span>
           {hasProfile && (
             <Badge

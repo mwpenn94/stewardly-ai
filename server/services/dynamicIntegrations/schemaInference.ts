@@ -27,7 +27,10 @@ export type InferredType =
   | "array"
   | "object"
   | "null"
-  | "unknown";
+  | "unknown"
+  | "timestamp"
+  | "json"
+  | "mixed";
 
 export interface FieldSchema {
   /** Dot-path to the field within a record (e.g. "user.address.zip"). */
@@ -56,7 +59,7 @@ export interface FieldSchema {
 
 export interface InferredSchema {
   recordCount: number;
-  fields: FieldSchema[];
+  fields: InferredField[];
   /**
    * Best guess at the record-identifier field (`id`, `uuid`, `slug`, `key`, ...).
    * Falls back to the first `unique===true` string field, else undefined.
@@ -221,7 +224,7 @@ export function inferSchema(records: unknown[]): InferredSchema {
     }
   }
 
-  const fields: FieldSchema[] = [];
+  const fields: InferredField[] = [];
   const accEntries = Array.from(acc.entries());
   for (const [path, a] of accEntries) {
     // Build seenTypes in descending frequency (excluding "null" — that feeds nullable).
@@ -240,6 +243,12 @@ export function inferSchema(records: unknown[]): InferredSchema {
     // If both integer and number show up, number wins.
     if (nonNullTypes.includes("number") && nonNullTypes.includes("integer")) {
       primary = "number";
+    }
+    // If we see both scalar and structural types (array/object), it's mixed.
+    const hasStructural = nonNullTypes.some((t) => t === "array" || t === "object");
+    const hasScalar = nonNullTypes.some((t) => t !== "array" && t !== "object");
+    if (hasStructural && hasScalar && nonNullTypes.length > 1) {
+      primary = "mixed";
     }
     // If "string" + any richer type show up, the richer type wins (email/date/etc.)
     // as long as it dominates; else fall back to string.
@@ -280,7 +289,7 @@ export function inferSchema(records: unknown[]): InferredSchema {
       enumValues = Array.from(a.distinctValues).sort();
     }
 
-    fields.push({
+    fields.push(toInferredField({
       path,
       type: primary,
       seenTypes,
@@ -292,7 +301,7 @@ export function inferSchema(records: unknown[]): InferredSchema {
       samples: a.samples,
       confidence: Math.round(confidence * 100) / 100,
       enumValues,
-    });
+    }));
   }
 
   fields.sort((x, y) => {
@@ -318,15 +327,16 @@ function isIdLike(path: string): boolean {
   return norm.endsWith("_id") || norm.endsWith("id") && norm.length <= 8;
 }
 
-function pickPrimaryKey(fields: FieldSchema[]): string | undefined {
+function pickPrimaryKey(fields: InferredField[]): string | undefined {
   const candidates = fields.filter((f) => isIdLike(f.path) && f.unique && f.nullable === false);
   if (candidates.length > 0) return candidates[0].path;
-  // Fall back to any unique non-null string/integer field.
+  // Fall back to any unique non-null string/integer field with an identifier-like hint.
   const fallback = fields.find(
     (f) =>
       f.unique &&
       !f.nullable &&
-      (f.type === "string" || f.type === "integer" || f.type === "enum"),
+      (f.type === "string" || f.type === "integer" || f.type === "enum") &&
+      f.semanticHints.includes("identifier"),
   );
   return fallback?.path;
 }
@@ -361,4 +371,193 @@ export function schemaToPersisted(schema: InferredSchema): {
       enumValues: f.enumValues,
     })),
   };
+}
+
+// ─── Backward-compat aliases & stubs ────────────────────────────────────
+
+/** Alias for FieldSchema — used by adapterGenerator, crmCanonicalMap, schemaDrift. */
+export type InferredField = FieldSchema & {
+  /** Normalized snake_case name derived from path. */
+  normalizedName: string;
+  /** Suggested name for display. */
+  name: string;
+  /** Whether the field looks required based on nullability. */
+  isRequiredSuggested: boolean;
+  /** Semantic hints (e.g. "email", "phone", "name"). */
+  semanticHints: SemanticHint[];
+  /** Alias for presentCount — used by drift detector. */
+  sampleCount: number;
+  /** Ratio of null values (0-1). */
+  nullRate: number;
+  /** Ratio of unique values (0-1). */
+  uniqueRate: number;
+  /** Whether this field is a candidate for primary key. */
+  isPrimaryKeyCandidate: boolean;
+  /** Whether this field should be read-only in generated UIs. */
+  isReadOnlySuggested?: boolean;
+};
+
+/** Semantic hint tag for a field. */
+export type SemanticHint =
+  | "email"
+  | "phone"
+  | "name"
+  | "address"
+  | "date"
+  | "currency"
+  | "identifier"
+  | "url"
+  | "description"
+  | "status"
+  | "category"
+  | "quantity"
+  | "percentage"
+  | "timestamp_created"
+  | "timestamp_updated"
+  | "primary_key"
+  | "state"
+  | "zip"
+  | "country"
+  | "unknown";
+
+/** Derive semantic hints from a FieldSchema. */
+function deriveSemanticHints(f: FieldSchema): SemanticHint[] {
+  const hints: SemanticHint[] = [];
+  const lp = f.path.toLowerCase();
+  if (f.type === "email" || lp.includes("email")) hints.push("email");
+  if (f.type === "phone" || lp.includes("phone") || lp.includes("tel")) hints.push("phone");
+  if (f.type === "url" || lp.includes("url") || lp.includes("website")) hints.push("url");
+  if (f.type === "date" || f.type === "datetime" || lp.includes("date") || lp.includes("time")) hints.push("date");
+  if (f.type === "currency" || lp.includes("price") || lp.includes("amount") || lp.includes("cost")) hints.push("currency");
+  if (f.type === "percentage" || lp.includes("rate") || lp.includes("percent")) hints.push("percentage");
+  if (lp.includes("name") || lp.includes("first") || lp.includes("last")) hints.push("name");
+  if (lp.includes("address") || lp.includes("street") || lp.includes("city") || lp.includes("zip")) hints.push("address");
+  if (lp.includes("id") || lp.includes("key") || lp.includes("uuid")) hints.push("identifier");
+  if (lp.includes("status") || lp.includes("state")) hints.push("status");
+  if (lp.includes("category") || lp.includes("type") || lp.includes("kind")) hints.push("category");
+  if (lp.includes("count") || lp.includes("quantity") || lp.includes("qty")) hints.push("quantity");
+  if (lp.includes("desc") || lp.includes("note") || lp.includes("comment")) hints.push("description");
+  if (lp.includes("created") && (f.type === "date" || f.type === "datetime" || f.type === "timestamp")) hints.push("timestamp_created");
+  if ((lp.includes("updated") || lp.includes("modified")) && (f.type === "date" || f.type === "datetime" || f.type === "timestamp")) hints.push("timestamp_updated");
+  if (hints.length === 0) hints.push("unknown");
+  return hints;
+}
+
+/** Normalize a dot-path to snake_case. */
+function normalizeFieldName(path: string): string {
+  return path
+    .replace(/\[\*\]/g, "")
+    .replace(/\./g, "_")
+    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+/** Convert FieldSchema to InferredField with extra derived properties. */
+export function toInferredField(f: FieldSchema): InferredField {
+  const total = f.presentCount || 1;
+  return {
+    ...f,
+    normalizedName: normalizeFieldName(f.path),
+    name: f.path.split(".").pop() ?? f.path,
+    isRequiredSuggested: !f.nullable && f.presentCount > 0,
+    semanticHints: deriveSemanticHints(f),
+    sampleCount: f.presentCount,
+    nullRate: 1 - (f.nonNullCount / total),
+    uniqueRate: f.nonNullCount > 0 ? f.distinctCount / f.nonNullCount : 0,
+    isPrimaryKeyCandidate: f.unique && !f.nullable && f.type !== "boolean" && f.type !== "mixed",
+  };
+}
+
+/** Extended InferredSchema with extra metadata. */
+export interface ExtendedInferredSchema extends InferredSchema {
+  confidence: number;
+  timestampField: string | null;
+}
+
+/** Merge multiple schemas into one (union of fields). */
+export function mergeSchemas(schemas: InferredSchema[]): InferredSchema {
+  if (schemas.length === 0) return { recordCount: 0, fields: [] };
+  if (schemas.length === 1) return schemas[0];
+
+  const fieldMap = new Map<string, InferredField>();
+  let totalRecords = 0;
+
+  for (const schema of schemas) {
+    totalRecords += schema.recordCount;
+    for (const field of schema.fields) {
+      const existing = fieldMap.get(field.path);
+      if (!existing) {
+        fieldMap.set(field.path, { ...field } as InferredField);
+      } else {
+        existing.presentCount += field.presentCount;
+        existing.nonNullCount += field.nonNullCount;
+        existing.nullable = existing.nullable || field.nullable;
+        existing.unique = existing.unique && field.unique;
+        existing.distinctCount = Math.max(existing.distinctCount, field.distinctCount);
+        if (existing.confidence > field.confidence) {
+          // keep higher confidence type
+        } else {
+          existing.type = field.type;
+          existing.confidence = field.confidence;
+        }
+        const sampleSet = new Set<string>([...existing.samples, ...field.samples]);
+        existing.samples = Array.from(sampleSet).slice(0, 5);
+      }
+    }
+  }
+
+  return {
+    recordCount: totalRecords,
+    fields: Array.from(fieldMap.values()),
+    primaryKey: schemas.find(s => s.primaryKey)?.primaryKey,
+  };
+}
+
+/** Suggest CRUD mapping for a schema (which fields map to create/read/update/delete). */
+export function suggestCrudMapping(schema: InferredSchema): {
+  identifierField: string | null;
+  displayField: string | null;
+  searchableFields: string[];
+  sortableFields: string[];
+  filterableFields: string[];
+} {
+  const fields = schema.fields.map(toInferredField);
+  const idField = fields.find(f => f.semanticHints.includes("identifier") && f.unique);
+  const nameField = fields.find(f => f.semanticHints.includes("name"));
+  const searchable = fields
+    .filter(f => f.type === "string" && !f.semanticHints.includes("identifier"))
+    .map(f => f.path);
+  const sortable = fields
+    .filter(f => ["number", "integer", "date", "datetime", "currency"].includes(f.type))
+    .map(f => f.path);
+  const filterable = fields
+    .filter(f => f.type === "enum" || f.semanticHints.includes("status") || f.semanticHints.includes("category"))
+    .map(f => f.path);
+
+  return {
+    identifierField: idField?.path ?? schema.primaryKey ?? null,
+    displayField: nameField?.path ?? fields.find(f => f.type === "string")?.path ?? null,
+    searchableFields: searchable.slice(0, 10),
+    sortableFields: sortable.slice(0, 10),
+    filterableFields: filterable.slice(0, 10),
+  };
+}
+
+/** Summarize a schema into a human-readable string. */
+export function summarizeSchema(schema: InferredSchema): string {
+  const lines: string[] = [
+    `Schema: ${schema.recordCount} records, ${schema.fields.length} fields`,
+  ];
+  if (schema.primaryKey) lines.push(`Primary key: ${schema.primaryKey}`);
+  for (const f of schema.fields.slice(0, 20)) {
+    const nullable = f.nullable ? "?" : "";
+    lines.push(`  ${f.path}: ${f.type}${nullable} (${Math.round(f.confidence * 100)}% confidence)`);
+  }
+  if (schema.fields.length > 20) {
+    lines.push(`  ... and ${schema.fields.length - 20} more fields`);
+  }
+  return lines.join("\n");
 }

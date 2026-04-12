@@ -1303,4 +1303,43 @@ export const wealthEngineRouter = router({
       }).catch(() => {/* persistence is best-effort */});
       return { data };
     }),
+
+  // ── Business Valuation (SDE multiple + exit projection) ──────────
+  valueBusiness: protectedProcedure
+    .input(z.object({
+      annualRevenue: z.number().optional(),
+      annualEbitda: z.number().optional(),
+      ownerAddBack: z.number().optional(),
+      growthRate: z.number().optional(),
+      exitYears: z.number().optional(),
+      industryMultiple: z.number().optional(),
+      revenue: z.number().optional(),
+      ebitda: z.number().optional(),
+      industry: z.string().optional(),
+      method: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const ebitda = input.annualEbitda ?? input.ebitda ?? 0;
+      const addBack = input.ownerAddBack ?? 0;
+      const sde = ebitda + addBack;
+      const multiple = input.industryMultiple ?? 3.5;
+      const currentValue = sde * multiple;
+      const growthRate = input.growthRate ?? 0.08;
+      const exitYears = input.exitYears ?? 5;
+      const projectedExitValue = currentValue * Math.pow(1 + growthRate, exitYears);
+      const cagr = growthRate;
+      return {
+        data: {
+          currentValue,
+          sde,
+          multipleApplied: multiple,
+          projectedExitValue,
+          cagr,
+          reasoning: `Valuation based on SDE of ${sde.toLocaleString()} with a ${multiple.toFixed(1)}x multiple. Growth projected at ${(growthRate * 100).toFixed(1)}% annually over ${exitYears} years.`,
+          valuationRange: { low: currentValue * 0.8, mid: currentValue, high: currentValue * 1.2 },
+          method: "sde_multiple",
+          multiples: { revenue: (input.annualRevenue ?? 0) > 0 ? currentValue / (input.annualRevenue ?? 1) : 0, ebitda: ebitda > 0 ? currentValue / ebitda : 0 },
+        },
+      };
+    }),
 });

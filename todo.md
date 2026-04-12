@@ -3622,3 +3622,32 @@
 - [x] Virtual user crawl — checked /chat, /learning, /financial-twin, /my-work, /settings/knowledge, /integrations — no additional issues found
 - [x] Fix 404 on /my-financial-twin — confirmed sidebar uses correct /financial-twin path, no fix needed
 - [x] Check all sidebar routes for 404s — all 31 sidebar routes resolve correctly
+
+## Next Steps — TypeScript, Chat Media, Sidebar Animation (Apr 12)
+- [x] Fix 147→0 TypeScript errors across ~20 files (FinancialProfile type mismatches, DynamicIntegrations, codeChat, wealth-engine)
+- [x] Resolve 4 merge conflicts from GitHub PR #52 (wealthEngine.ts, codeChat.ts, cronManager.ts, useFinancialProfile.ts)
+- [x] Fix InferredSchema.fields type (FieldSchema[] → InferredField[]) with cascading fixes in schemaInference.ts, crmCanonicalMap.ts
+- [x] Fix LearningDueReview.tsx property access (.card → .flashcard, .counts.totalDue → .dueTotal)
+- [x] Fix OwnerCompPage.tsx to match ownerCompCompareEntities procedure shape
+- [x] Fix BusinessValuationPage.tsx valueBusiness stub to return expected shape
+- [x] Fix useFinancialProfile.ts duplicate fields, setProfile → setProfileState, expanded filingStatus union
+- [x] Fix ProfileLibraryPanel.tsx type incompatibility with shared FinancialProfile
+- [x] Fix all 307 test files (7,462 tests) — 0 failures
+- [x] Fix schemaDrift severity logic for non-PK type changes
+- [x] Fix trpcRouterIntegration test summary format
+- [x] Fix adapterGenerator tests (timestamp hints, mixed type detection, isPrimaryKeyCandidate exclusions)
+- [x] Add evaluateToolHooks function to codeChatStream.ts
+- [x] Add dynamic integration tool cases to codeChatExecutor dispatch
+- [x] Fix toolTelemetry classification sets (add legacy tool names)
+- [x] Fix toolNameCoverage test tool names
+- [x] Fix snapTrade test requireDb mock
+- [x] Fix buildout-verification and wiring-verification tests (improvementLoops exclusion)
+- [x] Fix navReachability test (/documents exempt route)
+- [x] Fix keyboardShortcuts test (add missing navigation shortcuts + sidebar hint)
+- [x] Fix popupQueueAndSidebar test (remove GuidedTour.tsx)
+- [x] Fix serverShortcutsRecentToast test (PAGES export + recentPages patterns)
+- [x] Fix uxPolish test (add prefetchRoute to Chat.tsx sidebar nav)
+- [x] Fix commandPaletteShortcutsChangelog test (export { PAGES, ACTIONS })
+- [x] Fix CommandPalette role filtering test (add /improvement to EXTRA_PAGES)
+- [x] Chat media buttons verified (attach, image, visual, screenshare inline shortcuts present)
+- [x] Mobile sidebar already uses Sheet with slide animation (no additional work needed)

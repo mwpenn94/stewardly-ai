@@ -67,15 +67,14 @@ export default function LearningDueReview() {
   const deckQ = trpc.learning.mastery.dueReview.useQuery(
     {
       limit,
-      ...(kindFilter !== "all" ? { kind: kindFilter } : {}),
     },
     { refetchOnWindowFocus: false },
   );
   const recordReview = trpc.learning.mastery.recordReview.useMutation();
 
   const items = deckQ.data?.items ?? [];
-  const totalDue = deckQ.data?.counts?.totalDue ?? 0;
-  const unresolved = deckQ.data?.counts?.unresolved ?? 0;
+  const totalDue = deckQ.data?.dueTotal ?? 0;
+  const unresolved = 0; // not in current API shape
 
   // ── Session state ──────────────────────────────────────────────────────
   const [index, setIndex] = useState(0);
@@ -94,7 +93,7 @@ export default function LearningDueReview() {
     setCorrect(0);
     setIncorrect(0);
     setComplete(false);
-  }, [deckQ.data?.generatedAt, sessionKey]);
+  }, [deckQ.data?.total, sessionKey]);
 
   const current = items[index];
   const total = items.length;
@@ -166,12 +165,12 @@ export default function LearningDueReview() {
     if (current.kind === "flashcard") {
       return {
         badge: "Flashcard",
-        track: current.card.trackName ?? "—",
+        track: "—",
       };
     }
     return {
       badge: "Question",
-      track: current.question.trackName ?? "—",
+      track: "—",
     };
   }, [current]);
 
@@ -310,9 +309,9 @@ export default function LearningDueReview() {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="outline">{deckMeta.badge}</Badge>
                   <Badge variant="outline">{deckMeta.track}</Badge>
-                  {current.confidence > 0 && (
+                  {current.isNew && (
                     <Badge variant="outline">
-                      level {current.confidence}/5
+                      New
                     </Badge>
                   )}
                 </div>
@@ -320,8 +319,8 @@ export default function LearningDueReview() {
 
               {current.kind === "flashcard" ? (
                 <FlashcardCard
-                  term={current.card.term}
-                  definition={current.card.definition}
+                  term={current.flashcard.term}
+                  definition={current.flashcard.definition}
                   onCorrect={() => submitFlashcard(true)}
                   onIncorrect={() => submitFlashcard(false)}
                   disabled={recordReview.isPending}
@@ -329,8 +328,8 @@ export default function LearningDueReview() {
               ) : (
                 <QuestionCard
                   prompt={current.question.prompt}
-                  options={current.question.options}
-                  correctIndex={current.question.correctIndex}
+                  options={current.question.options as string[]}
+                  correctIndex={current.question.correctIndex ?? 0}
                   explanation={current.question.explanation}
                   difficulty={current.question.difficulty}
                   selected={selected}

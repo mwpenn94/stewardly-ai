@@ -138,7 +138,7 @@ export function ProfileLibraryPanel({ open, onClose }: ProfileLibraryPanelProps)
 
   const handleSwitch = useCallback(
     (entry: LibraryEntry) => {
-      replaceProfile(entry.profile);
+      replaceProfile(entry.profile as any);
       onClose();
     },
     [replaceProfile, onClose],

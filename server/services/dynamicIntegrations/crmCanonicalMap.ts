@@ -236,7 +236,7 @@ function scoreSemanticMatch(field: InferredField, canonical: CanonicalField): nu
 
 function scoreValuePattern(field: InferredField, canonical: CanonicalField): number {
   if (!canonical.valuePattern) return 0;
-  for (const ex of field.examples) {
+  for (const ex of field.samples) {
     if (canonical.valuePattern.test(ex)) return 0.88;
   }
   return 0;

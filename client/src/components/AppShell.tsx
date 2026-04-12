@@ -22,7 +22,7 @@ import { recordPageVisit } from "@/hooks/useRecentPages";
 // were deleted because PersonaSidebar5 fully replaces them. AppShell now
 // imports only what it actually renders (mobile header, bottom tab bar,
 // skip-link, persona sidebar, bottom-banner).
-import { MessageSquare, Brain, Menu, Calculator, GraduationCap, AudioLines } from "lucide-react";
+import { MessageSquare, Brain, Menu, Calculator, GraduationCap, AudioLines, Keyboard } from "lucide-react";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -216,7 +216,8 @@ export default function AppShell({ children, title }: AppShellProps) {
       {/* Pass 136: PersonaSidebar5 — 5-layer persona navigation.
           Replaces the old flat sidebar with role-aware persona layers.
           Falls back to the old sidebarContent for the inner nav items
-          while PersonaSidebar5 handles the structural shell. */}
+          while PersonaSidebar5 handles the structural shell.
+          Section labels: NAVIGATE (tools), ADMIN (admin tools) */}
       <PersonaSidebar5
         role={userRole === "steward" ? "admin" : (userRole as any) || "user"}
         collapsed={collapsed}
@@ -271,6 +272,12 @@ export default function AppShell({ children, title }: AppShellProps) {
         {/* Bottom tab bar removed — sidebar (accessible via hamburger
             menu on mobile header) is the intended navigation shell.
             Removed to eliminate double-nav overlap on mobile. */}
+
+        {/* Keyboard shortcut hint — visible on desktop only */}
+        <div className="hidden lg:flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground/60">
+          <Keyboard className="w-3 h-3" />
+          <span>Press <kbd className="px-1 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[10px]">?</kbd> for shortcuts</span>
+        </div>
       </div>
     </div>
   );

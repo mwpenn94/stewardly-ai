@@ -6,6 +6,7 @@ import TypingIndicator from "@/components/TypingIndicator";
 import { EmptyConversations } from "@/components/EmptyStates";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { useSoundCues } from "@/hooks/useSoundCues";
+import { prefetchRoute } from "@/lib/routePrefetch";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1911,6 +1912,7 @@ export default function Chat() {
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => { navigate(item.path); setSidebarOpen(false); }}
+                      onMouseEnter={() => prefetchRoute(item.path)}
                       className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
                         item.match.some(m => location === m || location.startsWith(m + "/"))
                           ? "bg-accent/15 text-accent"

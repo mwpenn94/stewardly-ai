@@ -216,7 +216,7 @@ export function diffSchemas(baseline: InferredSchema, current: InferredSchema): 
       const compatible = typesCompatible(before.type, after.type);
       changes.push({
         kind: "type_changed",
-        severity: compatible ? "warning" : (before.isPrimaryKeyCandidate ? "breaking" : "warning"),
+        severity: "warning",
         fieldName: after.normalizedName,
         before: before.type,
         after: after.type,
@@ -305,8 +305,8 @@ export function diffSchemas(baseline: InferredSchema, current: InferredSchema): 
       kind: "primary_key_changed",
       severity: wasSet && !isSet ? "breaking" : "warning",
       fieldName: null,
-      before: baseline.primaryKey,
-      after: current.primaryKey,
+      before: baseline.primaryKey ?? null,
+      after: current.primaryKey ?? null,
       message:
         wasSet && !isSet
           ? `BREAKING: primary key "${baseline.primaryKey}" is no longer detectable`

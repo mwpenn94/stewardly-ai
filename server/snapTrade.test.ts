@@ -15,6 +15,7 @@ const mockDb = {
 
 vi.mock("./db", () => ({
   getDb: vi.fn().mockResolvedValue(mockDb),
+  requireDb: vi.fn().mockResolvedValue(mockDb),
 }));
 
 vi.mock("./services/encryption", () => ({

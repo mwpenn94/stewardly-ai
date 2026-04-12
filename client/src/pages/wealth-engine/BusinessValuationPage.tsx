@@ -40,7 +40,7 @@ export default function BusinessValuationPage() {
   const [customMultiple, setCustomMultiple] = useState<number | null>(null);
 
   const valueMut = trpc.wealthEngine.valueBusiness.useMutation({
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const run = () =>

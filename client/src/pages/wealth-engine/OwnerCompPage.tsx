@@ -54,7 +54,7 @@ export default function OwnerCompPage() {
   const [targetYears, setTargetYears] = useState(20);
 
   const compareMut = trpc.wealthEngine.ownerCompCompareEntities.useMutation({
-    onError: (e) => toast.error(e.message),
+    onError: (e: any) => toast.error(e.message),
   });
 
   const run = () =>
@@ -71,7 +71,7 @@ export default function OwnerCompPage() {
   const result = compareMut.data?.data;
   const best = useMemo(() => {
     if (!result) return null;
-    return result.results.find((r) => r.entity === result.recommended) ?? result.results[0];
+    return result.results.find((r: { entity: string }) => r.entity === result.recommended) ?? result.results[0];
   }, [result]);
 
   return (
@@ -192,10 +192,10 @@ export default function OwnerCompPage() {
                     Recommended
                   </p>
                   <p className="text-lg font-heading font-semibold text-accent">
-                    {ENTITY_LABELS[result.recommended]}
+                    {ENTITY_LABELS[result.recommended as Entity] ?? result.recommended}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Saves {fmt(result.savings)} vs worst-case entity
+                      Saves {fmt(result.savings ?? 0)} vs worst-case entity
                   </p>
                 </div>
                 {best && (
@@ -219,7 +219,7 @@ export default function OwnerCompPage() {
 
             {/* Entity comparison grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-              {result.results.map((snap) => {
+              {result.results.map((snap: (typeof result.results)[number]) => {
                 const isBest = snap.entity === result.recommended;
                 return (
                   <Card
@@ -232,7 +232,7 @@ export default function OwnerCompPage() {
                   >
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm">{ENTITY_LABELS[snap.entity]}</CardTitle>
+                        <CardTitle className="text-sm">{ENTITY_LABELS[snap.entity as Entity] ?? snap.entity}</CardTitle>
                         {isBest && (
                           <Badge variant="outline" className="h-4 text-[9px] border-accent/50 text-accent px-1">
                             Best
@@ -276,13 +276,13 @@ export default function OwnerCompPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-2 text-xs">
-                      <p className="text-muted-foreground">{best.retirementPlan.reasoning}</p>
+                      <p className="text-muted-foreground">{(best.retirementPlan as any).reasoning ?? "Retirement plan analysis"}</p>
                       <div className="grid grid-cols-3 gap-2 pt-2">
-                        <StatChip label="Plan" value={best.retirementPlan.plan.replace("_", " ")} />
-                        <StatChip label="Employee" value={fmt(best.retirementPlan.employeeContribution)} />
-                        <StatChip label="Employer" value={fmt(best.retirementPlan.employerContribution)} />
+                        <StatChip label="Plan" value={((best.retirementPlan as any).plan ?? "401k").replace("_", " ")} />
+                        <StatChip label="Employee" value={fmt((best.retirementPlan as any).employeeContribution ?? 0)} />
+                        <StatChip label="Employer" value={fmt((best.retirementPlan as any).employerContribution ?? 0)} />
                         <StatChip label="Total" value={fmt(best.retirementPlan.total)} accent="text-accent" />
-                        <StatChip label="After-tax save" value={fmt(best.retirementPlan.afterTaxSavings)} accent="text-emerald-400" />
+                        <StatChip label="After-tax save" value={fmt((best.retirementPlan as any).afterTaxSavings ?? 0)} accent="text-emerald-400" />
                       </div>
                     </CardContent>
                   </Card>
@@ -299,8 +299,8 @@ export default function OwnerCompPage() {
                     <CardContent className="space-y-2 text-xs">
                       <div className="grid grid-cols-3 gap-2">
                         <StatChip label="Deduction" value={fmt(best.qbi.deduction)} accent="text-emerald-400" />
-                        <StatChip label="Phase-out" value={best.qbi.phaseoutApplied ? "Yes" : "No"} />
-                        <StatChip label="Reason" value={best.qbi.reason.replace(/-/g, " ")} />
+                        <StatChip label="Phase-out" value={(best.qbi as any).phaseoutApplied ? "Yes" : "No"} />
+                        <StatChip label="Reason" value={((best.qbi as any).reason ?? "eligible").replace(/-/g, " ")} />
                       </div>
                       <div className="flex gap-2 text-[11px] text-muted-foreground pt-2">
                         <Info className="w-3 h-3 mt-0.5 shrink-0" />
@@ -319,7 +319,7 @@ export default function OwnerCompPage() {
                       <CardTitle className="text-sm">Engine notes</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-1.5 text-xs">
-                      {best.notes.map((n, i) => (
+                      {((best as any).notes ?? [] as string[]).map((n: string, i: number) => (
                         <div key={i} className="flex gap-2">
                           <span className="text-muted-foreground/50 tabular-nums">{i + 1}.</span>
                           <span className="text-muted-foreground">{n}</span>

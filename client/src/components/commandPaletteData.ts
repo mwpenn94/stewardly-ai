@@ -185,6 +185,13 @@ export const EXTRA_PAGES: PageEntry[] = [
     keywords: ["search", "definitions", "content", "find"],
     minRole: "user",
   },
+  {
+    label: "Improvement Engine",
+    href: "/improvement",
+    iconName: "Brain",
+    keywords: ["improvement", "optimization", "suggestions"],
+    minRole: "advisor",
+  },
 ];
 
 /**

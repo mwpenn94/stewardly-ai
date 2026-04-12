@@ -65,7 +65,8 @@ describe("CommandPalette component", () => {
   });
 
   it("exports ACTIONS for testing", () => {
-    expect(src).toContain("export { ACTIONS }");
+    // Updated: PAGES is now also exported alongside ACTIONS
+    expect(src).toContain("export { PAGES, ACTIONS }");
   });
 
   it("includes shortcut hints for pages with G-then-X via commandPaletteData", () => {

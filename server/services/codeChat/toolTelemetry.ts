@@ -103,7 +103,7 @@ const WRITE_TOOLS = new Set(["write_file", "edit_file", "multi_edit"]);
 
 const SHELL_TOOLS = new Set(["run_bash"]);
 
-const NETWORK_TOOLS = new Set(["web_fetch"]);
+const NETWORK_TOOLS = new Set(["web_read", "web_search", "web_crawl", "web_extract", "web_fetch"]);
 
 const META_TOOLS = new Set(["update_todos", "finish"]);
 

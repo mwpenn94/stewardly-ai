@@ -25,7 +25,7 @@ export interface FinancialProfile {
   currentAge?: number;
   retirementAge?: number;
   lifeExpectancy?: number;
-  filingStatus?: "single" | "mfj" | "hoh";
+  filingStatus?: "single" | "mfj" | "mfs" | "hoh" | "qw";
   isMarried?: boolean;
   stateCode?: string;
   childrenCount?: number;
@@ -100,6 +100,11 @@ export interface FinancialProfile {
   // ─── Meta ───────────────────────────────────────────
   lastUpdated?: string;
   lastUpdatedBy?: string; // page name that last wrote
+
+  updatedAt?: string;        // alias for lastUpdated
+
+  // ─── Allow arbitrary extra keys for extensibility ───────
+  [key: string]: unknown;
 }
 
 /** Load profile from localStorage with defensive parsing. */
@@ -150,14 +155,14 @@ function completenessStatus(pct: number): { label: string; tone: "empty" | "spar
  *
  * @returns {profile, updateProfile, hasData, hasProfile, completeness, completenessStatus, clearProfile, replaceProfile}
  */
-export function useFinancialProfile(pageName?: string) {
-  const [profile, setProfile] = useState<FinancialProfile>(loadProfile);
+export function useFinancialProfile(pageName: string = "unknown") {
+  const [profile, setProfileState] = useState<FinancialProfile>(loadProfile);
 
   // Reload from localStorage if another tab or page changed it
   useEffect(() => {
     const handler = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) {
-        setProfile(loadProfile());
+        setProfileState(loadProfile());
       }
     };
     window.addEventListener("storage", handler);
@@ -166,7 +171,7 @@ export function useFinancialProfile(pageName?: string) {
 
   /** Merge new values into the profile and persist. */
   const updateProfile = useCallback((updates: Partial<FinancialProfile>) => {
-    setProfile(prev => {
+    setProfileState(prev => {
       const next = {
         ...prev,
         ...updates,
@@ -180,7 +185,7 @@ export function useFinancialProfile(pageName?: string) {
 
   /** Clear the entire profile. */
   const clearProfile = useCallback(() => {
-    setProfile({});
+    setProfileState({});
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
   }, []);
 
@@ -191,7 +196,7 @@ export function useFinancialProfile(pageName?: string) {
       lastUpdated: new Date().toISOString(),
       lastUpdatedBy: pageName ?? "import",
     };
-    setProfile(stamped);
+    setProfileState(stamped);
     saveProfile(stamped);
   }, [pageName]);
 
@@ -210,17 +215,19 @@ export function useFinancialProfile(pageName?: string) {
   /** Derive which pages have contributed data. */
   const source = profile.lastUpdatedBy;
 
-  return {
-    profile,
-    updateProfile,
-    hasData,
-    hasProfile,
-    completeness,
-    completenessStatus: useMemo(() => completenessStatus(completeness), [completeness]),
-    clearProfile,
-    replaceProfile,
-    source,
-  };
+  /** Completeness status label. */
+  const completenessStatusLabel = useMemo(() => {
+    if (completeness >= 80) return 'complete' as const;
+    if (completeness >= 40) return 'partial' as const;
+    return 'minimal' as const;
+  }, [completeness]);
+
+  /** Legacy setter — calls updateProfile with full replacement. */
+  const legacySetProfile = useCallback((newProfile?: Partial<FinancialProfile>, _source?: string) => {
+    if (newProfile) updateProfile(newProfile);
+  }, [updateProfile]);
+
+  return { profile, updateProfile, hasData, clearProfile, source, hasProfile, completeness, completenessStatus: completenessStatusLabel, setProfile: legacySetProfile, replaceProfile };
 }
 
 /**

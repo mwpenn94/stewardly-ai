@@ -169,7 +169,7 @@ export default function QuickQuoteHubPage() {
               Recommended for you
               {hasProfile && (
                 <Badge variant="outline" className="text-[10px] h-4 px-1">
-                  {completenessStatus.label}
+                  {completenessStatus}
                 </Badge>
               )}
             </h2>

@@ -254,17 +254,9 @@ const masteryRouter = router({
     }),
 
   /**
-   * Cross-track due-review deck.
-   *
-   * Returns a hydrated mixed deck of flashcards + practice questions
-   * whose SRS `nextDue` is in the past for the current user. Ranked
-   * most-overdue-first with confidence-tie breaking.
-   *
-   * The client uses this to power `/learning/review` — a single
-   * session UI where learners can work through everything due across
-   * every track they've touched, rather than hopping between tracks.
+   * Cross-track due-review deck (simplified variant).
    */
-  dueReview: protectedProcedure
+  dueReviewDeck: protectedProcedure
     .input(
       z
         .object({

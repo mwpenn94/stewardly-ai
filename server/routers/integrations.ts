@@ -948,7 +948,7 @@ export const integrationsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { mergeSchemas, suggestCrudMapping, summarizeSchema } = await import("../services/dynamicIntegrations/schemaInference");
-      const schema = mergeSchemas(input.a, input.b);
+      const schema = mergeSchemas([input.a, input.b]);
       return { schema, crudMapping: suggestCrudMapping(schema), summary: summarizeSchema(schema) };
     }),
 

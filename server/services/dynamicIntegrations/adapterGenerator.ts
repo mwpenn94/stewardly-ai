@@ -16,7 +16,8 @@
  *   4. Emit example curl commands for human verification.
  */
 
-import type { InferredSchema, InferredField, SemanticHint } from "./schemaInference";
+import type { InferredSchema, InferredField, SemanticHint, ExtendedInferredSchema } from "./schemaInference";
+import { toInferredField } from "./schemaInference";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -297,16 +298,16 @@ function mapTransform(field: InferredField): AdapterFieldMapping["transform"] {
 }
 
 function mapDirection(field: InferredField): AdapterFieldMapping["direction"] {
+  if (field.semanticHints.includes("timestamp_created") || field.semanticHints.includes("timestamp_updated")) return "derived";
   if (field.isPrimaryKeyCandidate) return "identifier";
   if (field.type === "mixed") return "skip";
   if (field.sampleCount === 0) return "skip";
-  if (field.semanticHints.includes("timestamp_created") || field.semanticHints.includes("timestamp_updated")) return "derived";
   if (field.isReadOnlySuggested) return "read";
   return "both";
 }
 
 export function generateFieldMappings(schema: InferredSchema): AdapterFieldMapping[] {
-  return schema.fields.map((f) => ({
+  return schema.fields.map(toInferredField).map((f) => ({
     canonicalName: f.normalizedName,
     sourceName: f.name,
     direction: mapDirection(f),
@@ -395,7 +396,7 @@ export function generateAdapter(
   const readyBonus = readiness.ready ? 0.1 : 0;
   const confidence = Math.max(
     0,
-    Math.min(1, 0.5 * schema.confidence + 0.3 * auth.probeConfidence + 0.1 + readyBonus)
+    Math.min(1, 0.5 * ((schema as ExtendedInferredSchema).confidence ?? 0.5) + 0.3 * auth.probeConfidence + 0.1 + readyBonus)
   );
 
   // Version derivation: short schema fingerprint
@@ -409,8 +410,8 @@ export function generateAdapter(
     endpoints,
     rateLimit,
     fieldMappings,
-    primaryKey: pk,
-    timestampField: schema.timestampField,
+    primaryKey: pk ?? null,
+    timestampField: (schema as ExtendedInferredSchema).timestampField ?? null,
     confidence,
     readinessReport: readiness,
   };
@@ -454,7 +455,7 @@ function buildReadinessReport(input: {
 // ─── Utility: schema fingerprint ───────────────────────────────────────────
 
 function fingerprintSchema(schema: InferredSchema): string {
-  const parts = schema.fields.map((f) => `${f.normalizedName}:${f.type}`).sort();
+  const parts = schema.fields.map((f) => `${(f as any).normalizedName ?? f.path}:${f.type}`).sort();
   let hash = 0;
   const s = parts.join("|");
   for (let i = 0; i < s.length; i++) {
