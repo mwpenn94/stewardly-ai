@@ -18,8 +18,9 @@ import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { ArrowLeft, Shield, Heart, Home, Car, Umbrella, AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { persistCalculation } from "@/lib/calculatorContext";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -186,6 +187,20 @@ export default function InsuranceAnalysis() {
     score += Math.min(10, Math.round((dime.coverageRatio / 100) * 10));
     return Math.min(100, score);
   }, [needs, dime]);
+
+  // ── Persist to calculator context bridge so Chat knows insurance analysis ──
+  useEffect(() => {
+    persistCalculation({
+      id: `insurance-dime-${annualIncome}-${childrenCount}`,
+      type: "insurance",
+      title: "Insurance Analysis — DIME Method",
+      summary: `Coverage score: ${coverageScore}/100. DIME need: ${fmt(dime.total)}, existing: ${fmt(existingLifeInsurance)}, gap: ${needs.lifeGap === 0 ? "none" : fmt(needs.lifeGap)}. Monthly premiums: ${fmt(needs.totalPremium)}. Umbrella: ${needs.hasUmbrella ? "yes" : "MISSING"}. Disability: ${needs.hasDisability ? "yes" : "MISSING"}.`,
+      inputs: { annualIncome, mortgageBalance, otherDebts, childrenCount, educationPerChild, existingLifeInsurance, spouseIncome, currentAge, netWorth, policyCount: policies.length },
+      outputs: { dimeTotal: dime.total, dimeGap: dime.gap, recommended: dime.recommended, coverageRatio: dime.coverageRatio, coverageScore, lifeGap: needs.lifeGap, totalPremium: needs.totalPremium, hasUmbrella: needs.hasUmbrella, hasDisability: needs.hasDisability },
+      timestamp: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coverageScore, dime.total, needs.lifeGap]);
 
   return (
     <AppShell title="Insurance Analysis">

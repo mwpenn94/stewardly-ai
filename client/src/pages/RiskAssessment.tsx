@@ -16,8 +16,9 @@ import { Progress } from "@/components/ui/progress";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { ArrowLeft, BarChart3, Shield, TrendingDown, AlertTriangle, Target, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { persistCalculation } from "@/lib/calculatorContext";
 
 // ─── Risk Assessment Questions ─────────────────────────────
 const QUESTIONS = [
@@ -155,6 +156,21 @@ export default function RiskAssessment() {
   const handleAnswer = (qId: string, score: number) => {
     setAnswers(prev => ({ ...prev, [qId]: score }));
   };
+
+  // ── Persist to calculator context bridge so Chat knows risk profile ──
+  useEffect(() => {
+    if (!allAnswered) return;
+    persistCalculation({
+      id: `risk-assessment-${overallScore}`,
+      type: "risk",
+      title: `Risk Assessment — ${profile.name}`,
+      summary: `Risk score: ${overallScore}/100 (${profile.name}). Recommended allocation: ${profile.equity}% equity, ${profile.fixed}% fixed income, ${profile.alternatives}% alternatives, ${profile.cash}% cash.`,
+      inputs: { questionCount: QUESTIONS.length, answeredCount, answers },
+      outputs: { overallScore, profileName: profile.name, equity: profile.equity, fixed: profile.fixed, alternatives: profile.alternatives, cash: profile.cash, categoryScores },
+      timestamp: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overallScore, allAnswered]);
 
   return (
     <AppShell title="Risk Assessment">

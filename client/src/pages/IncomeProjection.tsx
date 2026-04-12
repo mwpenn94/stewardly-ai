@@ -19,8 +19,9 @@ import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { ArrowLeft, DollarSign, TrendingUp, PiggyBank, BarChart3, Clock, Plus, Trash2, Loader2, Play } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { persistCalculation } from "@/lib/calculatorContext";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -228,6 +229,21 @@ export default function IncomeProjection() {
   }, [activeSources, portfolioBalance, retirementAge, lifeExpectancy, targetMonthly, expectedReturn, inflationRate]);
 
   const depletionAge = projection.find(r => r.balance <= 0)?.age;
+
+  // ── Persist to calculator context bridge so Chat knows projection results ──
+  useEffect(() => {
+    if (projection.length === 0) return;
+    persistCalculation({
+      id: `income-projection-${retirementAge}-${lifeExpectancy}`,
+      type: "income",
+      title: `Income Projection — Retire at ${retirementAge}, plan to ${lifeExpectancy}`,
+      summary: `Monthly income: ${fmt(totalMonthlyAtFull)} (${Math.round(totalMonthlyAtFull / Math.max(targetMonthly, 1) * 100)}% of ${fmt(targetMonthly)} target). Gap: ${gap <= 0 ? "none" : `${fmt(gap)}/mo`}. Withdrawal rate: ${withdrawalRate.toFixed(1)}%. Monte Carlo success: ${successRate}%.${depletionAge ? ` Portfolio depletes at age ${depletionAge}.` : " Portfolio survives through plan."}`,
+      inputs: { currentAge, retirementAge, lifeExpectancy, targetMonthly, portfolioBalance, expectedReturn, inflationRate },
+      outputs: { totalMonthlyIncome: totalMonthlyAtFull, totalAnnual, gap, withdrawalRate, withdrawalNeeded, successRate, depletionAge: depletionAge ?? null },
+      timestamp: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalMonthlyAtFull, successRate, withdrawalRate, depletionAge]);
 
   const ssResult = ssCalc.data as any;
 

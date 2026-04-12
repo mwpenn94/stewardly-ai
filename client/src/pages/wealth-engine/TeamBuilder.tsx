@@ -12,8 +12,9 @@
  * tRPC namespace: calculatorEngine.bie*
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { persistCalculation } from "@/lib/calculatorContext";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -191,6 +192,38 @@ export default function TeamBuilder() {
   };
 
   const isLoading = rollUp.isPending || rollDown.isPending || economics.isPending || bieBackPlan.isPending;
+
+  // ── Persist roll-up results to calculator context bridge ──
+  useEffect(() => {
+    if (!rollUp.data) return;
+    const d = rollUp.data as any;
+    persistCalculation({
+      id: `bie-team-rollup-${members.length}m`,
+      type: "bie",
+      title: `BIE Team Roll-Up — ${members.length} members`,
+      summary: `Total GDC: $${Math.round(d.totalGDC ?? 0).toLocaleString()}, Total Income: $${Math.round(d.totalIncome ?? 0).toLocaleString()}, Override: $${Math.round(d.totalOverride ?? 0).toLocaleString()}, AUM: $${Math.round(d.totalAUM ?? 0).toLocaleString()}.`,
+      inputs: { teamSize: members.length, roles: members.map(m => m.role), years, personalGrowth, teamGrowth },
+      outputs: { totalGDC: d.totalGDC, totalIncome: d.totalIncome, totalOverride: d.totalOverride, totalAUM: d.totalAUM },
+      timestamp: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rollUp.data]);
+
+  // ── Persist economics results to calculator context bridge ──
+  useEffect(() => {
+    if (!economics.data) return;
+    const d = economics.data as any;
+    persistCalculation({
+      id: `bie-economics-${years}yr`,
+      type: "bie",
+      title: `BIE Economics — ${years}-year P&L`,
+      summary: `Revenue Yr1: $${Math.round(d.yr1Income ?? 0).toLocaleString()}, Yr5: $${Math.round(d.yr5Income ?? 0).toLocaleString()}, CAC: $${Math.round(d.cac ?? 0).toLocaleString()}, LTV: $${Math.round(d.ltv ?? 0).toLocaleString()}, LTV:CAC: ${(d.ltvCacRatio ?? 0).toFixed(1)}x.`,
+      inputs: { years, personalGrowth, teamGrowth },
+      outputs: { yr1Income: d.yr1Income, yr5Income: d.yr5Income, cac: d.cac, ltv: d.ltv, ltvCacRatio: d.ltvCacRatio },
+      timestamp: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [economics.data]);
 
   return (
     <AppShell title="BIE Team Builder">

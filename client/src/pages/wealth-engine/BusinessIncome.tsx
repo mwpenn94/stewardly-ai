@@ -16,8 +16,9 @@ import { ArrowLeft, TrendingUp, Loader2, Users, DollarSign, Target, Calculator }
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { persistCalculation } from "@/lib/calculatorContext";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -74,6 +75,24 @@ export default function BusinessIncome() {
   }
 
   const results = simMutation.data;
+
+  // ── Persist to calculator context bridge so Chat knows BIE results ──
+  useEffect(() => {
+    if (!results || !Array.isArray(results) || results.length === 0) return;
+    const year1Income = (results[0] as any)?.totalIncome ?? 0;
+    const finalYearIncome = (results[results.length - 1] as any)?.totalIncome ?? 0;
+    const cumulative = results.reduce((s: number, r: any) => s + (r.totalIncome ?? 0), 0);
+    persistCalculation({
+      id: `bie-${role}-${years}yr`,
+      type: "bie",
+      title: `BIE Simulation — ${role} role, ${years}-year projection`,
+      summary: `Year 1 income: ${fmt(year1Income)}, Year ${years} income: ${fmt(finalYearIncome)}, Cumulative: ${fmt(cumulative)}. Team size: ${teamSize}, AUM: ${fmt(existingAUM)}.`,
+      inputs: { role, years, personalGDC, teamSize, teamAvgFYC, existingAUM, newAUMAnnual },
+      outputs: { year1Income, finalYearIncome, cumulative, yearCount: results.length },
+      timestamp: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results]);
 
   return (
     <AppShell title="Business Income">

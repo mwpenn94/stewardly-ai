@@ -749,7 +749,9 @@ export const wealthEngineRouter = router({
 
   industryBenchmarks: protectedProcedure.query(() => INDUSTRY_BENCHMARKS),
 
-  sp500History: protectedProcedure.query(() => SP500_HISTORY),
+  sp500History: protectedProcedure.query(() =>
+    Object.entries(SP500_HISTORY).map(([year, ret]) => ({ year: Number(year), return: ret })),
+  ),
 
   methodology: protectedProcedure.query(() => METHODOLOGY_DISCLOSURE),
 
