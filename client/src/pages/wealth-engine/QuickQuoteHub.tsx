@@ -40,9 +40,11 @@ import {
   Clock,
   Zap,
   ArrowRight,
+  Library,
 } from "lucide-react";
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import { ProfileLibraryPanel } from "@/components/financial-profile/ProfileLibraryPanel";
 import {
   QUICK_QUOTE_REGISTRY,
   groupQuotesByCategory,
@@ -82,6 +84,7 @@ export default function QuickQuoteHubPage() {
   const [, navigate] = useLocation();
   const { profile, hasProfile, completenessStatus } = useFinancialProfile();
   const [scope, setScope] = useState<ScopeKey>("user");
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const visible = useMemo(() => visibleQuotes(scope), [scope]);
   const grouped = useMemo(() => groupQuotesByCategory(visible), [visible]);
@@ -105,9 +108,24 @@ export default function QuickQuoteHubPage() {
                 ranked against your saved profile.
               </p>
             </div>
-            <ScopePicker scope={scope} onChange={setScope} />
+            <div className="flex items-center gap-2">
+              <ScopePicker scope={scope} onChange={setScope} />
+              {scope !== "user" && (
+                <button
+                  type="button"
+                  onClick={() => setLibraryOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-accent/40 hover:text-accent transition-colors"
+                  aria-label="Open profile library"
+                >
+                  <Library className="w-3 h-3" />
+                  Library
+                </button>
+              )}
+            </div>
           </div>
         </header>
+
+        <ProfileLibraryPanel open={libraryOpen} onClose={() => setLibraryOpen(false)} />
 
         <FinancialProfileBanner
           onPrefill={() => undefined}

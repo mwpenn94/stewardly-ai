@@ -8,7 +8,7 @@
  * and highlights the affiliate-track contribution as a hatched overlay.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,9 @@ import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { Loader2, Briefcase, PiggyBank } from "lucide-react";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import type { FinancialProfile } from "@/stores/financialProfile";
 
 const ROLES = [
   { key: "new", label: "New Associate" },
@@ -31,28 +34,66 @@ const ROLES = [
 ] as const;
 
 export default function PracticeToWealthPage() {
-  const [role, setRole] = useState<(typeof ROLES)[number]["key"]>("dir");
-  const [age, setAge] = useState(38);
+  const { profile: savedProfile, setProfile: setSavedProfile, hasProfile } =
+    useFinancialProfile();
+
+  // Map businessRole → local role type, falling back to "dir".
+  const roleFromProfile =
+    (savedProfile.businessRole as (typeof ROLES)[number]["key"] | undefined) &&
+    ROLES.some((r) => r.key === savedProfile.businessRole)
+      ? (savedProfile.businessRole as (typeof ROLES)[number]["key"])
+      : "dir";
+
+  const [role, setRole] = useState<(typeof ROLES)[number]["key"]>(roleFromProfile);
+  const [age, setAge] = useState(savedProfile.age ?? 38);
   const [years, setYears] = useState(25);
+
+  // Late hydration for when the profile loads after initial render
+  const didHydrateRef = useRef(hasProfile);
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    if (!hasProfile) return;
+    didHydrateRef.current = true;
+    if (savedProfile.age !== undefined) setAge(savedProfile.age);
+    if (
+      savedProfile.businessRole &&
+      ROLES.some((r) => r.key === savedProfile.businessRole)
+    ) {
+      setRole(savedProfile.businessRole as (typeof ROLES)[number]["key"]);
+    }
+  }, [hasProfile, savedProfile]);
+
+  const handlePrefill = (p: FinancialProfile) => {
+    if (p.age !== undefined) setAge(p.age);
+    if (p.businessRole && ROLES.some((r) => r.key === p.businessRole)) {
+      setRole(p.businessRole as (typeof ROLES)[number]["key"]);
+    }
+  };
 
   const profile = useMemo(
     () => ({
       age,
-      income: 250_000, // assumed practice income baseline
-      netWorth: 500_000,
-      savings: 250_000,
-      dependents: 2,
-      mortgage: 350_000,
-      debts: 50_000,
-      marginalRate: 0.32,
+      income: savedProfile.income ?? 250_000, // practice income baseline
+      netWorth: savedProfile.netWorth ?? 500_000,
+      savings: savedProfile.savings ?? 250_000,
+      dependents: savedProfile.dependents ?? 2,
+      mortgage: savedProfile.mortgage ?? 350_000,
+      debts: savedProfile.debts ?? 50_000,
+      marginalRate: savedProfile.marginalRate ?? 0.32,
     }),
-    [age],
+    [age, savedProfile],
   );
 
   const bizProject = trpc.wealthEngine.projectBizIncome.useMutation();
   const holisticSim = trpc.wealthEngine.holisticSimulate.useMutation();
 
   const onRun = async () => {
+    // Persist the inputs back to the shared profile so downstream
+    // calculators see the advisor's role + age without re-prompting.
+    setSavedProfile(
+      { age, businessRole: role, isBizOwner: true },
+      "user",
+    );
     // 1. Run BIE projection for the selected role
     bizProject.mutate({
       strategy: null,
@@ -103,7 +144,12 @@ export default function PracticeToWealthPage() {
           <CardHeader>
             <CardTitle className="text-base">Inputs</CardTitle>
           </CardHeader>
-          <CardContent className="grid md:grid-cols-4 gap-4">
+          <CardContent className="space-y-4">
+            <FinancialProfileBanner
+              onPrefill={handlePrefill}
+              usesFields={["age", "businessRole", "income", "savings", "netWorth"]}
+            />
+            <div className="grid md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>Role</Label>
               <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
@@ -136,6 +182,7 @@ export default function PracticeToWealthPage() {
                 )}
                 Run Both
               </Button>
+            </div>
             </div>
           </CardContent>
         </Card>
