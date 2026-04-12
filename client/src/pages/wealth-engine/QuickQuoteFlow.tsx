@@ -11,8 +11,9 @@
  * snapshot in step 3.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { persistCalculation } from "@/lib/calculatorContext";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,23 @@ export default function QuickQuoteFlowPage() {
   const max = DOMAINS.length * 3;
 
   const runPreset = trpc.wealthEngine.runPreset.useMutation();
+
+  // ── Persist to calculator context bridge when user reaches results ──
+  useEffect(() => {
+    if (step !== 3) return;
+    const pct = Math.round((total / max) * 100);
+    const weakDomains = DOMAINS.filter(d => scores[d.key] <= 1).map(d => d.label);
+    persistCalculation({
+      id: `quick-quote-${inputs.age}-${inputs.income}`,
+      type: "custom",
+      title: "Quick Quote — Protection Score",
+      summary: `Protection score: ${total}/${max} (${pct}%). Age ${inputs.age}, income $${inputs.income.toLocaleString()}, savings $${inputs.savings.toLocaleString()}, ${inputs.dependents} dependents.${weakDomains.length > 0 ? ` Weak areas: ${weakDomains.join(", ")}.` : " All domains well covered."}`,
+      inputs: { ...inputs },
+      outputs: { total, max, pct, scores, weakDomains },
+      timestamp: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   const onAdvanceToResults = () => {
     runPreset.mutate({

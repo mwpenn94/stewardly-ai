@@ -8,7 +8,8 @@
  * and highlights the affiliate-track contribution as a hatched overlay.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { persistCalculation } from "@/lib/calculatorContext";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
@@ -93,6 +94,30 @@ export default function PracticeToWealthPage() {
 
   const bizYears = bizProject.data?.data ?? [];
   const holisticYears = holisticSim.data?.data ?? [];
+
+  // ── Persist to calculator context bridge ──
+  useEffect(() => {
+    if (bizYears.length === 0 && holisticYears.length === 0) return;
+    const lastBiz = (bizYears[bizYears.length - 1] as any);
+    const lastWealth = (holisticYears[holisticYears.length - 1] as any);
+    const fmt = (n: number) => "$" + Math.round(n).toLocaleString();
+    persistCalculation({
+      id: `practice-to-wealth-${role}-${years}yr`,
+      type: "bie",
+      title: `Practice → Wealth — ${role} role, ${years}-year projection`,
+      summary: `Business: Year ${years} income ${fmt(lastBiz?.totalIncome ?? 0)}. Wealth: Year ${years} total value ${fmt(lastWealth?.totalValue ?? 0)}, liquid ${fmt(lastWealth?.totalLiquidWealth ?? 0)}.`,
+      inputs: { role, age, years },
+      outputs: {
+        finalBizIncome: lastBiz?.totalIncome ?? 0,
+        finalTotalValue: lastWealth?.totalValue ?? 0,
+        finalLiquidWealth: lastWealth?.totalLiquidWealth ?? 0,
+        bizYearCount: bizYears.length,
+        wealthYearCount: holisticYears.length,
+      },
+      timestamp: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bizYears.length, holisticYears.length]);
 
   return (
     <AppShell title="Practice → Wealth">
