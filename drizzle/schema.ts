@@ -6463,3 +6463,107 @@ export type AudioScript = typeof audioScripts.$inferSelect;
 export type InsertAudioScript = typeof audioScripts.$inferInsert;
 export type UserAudioPreference = typeof userAudioPreferences.$inferSelect;
 export type InsertUserAudioPreference = typeof userAudioPreferences.$inferInsert;
+
+// ─── Dynamic Integration Blueprints ────────────────────────────────────────
+// User/AI-defined adapters for any data source (documented or not).
+// A Blueprint captures: source kind + config, extraction, transforms, validation,
+// sink, schedule — everything needed to fetch, normalize and load records
+// without hand-coded provider logic.
+export const integrationBlueprints = mysqlTable("integration_blueprints", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  slug: varchar("slug", { length: 100 }).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  ownerId: int("owner_id"),
+  organizationId: int("organization_id"),
+  ownershipTier: varchar("ownership_tier", { length: 20 }).notNull().default("professional"),
+  visibility: varchar("visibility", { length: 20 }).notNull().default("private"),
+  status: varchar("status", { length: 20 }).notNull().default("draft"),
+  sourceKind: varchar("source_kind", { length: 20 }).notNull(),
+  sourceConfig: json("source_config").notNull(),
+  authConfig: json("auth_config"),
+  extractionConfig: json("extraction_config").notNull(),
+  transformSteps: json("transform_steps").notNull(),
+  validationRules: json("validation_rules"),
+  sinkConfig: json("sink_config").notNull(),
+  scheduleCron: varchar("schedule_cron", { length: 100 }),
+  rateLimitPerMin: int("rate_limit_per_min").default(60),
+  maxRecordsPerRun: int("max_records_per_run").default(10000),
+  currentVersion: int("current_version").notNull().default(1),
+  aiDrafted: mysqlBoolean("ai_drafted").default(false),
+  aiDraftedBy: varchar("ai_drafted_by", { length: 100 }),
+  tags: json("tags"),
+  lastRunAt: bigint("last_run_at", { mode: "number" }),
+  lastRunStatus: varchar("last_run_status", { length: 20 }),
+  lastRunError: text("last_run_error"),
+  totalRuns: int("total_runs").default(0),
+  totalRecordsIngested: int("total_records_ingested").default(0),
+  createdBy: int("created_by"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+}, (t) => ({
+  slugIdx: index("idx_blueprint_slug").on(t.slug),
+  ownerIdx: index("idx_blueprint_owner").on(t.ownerId),
+  orgIdx: index("idx_blueprint_org").on(t.organizationId),
+  statusIdx: index("idx_blueprint_status").on(t.status),
+}));
+export type IntegrationBlueprint = typeof integrationBlueprints.$inferSelect;
+export type InsertIntegrationBlueprint = typeof integrationBlueprints.$inferInsert;
+
+export const integrationBlueprintVersions = mysqlTable("integration_blueprint_versions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  blueprintId: varchar("blueprint_id", { length: 36 }).notNull(),
+  version: int("version").notNull(),
+  snapshotJson: json("snapshot_json").notNull(),
+  changeNote: text("change_note"),
+  createdBy: int("created_by"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+}, (t) => ({
+  blueprintIdx: index("idx_bpv_blueprint").on(t.blueprintId),
+  blueprintVersionIdx: uniqueIndex("idx_bpv_blueprint_version").on(t.blueprintId, t.version),
+}));
+export type IntegrationBlueprintVersion = typeof integrationBlueprintVersions.$inferSelect;
+
+export const integrationBlueprintSamples = mysqlTable("integration_blueprint_samples", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  blueprintId: varchar("blueprint_id", { length: 36 }).notNull(),
+  version: int("version").notNull().default(1),
+  rawSample: text("raw_sample"),
+  rawFormat: varchar("raw_format", { length: 20 }),
+  inferredSchema: json("inferred_schema").notNull(),
+  recordCount: int("record_count").notNull().default(0),
+  sourceHash: varchar("source_hash", { length: 64 }),
+  fetchedAt: bigint("fetched_at", { mode: "number" }).notNull(),
+}, (t) => ({
+  blueprintIdx: index("idx_bps_blueprint").on(t.blueprintId),
+}));
+export type IntegrationBlueprintSample = typeof integrationBlueprintSamples.$inferSelect;
+
+export const integrationBlueprintRuns = mysqlTable("integration_blueprint_runs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  blueprintId: varchar("blueprint_id", { length: 36 }).notNull(),
+  blueprintVersion: int("blueprint_version").notNull().default(1),
+  triggeredBy: int("triggered_by"),
+  triggerSource: varchar("trigger_source", { length: 30 }).notNull().default("manual"),
+  dryRun: mysqlBoolean("dry_run").default(false),
+  status: varchar("status", { length: 20 }).notNull().default("queued"),
+  recordsFetched: int("records_fetched").default(0),
+  recordsParsed: int("records_parsed").default(0),
+  recordsTransformed: int("records_transformed").default(0),
+  recordsValidated: int("records_validated").default(0),
+  recordsWritten: int("records_written").default(0),
+  recordsSkipped: int("records_skipped").default(0),
+  recordsErrored: int("records_errored").default(0),
+  errorLog: text("error_log"),
+  warnings: json("warnings"),
+  outputSummary: json("output_summary"),
+  startedAt: bigint("started_at", { mode: "number" }).notNull(),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  durationMs: int("duration_ms"),
+}, (t) => ({
+  blueprintIdx: index("idx_bpr_blueprint").on(t.blueprintId),
+  statusIdx: index("idx_bpr_status").on(t.status),
+  startedIdx: index("idx_bpr_started").on(t.startedAt),
+}));
+export type IntegrationBlueprintRun = typeof integrationBlueprintRuns.$inferSelect;
+export type InsertIntegrationBlueprintRun = typeof integrationBlueprintRuns.$inferInsert;

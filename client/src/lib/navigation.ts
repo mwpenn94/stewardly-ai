@@ -135,6 +135,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "FileText", label: "Documents", href: "/documents", minRole: "user", section: "relationships" },
   { iconName: "FileText", label: "Documents", href: "/settings/knowledge", minRole: "user", section: "relationships" },
   { iconName: "Link2", label: "Integrations", href: "/integrations", minRole: "user", section: "relationships" },
+  { iconName: "Plug", label: "Dynamic Integrations", href: "/dynamic-integrations", minRole: "advisor", section: "relationships" },
   { iconName: "HeartPulse", label: "Integration Health", href: "/integration-health", minRole: "advisor", section: "relationships" },
   { iconName: "Users2", label: "Community", href: "/community", minRole: "advisor", section: "relationships" },
 

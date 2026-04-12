@@ -66,6 +66,7 @@ const BCP = lazy(() => import("./pages/BCP"));
 const FairnessTestDashboard = lazy(() => import("./pages/FairnessTestDashboard"));
 const KnowledgeAdmin = lazy(() => import("./pages/KnowledgeAdmin"));
 const AdminIntegrations = lazy(() => import("./pages/AdminIntegrations"));
+const DynamicIntegrations = lazy(() => import("./pages/DynamicIntegrations"));
 const AdvisorIntegrations = lazy(() => import("./pages/AdvisorIntegrations"));
 const IntegrationHealth = lazy(() => import("./pages/IntegrationHealth"));
 const SuitabilityPanel = lazy(() => import("./pages/SuitabilityPanel"));
@@ -191,6 +192,7 @@ function Router() {
         <Route path={"/admin/integrations"} component={AdminIntegrations} />
         <Route path={"/my-integrations"} component={AdvisorIntegrations} />
         <Route path={"/integration-health"} component={IntegrationHealth} />
+        <Route path={"/dynamic-integrations"} component={DynamicIntegrations} />
         <Route path={"/suitability-panel"} component={SuitabilityPanel} />
         <Route path={"/proficiency"} component={ProficiencyDashboard} />
         <Route path={"/product-intelligence"} component={ProductIntelligence} />

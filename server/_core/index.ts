@@ -15,6 +15,7 @@ import { serveStatic, setupVite } from "./vite";
 import { initWebSocket } from "../services/websocketNotifications";
 import { initScheduler } from "../services/scheduler";
 import { bootstrapLearning } from "../services/learning/bootstrap";
+import { startBlueprintScheduler } from "../services/dynamicIntegrations/blueprintScheduler";
 import { validateRequiredEnvVars } from "./envValidation";
 import { validateDatabaseSchema } from "./schemaValidation";
 import { logger } from "./logger";
@@ -490,6 +491,13 @@ async function startServer() {
     bootstrapLearning().catch((err) =>
       logger.warn({ operation: "bootstrapLearning", err: String(err) }, "bootstrapLearning failed"),
     );
+    // Dynamic-integration blueprint scheduler — 60s tick, runs active blueprints
+    // whose scheduleCron matches the current minute.
+    try {
+      startBlueprintScheduler();
+    } catch (err) {
+      logger.warn({ operation: "startBlueprintScheduler", err: String(err) }, "blueprint scheduler failed to start");
+    }
   });
 
   // ── Graceful shutdown ─────────────────────────────────────────────
