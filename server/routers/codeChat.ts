@@ -78,6 +78,11 @@ import {
   clearProjectInstructionsCache,
 } from "../services/codeChat/projectInstructions";
 import {
+  loadSubagents,
+  clearSubagentsCache,
+  buildManifest as buildSubagentManifest,
+} from "../services/codeChat/subagents";
+import {
   getSymbolIndex,
   clearSymbolIndexCache,
 } from "../services/codeChat/symbolIndexCache";
@@ -356,6 +361,28 @@ export const codeChatRouter = router({
     clearProjectInstructionsCache();
     const result = await loadProjectInstructions(WORKSPACE_ROOT);
     return projectInstructionsManifest(result);
+  }),
+
+  // Pass 253: user-defined subagents loaded from .stewardly/agents/*.md
+  listSubagents: protectedProcedure.query(async () => {
+    const manifest = await loadSubagents(WORKSPACE_ROOT);
+    return {
+      agents: buildSubagentManifest(manifest.agents),
+      errors: manifest.errors,
+      dir: manifest.dir,
+      scanned: manifest.scanned,
+    };
+  }),
+
+  reloadSubagents: protectedProcedure.mutation(async () => {
+    clearSubagentsCache();
+    const manifest = await loadSubagents(WORKSPACE_ROOT);
+    return {
+      agents: buildSubagentManifest(manifest.agents),
+      errors: manifest.errors,
+      dir: manifest.dir,
+      scanned: manifest.scanned,
+    };
   }),
 
   // Pass 242: workspace symbol navigation
