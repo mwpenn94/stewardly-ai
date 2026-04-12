@@ -19,6 +19,7 @@ import {
   HandCoins, Briefcase, ListChecks, ShieldAlert, Dice5,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -112,6 +113,7 @@ const CALCULATORS = [
 export default function Calculators() {
   useAuth();
   const [, navigate] = useLocation();
+  const pil = usePlatformIntelligence();
   const [activeCalc, setActiveCalc] = useState<string>("iul");
 
   // IUL state
@@ -273,7 +275,7 @@ export default function Calculators() {
                 <SliderInput label="Death Benefit" value={iulDB} onChange={setIulDB} min={50000} max={10000000} step={25000} format={(v) => fmt(v)} />
                 <Button
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-sm h-10 gap-2"
-                  onClick={() => iulCalc.mutate({ age: iulAge, annualPremium: iulPremium, years: iulYears, illustratedRate: iulRate, deathBenefit: iulDB })}
+                  onClick={() => { iulCalc.mutate({ age: iulAge, annualPremium: iulPremium, years: iulYears, illustratedRate: iulRate, deathBenefit: iulDB }); pil.giveFeedback("engine.calculation_complete"); }}
                   disabled={iulCalc.isPending}
                 >
                   {iulCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Projection</>}

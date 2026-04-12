@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ export default function LearningQuizRunner() {
     refetchOnWindowFocus: false,
   });
   const recordReview = trpc.learning.mastery.recordReview.useMutation();
+  const pil = usePlatformIntelligence();
 
   const track = trackQ.data;
   const rawQuestions = questionsQ.data ?? [];
@@ -106,8 +108,13 @@ export default function LearningQuizRunner() {
     if (selected == null || !current) return;
     setRevealed(true);
     const correct = selected === current.correctIndex;
-    if (correct) setCorrectCount((c) => c + 1);
-    else setIncorrectCount((c) => c + 1);
+    if (correct) {
+      setCorrectCount((c) => c + 1);
+      pil.giveFeedback("learning.answer_correct");
+    } else {
+      setIncorrectCount((c) => c + 1);
+      pil.giveFeedback("learning.answer_incorrect");
+    }
 
     recordReview
       .mutateAsync({
@@ -126,6 +133,7 @@ export default function LearningQuizRunner() {
   const next = () => {
     if (index + 1 >= total) {
       setComplete(true);
+      pil.giveFeedback("learning.exam_complete");
       return;
     }
     setIndex((i) => i + 1);
