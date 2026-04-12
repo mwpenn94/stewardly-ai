@@ -403,7 +403,7 @@ export default function RetirementPage() {
                     <p className="text-[9px] text-muted-foreground mb-2">
                       {stressGfc.data.scenario?.description}
                     </p>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                       <div>
                         <p className="text-[9px] text-muted-foreground/70 uppercase">Max Drawdown</p>
                         <p className="text-sm font-mono text-red-400">
@@ -443,7 +443,7 @@ export default function RetirementPage() {
                             ? " Plan withstands most conditions but has some stress scenarios."
                             : " Consider increasing contributions or extending timeline."}
                         </p>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
                           <div>
                             <p className="text-[10px] text-muted-foreground/70 uppercase">Best Case</p>
                             <p className="text-sm font-semibold text-emerald-400">{formatCurrency(backtestRun.data.best?.final ?? 0)}</p>

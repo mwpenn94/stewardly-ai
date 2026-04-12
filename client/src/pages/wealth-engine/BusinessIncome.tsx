@@ -100,7 +100,7 @@ export default function BusinessIncome() {
               <CardContent className="space-y-3">
                 <div>
                   <Label className="text-xs text-muted-foreground">Role</Label>
-                  <div className="grid grid-cols-3 gap-1.5 mt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-1.5 mt-1">
                     {(rolesQ.data ?? []).slice(0, 9).map((r: any) => (
                       <button key={r.key} onClick={() => setRole(r.key)}
                         className={`text-[10px] py-1.5 rounded border transition-all ${role === r.key ? "bg-accent/10 border-accent/30 text-accent" : "bg-card/40 border-border/50 text-muted-foreground"}`}>
@@ -212,8 +212,8 @@ export default function BusinessIncome() {
                 <Card className="bg-card/60 border-border/50">
                   <CardHeader className="pb-2"><CardTitle className="text-sm">Year-by-Year Income Projection</CardTitle></CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[400px]">
-                      <Table>
+                    <ScrollArea className="h-[400px] w-full">
+                      <Table className="min-w-[400px]">
                         <TableHeader>
                           <TableRow className="border-border">
                             <TableHead className="text-[10px]">Year</TableHead>

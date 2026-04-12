@@ -218,7 +218,7 @@ export default function WhatIfSensitivity() {
             <CardTitle className="text-base">Parameters</CardTitle>
             <CardDescription>Pick two variables to sweep. The grid shows final-year total liquid wealth.</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-1">
               <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Row Variable</Label>
               <Select value={rowParam} onValueChange={setRowParam}>
@@ -337,7 +337,7 @@ export default function WhatIfSensitivity() {
 
         {/* Legend */}
         {grid && (
-          <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-[10px] text-muted-foreground">
             <div className="flex items-center gap-1">
               <div className="w-4 h-3 rounded" style={{ backgroundColor: heatColor(minVal, minVal, maxVal) }} />
               <span>Low ({fmt(minVal)})</span>
