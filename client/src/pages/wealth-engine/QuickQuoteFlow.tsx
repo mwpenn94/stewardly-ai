@@ -247,7 +247,7 @@ function StepBar({ step }: { step: 1 | 2 | 3 }) {
           className="h-1 flex-1 rounded-full"
           style={{
             background:
-              s <= step ? chartTokens.colors.wealthbridge : "#e2e8f0",
+              s <= step ? chartTokens.colors.wealthbridge : "hsl(var(--muted))",
             transition: "background 240ms ease",
           }}
         />
@@ -310,7 +310,7 @@ function ScoreRing({ total, max }: { total: number; max: number }) {
   return (
     <div className="flex items-center justify-center py-2">
       <svg width={160} height={160} viewBox="0 0 160 160">
-        <circle cx={80} cy={80} r={radius} fill="none" stroke="#e2e8f0" strokeWidth={12} />
+        <circle cx={80} cy={80} r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth={12} />
         <circle
           cx={80}
           cy={80}

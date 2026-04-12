@@ -143,7 +143,6 @@ export default function TeamBuilder() {
   });
 
   // Queries
-  const rolesQ = trpc.calculatorEngine.bieRoles.useQuery(undefined, { retry: false });
   const channelsQ = trpc.calculatorEngine.bieChannels.useQuery(undefined, { retry: false });
 
   const addMember = () => {
@@ -224,6 +223,45 @@ export default function TeamBuilder() {
 
           {/* ── COMPOSE TAB ──────────────────────────────────── */}
           <TabsContent value="compose" className="space-y-4 mt-4">
+            {/* Quick-start presets */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Play className="h-3.5 w-3.5" /> Quick Start — Load a Preset Team
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {[
+                  { key: "solo", label: "Solo New Associate", members: [{ id: `p${Date.now()}`, name: "You", role: "new", personalGDC: 65000 }] },
+                  { key: "exp", label: "Experienced Pro", members: [{ id: `p${Date.now()}`, name: "You", role: "exp", personalGDC: 150000 }] },
+                  { key: "dir", label: "Director + 3", members: [
+                    { id: `p1${Date.now()}`, name: "Director", role: "dir", personalGDC: 220000 },
+                    { id: `p2${Date.now()}`, name: "Sr Assoc", role: "sa", personalGDC: 180000 },
+                    { id: `p3${Date.now()}`, name: "Assoc 1", role: "exp", personalGDC: 120000 },
+                    { id: `p4${Date.now()}`, name: "New Hire", role: "new", personalGDC: 65000 },
+                  ]},
+                  { key: "md", label: "MD Team (6)", members: [
+                    { id: `p1${Date.now()}`, name: "MD", role: "md", personalGDC: 280000 },
+                    { id: `p2${Date.now()}`, name: "Dir 1", role: "dir", personalGDC: 220000 },
+                    { id: `p3${Date.now()}`, name: "Dir 2", role: "dir", personalGDC: 200000 },
+                    { id: `p4${Date.now()}`, name: "SA 1", role: "sa", personalGDC: 180000 },
+                    { id: `p5${Date.now()}`, name: "Exp 1", role: "exp", personalGDC: 120000 },
+                    { id: `p6${Date.now()}`, name: "New 1", role: "new", personalGDC: 65000 },
+                  ]},
+                ].map((preset) => (
+                  <Button
+                    key={preset.key}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => setMembers(preset.members)}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
