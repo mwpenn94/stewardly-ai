@@ -74,7 +74,7 @@ export default function LearningDueReview() {
 
   const items = deckQ.data?.items ?? [];
   const totalDue = deckQ.data?.dueTotal ?? 0;
-  const unresolved = 0; // not in current API shape
+  const unresolved = deckQ.data?.total ?? 0;
 
   // ── Session state ──────────────────────────────────────────────────────
   const [index, setIndex] = useState(0);
@@ -165,12 +165,12 @@ export default function LearningDueReview() {
     if (current.kind === "flashcard") {
       return {
         badge: "Flashcard",
-        track: "—",
+        track: (current.flashcard as Record<string, any>).trackName ?? "—",
       };
     }
     return {
       badge: "Question",
-      track: "—",
+      track: (current.question as Record<string, any>).trackName ?? "—",
     };
   }, [current]);
 
@@ -309,9 +309,9 @@ export default function LearningDueReview() {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Badge variant="outline">{deckMeta.badge}</Badge>
                   <Badge variant="outline">{deckMeta.track}</Badge>
-                  {current.isNew && (
+                  {(current as any).confidence > 0 && (
                     <Badge variant="outline">
-                      New
+                      level {(current as any).confidence}/5
                     </Badge>
                   )}
                 </div>
@@ -328,7 +328,7 @@ export default function LearningDueReview() {
               ) : (
                 <QuestionCard
                   prompt={current.question.prompt}
-                  options={current.question.options as string[]}
+                  options={(current.question.options ?? []) as string[]}
                   correctIndex={current.question.correctIndex ?? 0}
                   explanation={current.question.explanation}
                   difficulty={current.question.difficulty}

@@ -167,7 +167,7 @@ export default function BusinessValuationPage() {
                         {fmt(result.currentValue)}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        SDE {fmt(result.sde)} × {result.multipleApplied.toFixed(1)}x
+                        SDE {fmt(result.sde)} × {result.multiple.toFixed(1)}x
                       </p>
                     </div>
                     <div className="rounded-lg p-4 bg-emerald-500/5 border border-emerald-500/20">
@@ -175,16 +175,19 @@ export default function BusinessValuationPage() {
                         In {years} years
                       </p>
                       <p className="text-2xl font-heading font-semibold text-emerald-400 tabular-nums">
-                        {fmt(result.projectedExitValue)}
+                        {fmt(result.exitValue)}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        CAGR {pct(result.cagr)}
+                        CAGR {pct(result.annualizedReturn)}
                       </p>
                     </div>
                   </div>
 
                   <div className="rounded-md border border-border/40 p-3 bg-secondary/20">
-                    <p className="text-[11px] text-muted-foreground">{result.reasoning}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      SDE-based valuation using a {result.multiple.toFixed(1)}x multiple.
+                      {result.totalGrowth > 0 ? ` Projected ${pct(result.totalGrowth)} total growth over ${years} years at ${pct(result.annualizedReturn)} CAGR.` : ""}
+                    </p>
                   </div>
 
                   <div className="flex flex-wrap gap-2">

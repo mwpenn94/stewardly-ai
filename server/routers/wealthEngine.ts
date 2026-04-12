@@ -1304,41 +1304,54 @@ export const wealthEngineRouter = router({
       return { data };
     }),
 
-  // ── Business Valuation (SDE multiple + exit projection) ──────────
+  // ── Business Valuation: SDE multiple + exit projection ────────────────
   valueBusiness: protectedProcedure
-    .input(z.object({
-      annualRevenue: z.number().optional(),
-      annualEbitda: z.number().optional(),
-      ownerAddBack: z.number().optional(),
-      growthRate: z.number().optional(),
-      exitYears: z.number().optional(),
-      industryMultiple: z.number().optional(),
-      revenue: z.number().optional(),
-      ebitda: z.number().optional(),
-      industry: z.string().optional(),
-      method: z.string().optional(),
-    }))
+    .input(
+      z.object({
+        annualRevenue: z.number().min(0),
+        annualEbitda: z.number(),
+        ownerAddBack: z.number().min(0).default(0),
+        growthRate: z.number().min(-0.5).max(1).default(0.05),
+        exitYears: z.number().int().min(1).max(30).default(5),
+        industryMultiple: z.number().min(0.5).max(30).optional(),
+      }),
+    )
     .mutation(async ({ input }) => {
-      const ebitda = input.annualEbitda ?? input.ebitda ?? 0;
-      const addBack = input.ownerAddBack ?? 0;
-      const sde = ebitda + addBack;
-      const multiple = input.industryMultiple ?? 3.5;
+      const sde = input.annualEbitda + input.ownerAddBack;
+      // Default industry multiple: revenue-based heuristic
+      const multiple = input.industryMultiple ?? (sde > 500_000 ? 4.0 : sde > 200_000 ? 3.0 : 2.5);
       const currentValue = sde * multiple;
-      const growthRate = input.growthRate ?? 0.08;
-      const exitYears = input.exitYears ?? 5;
-      const projectedExitValue = currentValue * Math.pow(1 + growthRate, exitYears);
-      const cagr = growthRate;
+
+      // Project forward with growth
+      const projections: Array<{
+        year: number;
+        revenue: number;
+        sde: number;
+        valuation: number;
+      }> = [];
+      for (let y = 0; y <= input.exitYears; y++) {
+        const g = Math.pow(1 + input.growthRate, y);
+        projections.push({
+          year: y,
+          revenue: Math.round(input.annualRevenue * g),
+          sde: Math.round(sde * g),
+          valuation: Math.round(sde * g * multiple),
+        });
+      }
+      const exitValue = projections[projections.length - 1]?.valuation ?? currentValue;
+      const totalGrowth = exitValue / currentValue - 1;
+
       return {
         data: {
-          currentValue,
           sde,
-          multipleApplied: multiple,
-          projectedExitValue,
-          cagr,
-          reasoning: `Valuation based on SDE of ${sde.toLocaleString()} with a ${multiple.toFixed(1)}x multiple. Growth projected at ${(growthRate * 100).toFixed(1)}% annually over ${exitYears} years.`,
-          valuationRange: { low: currentValue * 0.8, mid: currentValue, high: currentValue * 1.2 },
-          method: "sde_multiple",
-          multiples: { revenue: (input.annualRevenue ?? 0) > 0 ? currentValue / (input.annualRevenue ?? 1) : 0, ebitda: ebitda > 0 ? currentValue / ebitda : 0 },
+          multiple,
+          currentValue,
+          exitValue,
+          totalGrowth,
+          annualizedReturn: input.exitYears > 0
+            ? Math.pow(exitValue / currentValue, 1 / input.exitYears) - 1
+            : 0,
+          projections,
         },
       };
     }),

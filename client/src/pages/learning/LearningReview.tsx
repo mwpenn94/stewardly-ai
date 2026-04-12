@@ -114,7 +114,7 @@ export default function LearningReview() {
   const [complete, setComplete] = useState(false);
 
   const items: SessionItem[] = useMemo(
-    () => (dueQ.data?.items as SessionItem[] | undefined) ?? [],
+    () => ((dueQ.data?.items ?? []) as unknown as SessionItem[]),
     [dueQ.data],
   );
   const total = items.length;

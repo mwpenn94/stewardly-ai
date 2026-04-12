@@ -16,11 +16,16 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import type { FinancialProfile as SharedFinancialProfile } from "@shared/financialProfile";
 
 const STORAGE_KEY = "stewardly-financial-profile";
 
-/** Canonical financial profile — shared across all calculator pages. */
-export interface FinancialProfile {
+/**
+ * Extended financial profile — superset of the shared type with
+ * additional fields for the more detailed hook-based calculators.
+ * Compatible with the shared FinancialProfile through structural subtyping.
+ */
+export interface FinancialProfile extends SharedFinancialProfile {
   // ─── Demographics ───────────────────────────────────
   currentAge?: number;
   retirementAge?: number;
@@ -92,6 +97,12 @@ export interface FinancialProfile {
   stateOfResidence?: string;
   /** Business owner flag */
   isBizOwner?: boolean;
+  /** Business role (BIE feeder) — extends shared type */
+  businessRole?: "new" | "exp" | "sa" | "dir" | "md" | "rvp" | "partner";
+  /** Business revenue */
+  businessRevenue?: number;
+  /** Business employee count */
+  businessEmployees?: number;
   /** Homeowner flag */
   hasHomeowner?: boolean;
   /** Alias for existingLifeInsurance */

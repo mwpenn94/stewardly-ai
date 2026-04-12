@@ -24,7 +24,7 @@ import { FinancialProfileBanner } from "@/components/financial-profile/Financial
 import type { FinancialProfile } from "@/stores/financialProfile";
 
 function RetirementCalculator() {
-  const { profile, setProfile } = useFinancialProfile();
+  const { profile, updateProfile } = useFinancialProfile();
   const [age, setAge] = useState(profile.age ?? 35);
   const [retireAge, setRetireAge] = useState(profile.retirementAge ?? 65);
   const [savings, setSavings] = useState(profile.savings ?? 250000);
@@ -41,7 +41,7 @@ function RetirementCalculator() {
     // Only run on the very first render after hydration. The hook's
     // setters are stable so re-runs are cheap if it fires again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile.updatedAt]);
+  }, [profile.lastUpdated]);
 
   const handlePrefill = (p: FinancialProfile) => {
     if (p.age !== undefined) setAge(p.age);
@@ -54,15 +54,12 @@ function RetirementCalculator() {
     // Persist the current inputs to the profile so the Tax /
     // Insurance / Social Security tabs can reuse them without
     // asking again. Source "user" since this is a direct edit.
-    setProfile(
-      {
-        age,
-        retirementAge: retireAge,
-        savings,
-        monthlySavings: monthly,
-      },
-      "user",
-    );
+    updateProfile({
+      age,
+      retirementAge: retireAge,
+      savings,
+      monthlySavings: monthly,
+    });
     const years = retireAge - age;
     const rate = 0.07 / 12;
     const months = years * 12;
@@ -100,14 +97,14 @@ function RetirementCalculator() {
 }
 
 function TaxBracketCalculator() {
-  const { profile, setProfile } = useFinancialProfile();
+  const { profile, updateProfile } = useFinancialProfile();
   const [income, setIncome] = useState(profile.income ?? 150000);
   const [result, setResult] = useState<{ effective: string; marginal: string; tax: number; marginalRate: number } | null>(null);
 
   useEffect(() => {
     if (profile.income !== undefined) setIncome(profile.income);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile.updatedAt]);
+  }, [profile.lastUpdated]);
 
   const handlePrefill = (p: FinancialProfile) => {
     if (p.income !== undefined) setIncome(p.income);
@@ -136,7 +133,7 @@ function TaxBracketCalculator() {
     }
     // Persist the income + derived marginal rate to the shared
     // profile so every downstream calc reuses them automatically.
-    setProfile({ income, marginalRate, filingStatus: "mfj" }, "user");
+    updateProfile({ income, marginalRate, filingStatus: "mfj" });
     setResult({ effective: `${(tax / income * 100).toFixed(1)}%`, marginal, tax: Math.round(tax), marginalRate });
   };
 

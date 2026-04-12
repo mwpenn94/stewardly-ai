@@ -275,7 +275,8 @@ export function detectCollectionPath(body: unknown): string {
 // ─── Field mapping ─────────────────────────────────────────────────────────
 
 function mapTransform(field: InferredField): AdapterFieldMapping["transform"] {
-  switch (field.type) {
+  const t = field.type as string;
+  switch (t) {
     case "date":
     case "datetime":
     case "timestamp":
@@ -312,9 +313,9 @@ export function generateFieldMappings(schema: InferredSchema): AdapterFieldMappi
     sourceName: f.name,
     direction: mapDirection(f),
     transform: mapTransform(f),
-    required: f.isRequiredSuggested,
+    required: f.isRequiredSuggested ?? false,
     confidence: f.confidence,
-    hints: f.semanticHints,
+    hints: f.semanticHints ?? [],
   }));
 }
 
@@ -396,7 +397,7 @@ export function generateAdapter(
   const readyBonus = readiness.ready ? 0.1 : 0;
   const confidence = Math.max(
     0,
-    Math.min(1, 0.5 * ((schema as ExtendedInferredSchema).confidence ?? 0.5) + 0.3 * auth.probeConfidence + 0.1 + readyBonus)
+    Math.min(1, 0.5 * (schema.confidence ?? 0) + 0.3 * auth.probeConfidence + 0.1 + readyBonus)
   );
 
   // Version derivation: short schema fingerprint
@@ -411,7 +412,7 @@ export function generateAdapter(
     rateLimit,
     fieldMappings,
     primaryKey: pk ?? null,
-    timestampField: (schema as ExtendedInferredSchema).timestampField ?? null,
+    timestampField: schema.timestampField ?? null,
     confidence,
     readinessReport: readiness,
   };

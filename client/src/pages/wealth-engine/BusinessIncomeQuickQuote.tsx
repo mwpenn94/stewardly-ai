@@ -63,7 +63,7 @@ export type { BizRoleKey };
 
 export default function BusinessIncomeQuickQuotePage() {
   const [, navigate] = useLocation();
-  const { profile, setProfile, hasProfile } = useFinancialProfile();
+  const { profile, updateProfile, hasProfile } = useFinancialProfile();
   const { recordRun } = useRunTimeline();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -107,15 +107,12 @@ export default function BusinessIncomeQuickQuotePage() {
   const runProjection = () => {
     // Persist answers to the shared profile so downstream calculators see
     // the business context (BIE strategy comparisons, UWE quick quote).
-    setProfile(
-      {
-        isBizOwner: true,
-        businessRole: role,
-        businessRevenue: personalGDC,
-        businessEmployees: teamSize,
-      },
-      "user",
-    );
+    updateProfile({
+      isBizOwner: true,
+      businessRole: role,
+      businessRevenue: personalGDC,
+      businessEmployees: teamSize,
+    });
 
     const streams: Record<string, boolean> = {
       personal: streamPersonal,

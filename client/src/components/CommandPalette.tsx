@@ -428,7 +428,7 @@ export function CommandPalette() {
               {recentPagesFiltered.map((rp) => {
                 // Reuse page icons from PAGES list for recent items
                 const pageEntry = PAGES.find((p) => p.href === rp.route) ?? pages.find((p) => p.href === rp.route);
-                const icon = pageEntry?.icon ?? pageEntry?.iconName;
+                const icon = pageEntry?.iconName;
                 return (
                   <CommandItem
                     key={`recent:${rp.route}`}

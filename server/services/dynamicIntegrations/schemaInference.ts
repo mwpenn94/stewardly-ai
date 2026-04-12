@@ -55,16 +55,72 @@ export interface FieldSchema {
   confidence: number;
   /** If type==="enum", the distinct values (≤20). */
   enumValues?: string[];
+  /** Normalized (lowercase, underscored) leaf name — derived from path. */
+  normalizedName: string;
+  /** Raw leaf name — last segment of the dot-path. */
+  name: string;
+  /** Whether this field looks required (present in >90% of records). */
+  isRequiredSuggested: boolean;
+  /** Whether this looks like a primary key candidate. */
+  isPrimaryKeyCandidate: boolean;
+  /** Whether this looks read-only (id, created_at, etc.). */
+  isReadOnlySuggested: boolean;
+  /** Semantic hints derived from field name + type patterns. */
+  semanticHints: SemanticHint[];
+  /** Number of non-null samples observed. */
+  sampleCount: number;
+  /** Fraction of records where this field was null/missing. */
+  nullRate: number;
+  /** Fraction of distinct values vs total values. */
+  uniqueRate: number;
 }
+
+/** Semantic hint types for field classification. */
+export type SemanticHint =
+  | "email"
+  | "phone"
+  | "url"
+  | "name"
+  | "first_name"
+  | "last_name"
+  | "address"
+  | "city"
+  | "state"
+  | "zip"
+  | "country"
+  | "primary_key"
+  | "foreign_key"
+  | "timestamp_created"
+  | "timestamp_updated"
+  | "currency"
+  | "percentage"
+  | "description"
+  | "status"
+  | "tag"
+  | "date"
+  | "identifier"
+  | "category"
+  | "quantity"
+  | "unknown";
+
+/**
+ * Alias for FieldSchema — downstream modules (adapterGenerator, crmCanonicalMap,
+ * schemaDrift) use this name for the enriched per-field representation.
+ */
+export type InferredField = FieldSchema;
 
 export interface InferredSchema {
   recordCount: number;
-  fields: InferredField[];
+  fields: FieldSchema[];
   /**
    * Best guess at the record-identifier field (`id`, `uuid`, `slug`, `key`, ...).
    * Falls back to the first `unique===true` string field, else undefined.
    */
   primaryKey?: string;
+  /** Best guess at a timestamp/date field for ordering. */
+  timestampField?: string | null;
+  /** Overall confidence score (0-1). */
+  confidence?: number;
 }
 
 const MAX_SAMPLES_PER_FIELD = 5;
@@ -315,6 +371,10 @@ export function inferSchema(records: unknown[]): InferredSchema {
 
   result.fields = fields;
   result.primaryKey = pickPrimaryKey(fields);
+  result.timestampField = detectTimestampField(fields);
+  result.confidence = fields.length > 0
+    ? fields.reduce((s, f) => s + f.confidence, 0) / fields.length
+    : 0;
   return result;
 }
 
@@ -339,6 +399,75 @@ function pickPrimaryKey(fields: InferredField[]): string | undefined {
       f.semanticHints.includes("identifier"),
   );
   return fallback?.path;
+}
+
+/**
+ * Enrich FieldSchema entries with computed fields (name, normalizedName,
+ * semantic hints, rates, etc.) after the core inference is done.
+ */
+function enrichFields(fields: FieldSchema[], recordCount: number): void {
+  const PK_PATTERNS = /^(id|_id|uuid|slug|key|pk)$/i;
+  const READONLY_PATTERNS = /^(id|_id|uuid|created_at|createdAt|updated_at|updatedAt|__v|_rev)$/i;
+  const TS_PATTERNS = /(?:created|updated|modified|timestamp|date|_at|At)$/i;
+
+  const SEMANTIC_MAP: Array<[RegExp, SemanticHint]> = [
+    [/email/i, "email"],
+    [/phone|mobile|tel/i, "phone"],
+    [/url|link|href|website/i, "url"],
+    [/^name$|full_?name|display_?name/i, "name"],
+    [/first_?name|fname|given/i, "first_name"],
+    [/last_?name|lname|surname|family/i, "last_name"],
+    [/address|street/i, "address"],
+    [/city/i, "city"],
+    [/state|province|region/i, "state"],
+    [/zip|postal/i, "zip"],
+    [/country/i, "country"],
+    [/status/i, "status"],
+    [/tag|label|category/i, "tag"],
+    [/desc|description|summary|note/i, "description"],
+    [/price|amount|cost|fee|total/i, "currency"],
+    [/percent|rate|ratio/i, "percentage"],
+  ];
+
+  for (const f of fields) {
+    const leaf = f.path.includes(".") ? f.path.split(".").pop()! : f.path;
+    f.name = leaf;
+    f.normalizedName = leaf.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    f.sampleCount = f.nonNullCount;
+    f.nullRate = recordCount > 0 ? 1 - (f.nonNullCount / recordCount) : 0;
+    f.uniqueRate = f.nonNullCount > 0 ? f.distinctCount / f.nonNullCount : 0;
+    f.isRequiredSuggested = recordCount > 0 && f.presentCount / recordCount > 0.9;
+    f.isPrimaryKeyCandidate = PK_PATTERNS.test(leaf) || (f.unique && f.type === "string");
+    f.isReadOnlySuggested = READONLY_PATTERNS.test(leaf);
+
+    const hints: SemanticHint[] = [];
+    // Type-based hints
+    if (f.type === "email") hints.push("email");
+    if (f.type === "url") hints.push("url");
+    if (f.type === "phone") hints.push("phone");
+    if (f.type === "currency") hints.push("currency");
+    if (f.type === "percentage") hints.push("percentage");
+    // Name-based hints
+    for (const [re, hint] of SEMANTIC_MAP) {
+      if (re.test(leaf) && !hints.includes(hint)) hints.push(hint);
+    }
+    if (PK_PATTERNS.test(leaf)) hints.push("primary_key");
+    if (TS_PATTERNS.test(leaf) && (f.type === "date" || f.type === "datetime")) {
+      if (/created/i.test(leaf)) hints.push("timestamp_created");
+      if (/updated|modified/i.test(leaf)) hints.push("timestamp_updated");
+    }
+    f.semanticHints = hints;
+  }
+}
+
+/**
+ * Detect a timestamp field for ordering.
+ */
+function detectTimestampField(fields: FieldSchema[]): string | null {
+  const candidates = fields.filter(
+    (f) => (f.type === "datetime" || f.type === "date") && f.semanticHints?.some(h => h === "timestamp_created" || h === "timestamp_updated")
+  );
+  return candidates[0]?.path ?? null;
 }
 
 /**
@@ -373,52 +502,7 @@ export function schemaToPersisted(schema: InferredSchema): {
   };
 }
 
-// ─── Backward-compat aliases & stubs ────────────────────────────────────
-
-/** Alias for FieldSchema — used by adapterGenerator, crmCanonicalMap, schemaDrift. */
-export type InferredField = FieldSchema & {
-  /** Normalized snake_case name derived from path. */
-  normalizedName: string;
-  /** Suggested name for display. */
-  name: string;
-  /** Whether the field looks required based on nullability. */
-  isRequiredSuggested: boolean;
-  /** Semantic hints (e.g. "email", "phone", "name"). */
-  semanticHints: SemanticHint[];
-  /** Alias for presentCount — used by drift detector. */
-  sampleCount: number;
-  /** Ratio of null values (0-1). */
-  nullRate: number;
-  /** Ratio of unique values (0-1). */
-  uniqueRate: number;
-  /** Whether this field is a candidate for primary key. */
-  isPrimaryKeyCandidate: boolean;
-  /** Whether this field should be read-only in generated UIs. */
-  isReadOnlySuggested?: boolean;
-};
-
-/** Semantic hint tag for a field. */
-export type SemanticHint =
-  | "email"
-  | "phone"
-  | "name"
-  | "address"
-  | "date"
-  | "currency"
-  | "identifier"
-  | "url"
-  | "description"
-  | "status"
-  | "category"
-  | "quantity"
-  | "percentage"
-  | "timestamp_created"
-  | "timestamp_updated"
-  | "primary_key"
-  | "state"
-  | "zip"
-  | "country"
-  | "unknown";
+// ─── toInferredField + ExtendedInferredSchema ────────────────────────────
 
 /** Derive semantic hints from a FieldSchema. */
 function deriveSemanticHints(f: FieldSchema): SemanticHint[] {
@@ -455,20 +539,21 @@ function normalizeFieldName(path: string): string {
     .replace(/^_|_$/g, "");
 }
 
-/** Convert FieldSchema to InferredField with extra derived properties. */
-export function toInferredField(f: FieldSchema): InferredField {
+/** Convert a (possibly partial) FieldSchema to a fully-populated InferredField. */
+export function toInferredField(f: Partial<FieldSchema> & Pick<FieldSchema, "path" | "type" | "seenTypes" | "nullable" | "presentCount" | "nonNullCount" | "distinctCount" | "unique" | "samples" | "confidence">): InferredField {
   const total = f.presentCount || 1;
   return {
     ...f,
     normalizedName: normalizeFieldName(f.path),
     name: f.path.split(".").pop() ?? f.path,
     isRequiredSuggested: !f.nullable && f.presentCount > 0,
-    semanticHints: deriveSemanticHints(f),
+    semanticHints: deriveSemanticHints(f as FieldSchema),
     sampleCount: f.presentCount,
     nullRate: 1 - (f.nonNullCount / total),
     uniqueRate: f.nonNullCount > 0 ? f.distinctCount / f.nonNullCount : 0,
     isPrimaryKeyCandidate: f.unique && !f.nullable && f.type !== "boolean" && f.type !== "mixed",
-  };
+    isReadOnlySuggested: f.isReadOnlySuggested ?? false,
+  } as InferredField;
 }
 
 /** Extended InferredSchema with extra metadata. */

@@ -215,14 +215,14 @@ describe("applyReadTransform", () => {
     expect(result.created_at).toBe(Date.parse("2024-01-01T00:00:00Z"));
   });
 
-  it("skips fields marked as skip", () => {
-    const schema = inferSchema([
-      { id: 1, weird: 42 },
-      { id: 2, weird: "hello" },
-      { id: 3, weird: [1] },
-    ]);
-    const spec = generateAdapter(schema, { name: "X", baseUrl: "https://x", authHint: { type: "bearer" }, listEndpoint: "/x" });
-    const result = applyReadTransform({ id: 1, weird: "anything" }, spec.fieldMappings);
+  it("skips fields marked as skip (manually constructed)", () => {
+    // Manually construct a skip-direction mapping since the inferrer
+    // no longer produces "mixed" type (it picks a majority type).
+    const mappings = [
+      { canonicalName: "id", sourceName: "id", direction: "identifier" as const, transform: "number" as const, required: true, confidence: 1, hints: [] },
+      { canonicalName: "weird", sourceName: "weird", direction: "skip" as const, transform: "string" as const, required: false, confidence: 0.5, hints: [] },
+    ];
+    const result = applyReadTransform({ id: 1, weird: "anything" }, mappings);
     expect(result.weird).toBeUndefined();
   });
 

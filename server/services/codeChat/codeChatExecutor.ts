@@ -48,6 +48,10 @@ export type CodeToolName =
   | "web_extract"
   | "web_crawl"
   | "web_search"
+  | "infer_schema"
+  | "generate_adapter"
+  | "detect_schema_drift"
+  | "map_to_crm_contact"
   | "finish";
 
 export interface CodeToolCall {
