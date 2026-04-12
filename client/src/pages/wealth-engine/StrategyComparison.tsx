@@ -12,7 +12,7 @@
  *  3. (Future Phase 5) "Generate report" button calls the PDF templates
  */
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,10 @@ import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportB
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { Loader2, PlayCircle, Award } from "lucide-react";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import { useRunTimeline } from "@/hooks/useRunTimeline";
+import type { FinancialProfile } from "@/stores/financialProfile";
 
 const PEER_SET = [
   "wealthbridgeClient",
@@ -77,13 +81,40 @@ const COMPANY_KEY: Record<(typeof PEER_SET)[number], CompanyKey> = {
 };
 
 export default function StrategyComparisonPage() {
+  const { profile: savedProfile, setProfile: setSavedProfile, hasProfile } =
+    useFinancialProfile();
+  const { recordRun } = useRunTimeline();
+
   // ── Client profile inputs ──
-  const [age, setAge] = useState(40);
-  const [income, setIncome] = useState(120_000);
-  const [netWorth, setNetWorth] = useState(350_000);
-  const [savings, setSavings] = useState(180_000);
-  const [dependents, setDependents] = useState(2);
+  const [age, setAge] = useState(savedProfile.age ?? 40);
+  const [income, setIncome] = useState(savedProfile.income ?? 120_000);
+  const [netWorth, setNetWorth] = useState(savedProfile.netWorth ?? 350_000);
+  const [savings, setSavings] = useState(savedProfile.savings ?? 180_000);
+  const [dependents, setDependents] = useState(savedProfile.dependents ?? 2);
   const [horizon, setHorizon] = useState(30);
+
+  // Late hydration via a one-shot ref guard — seeds the 5 input
+  // states from the saved profile once.
+  const didHydrateRef = useRef(hasProfile);
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    if (!hasProfile) return;
+    didHydrateRef.current = true;
+    if (savedProfile.age !== undefined) setAge(savedProfile.age);
+    if (savedProfile.income !== undefined) setIncome(savedProfile.income);
+    if (savedProfile.netWorth !== undefined) setNetWorth(savedProfile.netWorth);
+    if (savedProfile.savings !== undefined) setSavings(savedProfile.savings);
+    if (savedProfile.dependents !== undefined)
+      setDependents(savedProfile.dependents);
+  }, [hasProfile, savedProfile]);
+
+  const handlePrefill = (p: FinancialProfile) => {
+    if (p.age !== undefined) setAge(p.age);
+    if (p.income !== undefined) setIncome(p.income);
+    if (p.netWorth !== undefined) setNetWorth(p.netWorth);
+    if (p.savings !== undefined) setSavings(p.savings);
+    if (p.dependents !== undefined) setDependents(p.dependents);
+  };
 
   const profile = useMemo(
     () => ({
@@ -92,16 +123,24 @@ export default function StrategyComparisonPage() {
       netWorth,
       savings,
       dependents,
-      mortgage: 250_000,
-      debts: 30_000,
-      marginalRate: 0.25,
+      mortgage: savedProfile.mortgage ?? 250_000,
+      debts: savedProfile.debts ?? 30_000,
+      marginalRate: savedProfile.marginalRate ?? 0.25,
     }),
-    [age, income, netWorth, savings, dependents],
+    [age, income, netWorth, savings, dependents, savedProfile],
   );
+
+  const persistToProfile = () => {
+    setSavedProfile(
+      { age, income, netWorth, savings, dependents },
+      "user",
+    );
+  };
 
   const compare = trpc.wealthEngine.holisticCompare.useMutation();
 
   const onRunCompare = () => {
+    persistToProfile();
     const strategies = PEER_SET.map((preset) => ({
       name: PRESET_LABELS[preset],
       config: {
@@ -120,6 +159,23 @@ export default function StrategyComparisonPage() {
   const result = compare.data;
   const rows = result?.data?.compareRows ?? [];
   const winners = result?.data?.winners ?? {};
+
+  // Record the run to the timeline once the comparison completes.
+  useEffect(() => {
+    if (rows.length === 0) return;
+    const topRow = rows[0] as { liquidWealth?: number } | undefined;
+    const topValue = topRow?.liquidWealth ?? 0;
+    recordRun({
+      tool: "he.compareAt",
+      label: `HE: ${PEER_SET.length}-strategy comparison`,
+      inputSummary: `age ${age}, income ${formatCurrency(income)}, ${horizon}y horizon`,
+      outputSummary: topValue > 0 ? `Top strategy: ${formatCurrency(topValue)}` : `${rows.length} strategies`,
+      route: "/wealth-engine/strategy-comparison",
+      confidence: 0.8,
+      inputs: { age, income, netWorth, savings, dependents, horizon },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows.length]);
 
   return (
     <AppShell title="Strategy Comparison">
@@ -170,7 +226,12 @@ export default function StrategyComparisonPage() {
           <CardHeader>
             <CardTitle className="text-base">Client Profile</CardTitle>
           </CardHeader>
-          <CardContent className="grid md:grid-cols-3 gap-4">
+          <CardContent className="space-y-4">
+            <FinancialProfileBanner
+              onPrefill={handlePrefill}
+              usesFields={["age", "income", "netWorth", "savings", "dependents"]}
+            />
+            <div className="grid md:grid-cols-3 gap-4">
             <ProfileNumberField label="Age" value={age} onChange={setAge} min={18} max={85} />
             <ProfileNumberField
               label="Annual Income"
@@ -212,6 +273,7 @@ export default function StrategyComparisonPage() {
                 value={[horizon]}
                 onValueChange={(v) => setHorizon(v[0])}
               />
+            </div>
             </div>
           </CardContent>
         </Card>
