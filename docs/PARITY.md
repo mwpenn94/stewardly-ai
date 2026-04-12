@@ -47,7 +47,7 @@ Legend: Priority P0 (ship-blocker) → P3 (polish). Effort: S (≤1 day) / M (1�
 | G14 | ROUTE_MAP covers every major destination | ⚠ improved in P7 (CommandPalette now covers nav+extras; PIL ROUTE_MAP still independent) | 7/10 | P1 | S | Yes | Build Loop | in_progress |
 | G15 | Global "read this page aloud" keyboard shortcut | ✓ fixed (Build Loop P6) | 9/10 | P1 | S | Yes | Build Loop | done |
 | G16 | "Open command palette" voice command | ❌ | 0/10 | P1 | S | Yes | — | open |
-| G17 | Voice input inside CommandPalette (say query instead of type) | ❌ | 0/10 | P1 | S | Yes | — | open |
+| G17 | Voice input inside CommandPalette (say query instead of type) | ✓ PTT hold + Shift+Space (Build Loop P13) | 9/10 | P1 | S | Yes | Build Loop | done |
 | G18 | Universal focus trap / restore for modals | ⚠ cmdk only | 5/10 | P1 | M | Yes | — | open |
 | G19 | Landmark roles beyond `<main>` / `<nav>` | ⚠ minimal | 4/10 | P2 | S | Partial | — | open |
 | G20 | Icon-only button aria-label coverage on newer components | ⚠ 30+ added in prior passes, spot audit due | 7/10 | P2 | S | Yes | — | open |
@@ -67,7 +67,7 @@ Legend: Priority P0 (ship-blocker) → P3 (polish). Effort: S (≤1 day) / M (1�
 | G34 | CommandPalette surfaces recent pages (not just conversations) | ✓ fixed + role-filtered (Build Loop P7) | 9/10 | P2 | S | Yes | Build Loop | done |
 | G35 | aria-busy on React Query loading regions | ⚠ rare | 3/10 | P2 | S | Yes | — | open |
 | G36 | role="tablist" / tabpanel on custom tab UIs | ⚠ shadcn yes, bespoke no | 6/10 | P2 | S | Yes | — | open |
-| G37 | aria-describedby linking form errors to inputs | ⚠ partial | 5/10 | P2 | M | Yes | — | open |
+| G37 | aria-describedby linking form errors to inputs | ✓ `FormField` render-prop wrapper (Build Loop P13) — per-page migration ongoing | 7/10 | P2 | M | Yes | Build Loop | in_progress |
 | G38 | Skip-to-content link renders on every page (incl. Chat, non-AppShell pages) | ⚠ AppShell only | 7/10 | P2 | S | Yes | — | open |
 | G39 | Focus ring not clipped by `overflow: hidden` containers | ⚠ untested | 8/10 | P3 | S | Yes | — | open |
 | G40 | Pull-to-refresh on mobile list views | ❌ | 0/10 | P3 | M | No | — | open |
@@ -178,6 +178,17 @@ _(append-only, one line per merge event)_
 These behaviours must not be weakened without explicit user approval. Each line
 references the pass that shipped it.
 
+- **Build Loop Pass 13 — bi-modal input + form accessibility:**
+  - `CommandPalette` must keep the PTT voice-input affordance +
+    Shift+Space hold shortcut. Removing it regresses the bi-modal
+    parity G17 established (voice is first-class, not bolt-on).
+  - `FormField` must remain the canonical form-field wrapper. Don't
+    add parallel error-rendering paths that skip the aria-describedby
+    wiring — that's exactly what G37 catches.
+  - The `role="alert"` + `aria-live="polite"` combination on the
+    FormField error slot is intentional. role=alert makes SR users
+    hear the error the instant it appears; polite means they won't
+    be interrupted mid-word.
 - **Build Loop Pass 12 — mobile thumb-reach + earcon layer:**
   - `client/src/lib/earcons.ts` is the ONLY place UI earcons should
     be synthesized. Don't re-introduce inline `new AudioContext()`
@@ -351,7 +362,9 @@ Pass 10 · angle: motor-impairment + color-independent state indicators · queue
 
 Pass 11 · angle: onboarding + error recovery + delight depth · queue: G22 (celebration on non-learning wins), G47 (first-run voice onboarding), G49 (error recovery voice cue) · commit SHA: 5059eb8 · shipped: `client/src/components/VoiceOnboardingCoach.tsx` (dismissible floating coach card — only mounts when STT is supported, skipped on auth/marketing routes, localStorage-gated one-time dismiss, "Try it now" button dispatches pil:toggle-handsfree so the user experiences it, role=dialog + aria-labelledby + Escape-to-close). Wired into App.tsx PIL provider. ErrorBoundary upgraded — `componentDidCatch` now fires Web Speech TTS announcement, installs window keydown listener for R/Enter→reload + Escape→cancel-TTS, installs a fresh single-shot SpeechRecognition instance that listens for "reload" / "retry" / "try again" / "reboot" and auto-reloads, restarts itself on `onend` so users get multiple chances. All listeners torn down in componentWillUnmount + on state transition. role=alert + aria-live=assertive on the error panel so SR users hear the announcement. Auto-focuses the Reload button. Adds a visible keyboard + voice hint ("Press R or say 'reload' to retry"). feedbackSpecs.ts: 4 new entries (goal.completed, report.generated, engine.calculation_complete, milestone.reached) + upgraded compliance.check_passed from a toast to a full success_celebration. +5 new tests locking the new specs · deferred: wiring the new specs into actual call sites (ComplianceAudit, EngineDashboard, WealthEngineReports) — the specs + dispatch path are ready; consumers can opt-in as they're touched
 
-Pass 12 · angle: mobile thumb-reach + discoverability polish · queue: G41 (mobile Voice tab), G42 (chord/palette earcons) · commit SHA: TBD · shipped: `client/src/lib/earcons.ts` (5-spec inventory — palette_open/close chirps, chord_primed tick, chord_matched confirm tone, send tone — Web Audio synth with sub-200ms envelopes, DI-testable factory, body.earcons-muted opt-out class) + `client/src/lib/earcons.test.ts` (7 pure-function tests with fake AudioContext). Wired: `useKeyboardShortcuts.ts` fires chord_primed on first "g" press + chord_matched on successful chord→nav dispatch, `CommandPalette.tsx` fires palette_open/close on state transitions. AppShell.tsx mobile bottom tab bar: replaced 4-tab + Menu layout with 4-tab + Voice + Menu. The Voice tab dispatches chat:toggle-handsfree on /chat and pil:toggle-handsfree elsewhere (same routing as Shift+V keyboard shortcut). Every tab now has explicit min-h-[44px] for WCAG 2.5.5 compliance. earconsMuted field added to AppearanceSettings + AppearanceTab toggle + body class gate on earcons.ts playback. 5 new feedbackSpecs tests verifying the G22 celebration specs · deferred: G17 (CommandPalette voice input via Web Speech), G44 (voice barge-in beyond just "stop"), G23 (@symbol mention), G27 (shortcut hints in component-level tooltips — too broad for one pass, will pick off per-component)
+Pass 12 · angle: mobile thumb-reach + discoverability polish · queue: G41 (mobile Voice tab), G42 (chord/palette earcons) · commit SHA: e1b34ff · shipped: `client/src/lib/earcons.ts` (5-spec inventory — palette_open/close chirps, chord_primed tick, chord_matched confirm tone, send tone — Web Audio synth with sub-200ms envelopes, DI-testable factory, body.earcons-muted opt-out class) + `client/src/lib/earcons.test.ts` (7 pure-function tests with fake AudioContext). Wired: `useKeyboardShortcuts.ts` fires chord_primed on first "g" press + chord_matched on successful chord→nav dispatch, `CommandPalette.tsx` fires palette_open/close on state transitions. AppShell.tsx mobile bottom tab bar: replaced 4-tab + Menu layout with 4-tab + Voice + Menu. The Voice tab dispatches chat:toggle-handsfree on /chat and pil:toggle-handsfree elsewhere (same routing as Shift+V keyboard shortcut). Every tab now has explicit min-h-[44px] for WCAG 2.5.5 compliance. earconsMuted field added to AppearanceSettings + AppearanceTab toggle + body class gate on earcons.ts playback. 5 new feedbackSpecs tests verifying the G22 celebration specs · deferred: G17 (CommandPalette voice input via Web Speech), G44 (voice barge-in beyond just "stop"), G23 (@symbol mention), G27 (shortcut hints in component-level tooltips — too broad for one pass, will pick off per-component)
+
+Pass 13 · angle: bi-modal input parity + form a11y · queue: G17 (palette voice), G37 (form aria-describedby) · commit SHA: TBD · shipped: CommandPalette.tsx integrates usePushToTalk — hold the new mic button (44×44 WCAG 2.5.5) or hold Shift+Space while the palette is open to capture a spoken query that populates the input live via onInterim + commits on release. Placeholder dynamically reflects voice state ("Listening…" when active). Mic button aria-pressed reflects isActive, aria-label describes hold/release semantics, focus-visible ring kept with 44px min touch target. sr-only span + aria-describedby on CommandInput for SR users. `client/src/components/FormField.tsx` new reusable form-field wrapper with useId-based stable ids, auto-wires htmlFor/aria-describedby/aria-invalid/aria-required from caller-provided error + description props, render-prop pattern lets any input primitive (shadcn Input, plain input, Textarea) drop in. Error slot is role="alert" + aria-live="polite" + AlertCircle icon for color-independent signal · deferred: per-page FormField migration (AppearanceTab, SignIn, ContentStudio, etc.) — the helper is ready; consumers migrate opportunistically. G37 stays in_progress until the dozen largest forms are migrated.
 
 <!-- PASS_LOG_APPEND_HERE -->
 
@@ -359,6 +372,7 @@ Pass 12 · angle: mobile thumb-reach + discoverability polish · queue: G41 (mob
 
 _(append-only, most recent first)_
 
+- **Build Loop Pass 13** (claude/multisensory-accessible-ui-zmjLP) · CommandPalette voice input (hold the mic or Shift+Space to speak a query) + FormField a11y wrapper with auto-wired aria-describedby / aria-invalid / aria-required. G17 resolved; G37 advanced to in_progress (helper ready, per-page migration ongoing).
 - **Build Loop Pass 12** (claude/multisensory-accessible-ui-zmjLP) · Earcon layer + mobile Voice tab. 5 sub-200ms Web Audio synth tones wired into g-chord navigation + command palette open/close. Mobile bottom tab bar replaces generic Menu with dedicated thumb-reach Voice tab (routes through same window events as Shift+V keyboard shortcut). User-level earconsMuted opt-out in AppearanceTab. G41 / G42 resolved. 117 passing tests (110 prior + 7 new earcons tests).
 - **Build Loop Pass 11** (claude/multisensory-accessible-ui-zmjLP) · Voice onboarding coach + error boundary voice recovery + 4 new non-learning celebration specs. G22 / G47 / G49 resolved. 110 passing tests (105 prior + 5 new feedbackSpecs tests).
 - **Build Loop Pass 10** (claude/multisensory-accessible-ui-zmjLP) · Motor-impairment + color-independent state indicators. usePushToTalk hook + PushToTalkButton component ship the hold-to-dictate UX so Safari iOS users (G59 ptt_only capability bucket) + motor-impaired users + privacy-conscious users all have a voice entry point that doesn't require continuous listening. 5-mode color-blind picker in AppearanceTab with pattern adornments + chart recolors per deficiency. Disabled button opacity bumped to 0.65 for WCAG AA. G7 / G13 / G66 resolved. 105 passing tests (99 prior + 3 usePushToTalk + 3 colorBlindMode additions to appearanceSettings.test.ts).

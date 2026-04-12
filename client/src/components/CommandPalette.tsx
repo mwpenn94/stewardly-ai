@@ -26,6 +26,7 @@
  * keyboard-driven interaction.
  */
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { usePushToTalk } from "@/hooks/usePushToTalk";
 import { useLocation } from "wouter";
 import {
   CommandDialog,
@@ -60,6 +61,8 @@ import {
   Search,
   Keyboard,
   History,
+  Mic,
+  MicOff,
   Sparkles,
   ArrowRight,
   Calculator,
@@ -269,6 +272,48 @@ export function CommandPalette() {
     if (!open) setQuery("");
   }, [open]);
 
+  // Pass 13 (G17): push-to-talk voice input for the palette query.
+  // Hold the mic button (or Shift+Space while palette is open) to
+  // capture a spoken search term that populates the input as if the
+  // user typed it. No continuous listening — single-shot per press,
+  // works on Safari iOS + every full-support browser.
+  const voiceInput = usePushToTalk({
+    onTranscript: (text) => {
+      if (!text) return;
+      setQuery(text);
+    },
+    onInterim: (text) => {
+      // Show live interim as the query so filter results animate
+      // with the user's speech. Final onTranscript replaces it
+      // with the clean transcript.
+      if (text) setQuery(text);
+    },
+  });
+
+  // Pass 13 (G17): Shift+Space inside the palette triggers voice capture.
+  // Release to commit. Only active while palette is open + SR caps permit.
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === " " && e.shiftKey && !e.repeat && !voiceInput.isActive) {
+        e.preventDefault();
+        voiceInput.start();
+      }
+    };
+    const handleUp = (e: KeyboardEvent) => {
+      if (e.key === " " && voiceInput.isActive) {
+        e.preventDefault();
+        voiceInput.release();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    window.addEventListener("keyup", handleUp);
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+      window.removeEventListener("keyup", handleUp);
+    };
+  }, [open, voiceInput]);
+
   const handleSelect = useCallback(
     (value: string) => {
       setOpen(false);
@@ -316,11 +361,54 @@ export function CommandPalette() {
       title="Command Palette"
       description="Search pages, actions, and conversations"
     >
-      <CommandInput
-        placeholder="Search pages, actions, conversations…"
-        value={query}
-        onValueChange={setQuery}
-      />
+      {/* Pass 13 (G17): wrap the CommandInput + mic button in a flex
+          row so the mic affordance sits alongside the input. The
+          cmdk primitive handles focus management on its own input
+          so we only render the mic as a sibling — clicking it
+          doesn't steal palette focus. */}
+      <div className="flex items-center border-b border-border px-3">
+        <div className="flex-1">
+          <CommandInput
+            placeholder={
+              voiceInput.isActive
+                ? "Listening…"
+                : voiceInput.capabilities.mode === "unsupported"
+                  ? "Search pages, actions, conversations…"
+                  : "Search pages, actions… or hold 🎙 / Shift+Space to speak"
+            }
+            value={query}
+            onValueChange={setQuery}
+            aria-describedby="palette-voice-hint"
+          />
+        </div>
+        {voiceInput.isAvailable && (
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); voiceInput.start(); }}
+            onTouchStart={(e) => { e.preventDefault(); voiceInput.start(); }}
+            onMouseUp={() => voiceInput.release()}
+            onTouchEnd={() => voiceInput.release()}
+            onMouseLeave={() => voiceInput.isActive && voiceInput.cancel()}
+            aria-label={voiceInput.isActive ? "Release to search" : "Hold to speak your search"}
+            aria-pressed={voiceInput.isActive}
+            className={`shrink-0 ml-2 min-w-[36px] min-h-[36px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
+              voiceInput.isActive
+                ? "border-accent bg-accent/20 text-accent animate-pulse-glow"
+                : "border-border bg-secondary/30 text-muted-foreground hover:text-accent"
+            }`}
+          >
+            {voiceInput.isActive ? (
+              <Mic className="w-3.5 h-3.5" aria-hidden="true" />
+            ) : (
+              <MicOff className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
+          </button>
+        )}
+      </div>
+      {/* sr-only description that the aria-describedby above references */}
+      <span id="palette-voice-hint" className="sr-only">
+        Hold Shift and Space to search by voice, or use the microphone button.
+      </span>
       <CommandList>
         <CommandEmpty>
           <div className="flex flex-col items-center gap-1.5 py-2">
