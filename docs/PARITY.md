@@ -46,6 +46,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G22 | P1   | continuous      | Drift severity classification (breaking/warning/info)                      | done        | build-loop-p4    | 5/10  | pending |
 | G23 | P1   | dynamic-crud    | Pinned overrides survive re-inference (rehydratePinnedOverrides)           | done        | build-loop-p5    | 5/10  | pending |
 | G24 | P2   | dynamic-crud    | Override diff + audit trail (diffOverrideSets)                             | done        | build-loop-p5    | 4/10  | pending |
+| G25 | P1   | dynamic-crud    | Deep auth probe — JWT/API-key/Basic/OAuth detection from error bodies      | done        | build-loop-p13   | 5/10  | pending |
 
 ## Protected Improvements
 
@@ -102,4 +103,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 - Pass 9 · rate limiter · [R1: G6, A1: token bucket + per-source registry, A2: virtual-clock tests] · aedee23 · G6 done · G5/G8/G12 deferred
 - Pass 10 · personalization fold-back · [R1: G8, A1: trigger rules + dedup, A2: CRM-aware augment] · e6747bd · G8 done · G5/G12 deferred
 - Pass 11 · drift-aware pipeline orchestrator · [R1: G5, A1: 6-phase runner, A2: progress callback + abort signal] · 8946c4e · G5 done · G12 deferred
-- Pass 12 · adapter DSL serialization · [R1: G12, A1: canonical JSON + SHA256 fingerprint, A2: parser + bumpVersion] · pending · G12 done · all original gaps closed
+- Pass 12 · adapter DSL serialization · [R1: G12, A1: canonical JSON + SHA256 fingerprint, A2: parser + bumpVersion] · 7951cf1 · G12 done · all original gaps closed
+- Pass 13 · deep auth probe · [A1: error-body keyword detection, A2: header conventions + OAuth discovery] · pending · G25 done
