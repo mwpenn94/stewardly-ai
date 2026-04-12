@@ -102,6 +102,7 @@ export async function runAutonomousCoding(
     reads: 0,
     writes: 0,
     edits: 0,
+    multiEdits: 0,
     bashRuns: 0,
     grepSearches: 0,
     webFetches: 0,
@@ -151,7 +152,7 @@ export async function runAutonomousCoding(
         iterations: 0,
         steps: [],
         summary: `subtask threw: ${err instanceof Error ? err.message : "unknown"}`,
-        stats: { reads: 0, writes: 0, edits: 0, bashRuns: 0, grepSearches: 0, webFetches: 0, errors: 1 },
+        stats: { reads: 0, writes: 0, edits: 0, multiEdits: 0, bashRuns: 0, grepSearches: 0, webFetches: 0, errors: 1 },
       };
     }
 
@@ -159,6 +160,7 @@ export async function runAutonomousCoding(
     totalStats.reads += result.stats.reads;
     totalStats.writes += result.stats.writes;
     totalStats.edits += result.stats.edits;
+    totalStats.multiEdits += result.stats.multiEdits;
     totalStats.bashRuns += result.stats.bashRuns;
     totalStats.grepSearches += result.stats.grepSearches;
     totalStats.webFetches += result.stats.webFetches;
@@ -203,6 +205,8 @@ export function summarizeStep(step: CodeChatStep): string {
       return `write ${result.result.path} (${result.result.byteLength}B, ${result.result.created ? "created" : "updated"}, ${ms})`;
     case "edit":
       return `edit ${result.result.path} (${result.result.replacements} replacements, ${ms})`;
+    case "multi_edit":
+      return `multi_edit ${result.result.path} (${result.result.stepsApplied} steps, ${result.result.replacements} replacements, ${ms})`;
     case "list":
       return `list ${result.result.path} (${result.result.entries.length} entries, ${ms})`;
     case "grep":

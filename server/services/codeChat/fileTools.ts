@@ -236,6 +236,175 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// ─── Multi-edit (atomic batch find + replace) ────────────────────────────
+
+export interface MultiEditStep {
+  oldString: string;
+  newString: string;
+  /** Default false — require unique match, fail on ambiguity */
+  replaceAll?: boolean;
+}
+
+export interface MultiEditStepOutcome {
+  index: number;
+  oldString: string;
+  newString: string;
+  replacements: number;
+}
+
+export interface MultiEditFileResult {
+  path: string;
+  /** Total replacements summed across every step */
+  replacements: number;
+  /** Number of steps applied (= steps.length on success) */
+  stepsApplied: number;
+  byteLength: number;
+  before?: string;
+  after?: string;
+  diffTruncated?: boolean;
+  /** Per-step breakdown for UI rendering / auditing */
+  steps: MultiEditStepOutcome[];
+}
+
+/**
+ * Apply a batch of find/replace edits to a single file atomically:
+ *
+ *   1. Read the file once into memory.
+ *   2. Apply each edit sequentially against the running in-memory
+ *      content (later edits see earlier edits' results — Claude Code
+ *      MultiEdit semantics).
+ *   3. If any step throws (not found, ambiguous), the entire batch
+ *      is aborted and the file on disk is left untouched.
+ *   4. Only if every step succeeds is the final content written back.
+ *
+ * The atomicity is important because separate editFile calls can
+ * leave a file half-edited if the second call fails — this tool
+ * guarantees either all or none.
+ */
+export async function multiEditFile(
+  opts: SandboxOptions,
+  relativePath: string,
+  steps: MultiEditStep[],
+): Promise<MultiEditFileResult> {
+  if (!opts.allowMutations) {
+    throw new SandboxError(
+      "multi_edit requires allowMutations: true",
+      "MUTATIONS_DISABLED",
+    );
+  }
+  if (!Array.isArray(steps) || steps.length === 0) {
+    throw new SandboxError(
+      "multi_edit requires at least one step",
+      "BAD_ARGS",
+    );
+  }
+  if (steps.length > 50) {
+    throw new SandboxError(
+      `multi_edit is capped at 50 steps (got ${steps.length})`,
+      "TOO_MANY_STEPS",
+    );
+  }
+
+  // Validate every step shape up-front so the agent gets a clean
+  // error instead of a mid-batch failure.
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    if (!s || typeof s !== "object") {
+      throw new SandboxError(
+        `step ${i} is not an object`,
+        "BAD_ARGS",
+      );
+    }
+    if (typeof s.oldString !== "string" || s.oldString.length === 0) {
+      throw new SandboxError(
+        `step ${i}: oldString must be a non-empty string`,
+        "BAD_ARGS",
+      );
+    }
+    if (typeof s.newString !== "string") {
+      throw new SandboxError(
+        `step ${i}: newString must be a string`,
+        "BAD_ARGS",
+      );
+    }
+    if (s.oldString === s.newString) {
+      throw new SandboxError(
+        `step ${i}: oldString equals newString (no-op)`,
+        "BAD_ARGS",
+      );
+    }
+  }
+
+  const abs = resolveInside(opts.workspaceRoot, relativePath);
+  if (!existsSync(abs)) {
+    throw new SandboxError(`file not found: ${relativePath}`, "NOT_FOUND");
+  }
+
+  const before = await fs.readFile(abs, "utf8");
+  let running = before;
+  const outcomes: MultiEditStepOutcome[] = [];
+
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    const old = step.oldString;
+    if (!running.includes(old)) {
+      throw new SandboxError(
+        `step ${i}: oldString not found in ${relativePath} (after prior edits)`,
+        "NO_MATCH",
+      );
+    }
+    let replacements = 0;
+    if (step.replaceAll) {
+      const matchCount = (running.match(new RegExp(escapeRegex(old), "g")) || []).length;
+      running = running.split(old).join(step.newString);
+      replacements = matchCount;
+    } else {
+      const occurrences = running.split(old).length - 1;
+      if (occurrences > 1) {
+        throw new SandboxError(
+          `step ${i}: oldString matches ${occurrences} times in ${relativePath} (use replaceAll)`,
+          "AMBIGUOUS",
+        );
+      }
+      running = running.replace(old, step.newString);
+      replacements = 1;
+    }
+    outcomes.push({
+      index: i,
+      oldString: old,
+      newString: step.newString,
+      replacements,
+    });
+  }
+
+  // Enforce the same max-write budget as writeFile so a batch of
+  // edits that bloats the file past the cap fails before touching disk.
+  const max = opts.maxWriteBytes ?? 1024 * 1024;
+  const bytes = Buffer.byteLength(running, "utf8");
+  if (bytes > max) {
+    throw new SandboxError(
+      `multi_edit result exceeds max write size (${bytes} > ${max})`,
+      "TOO_LARGE",
+    );
+  }
+
+  await fs.writeFile(abs, running, "utf8");
+
+  const beforeSnap = snapshot(before);
+  const afterSnap = snapshot(running);
+  return {
+    path: relativePath,
+    replacements: outcomes.reduce((sum, o) => sum + o.replacements, 0),
+    stepsApplied: outcomes.length,
+    byteLength: bytes,
+    before: beforeSnap,
+    after: afterSnap,
+    diffTruncated:
+      beforeSnap.length !== before.length || afterSnap.length !== running.length,
+    steps: outcomes,
+  };
+}
+
 // ─── List directory ──────────────────────────────────────────────────────
 
 export interface ListDirEntry {

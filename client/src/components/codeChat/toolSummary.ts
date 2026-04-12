@@ -66,6 +66,13 @@ export function summarizeToolEvents(events: ToolEvent[] | undefined): ToolSummar
         summary.edits++;
         if (path) files.add(path);
         break;
+      case "multi_edit":
+        // Multi_edit is a batch operation — count as one edit from the
+        // summary's perspective since the user asked for one
+        // coordinated change. Path still counted in filesTouched.
+        summary.edits++;
+        if (path) files.add(path);
+        break;
       case "run_bash":
         summary.bashRuns++;
         break;

@@ -55,6 +55,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
     mutation: true,
   },
   {
+    id: "multi_edit",
+    label: "Multi-edit",
+    description:
+      "Atomic batch of edits on a single file; all-or-nothing (Parity P2, admin + write)",
+    mutation: true,
+  },
+  {
     id: "run_bash",
     label: "Run bash",
     description: "Shell command with 30s timeout (admin + write mode)",
@@ -87,6 +94,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "grep_search",
   "write_file",
   "edit_file",
+  "multi_edit",
   "run_bash",
   "update_todos",
   "find_symbol",

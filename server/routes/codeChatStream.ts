@@ -142,7 +142,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "Use `code_find_symbol` when you know the name of a function/class/interface/type/const and want to jump to its DEFINITION (faster than grep, and returns only definition sites).",
       "Use `code_web_fetch` to pull external documentation, API references, or reference material at runtime. Pass a full http(s) URL. The tool strips HTML to plain text, caps the body at 512KB, and blocks local/private hosts for SSRF safety. Prefer this over guessing when you need authoritative docs.",
       canMutate
-        ? "You have `code_write_file`, `code_edit_file`, `code_run_bash` — use sparingly, explain every change."
+        ? "You have `code_write_file`, `code_edit_file`, `code_multi_edit`, `code_run_bash` — use sparingly, explain every change. Prefer `code_multi_edit` when you need 2+ coordinated changes to the same file: it's atomic (either all edits apply or none do), so a file can never be left half-edited."
         : "Write/edit/bash disabled. Return diffs as code blocks.",
       // Pass 237: expose the live todo tracker tool
       "For any task with 3+ steps, call `code_update_todos` early with a pending list, then call it again after each step to flip status to in_progress/completed. Each item needs {id, content (imperative), activeForm (present-continuous), status}. This drives the live progress UI the user sees.",
@@ -222,7 +222,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
           ),
         });
 
-        const mutation = ["write_file", "edit_file", "run_bash"].includes(rawName);
+        const mutation = ["write_file", "edit_file", "multi_edit", "run_bash"].includes(rawName);
         if (mutation && !canMutate) {
           const errResult = JSON.stringify({ error: `${rawName} requires admin + write mode` });
           writeSse(res, { type: "tool_result", stepIndex, toolName: rawName, kind: "error", truncated: false, durationMs: 0 });

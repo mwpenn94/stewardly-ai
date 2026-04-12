@@ -173,10 +173,15 @@ function extractDiffFromTrace(
   rawPreview: string | undefined,
 ): { before: string; after: string; path: string } | null {
   if (!rawPreview) return null;
-  if (toolName !== "edit_file" && toolName !== "write_file") return null;
+  if (
+    toolName !== "edit_file" &&
+    toolName !== "write_file" &&
+    toolName !== "multi_edit"
+  )
+    return null;
   try {
     const parsed = JSON.parse(rawPreview);
-    // dispatch result shape: { kind: "edit"|"write", result: { before, after, path } }
+    // dispatch result shape: { kind: "edit"|"write"|"multi_edit", result: { before, after, path } }
     const inner = parsed?.result;
     if (!inner) return null;
     if (typeof inner.before !== "string" || typeof inner.after !== "string") {
@@ -577,7 +582,12 @@ function CodeChatInterface() {
       }
       const toRecord: Array<{ path: string; before: string; after: string; kind: "write" | "edit" }> = [];
       for (const ev of msg.toolEvents) {
-        if (ev.toolName !== "edit_file" && ev.toolName !== "write_file") continue;
+        if (
+          ev.toolName !== "edit_file" &&
+          ev.toolName !== "write_file" &&
+          ev.toolName !== "multi_edit"
+        )
+          continue;
         if (typeof ev.preview !== "string") continue;
         try {
           const parsed = JSON.parse(ev.preview);
@@ -588,7 +598,9 @@ function CodeChatInterface() {
             path: inner.path,
             before: inner.before,
             after: inner.after,
-            kind: ev.toolName === "edit_file" ? "edit" : "write",
+            // multi_edit folds into "edit" for history purposes — the
+            // final before/after snapshot captures the net change.
+            kind: ev.toolName === "write_file" ? "write" : "edit",
           });
         } catch { /* skip */ }
       }
@@ -1319,9 +1331,9 @@ function CodeChatInterface() {
           onClick={() => setToolsOpen(true)}
           className="hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border border-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Tool permissions"
-          title={`Tool permissions (${enabledTools.length}/9 enabled)`}
+          title={`Tool permissions (${enabledTools.length}/10 enabled)`}
         >
-          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/9
+          <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/10
         </button>
         {(() => {
           const s = summarizeHistory(editHistory);

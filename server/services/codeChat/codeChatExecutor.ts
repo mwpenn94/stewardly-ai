@@ -22,12 +22,15 @@ import {
   readFile,
   writeFile,
   editFile,
+  multiEditFile,
   listDirectory,
   runBash,
   type SandboxOptions,
   type ReadFileResult,
   type WriteFileResult,
   type EditFileResult,
+  type MultiEditFileResult,
+  type MultiEditStep,
   type BashResult,
   type ListDirEntry,
   SandboxError,
@@ -39,6 +42,7 @@ export type CodeToolName =
   | "read_file"
   | "write_file"
   | "edit_file"
+  | "multi_edit"
   | "list_directory"
   | "grep_search"
   | "run_bash"
@@ -86,6 +90,7 @@ export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
   | { kind: "edit"; result: EditFileResult }
+  | { kind: "multi_edit"; result: MultiEditFileResult }
   | { kind: "list"; result: { path: string; entries: ListDirEntry[] } }
   | { kind: "grep"; result: { matches: Array<{ file: string; line: number; text: string }>; truncated: boolean } }
   | { kind: "bash"; result: BashResult }
@@ -112,6 +117,7 @@ export interface CodeChatRunResult {
     reads: number;
     writes: number;
     edits: number;
+    multiEdits: number;
     bashRuns: number;
     grepSearches: number;
     webFetches: number;
@@ -152,6 +158,35 @@ export async function dispatchCodeTool(
           Boolean(call.args.replaceAll),
         );
         return { kind: "edit", result: r };
+      }
+      case "multi_edit": {
+        // Parity Pass 2: atomic batch find+replace. All steps apply
+        // against a single in-memory snapshot and the file is only
+        // written back if every step succeeded. Claude Code MultiEdit
+        // semantics: later steps see earlier steps' output.
+        const rawSteps = call.args.edits;
+        if (!Array.isArray(rawSteps)) {
+          return { kind: "error", error: "edits must be an array", code: "BAD_ARGS" };
+        }
+        const normalized: MultiEditStep[] = [];
+        for (let i = 0; i < rawSteps.length; i++) {
+          const entry = rawSteps[i];
+          if (!entry || typeof entry !== "object") continue;
+          const anyE = entry as Record<string, unknown>;
+          const oldString = typeof anyE.oldString === "string" ? anyE.oldString : "";
+          const newString = typeof anyE.newString === "string" ? anyE.newString : "";
+          normalized.push({
+            oldString,
+            newString,
+            replaceAll: Boolean(anyE.replaceAll),
+          });
+        }
+        const r = await multiEditFile(
+          sandbox,
+          String(call.args.path ?? ""),
+          normalized,
+        );
+        return { kind: "multi_edit", result: r };
       }
       case "list_directory": {
         const r = await listDirectory(sandbox, String(call.args.path ?? "."));
@@ -372,6 +407,7 @@ export async function executeCodeChat(
     reads: 0,
     writes: 0,
     edits: 0,
+    multiEdits: 0,
     bashRuns: 0,
     grepSearches: 0,
     webFetches: 0,
@@ -415,6 +451,13 @@ export async function executeCodeChat(
         break;
       case "edit":
         stats.edits++;
+        break;
+      case "multi_edit":
+        // Count each step within the batch so budget caps still apply
+        // the same way regardless of whether the agent used edit_file
+        // or multi_edit for the same semantic change.
+        stats.multiEdits++;
+        stats.edits += result.result.stepsApplied;
         break;
       case "bash":
         stats.bashRuns++;
@@ -481,6 +524,34 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         replaceAll: { type: "boolean" },
       },
       required: ["path", "oldString", "newString"],
+    },
+  },
+  {
+    name: "multi_edit",
+    description:
+      "Apply several find/replace edits to a single file in one atomic operation. Each edit has {oldString, newString, replaceAll?}. Edits apply sequentially so later edits see the result of earlier edits. If ANY edit fails (oldString not found, or not unique when replaceAll is false), the entire batch is rolled back and the file on disk is untouched. Use this over multiple edit_file calls when you have coordinated changes — it's faster, atomic, and half-way failures are impossible. Cap: 50 edits per call.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Workspace-relative path" },
+        edits: {
+          type: "array",
+          description: "Ordered list of find/replace steps",
+          items: {
+            type: "object",
+            properties: {
+              oldString: { type: "string", description: "Exact substring to find" },
+              newString: { type: "string", description: "Replacement text" },
+              replaceAll: {
+                type: "boolean",
+                description: "Replace every occurrence (default false = require uniqueness)",
+              },
+            },
+            required: ["oldString", "newString"],
+          },
+        },
+      },
+      required: ["path", "edits"],
     },
   },
   {
