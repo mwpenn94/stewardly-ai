@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -520,6 +521,7 @@ export default function Help() {
 
   return (
     <AppShell title="Help & Support">
+      <SEOHead title="Help & Support" description="Help documentation and support resources" />
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">

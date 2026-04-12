@@ -17,6 +17,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -127,6 +128,7 @@ export default function ConsensusPage() {
 
   return (
     <AppShell title="Consensus">
+      <SEOHead title="Consensus" description="Multi-model consensus analysis" />
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         <header>
           <h1 className="text-2xl font-bold flex items-center gap-2">

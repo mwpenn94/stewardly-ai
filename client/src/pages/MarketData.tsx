@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,7 @@ export default function MarketData() {
 
   if (authLoading) {
     return <AppShell title="Market Data"><div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div></AppShell>;
+      <SEOHead title="Market Data" description="Real-time market data and financial quotes" />
   }
 
   if (!isAuthenticated) {

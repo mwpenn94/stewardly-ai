@@ -13,6 +13,7 @@
  */
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,7 @@ export default function ClientDashboard() {
 
   if (authLoading) {
     return <AppShell title="Client Dashboard"><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
+      <SEOHead title="Client Dashboard" description="Client overview and activity dashboard" />
   }
 
   if (!user) {

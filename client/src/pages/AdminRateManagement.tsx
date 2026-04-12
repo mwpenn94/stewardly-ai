@@ -20,6 +20,7 @@
  */
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,7 @@ export default function AdminRateManagement() {
   if (authLoading) {
     return (
       <AppShell title="Rate Management">
+      <SEOHead title="Rate Management" description="Manage rate profiles and recommendations" />
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>

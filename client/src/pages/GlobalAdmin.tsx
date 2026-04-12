@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -109,6 +110,7 @@ export default function GlobalAdmin() {
 
   return (
     <AppShell title="Global Admin">
+      <SEOHead title="Global Admin" description="Platform administration and configuration" />
     <div className="min-h-screen animate-curtain-lift">
       {/* Header */}
       <header className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">

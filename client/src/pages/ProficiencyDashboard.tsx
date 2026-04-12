@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -93,6 +94,7 @@ export default function ProficiencyDashboard() {
 
   return (
     <AppShell title="My Progress">
+      <SEOHead title="My Progress" description="Track your learning progress and proficiency" />
     <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-card/80 backdrop-blur-xl border-b border-border relative overflow-hidden">

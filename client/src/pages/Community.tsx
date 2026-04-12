@@ -4,6 +4,7 @@
  */
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -55,6 +56,7 @@ export default function Community() {
   if (authLoading) {
     return (
       <AppShell title="Community">
+      <SEOHead title="Community" description="Professional community discussions and networking" />
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>

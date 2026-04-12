@@ -4,6 +4,7 @@
  */
 import { useState, useMemo } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export default function FinancialProtectionScore() {
   if (authLoading) {
     return (
       <AppShell title="Financial Protection">
+      <SEOHead title="Financial Protection" description="12-dimension financial protection assessment" />
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>

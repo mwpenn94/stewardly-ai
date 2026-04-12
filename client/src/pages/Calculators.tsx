@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,10 @@ import {
   HandCoins, Briefcase, ListChecks, Users, Grid3X3, BookOpen,
 } from "lucide-react";
 import { useState } from "react";
+  HandCoins, Briefcase, ListChecks, ShieldAlert, Dice5,
+} from "lucide-react";
+import { useState, useMemo } from "react";
+import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -104,11 +109,14 @@ const CALCULATORS = [
   { id: "charitable", label: "Charitable", icon: <HandCoins className="w-4 h-4" />, desc: "Giving strategy optimization", color: "text-orange-400" },
   { id: "divorce", label: "Divorce Analysis", icon: <Scale className="w-4 h-4" />, desc: "Asset division & alimony modeling", color: "text-red-400" },
   { id: "education", label: "Education", icon: <GraduationCap className="w-4 h-4" />, desc: "529 & education funding planner", color: "text-indigo-400" },
+  { id: "stress", label: "Stress Test", icon: <ShieldAlert className="w-4 h-4" />, desc: "S&P 500 backtest + crisis scenarios", color: "text-red-500" },
+  { id: "montecarlo", label: "Monte Carlo", icon: <Dice5 className="w-4 h-4" />, desc: "1,000-trial probability simulation", color: "text-purple-400" },
 ] as const;
 
 export default function Calculators() {
   useAuth();
   const [, navigate] = useLocation();
+  const pil = usePlatformIntelligence();
   const [activeCalc, setActiveCalc] = useState<string>("iul");
 
   // IUL state
@@ -137,8 +145,27 @@ export default function Calculators() {
   const pfCalc = trpc.calculators.premiumFinance.useMutation({ onError: (e) => toast.error(e.message) });
   const retCalc = trpc.calculators.retirement.useMutation({ onError: (e) => toast.error(e.message) });
 
+  // Stress Test state
+  const [stressBalance, setStressBalance] = useState(500000);
+  const [stressContrib, setStressContrib] = useState(12000);
+  const [stressCost, setStressCost] = useState(5000);
+  const [stressHorizon, setStressHorizon] = useState(30);
+  const [stressScenario, setStressScenario] = useState("gfc2008");
+  const backtestCalc = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: (e) => toast.error(e.message) });
+  const stressCalc = trpc.calculatorEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
+  const scenariosQuery = trpc.calculatorEngine.stressScenarios.useQuery();
+
+  // Monte Carlo state
+  const [mcBalance, setMcBalance] = useState(500000);
+  const [mcContrib, setMcContrib] = useState(12000);
+  const [mcYears, setMcYears] = useState(30);
+  const [mcVolatility, setMcVolatility] = useState(15);
+  const [mcTrials, setMcTrials] = useState(1000);
+  const mcCalc = trpc.calculatorEngine.uweMonteCarlo.useMutation({ onError: (e) => toast.error(e.message) });
+
   return (
     <AppShell title="Calculators">
+      <SEOHead title="Calculators" description="Financial calculators powered by the Wealth Engine" />
     <div className="min-h-screen">
       {/* Header — hidden on mobile where AppShell provides navigation */}
       <div className="hidden lg:block border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">
@@ -167,6 +194,7 @@ export default function Calculators() {
               { label: "Team Builder", path: "/wealth-engine/team-builder", icon: <Users className="w-4 h-4" />, desc: "Roll-up, roll-down, economics" },
               { label: "What-If Analysis", path: "/wealth-engine/sensitivity", icon: <Grid3X3 className="w-4 h-4" />, desc: "2D parameter heat map" },
               { label: "Reference Hub", path: "/wealth-engine/references", icon: <BookOpen className="w-4 h-4" />, desc: "Products, benchmarks, methodology" },
+              { label: "Business Income", path: "/wealth-engine/business-income", icon: <DollarSign className="w-4 h-4" />, desc: "BIE practice income modeling" },
               { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
               { label: "Team Builder", path: "/wealth-engine/team-builder", icon: <Users className="w-4 h-4" />, desc: "BIE roll-up/roll-down" },
               { label: "What-If Analysis", path: "/wealth-engine/sensitivity", icon: <Grid3X3 className="w-4 h-4" />, desc: "2D sensitivity grid" },
@@ -258,7 +286,7 @@ export default function Calculators() {
                 <SliderInput label="Death Benefit" value={iulDB} onChange={setIulDB} min={50000} max={10000000} step={25000} format={(v) => fmt(v)} />
                 <Button
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-sm h-10 gap-2"
-                  onClick={() => iulCalc.mutate({ age: iulAge, annualPremium: iulPremium, years: iulYears, illustratedRate: iulRate, deathBenefit: iulDB })}
+                  onClick={() => { iulCalc.mutate({ age: iulAge, annualPremium: iulPremium, years: iulYears, illustratedRate: iulRate, deathBenefit: iulDB }); pil.giveFeedback("engine.calculation_complete"); }}
                   disabled={iulCalc.isPending}
                 >
                   {iulCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Projection</>}
@@ -530,6 +558,201 @@ export default function Calculators() {
                   </div>
                   <p className="text-sm text-muted-foreground">Set your retirement goals</p>
                   <p className="text-[10px] text-muted-foreground/50 mt-1">See nominal and inflation-adjusted projections</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── STRESS TEST (SCUI) ──────────────────────────── */}
+        {activeCalc === "stress" && (
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <Card className="lg:col-span-2 bg-card/60 border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-red-500" /> Stress Test & Backtest
+                </CardTitle>
+                <CardDescription className="text-xs">S&P 500 historical backtest (1928-2025) + crisis scenarios</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <SliderInput label="Starting Balance" value={stressBalance} onChange={setStressBalance} min={10000} max={10000000} step={10000} format={fmt} />
+                <SliderInput label="Annual Contribution" value={stressContrib} onChange={setStressContrib} min={0} max={200000} step={1000} format={fmt} />
+                <SliderInput label="Annual Cost" value={stressCost} onChange={setStressCost} min={0} max={100000} step={500} format={fmt} />
+                <SliderInput label="Horizon" value={stressHorizon} onChange={setStressHorizon} min={5} max={50} suffix=" yrs" />
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Stress Scenario</Label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(scenariosQuery.data ?? []).map((s: any) => (
+                      <button
+                        key={s.key}
+                        onClick={() => setStressScenario(s.key)}
+                        className={`text-left p-2 rounded-md border text-[10px] transition-all ${
+                          stressScenario === s.key
+                            ? "bg-red-500/10 border-red-500/30 text-red-400"
+                            : "bg-card/40 border-border/50 text-muted-foreground hover:border-border"
+                        }`}
+                      >
+                        <span className="font-medium block">{s.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 text-sm h-10 gap-2"
+                    onClick={() => backtestCalc.mutate({ startBalance: stressBalance, annualContribution: stressContrib, annualCost: stressCost, horizon: stressHorizon })}
+                    disabled={backtestCalc.isPending}
+                  >
+                    {backtestCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><BarChart3 className="w-4 h-4" /> Backtest</>}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 text-sm h-10 gap-2"
+                    onClick={() => stressCalc.mutate({ scenarioKey: stressScenario, startBalance: stressBalance, annualContribution: stressContrib, annualCost: stressCost })}
+                    disabled={stressCalc.isPending}
+                  >
+                    {stressCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ShieldAlert className="w-4 h-4" /> Stress</>}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="lg:col-span-3 space-y-4">
+              {backtestCalc.data ? (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <StatCard label="Best Period" value={fmt((backtestCalc.data as any).bestEndingValue ?? 0)} positive={true} />
+                    <StatCard label="Worst Period" value={fmt((backtestCalc.data as any).worstEndingValue ?? 0)} positive={false} />
+                    <StatCard label="Median" value={fmt((backtestCalc.data as any).medianEndingValue ?? 0)} />
+                    <StatCard label="Success Rate" value={`${((backtestCalc.data as any).successRate ?? 0).toFixed(0)}%`} positive={((backtestCalc.data as any).successRate ?? 0) >= 80} />
+                  </div>
+                  {(backtestCalc.data as any).periods?.length > 0 && (
+                    <Card className="bg-card/60 border-border/50 p-4">
+                      <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-2">Rolling {stressHorizon}-Year Ending Values</p>
+                      <MiniBarChart data={(backtestCalc.data as any).periods} valueKey="endingValue" maxBars={20} />
+                    </Card>
+                  )}
+                </>
+              ) : stressCalc.data ? (
+                <Card className="bg-card/60 border-border/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">Stress Test Results</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <StatCard label="Starting Balance" value={fmt(stressBalance)} />
+                      <StatCard label="Final Value" value={fmt((stressCalc.data as any).endingValue ?? 0)} positive={((stressCalc.data as any).endingValue ?? 0) > stressBalance} />
+                    </div>
+                    {(stressCalc.data as any).yearByYear?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-2">Year-by-Year During Crisis</p>
+                        <MiniBarChart data={(stressCalc.data as any).yearByYear} valueKey="balance" />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
+                  <div className="w-12 h-12 rounded-xl bg-secondary/50 flex items-center justify-center mb-3">
+                    <ShieldAlert className="w-6 h-6 text-muted-foreground/30" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Run a historical backtest or stress scenario</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-1">Uses real S&P 500 data from 1928-2025</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── MONTE CARLO SIMULATION ────────────────────────── */}
+        {activeCalc === "montecarlo" && (
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <Card className="lg:col-span-2 bg-card/60 border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Dice5 className="w-4 h-4 text-purple-400" /> Monte Carlo Simulation
+                </CardTitle>
+                <CardDescription className="text-xs">Probabilistic wealth projection with {mcTrials.toLocaleString()} trials</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <SliderInput label="Starting Balance" value={mcBalance} onChange={setMcBalance} min={10000} max={10000000} step={10000} format={fmt} />
+                <SliderInput label="Annual Contribution" value={mcContrib} onChange={setMcContrib} min={0} max={200000} step={1000} format={fmt} />
+                <SliderInput label="Years" value={mcYears} onChange={setMcYears} min={5} max={50} suffix=" yrs" />
+                <SliderInput label="Volatility" value={mcVolatility} onChange={setMcVolatility} min={5} max={40} suffix="%" />
+                <SliderInput label="Trials" value={mcTrials} onChange={setMcTrials} min={100} max={5000} step={100} />
+                <Button
+                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-sm h-10 gap-2"
+                  onClick={() => {
+                    const strategy = {
+                      company: "wealthbridge" as const,
+                      companyName: "WealthBridge",
+                      color: "#16A34A",
+                      profile: { age: 40, income: 120000, savings: mcBalance, monthlySavings: Math.round(mcContrib / 12), equitiesReturn: 0.07 },
+                      products: [{ type: "aum" as const, initialAUM: mcBalance, annualAdd: mcContrib, feeRate: 0.008, grossReturn: 0.08, advisoryAlpha: 0.02, taxDrag: 0.005 }],
+                      features: { holistic: true, taxFree: false, livingBen: false, advisor: true, estate: false, group: false, fiduciary: true, lowFees: false, insurance: false },
+                      notes: "",
+                    };
+                    mcCalc.mutate({ strategy, years: mcYears, trials: mcTrials, volatility: mcVolatility / 100 });
+                  }}
+                  disabled={mcCalc.isPending}
+                >
+                  {mcCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Dice5 className="w-4 h-4" /> Run Simulation</>}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <div className="lg:col-span-3 space-y-4">
+              {mcCalc.data && Array.isArray(mcCalc.data) && mcCalc.data.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    <StatCard label="10th Percentile" value={fmt(mcCalc.data[mcCalc.data.length - 1]?.p10 ?? 0)} positive={false} sub="Worst case" />
+                    <StatCard label="25th Percentile" value={fmt(mcCalc.data[mcCalc.data.length - 1]?.p25 ?? 0)} />
+                    <StatCard label="Median (50th)" value={fmt(mcCalc.data[mcCalc.data.length - 1]?.p50 ?? 0)} positive={true} sub="Most likely" />
+                    <StatCard label="75th Percentile" value={fmt(mcCalc.data[mcCalc.data.length - 1]?.p75 ?? 0)} positive={true} />
+                    <StatCard label="90th Percentile" value={fmt(mcCalc.data[mcCalc.data.length - 1]?.p90 ?? 0)} positive={true} sub="Best case" />
+                  </div>
+
+                  <Card className="bg-card/60 border-border/50 p-4">
+                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-2">Probability Envelope (Median)</p>
+                    <MiniBarChart data={mcCalc.data} valueKey="p50" />
+                  </Card>
+
+                  <Card className="bg-card/60 border-border/50">
+                    <ScrollArea className="h-[300px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-border">
+                            <TableHead className="text-[10px]">Year</TableHead>
+                            <TableHead className="text-[10px] text-right">P10</TableHead>
+                            <TableHead className="text-[10px] text-right">P25</TableHead>
+                            <TableHead className="text-[10px] text-right">Median</TableHead>
+                            <TableHead className="text-[10px] text-right">P75</TableHead>
+                            <TableHead className="text-[10px] text-right">P90</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {mcCalc.data.map((p: any, i: number) => (
+                            <TableRow key={i} className="border-border/30">
+                              <TableCell className="text-xs py-1.5">{i + 1}</TableCell>
+                              <TableCell className="text-xs text-right py-1.5 font-mono text-red-400">{fmt(p.p10)}</TableCell>
+                              <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{fmt(p.p25)}</TableCell>
+                              <TableCell className="text-xs text-right py-1.5 font-mono text-foreground">{fmt(p.p50)}</TableCell>
+                              <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{fmt(p.p75)}</TableCell>
+                              <TableCell className="text-xs text-right py-1.5 font-mono text-emerald-400">{fmt(p.p90)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                  </Card>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
+                  <div className="w-12 h-12 rounded-xl bg-secondary/50 flex items-center justify-center mb-3">
+                    <Dice5 className="w-6 h-6 text-muted-foreground/30" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Run a Monte Carlo simulation</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-1">See probability ranges across {mcTrials.toLocaleString()} simulated scenarios</p>
                 </div>
               )}
             </div>

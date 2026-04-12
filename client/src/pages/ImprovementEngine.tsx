@@ -1,5 +1,6 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +103,7 @@ export default function ImprovementEngine() {
 
   return (
     <AppShell title="Improvement Engine">
+      <SEOHead title="Improvement Engine" description="AI improvement loops and signal detection" />
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
 

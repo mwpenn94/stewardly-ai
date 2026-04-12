@@ -5,6 +5,7 @@
  */
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ export default function IntelligenceHub() {
 
   return (
     <AppShell title="Intelligence">
+      <SEOHead title="Intelligence" description="AI-powered insights and intelligence dashboard" />
     <div className="min-h-screen">
       {/* Header */}
       <div className="hidden lg:block border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">

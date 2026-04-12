@@ -4,6 +4,7 @@
  */
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ export default function AgentManager() {
 
   return (
     <AppShell title="Agents">
+      <SEOHead title="Agents" description="Configure and manage AI agents" />
       <div className="min-h-screen">
         <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="container py-4 flex items-center justify-between">

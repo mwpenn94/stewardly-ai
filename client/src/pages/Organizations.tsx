@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -358,6 +359,7 @@ export default function Organizations() {
   // ─── ORGANIZATION LIST VIEW ───────────────────────────────────
   return (
     <AppShell title="Organizations">
+      <SEOHead title="Organizations" description="Organization management and configuration" />
     <div className="min-h-screen">
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">

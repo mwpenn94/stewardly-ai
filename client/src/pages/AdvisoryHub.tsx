@@ -6,6 +6,7 @@
  */
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export default function AdvisoryHub() {
 
   return (
     <AppShell title="Advisory">
+      <SEOHead title="Advisory" description="Advisory tools and client management" />
     <div className="min-h-screen">
       {/* Header */}
       <div className="hidden lg:block border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">

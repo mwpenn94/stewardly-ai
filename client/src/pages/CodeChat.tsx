@@ -10,6 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -2296,6 +2297,7 @@ export default function CodeChatPage() {
 
   return (
     <AppShell title="Code Chat">
+      <SEOHead title="Code Chat" description="AI-powered code assistant and development tools" />
       <div className="max-w-6xl mx-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="border-b border-border/40 px-4 pt-2">

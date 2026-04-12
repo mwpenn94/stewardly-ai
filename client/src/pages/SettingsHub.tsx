@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -83,6 +84,7 @@ export default function SettingsHub() {
   if (loading) {
     return (
       <AppShell title="Settings">
+      <SEOHead title="Settings" description="Account settings and preferences" />
         <div className="min-h-screen bg-background flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-accent" />
         </div>

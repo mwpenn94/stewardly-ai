@@ -19,6 +19,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
 import { sendFeedback } from "@/lib/feedbackSpecs";
+import { SEOHead } from "@/components/SEOHead";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -281,6 +282,7 @@ export default function MyFinancialTwin() {
   if (!isAuthenticated) {
     return (
       <AppShell title="My Financial Twin">
+      <SEOHead title="My Financial Twin" description="Your personalized financial twin and insights" />
         <div className="max-w-3xl mx-auto px-4 py-16 text-center">
           <Fingerprint className="w-12 h-12 mx-auto mb-4 text-accent/60" />
           <h2 className="text-lg font-heading font-semibold mb-2">Sign in to view your Financial Twin</h2>

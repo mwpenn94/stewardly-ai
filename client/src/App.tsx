@@ -40,6 +40,7 @@ const WeTeamBuilder = lazy(() => import("./pages/wealth-engine/TeamBuilder"));
 const WeSensitivity = lazy(() => import("./pages/wealth-engine/Sensitivity"));
 const WeWhatIfSensitivity = lazy(() => import("./pages/wealth-engine/WhatIfSensitivity"));
 const WeReferenceHub = lazy(() => import("./pages/wealth-engine/ReferenceHub"));
+const WeBusinessIncome = lazy(() => import("./pages/wealth-engine/BusinessIncome"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 // Consensus (Round C3 — multi-model consensus stream UI)
@@ -159,6 +160,7 @@ function Router() {
         <Route path={"/wealth-engine/team-builder"} component={WeTeamBuilder} />
         <Route path={"/wealth-engine/sensitivity"} component={WeSensitivity} />
         <Route path={"/wealth-engine/references"} component={WeReferenceHub} />
+        <Route path={"/wealth-engine/business-income"} component={WeBusinessIncome} />
         {/* Code Chat (admin foundation) */}
         <Route path={"/code-chat"} component={CodeChatPage} />
         {/* Consensus (Round C — multi-model consensus stream) */}
@@ -215,6 +217,7 @@ function Router() {
         <Route path="/client-onboarding" component={ClientOnboarding} />
         <Route path="/protection-score" component={FinancialProtectionScore} />
         <Route path="/financial-planning" component={FinancialPlanning} />
+        <Route path="/financial-protection-score" component={FinancialProtectionScore} />
         <Route path="/community" component={Community} />
         <Route path="/unsubscribe" component={Unsubscribe} />
         <Route path="/admin/system-health" component={AdminSystemHealth} />

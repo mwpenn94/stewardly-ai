@@ -18,6 +18,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
+import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,6 +64,7 @@ export default function LearningFlashcardStudy() {
     refetchOnWindowFocus: false,
   });
   const recordReview = trpc.learning.mastery.recordReview.useMutation();
+  const pil = usePlatformIntelligence();
 
   const track = trackQ.data;
   const rawCards = flashcardsQ.data ?? [];
@@ -129,9 +132,17 @@ export default function LearningFlashcardStudy() {
 
     if (correct) setCorrectCount((c) => c + 1);
     else setIncorrectCount((c) => c + 1);
+    if (correct) {
+      setCorrectCount((c) => c + 1);
+      pil.giveFeedback("learning.answer_correct");
+    } else {
+      setIncorrectCount((c) => c + 1);
+      pil.giveFeedback("learning.answer_incorrect");
+    }
 
     if (index + 1 >= total) {
       setComplete(true);
+      pil.giveFeedback("learning.exam_complete");
     } else {
       setIndex((i) => i + 1);
       setFlipped(false);
@@ -152,6 +163,7 @@ export default function LearningFlashcardStudy() {
   if (trackQ.isLoading || flashcardsQ.isLoading) {
     return (
       <AppShell title="Flashcards">
+      <SEOHead title="Flashcards" description="Study flashcards with spaced repetition" />
         <div className="p-6 text-sm text-muted-foreground">Loading deck…</div>
       </AppShell>
     );
@@ -375,6 +387,7 @@ export default function LearningFlashcardStudy() {
                 className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${flipped ? "animate-card-flip-in" : ""}`}
                 style={{ perspective: "600px" }}
                 onClick={() => { setFlipped((f) => !f); sendFeedback("learning.flashcard_flip"); }}
+                onClick={() => { setFlipped((f) => !f); pil.giveFeedback("learning.flashcard_flip"); }}
                 onKeyDown={(e) => {
                   if (e.key === " " || e.key === "Enter") {
                     e.preventDefault();

@@ -19,6 +19,7 @@ import { getLoginUrl } from "@/const";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 type Provider = {
@@ -1240,6 +1241,7 @@ export default function Integrations() {
 
   return (
     <AppShell title="Integrations">
+      <SEOHead title="Integrations" description="Connect external services and data sources" />
     <div className="min-h-screen bg-background">
       {/* Navigation Header */}
       <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
