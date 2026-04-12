@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Grid3x3, Play, Loader2, TrendingUp, AlertTriangle, Info } from "lucide-react";
+import { Grid3x3, Play, Loader2, TrendingUp, Info } from "lucide-react";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import { checkGuardrail } from "@/components/wealth-engine/GuardrailWarning";
 

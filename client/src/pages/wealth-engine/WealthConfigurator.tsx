@@ -9,7 +9,6 @@ import { SEOHead } from "@/components/SEOHead";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
@@ -18,8 +17,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Loader2, ShieldCheck, DollarSign, TrendingUp,
-  Building2, Briefcase, Sparkles, BarChart3, Info, ChevronDown,
-  ChevronUp, Play, Zap,
+  Building2, Briefcase, Sparkles, BarChart3, ChevronDown,
+  ChevronUp, Play,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -33,9 +32,6 @@ function fmt(n: number) {
 }
 function pct(n: number) {
   return `${(n * 100).toFixed(1)}%`;
-}
-function num(n: number) {
-  return n.toLocaleString("en-US");
 }
 
 // ─── COMPANY DEFINITIONS (mirrors server/shared/calculators/uwe.ts) ─
@@ -640,7 +636,7 @@ function MonteCarloResults({ mcData }: { mcData: any }) {
   const final = mcData[mcData.length - 1];
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
         <StatCard label="P10 (Pessimistic)" value={fmt(final.p10)} />
         <StatCard label="P25" value={fmt(final.p25)} />
         <StatCard label="P50 (Median)" value={fmt(final.p50)} positive />
