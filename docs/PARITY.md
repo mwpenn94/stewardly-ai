@@ -972,6 +972,7 @@ Columns:
 | PARITY-ROUTE-0001     | Duplicate /financial-protection-score removed | routing | done | P2 | build | 3 | (CBL-RqDMj-P1) | Canonical route is /protection-score. Removed duplicate from App.tsx. Updated quickQuoteRegistry.ts. |
 | PARITY-NAV-0007       | Chat.tsx sidebar synced with PersonaSidebar5 | navigation | done | P1 | build | 9 | (CBL-RqDMj-P2) | Chat.tsx had 18 hardcoded nav items diverged from PersonaSidebar5's 53. Replaced with import of shared PERSONA_LAYERS. Now always in sync. |
 | PARITY-MOBILE-0006    | Chat.tsx mobile bottom tabs gained Voice tab | mobile_ux | done | P1 | build | 8 | (CBL-RqDMj-P2) | Chat's bottom tabs now match AppShell: Chat/Tools/Insights/Learn/Voice. Voice tab dispatches chat:toggle-handsfree. |
+| PARITY-LEARN-0003     | LearningHome tools hardcoded to first track only | learning | done | P1 | build | 8 | (CBL-RqDMj-P3) | Practice Exam, Deep Dive, Case Studies cards now have inline track picker so users can access all imported tracks, not just the first one. |
 
 ---
 

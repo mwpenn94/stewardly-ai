@@ -12,7 +12,7 @@
  * regulatory review queue.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame, Search } from "lucide-react";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame, Search, ChevronDown } from "lucide-react";
 import { Link } from "wouter";
 import {
   loadStreakFromStorage,
@@ -296,39 +296,33 @@ export default function LearningHome() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {tracks.length > 0 && (
-                <Link href={`/learning/exam/${tracks[0].slug}`}>
-                  <Card className="card-lift cursor-pointer h-full">
-                    <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                      <ClipboardCheck className="h-6 w-6 text-primary" />
-                      <div className="text-sm font-medium">Practice Exam</div>
-                      <div className="text-[10px] text-muted-foreground">Timed, adaptive, or audio mode</div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <ToolCardWithTrackPicker
+                  icon={<ClipboardCheck className="h-6 w-6 text-primary" />}
+                  title="Practice Exam"
+                  description="Timed, adaptive, or audio mode"
+                  tracks={tracks}
+                  buildHref={(slug) => `/learning/exam/${slug}`}
+                />
               )}
               {tracks.length > 0 && (
-                <Link href={`/learning/discipline/${tracks[0].slug}`}>
-                  <Card className="card-lift cursor-pointer h-full">
-                    <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                      <BookOpen className="h-6 w-6 text-primary" />
-                      <div className="text-sm font-medium">Deep Dive</div>
-                      <div className="text-[10px] text-muted-foreground">Definitions, formulas, cases</div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <ToolCardWithTrackPicker
+                  icon={<BookOpen className="h-6 w-6 text-primary" />}
+                  title="Deep Dive"
+                  description="Definitions, formulas, cases"
+                  tracks={tracks}
+                  buildHref={(slug) => `/learning/discipline/${slug}`}
+                />
               )}
               {tracks.length > 0 && (
-                <Link href={`/learning/case/${tracks[0].slug}`}>
-                  <Card className="card-lift cursor-pointer h-full">
-                    <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                      <Scale className="h-6 w-6 text-primary" />
-                      <div className="text-sm font-medium">Case Studies</div>
-                      <div className="text-[10px] text-muted-foreground">Branching scenario decisions</div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <ToolCardWithTrackPicker
+                  icon={<Scale className="h-6 w-6 text-primary" />}
+                  title="Case Studies"
+                  description="Branching scenario decisions"
+                  tracks={tracks}
+                  buildHref={(slug) => `/learning/case/${slug}`}
+                />
               )}
               <Link href="/learning/connections">
                 <Card className="card-lift cursor-pointer h-full">
@@ -425,6 +419,42 @@ function StreakCard({ streak }: { streak: StreakSummary }) {
               Save your streak →
             </Button>
           </Link>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Learning tool card with an inline track picker — replaces the old hardcoded
+ *  first-track-only links so users can access exams, deep dives, and case
+ *  studies for ANY imported track. Tapping the card opens a track list;
+ *  tapping a track navigates to the tool for that track. */
+function ToolCardWithTrackPicker({ icon, title, description, tracks, buildHref }: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  tracks: { slug: string; name: string; emoji?: string | null }[];
+  buildHref: (slug: string) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card className="card-lift cursor-pointer h-full" onClick={() => setOpen(!open)}>
+      <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+        {icon}
+        <div className="text-sm font-medium">{title}</div>
+        <div className="text-[10px] text-muted-foreground">{description}</div>
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        {open && (
+          <div className="w-full mt-1 space-y-1 text-left" onClick={(e) => e.stopPropagation()}>
+            {tracks.map(t => (
+              <Link key={t.slug} href={buildHref(t.slug)}>
+                <button className="w-full text-left px-2 py-1.5 rounded-md text-xs hover:bg-secondary/60 transition-colors truncate">
+                  {t.emoji && <span className="mr-1">{t.emoji}</span>}
+                  {t.name}
+                </button>
+              </Link>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>
