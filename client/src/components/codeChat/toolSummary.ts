@@ -16,6 +16,7 @@ export interface ToolSummary {
   writes: number;
   edits: number;
   bashRuns: number;
+  webFetches: number;
   errors: number;
   totalDurationMs: number;
   /** Unique file paths the agent touched (union of read/write/edit) */
@@ -30,6 +31,7 @@ export function summarizeToolEvents(events: ToolEvent[] | undefined): ToolSummar
     writes: 0,
     edits: 0,
     bashRuns: 0,
+    webFetches: 0,
     errors: 0,
     totalDurationMs: 0,
     filesTouched: [],
@@ -67,6 +69,9 @@ export function summarizeToolEvents(events: ToolEvent[] | undefined): ToolSummar
       case "run_bash":
         summary.bashRuns++;
         break;
+      case "web_fetch":
+        summary.webFetches++;
+        break;
     }
   }
 
@@ -89,6 +94,7 @@ export function summaryChips(
   if (s.writes > 0) chips.push({ key: "write", label: "write", count: s.writes, variant: "warn" });
   if (s.edits > 0) chips.push({ key: "edit", label: "edit", count: s.edits, variant: "warn" });
   if (s.bashRuns > 0) chips.push({ key: "bash", label: "bash", count: s.bashRuns, variant: "warn" });
+  if (s.webFetches > 0) chips.push({ key: "web", label: "web", count: s.webFetches, variant: "info" });
   if (s.errors > 0) chips.push({ key: "errors", label: "errors", count: s.errors, variant: "error" });
   return chips;
 }
@@ -105,6 +111,7 @@ export function summarySentence(s: ToolSummary): string {
   if (s.writes) parts.push(`${s.writes} write${s.writes === 1 ? "" : "s"}`);
   if (s.edits) parts.push(`${s.edits} edit${s.edits === 1 ? "" : "s"}`);
   if (s.bashRuns) parts.push(`${s.bashRuns} bash`);
+  if (s.webFetches) parts.push(`${s.webFetches} web fetch${s.webFetches === 1 ? "" : "es"}`);
   if (s.errors) parts.push(`${s.errors} error${s.errors === 1 ? "" : "s"}`);
   return parts.length > 0 ? parts.join(" · ") : "no tool calls";
 }

@@ -272,4 +272,59 @@ describe("tryRunSlashCommand — built-ins", () => {
       expect.stringContaining("drizzle"),
     );
   });
+
+  it("/web rewrites to a code_web_fetch instruction", async () => {
+    const ctx = mockCtx();
+    const result = await tryRunSlashCommand("/web https://docs.example.com/api", ctx);
+    expect(result).toMatchObject({ handled: true });
+    if (result && "rewrite" in result && result.rewrite) {
+      expect(result.rewrite).toContain("code_web_fetch");
+      expect(result.rewrite).toContain("https://docs.example.com/api");
+    } else {
+      throw new Error("expected rewrite on /web");
+    }
+  });
+
+  it("/web with a follow-up question embeds both url and question", async () => {
+    const ctx = mockCtx();
+    const result = await tryRunSlashCommand(
+      "/web https://example.com/spec what is the auth flow?",
+      ctx,
+    );
+    expect(result).toMatchObject({ handled: true });
+    if (result && "rewrite" in result && result.rewrite) {
+      expect(result.rewrite).toContain("https://example.com/spec");
+      expect(result.rewrite).toContain("auth flow");
+    } else {
+      throw new Error("expected rewrite on /web");
+    }
+  });
+
+  it("/web still emits a rewrite for non-http strings (server revalidates)", async () => {
+    const ctx = mockCtx();
+    const result = await tryRunSlashCommand("/web docs.example.com/api", ctx);
+    expect(result).toMatchObject({ handled: true });
+    if (result && "rewrite" in result && result.rewrite) {
+      expect(result.rewrite).toContain("docs.example.com");
+      expect(result.rewrite.toLowerCase()).toContain("http");
+    } else {
+      throw new Error("expected rewrite on /web");
+    }
+  });
+
+  it("/fetch alias works", async () => {
+    const ctx = mockCtx();
+    const result = await tryRunSlashCommand("/fetch https://example.com/", ctx);
+    expect(result).toMatchObject({ handled: true });
+    if (result && "rewrite" in result) {
+      expect(result.rewrite).toBeDefined();
+    }
+  });
+
+  it("/web with empty args is a no-op (no rewrite emitted)", async () => {
+    const ctx = mockCtx();
+    const result = await tryRunSlashCommand("/web  ", ctx);
+    // Handler returns undefined for empty args; wrapper still marks as handled
+    expect(result).toEqual({ handled: true });
+  });
 });

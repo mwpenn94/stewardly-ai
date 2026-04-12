@@ -72,6 +72,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
     description: "Look up where a symbol is defined (Pass 242, read-only)",
     mutation: false,
   },
+  {
+    id: "web_fetch",
+    label: "Web fetch",
+    description:
+      "Fetch external http(s) docs/APIs, SSRF-guarded, 512KB cap (Parity P1, read-only)",
+    mutation: false,
+  },
 ];
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
@@ -83,6 +90,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "run_bash",
   "update_todos",
   "find_symbol",
+  "web_fetch",
 ];
 
 export default function ToolPermissionsPopover({

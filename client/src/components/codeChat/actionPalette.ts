@@ -119,4 +119,5 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "slash:explain", label: "/explain — explain a file", category: "slash", keywords: ["describe"] },
   { id: "slash:find", label: "/find — grep across codebase", category: "slash", keywords: ["search"] },
   { id: "slash:diff", label: "/diff — show file diff", category: "slash", keywords: ["changes"] },
+  { id: "slash:web", label: "/web — fetch external URL", category: "slash", keywords: ["fetch", "url", "docs", "http"] },
 ];

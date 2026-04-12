@@ -44,6 +44,7 @@ export type CodeToolName =
   | "run_bash"
   | "update_todos"
   | "find_symbol"
+  | "web_fetch"
   | "finish";
 
 export interface CodeToolCall {
@@ -70,6 +71,17 @@ export interface SymbolLookupHit {
   exported: boolean;
 }
 
+export interface WebFetchToolResult {
+  url: string;
+  status: number;
+  contentType: string;
+  content: string;
+  byteLength: number;
+  truncated: boolean;
+  htmlExtracted: boolean;
+  durationMs: number;
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -79,6 +91,7 @@ export type CodeToolResult =
   | { kind: "bash"; result: BashResult }
   | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
+  | { kind: "web"; result: WebFetchToolResult }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -101,6 +114,7 @@ export interface CodeChatRunResult {
     edits: number;
     bashRuns: number;
     grepSearches: number;
+    webFetches: number;
     errors: number;
   };
 }
@@ -217,6 +231,49 @@ export async function dispatchCodeTool(
           },
         };
       }
+      case "web_fetch": {
+        // Parity Pass 1: fetch an external URL (read-only, SSRF-guarded,
+        // content-type gated, size-capped). Works for docs/APIs the
+        // agent needs at runtime. Returns structured text so the LLM
+        // can reason over it without an extra round-trip.
+        const { fetchUrl, WebFetchError } = await import("./webFetch");
+        const rawUrl = String(call.args.url ?? "").trim();
+        if (!rawUrl) {
+          return { kind: "error", error: "url required", code: "BAD_ARGS" };
+        }
+        const maxBytesArg = Number(call.args.maxBytes);
+        const timeoutArg = Number(call.args.timeoutMs);
+        try {
+          const envAllow = process.env.CODE_CHAT_WEB_FETCH_ALLOWED_HOSTS;
+          const allowedHosts = envAllow
+            ? envAllow
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : undefined;
+          const result = await fetchUrl(rawUrl, {
+            maxBytes:
+              Number.isFinite(maxBytesArg) && maxBytesArg > 0
+                ? Math.min(maxBytesArg, 1024 * 1024)
+                : undefined,
+            timeoutMs:
+              Number.isFinite(timeoutArg) && timeoutArg > 0
+                ? Math.min(timeoutArg, 30_000)
+                : undefined,
+            allowedHosts,
+          });
+          return { kind: "web", result };
+        } catch (err) {
+          if (err instanceof WebFetchError) {
+            return { kind: "error", error: err.message, code: err.code };
+          }
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : "fetch failed",
+            code: "NETWORK_ERROR",
+          };
+        }
+      }
       case "update_todos": {
         // Validate + normalize the todos array. No file system side
         // effect — this tool exists so the agent can stream progress
@@ -317,6 +374,7 @@ export async function executeCodeChat(
     edits: 0,
     bashRuns: 0,
     grepSearches: 0,
+    webFetches: 0,
     errors: 0,
   };
   let finished = false;
@@ -363,6 +421,9 @@ export async function executeCodeChat(
         break;
       case "grep":
         stats.grepSearches++;
+        break;
+      case "web":
+        stats.webFetches++;
         break;
       case "error":
         stats.errors++;
@@ -464,6 +525,26 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         limit: { type: "number", description: "Max results (default 20, max 100)" },
       },
       required: ["name"],
+    },
+  },
+  {
+    name: "web_fetch",
+    description:
+      "Fetch an external URL (http/https) and return its text contents. HTML is converted to plain text and scripts/styles are stripped. Use this to pull in documentation, API specs, or reference material the agent needs to reason over. Local/loopback/RFC1918 hosts are blocked for SSRF safety. Images/binaries are rejected. Max 512KB per fetch (configurable), 15s timeout.",
+    parameters: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Absolute http(s) URL" },
+        maxBytes: {
+          type: "number",
+          description: "Optional soft cap on body bytes (default 512KB, max 1MB)",
+        },
+        timeoutMs: {
+          type: "number",
+          description: "Optional timeout in ms (default 15000, max 30000)",
+        },
+      },
+      required: ["url"],
     },
   },
   {

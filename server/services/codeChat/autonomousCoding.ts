@@ -104,6 +104,7 @@ export async function runAutonomousCoding(
     edits: 0,
     bashRuns: 0,
     grepSearches: 0,
+    webFetches: 0,
     errors: 0,
   };
   let finished = false;
@@ -150,7 +151,7 @@ export async function runAutonomousCoding(
         iterations: 0,
         steps: [],
         summary: `subtask threw: ${err instanceof Error ? err.message : "unknown"}`,
-        stats: { reads: 0, writes: 0, edits: 0, bashRuns: 0, grepSearches: 0, errors: 1 },
+        stats: { reads: 0, writes: 0, edits: 0, bashRuns: 0, grepSearches: 0, webFetches: 0, errors: 1 },
       };
     }
 
@@ -160,6 +161,7 @@ export async function runAutonomousCoding(
     totalStats.edits += result.stats.edits;
     totalStats.bashRuns += result.stats.bashRuns;
     totalStats.grepSearches += result.stats.grepSearches;
+    totalStats.webFetches += result.stats.webFetches;
     totalStats.errors += result.stats.errors;
 
     const sub: SubtaskResult = {
@@ -215,5 +217,7 @@ export function summarizeStep(step: CodeChatStep): string {
       return `todos updated (${result.result.count} items, ${ms})`;
     case "symbols":
       return `find_symbol ${result.result.query} → ${result.result.matches.length} matches (${ms})`;
+    case "web":
+      return `web_fetch ${result.result.url} → ${result.result.status} (${result.result.byteLength}B${result.result.htmlExtracted ? ", html" : ""}, ${ms})`;
   }
 }
