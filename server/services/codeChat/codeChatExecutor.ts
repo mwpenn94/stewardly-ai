@@ -168,6 +168,39 @@ export interface DispatchExtras {
 }
 
 /**
+ * Pull a non-empty string out of `args[key]`. Returns null when the
+ * value is missing, isn't a string, or is empty/whitespace-only.
+ *
+ * Build-loop Pass 20: hardening the dispatcher boundary so a model
+ * that calls `read_file({})` or `read_file({ path: null })` gets a
+ * clean BAD_ARGS error instead of accidentally trying to read a
+ * file literally named "null" or "undefined" inside the workspace.
+ */
+function requireStringArg(
+  args: Record<string, unknown>,
+  key: string,
+): string | null {
+  const v = args[key];
+  if (typeof v !== "string") return null;
+  const trimmed = v.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Build a `BAD_ARGS` result for a missing required string argument.
+ */
+function badArgs(
+  field: string,
+  reason: string = "required and must be a non-empty string",
+): CodeToolResult {
+  return {
+    kind: "error",
+    error: `${field} ${reason}`,
+    code: "BAD_ARGS",
+  };
+}
+
+/**
  * Dispatch one tool call. Used both by the multi-turn executor below
  * and by the tRPC procedures that expose individual tools.
  */
@@ -179,7 +212,9 @@ export async function dispatchCodeTool(
   try {
     switch (call.name) {
       case "read_file": {
-        const r = await readFile(sandbox, String(call.args.path));
+        const path = requireStringArg(call.args, "path");
+        if (path === null) return badArgs("path");
+        const r = await readFile(sandbox, path);
         return { kind: "read", result: r };
       }
       case "multi_read": {
@@ -233,36 +268,56 @@ export async function dispatchCodeTool(
         return { kind: "multi_read", result: { files: entries, totalBytes, errors } };
       }
       case "write_file": {
-        const r = await writeFile(
-          sandbox,
-          String(call.args.path),
-          String(call.args.content ?? ""),
-        );
+        const path = requireStringArg(call.args, "path");
+        if (path === null) return badArgs("path");
+        // Content can be empty (writing an empty file is valid),
+        // so we only require it to be a string — not a non-empty
+        // one. null/undefined coalesce to "".
+        const content =
+          typeof call.args.content === "string" ? call.args.content : "";
+        const r = await writeFile(sandbox, path, content);
         return { kind: "write", result: r };
       }
       case "edit_file": {
+        const path = requireStringArg(call.args, "path");
+        if (path === null) return badArgs("path");
+        const oldString = requireStringArg(call.args, "oldString");
+        if (oldString === null) return badArgs("oldString");
+        // newString CAN be empty (deleting text is valid), so we
+        // accept empty strings here but reject non-string types.
+        const newString =
+          typeof call.args.newString === "string" ? call.args.newString : null;
+        if (newString === null) return badArgs("newString", "must be a string");
         const r = await editFile(
           sandbox,
-          String(call.args.path),
-          String(call.args.oldString ?? ""),
-          String(call.args.newString ?? ""),
+          path,
+          oldString,
+          newString,
           Boolean(call.args.replaceAll),
         );
         return { kind: "edit", result: r };
       }
       case "list_directory": {
-        const r = await listDirectory(sandbox, String(call.args.path ?? "."));
+        // path is OPTIONAL — defaults to "." for root listing.
+        const rawPath = call.args.path;
+        const path =
+          typeof rawPath === "string" && rawPath.trim().length > 0
+            ? rawPath.trim()
+            : ".";
+        const r = await listDirectory(sandbox, path);
         return { kind: "list", result: r };
       }
       case "grep_search": {
         // Use ripgrep via runBash if available; falls back to a simple
         // line-by-line scan if rg is missing. Only the public API
         // shape is committed here so the executor stays portable.
-        const pattern = String(call.args.pattern ?? "");
-        const path = String(call.args.path ?? ".");
-        if (!pattern) {
-          return { kind: "error", error: "pattern required", code: "BAD_ARGS" };
-        }
+        const pattern = requireStringArg(call.args, "pattern");
+        if (pattern === null) return badArgs("pattern");
+        const rawSearchPath = call.args.path;
+        const path =
+          typeof rawSearchPath === "string" && rawSearchPath.trim().length > 0
+            ? rawSearchPath.trim()
+            : ".";
         const cmd = `rg --json --max-count 50 -e ${shellQuote(pattern)} ${shellQuote(path)} 2>/dev/null || true`;
         const bash = await runBash(
           { ...sandbox, allowMutations: true /* read-only intent */ },
@@ -293,7 +348,9 @@ export async function dispatchCodeTool(
         };
       }
       case "run_bash": {
-        const r = await runBash(sandbox, String(call.args.command ?? ""));
+        const command = requireStringArg(call.args, "command");
+        if (command === null) return badArgs("command");
+        const r = await runBash(sandbox, command);
         return { kind: "bash", result: r };
       }
       case "glob_files": {
@@ -440,10 +497,8 @@ export async function dispatchCodeTool(
         // and rebuilds every 60s.
         const { getSymbolIndex } = await import("./symbolIndexCache");
         const { findSymbols, findExactName } = await import("./symbolIndex");
-        const name = String(call.args.name ?? "").trim();
-        if (!name) {
-          return { kind: "error", error: "name required", code: "BAD_ARGS" };
-        }
+        const name = requireStringArg(call.args, "name");
+        if (name === null) return badArgs("name");
         const exact = Boolean(call.args.exact);
         const limit = Math.min(Math.max(Number(call.args.limit ?? 20), 1), 100);
         const index = await getSymbolIndex(sandbox.workspaceRoot);

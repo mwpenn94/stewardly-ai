@@ -622,6 +622,140 @@ describe("Round B1 — codeChatExecutor", () => {
         expect(r.error).toContain("LLM upstream timeout");
       }
     });
+
+    // Build-loop Pass 20: input validation hardening
+    it("read_file rejects missing path with BAD_ARGS", async () => {
+      const r = await dispatchCodeTool(
+        { name: "read_file", args: {} },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("read_file rejects null path with BAD_ARGS", async () => {
+      const r = await dispatchCodeTool(
+        { name: "read_file", args: { path: null as unknown as string } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("read_file rejects whitespace-only path with BAD_ARGS", async () => {
+      const r = await dispatchCodeTool(
+        { name: "read_file", args: { path: "   " } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("read_file rejects non-string path with BAD_ARGS", async () => {
+      const r = await dispatchCodeTool(
+        { name: "read_file", args: { path: 42 as unknown as string } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("write_file accepts an empty content string", async () => {
+      const r = await dispatchCodeTool(
+        { name: "write_file", args: { path: "empty.txt", content: "" } },
+        sandboxRW(),
+      );
+      expect(r.kind).toBe("write");
+    });
+
+    it("write_file rejects missing path", async () => {
+      const r = await dispatchCodeTool(
+        { name: "write_file", args: { content: "x" } },
+        sandboxRW(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("edit_file rejects missing path / oldString", async () => {
+      const r1 = await dispatchCodeTool(
+        { name: "edit_file", args: { oldString: "x", newString: "y" } },
+        sandboxRW(),
+      );
+      expect(r1.kind).toBe("error");
+      if (r1.kind === "error") expect(r1.code).toBe("BAD_ARGS");
+
+      const r2 = await dispatchCodeTool(
+        { name: "edit_file", args: { path: "f.txt", newString: "y" } },
+        sandboxRW(),
+      );
+      expect(r2.kind).toBe("error");
+      if (r2.kind === "error") expect(r2.code).toBe("BAD_ARGS");
+    });
+
+    it("edit_file accepts an empty newString (deletion)", async () => {
+      await writeFile(sandboxRW(), "del.txt", "hello world");
+      const r = await dispatchCodeTool(
+        {
+          name: "edit_file",
+          args: { path: "del.txt", oldString: "world", newString: "" },
+        },
+        sandboxRW(),
+      );
+      expect(r.kind).toBe("edit");
+    });
+
+    it("edit_file rejects non-string newString", async () => {
+      await writeFile(sandboxRW(), "bad.txt", "hello");
+      const r = await dispatchCodeTool(
+        {
+          name: "edit_file",
+          args: {
+            path: "bad.txt",
+            oldString: "hello",
+            newString: 42 as unknown as string,
+          },
+        },
+        sandboxRW(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("list_directory accepts missing path (defaults to '.')", async () => {
+      const r = await dispatchCodeTool(
+        { name: "list_directory", args: {} },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("list");
+    });
+
+    it("grep_search rejects missing pattern", async () => {
+      const r = await dispatchCodeTool(
+        { name: "grep_search", args: {} },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("run_bash rejects missing command", async () => {
+      const r = await dispatchCodeTool(
+        { name: "run_bash", args: {} },
+        sandboxRW(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("find_symbol rejects missing name", async () => {
+      const r = await dispatchCodeTool(
+        { name: "find_symbol", args: {} },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
   });
 
   describe("executeCodeChat multi-turn", () => {
