@@ -27,7 +27,7 @@ import {
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
-  BookOpen, History, StickyNote, Brain, BarChart3,
+  BookOpen, History, StickyNote, Brain, BarChart3, Mic, MicOff,
 } from "lucide-react";
 import { toast } from "sonner";
 // Build-loop Pass 12 (G17): lazy-load popovers/panels that only
@@ -50,6 +50,13 @@ import SymbolMentionPopover, {
 import {
   replaceMentionWithCitation,
 } from "@/components/codeChat/symbolMentions";
+import {
+  isVoiceInputSupported,
+  createVoiceRecognizer,
+  spliceTranscript,
+  type VoiceRecognizer,
+  type VoiceRecognizerState,
+} from "@/components/codeChat/voiceInput";
 const KeyboardShortcutsOverlay = lazy(() => import("@/components/codeChat/KeyboardShortcutsOverlay"));
 const SessionsLibraryPopover = lazy(() => import("@/components/codeChat/SessionsLibraryPopover"));
 import {
@@ -417,6 +424,14 @@ function CodeChatInterface() {
     { query: symbolMentionQuery ?? "", limit: 12 },
     { enabled: symbolMentionQuery !== null && symbolMentionQuery.length >= 1, staleTime: 30_000 },
   );
+
+  // Build-loop Pass 17 (G13-UI): voice input state. The recognizer
+  // is created lazily on first mic press because constructing the
+  // SpeechRecognition object up front would prompt for the mic
+  // permission immediately.
+  const [voiceState, setVoiceState] = useState<VoiceRecognizerState>("idle");
+  const [voiceSupported] = useState<boolean>(() => isVoiceInputSupported());
+  const voiceRecognizerRef = useRef<VoiceRecognizer | null>(null);
 
   // Command history (up/down arrow)
   const [commandHistory, setCommandHistory] = useState<string[]>(() => {
@@ -1208,6 +1223,56 @@ function CodeChatInterface() {
     setMentionQuery(null);
     inputRef.current?.focus();
   }, []);
+
+  // Build-loop Pass 17 (G13-UI): voice input toggle. Lazy-creates
+  // the recognizer on first press so the browser mic permission
+  // prompt fires only when the user actually wants to dictate.
+  const handleVoiceToggle = useCallback(() => {
+    if (!voiceSupported) {
+      toast.error("Voice input is not supported in this browser");
+      return;
+    }
+    let rec = voiceRecognizerRef.current;
+    if (!rec) {
+      rec = createVoiceRecognizer({
+        continuous: true,
+        interimResults: true,
+        onStateChange: (s) => setVoiceState(s),
+        onTranscript: (text, isFinal) => {
+          if (!isFinal) return;
+          // Splice the final transcript into the input at the cursor.
+          setInput((prev) => {
+            const ta = inputRef.current;
+            const cursor = ta?.selectionStart ?? prev.length;
+            const out = spliceTranscript(prev, cursor, text.trim());
+            requestAnimationFrame(() => {
+              const t = inputRef.current;
+              if (t) {
+                t.focus();
+                t.setSelectionRange(out.cursor, out.cursor);
+              }
+            });
+            return out.next;
+          });
+        },
+        onError: (err) => {
+          if (err === "no-speech" || err === "aborted") return;
+          if (err === "not-allowed") {
+            toast.error("Microphone permission denied");
+          } else {
+            toast.error(`Voice input error: ${err}`);
+          }
+        },
+      });
+      voiceRecognizerRef.current = rec;
+    }
+    if (!rec) return;
+    if (voiceState === "listening" || voiceState === "starting") {
+      rec.stop();
+    } else {
+      rec.start();
+    }
+  }, [voiceSupported, voiceState]);
 
   // Build-loop Pass 13 (G23): symbol mention picker — pulls the
   // active mention state out of the ref, replaces it with a
@@ -2084,6 +2149,39 @@ function CodeChatInterface() {
             rows={1}
             disabled={isExecuting}
           />
+          {/* Build-loop Pass 17 (G13-UI): voice input mic button.
+              Hidden entirely when SpeechRecognition is unsupported
+              so Firefox/older browsers don't see a broken control.
+              Pulses with a chart-3 ring while listening. */}
+          {voiceSupported && !isExecuting && (
+            <Button
+              size="icon"
+              type="button"
+              onClick={handleVoiceToggle}
+              className={`h-10 w-10 rounded-full shrink-0 transition-all ${
+                voiceState === "listening" || voiceState === "starting"
+                  ? "bg-chart-3/30 text-chart-3 hover:bg-chart-3/40 ring-2 ring-chart-3/40 animate-pulse"
+                  : "bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+              }`}
+              aria-label={
+                voiceState === "listening"
+                  ? "Stop voice input"
+                  : "Start voice input"
+              }
+              aria-pressed={voiceState === "listening"}
+              title={
+                voiceState === "listening"
+                  ? "Stop dictating (click or press the button again)"
+                  : "Dictate via voice (browser SpeechRecognition)"
+              }
+            >
+              {voiceState === "listening" || voiceState === "starting" ? (
+                <Mic className="w-4 h-4" />
+              ) : (
+                <MicOff className="w-4 h-4" />
+              )}
+            </Button>
+          )}
           {isExecuting ? (
             <Button
               size="icon"

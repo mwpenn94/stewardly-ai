@@ -107,6 +107,18 @@ or Enter selects.
 
 ---
 
+## Voice input
+
+If your browser supports the Web Speech API (Chrome, Edge, Safari),
+the prompt bar shows a microphone button next to Send. Click it
+to dictate — the chat input streams interim transcripts as you
+speak and commits final phrases when you pause. Click again to
+stop. The button is hidden in browsers without SpeechRecognition
+support (Firefox).
+
+Continuous mode is on by default so you can speak multi-sentence
+prompts without re-pressing the button.
+
 ## @file mentions
 
 Type `@` followed by a fuzzy filename and Code Chat opens a popover
