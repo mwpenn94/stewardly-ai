@@ -148,7 +148,7 @@ export default function LearningTrackDetail() {
 
   return (
     <AppShell title={track.name ?? "Track"}>
-      <div className="mx-auto max-w-5xl p-6 space-y-6">
+      <div className="mx-auto max-w-5xl px-4 py-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
         <div>
           <Button
@@ -159,11 +159,11 @@ export default function LearningTrackDetail() {
           >
             <ArrowLeft className="h-4 w-4 mr-2" /> All tracks
           </Button>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="text-4xl">{track.emoji ?? "📘"}</div>
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="text-3xl sm:text-4xl shrink-0">{track.emoji ?? "📘"}</div>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
                   {track.title ?? track.name}
                 </h1>
                 {track.subtitle && (
@@ -171,26 +171,26 @@ export default function LearningTrackDetail() {
                     {track.subtitle}
                   </p>
                 )}
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline">{track.category}</Badge>
-                  <Badge variant="outline">{chapters.length} chapters</Badge>
-                  <Badge variant="outline">
-                    {flashcards.length} flashcards
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2">
+                  <Badge variant="outline" className="text-[10px] sm:text-xs">{track.category}</Badge>
+                  <Badge variant="outline" className="text-[10px] sm:text-xs">{chapters.length} ch.</Badge>
+                  <Badge variant="outline" className="text-[10px] sm:text-xs">
+                    {flashcards.length} cards
                   </Badge>
-                  <Badge variant="outline">
-                    {questions.length} practice questions
+                  <Badge variant="outline" className="text-[10px] sm:text-xs">
+                    {questions.length} Qs
                   </Badge>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col gap-2 shrink-0">
+            <div className="flex sm:flex-col gap-2 shrink-0">
               <Link href={`/learning/tracks/${track.slug}/study`}>
                 <Button
                   size="sm"
                   disabled={flashcards.length === 0}
-                  className="w-full"
+                  className="w-full text-xs sm:text-sm"
                 >
-                  <Sparkles className="h-4 w-4 mr-2" /> Study flashcards
+                  <Sparkles className="h-4 w-4 mr-1 sm:mr-2" /> Study flashcards
                 </Button>
               </Link>
               <Link href={`/learning/tracks/${track.slug}/quiz`}>
@@ -198,9 +198,9 @@ export default function LearningTrackDetail() {
                   size="sm"
                   variant="outline"
                   disabled={questions.length === 0}
-                  className="w-full"
+                  className="w-full text-xs sm:text-sm"
                 >
-                  <Play className="h-4 w-4 mr-2" /> Take quiz
+                  <Play className="h-4 w-4 mr-1 sm:mr-2" /> Take quiz
                 </Button>
               </Link>
             </div>

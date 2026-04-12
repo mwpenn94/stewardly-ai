@@ -2611,6 +2611,60 @@ export default function Chat() {
                 )}
               </div>
 
+              {/* Inline media shortcuts — always visible for quick access */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="p-2 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all hidden sm:block"
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Attach file"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Attach file</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="p-2 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all hidden sm:block"
+                    onClick={() => imageInputRef.current?.click()}
+                    aria-label="Attach image"
+                  >
+                    <Image className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Attach image</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={`p-2 rounded-full transition-all hidden sm:block ${
+                      liveSessionMode === "screen" ? "bg-red-500/15 text-red-400" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setLiveSessionMode(liveSessionMode === "screen" ? null : "screen")}
+                    aria-label={liveSessionMode === "screen" ? "End screen share" : "Share screen"}
+                  >
+                    <Monitor className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{liveSessionMode === "screen" ? "End screen share" : "Share screen"}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={`p-2 rounded-full transition-all hidden sm:block ${
+                      liveSessionMode === "camera" ? "bg-red-500/15 text-red-400" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setLiveSessionMode(liveSessionMode === "camera" ? null : "camera")}
+                    aria-label={liveSessionMode === "camera" ? "End video" : "Start video"}
+                  >
+                    <Video className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{liveSessionMode === "camera" ? "End video session" : "Go live — Video"}</TooltipContent>
+              </Tooltip>
+
               {/* Mode dropdown — Copilot "Smart v" style */}
               <div className="relative" data-tour="focus-mode">
                   <button

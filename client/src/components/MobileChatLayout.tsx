@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Switch } from "@/components/ui/switch";
 import {
   SlidersHorizontal, Send, Menu, MessageSquare, Repeat, Brain, Code, Mic, MicOff,
@@ -149,7 +150,10 @@ export default function MobileChatLayout({
       </div>
 
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="w-[85vw] max-w-sm p-0">{conversationSidebar}</SheetContent>
+        <SheetContent side="left" className="w-[85vw] max-w-sm p-0">
+          <VisuallyHidden asChild><SheetTitle>Conversations</SheetTitle></VisuallyHidden>
+          {conversationSidebar}
+        </SheetContent>
       </Sheet>
     </div>
   );

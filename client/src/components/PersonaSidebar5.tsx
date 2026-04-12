@@ -18,7 +18,8 @@ import {
   Search, Plus, PanelLeftClose, PanelLeft,
   ChevronDown, Pin, Compass, Scale,
 } from "lucide-react";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 type Role = "guest" | "user" | "advisor" | "manager" | "admin";
 
@@ -293,6 +294,7 @@ export default function PersonaSidebar5({
       {onMobileChange && (
         <Sheet open={mobileOpen} onOpenChange={onMobileChange}>
           <SheetContent side="left" className="w-[280px] p-0">
+            <VisuallyHidden asChild><SheetTitle>Navigation</SheetTitle></VisuallyHidden>
             <SidebarInner {...inner} collapsed={false} onNavigate={() => onMobileChange(false)} />
           </SheetContent>
         </Sheet>
