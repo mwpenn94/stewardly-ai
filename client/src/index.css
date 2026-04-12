@@ -81,17 +81,23 @@
   --secondary-foreground: oklch(0.9 0.006 80);
 
   /* Muted */
+  /* Build Loop Pass 14 (G46): bumped muted-foreground from oklch 0.62
+     to 0.68 so muted text hits WCAG AA (4.5:1) against --card
+     (oklch 0.175). Prior value measured ~4.1:1 with the
+     Stewardship Gold hue. */
   --muted: oklch(0.22 0.02 255);
-  --muted-foreground: oklch(0.62 0.014 80);
+  --muted-foreground: oklch(0.68 0.014 80);
 
   /* Accent: Stewardship Gold (same as primary so `bg-accent`/`text-accent`
      across the codebase automatically picks up the new identity) */
   --accent: oklch(0.76 0.14 80);
   --accent-foreground: oklch(0.14 0.022 255);
 
-  /* Destructive: rose (unchanged — still the universal "danger" signal) */
-  --destructive: oklch(0.62 0.22 15);
-  --destructive-foreground: oklch(0.95 0.005 255);
+  /* Destructive: rose — Build Loop Pass 14 (G46) bumped lightness
+     from 0.62 → 0.68 so text-destructive hits WCAG AA on card
+     backgrounds (prev ~3.9:1 → now ~4.6:1 with the gold undertone). */
+  --destructive: oklch(0.68 0.22 15);
+  --destructive-foreground: oklch(0.98 0.005 255);
 
   /* Borders & inputs — warmer with gold undertone */
   --border: oklch(0.26 0.02 265);
@@ -119,6 +125,251 @@
 
 .dark {
   /* Same as root — dark by default */
+}
+
+/*
+  Build Loop Pass 4 (G2 / G9 / G51) — LIGHT THEME
+  The root tokens above are deep-navy Stewardship Gold in dark mode. The
+  .light class flips the base layer to a warm cream (oklch 0.98) with a
+  slightly deeper gold (keeping the brand accent consistent across modes)
+  and cranks foreground contrast to 0.18 for WCAG AAA on body text.
+
+  Rule of thumb: any token that's a NEUTRAL (background / card / popover /
+  secondary / border / input / sidebar) flips to a light equivalent here.
+  The semantic accents (primary / accent / destructive / chart-*) stay
+  close to their dark-mode values so the Stewardship Gold identity is
+  unmistakably the same brand in either mode.
+
+  Activation: AppearanceTab writes `wb_theme` to localStorage; the
+  ThemeProvider reads it on mount and toggles `.light` on the
+  documentElement. `system` mode defers to `prefers-color-scheme`.
+*/
+.light {
+  --background: oklch(0.985 0.008 90);        /* warm cream, not pure white */
+  --foreground: oklch(0.18 0.018 255);        /* deep navy text — AAA vs cream */
+
+  --card: oklch(1 0.004 95);                  /* near-white with warm tint */
+  --card-foreground: oklch(0.18 0.018 255);
+
+  --popover: oklch(1 0.004 95);
+  --popover-foreground: oklch(0.18 0.018 255);
+
+  /* Primary: slightly deeper gold for contrast vs light bg */
+  --primary: oklch(0.6 0.16 78);
+  --primary-foreground: oklch(0.99 0.006 95);
+
+  --secondary: oklch(0.94 0.014 85);          /* soft cream card shade */
+  --secondary-foreground: oklch(0.22 0.02 255);
+
+  --muted: oklch(0.93 0.012 85);
+  --muted-foreground: oklch(0.45 0.02 255);   /* AAA on cream */
+
+  /* Accent matches primary so bg-accent / text-accent stay consistent */
+  --accent: oklch(0.6 0.16 78);
+  --accent-foreground: oklch(0.99 0.006 95);
+
+  --destructive: oklch(0.55 0.22 15);
+  --destructive-foreground: oklch(0.99 0.005 95);
+
+  --border: oklch(0.88 0.014 85);             /* subtle gold-tinted border */
+  --input: oklch(0.92 0.012 85);
+  --ring: oklch(0.6 0.16 78);
+
+  --chart-1: oklch(0.6 0.16 78);              /* gold — still leads */
+  --chart-2: oklch(0.5 0.17 160);             /* emerald (darker vs cream) */
+  --chart-3: oklch(0.55 0.16 230);            /* sky (darker vs cream) */
+  --chart-4: oklch(0.55 0.22 15);             /* rose (darker vs cream) */
+  --chart-5: oklch(0.5 0.15 300);             /* purple (darker vs cream) */
+
+  --sidebar: oklch(0.96 0.01 85);
+  --sidebar-foreground: oklch(0.2 0.018 255);
+  --sidebar-primary: oklch(0.6 0.16 78);
+  --sidebar-primary-foreground: oklch(0.99 0.006 95);
+  --sidebar-accent: oklch(0.93 0.012 85);
+  --sidebar-accent-foreground: oklch(0.22 0.02 255);
+  --sidebar-border: oklch(0.88 0.014 85);
+  --sidebar-ring: oklch(0.6 0.16 78);
+}
+
+/* Build Loop Pass 4 — disable the warm navy vignette in light mode so we
+   don't stack gold glows on top of cream. */
+.light body {
+  background-image: radial-gradient(ellipse at 0% 0%, oklch(0.6 0.16 78 / 0.06) 0%, transparent 45%),
+                    radial-gradient(ellipse at 100% 100%, oklch(0.6 0.16 78 / 0.04) 0%, transparent 45%);
+}
+
+/*
+  Build Loop Pass 4 — font scale + chat density utilities.
+
+  AppearanceTab used to write `wb_font_size` / `wb_chat_density` keys that
+  nothing consumed. These CSS vars make the preferences real:
+  - `--font-scale` multiplies root font-size so Tailwind's rem-based
+    spacing scales consistently.
+  - `--chat-density-scale` is consumed by Chat message padding utilities.
+
+  Defaults (1x) are identity-safe so no visual regression on existing
+  users who haven't touched AppearanceTab.
+*/
+:root {
+  --font-scale: 1;
+  --chat-density-scale: 1;
+}
+
+html {
+  font-size: calc(16px * var(--font-scale));
+}
+
+/*
+  Build Loop Pass 4 — font-scale opt-in classes for users who explicitly
+  pick a size in AppearanceTab. Body tag classes so we don't wrestle with
+  Tailwind's `html` default.
+*/
+body.font-scale-compact       { --font-scale: 0.9; }
+body.font-scale-default       { --font-scale: 1; }
+body.font-scale-comfortable   { --font-scale: 1.1; }
+body.font-scale-large         { --font-scale: 1.2; }
+body.font-scale-xlarge        { --font-scale: 1.35; }
+
+body.chat-density-compact     { --chat-density-scale: 0.8; }
+body.chat-density-default     { --chat-density-scale: 1; }
+body.chat-density-spacious    { --chat-density-scale: 1.25; }
+
+/*
+  Build Loop Pass 4 — user-level reduced motion override. The @media
+  (prefers-reduced-motion: reduce) rule already handles OS-level opt-in;
+  this class lets AppearanceTab force-enable it for users who want the
+  animations off even when their OS setting is "no preference".
+*/
+body.reduced-motion-user *,
+body.reduced-motion-user *::before,
+body.reduced-motion-user *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/*
+  Build Loop Pass 4 — prefers-contrast: more override (G10).
+  Bumps border + foreground contrast to AAA levels for users with
+  reduced-contrast perception or high-contrast system settings.
+*/
+@media (prefers-contrast: more) {
+  :root {
+    --border: oklch(0.4 0.02 255);
+    --muted-foreground: oklch(0.78 0.014 80);
+  }
+  .light {
+    --border: oklch(0.68 0.02 255);
+    --muted-foreground: oklch(0.28 0.02 255);
+  }
+}
+
+/*
+  Build Loop Pass 4 — forced-colors mode (G11) for Windows High Contrast.
+  Override --ring / --border / --foreground with system colors so the app
+  is still fully operable when Windows forces a custom palette.
+*/
+@media (forced-colors: active) {
+  :root, .light {
+    --border: CanvasText;
+    --foreground: CanvasText;
+    --background: Canvas;
+    --ring: Highlight;
+    --primary: Highlight;
+    --accent: Highlight;
+  }
+  :focus-visible {
+    outline: 2px solid Highlight !important;
+    box-shadow: none !important;
+  }
+}
+
+/*
+  Build Loop Pass 10 (G13) — color-blind mode.
+  When body has `color-blind-mode`:
+  - Every element with a semantic status class gets a PATTERN
+    adornment in addition to its color, so users who can't
+    distinguish red/green still see a shape difference.
+  - Focus-visible rings get bumped 1 step to 3px so the focus
+    indicator doesn't rely on hue alone.
+  - Chart-2 (emerald) gets a slight hue shift away from chart-3
+    (sky) so deuteranopia users can still distinguish them.
+*/
+body.color-blind-mode :focus-visible {
+  box-shadow:
+    0 0 0 3px var(--background),
+    0 0 0 6px oklch(0.76 0.14 80 / 0.75),
+    0 0 14px 3px oklch(0.76 0.14 80 / 0.25) !important;
+}
+
+/* Status indicator adornments — add a suffix glyph after semantic badges */
+body.color-blind-mode [data-status="success"]::after,
+body.color-blind-mode .bg-emerald-500\/10::after,
+body.color-blind-mode .text-emerald::after {
+  content: " ✓";
+  font-weight: 700;
+  margin-left: 0.125rem;
+}
+body.color-blind-mode [data-status="error"]::after,
+body.color-blind-mode .bg-destructive\/10::after,
+body.color-blind-mode .text-destructive::after {
+  content: " ✕";
+  font-weight: 700;
+  margin-left: 0.125rem;
+}
+body.color-blind-mode [data-status="warning"]::after,
+body.color-blind-mode .bg-amber-500\/10::after,
+body.color-blind-mode .text-amber::after {
+  content: " !";
+  font-weight: 700;
+  margin-left: 0.125rem;
+}
+
+/* Deuteranopia (red/green weakness — ~4.5% of men): shift emerald
+   toward teal so it separates cleanly from the gold accent. */
+body.color-blind-deuteranopia,
+body.color-blind-all {
+  --chart-2: oklch(0.68 0.16 180);   /* Teal instead of emerald */
+  --chart-4: oklch(0.62 0.22 30);    /* Orange instead of rose */
+}
+
+/* Protanopia (red blindness — ~1% of men): similar treatment +
+   stronger blue shift for chart-3. */
+body.color-blind-protanopia {
+  --chart-2: oklch(0.68 0.16 180);   /* Teal */
+  --chart-3: oklch(0.68 0.18 240);   /* Deeper blue */
+  --chart-4: oklch(0.68 0.18 40);    /* Orange */
+}
+
+/* Tritanopia (blue weakness — rare): shift sky + emerald so they
+   don't collapse toward each other. */
+body.color-blind-tritanopia {
+  --chart-2: oklch(0.68 0.17 155);
+  --chart-3: oklch(0.62 0.2 340);    /* Magenta instead of sky */
+}
+
+/*
+  Build Loop Pass 10 (G66) — disabled button contrast.
+  shadcn/ui's default `disabled:opacity-50` drops contrast below
+  WCAG AA (4.5:1) against most card backgrounds. We bump it to
+  ~65% so disabled text stays legible, AND add an explicit dashed
+  border pattern so color-blind users still see the disabled state.
+*/
+button:disabled,
+[type="button"]:disabled,
+[type="submit"]:disabled,
+[type="reset"]:disabled,
+[role="button"][aria-disabled="true"] {
+  opacity: 0.65 !important;
+  cursor: not-allowed;
+}
+body.color-blind-mode button:disabled,
+body.color-blind-mode [type="button"]:disabled,
+body.color-blind-mode [type="submit"]:disabled,
+body.color-blind-mode [type="reset"]:disabled,
+body.color-blind-mode [role="button"][aria-disabled="true"] {
+  border-style: dashed !important;
 }
 
 @layer base {

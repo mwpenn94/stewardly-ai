@@ -173,6 +173,14 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, currentPage: location }));
   }, [location]);
 
+  // Pass 6 (G15 / G25 / G26): keyboard shortcut event bus. Shift+V and
+  // Shift+R (from useKeyboardShortcuts) fire these window events; the
+  // PIL provider handles them centrally so the shortcut works on every
+  // page. The `actions` closure below holds the real implementations —
+  // we bind them through a ref to avoid stale-closure bugs when the
+  // shortcut fires during a state transition.
+  const actionsRef = useRef<PILActions | null>(null);
+
   useEffect(() => {
     const onResize = () => {
       const w = window.innerWidth;
@@ -228,9 +236,50 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Pass 5 (G5): voice command vocabulary beyond navigation.
+    // Dispatch global events that the active page can listen for.
+    // Chat.tsx wires send / new_chat / palette / undo into its own
+    // handlers; any other page can subscribe similarly without
+    // changing PIL.
+
+    // "send" / "send it" / "submit" — fire the send event.
+    if (/^(send|send it|submit|go)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("pil:send"));
+      return;
+    }
+    // "new chat" / "new conversation" / "start over"
+    if (/^(new chat|new conversation|start over|blank slate)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("pil:new-chat"));
+      return;
+    }
+    // "open palette" / "search" / "command palette"
+    if (/^(open palette|command palette|open command|search|find)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("toggle-command-palette"));
+      return;
+    }
+    // "undo" — maps to the edit history ring buffer on pages that have one
+    if (/^(undo|take it back|revert)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("pil:undo"));
+      return;
+    }
+    // "cancel" — abort whatever is in flight (same as stop-stream)
+    if (/^(cancel|abort|never mind|forget it)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("pil:stop-stream"));
+      audioCompanion.pause();
+      return;
+    }
+
     // Level 2: Audio commands
     if (/^(pause|stop|hold on)$/i.test(normalized)) {
       audioCompanion.pause();
+      // Pass 5 (G61 — voice "stop" must actually stop everything):
+      // prior to this the command only paused TTS; SSE streaming kept
+      // running in the background and interleaved the user's next
+      // answer with the abandoned response. Emit a global event any
+      // streaming consumer can listen for — Chat.tsx handles it by
+      // calling streamAbortRef.current?.abort() in its `stop`
+      // listener.
+      window.dispatchEvent(new CustomEvent("pil:stop-stream"));
       return;
     }
     if (/^(resume|continue|play|keep going)$/i.test(normalized)) {
@@ -277,11 +326,12 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Level 5: If nothing matched and source is voice
+    // Level 5: If nothing matched and source is voice — dispatch the
+    // designed "voice.not_understood" spec (toast + gentle spoken retry).
     if (source === "voice") {
-      speakShort("I didn't catch that. Try again?");
+      giveFeedback("voice.not_understood");
     }
-  }, [navigate, state.modalityPref, audioCompanion]);
+  }, [navigate, state.modalityPref, audioCompanion, giveFeedback]);
 
   /* ── Voice listening ─────────────────────────────────────── */
 
@@ -312,15 +362,27 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setState(prev => ({ ...prev, voiceListening: true }));
-  }, [processIntent, state.handsFreeActive]);
+    try {
+      recognition.start();
+      setState(prev => ({ ...prev, voiceListening: true }));
+      // Pass 1: dispatch designed "voice.listening_started" spec so the
+      // mic-pulse animation + earcon actually fire for PIL hands-free path.
+      giveFeedback("voice.listening_started");
+    } catch (startErr) {
+      // start() can throw in some Safari versions or when a prior instance
+      // hasn't fully released the mic — fail safe instead of crashing.
+      console.warn("[PIL] voice start failed:", startErr);
+      recognitionRef.current = null;
+    }
+  }, [processIntent, state.handsFreeActive, giveFeedback]);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
     recognitionRef.current = null;
     setState(prev => ({ ...prev, voiceListening: false }));
-  }, []);
+    // Pass 1: dispatch designed "voice.listening_stopped" spec.
+    giveFeedback("voice.listening_stopped");
+  }, [giveFeedback]);
 
   /* ── Actions ─────────────────────────────────────────────── */
 
@@ -331,7 +393,13 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     setModalityPref: (pref) => setState(prev => ({ ...prev, modalityPref: pref })),
 
     enterHandsFree: () => {
-      SOUNDS.mode_activate();
+      // Pass 1 (multisensory build loop — G54): route through the dispatcher
+      // instead of calling SOUNDS/speakShort directly so the designed
+      // multimodal feedback spec ("handsfree.activated") is consistent with
+      // every other feedback path in the app. Keep the "onboarding" prompt
+      // line as a dedicated speak call because the spec is a short earcon
+      // only; users need the verbal affordance the first time they activate.
+      giveFeedback("handsfree.activated");
       setState(prev => ({ ...prev, handsFreeActive: true, modalityPref: "both" }));
       startListening();
       setTimeout(() => {
@@ -340,7 +408,7 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     },
 
     exitHandsFree: () => {
-      SOUNDS.mode_deactivate();
+      giveFeedback("handsfree.deactivated");
       stopListening();
       audioCompanion.pause();
       setState(prev => ({ ...prev, handsFreeActive: false, modalityPref: "both" }));
@@ -350,6 +418,44 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     speak: speakShort,
     playSound: (soundId) => SOUNDS[soundId]?.(),
   };
+
+  // Pass 6: keep the ref in sync so window-event handlers always hit
+  // the latest actions, and wire the listeners once on mount.
+  actionsRef.current = actions;
+  useEffect(() => {
+    const onToggle = () => {
+      const current = actionsRef.current;
+      if (!current) return;
+      if (state.handsFreeActive) current.exitHandsFree();
+      else current.enterHandsFree();
+    };
+    const onReadPage = () => {
+      const current = actionsRef.current;
+      if (!current) return;
+      // `readCurrentPage` is on AudioCompanion, not PIL. The existing
+      // processIntent voice path uses the same call — here we hit it
+      // via the same module.
+      audioCompanion.readCurrentPage?.();
+    };
+    // Build Loop Pass 10 (G7): PushToTalkButton dispatches pil:send-
+    // feedback so it can trigger designed feedback specs without
+    // importing the PIL context (and dragging the whole provider into
+    // a static button).
+    const onSendFeedback = (e: Event) => {
+      const current = actionsRef.current;
+      if (!current) return;
+      const detail = (e as CustomEvent).detail;
+      if (detail?.key) current.giveFeedback(detail.key, detail?.data);
+    };
+    window.addEventListener("pil:toggle-handsfree", onToggle);
+    window.addEventListener("pil:read-page", onReadPage);
+    window.addEventListener("pil:send-feedback", onSendFeedback);
+    return () => {
+      window.removeEventListener("pil:toggle-handsfree", onToggle);
+      window.removeEventListener("pil:read-page", onReadPage);
+      window.removeEventListener("pil:send-feedback", onSendFeedback);
+    };
+  }, [state.handsFreeActive, audioCompanion]);
 
   return (
     <PILCtx.Provider value={{ ...state, ...actions }}>

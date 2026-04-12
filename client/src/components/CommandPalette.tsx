@@ -1,15 +1,32 @@
 /**
  * CommandPalette — Global search & navigation overlay (Ctrl+K / Cmd+K).
  *
- * Searches across:
- *  - Pages & navigation (static list from sidebar)
- *  - Quick actions (new conversation, settings, etc.)
- *  - Recent conversations (via trpc.conversations.search)
+ * Build Loop Pass 7 (G14 / G33 / G52 / G67):
+ *
+ * Before: PAGES was a 21-entry hardcoded list that drifted from
+ * navigation.ts by ~15 routes. Users searching for "Code Chat",
+ * "Workflows", "Financial Twin", "Consensus", "Achievements",
+ * "My Work", "Learning", or any /settings/* sub-route found nothing —
+ * even though the routes existed in the app. The list also didn't
+ * filter by role so regular users saw "Global Admin" and "Manager
+ * Dashboard" entries that led to 403 pages.
+ *
+ * After:
+ *   1. PAGES is derived from TOOLS_NAV + ADMIN_NAV + UTILITY_NAV + a
+ *      small set of "extra" entries for routes that don't have a
+ *      sidebar entry (audio settings, consensus, achievements, etc.).
+ *   2. hasMinRole() filters entries so users only see what they can
+ *      actually access.
+ *   3. Shortcut hints only render for routes that match the 6 wired
+ *      g-chords in useKeyboardShortcuts.ts (G C, G H, G S, G I, G L,
+ *      G O). G53 fix: no more lies about G R / G M / G D / G N / G A.
+ *   4. Recent pages still surface at the top when the query is empty.
  *
  * Uses the shadcn/ui Command (cmdk) primitives for accessible,
  * keyboard-driven interaction.
  */
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { usePushToTalk } from "@/hooks/usePushToTalk";
 import { useLocation } from "wouter";
 import {
   CommandDialog,
@@ -22,49 +39,100 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import {
-  MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
-  Link2, HeartPulse, RefreshCw, Activity, Briefcase, Building2,
-  BarChart3, Globe, Wrench, HelpCircle, Settings, Plus, Search,
-  Keyboard, History, Sparkles, ArrowRight, Calculator, Shield, Clock,
+  MessageSquare,
+  Zap,
+  Brain,
+  Package,
+  Users,
+  TrendingUp,
+  FileText,
+  Link2,
+  HeartPulse,
+  RefreshCw,
+  Activity,
+  Briefcase,
+  Building2,
+  BarChart3,
+  Globe,
+  Wrench,
+  HelpCircle,
+  Settings,
+  Plus,
+  Search,
+  Keyboard,
+  History,
+  Mic,
+  MicOff,
+  Sparkles,
+  ArrowRight,
+  Calculator,
+  Shield,
+  Clock,
+  AudioLines,
+  Fingerprint,
+  Award,
+  GitBranch,
+  LayoutDashboard,
+  Users2,
+  Database,
+  Target,
+  GraduationCap,
+  BookOpen,
+  Bot,
+  Terminal,
+  Scale,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRecentPages } from "@/hooks/useRecentPages";
+import { hasMinRole, type UserRole } from "@/lib/navigation";
+import { playEarconById } from "@/lib/earcons";
+import {
+  buildPages,
+  type PageEntry,
+} from "./commandPaletteData";
 
-// ── Static page entries ─────────────────────────────────────────────
+// ── Icon mapping (shared with AppShell's ICON_MAP) ──────────────────
 
-interface PageEntry {
-  label: string;
-  href: string;
-  icon: React.ReactNode;
-  keywords: string[];
-  shortcut?: string;
+const ICON_MAP: Record<string, React.ReactNode> = {
+  MessageSquare: <MessageSquare className="w-4 h-4" />,
+  Zap: <Zap className="w-4 h-4" />,
+  Brain: <Brain className="w-4 h-4" />,
+  Package: <Package className="w-4 h-4" />,
+  Users: <Users className="w-4 h-4" />,
+  TrendingUp: <TrendingUp className="w-4 h-4" />,
+  FileText: <FileText className="w-4 h-4" />,
+  Link2: <Link2 className="w-4 h-4" />,
+  HeartPulse: <HeartPulse className="w-4 h-4" />,
+  RefreshCw: <RefreshCw className="w-4 h-4" />,
+  Activity: <Activity className="w-4 h-4" />,
+  Briefcase: <Briefcase className="w-4 h-4" />,
+  Building2: <Building2 className="w-4 h-4" />,
+  BarChart3: <BarChart3 className="w-4 h-4" />,
+  Globe: <Globe className="w-4 h-4" />,
+  Wrench: <Wrench className="w-4 h-4" />,
+  BookOpen: <BookOpen className="w-4 h-4" />,
+  HelpCircle: <HelpCircle className="w-4 h-4" />,
+  Settings: <Settings className="w-4 h-4" />,
+  GraduationCap: <GraduationCap className="w-4 h-4" />,
+  Sparkles: <Sparkles className="w-4 h-4" />,
+  Shield: <Shield className="w-4 h-4" />,
+  Bot: <Bot className="w-4 h-4" />,
+  Terminal: <Terminal className="w-4 h-4" />,
+  Calculator: <Calculator className="w-4 h-4" />,
+  LayoutDashboard: <LayoutDashboard className="w-4 h-4" />,
+  Users2: <Users2 className="w-4 h-4" />,
+  Database: <Database className="w-4 h-4" />,
+  Target: <Target className="w-4 h-4" />,
+  Fingerprint: <Fingerprint className="w-4 h-4" />,
+  Award: <Award className="w-4 h-4" />,
+  GitBranch: <GitBranch className="w-4 h-4" />,
+};
+
+function iconFor(name?: string): React.ReactNode {
+  return (name && ICON_MAP[name]) || <Zap className="w-4 h-4" />;
 }
-
-const PAGES: PageEntry[] = [
-  { label: "Chat", href: "/chat", icon: <MessageSquare className="w-4 h-4" />, keywords: ["conversation", "ai", "advisor", "ask"], shortcut: "G C" },
-  { label: "Operations Hub", href: "/operations", icon: <Zap className="w-4 h-4" />, keywords: ["ops", "workflows", "compliance", "agentic"], shortcut: "G O" },
-  { label: "Intelligence Hub", href: "/intelligence-hub", icon: <Brain className="w-4 h-4" />, keywords: ["models", "analytics", "data", "ai"], shortcut: "G I" },
-  { label: "Advisory Hub", href: "/advisory", icon: <Package className="w-4 h-4" />, keywords: ["insurance", "estate", "planning", "products"], shortcut: "G A" },
-  { label: "Relationships", href: "/relationships", icon: <Users className="w-4 h-4" />, keywords: ["clients", "contacts", "crm", "meetings"], shortcut: "G R" },
-  { label: "Market Data", href: "/market-data", icon: <TrendingUp className="w-4 h-4" />, keywords: ["stocks", "quotes", "economic", "fred"], shortcut: "G M" },
-  { label: "Documents", href: "/documents", icon: <FileText className="w-4 h-4" />, keywords: ["files", "knowledge", "upload"], shortcut: "G D" },
-  { label: "Integrations", href: "/integrations", icon: <Link2 className="w-4 h-4" />, keywords: ["connect", "plaid", "snaptrade", "api"], shortcut: "G N" },
-  { label: "Settings", href: "/settings/profile", icon: <Settings className="w-4 h-4" />, keywords: ["profile", "preferences", "account"], shortcut: "G S" },
-  { label: "Help & Support", href: "/help", icon: <HelpCircle className="w-4 h-4" />, keywords: ["faq", "support", "guide", "tour"], shortcut: "G H" },
-  { label: "Calculators", href: "/calculators", icon: <Calculator className="w-4 h-4" />, keywords: ["retirement", "mortgage", "compound", "tax"] },
-  { label: "Products", href: "/products", icon: <Package className="w-4 h-4" />, keywords: ["insurance", "annuity", "fund"] },
-  { label: "Integration Health", href: "/integration-health", icon: <HeartPulse className="w-4 h-4" />, keywords: ["status", "uptime", "monitoring"] },
-  { label: "Passive Actions", href: "/passive-actions", icon: <RefreshCw className="w-4 h-4" />, keywords: ["automation", "background", "tasks"] },
-  { label: "My Progress", href: "/proficiency", icon: <Activity className="w-4 h-4" />, keywords: ["learning", "proficiency", "skills"] },
-  { label: "Portal", href: "/portal", icon: <Briefcase className="w-4 h-4" />, keywords: ["advisor", "dashboard"] },
-  { label: "Organizations", href: "/organizations", icon: <Building2 className="w-4 h-4" />, keywords: ["firm", "team", "company"] },
-  { label: "Manager Dashboard", href: "/manager", icon: <BarChart3 className="w-4 h-4" />, keywords: ["oversight", "reports", "team"] },
-  { label: "Global Admin", href: "/admin", icon: <Globe className="w-4 h-4" />, keywords: ["admin", "system", "platform"] },
-  { label: "Improvement Engine", href: "/improvement", icon: <Wrench className="w-4 h-4" />, keywords: ["improve", "feedback", "optimize"] },
-  { label: "Changelog", href: "/changelog", icon: <History className="w-4 h-4" />, keywords: ["updates", "releases", "whats new", "version"] },
-];
 
 // ── Quick actions ───────────────────────────────────────────────────
 
@@ -91,23 +159,40 @@ const ACTIONS: ActionEntry[] = [
   {
     label: "Keyboard shortcuts",
     icon: <Keyboard className="w-4 h-4" />,
-    keywords: ["hotkeys", "keys", "shortcuts"],
+    keywords: ["hotkeys", "keys", "shortcuts", "help"],
     action: () => {
-      // Dispatch a "?" keypress to open the shortcuts overlay
-      window.dispatchEvent(new KeyboardEvent("keydown", { key: "?", bubbles: true }));
+      // Pass 8 (G68 — focus trap stack conflict): dispatch a dedicated
+      // `toggle-help` event instead of synthesizing a `?` keypress.
+      // CommandPalette's onSelect handler already calls setOpen(false)
+      // synchronously before running this action, so by the time the
+      // browser mounts KeyboardShortcutsOverlay the palette's focus
+      // trap has fully unwound and no two dialogs compete for focus.
+      // Defer to a microtask so the palette's close animation starts
+      // first — even a 0ms timeout is enough for the focus-trap stack
+      // to unwind.
+      setTimeout(() => {
+        document.dispatchEvent(new CustomEvent("toggle-help"));
+      }, 0);
+    },
+  },
+  // Pass 7 (G5 extension): multisensory actions exposed in the palette
+  // so keyboard-only users can trigger them without memorizing hotkeys.
+  {
+    label: "Toggle hands-free voice",
+    icon: <AudioLines className="w-4 h-4" />,
+    keywords: ["voice", "mic", "handsfree", "listen", "shift v"],
+    action: () => {
+      const onChat = typeof window !== "undefined" && window.location?.pathname?.startsWith("/chat");
+      window.dispatchEvent(
+        new CustomEvent(onChat ? "chat:toggle-handsfree" : "pil:toggle-handsfree"),
+      );
     },
   },
   {
-    label: "AI Tuning",
-    icon: <Sparkles className="w-4 h-4" />,
-    keywords: ["personalize", "tune", "model", "cascade"],
-    action: (navigate) => navigate("/settings/ai-tuning"),
-  },
-  {
-    label: "Financial Profile",
-    icon: <Shield className="w-4 h-4" />,
-    keywords: ["suitability", "risk", "assessment"],
-    action: (navigate) => navigate("/settings/suitability"),
+    label: "Read current page aloud",
+    icon: <AudioLines className="w-4 h-4" />,
+    keywords: ["tts", "narrate", "read", "speak", "shift r"],
+    action: () => window.dispatchEvent(new CustomEvent("pil:read-page")),
   },
 ];
 
@@ -132,6 +217,15 @@ export function CommandPalette() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const isAuthenticated = !!user && user.authTier !== "anonymous";
+  const userRole = (user?.role as UserRole) || "user";
+
+  // Pass 7 (G33 / G67): build pages from navigation.ts + filter by role.
+  // useMemo so the filter runs only when the role changes, not on every
+  // keystroke.
+  const pages = useMemo<PageEntry[]>(() => {
+    const all = buildPages();
+    return all.filter((p) => hasMinRole(userRole, p.minRole));
+  }, [userRole]);
 
   // Debounce search query for conversation search
   const debouncedQuery = useDebounce(query, 250);
@@ -152,8 +246,7 @@ export function CommandPalette() {
       }
     };
     // Pass 83: custom event so a visible sidebar trigger can open the palette
-    // without having to import / lift the `open` state. Any component that
-    // wants to surface the palette can dispatch `toggle-command-palette`.
+    // without having to import / lift the `open` state.
     const toggleHandler = () => setOpen((prev) => !prev);
     window.addEventListener("keydown", handler);
     window.addEventListener("toggle-command-palette", toggleHandler as EventListener);
@@ -163,10 +256,63 @@ export function CommandPalette() {
     };
   }, []);
 
+  // Pass 12 (G42): earcon on open/close so keyboard + SR users get a
+  // confirmation tone when they invoke the palette. Fires on state
+  // transitions only (not re-renders).
+  const prevOpenRef = useRef(open);
+  useEffect(() => {
+    if (prevOpenRef.current !== open) {
+      playEarconById(open ? "palette_open" : "palette_close");
+      prevOpenRef.current = open;
+    }
+  }, [open]);
+
   // Reset query when closing
   useEffect(() => {
     if (!open) setQuery("");
   }, [open]);
+
+  // Pass 13 (G17): push-to-talk voice input for the palette query.
+  // Hold the mic button (or Shift+Space while palette is open) to
+  // capture a spoken search term that populates the input as if the
+  // user typed it. No continuous listening — single-shot per press,
+  // works on Safari iOS + every full-support browser.
+  const voiceInput = usePushToTalk({
+    onTranscript: (text) => {
+      if (!text) return;
+      setQuery(text);
+    },
+    onInterim: (text) => {
+      // Show live interim as the query so filter results animate
+      // with the user's speech. Final onTranscript replaces it
+      // with the clean transcript.
+      if (text) setQuery(text);
+    },
+  });
+
+  // Pass 13 (G17): Shift+Space inside the palette triggers voice capture.
+  // Release to commit. Only active while palette is open + SR caps permit.
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === " " && e.shiftKey && !e.repeat && !voiceInput.isActive) {
+        e.preventDefault();
+        voiceInput.start();
+      }
+    };
+    const handleUp = (e: KeyboardEvent) => {
+      if (e.key === " " && voiceInput.isActive) {
+        e.preventDefault();
+        voiceInput.release();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    window.addEventListener("keyup", handleUp);
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+      window.removeEventListener("keyup", handleUp);
+    };
+  }, [open, voiceInput]);
 
   const handleSelect = useCallback(
     (value: string) => {
@@ -179,10 +325,10 @@ export function CommandPalette() {
         return;
       }
 
-      // Check if it's a page
-      const page = PAGES.find((p) => `page:${p.href}` === value);
-      if (page) {
-        navigate(page.href);
+      // Check if it's a page — any entry (including recents)
+      if (value.startsWith("page:")) {
+        const href = value.replace("page:", "");
+        navigate(href);
         return;
       }
 
@@ -197,9 +343,16 @@ export function CommandPalette() {
 
   const conversations = conversationSearch.data ?? [];
 
-  // Recent pages — shown when no query is entered
+  // Recent pages — shown when no query is entered.
+  // Pass 7 (G34): role-filter recent pages too so users don't see an
+  // admin page in their history if they're suddenly demoted.
   const { recentPages } = useRecentPages();
-  const showRecent = query.length === 0 && recentPages.length > 0;
+  const allowedHrefs = useMemo(() => new Set(pages.map((p) => p.href)), [pages]);
+  const recentPagesFiltered = useMemo(
+    () => recentPages.filter((rp) => allowedHrefs.has(rp.route)),
+    [recentPages, allowedHrefs],
+  );
+  const showRecent = query.length === 0 && recentPagesFiltered.length > 0;
 
   return (
     <CommandDialog
@@ -208,15 +361,58 @@ export function CommandPalette() {
       title="Command Palette"
       description="Search pages, actions, and conversations"
     >
-      <CommandInput
-        placeholder="Search pages, actions, conversations..."
-        value={query}
-        onValueChange={setQuery}
-      />
+      {/* Pass 13 (G17): wrap the CommandInput + mic button in a flex
+          row so the mic affordance sits alongside the input. The
+          cmdk primitive handles focus management on its own input
+          so we only render the mic as a sibling — clicking it
+          doesn't steal palette focus. */}
+      <div className="flex items-center border-b border-border px-3">
+        <div className="flex-1">
+          <CommandInput
+            placeholder={
+              voiceInput.isActive
+                ? "Listening…"
+                : voiceInput.capabilities.mode === "unsupported"
+                  ? "Search pages, actions, conversations…"
+                  : "Search pages, actions… or hold 🎙 / Shift+Space to speak"
+            }
+            value={query}
+            onValueChange={setQuery}
+            aria-describedby="palette-voice-hint"
+          />
+        </div>
+        {voiceInput.isAvailable && (
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); voiceInput.start(); }}
+            onTouchStart={(e) => { e.preventDefault(); voiceInput.start(); }}
+            onMouseUp={() => voiceInput.release()}
+            onTouchEnd={() => voiceInput.release()}
+            onMouseLeave={() => voiceInput.isActive && voiceInput.cancel()}
+            aria-label={voiceInput.isActive ? "Release to search" : "Hold to speak your search"}
+            aria-pressed={voiceInput.isActive}
+            className={`shrink-0 ml-2 min-w-[36px] min-h-[36px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
+              voiceInput.isActive
+                ? "border-accent bg-accent/20 text-accent animate-pulse-glow"
+                : "border-border bg-secondary/30 text-muted-foreground hover:text-accent"
+            }`}
+          >
+            {voiceInput.isActive ? (
+              <Mic className="w-3.5 h-3.5" aria-hidden="true" />
+            ) : (
+              <MicOff className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
+          </button>
+        )}
+      </div>
+      {/* sr-only description that the aria-describedby above references */}
+      <span id="palette-voice-hint" className="sr-only">
+        Hold Shift and Space to search by voice, or use the microphone button.
+      </span>
       <CommandList>
         <CommandEmpty>
           <div className="flex flex-col items-center gap-1.5 py-2">
-            <Search className="w-5 h-5 text-muted-foreground/40" />
+            <Search className="w-5 h-5 text-muted-foreground/40" aria-hidden="true" />
             <span className="text-muted-foreground">No results found</span>
             <span className="text-xs text-muted-foreground/60">Try a different search term</span>
           </div>
@@ -226,8 +422,8 @@ export function CommandPalette() {
         {showRecent && (
           <>
             <CommandGroup heading="Recent">
-              {recentPages.map((rp) => {
-                const pageEntry = PAGES.find((p) => p.href === rp.route);
+              {recentPagesFiltered.map((rp) => {
+                const pageEntry = pages.find((p) => p.href === rp.route);
                 return (
                   <CommandItem
                     key={`recent:${rp.route}`}
@@ -235,7 +431,11 @@ export function CommandPalette() {
                     keywords={[rp.label, "recent"]}
                     onSelect={handleSelect}
                   >
-                    {pageEntry?.icon || <Clock className="w-4 h-4 text-muted-foreground" />}
+                    {pageEntry ? (
+                      iconFor(pageEntry.iconName)
+                    ) : (
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                    )}
                     <span>{rp.label}</span>
                     <CommandShortcut>
                       <span className="text-[10px] text-muted-foreground/50">
@@ -267,16 +467,16 @@ export function CommandPalette() {
 
         <CommandSeparator />
 
-        {/* Pages */}
+        {/* Pages — derived from navigation.ts + EXTRA_PAGES (Pass 7) */}
         <CommandGroup heading="Pages">
-          {PAGES.map((page) => (
+          {pages.map((page) => (
             <CommandItem
               key={`page:${page.href}`}
               value={`page:${page.href}`}
               keywords={[page.label, ...page.keywords]}
               onSelect={handleSelect}
             >
-              {page.icon}
+              {iconFor(page.iconName)}
               <span>{page.label}</span>
               {page.shortcut && (
                 <CommandShortcut>
@@ -343,5 +543,5 @@ export function CommandPalette() {
   );
 }
 
-/** Export page list for testing */
-export { PAGES, ACTIONS };
+/** Export quick actions for testing */
+export { ACTIONS };

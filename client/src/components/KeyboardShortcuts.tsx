@@ -22,32 +22,37 @@ interface Shortcut {
 
 const SHORTCUTS: Shortcut[] = [
   // ── Navigation (G-then-X) ──
+  // Pass 6 (G53): trimmed to shortcuts that are ACTUALLY wired.
+  // Pass 2/v9.0 had listed G+M/G+D/G+N/G+A/G+R but none of those were
+  // wired in useKeyboardShortcuts — so users saw the overlay, tried
+  // them, and nothing happened. This list now matches the wired set.
   { keys: ["G", "then", "C"], description: "Go to Chat", category: "Navigation" },
-  { keys: ["G", "then", "O"], description: "Go to Operations", category: "Navigation" },
-  { keys: ["G", "then", "I"], description: "Go to Intelligence", category: "Navigation" },
-  { keys: ["G", "then", "A"], description: "Go to Advisory", category: "Navigation" },
-  { keys: ["G", "then", "R"], description: "Go to Relationships", category: "Navigation" },
-  { keys: ["G", "then", "M"], description: "Go to Market Data", category: "Navigation" },
-  { keys: ["G", "then", "D"], description: "Go to Documents", category: "Navigation" },
-  { keys: ["G", "then", "N"], description: "Go to Integrations", category: "Navigation" },
+  { keys: ["G", "then", "H"], description: "Go to Home (Chat)", category: "Navigation" },
   { keys: ["G", "then", "S"], description: "Go to Settings", category: "Navigation" },
-  { keys: ["G", "then", "H"], description: "Go to Help", category: "Navigation" },
+  { keys: ["G", "then", "I"], description: "Go to Intelligence Hub", category: "Navigation" },
+  { keys: ["G", "then", "L"], description: "Go to Lead Pipeline", category: "Navigation" },
+  { keys: ["G", "then", "O"], description: "Go to Operations", category: "Navigation" },
+
+  // ── Voice & Multisensory (Pass 6: G15 / G25 / G26) ──
+  { keys: ["Shift", "V"], description: "Toggle hands-free voice mode", category: "Voice & Audio" },
+  { keys: ["Shift", "R"], description: "Read current page aloud", category: "Voice & Audio" },
+  { keys: ["Say", "stop"], description: "Voice: abort streaming response", category: "Voice & Audio" },
+  { keys: ["Say", "send"], description: "Voice: send the current prompt", category: "Voice & Audio" },
 
   // ── Chat ──
-  { keys: ["Ctrl", "Shift", "N"], description: "New conversation", category: "Chat" },
-  { keys: ["Ctrl", "Shift", "S"], description: "Toggle sidebar", category: "Chat" },
-  { keys: ["Ctrl", "K"], description: "Open command palette", category: "General" },
   { keys: ["/"], description: "Focus chat input", category: "Chat" },
-  { keys: ["Ctrl", "Enter"], description: "Send message", category: "Chat" },
+  { keys: ["Enter"], description: "Send message", category: "Chat" },
   { keys: ["Shift", "Enter"], description: "New line in message", category: "Chat" },
 
   // ── General ──
+  { keys: ["Ctrl", "K"], description: "Open command palette", category: "General" },
   { keys: ["?"], description: "Show this shortcuts panel", category: "General" },
   { keys: ["Esc"], description: "Close menus / modals / cancel", category: "General" },
 ];
 
 const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   Navigation: "Press G, then a letter to jump to a page",
+  "Voice & Audio": "Multisensory shortcuts — work from any page",
   Chat: "Available on the Chat page",
   General: "Available everywhere",
 };
@@ -74,8 +79,18 @@ export function KeyboardShortcuts() {
         setOpen(false);
       }
     };
+    // Pass 8 (G68 — focus trap stack conflict): listen for an explicit
+    // `toggle-help` custom event so CommandPalette can dispatch it
+    // after closing its own dialog (rather than synthesizing a
+    // keydown which fires while both dialogs overlap in the focus
+    // trap stack and whichever mounts last wins).
+    const toggleHandler = () => toggle();
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    document.addEventListener("toggle-help", toggleHandler as EventListener);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.removeEventListener("toggle-help", toggleHandler as EventListener);
+    };
   }, [open, toggle]);
 
   if (!open) return null;

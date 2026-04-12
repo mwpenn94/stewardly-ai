@@ -4,6 +4,7 @@ import TypingIndicator from "@/components/TypingIndicator";
 import { EmptyConversations } from "@/components/EmptyStates";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { useSoundCues } from "@/hooks/useSoundCues";
+import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -42,6 +43,15 @@ import { ProgressiveMessage } from "@/components/ProgressiveMessage";
 import RichMediaEmbed, { type MediaEmbed } from "@/components/RichMediaEmbed";
 import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
 import { useTTS } from "@/hooks/useTTS";
+import { detectStt, type SttCapabilities } from "@/lib/sttSupport";
+import { VoiceSupportBanner } from "@/components/VoiceSupportBanner";
+import { useFocusOnRouteChange } from "@/hooks/useFocusOnRouteChange";
+import {
+  createAnnouncerState,
+  shouldEmitChunk,
+  finalChunk,
+  type AnnouncerState,
+} from "@/lib/liveAnnouncer";
 import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
@@ -116,6 +126,11 @@ const MODE_OPTIONS: { value: AdvisoryMode; label: string; desc: string; minRole:
 export default function Chat() {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
   const soundCues = useSoundCues();
+  // Pass 1 (multisensory build loop): wire PIL dispatcher into Chat so every
+  // send / stream start / stream end / error actually fires the designed
+  // multimodal feedback specs (visual toast + haptic + audio earcon/tts).
+  // Prior to this the 30 feedbackSpecs were defined but had zero consumers.
+  const pil = usePlatformIntelligence();
   const [location, navigate] = useLocation();
   const [matchChat, paramsChat] = useRoute("/chat/:id");
   const utils = trpc.useUtils();
@@ -225,6 +240,27 @@ export default function Chat() {
 
   // ─── HANDS-FREE & VOICE STATE ──────────────────────────────────
   const [handsFreeActive, setHandsFreeActive] = useState(false);
+  // Pass 2 (G59 — cross-browser STT silent-fail): probe capabilities on
+  // mount so we know whether to offer continuous listening, PTT-only, or
+  // nothing at all. Users of Firefox / Safari iOS deserve an actual banner
+  // explaining why the mic button won't work hands-free, not silent failure.
+  const sttCaps = useMemo<SttCapabilities>(() => detectStt(), []);
+  const sttFullSupport = sttCaps.mode === "full";
+  const sttAnySupport = sttCaps.mode !== "unsupported";
+  // Build Loop Pass 3 (G60): focus #chat-main on route change + announce
+  // via aria-live. Chat owns its own <main> element (id="chat-main") so
+  // we override the default target here.
+  useFocusOnRouteChange({ mainId: "chat-main" });
+
+  // Build Loop Pass 5 (G3): sentence-chunked aria-live announcements for
+  // streamed content. Instead of "AI is responding…", SR users now hear
+  // the actual answer sentence-by-sentence as it arrives, debounced to
+  // 800ms between announcements so the live region doesn't machine-gun.
+  // Build Loop Pass 5 (G4): same state powers a visible caption panel
+  // during TTS playback so deaf/HoH users have a WCAG 1.2.1-A transcript.
+  const announcerRef = useRef<AnnouncerState>(createAnnouncerState());
+  const [liveAnnouncement, setLiveAnnouncement] = useState<string>("");
+  const [captionText, setCaptionText] = useState<string>("");
   const [ttsEnabled, setTtsEnabled] = useState(() => {
     const stored = localStorage.getItem("tts-enabled");
     return stored !== "false"; // Default ON
@@ -571,6 +607,28 @@ export default function Chat() {
 
   // ─── HANDS-FREE TOGGLE ────────────────────────────────────────
   const toggleHandsFree = useCallback(() => {
+    // Pass 2 (G59): refuse to silently fail on unsupported browsers.
+    // Users with no SpeechRecognition constructor (Firefox, pre-iOS-14.5
+    // Safari, in-app WebViews) now see an explicit toast naming their
+    // browser + offering keyboard as an alternative. The banner will
+    // already be rendered above the input so this is the second-chance
+    // path for users who click the mic anyway.
+    if (!handsFreeActive && !sttAnySupport) {
+      toast.error(sttCaps.userMessage, {
+        description: sttCaps.recoveryHint,
+        duration: 8000,
+      });
+      return;
+    }
+    // On PTT-only browsers (Safari iOS, Safari desktop) continuous
+    // listening isn't reliable — still allow activation but warn once per
+    // session so the user understands why the mic might cut out.
+    if (!handsFreeActive && !sttFullSupport) {
+      toast.info("Continuous hands-free isn't supported on this browser.", {
+        description: sttCaps.recoveryHint,
+        duration: 6000,
+      });
+    }
     if (handsFreeActive) {
       // Deactivate
       setHandsFreeActive(false);
@@ -582,7 +640,7 @@ export default function Chat() {
       setTtsEnabled(true); // Force TTS on in hands-free
       tts.speak("Hands-free mode active.");
     }
-  }, [handsFreeActive, voice, tts]);
+  }, [handsFreeActive, voice, tts, sttAnySupport, sttFullSupport, sttCaps]);
 
    // ─── SEND MESSAGE ───────────────────────────────────────────
   const handleSendWithText = async (text: string) => {
@@ -594,8 +652,17 @@ export default function Chat() {
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     soundCues.play("sent");
+    // PIL: designed "chat.sent" feedback — haptic light + send earcon + send animation
+    pil.giveFeedback("chat.sent");
     setFollowUpSuggestions([]);
     setIsStreaming(true);
+    // Pass 5 (G3): reset the sentence chunker for the new response so
+    // we start emitting from byte 0 of the streaming content.
+    announcerRef.current = createAnnouncerState();
+    setLiveAnnouncement("");
+    setCaptionText("");
+    // PIL: begin streaming — fires typing-start animation + aria-live "thinking"
+    pil.giveFeedback("chat.streaming_start");
 
     try {
       // ─── ANONYMOUS PATH ───
@@ -657,6 +724,8 @@ export default function Chat() {
           setConversationId(activeConvId);
           navigate(`/chat/${activeConvId}`, { replace: true });
           utils.conversations.list.invalidate();
+          // PIL: designed "chat.new_conversation" feedback
+          pil.giveFeedback("chat.new_conversation");
         } catch (err) {
           creatingConversationRef.current = false;
           throw err;
@@ -868,11 +937,46 @@ export default function Chat() {
         };
         setMessages(prev => [...prev, placeholderMsg]);
 
+        // Pass 8 (G62): hoist watchdog + offline listener state above
+        // the try block so the catch handler can also clean them up.
+        let streamWatchdog: ReturnType<typeof setTimeout> | null = null;
+        let onOffline: (() => void) | null = null;
         try {
+          // Pass 8 (G62): fail fast when the browser says we're offline.
+          // Prevents the SSE pipeline from making a request that's
+          // destined to hang + leaves the user with a stale "AI is
+          // responding…" aria-live stub forever.
+          if (typeof navigator !== "undefined" && navigator.onLine === false) {
+            pil.giveFeedback("chat.error", { code: "NETWORK" });
+            setMessages(prev => prev.slice(0, -1)); // remove placeholder
+            setIsStreaming(false);
+            return;
+          }
           // Abort any previous stream before starting a new one
           streamAbortRef.current?.abort();
           const abortController = new AbortController();
           streamAbortRef.current = abortController;
+
+          // Pass 8 (G62): hard stream timeout. If the server stops
+          // writing tokens for 60s we abort — better to surface a
+          // retry than hang forever. Reset on every token below.
+          const STREAM_IDLE_TIMEOUT_MS = 60_000;
+          const resetWatchdog = () => {
+            if (streamWatchdog) clearTimeout(streamWatchdog);
+            streamWatchdog = setTimeout(() => {
+              console.warn("[Chat] Stream idle > 60s — aborting");
+              abortController.abort();
+            }, STREAM_IDLE_TIMEOUT_MS);
+          };
+          resetWatchdog();
+
+          // Pass 8 (G62): if the browser fires an `offline` event
+          // mid-stream, abort immediately so the UI doesn't hang.
+          onOffline = () => {
+            console.warn("[Chat] Network went offline mid-stream — aborting");
+            abortController.abort();
+          };
+          window.addEventListener("offline", onOffline);
 
           const sseResponse = await fetch("/api/chat/stream", {
             method: "POST",
@@ -912,6 +1016,9 @@ export default function Chat() {
               try {
                 const event = JSON.parse(trimmedLine.slice(6));
                 if (event.type === "token" && event.content) {
+                  // Pass 8 (G62): every token resets the watchdog.
+                  // 60s of complete silence = abort.
+                  resetWatchdog();
                   accumulated += event.content;
                   setStreamingContent(accumulated);
                   // Update the last message in-place
@@ -923,7 +1030,25 @@ export default function Chat() {
                     }
                     return updated;
                   });
+                  // Pass 5 (G3): feed the growing stream to the sentence
+                  // chunker so aria-live + captions track the answer in
+                  // real time. shouldEmitChunk is pure — no throttle
+                  // wrapper needed, the state advances atomically.
+                  const emit = shouldEmitChunk(accumulated, announcerRef.current);
+                  if (emit.emit) {
+                    announcerRef.current = emit.nextState;
+                    setLiveAnnouncement(emit.text);
+                    setCaptionText(emit.text);
+                  }
                 } else if (event.type === "done") {
+                  // Pass 5 (G3): flush any un-terminated trailing text
+                  // to the aria-live region + caption panel + then mark
+                  // the response complete so SR users hear the closure.
+                  const trailing = finalChunk(accumulated, announcerRef.current);
+                  if (trailing) {
+                    setLiveAnnouncement(trailing);
+                    setCaptionText(trailing);
+                  }
                   // Finalize — persist the streamed content (NOT regenerate)
                   // First update the UI immediately with the accumulated content
                   const streamedMediaEmbeds = Array.isArray(event.mediaEmbeds) ? event.mediaEmbeds : undefined;
@@ -980,9 +1105,16 @@ export default function Chat() {
               }
             }
           }
+          // Pass 8 (G62): release the idle watchdog + offline listener
+          // now that the stream closed cleanly.
+          if (streamWatchdog) { clearTimeout(streamWatchdog); streamWatchdog = null; }
+          if (onOffline) window.removeEventListener("offline", onOffline);
           setStreamingContent("");
           streamAbortRef.current = null;
         } catch (streamErr: any) {
+          // Pass 8 (G62): same cleanup on the error path.
+          if (streamWatchdog) { clearTimeout(streamWatchdog); streamWatchdog = null; }
+          if (onOffline) window.removeEventListener("offline", onOffline);
           streamAbortRef.current = null;
           // If aborted (user navigated away or sent new message), don't fallback
           if (streamErr?.name === "AbortError") {
@@ -1054,11 +1186,26 @@ export default function Chat() {
         }
       }
     } catch (err: any) {
-      toast.error(err.message || "Your message couldn't be sent — check your connection and try again");
+      // PIL: designed "chat.error" feedback — dispatches Steward-personality
+      // error toast + haptic error pattern + spoken recovery text. Categorize
+      // the failure by message so the spec can pick the right copy.
+      const raw = (err?.message || "").toLowerCase();
+      const code = raw.includes("fetch") || raw.includes("network") || raw.includes("connection")
+        ? "NETWORK"
+        : raw.includes("rate") || raw.includes("429")
+        ? "RATE_LIMIT"
+        : raw.includes("401") || raw.includes("403") || raw.includes("unauth") || raw.includes("expired")
+        ? "AUTH_EXPIRED"
+        : "GENERIC";
+      pil.giveFeedback("chat.error", { code });
+      // Keep the legacy toast for users who disabled visual feedback: the
+      // dispatcher already runs it, but sonner dedupes identical titles.
     } finally {
       setIsStreaming(false);
       setAttachments([]);
       soundCues.play("received");
+      // PIL: end of the streaming lifecycle — fires typing-end animation
+      pil.giveFeedback("chat.streaming_end");
       // If hands-free is active and TTS is NOT about to speak (no ttsEnabled or error path),
       // release the guard and restart listening.
       // If TTS IS enabled, the guard stays on until tts.onEnd releases it and restarts listening.
@@ -1080,6 +1227,48 @@ export default function Chat() {
       streamAbortRef.current = null;
     };
   }, []);
+
+  // Pass 5 (G61): voice "stop" command fires a `pil:stop-stream` window
+  // event. Chat listens for it + aborts any in-flight SSE stream AND
+  // clears the streaming UI so the new prompt doesn't interleave with
+  // the abandoned response. Also clears the captions.
+  useEffect(() => {
+    const onStop = () => {
+      streamAbortRef.current?.abort();
+      streamAbortRef.current = null;
+      setIsStreaming(false);
+      setStreamingContent("");
+      setCaptionText("");
+      setLiveAnnouncement("Stopped.");
+    };
+    // Pass 5 (G5): voice vocabulary — send / new-chat via PIL events.
+    const onVoiceSend = () => {
+      if (input.trim()) handleSendRef.current(input);
+    };
+    const onVoiceNewChat = () => {
+      setConversationId(null);
+      setMessages([]);
+      setInput("");
+      navigate("/chat");
+    };
+    // Pass 6 (G25): Shift+V routes to Chat's local voice mode when
+    // the user is on a chat page (useKeyboardShortcuts dispatches
+    // `chat:toggle-handsfree` in that case). Chat's voice → send flow
+    // is different from PIL's voice → navigate flow, so each owns
+    // its own handler.
+    const onToggleHandsFree = () => toggleHandsFree();
+    window.addEventListener("pil:stop-stream", onStop as EventListener);
+    window.addEventListener("pil:send", onVoiceSend as EventListener);
+    window.addEventListener("pil:new-chat", onVoiceNewChat as EventListener);
+    window.addEventListener("chat:toggle-handsfree", onToggleHandsFree as EventListener);
+    return () => {
+      window.removeEventListener("pil:stop-stream", onStop as EventListener);
+      window.removeEventListener("pil:send", onVoiceSend as EventListener);
+      window.removeEventListener("pil:new-chat", onVoiceNewChat as EventListener);
+      window.removeEventListener("chat:toggle-handsfree", onToggleHandsFree as EventListener);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input, navigate, toggleHandsFree]);
 
   // Keep the ref in sync for voice recognition callback
   useEffect(() => {
@@ -1810,13 +1999,27 @@ export default function Chat() {
       </aside>
 
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
-      <main id="chat-main" tabIndex={-1} className="flex-1 flex flex-col min-w-0">
-        {/* Pass 99 (Target 7 delightful accessibility): aria-live region
-            so screen reader users get spoken feedback when the AI starts
-            thinking and when a response finishes streaming. polite so
-            it doesn't interrupt whatever they're currently reading. */}
-        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-          {isStreaming ? "AI is responding…" : ""}
+      <main
+        id="chat-main"
+        tabIndex={-1}
+        className="flex-1 flex flex-col min-w-0"
+        aria-label="Chat"
+        aria-busy={isStreaming ? true : undefined}
+      >
+        {/* Pass 99 + Pass 5 (G3): aria-live region announces the ACTUAL
+            streamed content sentence-by-sentence (debounced ≥800ms
+            between announcements by `shouldEmitChunk`) instead of the
+            stale "AI is responding…" placeholder. SR users now hear
+            the answer as it arrives. polite = doesn't interrupt. */}
+        <div
+          className="sr-only"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {isStreaming && !liveAnnouncement
+            ? "AI is responding…"
+            : liveAnnouncement}
         </div>
         {/* Mobile-only sidebar toggle + escalation + guest sign-in */}
         <div className="lg:hidden flex items-center h-12 px-3 shrink-0 justify-between">
@@ -2150,6 +2353,43 @@ export default function Chat() {
         {/* ─── INPUT AREA (Copilot-style condensed) ────────────── */}
         <div className="p-3 sm:p-4 shrink-0">
           <div className="max-w-3xl mx-auto">
+            {/* Pass 2 (G59): user-visible fallback banner whenever the
+                browser can't do full continuous STT. Dismissible, persists
+                per browser family so returning Safari users aren't nagged. */}
+            {!sttFullSupport && (
+              <div className="mb-2">
+                <VoiceSupportBanner caps={sttCaps} />
+              </div>
+            )}
+            {/* Pass 5 (G4 — WCAG 1.2.1-A captions): visible caption strip
+                that mirrors the streamed content + TTS audio for deaf /
+                hard-of-hearing users. Renders during streaming OR during
+                TTS playback. Auto-clears on response end + user
+                interaction. Honors the user's reduced-motion preference
+                via the global .reduced-motion-user body class. */}
+            {(isStreaming || tts.isSpeaking) && captionText && (
+              <div
+                role="region"
+                aria-label="Live response caption"
+                className="mb-2 rounded-lg border border-accent/30 bg-card/80 backdrop-blur-sm px-3 py-2 text-xs text-foreground/90 shadow-sm animate-message-in"
+              >
+                <div className="flex items-start gap-2">
+                  <AudioLines
+                    className="w-3 h-3 text-accent shrink-0 mt-0.5"
+                    aria-hidden="true"
+                  />
+                  <div className="flex-1 leading-snug">{captionText}</div>
+                  <button
+                    type="button"
+                    onClick={() => setCaptionText("")}
+                    className="shrink-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
+                    aria-label="Dismiss caption"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            )}
             {/* Attachment chips */}
             {attachments.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2 px-1">

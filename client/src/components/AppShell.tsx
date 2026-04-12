@@ -11,74 +11,18 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import PersonaSidebar5 from "@/components/PersonaSidebar5";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { getLoginUrl } from "@/const";
+import { useFocusOnRouteChange } from "@/hooks/useFocusOnRouteChange";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLocation } from "wouter";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
-import { prefetchRoute } from "@/lib/routePrefetch";
 import { recordPageVisit } from "@/hooks/useRecentPages";
-import {
-  TOOLS_NAV, ADMIN_NAV, UTILITY_NAV, hasMinRole,
-  NAV_SECTION_ORDER, NAV_SECTION_LABELS,
-  type NavItemDef, type UserRole, type NavSection,
-} from "@/lib/navigation";
-import {
-  MessageSquare, Zap, Brain, Package, Users, TrendingUp, FileText,
-  Link2, HeartPulse, RefreshCw, Activity, Briefcase, Building2,
-  BarChart3, Globe, Wrench, HelpCircle, Settings, LogIn, LogOut,
-  Menu, X, ChevronDown, Keyboard, BookOpen,
-  GraduationCap, Sparkles, Shield, Bot, Terminal,
-  Calculator, LayoutDashboard, Users2, Database, Target, Search,
-  Fingerprint, Award, GitBranch,
-} from "lucide-react";
-
-// ─── Icon lookup ─────────────────────────────────────────────────────────────
-// Pass 83: added Calculator, LayoutDashboard, Users2, Database, Target,
-// Search (used by the new Command Palette trigger at the top of the sidebar).
-// Previously these fell back to the default Zap icon, which made Engine
-// Dashboard / Client Dashboard / Community / Data Freshness / Lead Sources
-// all show the same generic icon in the sidebar — a silent rendering bug.
-const ICON_MAP: Record<string, React.ReactNode> = {
-  MessageSquare: <MessageSquare className="w-4 h-4" />,
-  Zap: <Zap className="w-4 h-4" />,
-  Brain: <Brain className="w-4 h-4" />,
-  Package: <Package className="w-4 h-4" />,
-  Users: <Users className="w-4 h-4" />,
-  TrendingUp: <TrendingUp className="w-4 h-4" />,
-  FileText: <FileText className="w-4 h-4" />,
-  Link2: <Link2 className="w-4 h-4" />,
-  HeartPulse: <HeartPulse className="w-4 h-4" />,
-  RefreshCw: <RefreshCw className="w-4 h-4" />,
-  Activity: <Activity className="w-4 h-4" />,
-  Briefcase: <Briefcase className="w-4 h-4" />,
-  Building2: <Building2 className="w-4 h-4" />,
-  BarChart3: <BarChart3 className="w-4 h-4" />,
-  Globe: <Globe className="w-4 h-4" />,
-  Wrench: <Wrench className="w-4 h-4" />,
-  BookOpen: <BookOpen className="w-4 h-4" />,
-  HelpCircle: <HelpCircle className="w-4 h-4" />,
-  Settings: <Settings className="w-4 h-4" />,
-  GraduationCap: <GraduationCap className="w-4 h-4" />,
-  Sparkles: <Sparkles className="w-4 h-4" />,
-  Shield: <Shield className="w-4 h-4" />,
-  Bot: <Bot className="w-4 h-4" />,
-  Terminal: <Terminal className="w-4 h-4" />,
-  Calculator: <Calculator className="w-4 h-4" />,
-  LayoutDashboard: <LayoutDashboard className="w-4 h-4" />,
-  Users2: <Users2 className="w-4 h-4" />,
-  Database: <Database className="w-4 h-4" />,
-  Target: <Target className="w-4 h-4" />,
-  Fingerprint: <Fingerprint className="w-4 h-4" />,
-  Award: <Award className="w-4 h-4" />,
-  GitBranch: <GitBranch className="w-4 h-4" />,
-};
-
-function getIcon(name: string): React.ReactNode {
-  return ICON_MAP[name] ?? <Zap className="w-4 h-4" />;
-}
+// Build Loop Pass 9 (G56): the old nav import block, ICON_MAP, getIcon,
+// and ~300 lines of sidebarContent / renderNavItem / renderSectionedTools
+// were deleted because PersonaSidebar5 fully replaces them. AppShell now
+// imports only what it actually renders (mobile header, bottom tab bar,
+// skip-link, persona sidebar, bottom-banner).
+import { MessageSquare, Brain, Menu, Calculator, GraduationCap, AudioLines } from "lucide-react";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -91,6 +35,29 @@ export default function AppShell({ children, title }: AppShellProps) {
   const [location, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   useKeyboardShortcuts(); // Global shortcuts: ?, /, g+h, g+s, g+c, g+d, g+l, g+o
+  // Build Loop Pass 3 (G60 — WCAG 2.4.3 focus order): on every route
+  // change, focus the #main-content element AND fire an aria-live
+  // announcement of the new page name. Keyboard + SR users now get a
+  // spoken "Clients" / "Compliance Audit" marker when they navigate via
+  // g-chord, sidebar click, or deep link. Defers the focus call to
+  // requestAnimationFrame so the new route has actually mounted.
+  useFocusOnRouteChange({ mainId: "main-content" });
+
+  // Build Loop Pass 14 (G35): global busy signal for the <main>
+  // landmark's aria-busy attribute. Pages emit `pil:busy` when a
+  // long-running fetch starts and `pil:idle` when it ends. SR users
+  // hear "busy" announced when the state changes.
+  const [globalBusy, setGlobalBusy] = useState(false);
+  useEffect(() => {
+    const onBusy = () => setGlobalBusy(true);
+    const onIdle = () => setGlobalBusy(false);
+    window.addEventListener("pil:busy", onBusy);
+    window.addEventListener("pil:idle", onIdle);
+    return () => {
+      window.removeEventListener("pil:busy", onBusy);
+      window.removeEventListener("pil:idle", onIdle);
+    };
+  }, []);
 
   // Auto-propagate title to browser tab
   useEffect(() => {
@@ -186,6 +153,10 @@ export default function AppShell({ children, title }: AppShellProps) {
   const gTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Pass 8 (G63): the `useKeyboardShortcuts` hook also attaches a
+      // window keydown listener. Either handler can fire first; skip
+      // if the other already consumed the event.
+      if (e.defaultPrevented) return;
       const target = e.target as HTMLElement;
       const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
       const isMod = e.metaKey || e.ctrlKey;
@@ -216,316 +187,13 @@ export default function AppShell({ children, title }: AppShellProps) {
 
   const userRole = (user as any)?.role || "user";
 
-  const visibleTools = TOOLS_NAV.filter(i => hasMinRole(userRole, i.minRole));
-  const visibleAdmin = ADMIN_NAV.filter(i => hasMinRole(userRole, i.minRole));
+  // Build Loop Pass 9 (G56): `sidebarContent` / `renderNavItem` /
+  // `renderSectionedTools` / `visibleTools` / `visibleAdmin` /
+  // `isActive` / `ICON_MAP` / `getIcon` were all dead code after
+  // Pass 136 replaced the old flat sidebar with `<PersonaSidebar5>`.
+  // ~300 lines of unreachable JSX the bundler was still shipping.
+  // Deleted outright in Pass 9.
 
-  function isActive(href: string) {
-    if (href === "/chat") return location === "/chat" || location.startsWith("/chat/");
-    if (href === "/settings/profile") return location.startsWith("/settings");
-    return location === href || location.startsWith(href + "/");
-  }
-
-  /** Render a single nav item — collapsed (icon-only with tooltip) or expanded */
-  function renderNavItem(item: NavItemDef) {
-    const active = isActive(item.href);
-    const icon = getIcon(item.iconName);
-    if (collapsed) {
-      return (
-        <Tooltip key={item.href}>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => navigate(item.href)}
-              onMouseEnter={() => prefetchRoute(item.href)}
-              onFocus={() => prefetchRoute(item.href)}
-              aria-current={active ? "page" : undefined}
-              aria-label={item.label}
-              className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
-                active
-                  ? "bg-accent/15 text-accent"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-              }`}
-            >
-              {icon}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right">{item.label}</TooltipContent>
-        </Tooltip>
-      );
-    }
-    return (
-      <button
-        key={item.href}
-        onClick={() => navigate(item.href)}
-        onMouseEnter={() => prefetchRoute(item.href)}
-        onFocus={() => prefetchRoute(item.href)}
-        aria-current={active ? "page" : undefined}
-        className={`relative flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-[13px] transition-all duration-200 ${
-          active
-            ? "bg-accent/15 text-accent font-medium"
-            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-        }`}
-      >
-        {active && (
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full bg-accent transition-all" />
-        )}
-        {icon}
-        <span className="truncate">{item.label}</span>
-      </button>
-    );
-  }
-
-  /**
-   * Pass 83: render the 19-item TOOLS_NAV as 5 semantic sections
-   * (Home / Work / Intelligence / Relationships / Learning). Items
-   * without a section are still rendered at the top so nothing gets
-   * dropped if a new nav entry is added without a section field.
-   * When the sidebar is collapsed, section headers are replaced with
-   * a thin divider so the icon rail stays compact.
-   */
-  function renderSectionedTools(items: NavItemDef[]) {
-    if (collapsed) {
-      // Collapsed rail: group items by section but show dividers not headers
-      const out: React.ReactNode[] = [];
-      const unsectioned = items.filter((i) => !i.section);
-      out.push(...unsectioned.map(renderNavItem));
-      for (const section of NAV_SECTION_ORDER) {
-        const inSection = items.filter((i) => i.section === section);
-        if (inSection.length === 0) continue;
-        if (out.length > 0) out.push(<div key={`div-${section}`} className="my-1 border-t border-border/40" />);
-        out.push(...inSection.map(renderNavItem));
-      }
-      return out;
-    }
-    // Expanded: render section headers between groups
-    const out: React.ReactNode[] = [];
-    const unsectioned = items.filter((i) => !i.section);
-    out.push(...unsectioned.map(renderNavItem));
-    for (const section of NAV_SECTION_ORDER) {
-      const inSection = items.filter((i) => i.section === section);
-      if (inSection.length === 0) continue;
-      out.push(
-        <div
-          key={`hdr-${section}`}
-          className="px-2.5 pt-3.5 pb-1 flex items-center gap-2"
-        >
-          <span className="text-[9px] uppercase tracking-wider text-accent/50 font-semibold">
-            {NAV_SECTION_LABELS[section as NavSection]}
-          </span>
-          <span className="flex-1 h-px bg-gradient-to-r from-accent/30 via-accent/10 to-transparent" />
-        </div>,
-      );
-      out.push(...inSection.map(renderNavItem));
-    }
-    return out;
-  }
-
-  const sidebarContent = (
-    <div className="flex flex-col h-full">
-      {/* Logo / Brand */}
-      <div className={`flex items-center border-b border-border shrink-0 ${collapsed ? "p-2 justify-center h-14" : "px-3 py-3 gap-2 h-14"}`}>
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="h-8 w-8 flex items-center justify-center hover:bg-accent/10 rounded-lg transition-colors shrink-0"
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <img
-            src="https://d2xsxph8kpxj0f.cloudfront.net/310519663357378777/GaKEFERPH576tbv5NzvkMD/stewardly-logo-v3-naY7aeUkrMxcG3ificpKX6.webp"
-            alt="Stewardly"
-            className="h-6 w-6 rounded"
-          />
-        </button>
-        {!collapsed && (
-          <span className="font-semibold text-sm tracking-tight truncate text-foreground">Steward<span className="text-accent">ly</span></span>
-        )}
-      </div>
-
-      {/* Pass 83: visible Command Palette trigger — the Ctrl+K shortcut
-          already opens it, but discoverable affordance is missing. Clicking
-          dispatches the same `toggle-command-palette` CustomEvent the
-          keyboard shortcut handler uses. Collapsed state shows just a
-          search icon with tooltip; expanded state shows a button styled
-          like a search field with the ⌘K hint. */}
-      {collapsed ? (
-        <div className="p-1 pt-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
-                aria-label="Open Command Palette"
-                className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-              >
-                <Search className="w-4 h-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Search (⌘K)</TooltipContent>
-          </Tooltip>
-        </div>
-      ) : (
-        <div className="px-2 pt-2">
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
-            aria-label="Open Command Palette"
-            className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors text-[12px]"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span className="flex-1 text-left">Search…</span>
-            <kbd className="font-mono text-[10px] text-muted-foreground/70 bg-background/60 border border-border/60 rounded px-1 py-0.5">⌘K</kbd>
-          </button>
-        </div>
-      )}
-
-      {/* Navigation — collapsible sections */}
-      <ScrollArea className="flex-1">
-        <div className={collapsed ? "p-1 space-y-0.5" : "p-2 space-y-0.5"}>
-          {/* NAVIGATE section — collapsible */}
-          {!collapsed ? (
-            <button
-              onClick={() => setNavExpanded(!navExpanded)}
-              className="flex items-center justify-between w-full px-2 pt-2 pb-1 group"
-            >
-              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
-                Navigate
-              </span>
-              <ChevronDown className={`w-3 h-3 text-muted-foreground/40 transition-transform duration-200 ${navExpanded ? "" : "-rotate-90"}`} />
-            </button>
-          ) : null}
-          {(collapsed || navExpanded) && renderSectionedTools(visibleTools)}
-
-          {/* ADMIN section — collapsible */}
-          {visibleAdmin.length > 0 && (
-            <>
-              {!collapsed ? (
-                <button
-                  onClick={() => setAdminExpanded(!adminExpanded)}
-                  className="flex items-center justify-between w-full px-2 pt-3 pb-1 group"
-                >
-                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
-                    Admin
-                  </span>
-                  <ChevronDown className={`w-3 h-3 text-muted-foreground/40 transition-transform duration-200 ${adminExpanded ? "" : "-rotate-90"}`} />
-                </button>
-              ) : (
-                <div className="my-1 border-t border-border/50" />
-              )}
-              {(collapsed || adminExpanded) && visibleAdmin.map(renderNavItem)}
-            </>
-          )}
-        </div>
-      </ScrollArea>
-
-      {/* Bottom utility links — always visible */}
-      <div className="border-t border-border/50 shrink-0">
-        <div className={collapsed ? "p-1 space-y-0.5" : "p-2 space-y-0.5"}>
-          {collapsed ? (
-            <>
-              {UTILITY_NAV.map(item => (
-                <Tooltip key={item.href}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => navigate(item.href)}
-                      onMouseEnter={() => prefetchRoute(item.href)}
-                      onFocus={() => prefetchRoute(item.href)}
-                      className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                    >
-                      {getIcon(item.iconName)}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                </Tooltip>
-              ))}
-            </>
-          ) : (
-            <>
-              {UTILITY_NAV.map(item => (
-                <button
-                  key={item.href}
-                  onClick={() => navigate(item.href)}
-                  onMouseEnter={() => prefetchRoute(item.href)}
-                  onFocus={() => prefetchRoute(item.href)}
-                  className={`flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${
-                    isActive(item.href)
-                      ? "bg-accent/15 text-accent font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                  }`}
-                >
-                  {getIcon(item.iconName)}
-                  <span className="truncate">{item.label}</span>
-                </button>
-              ))}
-              <div className="mt-1 px-2.5 py-1">
-                <p className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
-                  <Keyboard className="w-3 h-3" />
-                  Press <kbd className="px-1 py-0.5 rounded bg-secondary/60 text-[9px] font-mono">?</kbd> for shortcuts
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* User footer */}
-      <div className="border-t border-border shrink-0">
-        {user?.authTier === "anonymous" ? (
-          <div className={collapsed ? "p-2 flex justify-center" : "px-3 py-2.5"}>
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => window.location.href = getLoginUrl()}
-                    className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/30 transition-colors"
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Sign in</TooltipContent>
-              </Tooltip>
-            ) : (
-              <button
-                onClick={() => window.location.href = getLoginUrl()}
-                className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors text-xs font-medium"
-              >
-                <LogIn className="w-3.5 h-3.5" /> Sign In
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className={`flex items-center ${collapsed ? "justify-center p-2" : "gap-2 px-3 py-2.5"}`}>
-            {collapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-medium text-accent cursor-pointer"
-                    onClick={() => setCollapsed(false)}
-                  >
-                    {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">{user?.name || "User"}</TooltipContent>
-              </Tooltip>
-            ) : (
-              <>
-                <div className="w-7 h-7 rounded-full bg-accent/20 ring-1 ring-accent/30 flex items-center justify-center text-xs font-semibold text-accent shrink-0">
-                  {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-medium truncate block">{user?.name || "User"}</span>
-                  <span className="text-[10px] text-accent/60 capitalize">{userRole}</span>
-                </div>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button onClick={() => logout()} className="text-muted-foreground hover:text-foreground shrink-0 p-1 rounded-md hover:bg-secondary/50 transition-colors" aria-label="Sign out">
-                      <LogOut className="w-3.5 h-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Sign out</TooltipContent>
-                </Tooltip>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
@@ -561,25 +229,53 @@ export default function AppShell({ children, title }: AppShellProps) {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile header bar */}
-        <div className="lg:hidden flex items-center h-12 px-3 shrink-0 border-b border-border/50 bg-card/30 backdrop-blur-sm">
+        {/*
+          Build Loop Pass 14 (G19): mobile header is now a semantic
+          <header> element with role=banner. This gives SR users a
+          landmark they can jump to (Rotor / Landmark navigation)
+          instead of having to tab through every nav item.
+        */}
+        <header
+          role="banner"
+          className="lg:hidden flex items-center h-12 px-3 shrink-0 border-b border-border/50 bg-card/30 backdrop-blur-sm"
+          aria-label={title || "Page header"}
+        >
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
             <Menu className="w-5 h-5" />
           </Button>
           {title && <span className="text-sm font-medium truncate ml-2">{title}</span>}
-        </div>
+        </header>
 
-        {/* Page content — scrollable. pb-16 lg:pb-0 reserves space for the
-            mobile bottom tab bar so the last row of content isn't covered. */}
-        <main id="main-content" className="flex-1 overflow-y-auto pb-16 lg:pb-0" tabIndex={-1}>
+        {/*
+          Build Loop Pass 14 (G35 + G19): <main> landmark with
+          aria-label for SR Rotor navigation. The aria-busy attribute
+          reflects a global "work in progress" signal dispatched via
+          `pil:busy` / `pil:idle` window events — pages can emit them
+          when a long-running fetch starts/stops so SR users know
+          loading is in flight.
+
+          Page content — scrollable. pb-16 lg:pb-0 reserves space for
+          the mobile bottom tab bar so the last row of content isn't
+          covered.
+        */}
+        <main
+          id="main-content"
+          className="flex-1 overflow-y-auto pb-16 lg:pb-0"
+          tabIndex={-1}
+          aria-label="Main content"
+          aria-busy={globalBusy ? true : undefined}
+        >
           {children}
         </main>
 
-        {/* Pass 92 (Target 8): mobile bottom tab bar — 5 tabs max per the
-            v10.0 prompt. Hidden on lg+ where the persistent sidebar is
-            visible. Always-visible "Menu" tab opens the full sidebar
-            sheet so every other nav item is still reachable. Touch
-            targets are 44px+ tall (WCAG 2.5.5). */}
+        {/* Pass 92 (Target 8) + Pass 12 (G41): mobile bottom tab bar.
+            Pass 12 replaced the 4-nav-tab + Menu layout with a
+            4-nav-tab + Voice layout — the hamburger lives on the
+            mobile header bar at the top already, so using the
+            bottom-right slot for a dedicated Voice toggle gives
+            mobile users a thumb-reach entry point to hands-free
+            mode without having to go find the mic button inside
+            Chat. Touch targets 44px+ per WCAG 2.5.5. */}
         <nav
           aria-label="Primary mobile navigation"
           className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-16 bg-card/95 backdrop-blur-sm border-t border-border flex items-stretch"
@@ -597,7 +293,7 @@ export default function AppShell({ children, title }: AppShellProps) {
                 onClick={() => navigate(tab.href)}
                 aria-label={tab.label}
                 aria-current={active ? "page" : undefined}
-                className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 transition-colors ${
+                className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 transition-colors min-h-[44px] ${
                   active
                     ? "text-accent"
                     : "text-muted-foreground hover:text-foreground"
@@ -608,10 +304,31 @@ export default function AppShell({ children, title }: AppShellProps) {
               </button>
             );
           })}
+          {/* Voice quick-access tab — dispatches the same event the
+              Shift+V keyboard shortcut does (chat:toggle-handsfree
+              when on /chat, pil:toggle-handsfree otherwise). Also
+              long-press → open the full menu so power users still
+              have a fallback. */}
+          <button
+            onClick={() => {
+              const onChat = location.startsWith("/chat");
+              window.dispatchEvent(
+                new CustomEvent(onChat ? "chat:toggle-handsfree" : "pil:toggle-handsfree"),
+              );
+            }}
+            onDoubleClick={() => setMobileOpen(true)}
+            aria-label="Toggle voice mode (double-tap to open menu)"
+            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-muted-foreground hover:text-accent transition-colors min-h-[44px]"
+          >
+            <AudioLines className="w-5 h-5" />
+            <span className="text-[10px] font-medium truncate">Voice</span>
+          </button>
+          {/* Menu tab moved next to Voice — keeps the original one-tap
+              path for users who never noticed the header hamburger. */}
           <button
             onClick={() => setMobileOpen(true)}
             aria-label="Open full menu"
-            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-muted-foreground hover:text-foreground transition-colors"
+            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
           >
             <Menu className="w-5 h-5" />
             <span className="text-[10px] font-medium truncate">Menu</span>
