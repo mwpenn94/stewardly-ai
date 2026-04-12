@@ -46,6 +46,11 @@ export class SandboxError extends Error {
 /**
  * Resolve a user-supplied path against the workspace root and verify
  * the result stays inside it. Throws SandboxError on escape attempts.
+ *
+ * NOTE: This does NOT follow symlinks. Use `resolveInsideReal` for
+ * any operation that's about to actually touch the filesystem — a
+ * symlink sitting inside the workspace could otherwise redirect the
+ * operation to an arbitrary file on the host. See Parity Pass 6.
  */
 export function resolveInside(
   workspaceRoot: string,
@@ -62,6 +67,76 @@ export function resolveInside(
   return normPath;
 }
 
+/**
+ * Like `resolveInside` but also fs.realpath()'s the result (when the
+ * path already exists) and re-verifies the REAL path still lives
+ * inside the workspace root. Blocks symlink-escape attacks where a
+ * malicious or LLM-planted symlink inside the workspace redirects
+ * reads/writes to arbitrary files on the host filesystem (e.g. a
+ * symlink `./notes.md` → `/etc/passwd`).
+ *
+ * For non-existent paths (e.g. create-a-new-file), we fall back to
+ * resolving the parent directory's realpath and rebasing the leaf,
+ * so writeFile still works when the target doesn't exist yet but
+ * its containing directory is a symlink out of the sandbox.
+ */
+export async function resolveInsideReal(
+  workspaceRoot: string,
+  userPath: string,
+): Promise<string> {
+  const normRoot = path.resolve(workspaceRoot);
+  const rootReal = existsSync(normRoot)
+    ? await fs.realpath(normRoot)
+    : normRoot;
+  const normPath = resolveInside(workspaceRoot, userPath);
+
+  // Fast path — path exists, realpath it directly.
+  if (existsSync(normPath)) {
+    let real: string;
+    try {
+      real = await fs.realpath(normPath);
+    } catch (err) {
+      throw new SandboxError(
+        `cannot realpath '${userPath}': ${(err as Error).message}`,
+        "REALPATH_FAILED",
+      );
+    }
+    if (!isInsideRoot(real, rootReal)) {
+      throw new SandboxError(
+        `path '${userPath}' resolves via symlink outside workspace`,
+        "SANDBOX_ESCAPE",
+      );
+    }
+    return normPath;
+  }
+
+  // Path doesn't exist yet — realpath the containing directory so a
+  // symlinked parent still blocks escapes on create.
+  const parent = path.dirname(normPath);
+  if (existsSync(parent)) {
+    let parentReal: string;
+    try {
+      parentReal = await fs.realpath(parent);
+    } catch (err) {
+      throw new SandboxError(
+        `cannot realpath parent of '${userPath}': ${(err as Error).message}`,
+        "REALPATH_FAILED",
+      );
+    }
+    if (!isInsideRoot(parentReal, rootReal)) {
+      throw new SandboxError(
+        `path '${userPath}' resolves via symlinked parent outside workspace`,
+        "SANDBOX_ESCAPE",
+      );
+    }
+  }
+  return normPath;
+}
+
+function isInsideRoot(absPath: string, rootReal: string): boolean {
+  return absPath === rootReal || absPath.startsWith(rootReal + path.sep);
+}
+
 // ─── Read ─────────────────────────────────────────────────────────────────
 
 export interface ReadFileResult {
@@ -75,7 +150,7 @@ export async function readFile(
   opts: SandboxOptions,
   relativePath: string,
 ): Promise<ReadFileResult> {
-  const abs = resolveInside(opts.workspaceRoot, relativePath);
+  const abs = await resolveInsideReal(opts.workspaceRoot, relativePath);
   if (!existsSync(abs)) {
     throw new SandboxError(`file not found: ${relativePath}`, "NOT_FOUND");
   }
@@ -131,7 +206,7 @@ export async function writeFile(
       "MUTATIONS_DISABLED",
     );
   }
-  const abs = resolveInside(opts.workspaceRoot, relativePath);
+  const abs = await resolveInsideReal(opts.workspaceRoot, relativePath);
   const max = opts.maxWriteBytes ?? 1024 * 1024;
   const bytes = Buffer.byteLength(content, "utf8");
   if (bytes > max) {
@@ -190,7 +265,7 @@ export async function editFile(
       "MUTATIONS_DISABLED",
     );
   }
-  const abs = resolveInside(opts.workspaceRoot, relativePath);
+  const abs = await resolveInsideReal(opts.workspaceRoot, relativePath);
   if (!existsSync(abs)) {
     throw new SandboxError(`file not found: ${relativePath}`, "NOT_FOUND");
   }
@@ -335,7 +410,7 @@ export async function multiEditFile(
     }
   }
 
-  const abs = resolveInside(opts.workspaceRoot, relativePath);
+  const abs = await resolveInsideReal(opts.workspaceRoot, relativePath);
   if (!existsSync(abs)) {
     throw new SandboxError(`file not found: ${relativePath}`, "NOT_FOUND");
   }
@@ -417,7 +492,7 @@ export async function listDirectory(
   opts: SandboxOptions,
   relativePath: string,
 ): Promise<{ path: string; entries: ListDirEntry[] }> {
-  const abs = resolveInside(opts.workspaceRoot, relativePath);
+  const abs = await resolveInsideReal(opts.workspaceRoot, relativePath);
   if (!existsSync(abs)) {
     throw new SandboxError(`directory not found: ${relativePath}`, "NOT_FOUND");
   }
