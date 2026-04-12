@@ -28,9 +28,10 @@ import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
 import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
 import StressTestPanel from "@/components/StressTestPanel";
+import MonteCarloFan from "@/components/MonteCarloFan";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
-import { Loader2, Target, Sliders, ShieldCheck, AlertTriangle, BarChart3 } from "lucide-react";
+import { Loader2, Target, Sliders, ShieldCheck } from "lucide-react";
 
 export default function RetirementPage() {
   const [age, setAge] = useState(40);
@@ -61,11 +62,12 @@ export default function RetirementPage() {
   const runPreset = trpc.wealthEngine.runPreset.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
   const backPlan = trpc.wealthEngine.backPlanHolistic.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
 
-  // Stress testing + historical backtest
+  // Stress testing + historical backtest + Monte Carlo
   const stressDotcom = trpc.calculatorEngine.stressTest.useMutation();
   const stressGFC = trpc.calculatorEngine.stressTest.useMutation();
   const stressCovid = trpc.calculatorEngine.stressTest.useMutation();
   const backtest = trpc.calculatorEngine.historicalBacktest.useMutation();
+  const monteCarlo = trpc.wealthEngine.monteCarloSim.useMutation();
 
   const annualContribution = income * savingsRate;
 
@@ -78,12 +80,13 @@ export default function RetirementPage() {
       },
       {
         onSuccess: () => {
-          // Auto-run stress tests + backtest with the user's savings as starting balance
+          // Auto-run stress tests + backtest + Monte Carlo
           const stressInput = { startBalance: savings, annualContribution };
           stressDotcom.mutate({ ...stressInput, scenarioKey: "dotcom" });
           stressGFC.mutate({ ...stressInput, scenarioKey: "gfc" });
           stressCovid.mutate({ ...stressInput, scenarioKey: "covid" });
           backtest.mutate({ startBalance: savings, annualContribution, annualCost: 0, horizon });
+          monteCarlo.mutate({ strategyConfig: { investReturn: investmentReturn, volatility: 0.15 }, maxYears: horizon });
         },
       },
     );
@@ -207,6 +210,21 @@ export default function RetirementPage() {
                   />
                 </CardContent>
               </Card>
+            )}
+
+            {/* Monte Carlo fan chart — probability distribution */}
+            {monteCarlo.data && (
+              <MonteCarloFan
+                data={(monteCarlo.data.data ?? []).map((p: any, i: number) => ({
+                  year: i,
+                  p10: p.p10 ?? 0,
+                  p25: p.p25 ?? 0,
+                  p50: p.p50 ?? 0,
+                  p75: p.p75 ?? 0,
+                  p90: p.p90 ?? 0,
+                })).filter((_: any, i: number) => i > 0)}
+                title={`Monte Carlo — ${horizon}-Year Probability Distribution`}
+              />
             )}
 
             {/* Guardrail warnings + benchmarks */}

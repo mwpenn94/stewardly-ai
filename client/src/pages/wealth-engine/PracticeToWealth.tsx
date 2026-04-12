@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
+import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
+import IncomeStreamBreakdown from "@/components/IncomeStreamBreakdown";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { Loader2, Briefcase, PiggyBank } from "lucide-react";
@@ -202,6 +204,22 @@ export default function PracticeToWealthPage() {
               />
             </CardContent>
           </Card>
+        )}
+
+        {/* Income Stream Breakdown — 13-stream BIE visualization */}
+        {bizYears.length > 0 && (
+          <IncomeStreamBreakdown
+            results={bizYears}
+            title="Income Stream Breakdown"
+          />
+        )}
+
+        {/* Guardrail warnings + benchmarks */}
+        {(bizYears.length > 0 || holisticYears.length > 0) && (
+          <CalculatorContextBar
+            params={{ returnRate: 0.07, savingsRate: 0.18 }}
+            className="space-y-3"
+          />
         )}
       </div>
     </AppShell>
