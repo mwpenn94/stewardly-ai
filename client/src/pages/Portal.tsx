@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -136,6 +137,7 @@ export default function Portal() {
   if (loading) {
     return (
       <AppShell title="Advisor Portal">
+      <SEOHead title="Advisor Portal" description="Advisor portal and client management" />
       <div className="min-h-screen bg-background p-6">
         <div className="max-w-7xl mx-auto space-y-6">
           <Skeleton className="h-8 w-48" />

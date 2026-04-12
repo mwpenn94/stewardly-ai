@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -159,6 +160,7 @@ export default function Calculators() {
 
   return (
     <AppShell title="Calculators">
+      <SEOHead title="Calculators" description="Financial calculators powered by the Wealth Engine" />
     <div className="min-h-screen">
       {/* Header — hidden on mobile where AppShell provides navigation */}
       <div className="hidden lg:block border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">

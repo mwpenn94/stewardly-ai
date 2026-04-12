@@ -112,7 +112,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   // ── RELATIONSHIPS — client + document + integration management
   { iconName: "Users", label: "Relationships", href: "/relationships", minRole: "user", section: "relationships" },
   { iconName: "LayoutDashboard", label: "Client Dashboard", href: "/client-dashboard", minRole: "user", section: "relationships" },
-  { iconName: "FileText", label: "Documents", href: "/documents", minRole: "user", section: "relationships" },
+  { iconName: "FileText", label: "Documents", href: "/settings/knowledge", minRole: "user", section: "relationships" },
   { iconName: "Link2", label: "Integrations", href: "/integrations", minRole: "user", section: "relationships" },
   { iconName: "HeartPulse", label: "Integration Health", href: "/integration-health", minRole: "advisor", section: "relationships" },
   { iconName: "Users2", label: "Community", href: "/community", minRole: "advisor", section: "relationships" },
@@ -121,7 +121,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "GraduationCap", label: "Learning", href: "/learning", minRole: "user", section: "learning" },
   { iconName: "Shield", label: "Licenses", href: "/learning/licenses", minRole: "user", section: "learning" },
   { iconName: "Award", label: "Achievements", href: "/learning/achievements", minRole: "user", section: "learning" },
-  { iconName: "Brain", label: "Concept Map", href: "/learning/connections", minRole: "user", section: "learning" },
+  { iconName: "GitBranch", label: "Concept Map", href: "/learning/connections", minRole: "user", section: "learning" },
   { iconName: "RefreshCw", label: "Due Review", href: "/learning/review", minRole: "user", section: "learning" },
   { iconName: "Search", label: "Search Content", href: "/learning/search", minRole: "user", section: "learning" },
   { iconName: "Sparkles", label: "Content Studio", href: "/learning/studio", minRole: "advisor", section: "learning" },

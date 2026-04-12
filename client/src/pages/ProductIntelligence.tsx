@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import {
   ArrowLeft, TrendingUp, Shield, FileSignature, BarChart3, Loader2,
   RefreshCw, Target, Activity, ChevronRight, DollarSign, Percent,
@@ -28,6 +29,7 @@ export default function ProductIntelligence() {
 
   return (
     <AppShell title="Product Intelligence">
+      <SEOHead title="Product Intelligence" description="Product analysis and competitive intelligence" />
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">

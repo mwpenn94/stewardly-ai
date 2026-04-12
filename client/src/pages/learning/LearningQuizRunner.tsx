@@ -15,6 +15,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -183,6 +184,7 @@ export default function LearningQuizRunner() {
   if (trackQ.isLoading || questionsQ.isLoading) {
     return (
       <AppShell title="Quiz">
+      <SEOHead title="Quiz" description="Practice quiz with explanations" />
         <div className="p-6 text-sm text-muted-foreground">Loading quiz…</div>
       </AppShell>
     );

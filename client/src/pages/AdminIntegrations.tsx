@@ -13,6 +13,7 @@ import { navigateToChat } from "@/lib/navigateToChat";
 import { Plug, Search, RefreshCw, Activity, AlertTriangle, CheckCircle, XCircle, Settings2, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function AdminIntegrations() {
   const [search, setSearch] = useState("");
@@ -38,6 +39,7 @@ export default function AdminIntegrations() {
 
   return (
     <AppShell title="Admin Integrations">
+      <SEOHead title="Admin Integrations" description="Manage platform integrations and API connections" />
     <div className="space-y-6">
       <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
       <div className="flex items-center justify-between">

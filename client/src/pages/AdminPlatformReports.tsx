@@ -3,6 +3,7 @@
  */
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export default function AdminPlatformReports() {
 
   if (authLoading) {
     return <AppShell title="Platform Reports"><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
+      <SEOHead title="Platform Reports" description="View platform analytics and usage reports" />
   }
   if (!user || user.role !== "admin") {
     return <AppShell title="Platform Reports"><div className="flex flex-col items-center justify-center h-64 gap-4"><XCircle className="w-12 h-12 text-red-500" /><p className="text-muted-foreground">Admin access required</p></div></AppShell>;

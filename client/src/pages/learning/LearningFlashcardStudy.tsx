@@ -18,6 +18,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,6 +149,7 @@ export default function LearningFlashcardStudy() {
   if (trackQ.isLoading || flashcardsQ.isLoading) {
     return (
       <AppShell title="Flashcards">
+      <SEOHead title="Flashcards" description="Study flashcards with spaced repetition" />
         <div className="p-6 text-sm text-muted-foreground">Loading deck…</div>
       </AppShell>
     );

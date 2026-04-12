@@ -4,6 +4,7 @@
  */
 import { useState, useMemo, useCallback } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -439,6 +440,7 @@ export default function EngineDashboard() {
 
   return (
     <AppShell title="Engine Dashboard">
+      <SEOHead title="Engine Dashboard" description="Wealth Engine multi-engine comparison dashboard" />
       <div className="container max-w-[1400px] py-4 md:py-6 space-y-4 md:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">

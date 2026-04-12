@@ -12,6 +12,7 @@
  */
 
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,6 +107,7 @@ export default function ContentStudio() {
 
   if (meQ.isLoading) {
     return <AppShell title="Content Studio"><div className="p-6 text-sm text-muted-foreground">Loading…</div></AppShell>;
+      <SEOHead title="Content Studio" description="Author and manage learning content" />
   }
   if (!isAdvisorPlus) {
     return <Redirect to="/learning" />;

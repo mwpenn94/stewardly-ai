@@ -23,6 +23,7 @@
  */
 import { useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -176,6 +177,7 @@ export default function AdminSystemHealth() {
   if (authLoading) {
     return (
       <AppShell title="System Health">
+      <SEOHead title="System Health" description="Monitor system health, cron jobs, and scheduler status" />
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>

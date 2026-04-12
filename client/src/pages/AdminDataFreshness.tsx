@@ -17,6 +17,7 @@
  */
 import { useMemo } from "react";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -122,6 +123,7 @@ export default function AdminDataFreshness() {
   if (authLoading) {
     return (
       <AppShell title="Data Freshness">
+      <SEOHead title="Data Freshness" description="Monitor data source freshness and ingestion health" />
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>

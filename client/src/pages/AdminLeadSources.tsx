@@ -13,6 +13,7 @@
  * build plan that would let this page render live data.
  */
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ export default function AdminLeadSources() {
 
   if (authLoading) {
     return <AppShell title="Lead Sources"><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
+      <SEOHead title="Lead Sources" description="Configure and manage lead capture sources" />
   }
   if (!user || user.role !== "admin") {
     return <AppShell title="Lead Sources"><div className="flex flex-col items-center justify-center h-64 gap-4"><XCircle className="w-12 h-12 text-red-500" /><p className="text-muted-foreground">Admin access required</p></div></AppShell>;

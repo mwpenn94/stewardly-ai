@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import {
   ArrowLeft, Shield, Server, Database, Cloud, Wifi, Clock, AlertTriangle,
   CheckCircle2, XCircle, Activity, RefreshCw, Loader2, BarChart3,
@@ -149,6 +150,7 @@ export default function BCP() {
 
   return (
     <AppShell title="Business Continuity">
+      <SEOHead title="Business Continuity" description="Business continuity planning and documentation" />
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">

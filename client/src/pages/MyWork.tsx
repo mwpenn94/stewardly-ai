@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 
 interface WorkItem {
   id: string;
@@ -60,6 +61,7 @@ export default function MyWork({ items = [], isLoading = false }: MyWorkProps) {
 
   return (
     <AppShell title="My Work">
+      <SEOHead title="My Work" description="Aggregated work dashboard and task management" />
     <div className="max-w-3xl mx-auto px-4 py-6 pb-20 md:pb-6">
       <div className="flex items-center justify-between mb-6">
         <div>

@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function FairnessTestDashboard() {
   const [, navigate] = useLocation();
@@ -72,6 +73,7 @@ export default function FairnessTestDashboard() {
 
   return (
     <AppShell title="Fairness Testing">
+      <SEOHead title="Fairness Testing" description="AI fairness testing and bias auditing" />
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}

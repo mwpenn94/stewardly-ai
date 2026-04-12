@@ -6,6 +6,7 @@
  * sections, category badges, and a timeline-style layout.
  */
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { CHANGELOG, CURRENT_VERSION } from "@/components/WhatsNewModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export default function Changelog() {
 
   return (
     <AppShell title="Changelog">
+      <SEOHead title="Changelog" description="Latest updates and release notes" />
       <div className="min-h-screen">
         {/* Header */}
         <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">

@@ -7,6 +7,7 @@
  */
 
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,6 +68,7 @@ export default function LicenseTracker() {
 
   return (
     <AppShell title="License Tracker">
+      <SEOHead title="License Tracker" description="Track professional licenses and CE credits" />
       <div className="mx-auto max-w-5xl p-6 space-y-6">
         <header className="flex items-center justify-between">
           <div>

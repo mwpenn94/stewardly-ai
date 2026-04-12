@@ -20,6 +20,7 @@
 import { useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import {
   Card,
@@ -101,6 +102,7 @@ export default function LearningTrackDetail() {
   if (trackQ.isLoading) {
     return (
       <AppShell title="Track">
+      <SEOHead title="Track" description="Track chapters and study materials" />
         <div className="p-6 text-sm text-muted-foreground">Loading track…</div>
       </AppShell>
     );
