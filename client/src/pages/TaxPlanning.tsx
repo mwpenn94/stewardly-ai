@@ -1,33 +1,63 @@
 /**
- * TaxPlanning — Tax planning analysis dashboard with bracket visualization,
- * Roth conversion analysis, tax-loss harvesting, and strategy recommendations.
+ * TaxPlanning — Wired to the real tax.projectYear + tax.projectStateTax
+ * backend (Pass 4/10 pure projector). Interactive income/deduction
+ * inputs, real bracket breakdown, effective rate, and state tax.
  */
 import { SEOHead } from "@/components/SEOHead";
-import { LeadCaptureGate } from "@/components/LeadCaptureGate";
-import { FinancialScoreCard } from "@/components/FinancialScoreCard";
-import { CalculatorInsight } from "@/components/CalculatorInsight";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, BarChart3 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, BarChart3, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
+import { useState } from "react";
 
-const BRACKETS_2026 = [
-  { rate: "10%", single: "$0 – $11,925", married: "$0 – $23,850", fill: 100 },
-  { rate: "12%", single: "$11,926 – $48,475", married: "$23,851 – $96,950", fill: 100 },
-  { rate: "22%", single: "$48,476 – $103,350", married: "$96,951 – $206,700", fill: 78 },
-  { rate: "24%", single: "$103,351 – $197,300", married: "$206,701 – $394,600", fill: 0 },
-  { rate: "32%", single: "$197,301 – $250,525", married: "$394,601 – $501,050", fill: 0 },
-  { rate: "35%", single: "$250,526 – $626,350", married: "$501,051 – $751,600", fill: 0 },
-  { rate: "37%", single: "Over $626,350", married: "Over $751,600", fill: 0 },
-];
+function fmt(n: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+}
 
 export default function TaxPlanning() {
   const [, navigate] = useLocation();
+
+  // Input state
+  const [filingStatus, setFilingStatus] = useState<"single" | "mfj" | "mfs" | "hoh">("mfj");
+  const [income, setIncome] = useState(150000);
+  const [capGains, setCapGains] = useState(0);
+  const [dividends, setDividends] = useState(5000);
+  const [tradDist, setTradDist] = useState(0);
+  const [itemized, setItemized] = useState(0);
+  const [aboveLine, setAboveLine] = useState(0);
+  const [age, setAge] = useState(45);
+  const [stateCode, setStateCode] = useState<"CA" | "NY" | "IL" | "TX">("TX");
+
+  const yearCtx = {
+    year: 2026,
+    filingStatus,
+    ordinaryIncomeUSD: income,
+    longTermCapGainsUSD: capGains,
+    qualifiedDividendsUSD: dividends,
+    traditionalDistributionsUSD: tradDist,
+    itemizedDeductionUSD: itemized,
+    aboveTheLineUSD: aboveLine,
+    primaryAge: age,
+  };
+
+  const taxResult = trpc.tax.projectYear.useQuery(yearCtx, { retry: false });
+  const stateResult = trpc.tax.projectStateTax.useQuery(
+    { year: yearCtx, state: stateCode },
+    { retry: false },
+  );
+  const rmdResult = trpc.tax.rmd.useQuery(
+    { age, priorYearBalance: tradDist > 0 ? tradDist * 20 : 500000 },
+    { retry: false, enabled: age >= 73 },
+  );
+
+  const fed = taxResult.data;
+  const st = stateResult.data;
 
   return (
     <AppShell title="Tax Planning">
@@ -36,119 +66,210 @@ export default function TaxPlanning() {
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/advisory")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/calculators")}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Tax Planning</h1>
-            <p className="text-sm text-muted-foreground">2026 tax analysis and optimization strategies</p>
+            <h1 className="text-2xl font-bold font-heading">Tax Planning</h1>
+            <p className="text-sm text-muted-foreground">2026 tax projection powered by the real tax engine</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => toast.info("Tax report export coming soon")}>
-          <FileText className="h-3.5 w-3.5 mr-1" /> Export Analysis
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <FinancialScoreCard title="Effective Rate" value="18.4%" icon={DollarSign} trend="down" trendValue="-1.2% vs last year" />
-        <FinancialScoreCard title="Tax Savings Found" value="$12,400" icon={PiggyBank} trend="up" trendValue="3 strategies" />
-        <FinancialScoreCard title="Harvesting Opps" value={5} format="number" icon={TrendingDown} trend="up" trendValue="$8,200 potential" />
-        <FinancialScoreCard title="Roth Space" value="$23,000" icon={BarChart3} />
+      {/* Summary cards */}
+      {fed && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="bg-card/60 border-border/50">
+            <CardContent className="p-3">
+              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Total Tax</p>
+              <p className="text-lg font-semibold tabular-nums">{fmt(fed.totalTaxUSD)}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card/60 border-border/50">
+            <CardContent className="p-3">
+              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Effective Rate</p>
+              <p className="text-lg font-semibold tabular-nums text-accent">{(fed.effectiveRate * 100).toFixed(1)}%</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card/60 border-border/50">
+            <CardContent className="p-3">
+              <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Marginal Rate</p>
+              <p className="text-lg font-semibold tabular-nums">{(fed.marginalRate * 100).toFixed(0)}%</p>
+            </CardContent>
+          </Card>
+          {st && (
+            <Card className="bg-card/60 border-border/50">
+              <CardContent className="p-3">
+                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Combined ({stateCode})</p>
+                <p className="text-lg font-semibold tabular-nums">{(st.combinedEffectiveRate * 100).toFixed(1)}%</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Input panel */}
+        <Card className="bg-card/60 border-border/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-accent" /> Tax Inputs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Filing Status</Label>
+              <div className="grid grid-cols-2 gap-1.5 mt-1">
+                {(["single", "mfj", "mfs", "hoh"] as const).map(s => (
+                  <button key={s} onClick={() => setFilingStatus(s)}
+                    className={`text-xs py-1.5 px-2 rounded border transition-all ${filingStatus === s ? "bg-accent/10 border-accent/30 text-accent" : "bg-card/40 border-border/50 text-muted-foreground"}`}>
+                    {s === "mfj" ? "Married Joint" : s === "mfs" ? "Married Sep" : s === "hoh" ? "Head of House" : "Single"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">State</Label>
+              <div className="grid grid-cols-4 gap-1.5 mt-1">
+                {(["CA", "NY", "IL", "TX"] as const).map(s => (
+                  <button key={s} onClick={() => setStateCode(s)}
+                    className={`text-xs py-1.5 rounded border transition-all ${stateCode === s ? "bg-accent/10 border-accent/30 text-accent" : "bg-card/40 border-border/50 text-muted-foreground"}`}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">W-2 / Ordinary Income</Label>
+              <Input type="number" value={income} onChange={e => setIncome(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Long-Term Capital Gains</Label>
+              <Input type="number" value={capGains} onChange={e => setCapGains(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Qualified Dividends</Label>
+              <Input type="number" value={dividends} onChange={e => setDividends(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Traditional IRA Distributions</Label>
+              <Input type="number" value={tradDist} onChange={e => setTradDist(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Itemized Deductions</Label>
+              <Input type="number" value={itemized} onChange={e => setItemized(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Above-the-Line Deductions</Label>
+              <Input type="number" value={aboveLine} onChange={e => setAboveLine(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Age</Label>
+              <Input type="number" value={age} onChange={e => setAge(Number(e.target.value))} className="h-8 text-sm" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Results panel */}
+        <div className="lg:col-span-2 space-y-4">
+          {taxResult.isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : fed ? (
+            <Tabs defaultValue="breakdown">
+              <TabsList>
+                <TabsTrigger value="breakdown">Bracket Breakdown</TabsTrigger>
+                <TabsTrigger value="details">Full Details</TabsTrigger>
+                {st && <TabsTrigger value="state">State Tax</TabsTrigger>}
+                {rmdResult.data && <TabsTrigger value="rmd">RMD</TabsTrigger>}
+              </TabsList>
+
+              <TabsContent value="breakdown" className="mt-4">
+                <Card className="bg-card/60 border-border/50">
+                  <CardContent className="p-4 space-y-2">
+                    {fed.bracketBreakdown?.map((b: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="font-mono text-xs">{(b.rate * 100).toFixed(0)}%</Badge>
+                          <span className="text-muted-foreground text-xs">
+                            {fmt(b.lowerBound)} – {fmt(b.upperBound)}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-mono text-sm">{fmt(b.taxOnBracket)}</span>
+                          <span className="text-xs text-muted-foreground ml-2">on {fmt(b.taxableInBracket)}</span>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="border-t border-border/50 pt-2 flex justify-between font-medium">
+                      <span>Total Federal Tax</span>
+                      <span className="font-mono">{fmt(fed.totalTaxUSD)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="details" className="mt-4">
+                <Card className="bg-card/60 border-border/50">
+                  <CardContent className="p-4 space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">AGI</span><span className="font-mono">{fmt(fed.agiUSD)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Deduction Used</span><span className="font-mono">{fmt(fed.deductionUsedUSD)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Deduction Type</span><Badge variant="outline">{fed.deductionType}</Badge></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Taxable Income</span><span className="font-mono">{fmt(fed.taxableIncomeUSD)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Ordinary Tax</span><span className="font-mono">{fmt(fed.ordinaryTaxUSD)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">LTCG + QD Tax</span><span className="font-mono">{fmt(fed.ltcgTaxUSD)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">NIIT (3.8%)</span><span className="font-mono">{fmt(fed.niitUSD)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">AMT</span><span className="font-mono">{fmt(fed.amtUSD ?? 0)}</span></div>
+                    <div className="border-t border-border/50 pt-2 flex justify-between font-medium">
+                      <span>Total Federal</span><span className="font-mono">{fmt(fed.totalTaxUSD)}</span>
+                    </div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Effective Rate</span><span className="font-mono text-accent">{(fed.effectiveRate * 100).toFixed(2)}%</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Marginal Rate</span><span className="font-mono">{(fed.marginalRate * 100).toFixed(0)}%</span></div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {st && (
+                <TabsContent value="state" className="mt-4">
+                  <Card className="bg-card/60 border-border/50">
+                    <CardContent className="p-4 space-y-2 text-sm">
+                      <div className="flex justify-between"><span className="text-muted-foreground">State</span><Badge variant="outline">{stateCode}</Badge></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">State Tax</span><span className="font-mono">{fmt(st.state.stateTaxUSD)}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">State Effective Rate</span><span className="font-mono">{(st.state.stateEffectiveRate * 100).toFixed(2)}%</span></div>
+                      <div className="border-t border-border/50 pt-2 flex justify-between font-medium">
+                        <span>Federal + State</span><span className="font-mono">{fmt(st.federal.totalTaxUSD + st.state.stateTaxUSD)}</span>
+                      </div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">Combined Effective Rate</span><span className="font-mono text-accent">{(st.combinedEffectiveRate * 100).toFixed(2)}%</span></div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
+
+              {rmdResult.data && (
+                <TabsContent value="rmd" className="mt-4">
+                  <Card className="bg-card/60 border-border/50">
+                    <CardContent className="p-4 text-sm">
+                      <p className="text-muted-foreground mb-2">Required Minimum Distribution at age {age}:</p>
+                      <p className="text-2xl font-bold">{fmt(rmdResult.data.amount)}</p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
+            </Tabs>
+          ) : taxResult.isError ? (
+            <Card className="bg-card/60 border-border/50">
+              <CardContent className="p-6 text-center">
+                <p className="text-sm text-destructive">Error loading tax projection. Check your inputs.</p>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
       </div>
 
-      <Tabs defaultValue="brackets">
-        <TabsList>
-          <TabsTrigger value="brackets">Tax Brackets</TabsTrigger>
-          <TabsTrigger value="strategies">Strategies</TabsTrigger>
-          <TabsTrigger value="harvesting">Tax-Loss Harvesting</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="brackets" className="mt-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">2026 Federal Tax Brackets (Married Filing Jointly)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {BRACKETS_2026.map(b => (
-                  <div key={b.rate} className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium w-12">{b.rate}</span>
-                      <span className="text-muted-foreground text-xs">{b.married}</span>
-                    </div>
-                    <Progress value={b.fill} className="h-2" />
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-4">
-                Current taxable income fills through the 22% bracket (78% filled). Consider Roth conversions up to the 24% bracket boundary.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="strategies" className="space-y-4 mt-4">
-          <LeadCaptureGate
-            title="Unlock Tax Optimization Strategies"
-            description="Enter your email to access personalized Roth conversion modeling, charitable giving analysis, and QBI deduction calculations."
-            onCapture={(email) => toast.success(`Tax strategies sent to ${email}`)}
-          >
-          <CalculatorInsight
-            title="Roth Conversion Opportunity"
-            summary="You have $23,000 of room in the 22% bracket before hitting 24%. Converting traditional IRA funds now locks in the lower rate."
-            detail="Converting $23,000 at 22% costs $5,060 in taxes now but saves an estimated $8,050 in future taxes at the projected 35% retirement bracket. Net benefit: $2,990 plus tax-free growth."
-            severity="success"
-            actionLabel="Model Conversion"
-            onAction={() => navigate("/chat")}
-          />
-          <CalculatorInsight
-            title="Charitable Giving — Donor Advised Fund"
-            summary="Bunching 2 years of charitable giving into a DAF this year could save $3,400 in taxes."
-            detail="By contributing $20,000 to a DAF this year instead of $10,000/year, you itemize this year (saving $3,400 vs standard deduction) and take the standard deduction next year."
-            severity="info"
-            actionLabel="Calculate DAF Impact"
-            onAction={() => navigate("/chat")}
-          />
-          <CalculatorInsight
-            title="Qualified Business Income Deduction"
-            summary="Your consulting income may qualify for the 20% QBI deduction, saving up to $6,000."
-            detail="If taxable income stays below $394,600 (MFJ), the full 20% deduction applies to qualified business income. Ensure W-2 wage and property basis tests are met."
-            severity="info"
-          />
-          </LeadCaptureGate>
-        </TabsContent>
-
-        <TabsContent value="harvesting" className="mt-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                {[
-                  { ticker: "VWO", loss: -2400, basis: 15000, current: 12600, replacement: "IEMG" },
-                  { ticker: "ARKK", loss: -3100, basis: 8000, current: 4900, replacement: "QQQM" },
-                  { ticker: "XLE", loss: -1200, basis: 10000, current: 8800, replacement: "VDE" },
-                  { ticker: "SLV", loss: -800, basis: 5000, current: 4200, replacement: "SIVR" },
-                  { ticker: "BNDX", loss: -700, basis: 12000, current: 11300, replacement: "IAGG" },
-                ].map(h => (
-                  <div key={h.ticker} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                    <div>
-                      <span className="font-mono text-sm font-medium">{h.ticker}</span>
-                      <span className="text-xs text-muted-foreground ml-2">→ {h.replacement}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-medium text-red-400">${h.loss.toLocaleString()}</span>
-                      <p className="text-xs text-muted-foreground">Basis: ${h.basis.toLocaleString()}</p>
-                    </div>
-                  </div>
-                ))}
-                <div className="pt-2 flex items-center justify-between">
-                  <span className="text-sm font-medium">Total Harvestable Losses</span>
-                  <span className="text-lg font-bold text-red-400">-$8,200</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <p className="text-[10px] text-muted-foreground text-center">
+        Tax calculations are for illustrative purposes. Consult a licensed tax professional for advice.
+      </p>
     </div>
     </AppShell>
   );

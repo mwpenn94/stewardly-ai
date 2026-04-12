@@ -206,6 +206,7 @@ function Router() {
         <Route path="/admin/webhooks" component={WebhookManager} />
         <Route path="/client-onboarding" component={ClientOnboarding} />
         <Route path="/protection-score" component={FinancialProtectionScore} />
+        <Route path="/financial-protection-score" component={FinancialProtectionScore} />
         <Route path="/community" component={Community} />
         <Route path="/unsubscribe" component={Unsubscribe} />
         <Route path="/admin/system-health" component={AdminSystemHealth} />
