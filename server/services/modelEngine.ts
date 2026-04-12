@@ -302,21 +302,21 @@ async function runModelLogic(
       return trackGoalProgress(input);
     // ─── Full Statistical Models ─────────────────────────────────────────
     case "monte-carlo-retirement":
-      return monteCarloRetirement(input as unknown as RetirementInput) as unknown as Record<string, unknown>;
+      return monteCarloRetirement(input as RetirementInput) as Record<string, unknown>;
     case "debt-optimization":
-      return optimizeDebt(input as unknown as DebtOptimizationInput) as unknown as Record<string, unknown>;
+      return optimizeDebt(input as DebtOptimizationInput) as Record<string, unknown>;
     case "tax-optimization":
-      return optimizeTax(input as unknown as TaxOptimizationInput) as unknown as Record<string, unknown>;
+      return optimizeTax(input as TaxOptimizationInput) as Record<string, unknown>;
     case "cash-flow-projection":
-      return projectCashFlow(input as unknown as CashFlowInput) as unknown as Record<string, unknown>;
+      return projectCashFlow(input as CashFlowInput) as Record<string, unknown>;
     case "insurance-gap-analysis":
-      return analyzeInsuranceGaps(input as unknown as InsuranceGapInput) as unknown as Record<string, unknown>;
+      return analyzeInsuranceGaps(input as InsuranceGapInput) as Record<string, unknown>;
     case "estate-planning":
-      return analyzeEstatePlan(input as unknown as EstatePlanningInput) as unknown as Record<string, unknown>;
+      return analyzeEstatePlan(input as EstatePlanningInput) as Record<string, unknown>;
     case "education-funding":
-      return projectEducationFunding(input as unknown as EducationFundingInput) as unknown as Record<string, unknown>;
+      return projectEducationFunding(input as EducationFundingInput) as Record<string, unknown>;
     case "risk-tolerance-assessment":
-      return scoreRiskTolerance(input as unknown as RiskToleranceInput) as unknown as Record<string, unknown>;
+      return scoreRiskTolerance(input as RiskToleranceInput) as Record<string, unknown>;
     default:
       return { status: "not_implemented", message: `Model ${slug} execution not yet implemented` };
   }

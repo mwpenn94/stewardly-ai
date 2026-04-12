@@ -169,7 +169,7 @@ export default function LearningQuizRunner() {
       if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
         return;
       }
-      const opts = (current?.options ?? []) as unknown as string[];
+      const opts: string[] = Array.isArray(current?.options) ? current.options as string[] : [];
       if (/^[1-9]$/.test(e.key)) {
         const idx = Number(e.key) - 1;
         if (idx < opts.length && !revealed) {
