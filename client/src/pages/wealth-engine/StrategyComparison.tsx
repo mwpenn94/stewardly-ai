@@ -15,7 +15,8 @@
  *
  * tRPC chain:
  *  1. wealthEngine.holisticCompare → server-side HE.compareAt + findWinners
- *  2. calculatorEngine.stressTest / historicalBacktest / industryBenchmarks / stressScenarios
+ *  2. wealthEngine.stressTest / historicalBacktest / industryBenchmarks / stressScenarios
+ *     (fully migrated from calculatorEngine to canonical wealthEngine in CBL28)
  *  3. ProjectionChart visualizes per-strategy snapshot trajectories
  */
 
@@ -164,29 +165,29 @@ export default function StrategyComparisonPage() {
   const [showMetricChart, setShowMetricChart] = useState(false);
   const [chartMetric, setChartMetric] = useState("totalValue");
 
-  // Enrichment queries — load reference data eagerly
-  const benchmarks = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
-  const stressScenarios = trpc.calculatorEngine.stressScenarios.useQuery(undefined, { staleTime: 300_000 });
-  const productRefs = trpc.calculatorEngine.productReferences.useQuery(undefined, { staleTime: 300_000 });
+  // Enrichment queries — load reference data eagerly (canonical wealthEngine router)
+  const benchmarks = trpc.wealthEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
+  const stressScenarios = trpc.wealthEngine.stressScenarios.useQuery(undefined, { staleTime: 300_000 });
+  const productRefs = trpc.wealthEngine.productReferences.useQuery(undefined, { staleTime: 300_000 });
 
   // Stress test + backtest — fire after comparison completes
   const onStressError = () => toast.error("Stress test failed — results may be incomplete");
   const onBacktestError = () => toast.error("Backtest failed — historical data unavailable");
-  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
-  const stressGfc = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
-  const stressCovid = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
-  const backtest = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: onBacktestError });
+  const stressDotcom = trpc.wealthEngine.stressTest.useMutation({ onError: onStressError });
+  const stressGfc = trpc.wealthEngine.stressTest.useMutation({ onError: onStressError });
+  const stressCovid = trpc.wealthEngine.stressTest.useMutation({ onError: onStressError });
+  const backtest = trpc.wealthEngine.historicalBacktest.useMutation({ onError: onBacktestError });
 
   // Multi-strategy stress test — runs all strategies through each crisis scenario
   const [stressScenarioKey, setStressScenarioKey] = useState("gfc");
   const [showMultiStress, setShowMultiStress] = useState(false);
-  const batchStress = trpc.calculatorEngine.batchStressTest.useMutation({ onError: onStressError });
+  const batchStress = trpc.wealthEngine.batchStressTest.useMutation({ onError: onStressError });
 
   // ── HE Back-Plan + Multi-Metric Chart (activating orphaned tRPC endpoints) ──
-  const heBackPlan = trpc.calculatorEngine.heBackPlan.useMutation({
+  const heBackPlan = trpc.wealthEngine.heBackPlan.useMutation({
     onError: () => toast.error("Back-plan calculation failed"),
   });
-  const heChartSeries = trpc.calculatorEngine.heChartSeries.useMutation({
+  const heChartSeries = trpc.wealthEngine.heChartSeries.useMutation({
     onError: () => toast.error("Chart series calculation failed"),
   });
 

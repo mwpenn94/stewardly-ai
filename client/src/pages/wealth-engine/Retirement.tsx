@@ -95,18 +95,18 @@ export default function RetirementPage() {
   // Risk context — auto-fire after goal projection runs
   const onStressError = () => toast.error("Stress test failed — results may be incomplete");
   const onBacktestError = () => toast.error("Backtest failed — historical data unavailable");
-  const stressGfc = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
-  const backtestRun = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: onBacktestError });
-  const benchmarks = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
+  const stressGfc = trpc.wealthEngine.stressTest.useMutation({ onError: onStressError });
+  const backtestRun = trpc.wealthEngine.historicalBacktest.useMutation({ onError: onBacktestError });
+  const benchmarks = trpc.wealthEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
   // Stress testing + historical backtest + Monte Carlo
-  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
-  const stressGFC = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
-  const stressCovid = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
-  const backtest = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: onBacktestError });
+  const stressDotcom = trpc.wealthEngine.stressTest.useMutation({ onError: onStressError });
+  const stressGFC = trpc.wealthEngine.stressTest.useMutation({ onError: onStressError });
+  const stressCovid = trpc.wealthEngine.stressTest.useMutation({ onError: onStressError });
+  const backtest = trpc.wealthEngine.historicalBacktest.useMutation({ onError: onBacktestError });
   const monteCarlo = trpc.wealthEngine.monteCarloSim.useMutation({ onError: () => toast.error("Monte Carlo simulation failed") });
 
   // ── Input guardrail validation via SCUI.checkGuardrails ──
-  const guardrailCheck = trpc.calculatorEngine.checkGuardrails.useQuery(
+  const guardrailCheck = trpc.wealthEngine.checkGuardrails.useQuery(
     { params: { returnRate: investmentReturn, savingsRate, taxRate: 0.25 } },
     { staleTime: 60_000 },
   );

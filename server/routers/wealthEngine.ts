@@ -44,12 +44,22 @@ import {
   HE_PRESETS,
   // Monte Carlo
   monteCarloSimulate,
+  // HE chart
+  getChartSeries,
   // Benchmarks
   GUARDRAILS,
   checkGuardrail,
   INDUSTRY_BENCHMARKS,
   METHODOLOGY_DISCLOSURE,
 } from "../shared/calculators";
+import {
+  SCUI,
+  STRESS_SCENARIOS,
+  SP500_HISTORY,
+  PRODUCT_REFERENCES,
+  historicalBacktest as scuiHistoricalBacktest,
+  stressTest as scuiStressTest,
+} from "../shared/calculators/scui";
 import {
   persistComputation,
   getLatestRun,
@@ -688,6 +698,93 @@ export const wealthEngineRouter = router({
     .query(({ input }) => ({
       check: checkGuardrail(input.key, input.value),
     })),
+
+  // ── SCUI — Stress testing, backtesting, reference data ────────────────
+  historicalBacktest: protectedProcedure
+    .input(z.object({
+      startBalance: z.number().min(0),
+      annualContribution: z.number().min(0),
+      annualCost: z.number().min(0),
+      horizon: z.number().min(1).max(50),
+    }))
+    .mutation(({ input }) =>
+      scuiHistoricalBacktest(input.startBalance, input.annualContribution, input.annualCost, input.horizon),
+    ),
+
+  stressTest: protectedProcedure
+    .input(z.object({
+      scenarioKey: z.string(),
+      startBalance: z.number().min(0),
+      annualContribution: z.number().min(0).optional().default(0),
+      annualCost: z.number().min(0).optional().default(0),
+    }))
+    .mutation(({ input }) =>
+      scuiStressTest(input.scenarioKey, input.startBalance, input.annualContribution, input.annualCost),
+    ),
+
+  batchStressTest: protectedProcedure
+    .input(z.object({
+      scenarioKey: z.string(),
+      strategies: z.array(z.object({
+        name: z.string(),
+        startBalance: z.number().min(0),
+        annualContribution: z.number().min(0).optional().default(0),
+        annualCost: z.number().min(0).optional().default(0),
+      })).min(1).max(20),
+    }))
+    .mutation(({ input }) => {
+      return input.strategies.map((s) => ({
+        strategy: s.name,
+        result: scuiStressTest(input.scenarioKey, s.startBalance, s.annualContribution, s.annualCost),
+      }));
+    }),
+
+  stressScenarios: protectedProcedure.query(() => {
+    return Object.entries(STRESS_SCENARIOS).map(([key, s]) => ({ key, ...s }));
+  }),
+
+  productReferences: protectedProcedure.query(() => {
+    return Object.entries(PRODUCT_REFERENCES).map(([key, ref]) => ({ key, ...ref }));
+  }),
+
+  industryBenchmarks: protectedProcedure.query(() => INDUSTRY_BENCHMARKS),
+
+  sp500History: protectedProcedure.query(() => SP500_HISTORY),
+
+  methodology: protectedProcedure.query(() => METHODOLOGY_DISCLOSURE),
+
+  checkGuardrails: protectedProcedure
+    .input(z.object({ params: z.record(z.string(), z.number()) }))
+    .query(({ input }) => {
+      return SCUI.checkGuardrails(input.params);
+    }),
+
+  heChartSeries: protectedProcedure
+    .input(z.object({
+      strategies: z.array(z.any()),
+      metric: z.string(),
+      maxYear: z.number().min(1).max(200).default(30),
+    }))
+    .mutation(({ input }) => {
+      // Set up the HE stateful module then read chart data
+      clearStrategies();
+      setHorizon(input.maxYear);
+      for (const s of input.strategies) {
+        addStrategy(createHolisticStrategy(s.name ?? "Untitled", s));
+      }
+      return getChartSeries(input.metric as never, input.maxYear);
+    }),
+
+  heBackPlan: protectedProcedure
+    .input(z.object({
+      targetValue: z.number().min(1),
+      targetYear: z.number().min(1).max(200),
+      baseStrategy: z.any(),
+    }))
+    .mutation(({ input }) => {
+      const hs = createHolisticStrategy(input.baseStrategy.name ?? "Untitled", input.baseStrategy);
+      return backPlanHolistic(input.targetValue, input.targetYear, hs);
+    }),
 
   estimatePremium: protectedProcedure
     .input(

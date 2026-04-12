@@ -2,7 +2,7 @@
  * Reference Hub — standalone page for product references, benchmarks,
  * methodology disclosures, S&P 500 history, guardrails, and historical backtest.
  *
- * Now wired to live backend data via calculatorEngine tRPC queries.
+ * Now wired to live backend data via wealthEngine tRPC queries (migrated from calculatorEngine in CBL28).
  */
 
 import { useState, useMemo } from "react";
@@ -38,11 +38,11 @@ type SortDir = "asc" | "desc";
 /* ── component ────────────────────────────────────────────────── */
 
 export default function ReferenceHub() {
-  const { data: references } = trpc.calculatorEngine.productReferences.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
-  const { data: benchmarks } = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
-  const { data: methodology } = trpc.calculatorEngine.methodology.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
-  const { data: sp500Raw } = trpc.calculatorEngine.sp500History.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
-  const { data: guardrails } = trpc.calculatorEngine.checkGuardrails.useQuery(
+  const { data: references } = trpc.wealthEngine.productReferences.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
+  const { data: benchmarks } = trpc.wealthEngine.industryBenchmarks.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
+  const { data: methodology } = trpc.wealthEngine.methodology.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
+  const { data: sp500Raw } = trpc.wealthEngine.sp500History.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
+  const { data: guardrails } = trpc.wealthEngine.checkGuardrails.useQuery(
     { params: { returnRate: 0.07, savingsRate: 0.15 } },
     { retry: false, staleTime: 5 * 60_000 },
   );
@@ -61,12 +61,12 @@ export default function ReferenceHub() {
   const [btContrib, setBtContrib] = useState(12000);
   const [btHorizon, setBtHorizon] = useState(30);
 
-  const backtest = trpc.calculatorEngine.historicalBacktest.useMutation({
+  const backtest = trpc.wealthEngine.historicalBacktest.useMutation({
     onSuccess: () => sendFeedback("calculator.result"),
   });
-  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
-  const stressGFC = trpc.calculatorEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
-  const stressCovid = trpc.calculatorEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
+  const stressDotcom = trpc.wealthEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
+  const stressGFC = trpc.wealthEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
+  const stressCovid = trpc.wealthEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
 
   const runBacktest = () => {
     const input = { startBalance: btBalance, annualContribution: btContrib };
