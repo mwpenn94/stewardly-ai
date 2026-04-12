@@ -12,6 +12,7 @@
 import { useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Loader2, BookOpen, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -111,10 +112,13 @@ export default function ExamSimulatorPage() {
   }
 
   return (
-    <ExamSimulator
-      config={config}
-      questionPool={questionPool}
-      onBack={() => navigate("/learning")}
-    />
+    <>
+      <SEOHead title={`Exam: ${config.moduleTitle}`} description={`Practice exam for ${config.moduleTitle} — ${questionPool.length} questions`} />
+      <ExamSimulator
+        config={config}
+        questionPool={questionPool}
+        onBack={() => navigate("/learning")}
+      />
+    </>
   );
 }

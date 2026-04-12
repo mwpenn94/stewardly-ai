@@ -11,6 +11,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -158,6 +159,7 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
 
   return (
     <AppShell title="Achievements">
+      <SEOHead title="Achievements" description="Track learning milestones, streaks, and mastery" />
     <div className="max-w-3xl mx-auto px-4 py-6 pb-20 md:pb-6">
       <h1 className="font-heading text-2xl font-bold mb-1">Achievements</h1>
       <p className="text-sm text-muted-foreground mb-6">
