@@ -106,8 +106,7 @@ export default function ContentStudio() {
   const [definition, setDefinition] = useState("");
 
   if (meQ.isLoading) {
-    return <AppShell title="Content Studio"><div className="p-6 text-sm text-muted-foreground">Loading…</div></AppShell>;
-      <SEOHead title="Content Studio" description="Author and manage learning content" />
+    return <AppShell title="Content Studio"><SEOHead title="Content Studio" description="Author and manage learning content" /><div className="p-6 text-sm text-muted-foreground">Loading…</div></AppShell>;
   }
   if (!isAdvisorPlus) {
     return <Redirect to="/learning" />;

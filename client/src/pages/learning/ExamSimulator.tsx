@@ -208,6 +208,46 @@ const params = useParams<{ moduleSlug?: string }>();
   const isLoadingData = !!moduleSlug && !poolProp && (trackQuery.isLoading || questionsQuery.isLoading);
   const loadError = trackQuery.error?.message ?? questionsQuery.error?.message;
 
+  // ── ALL hooks MUST be called before any early returns (Rules of Hooks) ──
+
+  // Build the question list based on mode
+  const questions = useMemo(() => {
+    if (config.mode === "adaptive") return [];
+    let pool = [...questionPool];
+    if (answerHistory) {
+      const incorrect = pool.filter((q) => answerHistory[q.id] === false);
+      const unanswered = pool.filter((q) => answerHistory[q.id] === undefined);
+      const correct = pool.filter((q) => answerHistory[q.id] === true);
+      pool = [...shuffleArray(incorrect), ...shuffleArray(unanswered), ...shuffleArray(correct)];
+    } else {
+      pool = shuffleArray(pool);
+    }
+    return pool.slice(0, config.questionCount);
+  }, [questionPool, config.questionCount, config.mode, answerHistory]);
+
+  // Exam state
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [flagged, setFlagged] = useState<Set<string>>(new Set());
+  const [answers, setAnswers] = useState<
+    { questionId: string; selectedKey: string; correct: boolean; timeSeconds: number }[]
+  >([]);
+  const [finished, setFinished] = useState(false);
+
+  // Adaptive mode state
+  const [adaptiveQuestions, setAdaptiveQuestions] = useState<Question[]>([]);
+  const [adaptiveCorrectHistory, setAdaptiveCorrectHistory] = useState<boolean[]>([]);
+  const [adaptiveAnswered, setAdaptiveAnswered] = useState<Set<string>>(new Set());
+
+  // Timer state
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(true);
+  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Early returns (safe — all hooks already called above) ──
+
   if (isLoadingData) {
     return (
       <AppShell title="Exam Simulator">
@@ -246,49 +286,6 @@ const params = useParams<{ moduleSlug?: string }>();
       </AppShell>
     );
   }
-
-  // Build the question list based on mode
-  const questions = useMemo(() => {
-    if (config.mode === "adaptive") {
-      // Adaptive builds questions one at a time; we just need the pool
-      return [];
-    }
-    // For non-adaptive modes, select and shuffle from pool
-    let pool = [...questionPool];
-
-    // If we have answer history, deprioritize previously correct questions
-    if (answerHistory) {
-      const incorrect = pool.filter((q) => answerHistory[q.id] === false);
-      const unanswered = pool.filter((q) => answerHistory[q.id] === undefined);
-      const correct = pool.filter((q) => answerHistory[q.id] === true);
-      pool = [...shuffleArray(incorrect), ...shuffleArray(unanswered), ...shuffleArray(correct)];
-    } else {
-      pool = shuffleArray(pool);
-    }
-
-    return pool.slice(0, config.questionCount);
-  }, [questionPool, config.questionCount, config.mode, answerHistory]);
-
-  // Exam state
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [revealed, setRevealed] = useState(false);
-  const [flagged, setFlagged] = useState<Set<string>>(new Set());
-  const [answers, setAnswers] = useState<
-    { questionId: string; selectedKey: string; correct: boolean; timeSeconds: number }[]
-  >([]);
-  const [finished, setFinished] = useState(false);
-
-  // Adaptive mode state
-  const [adaptiveQuestions, setAdaptiveQuestions] = useState<Question[]>([]);
-  const [adaptiveCorrectHistory, setAdaptiveCorrectHistory] = useState<boolean[]>([]);
-  const [adaptiveAnswered, setAdaptiveAnswered] = useState<Set<string>>(new Set());
-
-  // Timer state
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [timerRunning, setTimerRunning] = useState(true);
-  const [questionStartTime, setQuestionStartTime] = useState(Date.now());
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isAdaptive = config.mode === "adaptive";
   const activeQuestions = isAdaptive ? adaptiveQuestions : questions;
