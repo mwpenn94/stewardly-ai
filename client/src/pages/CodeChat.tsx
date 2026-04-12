@@ -150,6 +150,17 @@ import {
   type EditHistoryState,
   type EditHistoryEntry,
 } from "@/components/codeChat/editHistory";
+import {
+  buildToolStartAnnouncement,
+  buildToolFinishAnnouncement,
+  buildMessageAnnouncement,
+  buildAbortAnnouncement,
+  buildStreamErrorAnnouncement,
+  throttleAnnouncement,
+  flushPending,
+  emptyThrottleState,
+  type ThrottleState,
+} from "@/components/codeChat/a11yAnnouncer";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -1055,6 +1066,103 @@ function CodeChatInterface() {
     }
   }, [error]);
 
+  // Parity Pass 3 (a11y): screen-reader live region announcements.
+  // Screen reader users had no way to perceive what the agent was
+  // doing during a ReAct loop — the trace view is purely visual. We
+  // feed tool events through a pure throttle reducer so rapid bursts
+  // coalesce into a single final announcement instead of flooding
+  // the AT queue. The string we emit ultimately lands in a
+  // `role="status" aria-live="polite"` region below.
+  const [a11yAnnouncement, setA11yAnnouncement] = useState<string>("");
+  const a11yThrottleRef = useRef<ThrottleState>(emptyThrottleState);
+  const a11yLastToolStepRef = useRef<number>(-1);
+  const a11yLastFinishStepRef = useRef<number>(-1);
+  const a11yLastErrorRef = useRef<string>("");
+
+  // Announce tool start events as they come in. `currentTools` is the
+  // hook's running list so we pick up the newest one by stepIndex.
+  useEffect(() => {
+    if (!isExecuting) return;
+    if (currentTools.length === 0) return;
+    const latest = currentTools[currentTools.length - 1];
+    if (!latest || latest.stepIndex === a11yLastToolStepRef.current) return;
+    a11yLastToolStepRef.current = latest.stepIndex;
+
+    // Announce start when it first appears
+    const startText = buildToolStartAnnouncement(latest.toolName, latest.args);
+    const r = throttleAnnouncement(a11yThrottleRef.current, startText, Date.now(), 300);
+    a11yThrottleRef.current = r.next;
+    if (r.emit) setA11yAnnouncement(r.emit);
+  }, [currentTools, isExecuting]);
+
+  // Announce finishes (one announcement per step once status != running)
+  useEffect(() => {
+    if (currentTools.length === 0) return;
+    // Walk in reverse to find the newest complete/error event we haven't announced
+    for (let i = currentTools.length - 1; i >= 0; i--) {
+      const ev = currentTools[i];
+      if (ev.status === "running") continue;
+      if (ev.stepIndex <= a11yLastFinishStepRef.current) continue;
+      a11yLastFinishStepRef.current = ev.stepIndex;
+      // Error messages live in ev.preview as a serialized dispatch
+      // result; best-effort extraction for the announcer
+      let errMsg: string | undefined;
+      if (ev.status === "error" || ev.kind === "error") {
+        if (typeof ev.preview === "string") {
+          try {
+            const parsed = JSON.parse(ev.preview);
+            errMsg = typeof parsed?.error === "string" ? parsed.error : undefined;
+          } catch { /* ignore */ }
+        }
+      }
+      const text = buildToolFinishAnnouncement(ev.toolName, ev.args, ev.kind, errMsg);
+      const r = throttleAnnouncement(a11yThrottleRef.current, text, Date.now(), 300);
+      a11yThrottleRef.current = r.next;
+      if (r.emit) setA11yAnnouncement(r.emit);
+      break;
+    }
+  }, [currentTools]);
+
+  // Flush pending announcements on a short interval so coalesced
+  // updates eventually land even if no new events come in.
+  useEffect(() => {
+    if (!isExecuting) return;
+    const id = setInterval(() => {
+      const r = flushPending(a11yThrottleRef.current, Date.now(), 300);
+      a11yThrottleRef.current = r.next;
+      if (r.emit) setA11yAnnouncement(r.emit);
+    }, 300);
+    return () => clearInterval(id);
+  }, [isExecuting]);
+
+  // Announce the final assistant reply once execution finishes
+  const lastAnnouncedMessageIdRef = useRef<string>("");
+  useEffect(() => {
+    if (isExecuting) return;
+    if (messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (last.role !== "assistant") return;
+    if (last.id === lastAnnouncedMessageIdRef.current) return;
+    lastAnnouncedMessageIdRef.current = last.id;
+    const text = buildMessageAnnouncement(last.content);
+    // Use a forced emit (reset lastEmittedAt) so the final reply always lands
+    a11yThrottleRef.current = {
+      lastEmitted: text,
+      pending: null,
+      lastEmittedAt: Date.now(),
+    };
+    setA11yAnnouncement(text);
+  }, [messages, isExecuting]);
+
+  // Announce stream errors
+  useEffect(() => {
+    if (!error) return;
+    if (error === a11yLastErrorRef.current) return;
+    a11yLastErrorRef.current = error;
+    const text = buildStreamErrorAnnouncement(error);
+    setA11yAnnouncement(text);
+  }, [error]);
+
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || isExecuting) return;
@@ -1228,6 +1336,22 @@ function CodeChatInterface() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)]">
+      {/*
+        Parity Pass 3: screen-reader live region for tool progress +
+        agent replies. `sr-only` keeps it visually hidden but screen
+        readers pick it up via `role="status" aria-live="polite"`.
+        Content changes are announced non-interruptively so the user's
+        current context isn't clobbered.
+      */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        data-testid="codechat-live-region"
+      >
+        {a11yAnnouncement}
+      </div>
       {/* Config bar */}
       <div className="flex items-center gap-3 px-3 py-2 border-b border-border/40 text-xs">
         <div className="flex items-center gap-1.5">

@@ -93,10 +93,22 @@ Each row has:
 | R3 | Abort button / Esc to cancel | done | 9 | | Pass 203 + stream |
 | R4 | Auto-checkpoint during long runs | done | 9 | every 4 messages | Pass 223 |
 | R5 | Retry-on-error banner | done | 9 | | Pass 211 |
-| R6 | SSRF guard on web_fetch | done | 10 | loopback/RFC1918/metadata | P1 (this pass) |
+| R6 | SSRF guard on web_fetch | done | 10 | loopback/RFC1918/metadata | P1 (web_fetch pass) |
 | R7 | Dead-letter failed tool results | open | 0 | persist across refresh | — |
 | R8 | Offline graceful degradation | open | 1 | errors bubble, no local fallback | — |
 | R9 | Admin audit log of write ops | open | 2 | some logging but no consolidated view | — |
+
+### Accessibility
+
+| id | capability | status | depth | notes | refs |
+|---|---|---|---|---|---|
+| A1 | Screen-reader live region for tool progress | done | 9 | role=status aria-live=polite, throttled via pure reducer | P3 (this pass) |
+| A2 | Keyboard shortcuts overlay | done | 9 | | Pass 209 |
+| A3 | Icon button aria-labels (config bar) | done | 9 | 34 aria-labels across CodeChat.tsx | Pass 137 |
+| A4 | Focus trap in modal popovers | open | 3 | dialogs use role="dialog" but no focus trap loop | — |
+| A5 | Skip-to-main-content link | done | 8 | from Pass 91 | client/src/components/AppShell.tsx |
+| A6 | WCAG 2.3.3 prefers-reduced-motion | done | 9 | Pass 98 | client/src/index.css |
+| A7 | Announcer throttling / coalescing | done | 9 | pure ThrottleState reducer | P3 (this pass) |
 
 ---
 
@@ -136,3 +148,4 @@ Append-only tail. One line per completed pass:
 
 - Pass 1 · angle: missing-tool assessment · queue: [A1 web_fetch tool] · items completed: [web_fetch tool end-to-end (server service + dispatcher + SSE route allowlist + tool def + /web slash + permission popover + action palette + badge bump 8→9 + toolSummary + autonomousCoding summarizer + tests)] · items deferred: [] · sha: 3aa8672
 - Pass 2 · angle: T16 PARITY row — atomic multi-edit · queue: [R1 T16 from PARITY matrix] · items completed: [multi_edit tool (fileTools.multiEditFile with atomicity + before/after snapshots + 50-step cap + validation + TOO_LARGE guard), wired through codeChatExecutor.CodeToolName/CodeToolResult/dispatchCodeTool/CODE_CHAT_TOOL_DEFINITIONS/stats counter, autonomousCoding summarizer + stats aggregation, codeChatStream.mutation list + system prompt, ToolPermissionsPopover 9→10, CodeChat.tsx badge 9→10 + extractDiffFromTrace + edit-history capture, toolSummary counted, 17 new tests, TS clean, 794/794 suite, build 18.43s] · items deferred: [] · sha: e911c50
+- Pass 3 · angle: accessibility · queue: [A1 ARIA live region + A7 throttled announcer + new Accessibility matrix section] · items completed: [a11yAnnouncer.ts pure module with buildToolStartAnnouncement/buildToolFinishAnnouncement/buildMessageAnnouncement/buildAbortAnnouncement/buildStreamErrorAnnouncement/trimPreview + throttleAnnouncement/flushPending reducer, live-region JSX in CodeChat.tsx (role=status aria-live=polite sr-only data-testid), 4 useEffect hooks wiring tool start + finish + reply + error through the throttle, 37 new tests covering every builder + throttle + reducer flush, new "Accessibility" section in PARITY.md matrix (A1-A7)] · items deferred: [A4 focus trap in modals] · sha: pending-commit
