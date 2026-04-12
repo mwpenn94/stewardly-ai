@@ -124,6 +124,18 @@ export default function WealthConfigurator() {
     equitiesReturn, existingInsurance, isBizOwner,
   }), [age, income, netWorth, savings, monthlySavings, dependents, mortgage, debts, marginalRate, equitiesReturn, existingInsurance, isBizOwner]);
 
+  // ── Input guardrails ──
+  const warnings = useMemo(() => {
+    const w: { level: "warn" | "error"; msg: string }[] = [];
+    if (equitiesReturn > 0.12) w.push({ level: "error", msg: "Return rates above 12% are historically rare and may overstate projections." });
+    else if (equitiesReturn > 0.10) w.push({ level: "warn", msg: "Return rate above 10% — only realistic for aggressive equity portfolios." });
+    if (marginalRate > 0.40) w.push({ level: "warn", msg: "Marginal rate above 40% — verify this includes state + federal combined." });
+    if (monthlySavings > income / 12 * 0.5) w.push({ level: "warn", msg: "Monthly savings exceeds 50% of monthly income — is this sustainable?" });
+    if (mortgage + debts > netWorth * 2) w.push({ level: "warn", msg: "Total debts exceed 2× net worth — high leverage scenario." });
+    if (age >= 65 && dependents > 3) w.push({ level: "warn", msg: "Age 65+ with 3+ dependents — consider long-term care and estate planning." });
+    return w;
+  }, [equitiesReturn, marginalRate, monthlySavings, income, mortgage, debts, netWorth, age, dependents]);
+
   // ── tRPC mutations ──
   const buildMut = trpc.wealthEngine.buildStrategy.useMutation({ onError: (e) => toast.error(e.message) });
   const simMut = trpc.wealthEngine.simulate.useMutation({ onError: (e) => toast.error(e.message) });
@@ -247,6 +259,17 @@ export default function WealthConfigurator() {
               companyKey={companyKey} setCompanyKey={setCompanyKey}
               horizon={horizon} setHorizon={setHorizon}
             />
+
+            {/* Guardrail Warnings */}
+            {warnings.length > 0 && (
+              <div className="space-y-1.5">
+                {warnings.map((w, i) => (
+                  <div key={i} role="alert" className={`text-xs px-3 py-2 rounded-md border ${w.level === "error" ? "border-destructive/50 bg-destructive/10 text-destructive" : "border-amber-500/50 bg-amber-500/10 text-amber-400"}`}>
+                    {w.msg}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Run Buttons */}
             <div className="space-y-2">
