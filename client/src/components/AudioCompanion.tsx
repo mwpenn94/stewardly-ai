@@ -11,8 +11,8 @@
  * Controlled via the useAudioCompanion hook.
  */
 
-import { useState, useRef, useCallback, createContext, useContext } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Volume2, Pause, Play, SkipForward, SkipBack,
   ChevronDown, ChevronUp, Mic, MicOff, X,
@@ -71,17 +71,87 @@ export function useAudioCompanion() {
 
 /* ── provider ──────────────────────────────────────────────────── */
 
+/**
+ * Build Loop Pass 9 (G65): persist the AudioCompanion queue + current
+ * item across full page reloads. Prior to this, the user's playback
+ * state was held in component `useState` and any refresh dropped the
+ * queue to empty. Persistence is opt-in via localStorage — we only
+ * restore queue + currentItem + speed + mode; never the audio blob
+ * itself (that's re-synthesized on demand from the script).
+ *
+ * On resume, the player always starts PAUSED with `mode: "minimized"`
+ * so the user explicitly taps play — auto-playing audio on page load
+ * is a UX anti-pattern and most browsers block it anyway.
+ */
+const PERSIST_KEY = "stewardly-audio-companion-state";
+
+interface PersistedAudioState {
+  currentItem: AudioItem | null;
+  queue: AudioItem[];
+  speed: number;
+}
+
+function loadPersistedState(): PersistedAudioState | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PERSIST_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // Defensive: reject anything that doesn't look right.
+    if (typeof parsed !== "object" || parsed === null) return null;
+    if (parsed.currentItem != null && typeof parsed.currentItem.script !== "string") {
+      return null;
+    }
+    if (!Array.isArray(parsed.queue)) return null;
+    if (typeof parsed.speed !== "number" || !isFinite(parsed.speed)) {
+      parsed.speed = 1.0;
+    }
+    // Cap queue size to avoid OOM on corrupted state.
+    return {
+      currentItem: parsed.currentItem ?? null,
+      queue: parsed.queue.slice(0, 50),
+      speed: Math.max(0.5, Math.min(3.0, parsed.speed)),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedState(state: PersistedAudioState): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(PERSIST_KEY, JSON.stringify(state));
+  } catch {
+    /* private mode / quota — ignore */
+  }
+}
+
 export function AudioCompanionProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AudioState>({
-    currentItem: null,
-    queue: [],
-    playing: false,
-    speed: 1.0,
-    position: 0,
-    duration: 0,
-    mode: "hidden",
-    voiceListening: false,
+  const [state, setState] = useState<AudioState>(() => {
+    // Pass 9 (G65): hydrate from localStorage on mount.
+    const persisted = loadPersistedState();
+    return {
+      currentItem: persisted?.currentItem ?? null,
+      queue: persisted?.queue ?? [],
+      playing: false, // Always paused on resume — don't auto-play.
+      speed: persisted?.speed ?? 1.0,
+      position: 0,
+      duration: 0,
+      // If there's a pending item, show the player as minimized so the
+      // user sees an obvious "tap to resume" affordance.
+      mode: persisted?.currentItem ? "minimized" : "hidden",
+      voiceListening: false,
+    };
   });
+
+  // Persist whenever the queue or current item changes.
+  useEffect(() => {
+    savePersistedState({
+      currentItem: state.currentItem,
+      queue: state.queue,
+      speed: state.speed,
+    });
+  }, [state.currentItem, state.queue, state.speed]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const generationRef = useRef(0);
@@ -272,6 +342,12 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
 
 function AudioCompanionUI() {
   const audio = useAudioCompanion();
+  // Build Loop Pass 9 (G64): framer-motion's `useReducedMotion` honors
+  // the OS-level prefers-reduced-motion setting AND our user-level
+  // `body.reduced-motion-user` class (via the matchMedia polyfill the
+  // framer hook already respects). When true, we swap `initial`/`animate`
+  // props to identity values so no translate / fade is applied on mount.
+  const shouldReduceMotion = useReducedMotion();
 
   if (audio.mode === "hidden" || !audio.currentItem) return null;
 
@@ -285,8 +361,9 @@ function AudioCompanionUI() {
   if (audio.mode === "minimized") {
     return (
       <motion.div
-        initial={{ y: 20, opacity: 0 }}
+        initial={shouldReduceMotion ? { y: 0, opacity: 1 } : { y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
+        transition={shouldReduceMotion ? { duration: 0 } : undefined}
         className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card/95 backdrop-blur-md shadow-lg max-w-[90vw] md:bottom-4"
       >
         <Volume2 className="w-3.5 h-3.5 text-primary flex-none" />
@@ -317,8 +394,9 @@ function AudioCompanionUI() {
 
   return (
     <motion.div
-      initial={{ y: 40, opacity: 0 }}
+      initial={shouldReduceMotion ? { y: 0, opacity: 1 } : { y: 40, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
+      transition={shouldReduceMotion ? { duration: 0 } : undefined}
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/98 backdrop-blur-md shadow-2xl md:bottom-4 md:left-auto md:right-4 md:w-[400px] md:rounded-xl md:border"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
