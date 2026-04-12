@@ -6,8 +6,9 @@
  * Displays results as a color-coded heat map grid.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import AppShell from "@/components/AppShell";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,17 @@ export default function WhatIfSensitivity() {
   const [runError, setRunError] = useState<string | null>(null);
   const [failedCells, setFailedCells] = useState(0);
 
+  // Load shared financial profile from cross-page bridge (falls back to defaults)
+  const { profile: sharedProfile } = useFinancialProfile("WhatIfSensitivity");
+  const liveProfile = useMemo(() => ({
+    age: sharedProfile.currentAge ?? DEFAULT_PROFILE.age,
+    income: sharedProfile.annualIncome ?? DEFAULT_PROFILE.income,
+    netWorth: sharedProfile.netWorth ?? DEFAULT_PROFILE.netWorth,
+    savings: sharedProfile.portfolioBalance ?? DEFAULT_PROFILE.savings,
+    dependents: sharedProfile.childrenCount ?? DEFAULT_PROFILE.dependents,
+    mortgage: sharedProfile.mortgageBalance ?? DEFAULT_PROFILE.mortgage,
+  }), [sharedProfile]);
+
   const heSimulate = trpc.calculatorEngine.heSimulate.useMutation();
 
   const rowDef = PARAMS.find((p) => p.key === rowParam)!;
@@ -130,7 +142,7 @@ export default function WhatIfSensitivity() {
       // Run all cells sequentially to avoid hammering the server
       for (const rVal of rows) {
         for (const cVal of cols) {
-          const profile = { ...DEFAULT_PROFILE };
+          const profile = { ...liveProfile };
           const strategy = { ...DEFAULT_STRATEGY };
           let years = 20;
 
@@ -210,6 +222,13 @@ export default function WhatIfSensitivity() {
             Sweep two parameters across a range to see how they affect your projected wealth.
             Each cell runs the full holistic engine.
           </p>
+          {sharedProfile.annualIncome != null && (
+            <p className="text-[10px] text-accent mt-1 flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              Using your shared financial profile (age {liveProfile.age}, income ${(liveProfile.income / 1000).toFixed(0)}K).
+              Edit on any planning page to update.
+            </p>
+          )}
         </div>
 
         {/* Controls */}

@@ -291,6 +291,58 @@ export async function detectSignals(db: any): Promise<Signal[]> {
     logger.debug({ err }, "[ImprovementEngine] FUTURE_STATE signal check skipped");
   }
 
+  // ── PERFORMANCE: LLM response latency p95 from model_runs ──
+  try {
+    const { modelRuns } = await import("../../../drizzle/schema");
+    const recentRuns = await db
+      .select({ durationMs: modelRuns.durationMs })
+      .from(modelRuns)
+      .where(
+        and(
+          gte(modelRuns.createdAt, oneDayAgo),
+          sql`${modelRuns.durationMs} IS NOT NULL`,
+          sql`${modelRuns.durationMs} > 0`,
+        ),
+      );
+
+    if (recentRuns.length >= 10) {
+      const durations = recentRuns
+        .map((r: any) => r.durationMs as number)
+        .filter((d: number) => d > 0)
+        .sort((a: number, b: number) => a - b);
+
+      if (durations.length > 0) {
+        const p95Index = Math.floor(durations.length * 0.95);
+        const p95 = durations[Math.min(p95Index, durations.length - 1)];
+        const median = durations[Math.floor(durations.length / 2)];
+
+        // Alert if p95 exceeds 30 seconds (latency regression)
+        if (p95 > 30_000) {
+          signals.push({
+            signalType: "PERFORMANCE",
+            severity: p95 > 60_000 ? "critical" : "high",
+            sourceMetric: "llm_response_latency_p95",
+            sourceValue: `p95=${(p95 / 1000).toFixed(1)}s, median=${(median / 1000).toFixed(1)}s (${durations.length} samples)`,
+            threshold: ">30s p95",
+          });
+        }
+
+        // Also alert if median exceeds 15 seconds
+        if (median > 15_000) {
+          signals.push({
+            signalType: "PERFORMANCE",
+            severity: "medium",
+            sourceMetric: "llm_response_latency_median",
+            sourceValue: `median=${(median / 1000).toFixed(1)}s (${durations.length} samples)`,
+            threshold: ">15s median",
+          });
+        }
+      }
+    }
+  } catch (err) {
+    logger.debug({ err }, "[ImprovementEngine] PERFORMANCE latency check skipped");
+  }
+
   return signals;
 }
 

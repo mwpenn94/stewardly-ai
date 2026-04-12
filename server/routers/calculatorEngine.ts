@@ -13,6 +13,7 @@ import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { UWE } from "../engines/uwe";
 import { BIE } from "../engines/bie";
 import { HE } from "../engines/he";
+import { PRESETS as HE_SHARED_PRESETS } from "../shared/calculators/he";
 import { SCUI } from "../shared/calculators/scui";
 import type {
   CompanyKey, RoleKey, SeasonalityKey, FrequencyKey,
@@ -328,14 +329,16 @@ export const calculatorEngineRouter = router({
       return HE.backPlanHolistic(input.targetValue, input.targetYear, hs);
     }),
 
-  /** Get HE presets */
+  /** Get HE presets — uses the full 9-preset set from shared/calculators/he */
   hePresets: publicProcedure
     .input(z.object({ profile: clientProfileSchema.optional() }).optional())
     .query(({ input }) => {
-      return Object.entries(HE.PRESETS).map(([key, fn]) => ({
-        key,
-        strategy: fn(input?.profile as any),
-      }));
+      return Object.entries(HE_SHARED_PRESETS)
+        .filter(([key]) => key !== "wealthbridgePro") // wealthbridgePro requires a role arg
+        .map(([key, fn]) => ({
+          key,
+          strategy: (fn as (profile: any) => any)(input?.profile || {}),
+        }));
     }),
 
   // ═══ SCUI ENDPOINTS ══════════════════════════════════════════════
