@@ -1159,8 +1159,15 @@ export const wealthEngineRouter = router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
+      const start = Date.now();
       const result = compareEntities(input);
-      persistComputation(ctx.user.id, "owner_comp_compare", input, result);
+      persistComputation({
+        tool: "owner_comp_compare" as any,
+        input,
+        result,
+        durationMs: Date.now() - start,
+        meta: { userId: ctx.user.id, trigger: "user_ui" },
+      }).catch(() => {/* persistence is best-effort */});
       return { data: result };
     }),
 
@@ -1287,7 +1294,13 @@ export const wealthEngineRouter = router({
         planningActions,
         input,
       };
-      persistComputation(ctx.user.id, "multi_line_quick_quote", input, data);
+      persistComputation({
+        tool: "multi_line_quick_quote" as any,
+        input,
+        result: data,
+        durationMs: 0,
+        meta: { userId: ctx.user.id, trigger: "user_ui" },
+      }).catch(() => {/* persistence is best-effort */});
       return { data };
     }),
 });
