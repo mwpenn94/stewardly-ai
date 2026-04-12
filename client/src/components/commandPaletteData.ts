@@ -150,6 +150,41 @@ export const EXTRA_PAGES: PageEntry[] = [
     keywords: ["profile", "risk", "questionnaire"],
     minRole: "user",
   },
+  {
+    label: "Public Calculators",
+    href: "/public-calculators",
+    iconName: "Calculator",
+    keywords: ["embed", "public", "lead capture", "guest"],
+    minRole: "user",
+  },
+  {
+    label: "Embed Widget",
+    href: "/embed",
+    iconName: "Code",
+    keywords: ["embed", "widget", "iframe", "calculator"],
+    minRole: "advisor",
+  },
+  {
+    label: "Welcome Landing",
+    href: "/welcome-landing",
+    iconName: "Globe",
+    keywords: ["landing", "marketing", "public", "homepage"],
+    minRole: "user",
+  },
+  {
+    label: "Due Review",
+    href: "/learning/review",
+    iconName: "RefreshCw",
+    keywords: ["srs", "spaced repetition", "flashcard", "review"],
+    minRole: "user",
+  },
+  {
+    label: "Search Content",
+    href: "/learning/search",
+    iconName: "Search",
+    keywords: ["search", "definitions", "content", "find"],
+    minRole: "user",
+  },
 ];
 
 /**
