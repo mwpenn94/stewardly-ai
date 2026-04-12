@@ -15,6 +15,9 @@ import { ArrowLeft, BarChart3, Shield, TrendingDown, AlertTriangle, Target } fro
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import { useMemo } from "react";
 
 const RISK_FACTORS = [
   { name: "Time Horizon", score: 8, description: "20+ years to retirement" },
@@ -35,7 +38,34 @@ const ALLOCATION = [
 
 export default function RiskAssessment() {
   const [, navigate] = useLocation();
-  const overallScore = Math.round(RISK_FACTORS.reduce((s, f) => s + f.score, 0) / RISK_FACTORS.length * 10);
+  const { profile, setProfile } = useFinancialProfile();
+
+  // Profile-aware risk score: derive a 0-100 score from the saved
+  // profile so the gauge moves when the user changes any input.
+  // Heuristic: time horizon (if age + retirementAge known) +
+  // dependency burden + savings rate. Falls back to the static
+  // RISK_FACTORS average otherwise.
+  const overallScore = useMemo(() => {
+    const factors = [...RISK_FACTORS];
+    // Override the time-horizon factor when we know the user's age
+    if (profile.age !== undefined) {
+      const retire = profile.retirementAge ?? 65;
+      const yearsLeft = Math.max(0, retire - profile.age);
+      const horizonScore = Math.min(10, Math.max(1, Math.round(yearsLeft / 4)));
+      const idx = factors.findIndex((f) => f.name === "Time Horizon");
+      if (idx >= 0) factors[idx] = { ...factors[idx], score: horizonScore };
+    }
+    // Loss tolerance is a function of dependents (more deps =
+    // less risk capacity) — only override when known.
+    if (profile.dependents !== undefined) {
+      const lossScore = Math.max(2, 8 - profile.dependents);
+      const idx = factors.findIndex((f) => f.name === "Loss Tolerance");
+      if (idx >= 0) factors[idx] = { ...factors[idx], score: lossScore };
+    }
+    return Math.round(
+      (factors.reduce((s, f) => s + f.score, 0) / factors.length) * 10,
+    );
+  }, [profile]);
 
   return (
     <AppShell title="Risk Assessment">
@@ -56,6 +86,19 @@ export default function RiskAssessment() {
           <Target className="h-3.5 w-3.5 mr-1" /> Retake Assessment
         </Button>
       </div>
+
+      <FinancialProfileBanner
+        onPrefill={(p) => {
+          // Persist the equitiesReturn back to the profile so
+          // downstream calculators (Wealth Engine, Retirement) get
+          // the user's risk-implied return assumption.
+          if (p.equitiesReturn !== undefined) {
+            setProfile({ equitiesReturn: p.equitiesReturn }, "user");
+          }
+        }}
+        usesFields={["age", "retirementAge", "dependents", "equitiesReturn"]}
+        actionLabel="Personalize"
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <FinancialScoreCard title="Risk Score" value={overallScore} format="number" icon={BarChart3} trend="flat" trendValue="Moderate Growth" />

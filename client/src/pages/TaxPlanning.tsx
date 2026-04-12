@@ -15,6 +15,9 @@ import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, B
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import { useMemo } from "react";
 
 const BRACKETS_2026 = [
   { rate: "10%", single: "$0 – $11,925", married: "$0 – $23,850", fill: 100 },
@@ -28,6 +31,39 @@ const BRACKETS_2026 = [
 
 export default function TaxPlanning() {
   const [, navigate] = useLocation();
+  const { profile, setProfile } = useFinancialProfile();
+
+  // Derive profile-aware tax stats. When the saved profile has the
+  // user's income + filing status, we show real numbers; otherwise
+  // we fall back to the demo defaults so the UI always renders.
+  const stats = useMemo(() => {
+    const income = profile.income ?? 0;
+    const marginalRate = profile.marginalRate;
+    if (income === 0) {
+      return {
+        effectiveRate: "18.4%",
+        bracketHint: null as string | null,
+        rothSpace: "$23,000",
+        isLive: false,
+      };
+    }
+    // Quick effective-rate estimator: take the marginal rate and
+    // shave 6 points (rough effective vs marginal heuristic). This
+    // is illustrative, not advice — the page already disclaims that.
+    const eff = marginalRate ? Math.max(0, marginalRate * 100 - 6) : 18.4;
+    const filing = profile.filingStatus ?? "mfj";
+    // 24% bracket lower bound varies by filing status
+    const bracketTop = filing === "mfj" ? 394_600 : 197_300;
+    const rothSpace = Math.max(0, bracketTop - income);
+    return {
+      effectiveRate: `${eff.toFixed(1)}%`,
+      bracketHint: marginalRate
+        ? `Marginal rate ${(marginalRate * 100).toFixed(0)}%`
+        : null,
+      rothSpace: `$${rothSpace.toLocaleString()}`,
+      isLive: true,
+    };
+  }, [profile]);
 
   return (
     <AppShell title="Tax Planning">
@@ -49,11 +85,35 @@ export default function TaxPlanning() {
         </Button>
       </div>
 
+      <FinancialProfileBanner
+        onPrefill={(p) => {
+          // Banner click triggers a re-render with the latest profile,
+          // but we also persist the current values back so other tabs
+          // pick them up. For TaxPlanning the only field we own is
+          // filingStatus — preserve it if present.
+          if (p.filingStatus) {
+            setProfile({ filingStatus: p.filingStatus }, "user");
+          }
+        }}
+        usesFields={["income", "marginalRate", "filingStatus", "stateOfResidence"]}
+        actionLabel="Personalize"
+      />
+
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <FinancialScoreCard title="Effective Rate" value="18.4%" icon={DollarSign} trend="down" trendValue="-1.2% vs last year" />
+        <FinancialScoreCard
+          title="Effective Rate"
+          value={stats.effectiveRate}
+          icon={DollarSign}
+          trend={stats.isLive ? "flat" : "down"}
+          trendValue={stats.bracketHint ?? "Estimated"}
+        />
         <FinancialScoreCard title="Tax Savings Found" value="$12,400" icon={PiggyBank} trend="up" trendValue="3 strategies" />
         <FinancialScoreCard title="Harvesting Opps" value={5} format="number" icon={TrendingDown} trend="up" trendValue="$8,200 potential" />
-        <FinancialScoreCard title="Roth Space" value="$23,000" icon={BarChart3} />
+        <FinancialScoreCard
+          title={stats.isLive ? "Bracket Headroom" : "Roth Space"}
+          value={stats.rothSpace}
+          icon={BarChart3}
+        />
       </div>
 
       <Tabs defaultValue="brackets">

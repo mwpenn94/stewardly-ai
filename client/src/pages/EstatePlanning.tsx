@@ -14,6 +14,9 @@ import { ArrowLeft, FileText, Users, DollarSign, CheckCircle2, XCircle, Clock, A
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import { useMemo } from "react";
 
 const DOCUMENTS = [
   { name: "Last Will & Testament", status: "current", lastUpdated: "2024-06-15", attorney: "Smith & Associates" },
@@ -37,9 +40,36 @@ const statusLabel = { current: "Current", outdated: "Needs Update", missing: "Mi
 
 export default function EstatePlanning() {
   const [, navigate] = useLocation();
+  const { profile, setProfile } = useFinancialProfile();
 
   const currentCount = DOCUMENTS.filter(d => d.status === "current").length;
   const totalDocs = DOCUMENTS.length;
+
+  // Estate-tax exposure: when we know the user's net worth, render
+  // the real federal exemption gap. The 2026 federal exemption is
+  // $13.61M (single) / $27.22M (mfj). Conservative — drops to ~$7M
+  // post-sunset; sunset risk is called out separately.
+  const estateStats = useMemo(() => {
+    const nw = profile.netWorth ?? 0;
+    if (nw === 0) {
+      return {
+        netEstate: "$2.8M",
+        taxableEstate: "$0",
+        sunsetRisk: false,
+        isLive: false,
+      };
+    }
+    const filing = profile.filingStatus ?? "single";
+    const exemption = filing === "mfj" ? 27_220_000 : 13_610_000;
+    const sunsetExemption = filing === "mfj" ? 14_000_000 : 7_000_000;
+    const taxable = Math.max(0, nw - exemption);
+    return {
+      netEstate: `$${(nw / 1_000_000).toFixed(1)}M`,
+      taxableEstate: taxable > 0 ? `$${(taxable / 1_000_000).toFixed(1)}M` : "$0",
+      sunsetRisk: nw > sunsetExemption,
+      isLive: true,
+    };
+  }, [profile]);
 
   return (
     <AppShell title="Estate Planning">
@@ -60,11 +90,32 @@ export default function EstatePlanning() {
         </div>
       </div>
 
+      <FinancialProfileBanner
+        onPrefill={(p) => {
+          if (p.filingStatus || p.estateGoal) {
+            setProfile({ filingStatus: p.filingStatus, estateGoal: p.estateGoal }, "user");
+          }
+        }}
+        usesFields={["netWorth", "filingStatus", "dependents", "estateGoal"]}
+        actionLabel="Personalize"
+      />
+
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <FinancialScoreCard title="Estate Readiness" value={`${currentCount}/${totalDocs}`} icon={FileText} trend="down" trendValue="5 items need attention" />
-        <FinancialScoreCard title="Net Estate" value="$2.8M" icon={DollarSign} />
-        <FinancialScoreCard title="Estate Tax Exposure" value="$0" icon={Scale} trend="flat" trendValue="Below exemption" />
-        <FinancialScoreCard title="Beneficiaries" value={3} format="number" icon={Users} />
+        <FinancialScoreCard title="Net Estate" value={estateStats.netEstate} icon={DollarSign} />
+        <FinancialScoreCard
+          title="Estate Tax Exposure"
+          value={estateStats.taxableEstate}
+          icon={Scale}
+          trend={estateStats.taxableEstate === "$0" ? "flat" : "up"}
+          trendValue={estateStats.sunsetRisk ? "Sunset risk" : "Below exemption"}
+        />
+        <FinancialScoreCard
+          title="Dependents"
+          value={profile.dependents ?? 3}
+          format="number"
+          icon={Users}
+        />
       </div>
 
       <Tabs defaultValue="documents">
