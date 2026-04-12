@@ -82,6 +82,7 @@ import { rebalancingRouter } from "./routers/rebalancing";
 import { taxRouter } from "./routers/tax";
 import { portfolioLedgerRouter } from "./routers/portfolioLedger";
 import { estateRouter } from "./routers/estate";
+import { reportsFiduciaryRouter } from "./routers/reportsFiduciary";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -2130,6 +2131,7 @@ export const appRouter = router({
   tax: taxRouter,
   portfolioLedger: portfolioLedgerRouter,
   estate: estateRouter,
+  reportsFiduciary: reportsFiduciaryRouter,
 });
 
 export type AppRouter = typeof appRouter;
