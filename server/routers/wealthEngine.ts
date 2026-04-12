@@ -586,6 +586,96 @@ export const wealthEngineRouter = router({
       );
     }),
 
+  // ── Sensitivity sweep — 2D parameter heat map ──────────────────────────
+  sensitivitySweep: protectedProcedure
+    .input(
+      z.object({
+        xParam: z.enum(["savingsRate", "investmentReturn", "taxRate", "age", "income", "horizon"]),
+        yParam: z.enum(["savingsRate", "investmentReturn", "taxRate", "age", "income", "horizon"]),
+        xSteps: z.number().min(3).max(15).default(7),
+        ySteps: z.number().min(3).max(15).default(7),
+        xRange: z.tuple([z.number(), z.number()]),
+        yRange: z.tuple([z.number(), z.number()]),
+        metric: z.enum(["totalValue", "netValue", "roi", "savingsBalance", "productCashValue"]).default("totalValue"),
+        baseProfile: ClientProfileSchema.optional(),
+        companyKey: CompanyKeySchema.optional().default("wealthbridge"),
+        horizon: z.number().min(1).max(60).optional().default(30),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const t0 = Date.now();
+      const { xParam, yParam, xSteps, ySteps, xRange, yRange, metric, companyKey, horizon } = input;
+      const baseProfile = input.baseProfile ?? { age: 40, income: 150000, savings: 50000, monthlySavings: 2000, marginalRate: 0.32 };
+
+      // Generate step values for X and Y axes
+      const xValues = Array.from({ length: xSteps }, (_, i) =>
+        xRange[0] + (i * (xRange[1] - xRange[0])) / (xSteps - 1),
+      );
+      const yValues = Array.from({ length: ySteps }, (_, i) =>
+        yRange[0] + (i * (yRange[1] - yRange[0])) / (ySteps - 1),
+      );
+
+      // Map param names to profile/strategy fields
+      function applyParam(
+        profile: Record<string, unknown>,
+        strategyOverrides: Record<string, unknown>,
+        param: string,
+        value: number,
+      ) {
+        switch (param) {
+          case "savingsRate": strategyOverrides.savingsRate = value; break;
+          case "investmentReturn": strategyOverrides.investmentReturn = value; break;
+          case "taxRate": profile.marginalRate = value; strategyOverrides.taxRate = value; break;
+          case "age": profile.age = Math.round(value); break;
+          case "income": profile.income = Math.round(value); break;
+          case "horizon": strategyOverrides._horizon = Math.round(value); break;
+        }
+      }
+
+      // Sweep grid
+      const grid: number[][] = [];
+      let minVal = Infinity;
+      let maxVal = -Infinity;
+      for (let yi = 0; yi < ySteps; yi++) {
+        const row: number[] = [];
+        for (let xi = 0; xi < xSteps; xi++) {
+          const profile = { ...baseProfile };
+          const overrides: Record<string, unknown> = {};
+          applyParam(profile, overrides, xParam, xValues[xi]);
+          applyParam(profile, overrides, yParam, yValues[yi]);
+
+          const sweepHorizon = typeof overrides._horizon === "number" ? overrides._horizon : horizon;
+          const strategy = createHolisticStrategy("sweep", {
+            profile: profile as never,
+            companyKey: companyKey as never,
+            savingsRate: typeof overrides.savingsRate === "number" ? overrides.savingsRate : 0.15,
+            investmentReturn: typeof overrides.investmentReturn === "number" ? overrides.investmentReturn : 0.07,
+            taxRate: typeof overrides.taxRate === "number" ? overrides.taxRate : (profile.marginalRate as number) ?? 0.32,
+            hasBizIncome: false,
+          });
+          const snapshots = heSimulate(strategy, sweepHorizon);
+          const final = snapshots[snapshots.length - 1];
+          const val = final ? (final as Record<string, unknown>)[metric] as number ?? 0 : 0;
+          row.push(Math.round(val));
+          if (val < minVal) minVal = val;
+          if (val > maxVal) maxVal = val;
+        }
+        grid.push(row);
+      }
+
+      return {
+        grid,
+        xValues,
+        yValues,
+        xParam,
+        yParam,
+        metric,
+        minVal: Math.round(minVal),
+        maxVal: Math.round(maxVal),
+        durationMs: Date.now() - t0,
+      };
+    }),
+
   // ── Guardrails / benchmarks / methodology (read-only) ───────────────────
   getGuardrails: protectedProcedure.query(() => ({
     guardrails: GUARDRAILS,
