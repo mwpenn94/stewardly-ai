@@ -13,10 +13,11 @@
  *     final-year totalLiquidWealth ± a 15% band (matches v7 default).
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -28,7 +29,27 @@ import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
-import { Loader2, Target, Sliders, ShieldCheck } from "lucide-react";
+import {
+  Loader2, Target, Sliders, ShieldCheck, TrendingDown, Shield,
+  ChevronDown, ChevronUp, Info,
+} from "lucide-react";
+
+// ─── Benchmark helpers ───────────────────────────────────────────
+const BENCHMARK_LABELS: Record<string, string> = {
+  savingsRate: "National Savings Rate",
+  investorBehaviorGap: "Investor Behavior Gap",
+  retirementReadiness: "Retirement Readiness",
+  advisorAlpha: "Advisor Alpha",
+};
+
+function formatBenchmarkValue(key: string, data: any): string {
+  if (data.national != null) return `${(data.national * 100).toFixed(1)}%`;
+  if (data.gap != null) return `${(data.gap * 100).toFixed(1)}%/yr`;
+  if (data.pct != null) return `${(data.pct * 100).toFixed(0)}%`;
+  if (data.value != null) return `${(data.value * 100).toFixed(key.includes("Fee") ? 2 : 0)}%/yr`;
+  if (data.sp500 != null) return `S&P: ${(data.sp500 * 100).toFixed(1)}%`;
+  return "—";
+}
 
 export default function RetirementPage() {
   const [age, setAge] = useState(40);
@@ -53,8 +74,15 @@ export default function RetirementPage() {
     [age, income, savings],
   );
 
+  const [showRiskContext, setShowRiskContext] = useState(false);
+
   const runPreset = trpc.wealthEngine.runPreset.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
   const backPlan = trpc.wealthEngine.backPlanHolistic.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
+
+  // Risk context — auto-fire after goal projection runs
+  const stressGfc = trpc.calculatorEngine.stressTest.useMutation();
+  const backtestRun = trpc.calculatorEngine.historicalBacktest.useMutation();
+  const benchmarks = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
 
   const onRunGoal = () => {
     runPreset.mutate({
@@ -85,6 +113,15 @@ export default function RetirementPage() {
   const projection = runPreset.data?.data ?? [];
   const finalSnap = projection[projection.length - 1];
   const liquidValues = projection.map((s) => s.totalLiquidWealth);
+
+  // Auto-run risk context when goal projection completes
+  useEffect(() => {
+    if (!finalSnap) return;
+    const annualContrib = income * 0.15;
+    stressGfc.mutate({ scenarioKey: "gfc", startBalance: savings, annualContribution: annualContrib, annualCost: 0 });
+    backtestRun.mutate({ startBalance: savings, annualContribution: annualContrib, annualCost: 0, horizon });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalSnap?.totalLiquidWealth]);
 
   // Guardrail thresholds: ±15% of final liquid wealth (placeholder until
   // Phase 7 wires in the consumption-smoothing engine)
@@ -264,6 +301,116 @@ export default function RetirementPage() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Risk Context Panel — only shows after goal projection */}
+        {finalSnap && (
+          <Card>
+            <CardHeader className="py-3 cursor-pointer" onClick={() => setShowRiskContext(v => !v)}>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-destructive" /> Risk Context & Historical Backtest
+                  {backtestRun.data && (
+                    <Badge variant={backtestRun.data.survivalRate >= 0.9 ? "default" : "destructive"} className="text-[10px] ml-1">
+                      {(backtestRun.data.survivalRate * 100).toFixed(0)}% survival
+                    </Badge>
+                  )}
+                </CardTitle>
+                {showRiskContext ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+            </CardHeader>
+            {showRiskContext && (
+              <CardContent className="pt-0 space-y-4">
+                {/* 2008 Stress Test */}
+                {stressGfc.data && (
+                  <div className="p-3 rounded-lg border border-border/40 bg-card/60">
+                    <p className="text-xs font-semibold mb-1">If 2008 Happened Again</p>
+                    <p className="text-[9px] text-muted-foreground mb-2">
+                      {stressGfc.data.scenario?.description}
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <p className="text-[9px] text-muted-foreground/70 uppercase">Max Drawdown</p>
+                        <p className="text-sm font-mono text-red-400">
+                          {(stressGfc.data.maxDrawdown * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground/70 uppercase">Final Balance</p>
+                        <p className="text-sm font-mono">
+                          {formatCurrency(stressGfc.data.finalBalance)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-muted-foreground/70 uppercase">Est. Recovery</p>
+                        <p className="text-sm font-mono">
+                          {stressGfc.data.recoveryYears} year{stressGfc.data.recoveryYears !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Historical Backtest */}
+                {backtestRun.data && (
+                  <div className="p-4 rounded-lg border border-border/50 bg-secondary/20">
+                    <div className="flex items-start gap-3">
+                      <Shield className="h-5 w-5 text-accent mt-0.5 shrink-0" />
+                      <div className="space-y-2 flex-1">
+                        <p className="text-sm font-semibold">
+                          Historical Backtest ({horizon}-Year Windows, 1928-2025)
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Tested your retirement plan against every {horizon}-year rolling window in S&P 500 history.
+                          {backtestRun.data.survivalRate >= 0.95
+                            ? " Your plan survives the vast majority of historical conditions."
+                            : backtestRun.data.survivalRate >= 0.8
+                            ? " Plan withstands most conditions but has some stress scenarios."
+                            : " Consider increasing contributions or extending timeline."}
+                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground/70 uppercase">Best Case</p>
+                            <p className="text-sm font-semibold text-emerald-400">{formatCurrency(backtestRun.data.best?.final ?? 0)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground/70 uppercase">Median</p>
+                            <p className="text-sm font-semibold">{formatCurrency(backtestRun.data.medianFinal ?? 0)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground/70 uppercase">Worst Case</p>
+                            <p className="text-sm font-semibold text-red-400">{formatCurrency(backtestRun.data.worst?.final ?? 0)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Benchmark context */}
+                {benchmarks.data && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {Object.entries(benchmarks.data).slice(0, 4).map(([key, val]: [string, any]) => (
+                      <div key={key} className="p-2 rounded-lg bg-secondary/20 border border-border/20">
+                        <p className="text-[9px] text-muted-foreground/70 uppercase tracking-wider">
+                          {BENCHMARK_LABELS[key] || key}
+                        </p>
+                        <p className="text-xs font-semibold mt-0.5">
+                          {formatBenchmarkValue(key, val)}
+                        </p>
+                        <p className="text-[8px] text-muted-foreground">{val.source || ""}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-[9px] text-muted-foreground/50 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Past performance does not guarantee future results. All projections are hypothetical.
+                </p>
+              </CardContent>
+            )}
+          </Card>
+        )}
       </div>
     </AppShell>
   );

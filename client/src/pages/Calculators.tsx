@@ -197,7 +197,7 @@ export default function Calculators() {
               { label: "Risk Assessment", path: "/risk-assessment", icon: <Scale className="w-4 h-4" />, desc: "Risk profile analysis" },
               { label: "Income Projection", path: "/income-projection", icon: <TrendingUp className="w-4 h-4" />, desc: "Income modeling" },
               { label: "Insurance Analysis", path: "/insurance-analysis", icon: <Heart className="w-4 h-4" />, desc: "Coverage analysis" },
-              { label: "Protection Score", path: "/financial-protection-score", icon: <Calculator className="w-4 h-4" />, desc: "12-dimension scoring" },
+              { label: "Protection Score", path: "/protection-score", icon: <Calculator className="w-4 h-4" />, desc: "12-dimension scoring" },
             ].map(tool => (
               <button
                 key={tool.path}

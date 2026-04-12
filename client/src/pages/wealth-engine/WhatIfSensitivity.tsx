@@ -16,8 +16,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Grid3x3, Play, Loader2, TrendingUp } from "lucide-react";
+import { Grid3x3, Play, Loader2, TrendingUp, AlertTriangle, Info } from "lucide-react";
 import { sendFeedback } from "@/lib/feedbackSpecs";
+import { checkGuardrail } from "@/components/wealth-engine/GuardrailWarning";
 
 /* ── parameter definitions ──────────────────────────────────── */
 
@@ -314,6 +315,22 @@ export default function WhatIfSensitivity() {
             <div className="flex items-center gap-1">
               <div className="w-4 h-3 rounded" style={{ backgroundColor: heatColor(maxVal, minVal, maxVal) }} />
               <span>High ({fmt(maxVal)})</span>
+            </div>
+          </div>
+        )}
+
+        {/* Guardrail context note */}
+        {grid && (
+          <div className="flex items-start gap-2 p-3 rounded-lg border border-border/30 bg-secondary/10">
+            <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+            <div className="text-[10px] text-muted-foreground space-y-1">
+              <p>
+                <span className="font-medium">Guardrail context:</span> Return rates above 12% are historically rare for diversified portfolios (S&P 500 avg: 10.3%, Morningstar 2025).
+                Savings rates above 50% may not be sustainable. Tax rates vary by state (TX: 0%, CA: up to 13.3%).
+              </p>
+              <p>
+                These projections are hypothetical and for educational purposes only. Past performance does not guarantee future results.
+              </p>
             </div>
           </div>
         )}
