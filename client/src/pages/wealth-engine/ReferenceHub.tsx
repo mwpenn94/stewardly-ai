@@ -6,6 +6,7 @@
  */
 
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -37,13 +38,13 @@ type SortDir = "asc" | "desc";
 /* ── component ────────────────────────────────────────────────── */
 
 export default function ReferenceHub() {
-  const { data: references } = trpc.calculatorEngine.productReferences.useQuery(undefined, { retry: false });
-  const { data: benchmarks } = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { retry: false });
-  const { data: methodology } = trpc.calculatorEngine.methodology.useQuery(undefined, { retry: false });
-  const { data: sp500Raw } = trpc.calculatorEngine.sp500History.useQuery(undefined, { retry: false });
+  const { data: references } = trpc.calculatorEngine.productReferences.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
+  const { data: benchmarks } = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
+  const { data: methodology } = trpc.calculatorEngine.methodology.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
+  const { data: sp500Raw } = trpc.calculatorEngine.sp500History.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
   const { data: guardrails } = trpc.calculatorEngine.checkGuardrails.useQuery(
     { params: { returnRate: 0.07, savingsRate: 0.15 } },
-    { retry: false },
+    { retry: false, staleTime: 5 * 60_000 },
   );
 
   const [showGuardrails, setShowGuardrails] = useState(false);
@@ -63,9 +64,9 @@ export default function ReferenceHub() {
   const backtest = trpc.calculatorEngine.historicalBacktest.useMutation({
     onSuccess: () => sendFeedback("calculator.result"),
   });
-  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation();
-  const stressGFC = trpc.calculatorEngine.stressTest.useMutation();
-  const stressCovid = trpc.calculatorEngine.stressTest.useMutation();
+  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
+  const stressGFC = trpc.calculatorEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
+  const stressCovid = trpc.calculatorEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
 
   const runBacktest = () => {
     const input = { startBalance: btBalance, annualContribution: btContrib };

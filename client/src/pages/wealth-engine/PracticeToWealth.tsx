@@ -9,6 +9,7 @@
  */
 
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,8 +55,8 @@ export default function PracticeToWealthPage() {
     [age],
   );
 
-  const bizProject = trpc.wealthEngine.projectBizIncome.useMutation();
-  const holisticSim = trpc.wealthEngine.holisticSimulate.useMutation();
+  const bizProject = trpc.wealthEngine.projectBizIncome.useMutation({ onError: (e) => toast.error(e.message) });
+  const holisticSim = trpc.wealthEngine.holisticSimulate.useMutation({ onError: (e) => toast.error(e.message) });
 
   const onRun = async () => {
     // 1. Run BIE projection for the selected role

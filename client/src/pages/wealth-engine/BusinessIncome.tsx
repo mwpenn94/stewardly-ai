@@ -17,6 +17,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
 import { useState } from "react";
+import { toast } from "sonner";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -37,13 +38,13 @@ export default function BusinessIncome() {
   // Back-plan
   const [targetIncome, setTargetIncome] = useState(200000);
 
-  // Queries
-  const rolesQ = trpc.calculatorEngine.bieRoles.useQuery();
-  const presetsQ = trpc.calculatorEngine.biePresets.useQuery();
+  // Queries (reference data — cache 5min)
+  const rolesQ = trpc.calculatorEngine.bieRoles.useQuery(undefined, { staleTime: 5 * 60_000 });
+  const presetsQ = trpc.calculatorEngine.biePresets.useQuery(undefined, { staleTime: 5 * 60_000 });
 
   // Mutations
-  const simMutation = trpc.calculatorEngine.bieSimulate.useMutation();
-  const backPlanMutation = trpc.calculatorEngine.bieBackPlan.useMutation();
+  const simMutation = trpc.calculatorEngine.bieSimulate.useMutation({ onError: (e) => toast.error(e.message) });
+  const backPlanMutation = trpc.calculatorEngine.bieBackPlan.useMutation({ onError: (e) => toast.error(e.message) });
 
   function runSimulation() {
     const team = teamSize > 0
