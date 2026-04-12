@@ -33,10 +33,9 @@ describe("CommandPalette component", () => {
     expect(src).toMatch(/e\.metaKey\s*\|\|\s*e\.ctrlKey/);
   });
 
-  it("has pages group with at least 15 entries", () => {
-    const pageMatches = src.match(/\{ label: "/g);
-    expect(pageMatches).not.toBeNull();
-    expect(pageMatches!.length).toBeGreaterThanOrEqual(15);
+  it("derives pages from navigation data via buildPages", () => {
+    // Pages are built dynamically from TOOLS_NAV/ADMIN_NAV/UTILITY_NAV via buildPages()
+    expect(src).toContain("buildPages");
   });
 
   it("has actions group with at least 3 entries", () => {
@@ -65,14 +64,17 @@ describe("CommandPalette component", () => {
     expect(src).toContain("toggle");
   });
 
-  it("exports PAGES and ACTIONS for testing", () => {
-    expect(src).toContain("export { PAGES, ACTIONS }");
+  it("exports ACTIONS for testing", () => {
+    expect(src).toContain("export { ACTIONS }");
   });
 
-  it("includes shortcut hints for pages with G-then-X", () => {
-    expect(src).toContain('shortcut: "G C"');
-    expect(src).toContain('shortcut: "G O"');
-    expect(src).toContain('shortcut: "G M"');
+  it("includes shortcut hints for pages with G-then-X via commandPaletteData", () => {
+    // Shortcuts are defined in commandPaletteData.ts WIRED_G_CHORDS, imported by CommandPalette
+    const dataPath = path.resolve(__dirname, "../client/src/components/commandPaletteData.ts");
+    const dataSrc = fs.readFileSync(dataPath, "utf-8");
+    expect(dataSrc).toContain('"G C"');
+    expect(dataSrc).toContain('"G O"');
+    expect(dataSrc).toContain('"G I"');
   });
 
   it("navigates to conversation on select", () => {

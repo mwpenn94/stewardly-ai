@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,15 +86,17 @@ export default function RetirementPage() {
   const backPlan = trpc.wealthEngine.backPlanHolistic.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
 
   // Risk context — auto-fire after goal projection runs
-  const stressGfc = trpc.calculatorEngine.stressTest.useMutation();
-  const backtestRun = trpc.calculatorEngine.historicalBacktest.useMutation();
+  const onStressError = () => toast.error("Stress test failed — results may be incomplete");
+  const onBacktestError = () => toast.error("Backtest failed — historical data unavailable");
+  const stressGfc = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
+  const backtestRun = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: onBacktestError });
   const benchmarks = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
   // Stress testing + historical backtest + Monte Carlo
-  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation();
-  const stressGFC = trpc.calculatorEngine.stressTest.useMutation();
-  const stressCovid = trpc.calculatorEngine.stressTest.useMutation();
-  const backtest = trpc.calculatorEngine.historicalBacktest.useMutation();
-  const monteCarlo = trpc.wealthEngine.monteCarloSim.useMutation();
+  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
+  const stressGFC = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
+  const stressCovid = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
+  const backtest = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: onBacktestError });
+  const monteCarlo = trpc.wealthEngine.monteCarloSim.useMutation({ onError: () => toast.error("Monte Carlo simulation failed") });
 
   const annualContribution = income * savingsRate;
 

@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
+import path from "path";
 
-const WHATS_NEW_PATH = "/home/ubuntu/wealthbridge-ai/client/src/components/WhatsNewModal.tsx";
-const CHANGELOG_BELL_PATH = "/home/ubuntu/wealthbridge-ai/client/src/components/ChangelogBell.tsx";
+const PROJECT_ROOT = path.resolve(import.meta.dirname, "..");
+const WHATS_NEW_PATH = path.join(PROJECT_ROOT, "client/src/components/WhatsNewModal.tsx");
+const CHANGELOG_BELL_PATH = path.join(PROJECT_ROOT, "client/src/components/ChangelogBell.tsx");
 
 describe("Changelog Data Update (v2026.04.04)", () => {
   const content = readFileSync(WHATS_NEW_PATH, "utf-8");

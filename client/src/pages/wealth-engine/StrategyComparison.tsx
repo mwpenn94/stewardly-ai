@@ -20,6 +20,7 @@
  */
 
 import { useState, useMemo, useEffect } from "react";
+import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,7 +130,9 @@ export default function StrategyComparisonPage() {
 
   const guardrailWarnings = useMemo(() => checkInputGuardrails(0.15, 0.07), []);
 
-  const compare = trpc.wealthEngine.holisticCompare.useMutation();
+  const compare = trpc.wealthEngine.holisticCompare.useMutation({
+    onError: () => toast.error("Strategy comparison failed — please try again"),
+  });
 
   const [showProductRefs, setShowProductRefs] = useState(false);
 
@@ -139,10 +142,12 @@ export default function StrategyComparisonPage() {
   const productRefs = trpc.calculatorEngine.productReferences.useQuery(undefined, { staleTime: 300_000 });
 
   // Stress test + backtest — fire after comparison completes
-  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation();
-  const stressGfc = trpc.calculatorEngine.stressTest.useMutation();
-  const stressCovid = trpc.calculatorEngine.stressTest.useMutation();
-  const backtest = trpc.calculatorEngine.historicalBacktest.useMutation();
+  const onStressError = () => toast.error("Stress test failed — results may be incomplete");
+  const onBacktestError = () => toast.error("Backtest failed — historical data unavailable");
+  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
+  const stressGfc = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
+  const stressCovid = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
+  const backtest = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: onBacktestError });
 
   const result = compare.data;
   const rows = result?.data?.compareRows ?? [];

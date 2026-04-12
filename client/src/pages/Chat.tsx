@@ -443,16 +443,25 @@ export default function Chat() {
   });
   const createFolderMutation = trpc.conversations.createFolder.useMutation({
     onSuccess: () => { utils.conversations.folders.invalidate(); setFolderDialogOpen(false); setNewFolderName(""); },
+    onError: () => toast.error("Failed to create folder"),
   });
   const updateFolderMutation = trpc.conversations.updateFolder.useMutation({
     onSuccess: () => { utils.conversations.folders.invalidate(); setEditingFolder(null); },
+    onError: () => toast.error("Failed to update folder"),
   });
   const deleteFolderMutation = trpc.conversations.deleteFolder.useMutation({
     onSuccess: () => { utils.conversations.folders.invalidate(); utils.conversations.list.invalidate(); },
+    onError: () => toast.error("Failed to delete folder"),
   });
-  const reorderMutation = trpc.conversations.reorder.useMutation();
-  const autonomousStart = trpc.autonomousProcessing.start.useMutation();
-  const autonomousStop = trpc.autonomousProcessing.stop.useMutation();
+  const reorderMutation = trpc.conversations.reorder.useMutation({
+    onError: () => toast.error("Failed to reorder conversations"),
+  });
+  const autonomousStart = trpc.autonomousProcessing.start.useMutation({
+    onError: () => toast.error("Failed to start autonomous processing"),
+  });
+  const autonomousStop = trpc.autonomousProcessing.stop.useMutation({
+    onError: () => toast.error("Failed to stop autonomous processing"),
+  });
   const consensusQuery = trpc.advancedIntelligence.consensusQuery.useMutation();
   // Round E1 — multi-model consensus stream (Phase C2 backend, trio UI)
   const consensusStreamMutation = trpc.wealthEngine.consensusStream.useMutation();
