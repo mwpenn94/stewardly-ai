@@ -12,7 +12,7 @@
  * mwpenn94/emba_modules could actually be answered.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
@@ -27,9 +27,19 @@ import {
   RotateCw,
   Trophy,
   HelpCircle,
+  Shuffle,
+  ListOrdered,
+  TrendingDown,
 } from "lucide-react";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { toast } from "sonner";
+import {
+  buildStudyDeck,
+  buildMasteryLookup,
+  formatSessionLabel,
+  type StudyMode,
+} from "./lib/deckBuilder";
+import { recordStudyNow } from "./lib/studyStreak";
 
 export default function LearningQuizRunner() {
   const params = useParams<{ slug: string }>();
@@ -44,10 +54,32 @@ export default function LearningQuizRunner() {
     { trackId: trackQ.data?.id ?? 0 },
     { enabled: !!trackQ.data?.id },
   );
+  const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, {
+    refetchOnWindowFocus: false,
+  });
   const recordReview = trpc.learning.mastery.recordReview.useMutation();
 
   const track = trackQ.data;
-  const questions = questionsQ.data ?? [];
+  const rawQuestions = questionsQ.data ?? [];
+
+  // ── Session config (pass 3 — shuffle + size + weakest first) ──
+  const [started, setStarted] = useState(false);
+  const [mode, setMode] = useState<StudyMode>("shuffle");
+  const [limit, setLimit] = useState<number>(20);
+  const [sessionSeed, setSessionSeed] = useState<string>(
+    () => `q-${Date.now()}`,
+  );
+
+  const questions = useMemo(() => {
+    const lookup = buildMasteryLookup(masteryQ.data ?? []);
+    return buildStudyDeck(rawQuestions, {
+      mode,
+      limit,
+      seed: sessionSeed,
+      masteryLookup: lookup,
+      itemKeyOf: (q: any) => `question:${q.id}`,
+    });
+  }, [rawQuestions, mode, limit, sessionSeed, masteryQ.data]);
 
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -63,7 +95,7 @@ export default function LearningQuizRunner() {
     setCorrectCount(0);
     setIncorrectCount(0);
     setComplete(false);
-  }, [trackQ.data?.id]);
+  }, [trackQ.data?.id, sessionSeed]);
 
   const current = questions[index];
   const total = questions.length;
@@ -85,6 +117,9 @@ export default function LearningQuizRunner() {
       .catch((err) => {
         toast.error(`Review not saved: ${err.message ?? "network error"}`);
       });
+
+    // Pass 7 — streak day marker (idempotent per-day).
+    recordStudyNow();
   };
 
   const next = () => {
@@ -98,13 +133,52 @@ export default function LearningQuizRunner() {
   };
 
   const restart = () => {
+    setSessionSeed(`q-${Date.now()}`);
     setIndex(0);
     setSelected(null);
     setRevealed(false);
     setCorrectCount(0);
     setIncorrectCount(0);
     setComplete(false);
+    setStarted(true);
   };
+
+  // Pass 6 (build loop) — keyboard shortcuts during the quiz:
+  // digits 1..N pick option, Enter submits / advances. No-op when
+  // not started yet, complete, or focus is in a text input.
+  useEffect(() => {
+    if (!started || complete || !current) return;
+    function handle(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+      const opts = (current?.options ?? []) as unknown as string[];
+      if (/^[1-9]$/.test(e.key)) {
+        const idx = Number(e.key) - 1;
+        if (idx < opts.length && !revealed) {
+          e.preventDefault();
+          setSelected(idx);
+        }
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (!revealed && selected != null && !recordReview.isPending) submit();
+        else if (revealed) next();
+      }
+    }
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [
+    started,
+    complete,
+    current,
+    revealed,
+    selected,
+    recordReview.isPending,
+  ]);
 
   if (trackQ.isLoading || questionsQ.isLoading) {
     return (
@@ -135,7 +209,7 @@ export default function LearningQuizRunner() {
     );
   }
 
-  if (total === 0) {
+  if (rawQuestions.length === 0) {
     return (
       <AppShell title={`${track.name} · Quiz`}>
         <div className="mx-auto max-w-2xl p-6 space-y-4">
@@ -157,6 +231,121 @@ export default function LearningQuizRunner() {
                 </Link>
                 .
               </p>
+            </CardContent>
+          </Card>
+        </div>
+      </AppShell>
+    );
+  }
+
+  // Pre-session configure card (pass 3) — pick deck size + ordering.
+  if (!started) {
+    return (
+      <AppShell title={`${track.name} · Quiz`}>
+        <div className="mx-auto max-w-2xl p-6 space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/learning/tracks/${track.slug}`)}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to {track.name}
+          </Button>
+          <Card>
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
+                  <HelpCircle className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="font-semibold">Start practice quiz</p>
+                  <p className="text-xs text-muted-foreground">
+                    {rawQuestions.length} questions available in this track
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                    Quiz length
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[10, 20, 50, rawQuestions.length].map((n, i) => {
+                      const isAll = i === 3;
+                      const label = isAll ? "All" : String(n);
+                      const val = isAll
+                        ? rawQuestions.length
+                        : Math.min(n, rawQuestions.length);
+                      const active = limit === val;
+                      if (!isAll && n > rawQuestions.length) return null;
+                      return (
+                        <Button
+                          key={`${label}-${val}`}
+                          variant={active ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setLimit(val)}
+                        >
+                          {label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                    Question order
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant={mode === "shuffle" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMode("shuffle")}
+                      className="h-auto py-2 flex flex-col items-center gap-1"
+                    >
+                      <Shuffle className="h-4 w-4" />
+                      <span className="text-xs">Shuffle</span>
+                    </Button>
+                    <Button
+                      variant={mode === "weakest" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMode("weakest")}
+                      className="h-auto py-2 flex flex-col items-center gap-1"
+                      disabled={!(masteryQ.data && masteryQ.data.length > 0)}
+                      title={
+                        masteryQ.data && masteryQ.data.length > 0
+                          ? "Lowest-confidence questions first"
+                          : "Needs prior study history"
+                      }
+                    >
+                      <TrendingDown className="h-4 w-4" />
+                      <span className="text-xs">Weakest</span>
+                    </Button>
+                    <Button
+                      variant={mode === "sequential" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMode("sequential")}
+                      className="h-auto py-2 flex flex-col items-center gap-1"
+                    >
+                      <ListOrdered className="h-4 w-4" />
+                      <span className="text-xs">In order</span>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="pt-2 text-xs text-muted-foreground text-center">
+                  {formatSessionLabel(rawQuestions.length, limit, mode)}
+                </div>
+              </div>
+
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() => setStarted(true)}
+                disabled={total === 0}
+              >
+                Start quiz
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -210,8 +399,14 @@ export default function LearningQuizRunner() {
           current && (
             <Card>
               <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 justify-between">
                   <Badge variant="outline">{current.difficulty}</Badge>
+                  <span
+                    className="text-[10px] text-muted-foreground hidden md:inline"
+                    aria-hidden
+                  >
+                    Press 1–{options.length} to choose · Enter to submit
+                  </span>
                 </div>
                 <p className="text-base font-medium leading-relaxed">
                   {current.prompt}

@@ -20,7 +20,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, FileText, BookOpen, Wrench, Shield, Plus } from "lucide-react";
+import {
+  Sparkles,
+  FileText,
+  BookOpen,
+  Wrench,
+  Shield,
+  Plus,
+  History,
+  CheckCircle2,
+  AlertTriangle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Redirect } from "wouter";
 
@@ -33,6 +43,11 @@ export default function ContentStudio() {
   const defsQ = trpc.learning.content.listDefinitions.useQuery({ limit: 20 });
   const tracksQ = trpc.learning.content.listTracks.useQuery({ limit: 50 });
   const pendingQ = trpc.learning.freshness.pendingUpdates.useQuery(undefined, { enabled: isAdmin });
+  // Pass 4 (build loop) — admin-only import history.
+  const importHistoryQ = trpc.learning.importHistory.useQuery(undefined, {
+    enabled: isAdmin,
+    refetchOnWindowFocus: false,
+  });
   const utils = trpc.useUtils();
 
   const createDefMut = trpc.learning.content.createDefinition.useMutation({
@@ -80,6 +95,8 @@ export default function ContentStudio() {
       }
       utils.learning.content.listTracks.invalidate();
       utils.learning.content.listDefinitions.invalidate();
+      // Pass 4 — refresh the history panel after the import lands.
+      utils.learning.importHistory.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });
@@ -249,6 +266,9 @@ export default function ContentStudio() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Pass 4 (build loop) — Last 50 import runs */}
+            <ImportHistoryPanel data={importHistoryQ.data} loading={importHistoryQ.isLoading} />
           </>
         )}
       </div>
@@ -267,5 +287,164 @@ function StudioTile(props: { icon: React.ReactNode; label: string; count: number
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ─── Pass 4 (build loop) — Import History panel ──────────────────────────
+//
+// Surfaces the persisted .stewardly/learning_import_history.json file
+// so admins can answer "when was the last import" + "what changed"
+// without scrolling server logs.
+
+function ImportHistoryPanel(props: {
+  data:
+    | {
+        runs: Array<{
+          id: string;
+          finishedAt: string;
+          ok: boolean;
+          durationMs: number;
+          counts: {
+            disciplines: number;
+            definitions: number;
+            tracks: number;
+            chapters: number;
+            subsections: number;
+            questions: number;
+            flashcards: number;
+          };
+          errorCount: number;
+          errorSamples: string[];
+          totalInserted: number;
+        }>;
+        summary: {
+          totalRuns: number;
+          successfulRuns: number;
+          failedRuns: number;
+          lastRunAt: string | null;
+          lastSuccessAt: string | null;
+          lastInsertedTotal: number;
+          totals: {
+            disciplines: number;
+            definitions: number;
+            tracks: number;
+            chapters: number;
+            subsections: number;
+            questions: number;
+            flashcards: number;
+          };
+        };
+      }
+    | undefined;
+  loading: boolean;
+}) {
+  if (props.loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <History className="h-4 w-4" /> Import history
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">Loading…</CardContent>
+      </Card>
+    );
+  }
+  const runs = props.data?.runs ?? [];
+  const summary = props.data?.summary;
+  const formatRel = (iso: string | null) => {
+    if (!iso) return "never";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const diffMs = Date.now() - d.getTime();
+    const min = Math.floor(diffMs / 60_000);
+    if (min < 1) return "just now";
+    if (min < 60) return `${min}m ago`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `${h}h ago`;
+    const days = Math.floor(h / 24);
+    if (days < 30) return `${days}d ago`;
+    return d.toLocaleDateString();
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <History className="h-4 w-4" /> Import history
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {summary && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <SummaryStat label="Last run" value={formatRel(summary.lastRunAt)} />
+            <SummaryStat label="Last success" value={formatRel(summary.lastSuccessAt)} />
+            <SummaryStat
+              label="Successful"
+              value={`${summary.successfulRuns} / ${summary.totalRuns}`}
+            />
+            <SummaryStat
+              label="Last insert"
+              value={summary.lastInsertedTotal.toLocaleString()}
+            />
+          </div>
+        )}
+        {runs.length === 0 ? (
+          <div className="text-sm text-muted-foreground">
+            No import runs yet. Click <strong>Import from GitHub</strong> above to fetch
+            the latest emba_modules content. Each run will be persisted here.
+          </div>
+        ) : (
+          <ul className="divide-y border rounded-md max-h-96 overflow-auto">
+            {runs.slice(0, 20).map((r) => {
+              const clean = r.ok && r.errorCount === 0;
+              return (
+                <li key={r.id} className="p-3 text-xs space-y-1">
+                  <div className="flex items-center gap-2">
+                    {clean ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                    )}
+                    <span className="font-medium">{formatRel(r.finishedAt)}</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-muted-foreground">
+                      {r.durationMs}ms
+                    </span>
+                    {r.errorCount > 0 && (
+                      <Badge variant="outline" className="text-amber-600">
+                        {r.errorCount} error{r.errorCount === 1 ? "" : "s"}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-muted-foreground">
+                    +{r.counts.definitions} defs · +{r.counts.tracks} tracks ·{" "}
+                    +{r.counts.chapters} chapters · +{r.counts.questions} qs ·{" "}
+                    +{r.counts.flashcards} cards
+                  </div>
+                  {r.errorSamples.length > 0 && (
+                    <div className="text-amber-600/90">
+                      ↳ {r.errorSamples[0]}
+                      {r.errorCount > 1 && ` · +${r.errorCount - 1} more`}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SummaryStat(props: { label: string; value: string }) {
+  return (
+    <div className="border rounded-md p-3">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {props.label}
+      </div>
+      <div className="text-sm font-semibold">{props.value}</div>
+    </div>
   );
 }

@@ -38,8 +38,8 @@ describe("learning/wiring", () => {
   });
 
   describe("agent tool catalog", () => {
-    it("exports at least 11 learning tools", () => {
-      expect(LEARNING_AGENT_TOOLS.length).toBeGreaterThanOrEqual(11);
+    it("exports at least 12 learning tools", () => {
+      expect(LEARNING_AGENT_TOOLS.length).toBeGreaterThanOrEqual(12);
     });
 
     it("each tool references a learning.* procedure", () => {
@@ -70,6 +70,7 @@ describe("learning/wiring", () => {
         "generate_practice_questions",
         "suggest_content_improvements",
         "draft_definition",
+        "start_review_session",
       ]) {
         expect(names.has(required)).toBe(true);
       }

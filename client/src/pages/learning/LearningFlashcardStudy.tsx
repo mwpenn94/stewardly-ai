@@ -30,9 +30,19 @@ import {
   RotateCw,
   Sparkles,
   Trophy,
+  Shuffle,
+  ListOrdered,
+  TrendingDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCelebration } from "@/lib/CelebrationEngine";
+import {
+  buildStudyDeck,
+  buildMasteryLookup,
+  formatSessionLabel,
+  type StudyMode,
+} from "./lib/deckBuilder";
+import { recordStudyNow } from "./lib/studyStreak";
 
 export default function LearningFlashcardStudy() {
   const params = useParams<{ slug: string }>();
@@ -47,10 +57,33 @@ export default function LearningFlashcardStudy() {
     { trackId: trackQ.data?.id ?? 0 },
     { enabled: !!trackQ.data?.id },
   );
+  const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, {
+    refetchOnWindowFocus: false,
+  });
   const recordReview = trpc.learning.mastery.recordReview.useMutation();
 
   const track = trackQ.data;
-  const cards = flashcardsQ.data ?? [];
+  const rawCards = flashcardsQ.data ?? [];
+
+  // ── Deck config (pass 3 — shuffle + session size + weakest-first) ──
+  const [started, setStarted] = useState(false);
+  const [mode, setMode] = useState<StudyMode>("shuffle");
+  const [limit, setLimit] = useState<number>(20);
+  const [sessionSeed, setSessionSeed] = useState<string>(
+    () => `fc-${Date.now()}`,
+  );
+
+  // Compose the deck pure-function-style so tests can lock in ordering.
+  const cards = useMemo(() => {
+    const masteryLookup = buildMasteryLookup(masteryQ.data ?? []);
+    return buildStudyDeck(rawCards, {
+      mode,
+      limit,
+      seed: sessionSeed,
+      masteryLookup,
+      itemKeyOf: (f: any) => `flashcard:${f.id}`,
+    });
+  }, [rawCards, mode, limit, sessionSeed, masteryQ.data]);
 
   // Session state
   const [index, setIndex] = useState(0);
@@ -59,14 +92,14 @@ export default function LearningFlashcardStudy() {
   const [incorrectCount, setIncorrectCount] = useState(0);
   const [complete, setComplete] = useState(false);
 
-  // Reset when the deck changes.
+  // Reset when the deck changes OR the user restarts.
   useEffect(() => {
     setIndex(0);
     setFlipped(false);
     setCorrectCount(0);
     setIncorrectCount(0);
     setComplete(false);
-  }, [trackQ.data?.id]);
+  }, [trackQ.data?.id, sessionSeed]);
 
   const current = cards[index];
   const total = cards.length;
@@ -87,6 +120,9 @@ export default function LearningFlashcardStudy() {
         toast.error(`Review not saved: ${err.message ?? "network error"}`);
       });
 
+    // Pass 7 — streak-day tracker (idempotent per-day).
+    recordStudyNow();
+
     if (correct) setCorrectCount((c) => c + 1);
     else setIncorrectCount((c) => c + 1);
 
@@ -99,11 +135,14 @@ export default function LearningFlashcardStudy() {
   };
 
   const restart = () => {
+    // Bump the seed so a fresh shuffle runs on restart.
+    setSessionSeed(`fc-${Date.now()}`);
     setIndex(0);
     setFlipped(false);
     setCorrectCount(0);
     setIncorrectCount(0);
     setComplete(false);
+    setStarted(true);
   };
 
   if (trackQ.isLoading || flashcardsQ.isLoading) {
@@ -135,7 +174,7 @@ export default function LearningFlashcardStudy() {
     );
   }
 
-  if (total === 0) {
+  if (rawCards.length === 0) {
     return (
       <AppShell title={`${track.name} · Flashcards`}>
         <div className="mx-auto max-w-2xl p-6 space-y-4">
@@ -157,6 +196,121 @@ export default function LearningFlashcardStudy() {
                 </Link>
                 .
               </p>
+            </CardContent>
+          </Card>
+        </div>
+      </AppShell>
+    );
+  }
+
+  // Pre-session configure card — lets the learner pick a deck size +
+  // ordering mode before the runner starts. Hidden once started.
+  if (!started) {
+    return (
+      <AppShell title={`${track.name} · Flashcards`}>
+        <div className="mx-auto max-w-2xl p-6 space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/learning/tracks/${track.slug}`)}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to {track.name}
+          </Button>
+          <Card>
+            <CardContent className="p-6 space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="font-semibold">Start flashcard session</p>
+                  <p className="text-xs text-muted-foreground">
+                    {rawCards.length} cards available in this track
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                    Session size
+                  </p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[10, 20, 50, rawCards.length].map((n, i) => {
+                      const isAll = i === 3;
+                      const label = isAll ? "All" : String(n);
+                      const val = isAll ? rawCards.length : Math.min(n, rawCards.length);
+                      const active = limit === val;
+                      // Skip duplicates (e.g. if track has only 7 cards)
+                      if (!isAll && n > rawCards.length) return null;
+                      return (
+                        <Button
+                          key={`${label}-${val}`}
+                          variant={active ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setLimit(val)}
+                        >
+                          {label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                    Order
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant={mode === "shuffle" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMode("shuffle")}
+                      className="h-auto py-2 flex flex-col items-center gap-1"
+                    >
+                      <Shuffle className="h-4 w-4" />
+                      <span className="text-xs">Shuffle</span>
+                    </Button>
+                    <Button
+                      variant={mode === "weakest" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMode("weakest")}
+                      className="h-auto py-2 flex flex-col items-center gap-1"
+                      disabled={!(masteryQ.data && masteryQ.data.length > 0)}
+                      title={
+                        masteryQ.data && masteryQ.data.length > 0
+                          ? "Lowest-confidence items first"
+                          : "Needs prior study history"
+                      }
+                    >
+                      <TrendingDown className="h-4 w-4" />
+                      <span className="text-xs">Weakest</span>
+                    </Button>
+                    <Button
+                      variant={mode === "sequential" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMode("sequential")}
+                      className="h-auto py-2 flex flex-col items-center gap-1"
+                    >
+                      <ListOrdered className="h-4 w-4" />
+                      <span className="text-xs">In order</span>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="pt-2 text-xs text-muted-foreground text-center">
+                  {formatSessionLabel(rawCards.length, limit, mode)}
+                </div>
+              </div>
+
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() => setStarted(true)}
+                disabled={total === 0}
+              >
+                Start studying
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -206,9 +360,23 @@ export default function LearningFlashcardStudy() {
           current && (
             <div className="space-y-4">
               <Card
-                className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 ${flipped ? "animate-card-flip-in" : ""}`}
+                role="button"
+                tabIndex={0}
+                aria-pressed={flipped}
+                aria-label={
+                  flipped
+                    ? `Definition revealed. ${current.definition}. Press space to flip back.`
+                    : `Flashcard term: ${current.term}. Press space or enter to reveal the definition.`
+                }
+                className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${flipped ? "animate-card-flip-in" : ""}`}
                 style={{ perspective: "600px" }}
                 onClick={() => setFlipped((f) => !f)}
+                onKeyDown={(e) => {
+                  if (e.key === " " || e.key === "Enter") {
+                    e.preventDefault();
+                    setFlipped((f) => !f);
+                  }
+                }}
               >
                 <CardContent className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
                   {flipped ? (
@@ -227,7 +395,7 @@ export default function LearningFlashcardStudy() {
                       </p>
                       <p className="text-xl font-semibold">{current.term}</p>
                       <p className="text-xs text-muted-foreground mt-3">
-                        Click the card to reveal
+                        Click or press Space to reveal
                       </p>
                     </>
                   )}
@@ -240,6 +408,7 @@ export default function LearningFlashcardStudy() {
                   className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-400"
                   onClick={() => mark(false)}
                   disabled={!flipped || recordReview.isPending}
+                  aria-label="Mark this card as got it wrong"
                 >
                   <X className="h-4 w-4 mr-2" /> Got it wrong
                 </Button>
@@ -247,6 +416,7 @@ export default function LearningFlashcardStudy() {
                   className="bg-emerald-600 hover:bg-emerald-700 text-white"
                   onClick={() => mark(true)}
                   disabled={!flipped || recordReview.isPending}
+                  aria-label="Mark this card as got it right"
                 >
                   <Check className="h-4 w-4 mr-2" /> Got it right
                 </Button>

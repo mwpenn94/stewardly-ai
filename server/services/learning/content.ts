@@ -600,13 +600,25 @@ export interface SearchResult {
 export async function searchContent(query: string, limit = 20): Promise<SearchResult[]> {
   const db = await getDb();
   if (!db) return [];
+  // Pass 8 (build loop) — search now matches body text as well as
+  // titles, plus includes practice questions so every imported
+  // emba_modules content type is discoverable.
   const like$ = `%${query}%`;
   const results: SearchResult[] = [];
   try {
+    // Definitions — match term OR body
     const defs = await db
       .select()
       .from(learningDefinitions)
-      .where(and(eq(learningDefinitions.status, "published"), like(learningDefinitions.term, like$)))
+      .where(
+        and(
+          eq(learningDefinitions.status, "published"),
+          or(
+            like(learningDefinitions.term, like$),
+            like(learningDefinitions.definition, like$),
+          ),
+        ),
+      )
       .limit(limit);
     for (const d of defs) {
       results.push({
@@ -617,10 +629,19 @@ export async function searchContent(query: string, limit = 20): Promise<SearchRe
       });
     }
 
+    // Flashcards — match term OR definition body
     const fcs = await db
       .select()
       .from(learningFlashcards)
-      .where(and(eq(learningFlashcards.status, "published"), like(learningFlashcards.term, like$)))
+      .where(
+        and(
+          eq(learningFlashcards.status, "published"),
+          or(
+            like(learningFlashcards.term, like$),
+            like(learningFlashcards.definition, like$),
+          ),
+        ),
+      )
       .limit(limit);
     for (const f of fcs) {
       results.push({
@@ -631,10 +652,21 @@ export async function searchContent(query: string, limit = 20): Promise<SearchRe
       });
     }
 
+    // Tracks — match name + tagline/subtitle/description
     const tracks = await db
       .select()
       .from(learningTracks)
-      .where(and(eq(learningTracks.status, "published"), like(learningTracks.name, like$)))
+      .where(
+        and(
+          eq(learningTracks.status, "published"),
+          or(
+            like(learningTracks.name, like$),
+            like(learningTracks.title, like$),
+            like(learningTracks.subtitle, like$),
+            like(learningTracks.description, like$),
+          ),
+        ),
+      )
       .limit(limit);
     for (const t of tracks) {
       results.push({
@@ -642,6 +674,30 @@ export async function searchContent(query: string, limit = 20): Promise<SearchRe
         id: t.id,
         title: t.name,
         snippet: (t.subtitle ?? t.description ?? "").slice(0, 200),
+      });
+    }
+
+    // Practice questions — match prompt (explanation searched too if present)
+    const qs = await db
+      .select()
+      .from(learningPracticeQuestions)
+      .where(
+        and(
+          eq(learningPracticeQuestions.status, "published"),
+          or(
+            like(learningPracticeQuestions.prompt, like$),
+            like(learningPracticeQuestions.explanation, like$),
+          ),
+        ),
+      )
+      .limit(limit);
+    for (const q of qs) {
+      const prompt = (q.prompt ?? "") as string;
+      results.push({
+        type: "question",
+        id: q.id,
+        title: prompt.length > 80 ? `${prompt.slice(0, 77)}…` : prompt,
+        snippet: (q.explanation ?? "").slice(0, 200),
       });
     }
   } catch (err) {

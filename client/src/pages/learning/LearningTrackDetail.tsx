@@ -17,7 +17,7 @@
  * which in turn read from the DB tables populated by embaImport.ts.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   BookOpen,
   Layers,
@@ -39,7 +40,15 @@ import {
   Play,
   Sparkles,
   FileText,
+  TrendingUp,
 } from "lucide-react";
+import {
+  buildMasteryLookup,
+  buildTrackProgress,
+  formatProgressPct,
+  completionStatus,
+  type ChapterProgress,
+} from "./lib/trackProgress";
 
 export default function LearningTrackDetail() {
   const params = useParams<{ slug: string }>();
@@ -62,11 +71,28 @@ export default function LearningTrackDetail() {
     { trackId: trackQ.data?.id ?? 0 },
     { enabled: !!trackQ.data?.id },
   );
+  // Pass 5 (build loop) — fold mastery into per-chapter progress.
+  const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, {
+    refetchOnWindowFocus: false,
+  });
 
   const track = trackQ.data;
   const chapters = chaptersQ.data ?? [];
   const questions = questionsQ.data ?? [];
   const flashcards = flashcardsQ.data ?? [];
+
+  // Pure rollup — guarded by useMemo so we only recompute when the
+  // four input arrays change (cheap O(n)).
+  const progress = useMemo(() => {
+    if (!chapters.length && !flashcards.length && !questions.length) return null;
+    const lookup = buildMasteryLookup(masteryQ.data ?? []);
+    return buildTrackProgress(
+      chapters.map((c: any) => ({ id: c.id, title: c.title })),
+      flashcards.map((f: any) => ({ id: f.id, chapterId: f.chapterId ?? null })),
+      questions.map((q: any) => ({ id: q.id, chapterId: q.chapterId ?? null })),
+      lookup,
+    );
+  }, [chapters, flashcards, questions, masteryQ.data]);
 
   const [expandedChapterId, setExpandedChapterId] = useState<number | null>(
     null,
@@ -175,6 +201,11 @@ export default function LearningTrackDetail() {
             </p>
           )}
         </div>
+
+        {/* Pass 5 (build loop) — Your progress */}
+        {progress && progress.trackTotal > 0 && (
+          <TrackProgressCard progress={progress} />
+        )}
 
         {/* Chapters */}
         <Card>
@@ -357,5 +388,121 @@ function EmptyChapters() {
         (click "Import from GitHub").
       </p>
     </div>
+  );
+}
+
+// ─── Pass 5 (build loop) — Your progress card ────────────────────────────
+
+function TrackProgressCard({
+  progress,
+}: {
+  progress: {
+    trackTotal: number;
+    trackMastered: number;
+    trackInProgress: number;
+    trackUnseen: number;
+    trackCompletionPct: number;
+    trackAttemptedPct: number;
+    chapters: ChapterProgress[];
+    unchaptered: { total: number; mastered: number; inProgress: number; unseen: number };
+  };
+}) {
+  const hasAnyProgress = progress.trackMastered + progress.trackInProgress > 0;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <TrendingUp className="h-4 w-4" /> Your progress
+        </CardTitle>
+        <CardDescription className="text-xs">
+          {hasAnyProgress
+            ? "Mastered items are dark, in-progress items are amber, untouched items are pale."
+            : "Start studying to track your progress here."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Track-level rollup */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">
+              {progress.trackMastered} mastered · {progress.trackInProgress} in progress ·{" "}
+              {progress.trackUnseen} new
+            </span>
+            <span className="font-semibold">
+              {formatProgressPct(progress.trackCompletionPct)} mastered
+            </span>
+          </div>
+          <Progress
+            value={progress.trackCompletionPct * 100}
+            aria-label={`Track mastery: ${progress.trackMastered} of ${progress.trackTotal} items mastered`}
+          />
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>{progress.trackTotal} items total</span>
+            <span>{formatProgressPct(progress.trackAttemptedPct)} touched</span>
+          </div>
+        </div>
+
+        {/* Per-chapter rows — only chapters that have at least one item */}
+        {progress.chapters.some((c) => c.total > 0) && (
+          <div className="space-y-2 pt-2 border-t">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              By chapter
+            </p>
+            <ul className="space-y-2">
+              {progress.chapters
+                .filter((c) => c.total > 0)
+                .map((c) => (
+                  <ChapterProgressRow key={c.chapterId} chapter={c} />
+                ))}
+              {progress.unchaptered.total > 0 && (
+                <li className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground italic">
+                      Unchaptered material
+                    </span>
+                    <span className="text-muted-foreground">
+                      {progress.unchaptered.mastered}/{progress.unchaptered.total}
+                    </span>
+                  </div>
+                  <Progress
+                    value={
+                      progress.unchaptered.total > 0
+                        ? (progress.unchaptered.mastered / progress.unchaptered.total) * 100
+                        : 0
+                    }
+                    aria-label={`Unchaptered material: ${progress.unchaptered.mastered} of ${progress.unchaptered.total} mastered`}
+                  />
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ChapterProgressRow({ chapter }: { chapter: ChapterProgress }) {
+  const status = completionStatus(chapter.completionPct);
+  const variant: Record<typeof status, string> = {
+    unstarted: "text-muted-foreground",
+    started: "text-amber-600",
+    "in-progress": "text-amber-600",
+    "near-mastery": "text-emerald-600",
+    mastered: "text-emerald-600",
+  };
+  return (
+    <li className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-medium line-clamp-1 max-w-[60%]">{chapter.title}</span>
+        <span className={variant[status]}>
+          {chapter.mastered}/{chapter.total} · {formatProgressPct(chapter.completionPct)}
+        </span>
+      </div>
+      <Progress
+        value={chapter.completionPct * 100}
+        aria-label={`${chapter.title}: ${chapter.mastered} of ${chapter.total} mastered`}
+      />
+    </li>
   );
 }
