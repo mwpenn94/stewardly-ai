@@ -130,9 +130,12 @@ export default function StrategyComparisonPage() {
 
   const compare = trpc.wealthEngine.holisticCompare.useMutation();
 
+  const [showProductRefs, setShowProductRefs] = useState(false);
+
   // Enrichment queries — load reference data eagerly
   const benchmarks = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
   const stressScenarios = trpc.calculatorEngine.stressScenarios.useQuery(undefined, { staleTime: 300_000 });
+  const productRefs = trpc.calculatorEngine.productReferences.useQuery(undefined, { staleTime: 300_000 });
 
   // Stress test + backtest — fire after comparison completes
   const stressDotcom = trpc.calculatorEngine.stressTest.useMutation();
@@ -297,15 +300,7 @@ export default function StrategyComparisonPage() {
             </CardHeader>
             {showBenchmarks && (
               <CardContent className="pt-0">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {(benchmarks.data as any[]).map((b: any, i: number) => (
-                    <div key={i} className="p-3 rounded-lg bg-secondary/30 border border-border/30">
-                      <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">{b.label}</p>
-                      <p className="text-sm font-semibold mt-0.5">{b.value}</p>
-                      <p className="text-[9px] text-muted-foreground mt-1">{b.source}</p>
-                    </div>
-                  ))}
-                </div>
+                <BenchmarkGrid data={benchmarks.data} />
               </CardContent>
             )}
           </Card>
@@ -501,6 +496,38 @@ export default function StrategyComparisonPage() {
           </Card>
         )}
 
+        {/* Product References */}
+        {productRefs.data && rows.length > 0 && (
+          <Card className="border-border/50">
+            <CardHeader className="py-3 cursor-pointer" onClick={() => setShowProductRefs(r => !r)}>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Info className="h-4 w-4 text-accent" /> Product References & Citations
+                  <Badge variant="outline" className="text-[10px] ml-1">
+                    {(productRefs.data as any[]).length} products
+                  </Badge>
+                </CardTitle>
+                {showProductRefs ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+            </CardHeader>
+            {showProductRefs && (
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {(productRefs.data as any[]).map((ref: any) => (
+                    <div key={ref.key} className="p-3 rounded-lg bg-secondary/20 border border-border/20">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs font-semibold uppercase">{ref.key}</p>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">{ref.benchmark}</p>
+                      <p className="text-[9px] text-muted-foreground/60 mt-1">{ref.src}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        )}
+
         {compare.isError && (
           <p className="text-sm text-red-600">
             {compare.error?.message || "Comparison failed"}
@@ -544,6 +571,44 @@ function ProfileNumberField({
           {formatCurrency(value)}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Benchmark Labels ────────────────────────────────────────────
+const BENCHMARK_LABELS: Record<string, string> = {
+  savingsRate: "National Savings Rate",
+  investorBehaviorGap: "Investor Behavior Gap",
+  lifeInsuranceGap: "Life Insurance Gap",
+  retirementReadiness: "Retirement Readiness",
+  estatePlanningGap: "Estate Planning Gap",
+  advisorAlpha: "Advisor Alpha",
+  avgAdvisoryFee: "Avg Advisory Fee",
+  avgWealthGrowth: "Avg Wealth Growth",
+};
+
+function formatBenchmarkValue(key: string, data: any): string {
+  if (data.national != null) return `${(data.national * 100).toFixed(1)}%`;
+  if (data.gap != null) return `${(data.gap * 100).toFixed(1)}%/yr`;
+  if (data.pct != null) return `${(data.pct * 100).toFixed(0)}%`;
+  if (data.value != null) return key.includes("Fee") ? `${(data.value * 100).toFixed(2)}%` : `${(data.value * 100).toFixed(0)}%/yr`;
+  if (data.sp500 != null) return `S&P: ${(data.sp500 * 100).toFixed(1)}%`;
+  return "—";
+}
+
+function BenchmarkGrid({ data }: { data: any }) {
+  const entries = Object.entries(data || {});
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {entries.map(([key, val]: [string, any]) => (
+        <div key={key} className="p-3 rounded-lg bg-secondary/30 border border-border/30">
+          <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">
+            {BENCHMARK_LABELS[key] || key}
+          </p>
+          <p className="text-sm font-semibold mt-0.5">{formatBenchmarkValue(key, val)}</p>
+          <p className="text-[9px] text-muted-foreground mt-1">{val.source || ""}</p>
+        </div>
+      ))}
     </div>
   );
 }

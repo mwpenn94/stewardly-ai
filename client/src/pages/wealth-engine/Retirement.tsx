@@ -34,6 +34,23 @@ import {
   ChevronDown, ChevronUp, Info,
 } from "lucide-react";
 
+// ─── Benchmark helpers ───────────────────────────────────────────
+const BENCHMARK_LABELS: Record<string, string> = {
+  savingsRate: "National Savings Rate",
+  investorBehaviorGap: "Investor Behavior Gap",
+  retirementReadiness: "Retirement Readiness",
+  advisorAlpha: "Advisor Alpha",
+};
+
+function formatBenchmarkValue(key: string, data: any): string {
+  if (data.national != null) return `${(data.national * 100).toFixed(1)}%`;
+  if (data.gap != null) return `${(data.gap * 100).toFixed(1)}%/yr`;
+  if (data.pct != null) return `${(data.pct * 100).toFixed(0)}%`;
+  if (data.value != null) return `${(data.value * 100).toFixed(key.includes("Fee") ? 2 : 0)}%/yr`;
+  if (data.sp500 != null) return `S&P: ${(data.sp500 * 100).toFixed(1)}%`;
+  return "—";
+}
+
 export default function RetirementPage() {
   const [age, setAge] = useState(40);
   const [retirementAge, setRetirementAge] = useState(65);
@@ -372,11 +389,15 @@ export default function RetirementPage() {
                 {/* Benchmark context */}
                 {benchmarks.data && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {(benchmarks.data as any[]).slice(0, 4).map((b: any, i: number) => (
-                      <div key={i} className="p-2 rounded-lg bg-secondary/20 border border-border/20">
-                        <p className="text-[9px] text-muted-foreground/70 uppercase tracking-wider">{b.label}</p>
-                        <p className="text-xs font-semibold mt-0.5">{b.value}</p>
-                        <p className="text-[8px] text-muted-foreground">{b.source}</p>
+                    {Object.entries(benchmarks.data).slice(0, 4).map(([key, val]: [string, any]) => (
+                      <div key={key} className="p-2 rounded-lg bg-secondary/20 border border-border/20">
+                        <p className="text-[9px] text-muted-foreground/70 uppercase tracking-wider">
+                          {BENCHMARK_LABELS[key] || key}
+                        </p>
+                        <p className="text-xs font-semibold mt-0.5">
+                          {formatBenchmarkValue(key, val)}
+                        </p>
+                        <p className="text-[8px] text-muted-foreground">{val.source || ""}</p>
                       </div>
                     ))}
                   </div>
