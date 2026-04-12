@@ -15,6 +15,8 @@ import {
   dispatchCodeTool,
   CODE_CHAT_TOOL_DEFINITIONS,
   type CodeToolCall,
+  type CodeToolName,
+  type CodeToolResult,
 } from "../services/codeChat/codeChatExecutor";
 import { extractFileMentions } from "../services/codeChat/fileIndex";
 import { readFile as sandboxReadFile } from "../services/codeChat/fileTools";
@@ -40,6 +42,29 @@ const READ_ONLY_TOOLS = new Set([
   "web_fetch", // Parity Pass 1: SSRF-guarded external URL fetch
   "git_blame", // Parity Pass 9 (T18): read-only per-line attribution
 ]);
+
+// Parity Pass 10: type predicate for CodeToolName. Every member of
+// this set MUST appear in the CodeToolName union — adding a new tool
+// should update both. The check prevents the executor from dispatching
+// arbitrary strings masquerading as tool names via `as any`.
+const KNOWN_TOOL_NAMES = new Set<CodeToolName>([
+  "read_file",
+  "write_file",
+  "edit_file",
+  "multi_edit",
+  "list_directory",
+  "grep_search",
+  "run_bash",
+  "update_todos",
+  "find_symbol",
+  "web_fetch",
+  "git_blame",
+  "finish",
+]);
+
+function isCodeToolName(name: string): name is CodeToolName {
+  return KNOWN_TOOL_NAMES.has(name as CodeToolName);
+}
 
 function writeSse(res: any, data: Record<string, unknown>): void {
   if (!res.writableEnded) {
@@ -251,8 +276,18 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         }
 
         const toolStart = Date.now();
-        const dispatchResult = await dispatchCodeTool(
-          { name: rawName as any, args } as CodeToolCall,
+        // Parity Pass 10 (type safety): narrow CodeToolCall.name to
+        // CodeToolName instead of the previous `as any`. The rawName
+        // value is reconstructed from the LLM's tool call and may
+        // refer to a tool that doesn't exist in the registry, so we
+        // fall back to "finish" rather than throwing — dispatchCodeTool
+        // will return a clean `{kind: "error"}` if the registry lookup
+        // fails, which the error path below surfaces.
+        const narrowedName: CodeToolName = isCodeToolName(rawName)
+          ? rawName
+          : "finish";
+        const dispatchResult: CodeToolResult = await dispatchCodeTool(
+          { name: narrowedName, args } as CodeToolCall,
           { workspaceRoot: WORKSPACE_ROOT, allowMutations: canMutate },
         );
         const durationMs = Date.now() - toolStart;
@@ -265,8 +300,12 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         // tool dispatch — writable to logs/DB/webhooks by the
         // logger transport. Args are redacted in place via the
         // pure toolTelemetry module so secrets never hit the log.
-        const resultKind = (dispatchResult as any).kind || "unknown";
-        const isError = resultKind === "error";
+        //
+        // Pass 10: narrow via the discriminated union instead of
+        // `as any`. errorMessage + errorCode only exist on the
+        // error branch.
+        const resultKind = dispatchResult.kind;
+        const isError = dispatchResult.kind === "error";
         const auditEvent = buildToolCallAuditEvent(
           {
             userId: user.id,
@@ -275,8 +314,8 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
             args,
             resultKind,
             error: isError,
-            errorMessage: isError ? (dispatchResult as any).error : undefined,
-            errorCode: isError ? (dispatchResult as any).code : undefined,
+            errorMessage: dispatchResult.kind === "error" ? dispatchResult.error : undefined,
+            errorCode: dispatchResult.kind === "error" ? dispatchResult.code : undefined,
             durationMs,
             resultBytes: resultStr.length,
             source: "react-loop",
@@ -298,10 +337,10 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         // Pass 237: for update_todos, also emit a dedicated SSE event
         // with the parsed todos payload so the client can render a
         // live todo panel without waiting for the final response.
-        if (rawName === "update_todos" && (dispatchResult as any).kind === "todos") {
+        if (rawName === "update_todos" && dispatchResult.kind === "todos") {
           writeSse(res, {
             type: "todos_updated",
-            todos: (dispatchResult as any).result.todos,
+            todos: dispatchResult.result.todos,
           });
         }
 
