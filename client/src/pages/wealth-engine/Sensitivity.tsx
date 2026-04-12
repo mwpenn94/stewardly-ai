@@ -204,7 +204,7 @@ export default function Sensitivity() {
                 <Info className="w-3 h-3" />
                 Base assumptions (held constant unless swept)
               </p>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs">Age: {age}</Label>
                   <Slider value={[age]} onValueChange={([v]) => setAge(v)} min={20} max={65} step={1} />
@@ -290,7 +290,7 @@ export default function Sensitivity() {
                         {yDef.label} ↓ / {xDef.label} →
                       </th>
                       {data.xValues.map((xv: number, xi: number) => (
-                        <th key={xi} className="p-1.5 text-center font-medium border border-border/30 bg-muted/30 min-w-[72px]">
+                        <th key={xi} className="p-1.5 text-center font-medium border border-border/30 bg-muted/30 min-w-[56px] sm:min-w-[72px]">
                           {xDef.format(xv)}
                         </th>
                       ))}

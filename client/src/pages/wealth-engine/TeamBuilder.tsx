@@ -267,9 +267,9 @@ export default function TeamBuilder() {
             {members.map(m => {
               const roleDef = ROLES.find(r => r.key === m.role);
               return (
-                <div key={m.id} className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-card/60">
+                <div key={m.id} className="flex flex-wrap items-center gap-2 p-2 rounded-lg border border-border/50 bg-card/60">
                   <Select value={m.role} onValueChange={v => updateMember(m.id, "role", v)}>
-                    <SelectTrigger className="h-8 text-xs w-[180px]">
+                    <SelectTrigger className="h-8 text-xs w-full sm:w-[180px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -456,8 +456,8 @@ export default function TeamBuilder() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-end gap-4">
-                  <div className="space-y-1 flex-1 max-w-xs">
+                <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+                  <div className="space-y-1 flex-1 w-full sm:max-w-xs">
                     <Label className="text-xs font-medium">Org Income Target</Label>
                     <div className="flex items-center gap-2">
                       <Target className="w-4 h-4 text-accent" />
@@ -560,11 +560,11 @@ export default function TeamBuilder() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-end gap-4">
-                  <div className="space-y-1">
+                <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+                  <div className="space-y-1 w-full sm:w-auto">
                     <Label className="text-xs">Leader Role</Label>
                     <Select value={leaderRole} onValueChange={setLeaderRole}>
-                      <SelectTrigger className="h-9 text-xs w-[200px]">
+                      <SelectTrigger className="h-9 text-xs w-full sm:w-[200px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
