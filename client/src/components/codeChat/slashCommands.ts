@@ -180,6 +180,30 @@ export const BUILT_IN_COMMANDS: SlashCommand[] = [
     },
   },
   {
+    name: "web",
+    aliases: ["fetch", "url"],
+    description: "Fetch an external URL and summarize the content (Parity P1)",
+    args: "<url> [question]",
+    handler: (_ctx, args) => {
+      const trimmed = args.trim();
+      if (!trimmed) return;
+      // Split first token off as URL, rest is an optional follow-up question
+      const firstSpace = trimmed.indexOf(" ");
+      const rawUrl = firstSpace === -1 ? trimmed : trimmed.slice(0, firstSpace);
+      const question = firstSpace === -1 ? "" : trimmed.slice(firstSpace + 1).trim();
+      // Lightweight client-side sanity check so the user gets a fast
+      // failure for obviously-bad inputs; the server re-validates.
+      if (!/^https?:\/\//i.test(rawUrl)) {
+        return {
+          rewrite: `Use \`code_web_fetch\` to fetch ${rawUrl} (ensure it's an http/https URL) and summarize the content.${question ? `\n\nThen answer: ${question}` : ""}`,
+        };
+      }
+      return {
+        rewrite: `Use \`code_web_fetch\` to pull the content at ${rawUrl}. After reading, summarize the key information and cite any specific sections that matter.${question ? `\n\nThen answer this question using the fetched content: ${question}` : ""}`,
+      };
+    },
+  },
+  {
     name: "compact",
     description: "Summarize older turns into a single message to free up context",
     args: "[keepRecent]",

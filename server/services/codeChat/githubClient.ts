@@ -151,14 +151,27 @@ export async function loadGitHubCredentialsForUser(
                 connectionId: conn.id,
               };
             }
-            if (raw && typeof (raw as any).access_token === "string") {
+            // Parity Pass 12: narrow via Record<string, unknown>
+            // access instead of `as any` chain. Every field is
+            // validated individually so a partial or malformed
+            // oauth2 payload can't crash the type system (e.g. a
+            // stale migration that has access_token but missing
+            // refresh_token). expires_at can legitimately arrive
+            // as ISO string, epoch seconds, or epoch ms depending on
+            // which OAuth provider populated the row; normalizeExpiresAt
+            // maps all three to a single ISO string.
+            if (raw && typeof raw.access_token === "string") {
+              const refreshToken =
+                typeof raw.refresh_token === "string" ? raw.refresh_token : undefined;
+              const expiresAt = normalizeExpiresAt(raw.expires_at);
+              const scope = typeof raw.scope === "string" ? raw.scope : undefined;
               return {
                 credentials: {
                   kind: "oauth2",
-                  accessToken: (raw as any).access_token,
-                  refreshToken: (raw as any).refresh_token,
-                  expiresAt: (raw as any).expires_at,
-                  scope: (raw as any).scope,
+                  accessToken: raw.access_token,
+                  refreshToken,
+                  expiresAt,
+                  scope,
                 },
                 source: "user_connection",
                 connectionId: conn.id,
@@ -178,6 +191,31 @@ export async function loadGitHubCredentialsForUser(
   const envCreds = loadGitHubCredentialsFromEnv();
   if (envCreds) return { credentials: envCreds, source: "env" };
   return null;
+}
+
+/**
+ * Parity Pass 12: normalize an expires_at field from a credentials
+ * payload into a single ISO string. Accepts:
+ *   - undefined/null → undefined
+ *   - ISO string → pass-through after Date() validation
+ *   - epoch seconds (< 1e12) → multiplied to ms then ISO
+ *   - epoch ms (>= 1e12) → ISO
+ * Rejects anything that produces an Invalid Date.
+ */
+export function normalizeExpiresAt(raw: unknown): string | undefined {
+  if (raw === null || raw === undefined) return undefined;
+  if (typeof raw === "string") {
+    const d = new Date(raw);
+    return Number.isFinite(d.getTime()) ? d.toISOString() : undefined;
+  }
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    // Heuristic: values below 1e12 are almost certainly epoch seconds
+    // (31 Dec 2001 in ms is ~1.01e9, 1 Dec 2033 in s is ~2e9)
+    const ms = raw < 1e12 ? raw * 1000 : raw;
+    const d = new Date(ms);
+    return Number.isFinite(d.getTime()) ? d.toISOString() : undefined;
+  }
+  return undefined;
 }
 
 /** Default owner/repo for the Stewardly self-update workflow, overridable via env. */

@@ -40,6 +40,8 @@ describe("summarizeToolEvents", () => {
       ev("write_file", { args: { path: "c.ts" } }),
       ev("edit_file", { args: { path: "a.ts" } }),
       ev("run_bash", { args: { command: "ls" } }),
+      ev("web_fetch", { args: { url: "https://example.com" } }),
+      ev("web_fetch", { args: { url: "https://example.org" } }),
     ]);
     expect(s.reads).toBe(2);
     expect(s.lists).toBe(1);
@@ -47,6 +49,7 @@ describe("summarizeToolEvents", () => {
     expect(s.writes).toBe(1);
     expect(s.edits).toBe(1);
     expect(s.bashRuns).toBe(1);
+    expect(s.webFetches).toBe(2);
   });
 
   it("counts errors across all tool kinds", () => {

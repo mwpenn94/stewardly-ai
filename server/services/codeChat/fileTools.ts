@@ -47,6 +47,11 @@ export class SandboxError extends Error {
 /**
  * Resolve a user-supplied path against the workspace root and verify
  * the result stays inside it. Throws SandboxError on escape attempts.
+ *
+ * NOTE: This does NOT follow symlinks. Use `resolveInsideReal` for
+ * any operation that's about to actually touch the filesystem — a
+ * symlink sitting inside the workspace could otherwise redirect the
+ * operation to an arbitrary file on the host. See Parity Pass 6.
  */
 export function resolveInside(
   workspaceRoot: string,
@@ -63,6 +68,76 @@ export function resolveInside(
   return normPath;
 }
 
+/**
+ * Like `resolveInside` but also fs.realpath()'s the result (when the
+ * path already exists) and re-verifies the REAL path still lives
+ * inside the workspace root. Blocks symlink-escape attacks where a
+ * malicious or LLM-planted symlink inside the workspace redirects
+ * reads/writes to arbitrary files on the host filesystem (e.g. a
+ * symlink `./notes.md` → `/etc/passwd`).
+ *
+ * For non-existent paths (e.g. create-a-new-file), we fall back to
+ * resolving the parent directory's realpath and rebasing the leaf,
+ * so writeFile still works when the target doesn't exist yet but
+ * its containing directory is a symlink out of the sandbox.
+ */
+export async function resolveInsideReal(
+  workspaceRoot: string,
+  userPath: string,
+): Promise<string> {
+  const normRoot = path.resolve(workspaceRoot);
+  const rootReal = existsSync(normRoot)
+    ? await fs.realpath(normRoot)
+    : normRoot;
+  const normPath = resolveInside(workspaceRoot, userPath);
+
+  // Fast path — path exists, realpath it directly.
+  if (existsSync(normPath)) {
+    let real: string;
+    try {
+      real = await fs.realpath(normPath);
+    } catch (err) {
+      throw new SandboxError(
+        `cannot realpath '${userPath}': ${(err as Error).message}`,
+        "REALPATH_FAILED",
+      );
+    }
+    if (!isInsideRoot(real, rootReal)) {
+      throw new SandboxError(
+        `path '${userPath}' resolves via symlink outside workspace`,
+        "SANDBOX_ESCAPE",
+      );
+    }
+    return normPath;
+  }
+
+  // Path doesn't exist yet — realpath the containing directory so a
+  // symlinked parent still blocks escapes on create.
+  const parent = path.dirname(normPath);
+  if (existsSync(parent)) {
+    let parentReal: string;
+    try {
+      parentReal = await fs.realpath(parent);
+    } catch (err) {
+      throw new SandboxError(
+        `cannot realpath parent of '${userPath}': ${(err as Error).message}`,
+        "REALPATH_FAILED",
+      );
+    }
+    if (!isInsideRoot(parentReal, rootReal)) {
+      throw new SandboxError(
+        `path '${userPath}' resolves via symlinked parent outside workspace`,
+        "SANDBOX_ESCAPE",
+      );
+    }
+  }
+  return normPath;
+}
+
+function isInsideRoot(absPath: string, rootReal: string): boolean {
+  return absPath === rootReal || absPath.startsWith(rootReal + path.sep);
+}
+
 // ─── Read ─────────────────────────────────────────────────────────────────
 
 export interface ReadFileResult {
@@ -76,7 +151,7 @@ export async function readFile(
   opts: SandboxOptions,
   relativePath: string,
 ): Promise<ReadFileResult> {
-  const abs = resolveInside(opts.workspaceRoot, relativePath);
+  const abs = await resolveInsideReal(opts.workspaceRoot, relativePath);
   if (!existsSync(abs)) {
     throw new SandboxError(`file not found: ${relativePath}`, "NOT_FOUND");
   }
@@ -132,7 +207,7 @@ export async function writeFile(
       "MUTATIONS_DISABLED",
     );
   }
-  const abs = resolveInside(opts.workspaceRoot, relativePath);
+  const abs = await resolveInsideReal(opts.workspaceRoot, relativePath);
   const max = opts.maxWriteBytes ?? 1024 * 1024;
   const bytes = Buffer.byteLength(content, "utf8");
   if (bytes > max) {
@@ -195,7 +270,7 @@ export async function editFile(
       "MUTATIONS_DISABLED",
     );
   }
-  const abs = resolveInside(opts.workspaceRoot, relativePath);
+  const abs = await resolveInsideReal(opts.workspaceRoot, relativePath);
   if (!existsSync(abs)) {
     throw new SandboxError(`file not found: ${relativePath}`, "NOT_FOUND");
   }
@@ -243,6 +318,175 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// ─── Multi-edit (atomic batch find + replace) ────────────────────────────
+
+export interface MultiEditStep {
+  oldString: string;
+  newString: string;
+  /** Default false — require unique match, fail on ambiguity */
+  replaceAll?: boolean;
+}
+
+export interface MultiEditStepOutcome {
+  index: number;
+  oldString: string;
+  newString: string;
+  replacements: number;
+}
+
+export interface MultiEditFileResult {
+  path: string;
+  /** Total replacements summed across every step */
+  replacements: number;
+  /** Number of steps applied (= steps.length on success) */
+  stepsApplied: number;
+  byteLength: number;
+  before?: string;
+  after?: string;
+  diffTruncated?: boolean;
+  /** Per-step breakdown for UI rendering / auditing */
+  steps: MultiEditStepOutcome[];
+}
+
+/**
+ * Apply a batch of find/replace edits to a single file atomically:
+ *
+ *   1. Read the file once into memory.
+ *   2. Apply each edit sequentially against the running in-memory
+ *      content (later edits see earlier edits' results — Claude Code
+ *      MultiEdit semantics).
+ *   3. If any step throws (not found, ambiguous), the entire batch
+ *      is aborted and the file on disk is left untouched.
+ *   4. Only if every step succeeds is the final content written back.
+ *
+ * The atomicity is important because separate editFile calls can
+ * leave a file half-edited if the second call fails — this tool
+ * guarantees either all or none.
+ */
+export async function multiEditFile(
+  opts: SandboxOptions,
+  relativePath: string,
+  steps: MultiEditStep[],
+): Promise<MultiEditFileResult> {
+  if (!opts.allowMutations) {
+    throw new SandboxError(
+      "multi_edit requires allowMutations: true",
+      "MUTATIONS_DISABLED",
+    );
+  }
+  if (!Array.isArray(steps) || steps.length === 0) {
+    throw new SandboxError(
+      "multi_edit requires at least one step",
+      "BAD_ARGS",
+    );
+  }
+  if (steps.length > 50) {
+    throw new SandboxError(
+      `multi_edit is capped at 50 steps (got ${steps.length})`,
+      "TOO_MANY_STEPS",
+    );
+  }
+
+  // Validate every step shape up-front so the agent gets a clean
+  // error instead of a mid-batch failure.
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    if (!s || typeof s !== "object") {
+      throw new SandboxError(
+        `step ${i} is not an object`,
+        "BAD_ARGS",
+      );
+    }
+    if (typeof s.oldString !== "string" || s.oldString.length === 0) {
+      throw new SandboxError(
+        `step ${i}: oldString must be a non-empty string`,
+        "BAD_ARGS",
+      );
+    }
+    if (typeof s.newString !== "string") {
+      throw new SandboxError(
+        `step ${i}: newString must be a string`,
+        "BAD_ARGS",
+      );
+    }
+    if (s.oldString === s.newString) {
+      throw new SandboxError(
+        `step ${i}: oldString equals newString (no-op)`,
+        "BAD_ARGS",
+      );
+    }
+  }
+
+  const abs = await resolveInsideReal(opts.workspaceRoot, relativePath);
+  if (!existsSync(abs)) {
+    throw new SandboxError(`file not found: ${relativePath}`, "NOT_FOUND");
+  }
+
+  const before = await fs.readFile(abs, "utf8");
+  let running = before;
+  const outcomes: MultiEditStepOutcome[] = [];
+
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    const old = step.oldString;
+    if (!running.includes(old)) {
+      throw new SandboxError(
+        `step ${i}: oldString not found in ${relativePath} (after prior edits)`,
+        "NO_MATCH",
+      );
+    }
+    let replacements = 0;
+    if (step.replaceAll) {
+      const matchCount = (running.match(new RegExp(escapeRegex(old), "g")) || []).length;
+      running = running.split(old).join(step.newString);
+      replacements = matchCount;
+    } else {
+      const occurrences = running.split(old).length - 1;
+      if (occurrences > 1) {
+        throw new SandboxError(
+          `step ${i}: oldString matches ${occurrences} times in ${relativePath} (use replaceAll)`,
+          "AMBIGUOUS",
+        );
+      }
+      running = running.replace(old, step.newString);
+      replacements = 1;
+    }
+    outcomes.push({
+      index: i,
+      oldString: old,
+      newString: step.newString,
+      replacements,
+    });
+  }
+
+  // Enforce the same max-write budget as writeFile so a batch of
+  // edits that bloats the file past the cap fails before touching disk.
+  const max = opts.maxWriteBytes ?? 1024 * 1024;
+  const bytes = Buffer.byteLength(running, "utf8");
+  if (bytes > max) {
+    throw new SandboxError(
+      `multi_edit result exceeds max write size (${bytes} > ${max})`,
+      "TOO_LARGE",
+    );
+  }
+
+  await fs.writeFile(abs, running, "utf8");
+
+  const beforeSnap = snapshot(before);
+  const afterSnap = snapshot(running);
+  return {
+    path: relativePath,
+    replacements: outcomes.reduce((sum, o) => sum + o.replacements, 0),
+    stepsApplied: outcomes.length,
+    byteLength: bytes,
+    before: beforeSnap,
+    after: afterSnap,
+    diffTruncated:
+      beforeSnap.length !== before.length || afterSnap.length !== running.length,
+    steps: outcomes,
+  };
+}
+
 // ─── List directory ──────────────────────────────────────────────────────
 
 export interface ListDirEntry {
@@ -255,7 +499,7 @@ export async function listDirectory(
   opts: SandboxOptions,
   relativePath: string,
 ): Promise<{ path: string; entries: ListDirEntry[] }> {
-  const abs = resolveInside(opts.workspaceRoot, relativePath);
+  const abs = await resolveInsideReal(opts.workspaceRoot, relativePath);
   if (!existsSync(abs)) {
     throw new SandboxError(`directory not found: ${relativePath}`, "NOT_FOUND");
   }

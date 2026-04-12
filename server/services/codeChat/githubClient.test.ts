@@ -18,6 +18,7 @@ import {
   updatePullRequest,
   getAuthenticatedUser,
   listUserRepositories,
+  normalizeExpiresAt,
   listBranches,
   commitMultipleFiles,
   verifyPushAccess,
@@ -389,5 +390,53 @@ describe("githubClient — createGist", () => {
         files: {},
       }),
     ).rejects.toBeInstanceOf(GitHubError);
+  });
+});
+
+// ─── normalizeExpiresAt (Parity Pass 12) ───────────────────────────
+
+describe("normalizeExpiresAt", () => {
+  it("returns undefined for null/undefined", () => {
+    expect(normalizeExpiresAt(null)).toBeUndefined();
+    expect(normalizeExpiresAt(undefined)).toBeUndefined();
+  });
+
+  it("passes ISO strings through", () => {
+    const iso = "2026-12-31T00:00:00.000Z";
+    expect(normalizeExpiresAt(iso)).toBe(iso);
+  });
+
+  it("normalizes an ISO string via Date round-trip", () => {
+    const input = "2026-04-12T00:00:00Z";
+    const out = normalizeExpiresAt(input);
+    expect(out).toBe("2026-04-12T00:00:00.000Z");
+  });
+
+  it("returns undefined for an invalid date string", () => {
+    expect(normalizeExpiresAt("not a date")).toBeUndefined();
+  });
+
+  it("treats small numbers as epoch seconds", () => {
+    // 2026-04-12 in epoch seconds ≈ 1.776e9 (< 1e12)
+    const epochSec = Math.floor(new Date("2026-04-12T00:00:00Z").getTime() / 1000);
+    const out = normalizeExpiresAt(epochSec);
+    expect(out).toBe("2026-04-12T00:00:00.000Z");
+  });
+
+  it("treats large numbers as epoch ms", () => {
+    // 2026-04-12 in epoch ms ≈ 1.776e12 (>= 1e12)
+    const epochMs = new Date("2026-04-12T00:00:00Z").getTime();
+    const out = normalizeExpiresAt(epochMs);
+    expect(out).toBe("2026-04-12T00:00:00.000Z");
+  });
+
+  it("rejects non-finite numbers", () => {
+    expect(normalizeExpiresAt(NaN)).toBeUndefined();
+    expect(normalizeExpiresAt(Infinity)).toBeUndefined();
+  });
+
+  it("rejects arrays and objects", () => {
+    expect(normalizeExpiresAt([])).toBeUndefined();
+    expect(normalizeExpiresAt({})).toBeUndefined();
   });
 });
