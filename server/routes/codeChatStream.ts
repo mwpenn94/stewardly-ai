@@ -19,6 +19,12 @@ import {
 import { extractFileMentions } from "../services/codeChat/fileIndex";
 import { readFile as sandboxReadFile } from "../services/codeChat/fileTools";
 import {
+  extractSymbolCitations,
+  buildCitationContext,
+  formatCitationOverlay,
+  type ResolvedSymbolCitation,
+} from "../services/codeChat/symbolCitations";
+import {
   loadProjectInstructions,
   buildInstructionsPromptOverlay,
 } from "../services/codeChat/projectInstructions";
@@ -194,6 +200,65 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         resolvedMentions.push({ path: rel, bytes: 0, error: msg });
       }
     }
+    // ─── Build-loop Pass 14: symbol citation expansion ───────────
+    //
+    // Closes the loop on G23 (Pass 13). The client rewrites
+    // `#useAuth` mentions into `[useAuth at hooks/useAuth.ts:42]`
+    // citations; here on the server we read each cited file at
+    // the cited line ±5/+25 lines and inline the slice as
+    // additional context the LLM sees alongside the prompt.
+    const citations = extractSymbolCitations(message);
+    const resolvedCitations: ResolvedSymbolCitation[] = [];
+    for (const citation of citations) {
+      try {
+        const fileResult = await sandboxReadFile(
+          { workspaceRoot: WORKSPACE_ROOT, allowMutations: false, maxReadBytes: 256 * 1024 },
+          citation.path,
+        );
+        const lines = fileResult.content.split("\n");
+        const ctx = buildCitationContext(lines, citation, 5, 25);
+        if (ctx) {
+          const r: ResolvedSymbolCitation = {
+            ...citation,
+            resolved: true,
+            context: ctx.context,
+            startLine: ctx.startLine,
+          };
+          resolvedCitations.push(r);
+          contextChunks.push(formatCitationOverlay(r));
+        } else {
+          const r: ResolvedSymbolCitation = {
+            ...citation,
+            resolved: false,
+            error: "empty file",
+          };
+          resolvedCitations.push(r);
+          contextChunks.push(formatCitationOverlay(r));
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        const r: ResolvedSymbolCitation = {
+          ...citation,
+          resolved: false,
+          error: msg,
+        };
+        resolvedCitations.push(r);
+        contextChunks.push(formatCitationOverlay(r));
+      }
+    }
+    if (resolvedCitations.length > 0) {
+      writeSse(res, {
+        type: "citations_resolved",
+        citations: resolvedCitations.map((c) => ({
+          name: c.name,
+          path: c.path,
+          line: c.line,
+          resolved: c.resolved,
+          error: c.error,
+        })),
+      });
+    }
+
     const userMessage = contextChunks.length > 0
       ? `${message}${contextChunks.join("")}`
       : message;

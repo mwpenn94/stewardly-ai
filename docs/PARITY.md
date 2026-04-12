@@ -103,6 +103,7 @@ Pass 9 · angle: performance / freshness · queue: G10 (cache invalidation) · 6
 Pass 10 · angle: accessibility · queue: G15 (a11y audit) · cc43769 · shipped: aria-labels on 6 unlabeled buttons + focus-visible rings + role=log/aria-live/aria-busy on messages container + a11yLint.test.ts regression lint · deferred: G5–G9, G11–G13, G16–G18, G22–G24
 Pass 11 · angle: feature completeness · queue: G7 (task subagent) · 7129ab0 · shipped: TaskRunner injection point + dispatcher case + recursion-guarded sub-ReAct-loop in stream route + SSE subagent_* events + 5 dispatcher tests · deferred: G5, G6, G8, G9, G11–G13, G16–G18, G22–G24
 Pass 12 · angle: bundle size · queue: G17 (lazy popovers) · 6edc955 · shipped: 17 lazy popovers + Suspense gating + DEFAULT_ENABLED_TOOLS split — CodeChat chunk 318KB → 148KB (-53%) · deferred: G5, G6, G8, G9, G11–G13, G16, G18, G22–G24
-Pass 13 · angle: ergonomics · queue: G23 (symbol mention) · shipped: symbolMentions.ts parser + SymbolMentionPopover + chat input wiring + keyboard nav + 22 new tests · deferred: G5, G6, G8, G9, G11–G13, G16, G18, G22, G24
+Pass 13 · angle: ergonomics · queue: G23 (symbol mention) · 4242fbb · shipped: symbolMentions.ts parser + SymbolMentionPopover + chat input wiring + keyboard nav + 22 new tests · deferred: G5, G6, G8, G9, G11, G12, G16, G18, G22, G24
+Pass 14 · angle: feature completeness (G23 follow-on) · queue: server-side citation auto-resolver · shipped: server symbolCitations.ts (extractSymbolCitations + buildCitationContext + formatCitationOverlay) + stream-route resolution loop with line-window read + SSE citations_resolved event + 17 new tests · deferred: G5, G6, G8, G9, G11, G12, G16, G18, G22, G24
 
 <!-- PASS_LOG_APPEND_HERE -->
