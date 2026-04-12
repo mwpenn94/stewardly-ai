@@ -48,7 +48,7 @@ Each row has:
 | T13 | Agent memory (`/remember`) | done | 9 | client-side persistent facts | Pass 241 |
 | T14 | Symbol index cache | done | 9 | 60s TTL | Pass 242 |
 | T15 | Task delegation / sub-agents | open | 0 | Claude Code has `Task` tool; spawns sub-agents in isolated contexts | — |
-| T16 | Multi-edit transactional | done | 9 | atomic batch edits per-file, all-or-nothing, 50-step cap, file untouched on any failure | P2 (pending-commit) |
+| T16 | Multi-edit transactional | done | 9 | atomic batch edits per-file, all-or-nothing, 50-step cap, file untouched on any failure | P2 e911c50 |
 | T17 | Image/screenshot attachment | open | 0 | Multimodal input — screenshots, diagrams | — |
 | T18 | Git blame tool | open | 0 | Agent-accessible blame for any line | — |
 | T19 | Notebook (.ipynb) read/edit | open | 0 | Claude Code has NotebookEdit | — |
@@ -135,4 +135,4 @@ _empty — log three-way merges here when parallel processes conflict_
 Append-only tail. One line per completed pass:
 
 - Pass 1 · angle: missing-tool assessment · queue: [A1 web_fetch tool] · items completed: [web_fetch tool end-to-end (server service + dispatcher + SSE route allowlist + tool def + /web slash + permission popover + action palette + badge bump 8→9 + toolSummary + autonomousCoding summarizer + tests)] · items deferred: [] · sha: 3aa8672
-- Pass 2 · angle: T16 PARITY row — atomic multi-edit · queue: [R1 T16 from PARITY matrix] · items completed: [multi_edit tool (fileTools.multiEditFile with atomicity + before/after snapshots + 50-step cap + validation + TOO_LARGE guard), wired through codeChatExecutor.CodeToolName/CodeToolResult/dispatchCodeTool/CODE_CHAT_TOOL_DEFINITIONS/stats counter, autonomousCoding summarizer + stats aggregation, codeChatStream.mutation list + system prompt, ToolPermissionsPopover 9→10, CodeChat.tsx badge 9→10 + extractDiffFromTrace + edit-history capture, toolSummary counted, 17 new tests, TS clean, 794/794 suite, build 18.43s] · items deferred: [] · sha: pending-commit
+- Pass 2 · angle: T16 PARITY row — atomic multi-edit · queue: [R1 T16 from PARITY matrix] · items completed: [multi_edit tool (fileTools.multiEditFile with atomicity + before/after snapshots + 50-step cap + validation + TOO_LARGE guard), wired through codeChatExecutor.CodeToolName/CodeToolResult/dispatchCodeTool/CODE_CHAT_TOOL_DEFINITIONS/stats counter, autonomousCoding summarizer + stats aggregation, codeChatStream.mutation list + system prompt, ToolPermissionsPopover 9→10, CodeChat.tsx badge 9→10 + extractDiffFromTrace + edit-history capture, toolSummary counted, 17 new tests, TS clean, 794/794 suite, build 18.43s] · items deferred: [] · sha: e911c50
