@@ -33,6 +33,7 @@ import { seed as seedProviderHealthQueries } from "./21-providerHealthQueries";
 import { seed as seedImportFieldMappings } from "./22-importFieldMappings";
 import { seed as seedHolisticSummaryActions } from "./31-holisticSummaryActions";
 import { seed as seedChannelPilotDefaults } from "./32-channelPilotDefaults";
+import { seedDataSources } from "./seedDataSources";
 
 // ─── New seed modules ───────────────────────────────────────────────────────
 import { seedFeatureFlags } from "./seedFeatureFlags";
@@ -132,6 +133,7 @@ export async function runAllSeeds(): Promise<{ results: SeedResult[]; totalRecor
       { name: "SOFR Publication Calendar", fn: seedSofrPublicationCalendar },
       { name: "Provider Health Queries", fn: seedProviderHealthQueries },
       { name: "Import Field Mappings", fn: seedImportFieldMappings },
+      { name: "Data Sources (Gov APIs)", fn: seedDataSources },
     ],
   ];
 
@@ -174,4 +176,5 @@ export {
   seedLeadSources, seedPropensityFeatures, seedComplianceRules,
   seedLeadCaptureConfigs, seedVerificationBadgeTypes,
   seedHolisticSummaryActions, seedChannelPilotDefaults,
+  seedDataSources,
 };

@@ -469,6 +469,23 @@ async function startServer() {
     logger.info({ operation: "startServer", port }, `Server running on http://localhost:${port}/`);
     // Initialize background scheduler for health checks and data pipelines
     initScheduler();
+
+    // CBL19: Activate cron manager for fine-grained data pipeline scheduling
+    // This complements initScheduler — cronManager handles per-provider timing
+    // and connection-level syncs that the general scheduler doesn't cover
+    import("../services/cronManager").then(({ startCronManager, registerPlatformJobs }) => {
+      registerPlatformJobs({
+        fred: process.env.FRED_API_KEY,
+        bls: process.env.BLS_API_KEY,
+        census: process.env.CENSUS_API_KEY,
+        bea: process.env.BEA_API_KEY,
+      });
+      startCronManager();
+      logger.info({ operation: "cronManager" }, "Cron manager started with platform jobs");
+    }).catch((err) =>
+      logger.warn({ operation: "cronManager", err: String(err) }, "Cron manager startup failed (non-fatal)"),
+    );
+
     // Bootstrap EMBA Learning: seed catalog + register ReAct agent tools (idempotent, non-blocking)
     bootstrapLearning().catch((err) =>
       logger.warn({ operation: "bootstrapLearning", err: String(err) }, "bootstrapLearning failed"),
