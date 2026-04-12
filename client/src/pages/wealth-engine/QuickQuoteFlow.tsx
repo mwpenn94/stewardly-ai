@@ -29,6 +29,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ShieldAlert,
+  Info,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -202,6 +203,9 @@ export default function QuickQuoteFlowPage() {
                       Total protection: {formatCurrency(finalSnap.totalProtection)}
                     </div>
                   </div>
+                  {/* Contextual insights based on weak scores */}
+                  <ScoreInsights scores={scores} inputs={inputs} />
+
                   <div className="rounded-md border p-4 text-sm flex items-start gap-3">
                     <ShieldAlert className="h-5 w-5 mt-0.5" style={{ color: chartTokens.colors.warning }} />
                     <div>
@@ -320,6 +324,58 @@ function ScoreRing({ total, max }: { total: number; max: number }) {
           {total}/{max}
         </text>
       </svg>
+    </div>
+  );
+}
+
+// ─── Score-based contextual insights with product references ────
+const SCORE_INSIGHTS: Record<DomainKey, { lowMsg: string; ref: string }> = {
+  income: {
+    lowMsg: "Income replacement is a gap. Term life insurance can cover 10-12x your annual income for pennies on the dollar.",
+    ref: "LIMRA 2025: $17.5B record life premium. Avg term cost age 40: $30-50/mo per $500K (NerdWallet).",
+  },
+  emergency: {
+    lowMsg: "Your emergency fund covers less than 6 months. Financial planners recommend 6-12 months of expenses in liquid savings.",
+    ref: "Federal Reserve 2025: 37% of Americans can't cover a $400 emergency. Target: 6-12 months expenses.",
+  },
+  retirement: {
+    lowMsg: "Savings rate is below the recommended 15%. Even small increases compound significantly over decades.",
+    ref: "National savings rate: 6.2% (BEA 2025). Vanguard recommends 12-15% including employer match.",
+  },
+  protection: {
+    lowMsg: "Protection coverage may be insufficient. 1 in 4 workers becomes disabled before age 67 (SSA).",
+    ref: "Life Happens/LIMRA 2025: 41% lack adequate coverage. DI replaces 60% of income. LTC avg: $108K/yr (Genworth).",
+  },
+  tax: {
+    lowMsg: "At your income level, tax-advantaged accounts (401k, IUL, HSA) could significantly reduce your effective rate.",
+    ref: "2025 401k limit: $23,500 ($31,000 with catch-up 50+). IUL provides tax-free policy loans (IRC §7702).",
+  },
+  estate: {
+    lowMsg: "67% of Americans lack a will (Caring.com 2025). Estate planning protects your family and reduces probate costs.",
+    ref: "Estate exemption: $13.99M (2025), $15M+ (2026+, One Big Beautiful Bill Act). Top rate: 40%.",
+  },
+};
+
+function ScoreInsights({ scores, inputs }: { scores: Record<DomainKey, number>; inputs: QuickQuoteInputs }) {
+  const weakDomains = DOMAINS.filter((d) => scores[d.key] <= 1);
+  if (weakDomains.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-semibold flex items-center gap-1.5">
+        <Info className="h-3.5 w-3.5 text-accent" />
+        Areas to strengthen ({weakDomains.length} identified)
+      </p>
+      {weakDomains.slice(0, 3).map((d) => {
+        const insight = SCORE_INSIGHTS[d.key];
+        return (
+          <div key={d.key} className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
+            <p className="text-xs font-medium">{d.label}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{insight.lowMsg}</p>
+            <p className="text-[9px] text-muted-foreground/60 mt-1 italic">{insight.ref}</p>
+          </div>
+        );
+      })}
     </div>
   );
 }
