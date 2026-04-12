@@ -200,13 +200,24 @@ async function startServer() {
   await registerMCPEndpoint(app);
 
   // ─── TTS Audio endpoint (Edge TTS for AudioCompanion) ──────────────
+  // Auth middleware: inject __user for TTS routes so tts.ts can check it
   const ttsRouter = (await import("../routes/tts")).default;
+  app.use("/api/tts", generalLimiter, async (req, _res, next) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (user) (req as any).__user = user;
+    } catch { /* let route handle 401 */ }
+    next();
+  });
   app.use(ttsRouter);
 
   // ─── Code Chat SSE streaming endpoint ─────────────────────────────
   const codeChatStreamRouter = (await import("../routes/codeChatStream")).default;
   // ─── Automation telemetry SSE stream (pass 6) ────────────────────
   const automationTelemetryStreamRouter = (await import("../routes/automationTelemetryStream")).default;
+  // Rate limit + auth for Code Chat + Automation SSE endpoints
+  app.use("/api/codechat/stream", generalLimiter);
+  app.use("/api/automation/telemetry/stream", generalLimiter);
   app.use(async (req, res, next) => {
     const needsAuth =
       (req.path === "/api/codechat/stream" && req.method === "POST") ||
