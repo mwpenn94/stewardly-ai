@@ -10,6 +10,7 @@ import { GuestBanner } from "./components/GuestBanner";
 import { ContextualHelp } from "./components/ContextualHelp";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { CommandPalette } from "./components/CommandPalette";
+import { VoiceOnboardingCoach } from "./components/VoiceOnboardingCoach";
 import { useGuestSession } from "./hooks/useGuestSession";
 import GlobalFooter from "./components/GlobalFooter";
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -317,6 +318,7 @@ function App() {
                 <Toaster />
                 <KeyboardShortcuts />
                 <CommandPalette />
+                <VoiceOnboardingCoach />
                 <AppContent />
               </PILProvider>
             </AudioCompanionProvider>

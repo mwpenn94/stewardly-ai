@@ -131,13 +131,54 @@ export const FEEDBACK_SPECS: Record<string, FeedbackFactory> = {
 
   // ── COMPLIANCE ──────────────────────────────────────────
   "compliance.check_passed": () => ({
-    visual: { type: "toast", content: { variant: "success", title: "Compliance check passed" } },
+    visual: { type: "success_celebration", content: { intensity: "medium" } },
     audio: { type: "spoken", text: "Compliance check passed." },
     haptic: "success",
   }),
   "compliance.flag_raised": (data) => ({
     visual: { type: "toast", content: { variant: "warning", title: `Compliance flag: ${data?.flag}`, persistent: true } },
     audio: { type: "spoken", text: `Compliance flag raised. ${data?.flag}. Please review.` },
+    haptic: "heavy",
+  }),
+
+  // ── GOALS & WINS (Pass 11 / G22) ────────────────────────
+  "goal.completed": (data) => ({
+    visual: { type: "success_celebration", content: { intensity: "heavy", color: "gold" } },
+    audio: {
+      type: "spoken",
+      text: data?.goalName ? `Goal complete: ${data.goalName}.` : "Goal complete.",
+    },
+    haptic: "success",
+  }),
+  "report.generated": (data) => ({
+    visual: {
+      type: "toast",
+      content: {
+        variant: "success",
+        title: "Report ready",
+        description: data?.reportName || "Your report has been generated.",
+      },
+    },
+    audio: {
+      type: "spoken",
+      text: data?.reportName ? `${data.reportName} is ready.` : "Your report is ready.",
+    },
+    haptic: "success",
+  }),
+  "engine.calculation_complete": (data) => ({
+    visual: { type: "success_celebration", content: { intensity: "light" } },
+    audio: {
+      type: "spoken",
+      text: data?.summary || "Calculation complete.",
+    },
+    haptic: "success",
+  }),
+  "milestone.reached": (data) => ({
+    visual: { type: "success_celebration", content: { intensity: "heavy" } },
+    audio: {
+      type: "spoken",
+      text: data?.name ? `Milestone reached: ${data.name}!` : "Milestone reached!",
+    },
     haptic: "heavy",
   }),
 

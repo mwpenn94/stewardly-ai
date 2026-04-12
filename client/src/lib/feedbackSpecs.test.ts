@@ -56,10 +56,15 @@ const REQUIRED_KEYS = [
   // onboarding
   "onboarding.step_complete",
   "onboarding.complete",
+  // Pass 11 (G22) — goal / milestone / report / engine wins
+  "goal.completed",
+  "report.generated",
+  "engine.calculation_complete",
+  "milestone.reached",
 ];
 
 describe("feedbackSpecs inventory", () => {
-  it("has all 34 designed event keys defined", () => {
+  it("has all designed event keys defined", () => {
     for (const key of REQUIRED_KEYS) {
       expect(FEEDBACK_SPECS[key], `missing spec: ${key}`).toBeDefined();
     }
@@ -107,5 +112,36 @@ describe("feedbackSpecs inventory", () => {
     const spec = getFeedback("voice.not_understood");
     expect(spec?.haptic).toBeUndefined();
     expect(spec?.visual?.type).toBe("toast");
+  });
+
+  /* Pass 11 (G22) — non-learning win specs */
+  it("goal.completed fires heavy celebration + success haptic", () => {
+    const spec = getFeedback("goal.completed", { goalName: "Retirement on track" });
+    expect(spec?.visual?.type).toBe("success_celebration");
+    expect(spec?.visual?.content?.intensity).toBe("heavy");
+    expect(spec?.haptic).toBe("success");
+    expect(spec?.audio?.text).toMatch(/Retirement on track/);
+  });
+
+  it("report.generated surfaces a success toast with the report name", () => {
+    const spec = getFeedback("report.generated", { reportName: "2026 Q1 Plan" });
+    expect(spec?.visual?.type).toBe("toast");
+    expect(spec?.visual?.content?.description).toMatch(/2026 Q1 Plan/);
+  });
+
+  it("milestone.reached uses heavy celebration + heavy haptic", () => {
+    const spec = getFeedback("milestone.reached", { name: "First 10 clients" });
+    expect(spec?.visual?.content?.intensity).toBe("heavy");
+    expect(spec?.haptic).toBe("heavy");
+  });
+
+  it("engine.calculation_complete is gentle (light) — it's a calculation, not a celebration", () => {
+    const spec = getFeedback("engine.calculation_complete");
+    expect(spec?.visual?.content?.intensity).toBe("light");
+  });
+
+  it("compliance.check_passed is now a celebration (Pass 11 upgrade from toast)", () => {
+    const spec = getFeedback("compliance.check_passed");
+    expect(spec?.visual?.type).toBe("success_celebration");
   });
 });
