@@ -238,7 +238,7 @@ export default function ReferenceHub() {
             <CardContent className="space-y-4">
               {/* Overall stats */}
               {overallStats && (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
                   <StatChip label="Average Return" value={pct(overallStats.avg)} />
                   <StatChip label="Best Year" value={`${overallStats.best.year}: ${pct(overallStats.best.return)}`} positive />
                   <StatChip label="Worst Year" value={`${overallStats.worst.year}: ${pct(overallStats.worst.return)}`} negative />
@@ -250,7 +250,7 @@ export default function ReferenceHub() {
               {/* Decade averages */}
               <div>
                 <h3 className="text-sm font-medium mb-2">Decade Averages</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
                   {decadeAverages.map((d) => (
                     <button
                       key={d.decade}

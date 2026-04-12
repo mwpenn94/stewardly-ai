@@ -137,7 +137,7 @@ export function CalculatorContextBar({ params, showBenchmarks = true, className 
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
               {Object.entries(benchmarks as Record<string, any>).map(([key, bm]: [string, any]) => {
                 const displayValue = formatBenchmarkValue(key, bm);
                 return (

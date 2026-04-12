@@ -212,13 +212,13 @@ export default function TeamBuilder() {
         </div>
 
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid grid-cols-6 w-full">
-            <TabsTrigger value="compose" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Compose</TabsTrigger>
-            <TabsTrigger value="rollup" className="gap-1.5 text-xs"><ArrowUp className="h-3.5 w-3.5" /> Roll-Up</TabsTrigger>
-            <TabsTrigger value="rolldown" className="gap-1.5 text-xs"><ArrowDown className="h-3.5 w-3.5" /> Roll-Down</TabsTrigger>
-            <TabsTrigger value="backplan" className="gap-1.5 text-xs"><Crosshair className="h-3.5 w-3.5" /> Back-Plan</TabsTrigger>
-            <TabsTrigger value="economics" className="gap-1.5 text-xs"><BarChart3 className="h-3.5 w-3.5" /> Economics</TabsTrigger>
-            <TabsTrigger value="campaigns" className="gap-1.5 text-xs"><Megaphone className="h-3.5 w-3.5" /> Campaigns</TabsTrigger>
+          <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full">
+            <TabsTrigger value="compose" className="gap-1 text-xs"><Users className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Compose</span></TabsTrigger>
+            <TabsTrigger value="rollup" className="gap-1 text-xs"><ArrowUp className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Roll-</span>Up</TabsTrigger>
+            <TabsTrigger value="rolldown" className="gap-1 text-xs"><ArrowDown className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Roll-</span>Down</TabsTrigger>
+            <TabsTrigger value="backplan" className="gap-1 text-xs"><Crosshair className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Back-</span>Plan</TabsTrigger>
+            <TabsTrigger value="economics" className="gap-1 text-xs"><BarChart3 className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Econ</span></TabsTrigger>
+            <TabsTrigger value="campaigns" className="gap-1 text-xs"><Megaphone className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Campaigns</span></TabsTrigger>
           </TabsList>
 
           {/* ── COMPOSE TAB ──────────────────────────────────── */}
