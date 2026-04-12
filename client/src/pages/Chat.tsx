@@ -432,7 +432,9 @@ export default function Chat() {
   const createConversation = trpc.conversations.create.useMutation();
   const deleteConversation = trpc.conversations.delete.useMutation();
   const feedbackMutation = trpc.feedback.submit.useMutation();
-  const visualMutation = trpc.visual.generate.useMutation();
+  const visualMutation = trpc.visual.generate.useMutation({
+    onError: () => toast.error("Visual generation failed — please try again"),
+  });
 
   // ─── FOLDER & PIN QUERIES/MUTATIONS ────────────────────────
   const foldersQuery = trpc.conversations.folders.useQuery(undefined, { enabled: isAuthenticated, staleTime: 30_000 });
@@ -463,9 +465,13 @@ export default function Chat() {
   const autonomousStop = trpc.autonomousProcessing.stop.useMutation({
     onError: () => toast.error("Failed to stop autonomous processing"),
   });
-  const consensusQuery = trpc.advancedIntelligence.consensusQuery.useMutation();
+  const consensusQuery = trpc.advancedIntelligence.consensusQuery.useMutation({
+    onError: () => toast.error("Consensus query failed — please try again"),
+  });
   // Round E1 — multi-model consensus stream (Phase C2 backend, trio UI)
-  const consensusStreamMutation = trpc.wealthEngine.consensusStream.useMutation();
+  const consensusStreamMutation = trpc.wealthEngine.consensusStream.useMutation({
+    onError: () => toast.error("Consensus stream failed — falling back to single-model"),
+  });
 
   // DnD sensors
   const sensors = useSensors(

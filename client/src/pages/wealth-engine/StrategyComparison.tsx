@@ -171,11 +171,17 @@ export default function StrategyComparisonPage() {
   const stressCovid = trpc.calculatorEngine.stressTest.useMutation({ onError: onStressError });
   const backtest = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: onBacktestError });
 
+  // Multi-strategy stress test — runs all strategies through each crisis scenario
+  const [stressScenarioKey, setStressScenarioKey] = useState("gfc");
+  const [showMultiStress, setShowMultiStress] = useState(false);
+  const batchStress = trpc.calculatorEngine.batchStressTest.useMutation({ onError: onStressError });
+
   const result = compare.data;
   const rows = result?.data?.compareRows ?? [];
   const winners = result?.data?.winners ?? {};
 
   // After comparison runs, auto-fire stress tests + backtest for the winning strategy
+  // AND batch stress test across all strategies
   useEffect(() => {
     if (!rows.length || !winners.totalValue) return;
     const winnerRow = rows.find((r: any) => r.name === winners.totalValue?.name);
@@ -191,6 +197,15 @@ export default function StrategyComparisonPage() {
     stressGfc.mutate({ scenarioKey: "gfc", startBalance: startBal, annualContribution: annualContrib, annualCost });
     stressCovid.mutate({ scenarioKey: "covid", startBalance: startBal, annualContribution: annualContrib, annualCost });
     backtest.mutate({ startBalance: startBal, annualContribution: annualContrib, annualCost, horizon });
+
+    // Batch stress test all strategies through the selected scenario
+    const batchStrategies = rows.map((r: any) => ({
+      name: r.name,
+      startBalance: startBal,
+      annualContribution: annualContrib,
+      annualCost: r.totalValue > 0 ? (r.totalValue - r.netValue) / horizon : 0,
+    }));
+    batchStress.mutate({ scenarioKey: stressScenarioKey, strategies: batchStrategies });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows.length, winners.totalValue?.name]);
 
@@ -544,11 +559,96 @@ export default function StrategyComparisonPage() {
                   </div>
                 )}
 
+                {/* Multi-Strategy Stress Comparison */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center gap-2 text-sm font-semibold hover:text-accent transition-colors"
+                      onClick={() => setShowMultiStress(s => !s)}
+                      aria-label="Toggle multi-strategy stress comparison"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      Compare All Strategies Under Stress
+                      {showMultiStress ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    </button>
+                    {stressScenarios.data && (
+                      <select
+                        className="text-xs bg-secondary/50 border border-border/50 rounded px-2 py-1"
+                        value={stressScenarioKey}
+                        onChange={(e) => {
+                          setStressScenarioKey(e.target.value);
+                          if (rows.length) {
+                            const batchStrategies = rows.map((r: any) => ({
+                              name: r.name,
+                              startBalance: savings,
+                              annualContribution: income * savingsRate,
+                              annualCost: r.totalValue > 0 ? (r.totalValue - r.netValue) / horizon : 0,
+                            }));
+                            batchStress.mutate({ scenarioKey: e.target.value, strategies: batchStrategies });
+                          }
+                        }}
+                        aria-label="Select stress scenario for comparison"
+                      >
+                        {(stressScenarios.data as any[]).map((s: any) => (
+                          <option key={s.key} value={s.key}>{s.name || s.key}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  {showMultiStress && batchStress.data && (
+                    <Card className="bg-card/60 border-border/50">
+                      <ScrollArea className="h-auto max-h-[300px]">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-border">
+                              <TableHead className="text-[10px]">Strategy</TableHead>
+                              <TableHead className="text-[10px] text-right">Final Value</TableHead>
+                              <TableHead className="text-[10px] text-right">Drawdown</TableHead>
+                              <TableHead className="text-[10px] text-right">Recovery</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(batchStress.data as any[])
+                              .sort((a: any, b: any) => (b.result?.finalValue ?? 0) - (a.result?.finalValue ?? 0))
+                              .map((entry: any, i: number) => {
+                                const r = entry.result;
+                                const isWinner = i === 0;
+                                return (
+                                  <TableRow key={entry.name} className={`border-border/30 ${isWinner ? "bg-accent/5" : ""}`}>
+                                    <TableCell className="text-xs py-1.5">
+                                      {entry.name}
+                                      {isWinner && <Badge variant="default" className="ml-1 text-[8px] py-0">best</Badge>}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-right py-1.5 font-mono">
+                                      {r ? formatCurrency(r.finalValue ?? 0) : "—"}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-right py-1.5 font-mono text-red-400">
+                                      {r?.maxDrawdown != null ? `${(r.maxDrawdown * 100).toFixed(1)}%` : "—"}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">
+                                      {r?.recoveryYears != null ? `${r.recoveryYears} yrs` : "—"}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </Card>
+                  )}
+                  {showMultiStress && batchStress.isPending && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground p-3">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Running stress test across all strategies…
+                    </div>
+                  )}
+                </div>
+
                 {/* Methodology footnote */}
                 <p className="text-[9px] text-muted-foreground/50 flex items-center gap-1">
                   <Info className="h-3 w-3" />
                   Stress tests apply historical S&P 500 returns to your starting balance and contribution schedule.
                   Backtest uses rolling {horizon}-year windows across 98 years of market data.
+                  Multi-strategy comparison uses per-strategy cost structures.
                   Past performance does not guarantee future results.
                 </p>
               </CardContent>

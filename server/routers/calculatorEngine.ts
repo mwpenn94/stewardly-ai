@@ -364,6 +364,24 @@ export const calculatorEngineRouter = router({
       return SCUI.stressTest(input.scenarioKey, input.startBalance, input.annualContribution, input.annualCost);
     }),
 
+  /** Batch stress test — run the same scenario across multiple strategies */
+  batchStressTest: protectedProcedure
+    .input(z.object({
+      scenarioKey: z.string(),
+      strategies: z.array(z.object({
+        name: z.string(),
+        startBalance: z.number().min(0),
+        annualContribution: z.number().min(0).default(0),
+        annualCost: z.number().min(0).default(0),
+      })).min(1).max(10),
+    }))
+    .mutation(({ input }) => {
+      return input.strategies.map((s) => ({
+        name: s.name,
+        result: SCUI.stressTest(input.scenarioKey, s.startBalance, s.annualContribution, s.annualCost),
+      }));
+    }),
+
   /** Get stress scenarios */
   stressScenarios: publicProcedure.query(() => {
     return Object.entries(SCUI.STRESS_SCENARIOS).map(([key, s]) => ({ key, ...s }));
