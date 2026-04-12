@@ -123,8 +123,8 @@ export const FEATURE_AXES: readonly FeatureAxis[] = [
     id: "tax_planning",
     label: "Tax planning / projection",
     description: "Multi-year tax projections, Roth conversion analysis, TLH, basis tracking.",
-    stewardlyScore: 2,
-    stewardlyEvidence: "client/src/pages/TaxPlanning.tsx + /tax-planning calculator route exist; basis tracking + multi-year projection limited.",
+    stewardlyScore: 3,
+    stewardlyEvidence: "server/services/tax/projector.ts (Pass 4) — multi-year federal projection (2024 current-law + post-TCJA-sunset model), Roth conversion ladder, RMD calculator, IRMAA tier lookup, LT/ST cap gain tax tiers, inflation helper + 46 tests. Wired to `tax.*` tRPC router alongside existing TaxPlanning.tsx calculator. Basis tracking per-lot still a follow-up.",
   },
   {
     id: "estate_planning",
