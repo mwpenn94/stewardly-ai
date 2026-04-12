@@ -35,12 +35,12 @@ const filingStatusSchema = z.enum(["single", "mfj", "mfs", "hoh"]);
 const yearCtxSchema = z.object({
   year: z.number().int().min(2024).max(2100),
   filingStatus: filingStatusSchema,
-  ordinaryIncomeUSD: z.number(),
-  longTermCapGainsUSD: z.number(),
-  qualifiedDividendsUSD: z.number(),
-  traditionalDistributionsUSD: z.number(),
-  itemizedDeductionUSD: z.number(),
-  aboveTheLineUSD: z.number(),
+  ordinaryIncomeUSD: z.number().min(0).max(100_000_000),
+  longTermCapGainsUSD: z.number().min(0).max(100_000_000),
+  qualifiedDividendsUSD: z.number().min(0).max(100_000_000),
+  traditionalDistributionsUSD: z.number().min(0).max(100_000_000),
+  itemizedDeductionUSD: z.number().min(0).max(100_000_000),
+  aboveTheLineUSD: z.number().min(0).max(100_000_000),
   primaryAge: z.number().int().min(0).max(120),
   spouseAge: z.number().int().min(0).max(120).optional(),
 });

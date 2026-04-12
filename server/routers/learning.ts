@@ -283,7 +283,7 @@ const contentRouter = router({
       z.object({
         disciplineId: z.number().int().optional(),
         term: z.string().min(1).max(512),
-        definition: z.string().min(1),
+        definition: z.string().min(1).max(50_000),
         visibility: Visibility.default("private"),
         status: PubStatus.default("draft"),
         sourceRef: z.string().max(2000).optional(),
