@@ -93,12 +93,29 @@ const COMPANY_KEY: Record<(typeof PEER_SET)[number], CompanyKey> = {
 };
 
 // ─── Guardrail check helper ──────────────────────────────────────
-function checkInputGuardrails(savingsRate: number, investReturn: number) {
-  const warnings: string[] = [];
+function checkInputGuardrails(
+  savingsRate: number,
+  investReturn: number,
+  age: number,
+  income: number,
+  netWorth: number,
+  horizon: number,
+) {
+  const warnings: { level: "warn" | "error"; msg: string }[] = [];
   if (investReturn > 0.12)
-    warnings.push("Return rates above 12% are historically rare for diversified portfolios (Morningstar 2025).");
+    warnings.push({ level: "error", msg: "Return rates above 12% are historically rare for diversified portfolios (S&P 500 long-run avg ~10.5% nominal, Morningstar 2025)." });
+  else if (investReturn > 0.09)
+    warnings.push({ level: "warn", msg: "Return rates above 9% assume significant equity exposure. The S&P 500 30-year CAGR has ranged 8-11% (1928-2025)." });
   if (savingsRate > 0.50)
-    warnings.push("Savings rates above 50% may not be sustainable long-term.");
+    warnings.push({ level: "error", msg: "Savings rates above 50% may not be sustainable long-term — most households save 3-10% (BLS 2024)." });
+  else if (savingsRate > 0.30)
+    warnings.push({ level: "warn", msg: "Savings rates above 30% are achievable but above the 90th percentile for US households (BLS 2024)." });
+  if (age + horizon > 100)
+    warnings.push({ level: "warn", msg: `Projection extends to age ${age + horizon}. Life expectancy assumptions should be validated for planning beyond age 95.` });
+  if (income < 30000)
+    warnings.push({ level: "warn", msg: "Income below $30K may limit the applicability of some strategies (advisory fee minimums, insurance underwriting)." });
+  if (netWorth < 0)
+    warnings.push({ level: "error", msg: "Negative net worth significantly affects strategy suitability — debt reduction should be prioritized." });
   return warnings;
 }
 
@@ -110,6 +127,8 @@ export default function StrategyComparisonPage() {
   const [savings, setSavings] = useState(180_000);
   const [dependents, setDependents] = useState(2);
   const [horizon, setHorizon] = useState(30);
+  const [savingsRate, setSavingsRate] = useState(0.15);
+  const [investReturn, setInvestReturn] = useState(0.07);
   const [showDetailTable, setShowDetailTable] = useState(false);
   const [showStressTest, setShowStressTest] = useState(false);
   const [showBenchmarks, setShowBenchmarks] = useState(false);
@@ -128,7 +147,10 @@ export default function StrategyComparisonPage() {
     [age, income, netWorth, savings, dependents],
   );
 
-  const guardrailWarnings = useMemo(() => checkInputGuardrails(0.15, 0.07), []);
+  const guardrailWarnings = useMemo(
+    () => checkInputGuardrails(savingsRate, investReturn, age, income, netWorth, horizon),
+    [savingsRate, investReturn, age, income, netWorth, horizon],
+  );
 
   const compare = trpc.wealthEngine.holisticCompare.useMutation({
     onError: () => toast.error("Strategy comparison failed — please try again"),
@@ -160,7 +182,7 @@ export default function StrategyComparisonPage() {
     if (!winnerRow) return;
 
     const startBal = savings;
-    const annualContrib = income * 0.15; // savingsRate
+    const annualContrib = income * savingsRate;
     const annualCost = winnerRow.totalValue > 0
       ? (winnerRow.totalValue - winnerRow.netValue) / horizon
       : 0;
@@ -180,8 +202,8 @@ export default function StrategyComparisonPage() {
         hasBizIncome: false,
         profile,
         companyKey: COMPANY_KEY[preset],
-        savingsRate: 0.15,
-        investmentReturn: 0.07,
+        savingsRate,
+        investmentReturn: investReturn,
         reinvestTaxSavings: preset === "wealthbridgeClient" || preset === "ria",
       },
     }));
@@ -232,13 +254,23 @@ export default function StrategyComparisonPage() {
           </div>
         </div>
 
-        {/* Guardrail warnings */}
+        {/* Guardrail warnings — dynamic based on user inputs */}
         {guardrailWarnings.length > 0 && (
-          <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
-            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-            <div className="text-xs text-amber-200/80 space-y-1">
-              {guardrailWarnings.map((w, i) => <p key={i}>{w}</p>)}
-            </div>
+          <div className="space-y-1.5">
+            {guardrailWarnings.map((w, i) => (
+              <div key={i} className={`flex items-start gap-2 p-3 rounded-lg border ${
+                w.level === "error"
+                  ? "border-red-500/30 bg-red-500/5"
+                  : "border-amber-500/30 bg-amber-500/5"
+              }`}>
+                {w.level === "error" ? (
+                  <Shield className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                )}
+                <p className={`text-xs ${w.level === "error" ? "text-red-300/80" : "text-amber-200/80"}`}>{w.msg}</p>
+              </div>
+            ))}
           </div>
         )}
 
@@ -289,6 +321,28 @@ export default function StrategyComparisonPage() {
                 value={[horizon]}
                 onValueChange={(v) => setHorizon(v[0])}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Savings Rate: {Math.round(savingsRate * 100)}%</Label>
+              <Slider
+                min={0}
+                max={0.6}
+                step={0.01}
+                value={[savingsRate]}
+                onValueChange={(v) => setSavingsRate(v[0])}
+              />
+              <p className="text-[10px] text-muted-foreground">% of income saved annually (US median ~6%)</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Expected Return: {Math.round(investReturn * 100)}%</Label>
+              <Slider
+                min={0}
+                max={0.15}
+                step={0.005}
+                value={[investReturn]}
+                onValueChange={(v) => setInvestReturn(v[0])}
+              />
+              <p className="text-[10px] text-muted-foreground">Annual nominal return (S&P 500 30yr avg ~10.5%)</p>
             </div>
           </CardContent>
         </Card>

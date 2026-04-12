@@ -127,8 +127,11 @@ export default function Calculators() {
   const [pfFace, setPfFace] = useState(5000000);
   const [pfPremium, setPfPremium] = useState(100000);
   const [pfLoanRate, setPfLoanRate] = useState(5.5);
+  const [pfCreditRate, setPfCreditRate] = useState(6.5);
   const [pfYears, setPfYears] = useState(10);
+  const [pfProjectionYears, setPfProjectionYears] = useState(20);
   const [pfCollateral, setPfCollateral] = useState(2.0);
+  const [pfCashOutlay, setPfCashOutlay] = useState(25000);
 
   // Retirement state
   const [retAge, setRetAge] = useState(35);
@@ -366,19 +369,39 @@ export default function Calculators() {
             <Card className="lg:col-span-2 bg-card/60 border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-blue-400" /> Premium Finance
+                  <Building2 className="w-4 h-4 text-accent" /> Premium Finance
                 </CardTitle>
-                <CardDescription className="text-xs">Leverage analysis for high-net-worth strategies</CardDescription>
+                <CardDescription className="text-xs">Leverage analysis for high-net-worth IUL strategies</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <SliderInput label="Face Amount" value={pfFace} onChange={setPfFace} min={500000} max={50000000} step={250000} format={(v) => fmt(v)} />
                 <SliderInput label="Annual Premium" value={pfPremium} onChange={setPfPremium} min={5000} max={1000000} step={5000} format={(v) => fmt(v)} />
+                <SliderInput label="Cash Outlay / Year" value={pfCashOutlay} onChange={setPfCashOutlay} min={0} max={500000} step={5000} format={(v) => fmt(v)} />
                 <SliderInput label="Loan Rate" value={pfLoanRate} onChange={setPfLoanRate} min={2} max={12} step={0.25} suffix="%" />
-                <SliderInput label="Years" value={pfYears} onChange={setPfYears} min={3} max={30} suffix=" yrs" />
+                <SliderInput label="Credited Rate" value={pfCreditRate} onChange={setPfCreditRate} min={3} max={12} step={0.25} suffix="%" />
+                <SliderInput label="Funding Years" value={pfYears} onChange={setPfYears} min={3} max={30} suffix=" yrs" />
+                <SliderInput label="Projection Years" value={pfProjectionYears} onChange={setPfProjectionYears} min={pfYears} max={40} suffix=" yrs" />
                 <SliderInput label="Collateral Rate" value={pfCollateral} onChange={setPfCollateral} min={0.5} max={10} step={0.25} suffix="%" />
+
+                {/* Spread indicator */}
+                <div className={`text-xs p-2 rounded border ${pfCreditRate > pfLoanRate ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400" : "border-red-500/30 bg-red-500/5 text-red-400"}`}>
+                  <span className="font-medium">Spread:</span>{" "}
+                  {(pfCreditRate - pfLoanRate).toFixed(2)}%{" "}
+                  {pfCreditRate > pfLoanRate ? "(positive — arbitrage opportunity)" : "(negative — loan costs exceed credited growth)"}
+                </div>
+
                 <Button
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-sm h-10 gap-2"
-                  onClick={() => pfCalc.mutate({ faceAmount: pfFace, annualPremium: pfPremium, loanRate: pfLoanRate, years: pfYears, collateralRate: pfCollateral })}
+                  onClick={() => pfCalc.mutate({
+                    faceAmount: pfFace,
+                    annualPremium: pfPremium,
+                    loanRate: pfLoanRate,
+                    creditingRate: pfCreditRate,
+                    years: pfYears,
+                    projectionYears: pfProjectionYears,
+                    collateralRate: pfCollateral,
+                    cashOutlay: pfCashOutlay,
+                  })}
                   disabled={pfCalc.isPending}
                 >
                   {pfCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Analysis</>}
@@ -389,47 +412,112 @@ export default function Calculators() {
             <div className="lg:col-span-3 space-y-4">
               {pfCalc.data ? (
                 <>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    <StatCard label="Total Collateral Cost" value={fmt(pfCalc.data.totalCollateralCost)} />
+                  {/* Key metrics strip */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <StatCard label="Net Equity (Final)" value={fmt(pfCalc.data.finalNetEquity)} positive={pfCalc.data.finalNetEquity >= 0} />
+                    <StatCard label="DB Leverage" value={`${pfCalc.data.deathBenefitLeverage}x`} positive={pfCalc.data.deathBenefitLeverage > 1} />
+                    <StatCard label="ROI on Cash Outlay" value={`${pfCalc.data.roi}%`} positive={pfCalc.data.roi > 0} />
                     <StatCard
-                      label="Net Equity (Final)"
-                      value={fmt(pfCalc.data.projections[pfCalc.data.projections.length - 1]?.netEquity || 0)}
-                      positive={(pfCalc.data.projections[pfCalc.data.projections.length - 1]?.netEquity || 0) >= 0}
+                      label="Breakeven Year"
+                      value={pfCalc.data.breakevenYear ? `Year ${pfCalc.data.breakevenYear}` : "Never"}
+                      positive={pfCalc.data.breakevenYear !== null}
                     />
-                    <StatCard label="ROI" value={`${pfCalc.data.roi}%`} positive={pfCalc.data.roi > 0} />
                   </div>
 
+                  {/* Summary insight strip */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="bg-card/60 border border-border/50 rounded-lg p-3">
+                      <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">Total Cash Outlay</p>
+                      <p className="text-sm font-mono font-medium mt-1">{fmt(pfCalc.data.totalCashOutlay)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">vs {fmt(pfPremium * pfYears)} if paying premiums directly</p>
+                    </div>
+                    <div className="bg-card/60 border border-border/50 rounded-lg p-3">
+                      <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">Collateral Cost</p>
+                      <p className="text-sm font-mono font-medium mt-1">{fmt(pfCalc.data.totalCollateralCost)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Total cost of securing the loan</p>
+                    </div>
+                    <div className="bg-card/60 border border-border/50 rounded-lg p-3">
+                      <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">Death Benefit</p>
+                      <p className="text-sm font-mono font-medium text-accent mt-1">{fmt(pfCalc.data.finalDeathBenefit)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Net of loan balance at final year</p>
+                    </div>
+                  </div>
+
+                  {/* Spread analysis */}
+                  <Card className="bg-card/60 border-border/50 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">Arbitrage Spread Analysis</p>
+                      <Badge variant={pfCalc.data.spreadPct > 0 ? "default" : "destructive"} className="text-[10px]">
+                        {pfCalc.data.spreadPct > 0 ? "+" : ""}{pfCalc.data.spreadPct}% spread
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <p className="text-lg font-mono font-bold text-red-400">{pfCalc.data.loanRate}%</p>
+                        <p className="text-[10px] text-muted-foreground">Loan Rate</p>
+                      </div>
+                      <div>
+                        <p className={`text-lg font-mono font-bold ${pfCalc.data.spreadPct > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                          {pfCalc.data.spreadPct > 0 ? "+" : ""}{pfCalc.data.spreadPct}%
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">Net Spread</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-mono font-bold text-accent">{pfCalc.data.creditingRate}%</p>
+                        <p className="text-[10px] text-muted-foreground">Credited Rate</p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Net Equity Chart */}
                   <Card className="bg-card/60 border-border/50 p-4">
                     <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-2">Net Equity Over Time</p>
                     <MiniBarChart data={pfCalc.data.projections} valueKey="netEquity" />
                   </Card>
 
+                  {/* Year-by-year detail table */}
                   <Card className="bg-card/60 border-border/50">
-                    <ScrollArea className="h-[300px]">
+                    <ScrollArea className="h-[350px]">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-border">
                             <TableHead className="text-[10px]">Year</TableHead>
+                            <TableHead className="text-[10px] text-right">Cash Outlay</TableHead>
                             <TableHead className="text-[10px] text-right">Loan Balance</TableHead>
                             <TableHead className="text-[10px] text-right">Policy Value</TableHead>
                             <TableHead className="text-[10px] text-right">Net Equity</TableHead>
                             <TableHead className="text-[10px] text-right">Death Benefit</TableHead>
+                            <TableHead className="text-[10px] text-right">Leverage</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {pfCalc.data.projections.map((p) => (
-                            <TableRow key={p.year} className="border-border/30">
-                              <TableCell className="text-xs py-1.5">{p.year}</TableCell>
+                            <TableRow key={p.year} className={`border-border/30 ${p.year === pfCalc.data!.breakevenYear ? "bg-emerald-500/10" : ""}`}>
+                              <TableCell className="text-xs py-1.5">
+                                {p.year}
+                                {p.year === pfCalc.data!.breakevenYear && (
+                                  <Badge variant="outline" className="ml-1 text-[8px] text-emerald-400 border-emerald-500/30 py-0">breakeven</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{fmt(p.cashOutlayThisYear)}</TableCell>
                               <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{fmt(p.loanBalance)}</TableCell>
                               <TableCell className="text-xs text-right py-1.5 font-mono">{fmt(p.policyValue)}</TableCell>
                               <TableCell className={`text-xs text-right py-1.5 font-mono ${p.netEquity >= 0 ? "text-emerald-400" : "text-red-400"}`}>{fmt(p.netEquity)}</TableCell>
-                              <TableCell className="text-xs text-right py-1.5 font-mono text-blue-400">{fmt(p.deathBenefit)}</TableCell>
+                              <TableCell className="text-xs text-right py-1.5 font-mono text-accent">{fmt(p.deathBenefit)}</TableCell>
+                              <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{p.leverageRatio}x</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
                       </Table>
                     </ScrollArea>
                   </Card>
+
+                  {/* Reference context */}
+                  <div className="text-[10px] text-muted-foreground/50 space-y-1 p-3 bg-card/30 rounded-lg border border-border/30">
+                    <p><strong>Methodology:</strong> Year-by-year simulation using the UWE engine&apos;s IUL product model with policy loan overlay. COI charges, bonus credits (years 1-5 +1%, years 6-10 +0.5%), and post-funding growth are modeled.</p>
+                    <p><strong>Assumptions:</strong> Level credited rate, level loan rate, collateral assignment cost is annual % of outstanding loan balance. Breakeven = first year net equity turns positive.</p>
+                    <p><strong>Reference:</strong> SOFR + spread is the typical premium financing loan structure (LocalLifeAgents, Nov 2025). IUL credited rates based on S&P 500 index strategy with cap/floor (NLG FlexLife benchmark).</p>
+                  </div>
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
@@ -437,7 +525,7 @@ export default function Calculators() {
                     <BarChart3 className="w-6 h-6 text-muted-foreground/30" />
                   </div>
                   <p className="text-sm text-muted-foreground">Configure the premium finance scenario</p>
-                  <p className="text-[10px] text-muted-foreground/50 mt-1">See leverage analysis with equity projections</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-1">Includes leverage ratio, breakeven analysis, spread arbitrage, and year-by-year projections</p>
                 </div>
               )}
             </div>

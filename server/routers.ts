@@ -1823,16 +1823,23 @@ const calculatorsRouter = router({
       faceAmount: z.number().min(100000),
       annualPremium: z.number().min(1000),
       loanRate: z.number().min(0).max(20),
+      creditingRate: z.number().min(0).max(15).optional(),
       years: z.number().min(1).max(30),
+      projectionYears: z.number().min(1).max(40).optional(),
       collateralRate: z.number().min(0).max(20),
+      cashOutlay: z.number().min(0).optional(),
     }))
     .mutation(({ input }) => {
+      const creditRate = (input.creditingRate ?? 6.5) / 100;
+      const projYears = input.projectionYears ?? input.years;
+      const cashOut = input.cashOutlay ?? input.annualPremium;
       const product: UWEProductConfig = {
         type: "premfin",
         face: input.faceAmount,
-        cashOutlay: input.annualPremium,
+        cashOutlay: cashOut,
+        annualPremium: input.annualPremium,
         loanRate: input.loanRate / 100,
-        creditingRate: 0.065,
+        creditingRate: creditRate,
         fundingYears: input.years,
       };
       const strategy: UWEStrategyConfig = {
@@ -1844,28 +1851,54 @@ const calculatorsRouter = router({
         features: { ...DEFAULT_FEATURES, premFinance: true },
         notes: "",
       };
-      const snapshots = UWE.simulate(strategy, input.years);
+      const snapshots = UWE.simulate(strategy, projYears);
+      let breakevenYear: number | null = null;
       const projections = snapshots.map((s) => {
         const detail = s.productDetails[0];
         const details = detail?.details as Record<string, number> | undefined;
         const loanBal = details?.loanBalance ?? 0;
-        const csv = details?.csv ?? 0;
+        const csv = details?.grossCSV ?? details?.csv ?? 0;
         const netEq = details?.netEquity ?? detail?.cashValue ?? 0;
         const collateralCost = Math.round(loanBal * (input.collateralRate / 100));
+        const db = detail ? detail.deathBenefit : s.productDeathBenefit;
+        const cumulativeCashOutlay = Math.min(s.year, input.years) * cashOut;
+        const leverageRatio = cumulativeCashOutlay > 0 ? Math.round((db / cumulativeCashOutlay) * 10) / 10 : 0;
+        if (breakevenYear === null && netEq > 0) breakevenYear = s.year;
         return {
           year: s.year,
           premium: s.year <= input.years ? input.annualPremium : 0,
+          cashOutlayThisYear: s.year <= input.years ? cashOut : 0,
+          cumulativeCashOutlay,
           loanBalance: loanBal,
           policyValue: csv,
           collateralCost,
           netEquity: netEq,
-          deathBenefit: detail ? detail.deathBenefit : s.productDeathBenefit,
+          deathBenefit: db,
+          leverageRatio,
+          spread: Math.round((creditRate - input.loanRate / 100) * 10000) / 100,
         };
       });
-      const totalCost = projections.reduce((sum, p) => sum + p.collateralCost, 0);
+      const totalCollateralCost = projections.reduce((sum, p) => sum + p.collateralCost, 0);
+      const totalCashOutlay = projections.reduce((sum, p) => sum + p.cashOutlayThisYear, 0);
       const lastP = projections[projections.length - 1];
-      const roi = totalCost > 0 ? ((lastP?.netEquity ?? 0) / totalCost * 100) : 0;
-      return { projections, totalCollateralCost: totalCost, roi: Math.round(roi * 100) / 100 };
+      const finalNetEquity = lastP?.netEquity ?? 0;
+      const finalDB = lastP?.deathBenefit ?? 0;
+      const roi = totalCashOutlay > 0 ? Math.round((finalNetEquity / totalCashOutlay) * 10000) / 100 : 0;
+      const dbLeverage = totalCashOutlay > 0 ? Math.round((finalDB / totalCashOutlay) * 10) / 10 : 0;
+      const spreadPct = Math.round((creditRate - input.loanRate / 100) * 10000) / 100;
+      return {
+        projections,
+        totalCollateralCost,
+        totalCashOutlay,
+        roi,
+        breakevenYear,
+        finalNetEquity,
+        finalDeathBenefit: finalDB,
+        deathBenefitLeverage: dbLeverage,
+        spreadPct,
+        creditingRate: Math.round(creditRate * 10000) / 100,
+        loanRate: input.loanRate,
+      };
     }),
 
   retirement: protectedProcedure
