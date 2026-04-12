@@ -1765,6 +1765,14 @@ const settingsRouter = router({
 });
 
 // ─── CALCULATORS ROUTER ──────────────────────────────────────────
+// Wired to the real UWE engine (v7 parity) instead of simplified stubs.
+// Each procedure creates a single-product strategy, runs UWE.simulate(),
+// and maps the rich engine output to the UI's expected shape.
+import { UWE } from "./engines/uwe";
+import type { StrategyConfig as UWEStrategyConfig, ProductConfig as UWEProductConfig, CompanyFeatures } from "./engines/types";
+
+const DEFAULT_FEATURES: CompanyFeatures = { holistic: true, taxFree: true, livingBen: true, advisor: true, estate: false, group: false, fiduciary: true, lowFees: false, insurance: true };
+
 const calculatorsRouter = router({
   iulProjection: protectedProcedure
     .input(z.object({
@@ -1775,21 +1783,38 @@ const calculatorsRouter = router({
       deathBenefit: z.number().min(10000),
     }))
     .mutation(({ input }) => {
-      const projections = [];
-      let cashValue = 0;
-      const costOfInsurance = input.deathBenefit * 0.005; // simplified COI
-      for (let year = 1; year <= input.years; year++) {
-        cashValue = (cashValue + input.annualPremium - costOfInsurance) * (1 + input.illustratedRate / 100);
-        const surrenderValue = Math.max(0, cashValue * (year < 10 ? 0.85 + year * 0.015 : 1));
-        projections.push({
-          year,
-          age: input.age + year,
-          premium: input.annualPremium,
-          cashValue: Math.round(cashValue),
-          surrenderValue: Math.round(surrenderValue),
-          deathBenefit: Math.max(input.deathBenefit, Math.round(cashValue * 1.1)),
-        });
-      }
+      const product: UWEProductConfig = {
+        type: "iul",
+        face: input.deathBenefit,
+        annualPremium: input.annualPremium,
+        fundingYears: input.years,
+        livingBenPct: 0.90,
+      };
+      const strategy: UWEStrategyConfig = {
+        company: "wealthbridge",
+        companyName: "WealthBridge",
+        color: "#16A34A",
+        profile: { age: input.age, income: 120000, savings: 0, monthlySavings: 0, equitiesReturn: 0 },
+        products: [product],
+        features: DEFAULT_FEATURES,
+        notes: "",
+      };
+      const snapshots = UWE.simulate(strategy, input.years);
+      const projections = snapshots.map((s) => {
+        const detail = s.productDetails[0];
+        const cv = detail ? detail.cashValue : s.productCashValue;
+        const db = detail ? detail.deathBenefit : s.productDeathBenefit;
+        return {
+          year: s.year,
+          age: s.age,
+          premium: s.year <= input.years ? input.annualPremium : 0,
+          cashValue: cv,
+          surrenderValue: Math.round(cv * (s.year < 10 ? 0.85 + s.year * 0.015 : 1)),
+          deathBenefit: db,
+          taxSaving: detail ? detail.taxSaving : s.productTaxSaving,
+          livingBenefit: detail ? detail.livingBenefit : s.productLivingBenefit,
+        };
+      });
       return { projections, totalPremiums: input.annualPremium * input.years };
     }),
 
@@ -1802,27 +1827,44 @@ const calculatorsRouter = router({
       collateralRate: z.number().min(0).max(20),
     }))
     .mutation(({ input }) => {
-      const projections = [];
-      let loanBalance = 0;
-      let policyValue = 0;
-      const policyGrowthRate = 0.065; // assumed illustrated rate
-      for (let year = 1; year <= input.years; year++) {
-        loanBalance = (loanBalance + input.annualPremium) * (1 + input.loanRate / 100);
-        policyValue = (policyValue + input.annualPremium) * (1 + policyGrowthRate);
-        const collateralCost = loanBalance * (input.collateralRate / 100);
-        const netEquity = policyValue - loanBalance;
-        projections.push({
-          year,
-          premium: input.annualPremium,
-          loanBalance: Math.round(loanBalance),
-          policyValue: Math.round(policyValue),
-          collateralCost: Math.round(collateralCost),
-          netEquity: Math.round(netEquity),
-          deathBenefit: Math.max(input.faceAmount, Math.round(policyValue * 1.1)),
-        });
-      }
+      const product: UWEProductConfig = {
+        type: "premfin",
+        face: input.faceAmount,
+        cashOutlay: input.annualPremium,
+        loanRate: input.loanRate / 100,
+        creditingRate: 0.065,
+        fundingYears: input.years,
+      };
+      const strategy: UWEStrategyConfig = {
+        company: "wealthbridge",
+        companyName: "WealthBridge",
+        color: "#16A34A",
+        profile: { age: 45, income: 500000, netWorth: 5000000, savings: 0, monthlySavings: 0, equitiesReturn: 0 },
+        products: [product],
+        features: { ...DEFAULT_FEATURES, premFinance: true },
+        notes: "",
+      };
+      const snapshots = UWE.simulate(strategy, input.years);
+      const projections = snapshots.map((s) => {
+        const detail = s.productDetails[0];
+        const details = detail?.details as Record<string, number> | undefined;
+        const loanBal = details?.loanBalance ?? 0;
+        const csv = details?.csv ?? 0;
+        const netEq = details?.netEquity ?? detail?.cashValue ?? 0;
+        const collateralCost = Math.round(loanBal * (input.collateralRate / 100));
+        return {
+          year: s.year,
+          premium: s.year <= input.years ? input.annualPremium : 0,
+          loanBalance: loanBal,
+          policyValue: csv,
+          collateralCost,
+          netEquity: netEq,
+          deathBenefit: detail ? detail.deathBenefit : s.productDeathBenefit,
+        };
+      });
       const totalCost = projections.reduce((sum, p) => sum + p.collateralCost, 0);
-      const roi = policyValue > 0 ? ((policyValue - loanBalance) / totalCost * 100) : 0;
+      const lastP = projections[projections.length - 1];
+      const roi = totalCost > 0 ? ((lastP?.netEquity ?? 0) / totalCost * 100) : 0;
       return { projections, totalCollateralCost: totalCost, roi: Math.round(roi * 100) / 100 };
     }),
 
@@ -1837,25 +1879,44 @@ const calculatorsRouter = router({
     }))
     .mutation(({ input }) => {
       const years = input.retirementAge - input.currentAge;
-      const monthlyRate = input.expectedReturn / 100 / 12;
-      const inflationMonthly = input.inflationRate / 100 / 12;
-      const projections = [];
-      let balance = input.currentSavings;
-      for (let year = 1; year <= years; year++) {
-        for (let month = 0; month < 12; month++) {
-          balance = (balance + input.monthlyContribution) * (1 + monthlyRate);
-        }
-        const realBalance = balance / Math.pow(1 + input.inflationRate / 100, year);
-        projections.push({
-          year,
-          age: input.currentAge + year,
-          nominalBalance: Math.round(balance),
-          realBalance: Math.round(realBalance),
-          totalContributed: Math.round(input.currentSavings + input.monthlyContribution * 12 * year),
-        });
-      }
-      const monthlyIncome = Math.round(balance * 0.04 / 12); // 4% rule
-      return { projections, estimatedMonthlyIncome: monthlyIncome, finalBalance: Math.round(balance) };
+      const annualContrib = input.monthlyContribution * 12;
+      const product: UWEProductConfig = {
+        type: "401k",
+        initialBalance: input.currentSavings,
+        annualContrib,
+        employerMatch: 0,
+        grossReturn: input.expectedReturn / 100,
+      };
+      const strategy: UWEStrategyConfig = {
+        company: "wealthbridge",
+        companyName: "WealthBridge",
+        color: "#16A34A",
+        profile: {
+          age: input.currentAge,
+          income: annualContrib * 4,
+          savings: input.currentSavings,
+          monthlySavings: input.monthlyContribution,
+          equitiesReturn: input.expectedReturn / 100,
+        },
+        products: [product],
+        features: DEFAULT_FEATURES,
+        notes: "",
+      };
+      const snapshots = UWE.simulate(strategy, years);
+      const projections = snapshots.map((s) => {
+        const nominalBalance = s.totalWealth;
+        const realBalance = Math.round(nominalBalance / Math.pow(1 + input.inflationRate / 100, s.year));
+        return {
+          year: s.year,
+          age: s.age,
+          nominalBalance,
+          realBalance,
+          totalContributed: Math.round(input.currentSavings + annualContrib * s.year),
+        };
+      });
+      const finalBalance = projections[projections.length - 1]?.nominalBalance ?? 0;
+      const monthlyIncome = Math.round(finalBalance * 0.04 / 12);
+      return { projections, estimatedMonthlyIncome: monthlyIncome, finalBalance };
     }),
 });
 

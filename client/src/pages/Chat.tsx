@@ -1493,28 +1493,28 @@ export default function Chat() {
   type PersonaLayer = { key: string; label: string; minRole: string; items: PersonaNavItem[] };
   const ROLE_LEVEL: Record<string, number> = { guest: 0, user: 1, advisor: 2, manager: 3, admin: 4 };
   const personaLayers: PersonaLayer[] = [
-    { key: "person", label: "Person", minRole: "guest", items: [
+    { key: "person", label: "People", minRole: "guest", items: [
       { label: "Code Chat", icon: <Monitor className="w-4 h-4" />, path: "/code-chat", match: ["/code-chat"] },
       { label: "Documents", icon: <FileText className="w-4 h-4" />, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },
       { label: "My Progress", icon: <BarChart3 className="w-4 h-4" />, path: "/proficiency", match: ["/proficiency"] },
       { label: "Audio", icon: <Volume2 className="w-4 h-4" />, path: "/settings/audio", match: ["/settings/audio"] },
     ]},
-    { key: "client", label: "Client", minRole: "user", items: [
+    { key: "client", label: "Clients", minRole: "user", items: [
       { label: "My Financial Twin", icon: <Fingerprint className="w-4 h-4" />, path: "/financial-twin", match: ["/financial-twin"] },
       { label: "Insights", icon: <Sparkles className="w-4 h-4" />, path: "/intelligence-hub", match: ["/intelligence-hub", "/insights"] },
       { label: "Suitability", icon: <Scale className="w-4 h-4" />, path: "/settings/suitability", match: ["/settings/suitability", "/suitability"] },
     ]},
-    { key: "advisor", label: "Advisor", minRole: "advisor", items: [
+    { key: "advisor", label: "Professionals", minRole: "advisor", items: [
       { label: "Clients", icon: <Users className="w-4 h-4" />, path: "/relationships", match: ["/relationships", "/portal"] },
       { label: "Cases & Work", icon: <Briefcase className="w-4 h-4" />, path: "/my-work", match: ["/my-work", "/operations", "/workflows"] },
       { label: "Compliance", icon: <Shield className="w-4 h-4" />, path: "/compliance-audit", match: ["/compliance-audit"] },
       { label: "Market Data", icon: <TrendingUp className="w-4 h-4" />, path: "/market-data", match: ["/market-data"] },
       { label: "Calculators", icon: <Calculator className="w-4 h-4" />, path: "/calculators", match: ["/calculators", "/wealth-engine"] },
     ]},
-    { key: "manager", label: "Manager", minRole: "manager", items: [
+    { key: "manager", label: "Leaders", minRole: "manager", items: [
       { label: "Team Dashboard", icon: <Users className="w-4 h-4" />, path: "/manager", match: ["/manager"] },
     ]},
-    { key: "steward", label: "Steward", minRole: "admin", items: [
+    { key: "steward", label: "Stewards", minRole: "admin", items: [
       { label: "Platform Admin", icon: <Settings className="w-4 h-4" />, path: "/admin", match: ["/admin"] },
       { label: "AI Intelligence", icon: <Brain className="w-4 h-4" />, path: "/admin/intelligence", match: ["/admin/intelligence"] },
       { label: "System Health", icon: <Monitor className="w-4 h-4" />, path: "/admin/system-health", match: ["/admin/system-health"] },

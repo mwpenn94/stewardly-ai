@@ -43,7 +43,7 @@ const ROLE_LEVEL: Record<Role, number> = {
 const PERSONA_LAYERS: PersonaLayer[] = [
   {
     key: "person",
-    label: "Person",
+    label: "People",
     minRole: "guest",
     items: [
       { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat"] },
@@ -55,7 +55,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
   },
   {
     key: "client",
-    label: "Client",
+    label: "Clients",
     minRole: "user",
     items: [
       { label: "My Financial Twin", icon: Fingerprint, path: "/financial-twin", match: ["/financial-twin"] },
@@ -65,7 +65,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
   },
   {
     key: "advisor",
-    label: "Advisor",
+    label: "Professionals",
     minRole: "advisor",
     items: [
       { label: "Clients", icon: Users, path: "/relationships", match: ["/relationships", "/portal", "/client-dashboard"] },
@@ -78,7 +78,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
   },
   {
     key: "manager",
-    label: "Manager",
+    label: "Leaders",
     minRole: "manager",
     items: [
       { label: "Team Dashboard", icon: UserCog, path: "/manager", match: ["/manager"] },
@@ -86,7 +86,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
   },
   {
     key: "steward",
-    label: "Steward",
+    label: "Stewards",
     minRole: "admin",
     items: [
       { label: "Platform Admin", icon: Cog, path: "/admin", match: ["/admin"] },
