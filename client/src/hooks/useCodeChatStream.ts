@@ -11,6 +11,10 @@ import {
   mergeTodoList,
   type AgentTodoItem,
 } from "@/components/codeChat/agentTodos";
+import {
+  parseSseLine,
+  splitSseBuffer,
+} from "@/components/codeChat/sseEventParser";
 
 export interface ToolEvent {
   stepIndex: number;
@@ -113,81 +117,83 @@ export function useCodeChatStream() {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+        const framing = splitSseBuffer(buffer);
+        buffer = framing.leftover;
 
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
+        for (const line of framing.lines) {
+          // Parity Pass 8: every SSE line flows through the pure
+          // defensive parser. Malformed lines return a discriminated
+          // "invalid" / "unknown" value we can choose to ignore
+          // (unknown types = forward-compat with server updates),
+          // so no naked JSON.parse inside this hook anymore.
+          const event = parseSseLine(line);
+          if (!event) continue;
+          if (event.kind === "invalid") continue;
+          if (event.kind === "unknown") continue;
 
-            switch (event.type) {
-              case "tool_start": {
-                const te: ToolEvent = {
-                  stepIndex: event.stepIndex,
-                  toolName: event.toolName,
-                  args: event.args,
-                  status: "running",
-                };
-                toolEvents.push(te);
-                setCurrentTools([...toolEvents]);
-                break;
-              }
-              case "tool_result": {
-                const existing = toolEvents.find(t => t.stepIndex === event.stepIndex);
-                if (existing) {
-                  existing.status = event.kind === "error" ? "error" : "complete";
-                  existing.kind = event.kind;
-                  existing.preview = event.preview;
-                  existing.truncated = event.truncated;
-                  existing.durationMs = event.durationMs;
-                }
-                setCurrentTools([...toolEvents]);
-                break;
-              }
-              case "todos_updated": {
-                // Pass 237: live todo tracker event
-                const parsed = parseTodosPayload(event.todos);
-                agentTodos = mergeTodoList(agentTodos, parsed);
-                setCurrentTodos([...agentTodos]);
-                break;
-              }
-              case "instructions_loaded": {
-                // Pass 238: CLAUDE.md auto-loading receipt
-                if (Array.isArray(event.files)) {
-                  setLoadedInstructionFiles(
-                    event.files.filter((f: unknown): f is string => typeof f === "string"),
-                  );
-                }
-                break;
-              }
-              case "done": {
-                const assistantMsg: CodeChatMessage = {
-                  id: `a-${Date.now()}`,
-                  role: "assistant",
-                  content: event.response,
-                  toolEvents: [...toolEvents],
-                  agentTodos: agentTodos.length > 0 ? [...agentTodos] : undefined,
-                  model: event.model,
-                  iterations: event.iterations,
-                  toolCallCount: event.toolCallCount,
-                  totalDurationMs: event.totalDurationMs,
-                  timestamp: new Date(),
-                };
-                setMessages(prev => [...prev, assistantMsg]);
-                setCurrentTools([]);
-                // Do NOT reset currentTodos — leave them visible until
-                // the next send for continuity
-                break;
-              }
-              case "error":
-                setError(event.message);
-                break;
-              case "thinking":
-              case "heartbeat":
-                break;
+          switch (event.kind) {
+            case "tool_start": {
+              const te: ToolEvent = {
+                stepIndex: event.stepIndex,
+                toolName: event.toolName,
+                args: event.args,
+                status: "running",
+              };
+              toolEvents.push(te);
+              setCurrentTools([...toolEvents]);
+              break;
             }
-          } catch { /* skip unparseable lines */ }
+            case "tool_result": {
+              const existing = toolEvents.find(t => t.stepIndex === event.stepIndex);
+              if (existing) {
+                existing.status = event.resultKind === "error" ? "error" : "complete";
+                existing.kind = event.resultKind;
+                existing.preview = event.preview;
+                existing.truncated = event.truncated;
+                existing.durationMs = event.durationMs;
+              }
+              setCurrentTools([...toolEvents]);
+              break;
+            }
+            case "todos_updated": {
+              const parsed = parseTodosPayload(event.todos);
+              agentTodos = mergeTodoList(agentTodos, parsed);
+              setCurrentTodos([...agentTodos]);
+              break;
+            }
+            case "instructions_loaded": {
+              setLoadedInstructionFiles(event.files);
+              break;
+            }
+            case "mentions_resolved":
+              // Not surfaced in UI yet — keep silent for forward-compat
+              break;
+            case "done": {
+              const assistantMsg: CodeChatMessage = {
+                id: `a-${Date.now()}`,
+                role: "assistant",
+                content: event.response,
+                toolEvents: [...toolEvents],
+                agentTodos: agentTodos.length > 0 ? [...agentTodos] : undefined,
+                model: event.model,
+                iterations: event.iterations,
+                toolCallCount: event.toolCallCount,
+                totalDurationMs: event.totalDurationMs,
+                timestamp: new Date(),
+              };
+              setMessages(prev => [...prev, assistantMsg]);
+              setCurrentTools([]);
+              // Do NOT reset currentTodos — leave them visible until
+              // the next send for continuity
+              break;
+            }
+            case "error":
+              setError(event.message);
+              break;
+            case "thinking":
+            case "heartbeat":
+              break;
+          }
         }
       }
     } catch (err: any) {
