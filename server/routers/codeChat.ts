@@ -195,6 +195,7 @@ const CodeToolCallSchema = z.object({
     "run_bash",
     "update_todos",
     "find_symbol",
+    "task",
     "finish",
   ]),
   args: z.record(z.string(), z.any()),
@@ -608,6 +609,7 @@ export const codeChatRouter = router({
         "glob_files", // Build-loop Pass 1: Claude-Code Glob parity
         "web_fetch", // Build-loop Pass 3: Claude-Code WebFetch parity
         "web_search", // Build-loop Pass 5: Claude-Code WebSearch parity
+        "task", // Build-loop Pass 11: subagent (read-only by construction)
         "update_todos", // Pass 237: live progress reporter
         "find_symbol", // Pass 242: workspace symbol index
       ]);

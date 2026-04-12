@@ -527,6 +527,101 @@ describe("Round B1 — codeChatExecutor", () => {
       expect(r.kind).toBe("error");
       if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
     });
+
+    // Build-loop Pass 11: task subagent dispatcher
+    it("task returns TASK_UNAVAILABLE when no runner injected", async () => {
+      const r = await dispatchCodeTool(
+        {
+          name: "task",
+          args: { description: "explore", prompt: "find foo" },
+        },
+        sandboxRO(),
+        // No extras → no taskRunner
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("TASK_UNAVAILABLE");
+    });
+
+    it("task rejects missing description", async () => {
+      const r = await dispatchCodeTool(
+        { name: "task", args: { prompt: "do stuff" } },
+        sandboxRO(),
+        { taskRunner: async () => ({ description: "x", summary: "y", iterations: 1, toolCallCount: 0, durationMs: 1, truncated: false }) },
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("task rejects missing prompt", async () => {
+      const r = await dispatchCodeTool(
+        { name: "task", args: { description: "find" } },
+        sandboxRO(),
+        { taskRunner: async () => ({ description: "x", summary: "y", iterations: 1, toolCallCount: 0, durationMs: 1, truncated: false }) },
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("task invokes the runner with normalized args and returns its result", async () => {
+      const calls: Array<{ description: string; prompt: string; maxIterations?: number; model?: string }> = [];
+      const r = await dispatchCodeTool(
+        {
+          name: "task",
+          args: {
+            description: "  Trace useAuth callers  ",
+            prompt: "Find every consumer of the useAuth hook",
+            maxIterations: 3,
+            model: "claude-sonnet-4-6",
+          },
+        },
+        sandboxRO(),
+        {
+          taskRunner: async (input) => {
+            calls.push(input);
+            return {
+              description: input.description,
+              summary: "Found 7 consumers across client/src/hooks/useAuth.ts",
+              iterations: 3,
+              toolCallCount: 9,
+              durationMs: 1234,
+              truncated: false,
+            };
+          },
+        },
+      );
+      expect(r.kind).toBe("task");
+      if (r.kind === "task") {
+        expect(r.result.summary).toContain("7 consumers");
+        expect(r.result.iterations).toBe(3);
+        expect(r.result.toolCallCount).toBe(9);
+        expect(r.result.truncated).toBe(false);
+      }
+      expect(calls).toHaveLength(1);
+      // Description was trimmed before being passed to the runner
+      expect(calls[0].description).toBe("Trace useAuth callers");
+      expect(calls[0].maxIterations).toBe(3);
+      expect(calls[0].model).toBe("claude-sonnet-4-6");
+    });
+
+    it("task captures runner errors as TASK_FAILED", async () => {
+      const r = await dispatchCodeTool(
+        {
+          name: "task",
+          args: { description: "x", prompt: "y" },
+        },
+        sandboxRO(),
+        {
+          taskRunner: async () => {
+            throw new Error("LLM upstream timeout");
+          },
+        },
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") {
+        expect(r.code).toBe("TASK_FAILED");
+        expect(r.error).toContain("LLM upstream timeout");
+      }
+    });
   });
 
   describe("executeCodeChat multi-turn", () => {

@@ -48,6 +48,7 @@ export type CodeToolName =
   | "run_bash"
   | "update_todos"
   | "find_symbol"
+  | "task"
   | "finish";
 
 export interface CodeToolCall {
@@ -83,11 +84,43 @@ export interface MultiReadEntry {
   errorCode?: string;
 }
 
+/**
+ * Build-loop Pass 11 (G7) — `task` subagent runner.
+ *
+ * The dispatcher does NOT itself spawn LLM calls. The route layer
+ * (codeChatStream.ts / codeChatRouter) injects a `taskRunner`
+ * callback that knows how to start a fresh ReAct loop with a
+ * narrower budget + system prompt. If the runner is missing the
+ * dispatcher returns a clear error so the agent can fall back to
+ * inline reasoning.
+ */
+export interface TaskRunInput {
+  description: string;
+  prompt: string;
+  /** Max iterations the sub-agent gets (capped at 10 by the runner). */
+  maxIterations?: number;
+  /** Optional model override; falls back to whatever the parent uses. */
+  model?: string;
+}
+
+export interface TaskRunResult {
+  description: string;
+  summary: string;
+  iterations: number;
+  toolCallCount: number;
+  durationMs: number;
+  /** True if the sub-agent hit its iteration cap without finishing. */
+  truncated: boolean;
+}
+
+export type TaskRunner = (input: TaskRunInput) => Promise<TaskRunResult>;
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "multi_read"; result: { files: MultiReadEntry[]; totalBytes: number; errors: number } }
   | { kind: "web_fetch"; result: { url: string; finalUrl: string; status: number; contentType: string; title?: string; text: string; truncated: boolean; bytes: number; elapsedMs: number } }
   | { kind: "web_search"; result: { provider: string; query: string; results: Array<{ title: string; url: string; snippet: string }>; truncated: boolean; error?: string } }
+  | { kind: "task"; result: TaskRunResult }
   | { kind: "write"; result: WriteFileResult }
   | { kind: "edit"; result: EditFileResult }
   | { kind: "list"; result: { path: string; entries: ListDirEntry[] } }
@@ -125,12 +158,23 @@ export interface CodeChatRunResult {
 // ─── Single tool dispatch ────────────────────────────────────────────────
 
 /**
+ * Optional extras the route layer can inject to enable tools that
+ * need callbacks the dispatcher itself can't provide. Currently used
+ * by the `task` subagent runner (Build-loop Pass 11 / G7), which
+ * needs an LLM-aware callback.
+ */
+export interface DispatchExtras {
+  taskRunner?: TaskRunner;
+}
+
+/**
  * Dispatch one tool call. Used both by the multi-turn executor below
  * and by the tRPC procedures that expose individual tools.
  */
 export async function dispatchCodeTool(
   call: CodeToolCall,
   sandbox: SandboxOptions,
+  extras: DispatchExtras = {},
 ): Promise<CodeToolResult> {
   try {
     switch (call.name) {
@@ -342,6 +386,51 @@ export async function dispatchCodeTool(
             return { kind: "error", error: err.message, code: err.code };
           }
           throw err;
+        }
+      }
+      case "task": {
+        // Build-loop Pass 11 (G7): subagent runner. Spawns a fresh
+        // ReAct loop with a focused task description and a narrower
+        // budget. The route layer (codeChatStream.ts) injects the
+        // actual runner via `extras.taskRunner` because the dispatcher
+        // doesn't have access to contextualLLM or executeReActLoop
+        // by design (kept pure-function and LLM-agnostic).
+        if (!extras.taskRunner) {
+          return {
+            kind: "error",
+            error: "task tool not available in this context (no taskRunner injected)",
+            code: "TASK_UNAVAILABLE",
+          };
+        }
+        const description = String(call.args.description ?? "").trim();
+        const prompt = String(call.args.prompt ?? "").trim();
+        if (!description || !prompt) {
+          return {
+            kind: "error",
+            error: "task requires both `description` and `prompt`",
+            code: "BAD_ARGS",
+          };
+        }
+        const maxIterations =
+          typeof call.args.maxIterations === "number"
+            ? call.args.maxIterations
+            : undefined;
+        const model =
+          typeof call.args.model === "string" ? call.args.model : undefined;
+        try {
+          const result = await extras.taskRunner({
+            description,
+            prompt,
+            maxIterations,
+            model,
+          });
+          return { kind: "task", result };
+        } catch (err) {
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : String(err),
+            code: "TASK_FAILED",
+          };
         }
       }
       case "find_symbol": {
@@ -616,6 +705,35 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         path: { type: "string", description: "Where to start searching (default '.')" },
       },
       required: ["pattern"],
+    },
+  },
+  {
+    name: "task",
+    description:
+      "Spawn a focused subagent to handle a side-task. Use this to delegate research questions ('find every place X is used') or multi-step explorations that would otherwise pollute your main reasoning trace. The subagent runs its own ReAct loop with up to 5 iterations and returns a single summary string. Best for: large-scale grep + read sweeps, dependency tracing, comparative analysis. Don't use for write operations — the subagent gets read-only tools.",
+    parameters: {
+      type: "object",
+      properties: {
+        description: {
+          type: "string",
+          description:
+            "Short label for this subagent run (e.g. 'Trace where useAuth is consumed').",
+        },
+        prompt: {
+          type: "string",
+          description:
+            "Detailed instructions for the subagent. Include any context the parent agent already learned.",
+        },
+        maxIterations: {
+          type: "number",
+          description: "Max iterations the subagent gets (1-10, default 5).",
+        },
+        model: {
+          type: "string",
+          description: "Optional model override for the subagent.",
+        },
+      },
+      required: ["description", "prompt"],
     },
   },
   {

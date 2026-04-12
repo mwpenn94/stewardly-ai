@@ -37,6 +37,7 @@ const READ_ONLY_TOOLS = new Set([
   "glob_files", // Build-loop Pass 1: Claude-Code Glob parity
   "web_fetch", // Build-loop Pass 3: Claude-Code WebFetch parity
   "web_search", // Build-loop Pass 5: Claude-Code WebSearch parity
+  "task", // Build-loop Pass 11: subagent (read-only by construction)
   "update_todos", // Pass 237: no-op progress reporter, safe for all roles
   "find_symbol", // Pass 242: workspace symbol index lookup
 ]);
@@ -145,6 +146,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "Use `code_multi_read` to read up to 10 files in ONE call whenever you already know 2+ files you need to inspect — it saves round-trips (the slowest part of a session).",
       "Use `code_glob_files` to find files by pattern (e.g. `src/**/*.tsx`, `server/services/**/*.test.ts`). Prefer this over `code_list_directory` when you know the filename shape, and over shell `find` for speed.",
       "Use `code_web_search` when you need fresh information beyond your training cutoff (recent library releases, current events, vendor pricing changes). Pair with `code_web_fetch` to read the most promising result in full.",
+      "Use `code_task` to delegate large-scale exploratory work (find every consumer of X, audit every test that touches Y) to a focused subagent. The subagent runs its own ReAct loop with read-only tools and returns a single summary so your main reasoning trace stays clean.",
       "Use `code_web_fetch` to pull external docs (MDN, React, Node, GitHub READMEs, SEC/FINRA/IRS regulatory pages) into context when the user's question depends on up-to-date vendor documentation. Host allowlist is enforced.",
       "Use `code_find_symbol` when you know the name of a function/class/interface/type/const and want to jump to its DEFINITION (faster than grep, and returns only definition sites).",
       canMutate
@@ -204,6 +206,95 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
 
     writeSse(res, { type: "thinking", content: "Starting analysis..." });
 
+    // Build-loop Pass 11 (G7): subagent runner for the `task` tool.
+    // The subagent always gets a read-only tool set (no writes,
+    // no bash) so a parent agent can't smuggle mutations through
+    // a delegated task. Iterations are capped at 10 regardless of
+    // what the parent requests.
+    const taskRunner = async (input: {
+      description: string;
+      prompt: string;
+      maxIterations?: number;
+      model?: string;
+    }) => {
+      const subStart = Date.now();
+      const subMaxIter = Math.min(Math.max(1, input.maxIterations ?? 5), 10);
+      // Subagent always gets the read-only set, never write tools.
+      const subToolDefs = CODE_CHAT_TOOL_DEFINITIONS
+        .filter((t) => READ_ONLY_TOOLS.has(t.name) && t.name !== "task")
+        .filter((t) => (userAllowed ? userAllowed.has(t.name) : true))
+        .map((t) => ({
+          type: "function" as const,
+          function: {
+            name: `code_${t.name}`,
+            description: t.description,
+            parameters: t.parameters,
+          },
+        }));
+      const subSystemPrompt = [
+        "You are a focused subagent inside Stewardly Code Chat.",
+        `Your task: ${input.description}`,
+        "Use the read tools (read_file, multi_read, list_directory, grep_search, glob_files, find_symbol, web_fetch, web_search) to investigate.",
+        "When you have enough information, return ONLY the answer — no preamble, no meta-commentary about tool calls.",
+        "Be concise. The parent agent will read your reply and decide what to do.",
+      ].join("\n");
+      let subToolCallCount = 0;
+      // Emit a subagent_start event so the UI can render a panel.
+      writeSse(res, {
+        type: "subagent_start",
+        description: input.description,
+        maxIterations: subMaxIter,
+      });
+      const subResult = await executeReActLoop({
+        messages: [
+          { role: "system", content: subSystemPrompt },
+          { role: "user", content: input.prompt },
+        ] as any,
+        userId: user.id,
+        tools: subToolDefs.length > 0 ? (subToolDefs as any) : undefined,
+        maxIterations: subMaxIter,
+        model: input.model ?? model,
+        contextualLLM,
+        executeTool: async (toolName: string, args: Record<string, unknown>) => {
+          subToolCallCount++;
+          const rawName = toolName.replace(/^code_/, "");
+          // Subagent gets workspace + read-only — no canMutate even
+          // if the parent has it on.
+          const dispatchResult = await dispatchCodeTool(
+            { name: rawName as any, args } as CodeToolCall,
+            { workspaceRoot: WORKSPACE_ROOT, allowMutations: false },
+            // Recursion guard: subagents can't spawn sub-subagents.
+            { taskRunner: undefined },
+          );
+          // Stream a subagent_tool_call event so the UI can show
+          // what the subagent is doing without polluting the parent
+          // trace.
+          writeSse(res, {
+            type: "subagent_tool_call",
+            toolName: rawName,
+            kind: (dispatchResult as any).kind || "unknown",
+          });
+          return JSON.stringify(dispatchResult);
+        },
+      });
+      const truncated = subResult.iterations >= subMaxIter;
+      writeSse(res, {
+        type: "subagent_done",
+        description: input.description,
+        iterations: subResult.iterations,
+        toolCallCount: subToolCallCount,
+        truncated,
+      });
+      return {
+        description: input.description,
+        summary: subResult.response,
+        iterations: subResult.iterations,
+        toolCallCount: subToolCallCount,
+        durationMs: Date.now() - subStart,
+        truncated,
+      };
+    };
+
     const result = await executeReActLoop({
       messages: [
         { role: "system", content: systemPrompt },
@@ -239,6 +330,10 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         const dispatchResult = await dispatchCodeTool(
           { name: rawName as any, args } as CodeToolCall,
           { workspaceRoot: WORKSPACE_ROOT, allowMutations: canMutate },
+          // Build-loop Pass 11 (G7): inject the subagent runner so
+          // the parent agent can spawn focused side-tasks via the
+          // `task` tool.
+          { taskRunner },
         );
         const durationMs = Date.now() - toolStart;
 

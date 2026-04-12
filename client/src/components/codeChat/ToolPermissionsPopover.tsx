@@ -71,6 +71,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
     mutation: false,
   },
   {
+    id: "task",
+    label: "Task subagent",
+    description:
+      "Spawn a focused subagent for side-tasks (Claude Code Task parity)",
+    mutation: false,
+  },
+  {
     id: "write_file",
     label: "Write file",
     description: "Create or overwrite a file (admin + write mode)",
@@ -110,6 +117,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "glob_files",
   "web_fetch",
   "web_search",
+  "task",
   "write_file",
   "edit_file",
   "run_bash",
