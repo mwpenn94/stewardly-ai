@@ -108,6 +108,8 @@ const EXEMPT_ROUTES = new Set<string>([
   "/wealth-engine/retirement",
   "/wealth-engine/practice-to-wealth",
   "/wealth-engine/quick-quote",
+  "/wealth-engine/owner-comp",
+  "/wealth-engine/business-valuation",
   // Public / embed / calculator widgets
   "/public-calculators",
   "/embed",

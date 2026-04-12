@@ -194,3 +194,30 @@ export {
   stressTest,
   checkGuardrails,
 } from "./scui";
+
+// OCE — Owner Compensation Engine (business owner / operator cash flow,
+// entity comparison, QBI, retirement stacking, business valuation).
+export * as OwnerComp from "./ownerComp";
+export {
+  OWNER_COMP_CONSTANTS,
+  calcFederalIncomeTax,
+  calcEmployeePayrollTax,
+  calcSelfEmploymentTax,
+  calcQbiDeduction,
+  recommendRetirementPlan,
+  buildOwnerCompSnapshot,
+  compareEntities,
+  pickDefaultMultiple,
+  valueBusiness,
+  type EntityType,
+  type FilingStatus as OwnerCompFilingStatus,
+  type QbiInput,
+  type QbiResult,
+  type RetirementInput,
+  type RetirementRecommendation,
+  type OwnerCompInput,
+  type OwnerCompSnapshot,
+  type ValuationInput,
+  type ValuationResult,
+  type ValuationMethod,
+} from "./ownerComp";
