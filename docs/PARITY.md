@@ -502,6 +502,7 @@ _(not applicable — no parallel tracks dispatched)_
 ---
 
 # Track B — Learning Experience
+# Stewardly PARITY — Build Loop Work Queue
 
 **Purpose.** Bidirectional work ledger for the continuous build loop. Two
 kinds of rows live here:
@@ -981,3 +982,4 @@ with `added_by=assessment` — the build loop will pick them up on its
 next pass. When two processes edit the same row concurrently, resolve
 by **evidence recency** (latest sourceNotes or commit SHA wins), and
 log the conflict in section 4.
+

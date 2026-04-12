@@ -44,6 +44,7 @@ import {
 import { recordStudyNow } from "./lib/studyStreak";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 
+
 export default function LearningQuizRunner() {
   const params = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
@@ -132,6 +133,7 @@ export default function LearningQuizRunner() {
 
     // Pass 16 — PIL feedback dispatch (G1/G8).
     sendFeedback(correct ? "learning.answer_correct" : "learning.answer_incorrect");
+
   };
 
   const next = () => {

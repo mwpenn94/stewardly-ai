@@ -34,6 +34,7 @@ export default defineConfig({
       "client/src/hooks/**/*.test.ts",
       // Hybrid pass 4: planning calculator pure functions
       "client/src/lib/planningCalculations.test.ts",
+      "client/src/pages/learning/lib/**/*.test.ts",
     ],
   },
 });

@@ -56,6 +56,7 @@ import { useCelebration } from "@/lib/CelebrationEngine";
 import { recordStudyNow } from "./lib/studyStreak";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 
+
 type KindFilter = "all" | "flashcard" | "question";
 
 export default function LearningDueReview() {
@@ -126,6 +127,7 @@ export default function LearningDueReview() {
     recordStudyNow();
     // Pass 16 — PIL feedback dispatch (G1/G8).
     sendFeedback(ok ? "learning.answer_correct" : "learning.answer_incorrect");
+
     if (ok) setCorrect((c) => c + 1);
     else setIncorrect((c) => c + 1);
     advance();
@@ -147,6 +149,7 @@ export default function LearningDueReview() {
     recordStudyNow();
     // Pass 16 — PIL feedback dispatch (G1/G8).
     sendFeedback(ok ? "learning.answer_correct" : "learning.answer_incorrect");
+
     if (ok) setCorrect((c) => c + 1);
     else setIncorrect((c) => c + 1);
   };

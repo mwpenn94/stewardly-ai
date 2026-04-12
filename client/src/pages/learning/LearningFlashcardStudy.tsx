@@ -47,6 +47,7 @@ import {
 import { recordStudyNow } from "./lib/studyStreak";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 
+
 export default function LearningFlashcardStudy() {
   const params = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
@@ -388,11 +389,13 @@ export default function LearningFlashcardStudy() {
                 style={{ perspective: "600px" }}
                 onClick={() => { setFlipped((f) => !f); sendFeedback("learning.flashcard_flip"); }}
                 onClick={() => { setFlipped((f) => !f); pil.giveFeedback("learning.flashcard_flip"); }}
+                onClick={() => setFlipped((f) => !f)}
                 onKeyDown={(e) => {
                   if (e.key === " " || e.key === "Enter") {
                     e.preventDefault();
                     setFlipped((f) => !f);
                     sendFeedback("learning.flashcard_flip");
+
                   }
                 }}
               >
