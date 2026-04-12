@@ -110,6 +110,93 @@ import {
   summarizeCycles,
 } from "../services/codeChat/circularDeps";
 import {
+  unifiedSearch,
+  type UnifiedResultKind,
+} from "../services/codeChat/workspaceSearch";
+import {
+  previewFile,
+  aggregateWorkspacePreview,
+  buildApplyPlan,
+  DEFAULT_WORKSPACE_LIMIT,
+  DEFAULT_MAX_FILES,
+  type FindReplaceOptions,
+  type FilePreview,
+} from "../services/codeChat/findReplace";
+import {
+  buildCheckpoint,
+  buildRestorePlan,
+  summarizeCheckpoint,
+  saveCheckpointToDisk,
+  loadCheckpointsFromDisk,
+  deleteCheckpointFromDisk,
+  type Checkpoint,
+} from "../services/codeChat/checkpoints";
+import { randomUUID } from "crypto";
+import {
+  parseTscOutput,
+  groupByFile as groupDiagnosticsByFile,
+  summarizeDiagnostics,
+  filterDiagnostics,
+  type DiagnosticSeverity,
+  type DiagnosticSource,
+} from "../services/codeChat/diagnostics";
+import {
+  getCachedDiagnostics,
+  setCachedDiagnostics,
+  clearDiagnosticsCache,
+  withInflight,
+  type DiagnosticsSnapshot,
+} from "../services/codeChat/diagnosticsCache";
+import {
+  draftPullRequest,
+  type CommitSummary,
+  type ChangedFile,
+} from "../services/codeChat/prDrafter";
+import {
+  parseVitestOutput,
+  filterFileResults,
+  sortFileResults,
+  type TestStatus,
+} from "../services/codeChat/testRunner";
+import {
+  buildEnvSnapshot,
+  filterEntries as filterEnvEntries,
+  type EnvCategory,
+} from "../services/codeChat/envInspector";
+import {
+  parseGitLog,
+  parseNumstat,
+  mergeCommitStats,
+  computeLogStats,
+  groupCommitsByDay,
+  filterCommits,
+} from "../services/codeChat/gitLog";
+import {
+  classifyDependencies,
+  summarizeLicenses,
+  filterDependencies as filterLicenseDeps,
+  extractLicense,
+  type DependencyEntry,
+  type LicenseCategory,
+} from "../services/codeChat/licenseScanner";
+import {
+  detectDeadCode,
+  summarizeDeadCode,
+  groupByPath as groupDeadByPath,
+} from "../services/codeChat/deadCode";
+import {
+  parseNpmOutdated,
+  parseNpmAudit,
+  filterOutdated,
+  filterVulns,
+  type UpdateSemver,
+  type VulnSeverity,
+} from "../services/codeChat/npmInspector";
+import {
+  computeWorkspaceHealth,
+  type HealthInput,
+} from "../services/codeChat/workspaceHealth";
+import {
   getTodoMarkers,
   clearTodoMarkersCache,
 } from "../services/codeChat/todoMarkersCache";
@@ -472,6 +559,1148 @@ export const codeChatRouter = router({
       summary: summarizeCycles(cycles),
     };
   }),
+
+  // Pass 249: unified workspace search (symbols + grep + TODOs in one query)
+  workspaceSearch: protectedProcedure
+    .input(
+      z.object({
+        query: z.string().min(1).max(200),
+        kinds: z.array(z.enum(["symbol", "grep", "todo"])).optional(),
+        perKindLimit: z.number().min(1).max(100).optional(),
+        totalLimit: z.number().min(1).max(500).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const kinds = new Set<UnifiedResultKind>(
+        input.kinds && input.kinds.length > 0
+          ? input.kinds
+          : ["symbol", "grep", "todo"],
+      );
+
+      // Run each source in parallel. Each is independent and has its
+      // own cache so parallelism is a free speedup.
+      const [symbolIndex, todoMarkers, grepResult] = await Promise.all([
+        kinds.has("symbol") ? getSymbolIndex(WORKSPACE_ROOT) : null,
+        kinds.has("todo") ? getTodoMarkers(WORKSPACE_ROOT) : null,
+        kinds.has("grep")
+          ? dispatchCodeTool(
+              {
+                name: "grep_search",
+                args: { pattern: input.query, path: "." },
+              } as CodeToolCall,
+              { workspaceRoot: WORKSPACE_ROOT },
+            ).catch(() => null)
+          : null,
+      ]);
+
+      const grepMatches: Array<{ file: string; line: number; text: string }> = [];
+      if (
+        grepResult &&
+        grepResult.kind === "grep" &&
+        Array.isArray(grepResult.result?.matches)
+      ) {
+        for (const m of grepResult.result.matches) {
+          grepMatches.push({
+            file: String(m.file ?? ""),
+            line: Number(m.line ?? 0),
+            text: String(m.text ?? ""),
+          });
+        }
+      }
+
+      const output = unifiedSearch({
+        query: input.query,
+        symbols: symbolIndex?.symbols ?? [],
+        grepMatches,
+        todos: todoMarkers ?? [],
+        kinds: Array.from(kinds),
+        perKindLimit: input.perKindLimit,
+        totalLimit: input.totalLimit,
+      });
+
+      return output;
+    }),
+
+  // Pass 250: multi-file find & replace — preview step
+  findReplacePreview: protectedProcedure
+    .input(
+      z.object({
+        find: z.string().min(1).max(500),
+        replace: z.string().max(2000),
+        regex: z.boolean().optional(),
+        caseSensitive: z.boolean().optional(),
+        wholeWord: z.boolean().optional(),
+        /** Optional path prefix to narrow the sweep */
+        pathPrefix: z.string().max(500).optional(),
+        perFileLimit: z.number().min(1).max(1000).optional(),
+        totalLimit: z.number().min(1).max(10000).optional(),
+        maxFiles: z.number().min(1).max(2000).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const options: FindReplaceOptions = {
+        find: input.find,
+        replace: input.replace,
+        regex: input.regex,
+        caseSensitive: input.caseSensitive,
+        wholeWord: input.wholeWord,
+        perFileLimit: input.perFileLimit,
+      };
+
+      // Validate the pattern up-front so a bad regex comes back as a
+      // structured error instead of 500-ing deep inside previewFile.
+      try {
+        const { compilePattern } = await import(
+          "../services/codeChat/findReplace"
+        );
+        compilePattern(options);
+      } catch (err) {
+        return {
+          error:
+            err instanceof Error ? err.message : "invalid find pattern",
+          preview: null,
+        };
+      }
+
+      const allFiles = await getWorkspaceFileIndex(WORKSPACE_ROOT);
+      const maxFiles = Math.min(input.maxFiles ?? DEFAULT_MAX_FILES, 2000);
+      const prefix = (input.pathPrefix ?? "").trim();
+      const candidates = allFiles
+        .filter((f) => !prefix || f.startsWith(prefix))
+        .slice(0, maxFiles);
+
+      const previews: Array<FilePreview | null> = [];
+      let filesScanned = 0;
+      for (const rel of candidates) {
+        filesScanned++;
+        try {
+          const abs = path.resolve(WORKSPACE_ROOT, rel);
+          const stat = await fs.promises.stat(abs);
+          if (!stat.isFile()) continue;
+          if (stat.size > 1_000_000) continue; // skip files > 1MB
+          const content = await fs.promises.readFile(abs, "utf-8");
+          const p = previewFile(rel, content, options);
+          previews.push(p);
+        } catch {
+          /* unreadable / binary — skip silently */
+        }
+      }
+
+      const preview = aggregateWorkspacePreview(
+        options,
+        previews,
+        filesScanned,
+        input.totalLimit ?? DEFAULT_WORKSPACE_LIMIT,
+      );
+
+      return { error: null, preview };
+    }),
+
+  // Pass 250: multi-file find & replace — apply step (admin-gated)
+  findReplaceApply: adminProcedure
+    .input(
+      z.object({
+        confirmDangerous: z.literal(true),
+        acceptPaths: z.array(z.string().max(500)).min(1).max(2000),
+        /** Re-send the preview so we don't trust stale client state */
+        preview: z.object({
+          options: z.object({
+            find: z.string(),
+            replace: z.string(),
+            regex: z.boolean().optional(),
+            caseSensitive: z.boolean().optional(),
+            wholeWord: z.boolean().optional(),
+            perFileLimit: z.number().optional(),
+          }),
+          files: z.array(
+            z.object({
+              path: z.string(),
+              newContent: z.string(),
+              matches: z.array(z.any()),
+              truncated: z.boolean(),
+              delta: z.object({
+                removed: z.number(),
+                added: z.number(),
+              }),
+            }),
+          ),
+          totals: z.object({
+            filesMatched: z.number(),
+            filesScanned: z.number(),
+            totalMatches: z.number(),
+            workspaceTruncated: z.boolean(),
+            filesTruncated: z.number(),
+          }),
+        }),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const plan = buildApplyPlan({
+        acceptPaths: input.acceptPaths,
+        preview: input.preview as unknown as Parameters<typeof buildApplyPlan>[0]["preview"],
+      });
+
+      const writtenPaths: string[] = [];
+      const failed: Array<{ path: string; error: string }> = [];
+      for (const w of plan.writes) {
+        const result = await dispatchCodeTool(
+          {
+            name: "write_file",
+            args: { path: w.path, content: w.content },
+          } as CodeToolCall,
+          { workspaceRoot: WORKSPACE_ROOT, allowMutations: true },
+        );
+        if (result.kind === "error") {
+          failed.push({ path: w.path, error: result.error });
+        } else {
+          writtenPaths.push(w.path);
+        }
+      }
+
+      return {
+        writtenPaths,
+        failed,
+        skippedUnknown: plan.skippedUnknown,
+      };
+    }),
+
+  // Pass 251: workspace checkpoints (snapshot/restore)
+  listCheckpoints: protectedProcedure.query(async () => {
+    const checkpoints = await loadCheckpointsFromDisk(WORKSPACE_ROOT);
+    return {
+      checkpoints: checkpoints.map(summarizeCheckpoint),
+    };
+  }),
+
+  getCheckpoint: protectedProcedure
+    .input(z.object({ id: z.string().max(200) }))
+    .query(async ({ input }) => {
+      const all = await loadCheckpointsFromDisk(WORKSPACE_ROOT);
+      const c = all.find((x) => x.id === input.id);
+      return c ? { checkpoint: c } : { checkpoint: null };
+    }),
+
+  createCheckpoint: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(120),
+        description: z.string().max(500).optional(),
+        paths: z.array(z.string().max(500)).min(1).max(500),
+        tags: z.array(z.string().max(40)).max(16).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      // Read each accepted path via the sandbox read helper so we
+      // inherit the out-of-bounds guard for free.
+      const fileEntries: Array<{ path: string; content: string }> = [];
+      const readErrors: Array<{ path: string; error: string }> = [];
+      for (const rel of input.paths) {
+        try {
+          const abs = path.resolve(WORKSPACE_ROOT, rel);
+          if (!abs.startsWith(path.resolve(WORKSPACE_ROOT))) {
+            readErrors.push({ path: rel, error: "out_of_bounds" });
+            continue;
+          }
+          const stat = await fs.promises.stat(abs);
+          if (!stat.isFile()) {
+            readErrors.push({ path: rel, error: "not_a_file" });
+            continue;
+          }
+          if (stat.size > 2_000_000) {
+            readErrors.push({ path: rel, error: "too_large" });
+            continue;
+          }
+          const content = await fs.promises.readFile(abs, "utf-8");
+          fileEntries.push({ path: rel, content });
+        } catch (err) {
+          readErrors.push({
+            path: rel,
+            error: err instanceof Error ? err.message : "read_failed",
+          });
+        }
+      }
+
+      if (fileEntries.length === 0) {
+        return {
+          checkpoint: null,
+          readErrors,
+          skipped: [],
+        };
+      }
+
+      const { checkpoint, skipped } = buildCheckpoint({
+        id: `cp_${Date.now()}_${randomUUID().slice(0, 8)}`,
+        name: input.name,
+        description: input.description,
+        tags: input.tags,
+        files: fileEntries,
+      });
+
+      await saveCheckpointToDisk(WORKSPACE_ROOT, checkpoint);
+
+      return {
+        checkpoint: summarizeCheckpoint(checkpoint),
+        readErrors,
+        skipped,
+      };
+    }),
+
+  restoreCheckpoint: adminProcedure
+    .input(
+      z.object({
+        id: z.string().max(200),
+        confirmDangerous: z.literal(true),
+        /** Optional subset of paths to restore. Default: all. */
+        paths: z.array(z.string().max(500)).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const all = await loadCheckpointsFromDisk(WORKSPACE_ROOT);
+      const target = all.find((x) => x.id === input.id);
+      if (!target) {
+        return {
+          ok: false,
+          error: "checkpoint_not_found",
+          restoredPaths: [],
+          failed: [],
+        };
+      }
+
+      // Collect live byte lengths so the UI can warn about drift on
+      // the way back (also returned for the post-restore toast).
+      const liveBytes = new Map<string, number>();
+      for (const f of target.files) {
+        try {
+          const abs = path.resolve(WORKSPACE_ROOT, f.path);
+          const stat = await fs.promises.stat(abs);
+          if (stat.isFile()) liveBytes.set(f.path, stat.size);
+        } catch {
+          /* missing files are ok — restore will create them */
+        }
+      }
+
+      const plan = buildRestorePlan(target, {
+        paths: input.paths,
+        liveBytes,
+      });
+
+      const restoredPaths: string[] = [];
+      const failed: Array<{ path: string; error: string }> = [];
+      for (const entry of plan.entries) {
+        const result = await dispatchCodeTool(
+          {
+            name: "write_file",
+            args: { path: entry.path, content: entry.content },
+          } as CodeToolCall,
+          { workspaceRoot: WORKSPACE_ROOT, allowMutations: true },
+        );
+        if (result.kind === "error") {
+          failed.push({ path: entry.path, error: result.error });
+        } else {
+          restoredPaths.push(entry.path);
+        }
+      }
+
+      return {
+        ok: true,
+        error: null,
+        restoredPaths,
+        failed,
+        filteredPaths: plan.filtered,
+      };
+    }),
+
+  deleteCheckpoint: protectedProcedure
+    .input(z.object({ id: z.string().max(200) }))
+    .mutation(async ({ input }) => {
+      const ok = await deleteCheckpointFromDisk(WORKSPACE_ROOT, input.id);
+      return { ok };
+    }),
+
+  // Pass 261: workspace health dashboard (aggregates every inspector)
+  workspaceHealth: protectedProcedure.query(async () => {
+    // Pull from every cached source in parallel. Each source has its
+    // own TTL cache so this stays snappy — we do NOT re-run tsc or
+    // tests here; users must visit those panels explicitly to refresh.
+    const [importData, todoMarkers, symbolIdx, diagCache] = await Promise.all([
+      getImportGraph(WORKSPACE_ROOT),
+      getTodoMarkers(WORKSPACE_ROOT),
+      getSymbolIndex(WORKSPACE_ROOT),
+      Promise.resolve(getCachedDiagnostics()),
+    ]);
+
+    // Circular deps from the import graph
+    const cycles = findCycles(importData.graph);
+    const circularCycles = cycles.length;
+    const circularFilesInCycles = cycles.reduce(
+      (acc, c) => acc + c.files.length,
+      0,
+    );
+
+    // Dead code
+    const deadReport = {
+      entries: [] as Array<{ path: string; name: string }>,
+      orphanFiles: [] as string[],
+    };
+    try {
+      const { detectDeadCode } = await import("../services/codeChat/deadCode");
+      const report = detectDeadCode(symbolIdx, importData.graph, {
+        limit: 1000,
+      });
+      deadReport.entries = report.entries.map((e) => ({
+        path: e.path,
+        name: e.name,
+      }));
+      deadReport.orphanFiles = report.orphanFiles;
+    } catch {
+      /* ignore */
+    }
+
+    // TODO marker stats
+    const markerStats = { TODO: 0, FIXME: 0, HACK: 0, BUG: 0 };
+    for (const m of todoMarkers) {
+      if (m.kind in markerStats) {
+        markerStats[m.kind as keyof typeof markerStats]++;
+      }
+    }
+
+    // Diagnostics — only the cached snapshot; the caller refreshes via
+    // the Problems tab
+    let tsErrors = 0;
+    let tsWarnings = 0;
+    if (diagCache) {
+      for (const d of diagCache.diagnostics) {
+        if (d.severity === "error") tsErrors++;
+        else if (d.severity === "warning") tsWarnings++;
+      }
+    }
+
+    // Git status for dirty file count
+    const gitEntries = await getWorkspaceGitStatus(WORKSPACE_ROOT);
+    const gitStaged = gitEntries.filter((e) => e.staged).length;
+    const gitDirty = gitEntries.filter((e) => e.dirty).length;
+    const gitUntracked = gitEntries.filter((e) => e.worktree === "untracked").length;
+
+    const input: HealthInput = {
+      tsErrors,
+      tsWarnings,
+      diagnosticsDurationMs: diagCache?.durationMs,
+      // Tests + npm data are not cached server-side (runTests is a mutation
+      // and npmInspect runs on demand); we treat them as "unknown" => 0
+      testsFailed: 0,
+      testsTotal: 0,
+      testsPassed: 0,
+      outdatedMajor: 0,
+      outdatedMinor: 0,
+      outdatedPatch: 0,
+      vulnCritical: 0,
+      vulnHigh: 0,
+      vulnModerate: 0,
+      circularCycles,
+      circularFilesInCycles,
+      deadExports: deadReport.entries.length,
+      orphanFiles: deadReport.orphanFiles.length,
+      todoCount: markerStats.TODO,
+      fixmeCount: markerStats.FIXME,
+      bugCount: markerStats.BUG,
+      hackCount: markerStats.HACK,
+      gitDirtyFiles: gitDirty,
+      gitStaged,
+      gitUntracked,
+    };
+
+    const report = computeWorkspaceHealth(input);
+    return { report, input };
+  }),
+
+  // Pass 260: npm outdated + audit inspector
+  npmInspect: protectedProcedure
+    .input(
+      z
+        .object({
+          kind: z.enum(["outdated", "audit", "both"]).optional(),
+          outdatedFilter: z
+            .object({
+              severity: z.enum(["patch", "minor", "major", "none"]).optional(),
+              type: z.string().max(80).optional(),
+              search: z.string().max(200).optional(),
+            })
+            .optional(),
+          auditFilter: z
+            .object({
+              minSeverity: z
+                .enum(["info", "low", "moderate", "high", "critical"])
+                .optional(),
+              search: z.string().max(200).optional(),
+            })
+            .optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const kind = input?.kind ?? "both";
+
+      const runCmd = async (command: string) => {
+        const result = await dispatchCodeTool(
+          {
+            name: "run_bash",
+            args: { command },
+          } as CodeToolCall,
+          {
+            workspaceRoot: WORKSPACE_ROOT,
+            allowMutations: true,
+            bashTimeoutMs: 120_000,
+          },
+        );
+        if (result.kind === "bash") {
+          return result.result.stdout ?? "";
+        }
+        return "";
+      };
+
+      const promises: Promise<void>[] = [];
+      let outdatedRaw = "";
+      let auditRaw = "";
+      if (kind === "outdated" || kind === "both") {
+        promises.push(
+          runCmd("npm outdated --json 2>/dev/null || true").then((r) => {
+            outdatedRaw = r;
+          }),
+        );
+      }
+      if (kind === "audit" || kind === "both") {
+        promises.push(
+          runCmd("npm audit --json 2>/dev/null || true").then((r) => {
+            auditRaw = r;
+          }),
+        );
+      }
+      await Promise.all(promises);
+
+      const outdated = parseNpmOutdated(outdatedRaw);
+      const audit = parseNpmAudit(auditRaw);
+
+      const filteredOutdated = filterOutdated(outdated, {
+        severity: input?.outdatedFilter?.severity as UpdateSemver | undefined,
+        type: input?.outdatedFilter?.type,
+        search: input?.outdatedFilter?.search,
+      });
+      const filteredVulns = filterVulns(audit.entries, {
+        minSeverity: input?.auditFilter?.minSeverity as VulnSeverity | undefined,
+        search: input?.auditFilter?.search,
+      });
+
+      return {
+        outdated: filteredOutdated.slice(0, 500),
+        totalOutdated: outdated.length,
+        vulnerabilities: filteredVulns.slice(0, 500),
+        auditSummary: audit.summary,
+      };
+    }),
+
+  // Pass 259: dead code detector
+  detectDeadCode: protectedProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(2000).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const [symbolIndex, importData] = await Promise.all([
+        getSymbolIndex(WORKSPACE_ROOT),
+        getImportGraph(WORKSPACE_ROOT),
+      ]);
+      const report = detectDeadCode(symbolIndex, importData.graph, {
+        limit: input?.limit ?? 500,
+      });
+      return {
+        entries: report.entries,
+        groups: groupDeadByPath(report.entries).slice(0, 200),
+        orphanFiles: report.orphanFiles,
+        summary: summarizeDeadCode(report),
+      };
+    }),
+
+  // Pass 258: dependency license scanner
+  scanLicenses: protectedProcedure
+    .input(
+      z
+        .object({
+          /** Only look at direct deps in root package.json (fast) */
+          rootOnly: z.boolean().optional(),
+          category: z
+            .enum([
+              "permissive",
+              "weak_copyleft",
+              "strong_copyleft",
+              "commercial",
+              "unknown",
+            ])
+            .optional(),
+          minRisk: z.number().min(0).max(3).optional(),
+          search: z.string().max(200).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const rootPkgPath = path.join(WORKSPACE_ROOT, "package.json");
+      const deps: DependencyEntry[] = [];
+      let rootName = "";
+      try {
+        const rootRaw = await fs.promises.readFile(rootPkgPath, "utf-8");
+        const rootPkg = JSON.parse(rootRaw);
+        rootName = rootPkg.name ?? "";
+        const collect = (map: Record<string, string> | undefined) => {
+          if (!map) return [];
+          return Object.entries(map).map(([name, version]) => ({
+            name,
+            version: String(version),
+          }));
+        };
+        const directDeps = [
+          ...collect(rootPkg.dependencies),
+          ...collect(rootPkg.devDependencies),
+          ...collect(rootPkg.optionalDependencies),
+        ];
+        const nodeModulesRoot = path.join(WORKSPACE_ROOT, "node_modules");
+        const rootOnly = input?.rootOnly !== false;
+
+        for (const d of directDeps) {
+          const depPath = path.join(nodeModulesRoot, d.name, "package.json");
+          try {
+            const raw = await fs.promises.readFile(depPath, "utf-8");
+            const parsed = JSON.parse(raw);
+            deps.push({
+              name: d.name,
+              version: parsed.version ?? d.version,
+              license: extractLicense(parsed),
+              path: path.relative(WORKSPACE_ROOT, depPath),
+            });
+          } catch {
+            // Missing or unreadable — fall back to the declared version
+            // with a blank license (will be flagged as unknown)
+            deps.push({
+              name: d.name,
+              version: d.version,
+              license: "",
+            });
+          }
+        }
+
+        // If not rootOnly, walk the top-level node_modules folders to
+        // include direct + transitive (but we skip nested node_modules
+        // to keep the count bounded)
+        if (!rootOnly) {
+          try {
+            const names = await fs.promises.readdir(nodeModulesRoot);
+            const seen = new Set(deps.map((d) => d.name));
+            for (const name of names) {
+              if (name.startsWith(".") || seen.has(name)) continue;
+              // Handle scoped packages
+              if (name.startsWith("@")) {
+                try {
+                  const scoped = await fs.promises.readdir(
+                    path.join(nodeModulesRoot, name),
+                  );
+                  for (const sub of scoped) {
+                    const full = `${name}/${sub}`;
+                    if (seen.has(full)) continue;
+                    const depPath = path.join(
+                      nodeModulesRoot,
+                      name,
+                      sub,
+                      "package.json",
+                    );
+                    try {
+                      const raw = await fs.promises.readFile(depPath, "utf-8");
+                      const parsed = JSON.parse(raw);
+                      deps.push({
+                        name: full,
+                        version: parsed.version ?? "",
+                        license: extractLicense(parsed),
+                        path: path.relative(WORKSPACE_ROOT, depPath),
+                      });
+                      seen.add(full);
+                    } catch {
+                      /* skip */
+                    }
+                    if (deps.length >= 2000) break;
+                  }
+                } catch {
+                  /* skip */
+                }
+              } else {
+                const depPath = path.join(nodeModulesRoot, name, "package.json");
+                try {
+                  const raw = await fs.promises.readFile(depPath, "utf-8");
+                  const parsed = JSON.parse(raw);
+                  deps.push({
+                    name,
+                    version: parsed.version ?? "",
+                    license: extractLicense(parsed),
+                    path: path.relative(WORKSPACE_ROOT, depPath),
+                  });
+                  seen.add(name);
+                } catch {
+                  /* skip */
+                }
+              }
+              if (deps.length >= 2000) break;
+            }
+          } catch {
+            /* node_modules unreadable */
+          }
+        }
+      } catch (err) {
+        return {
+          error:
+            err instanceof Error ? err.message : "failed to read package.json",
+          deps: [],
+          summary: null,
+          rootName,
+        };
+      }
+
+      const classified = classifyDependencies(deps);
+      const filtered = filterLicenseDeps(classified, {
+        category: input?.category as LicenseCategory | undefined,
+        minRisk: input?.minRisk as 0 | 1 | 2 | 3 | undefined,
+        search: input?.search,
+      });
+      const summary = summarizeLicenses(classified);
+
+      return {
+        error: null,
+        rootName,
+        deps: filtered.slice(0, 1000),
+        summary,
+      };
+    }),
+
+  // Pass 257: commit history timeline
+  gitLogHistory: protectedProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(500).optional(),
+          branch: z.string().max(200).optional(),
+          author: z.string().max(200).optional(),
+          search: z.string().max(200).optional(),
+          sinceIso: z.string().max(40).optional(),
+          includeStats: z.boolean().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const limit = Math.min(input?.limit ?? 50, 500);
+      const branch = (input?.branch ?? "HEAD").replace(/[^a-zA-Z0-9._/-]/g, "");
+
+      const logResult = await dispatchCodeTool(
+        {
+          name: "run_bash",
+          args: {
+            command: `git log ${branch} -n ${limit} --format="%H%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%b%x1e" 2>/dev/null || true`,
+          },
+        } as CodeToolCall,
+        { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 20_000 },
+      );
+      let rawLog = "";
+      if (logResult.kind === "bash") {
+        rawLog = logResult.result.stdout ?? "";
+      }
+      const commits = parseGitLog(rawLog);
+
+      // Optionally pull the numstat pass so each commit carries a delta
+      let withStats = commits;
+      if (input?.includeStats && commits.length > 0) {
+        const statsResult = await dispatchCodeTool(
+          {
+            name: "run_bash",
+            args: {
+              command: `git log ${branch} -n ${limit} --numstat --format="commit:%H" 2>/dev/null || true`,
+            },
+          } as CodeToolCall,
+          { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 20_000 },
+        );
+        if (statsResult.kind === "bash") {
+          const statsMap = parseNumstat(statsResult.result.stdout ?? "");
+          withStats = mergeCommitStats(commits, statsMap);
+        }
+      }
+
+      const filtered = filterCommits(withStats, {
+        author: input?.author,
+        search: input?.search,
+        sinceIso: input?.sinceIso,
+      });
+
+      return {
+        commits: filtered,
+        groups: groupCommitsByDay(filtered),
+        stats: computeLogStats(filtered),
+      };
+    }),
+
+  // Pass 256: environment variable inspector (admin-only, masked values)
+  inspectEnv: adminProcedure
+    .input(
+      z
+        .object({
+          category: z
+            .enum([
+              "database",
+              "api_key",
+              "auth",
+              "feature_flag",
+              "service_url",
+              "aws",
+              "mail",
+              "observability",
+              "general",
+            ])
+            .optional(),
+          onlyMissing: z.boolean().optional(),
+          search: z.string().max(200).optional(),
+        })
+        .optional(),
+    )
+    .query(({ input }) => {
+      const snapshot = buildEnvSnapshot(process.env, {
+        additionalExpected: [
+          "GITHUB_TOKEN",
+          "INTEGRATION_ENCRYPTION_KEY",
+          "FRED_API_KEY",
+          "CENSUS_API_KEY",
+        ],
+        includeMissing: true,
+      });
+      const filtered = filterEnvEntries(snapshot.entries, {
+        category: input?.category as EnvCategory | undefined,
+        onlyMissing: input?.onlyMissing,
+        search: input?.search,
+      });
+      return {
+        entries: filtered.slice(0, 500),
+        byCategory: snapshot.byCategory,
+        totalPresent: snapshot.totalPresent,
+        missingCount: snapshot.missingCount,
+        requiredMissing: snapshot.requiredMissing,
+      };
+    }),
+
+  // Pass 252: workspace diagnostics (tsc --noEmit + parse)
+  getDiagnostics: protectedProcedure
+    .input(
+      z
+        .object({
+          severity: z.array(z.enum(["error", "warning", "info"])).optional(),
+          source: z.array(z.enum(["tsc", "eslint", "manual"])).optional(),
+          pathPrefix: z.string().max(200).optional(),
+          code: z.string().max(80).optional(),
+          search: z.string().max(200).optional(),
+          /** When true, bypass the cache and run tsc fresh */
+          refresh: z.boolean().optional(),
+          limit: z.number().min(1).max(2000).optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const snapshot = await (async (): Promise<DiagnosticsSnapshot> => {
+        if (!input?.refresh) {
+          const cached = getCachedDiagnostics();
+          if (cached) return cached;
+        }
+        return withInflight(async () => {
+          const startedAt = new Date().toISOString();
+          const t0 = Date.now();
+          const result = await dispatchCodeTool(
+            {
+              name: "run_bash",
+              args: {
+                command:
+                  "npx --no-install tsc --noEmit --pretty false 2>&1 | head -n 2000",
+              },
+            } as CodeToolCall,
+            {
+              workspaceRoot: WORKSPACE_ROOT,
+              allowMutations: true,
+              bashTimeoutMs: 120_000,
+            },
+          );
+          const durationMs = Date.now() - t0;
+          const finishedAt = new Date().toISOString();
+          let stdout = "";
+          let stderrTail = "";
+          let exitCode = 0;
+          if (result.kind === "bash") {
+            stdout = result.result.stdout ?? "";
+            stderrTail = (result.result.stderr ?? "").slice(-2000);
+            exitCode = result.result.exitCode ?? 0;
+          } else if (result.kind === "error") {
+            stderrTail = result.error.slice(-2000);
+            exitCode = -1;
+          }
+          const diagnostics = parseTscOutput(stdout);
+          const snap: DiagnosticsSnapshot = {
+            diagnostics,
+            startedAt,
+            finishedAt,
+            durationMs,
+            exitCode,
+            stderrTail,
+          };
+          setCachedDiagnostics(snap);
+          return snap;
+        });
+      })();
+
+      const filtered = filterDiagnostics(snapshot.diagnostics, {
+        severity: input?.severity as DiagnosticSeverity[] | undefined,
+        source: input?.source as DiagnosticSource[] | undefined,
+        pathPrefix: input?.pathPrefix,
+        code: input?.code,
+        search: input?.search,
+      });
+      const limit = Math.min(input?.limit ?? 500, 2000);
+
+      return {
+        diagnostics: filtered.slice(0, limit),
+        groups: groupDiagnosticsByFile(filtered).slice(0, 200),
+        summary: summarizeDiagnostics(filtered),
+        rawTotal: snapshot.diagnostics.length,
+        totalFiltered: filtered.length,
+        runMeta: {
+          startedAt: snapshot.startedAt,
+          finishedAt: snapshot.finishedAt,
+          durationMs: snapshot.durationMs,
+          exitCode: snapshot.exitCode,
+          stderrTail: snapshot.stderrTail,
+        },
+      };
+    }),
+
+  refreshDiagnostics: protectedProcedure.mutation(async () => {
+    clearDiagnosticsCache();
+    return { ok: true };
+  }),
+
+  // Pass 255: test runner integration — run vitest + parse output
+  runTests: protectedProcedure
+    .input(
+      z
+        .object({
+          /** Optional glob/path to narrow which tests run (e.g. "server/services/codeChat") */
+          pattern: z.string().max(500).optional(),
+          status: z.array(z.enum(["passed", "failed", "skipped", "todo"])).optional(),
+          search: z.string().max(200).optional(),
+          /** Limit tests to a single file for speed */
+          singleFile: z.string().max(500).optional(),
+        })
+        .optional(),
+    )
+    .mutation(async ({ input }) => {
+      const t0 = Date.now();
+      const startedAt = new Date().toISOString();
+
+      // Build a safe vitest command: --no-coverage, --reporter default
+      // (we parse the default reporter output). The single-file and
+      // pattern inputs are sanitized to prevent command injection.
+      const safeArg = (raw: string): string =>
+        raw.replace(/[^a-zA-Z0-9._/\-*@]/g, "").slice(0, 500);
+      const args: string[] = [
+        "--no-install",
+        "vitest",
+        "run",
+        "--no-coverage",
+        "--reporter=default",
+      ];
+      if (input?.singleFile) {
+        args.push(safeArg(input.singleFile));
+      } else if (input?.pattern) {
+        args.push(safeArg(input.pattern));
+      }
+      const command = `npx ${args.join(" ")} 2>&1 | head -n 3000`;
+
+      const result = await dispatchCodeTool(
+        {
+          name: "run_bash",
+          args: { command },
+        } as CodeToolCall,
+        {
+          workspaceRoot: WORKSPACE_ROOT,
+          allowMutations: true,
+          bashTimeoutMs: 300_000,
+        },
+      );
+
+      let stdout = "";
+      let exitCode = -1;
+      let stderrTail = "";
+      if (result.kind === "bash") {
+        stdout = result.result.stdout ?? "";
+        stderrTail = (result.result.stderr ?? "").slice(-2000);
+        exitCode = result.result.exitCode ?? 0;
+      } else if (result.kind === "error") {
+        stderrTail = result.error.slice(-2000);
+        exitCode = -1;
+      }
+
+      const { files, summary } = parseVitestOutput(stdout);
+      const filtered = filterFileResults(files, {
+        status: input?.status as TestStatus[] | undefined,
+        search: input?.search,
+      });
+      const sorted = sortFileResults(filtered);
+
+      return {
+        files: sorted.slice(0, 200),
+        summary: {
+          ...summary,
+          exitCode,
+          rawTail: stderrTail,
+        },
+        meta: {
+          startedAt,
+          finishedAt: new Date().toISOString(),
+          durationMs: Date.now() - t0,
+          command: command.slice(0, 200),
+        },
+      };
+    }),
+
+  // Pass 253: draft a PR body from the current branch delta
+  draftPullRequest: protectedProcedure
+    .input(
+      z.object({
+        /** Defaults to "main" */
+        targetBranch: z.string().max(200).optional(),
+        /** Defaults to the current HEAD branch */
+        sourceBranch: z.string().max(200).optional(),
+        /** Hard cap on commits pulled (default 40) */
+        maxCommits: z.number().min(1).max(200).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const target = (input.targetBranch ?? "main").replace(/[^a-zA-Z0-9._/-]/g, "");
+      const maxCommits = Math.min(input.maxCommits ?? 40, 200);
+
+      // Resolve source branch (caller override or current HEAD)
+      let source = input.sourceBranch?.replace(/[^a-zA-Z0-9._/-]/g, "");
+      if (!source) {
+        const headResult = await dispatchCodeTool(
+          {
+            name: "run_bash",
+            args: { command: "git rev-parse --abbrev-ref HEAD" },
+          } as CodeToolCall,
+          { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 10_000 },
+        );
+        if (headResult.kind === "bash") {
+          source = (headResult.result.stdout ?? "").trim() || "HEAD";
+        } else {
+          source = "HEAD";
+        }
+      }
+
+      if (!source) source = "HEAD";
+
+      // Gather commits on the branch that are not on target
+      const commits: CommitSummary[] = [];
+      const logResult = await dispatchCodeTool(
+        {
+          name: "run_bash",
+          args: {
+            command: `git log ${source} ^${target} --no-merges -n ${maxCommits} --format="%H%x1f%an%x1f%s%x1f%b%x1e" 2>/dev/null || true`,
+          },
+        } as CodeToolCall,
+        { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 15_000 },
+      );
+      if (logResult.kind === "bash") {
+        const raw = logResult.result.stdout ?? "";
+        for (const rec of raw.split("\x1e")) {
+          const trimmed = rec.trim();
+          if (!trimmed) continue;
+          const parts = trimmed.split("\x1f");
+          if (parts.length < 3) continue;
+          const [sha, author, subject, body] = parts;
+          commits.push({
+            sha: (sha ?? "").slice(0, 40),
+            author: author ?? undefined,
+            subject: (subject ?? "").trim(),
+            body: (body ?? "").trim() || undefined,
+          });
+        }
+      }
+
+      // Gather changed files with numstat
+      const changedFiles: ChangedFile[] = [];
+      const diffResult = await dispatchCodeTool(
+        {
+          name: "run_bash",
+          args: {
+            command: `git diff --numstat ${target}...${source} 2>/dev/null || true`,
+          },
+        } as CodeToolCall,
+        { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 15_000 },
+      );
+      const statusMap = new Map<string, string>();
+      const nameStatusResult = await dispatchCodeTool(
+        {
+          name: "run_bash",
+          args: {
+            command: `git diff --name-status ${target}...${source} 2>/dev/null || true`,
+          },
+        } as CodeToolCall,
+        { workspaceRoot: WORKSPACE_ROOT, allowMutations: true, bashTimeoutMs: 15_000 },
+      );
+      if (nameStatusResult.kind === "bash") {
+        for (const line of (nameStatusResult.result.stdout ?? "").split("\n")) {
+          const parts = line.trim().split(/\s+/);
+          if (parts.length < 2) continue;
+          // Rename/copy have 3 columns: R100 old new — take the new
+          const status = (parts[0] ?? "").charAt(0);
+          const path = parts[parts.length - 1] ?? "";
+          if (path) statusMap.set(path, status);
+        }
+      }
+      if (diffResult.kind === "bash") {
+        for (const line of (diffResult.result.stdout ?? "").split("\n")) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          // Format: "adds\tdels\tpath"; binary files are "-\t-\tpath"
+          const parts = trimmed.split(/\s+/);
+          if (parts.length < 3) continue;
+          const [a, d, ...rest] = parts;
+          const path = rest.join(" ");
+          const additions = a === "-" ? 0 : Number.parseInt(a!, 10) || 0;
+          const deletions = d === "-" ? 0 : Number.parseInt(d!, 10) || 0;
+          changedFiles.push({
+            path,
+            status: statusMap.get(path) ?? "M",
+            additions,
+            deletions,
+          });
+        }
+      }
+
+      const draft = draftPullRequest({
+        sourceBranch: source,
+        targetBranch: target,
+        commits,
+        changedFiles,
+      });
+
+      return {
+        draft,
+        meta: {
+          sourceBranch: source,
+          targetBranch: target,
+          commitCount: commits.length,
+          filesChanged: changedFiles.length,
+        },
+      };
+    }),
 
   // Pass 246: TODO marker scanner
   scanTodoMarkers: protectedProcedure

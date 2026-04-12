@@ -13,6 +13,7 @@
  *   g h → go to GitHub (read) tab
  *   g w → go to Git Write tab
  *   g j → go to Jobs tab
+ *   g s → go to Find anywhere (workspace search) — Pass 249
  *
  * Pure state-machine functions so the logic is unit-testable
  * without DOM or React hooks.
@@ -43,6 +44,18 @@ const CHORD_MAP: Record<string, Record<string, ChordMatch>> = {
     h: { tab: "github", label: "GitHub" },
     w: { tab: "write", label: "Git Write" },
     j: { tab: "jobs", label: "Jobs" },
+    s: { tab: "search", label: "Find" },
+    p: { tab: "replace", label: "Replace" },
+    k: { tab: "checkpoints", label: "Checkpoints" },
+    x: { tab: "diagnostics", label: "Problems" },
+    u: { tab: "prdraft", label: "PR Draft" },
+    t: { tab: "tests", label: "Tests" },
+    e: { tab: "env", label: "Env" },
+    l: { tab: "log", label: "Log" },
+    n: { tab: "licenses", label: "Licenses" },
+    v: { tab: "dead", label: "Dead Code" },
+    m: { tab: "npm", label: "NPM" },
+    q: { tab: "health", label: "Health" },
   },
 };
 

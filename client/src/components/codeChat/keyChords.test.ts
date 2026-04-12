@@ -90,4 +90,88 @@ describe("allChordLabels", () => {
     expect(labels.every((l) => l.keys[0] === "g")).toBe(true);
     expect(labels.some((l) => l.label.includes("Files"))).toBe(true);
   });
+
+  it("includes the g+s Find chord added in Pass 249", () => {
+    const labels = allChordLabels();
+    const findChord = labels.find((l) => l.keys[1] === "s");
+    expect(findChord).toBeDefined();
+    expect(findChord!.label).toContain("Find");
+  });
+
+  it("includes the g+p Replace chord added in Pass 250", () => {
+    const labels = allChordLabels();
+    const replaceChord = labels.find((l) => l.keys[1] === "p");
+    expect(replaceChord).toBeDefined();
+    expect(replaceChord!.label).toContain("Replace");
+  });
+
+  it("includes the g+k Checkpoints chord added in Pass 251", () => {
+    const labels = allChordLabels();
+    const cpChord = labels.find((l) => l.keys[1] === "k");
+    expect(cpChord).toBeDefined();
+    expect(cpChord!.label).toContain("Checkpoints");
+  });
+
+  it("includes the g+x Problems chord added in Pass 252", () => {
+    const labels = allChordLabels();
+    const xChord = labels.find((l) => l.keys[1] === "x");
+    expect(xChord).toBeDefined();
+    expect(xChord!.label).toContain("Problems");
+  });
+
+  it("includes the g+u PR Draft chord added in Pass 253", () => {
+    const labels = allChordLabels();
+    const uChord = labels.find((l) => l.keys[1] === "u");
+    expect(uChord).toBeDefined();
+    expect(uChord!.label).toContain("PR");
+  });
+
+  it("includes the g+t Tests chord added in Pass 255", () => {
+    const labels = allChordLabels();
+    const tChord = labels.find((l) => l.keys[1] === "t");
+    expect(tChord).toBeDefined();
+    expect(tChord!.label).toContain("Tests");
+  });
+
+  it("includes the g+e Env chord added in Pass 256", () => {
+    const labels = allChordLabels();
+    const eChord = labels.find((l) => l.keys[1] === "e");
+    expect(eChord).toBeDefined();
+    expect(eChord!.label).toContain("Env");
+  });
+
+  it("includes the g+l Log chord added in Pass 257", () => {
+    const labels = allChordLabels();
+    const lChord = labels.find((l) => l.keys[1] === "l");
+    expect(lChord).toBeDefined();
+    expect(lChord!.label).toContain("Log");
+  });
+
+  it("includes the g+n Licenses chord added in Pass 258", () => {
+    const labels = allChordLabels();
+    const nChord = labels.find((l) => l.keys[1] === "n");
+    expect(nChord).toBeDefined();
+    expect(nChord!.label).toContain("Licenses");
+  });
+
+  it("includes the g+v Dead Code chord added in Pass 259", () => {
+    const labels = allChordLabels();
+    const vChord = labels.find((l) => l.keys[1] === "v");
+    expect(vChord).toBeDefined();
+    expect(vChord!.label).toContain("Dead");
+  });
+
+  it("includes the g+m NPM chord added in Pass 260", () => {
+    const labels = allChordLabels();
+    const mChord = labels.find((l) => l.keys[1] === "m");
+    expect(mChord).toBeDefined();
+    expect(mChord!.label).toContain("NPM");
+  });
+
+  it("includes the g+q Health chord added in Pass 261", () => {
+    const labels = allChordLabels();
+    const qChord = labels.find((l) => l.keys[1] === "q");
+    expect(qChord).toBeDefined();
+    expect(qChord!.label).toContain("Health");
+  });
 });
