@@ -14,6 +14,9 @@ import {
   ChevronDown, ChevronUp, PiggyBank, Shield, Loader2,
   BarChart3, Percent, Calendar, Plus, Trash2, CheckCircle,
 } from "lucide-react";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import type { FinancialProfile } from "@/stores/financialProfile";
 
 // ─── Monte Carlo Simulation ────────────────────────────────────────────
 function runMonteCarlo(params: {
@@ -138,15 +141,48 @@ export default function FinancialPlanning() {
 
 // ─── Retirement Projection (Monte Carlo) ───────────────────────────────
 function RetirementProjection() {
-  const [params, setParams] = useState({
-    currentSavings: 500000,
-    annualContribution: 25000,
-    yearsToRetirement: 20,
-    annualWithdrawal: 60000,
-    yearsInRetirement: 30,
-    avgReturn: 0.07,
+  const { profile, setProfile } = useFinancialProfile();
+  const [params, setParams] = useState(() => ({
+    currentSavings: profile.savings ?? 500000,
+    annualContribution: profile.monthlySavings !== undefined ? profile.monthlySavings * 12 : 25000,
+    yearsToRetirement:
+      profile.age !== undefined && profile.retirementAge !== undefined
+        ? Math.max(1, profile.retirementAge - profile.age)
+        : 20,
+    annualWithdrawal: profile.desiredRetirementIncome ?? 60000,
+    yearsInRetirement: profile.yearsInRetirement ?? 30,
+    avgReturn: profile.equitiesReturn ?? 0.07,
     stdDev: 0.15,
-  });
+  }));
+
+  const handlePrefill = (p: FinancialProfile) => {
+    setParams((prev) => ({
+      ...prev,
+      currentSavings: p.savings ?? prev.currentSavings,
+      annualContribution:
+        p.monthlySavings !== undefined ? p.monthlySavings * 12 : prev.annualContribution,
+      yearsToRetirement:
+        p.age !== undefined && p.retirementAge !== undefined
+          ? Math.max(1, p.retirementAge - p.age)
+          : prev.yearsToRetirement,
+      annualWithdrawal: p.desiredRetirementIncome ?? prev.annualWithdrawal,
+      yearsInRetirement: p.yearsInRetirement ?? prev.yearsInRetirement,
+      avgReturn: p.equitiesReturn ?? prev.avgReturn,
+    }));
+  };
+
+  const persistRetirementToProfile = () => {
+    setProfile(
+      {
+        savings: params.currentSavings,
+        monthlySavings: Math.round(params.annualContribution / 12),
+        yearsInRetirement: params.yearsInRetirement,
+        desiredRetirementIncome: params.annualWithdrawal,
+        equitiesReturn: params.avgReturn,
+      },
+      "user",
+    );
+  };
   const [results, setResults] = useState<ReturnType<typeof runMonteCarlo> | null>(null);
   const [running, setRunning] = useState(false);
   const [scenario2, setScenario2] = useState<ReturnType<typeof runMonteCarlo> | null>(null);
@@ -154,6 +190,7 @@ function RetirementProjection() {
   const [params2, setParams2] = useState({ ...params, yearsToRetirement: 25 });
 
   const run = useCallback(() => {
+    persistRetirementToProfile();
     setRunning(true);
     setTimeout(() => {
       const r = runMonteCarlo({ ...params, trials: 1000 });
@@ -164,12 +201,25 @@ function RetirementProjection() {
       }
       setRunning(false);
     }, 100);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params, params2, showScenario2]);
 
   const successColor = (rate: number) => rate >= 80 ? "text-emerald-400" : rate >= 60 ? "text-amber-400" : "text-red-400";
 
   return (
     <div className="space-y-6">
+      <FinancialProfileBanner
+        onPrefill={handlePrefill}
+        usesFields={[
+          "savings",
+          "monthlySavings",
+          "age",
+          "retirementAge",
+          "yearsInRetirement",
+          "desiredRetirementIncome",
+          "equitiesReturn",
+        ]}
+      />
       <div className="grid md:grid-cols-2 gap-6">
         {/* Inputs */}
         <Card>
@@ -352,9 +402,27 @@ function RetirementProjection() {
 
 // ─── Social Security Optimizer ─────────────────────────────────────────
 function SocialSecurityOptimizer() {
+  const { profile, setProfile } = useFinancialProfile();
+  // FRA is 67 for most users today; don't derive it from the profile.
   const [fra, setFra] = useState(67);
   const [fraMonthly, setFraMonthly] = useState(2800);
   const [lifeExpectancy, setLifeExpectancy] = useState(85);
+
+  const handlePrefill = (p: FinancialProfile) => {
+    if (p.yearsInRetirement !== undefined && p.retirementAge !== undefined) {
+      setLifeExpectancy(p.retirementAge + p.yearsInRetirement);
+    }
+  };
+
+  const persist = () => {
+    // Persist the implied life expectancy back via
+    // yearsInRetirement = lifeExpectancy - retirementAge.
+    const retire = profile.retirementAge ?? 67;
+    setProfile(
+      { yearsInRetirement: Math.max(0, lifeExpectancy - retire) },
+      "user",
+    );
+  };
 
   const ss = useMemo(() => calcSocialSecurity(fra, fraMonthly), [fra, fraMonthly]);
   const cumulative = useMemo(() => ({
@@ -368,6 +436,10 @@ function SocialSecurityOptimizer() {
 
   return (
     <div className="space-y-6">
+      <FinancialProfileBanner
+        onPrefill={handlePrefill}
+        usesFields={["retirementAge", "yearsInRetirement"]}
+      />
       <div className="grid md:grid-cols-3 gap-3">
         <div>
           <Label className="text-xs">Full Retirement Age (FRA)</Label>
@@ -379,7 +451,7 @@ function SocialSecurityOptimizer() {
         </div>
         <div>
           <Label className="text-xs">Life Expectancy</Label>
-          <Input type="number" min={62} max={100} value={lifeExpectancy} onChange={e => setLifeExpectancy(+e.target.value)} />
+          <Input type="number" min={62} max={100} value={lifeExpectancy} onChange={e => { setLifeExpectancy(+e.target.value); persist(); }} />
         </div>
       </div>
 
@@ -437,12 +509,34 @@ function SocialSecurityOptimizer() {
 
 // ─── Roth Conversion Analysis ──────────────────────────────────────────
 function RothConversion() {
+  const { profile, setProfile } = useFinancialProfile();
   const [traditionalBalance, setTraditionalBalance] = useState(500000);
   const [conversionAmount, setConversionAmount] = useState(50000);
-  const [currentTaxRate, setCurrentTaxRate] = useState(24);
+  const [currentTaxRate, setCurrentTaxRate] = useState(
+    profile.marginalRate ? Math.round(profile.marginalRate * 100) : 24,
+  );
   const [futureTaxRate, setFutureTaxRate] = useState(32);
   const [yearsUntilWithdrawal, setYearsUntilWithdrawal] = useState(15);
-  const [avgReturn, setAvgReturn] = useState(7);
+  const [avgReturn, setAvgReturn] = useState(
+    profile.equitiesReturn ? Math.round(profile.equitiesReturn * 100) : 7,
+  );
+
+  const handlePrefill = (p: FinancialProfile) => {
+    if (p.marginalRate !== undefined)
+      setCurrentTaxRate(Math.round(p.marginalRate * 100));
+    if (p.equitiesReturn !== undefined)
+      setAvgReturn(Math.round(p.equitiesReturn * 100));
+  };
+
+  const persist = () => {
+    setProfile(
+      {
+        marginalRate: currentTaxRate / 100,
+        equitiesReturn: avgReturn / 100,
+      },
+      "user",
+    );
+  };
 
   const analysis = useMemo(() => {
     const growth = Math.pow(1 + avgReturn / 100, yearsUntilWithdrawal);
@@ -473,6 +567,10 @@ function RothConversion() {
 
   return (
     <div className="space-y-6">
+      <FinancialProfileBanner
+        onPrefill={handlePrefill}
+        usesFields={["marginalRate", "equitiesReturn"]}
+      />
       <div className="grid md:grid-cols-3 gap-3">
         <div>
           <Label className="text-xs">Traditional IRA Balance</Label>
@@ -484,7 +582,7 @@ function RothConversion() {
         </div>
         <div>
           <Label className="text-xs">Current Tax Rate (%)</Label>
-          <Input type="number" value={currentTaxRate} onChange={e => setCurrentTaxRate(+e.target.value)} />
+          <Input type="number" value={currentTaxRate} onChange={e => { setCurrentTaxRate(+e.target.value); persist(); }} />
         </div>
         <div>
           <Label className="text-xs">Expected Future Tax Rate (%)</Label>
@@ -496,7 +594,7 @@ function RothConversion() {
         </div>
         <div>
           <Label className="text-xs">Avg Annual Return (%)</Label>
-          <Input type="number" value={avgReturn} onChange={e => setAvgReturn(+e.target.value)} />
+          <Input type="number" value={avgReturn} onChange={e => { setAvgReturn(+e.target.value); persist(); }} />
         </div>
       </div>
 
@@ -556,11 +654,41 @@ function RothConversion() {
 
 // ─── Goal Tracker ──────────────────────────────────────────────────────
 function GoalTracker() {
+  const { profile, setProfile } = useFinancialProfile();
+  // Seed the retirement goal from the shared profile when present.
+  const defaultRetirementTarget =
+    profile.desiredRetirementIncome !== undefined
+      ? profile.desiredRetirementIncome * 25 // 4% withdrawal rule → target = income × 25
+      : 2_000_000;
+  const retirementDeadline =
+    profile.retirementAge !== undefined && profile.age !== undefined
+      ? `${new Date().getFullYear() + (profile.retirementAge - profile.age)}-01-01`
+      : "2050-01-01";
   const [goals, setGoals] = useState([
-    { id: 1, name: "Emergency Fund", target: 30000, current: 22500, deadline: "2025-12-31", category: "savings" },
+    { id: 1, name: "Emergency Fund", target: 30000, current: profile.savings ?? 22500, deadline: "2025-12-31", category: "savings" },
     { id: 2, name: "Down Payment", target: 100000, current: 45000, deadline: "2027-06-30", category: "housing" },
-    { id: 3, name: "Retirement (65)", target: 2000000, current: 500000, deadline: "2050-01-01", category: "retirement" },
+    { id: 3, name: `Retirement${profile.retirementAge ? ` (${profile.retirementAge})` : ""}`, target: defaultRetirementTarget, current: profile.savings ?? 500000, deadline: retirementDeadline, category: "retirement" },
   ]);
+
+  const handlePrefill = (p: FinancialProfile) => {
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.category === "savings" && p.savings !== undefined) {
+          return { ...g, current: p.savings };
+        }
+        if (g.category === "retirement" && p.desiredRetirementIncome !== undefined) {
+          return { ...g, target: p.desiredRetirementIncome * 25 };
+        }
+        return g;
+      }),
+    );
+  };
+
+  // Persist the emergency-fund "current" back to the profile as savings
+  // so the calculator tabs pick it up.
+  const persistEmergencyFund = (newCurrent: number) => {
+    setProfile({ savings: newCurrent }, "user");
+  };
   const [showAdd, setShowAdd] = useState(false);
   const [newGoal, setNewGoal] = useState({ name: "", target: 0, current: 0, deadline: "", category: "savings" });
 
@@ -574,11 +702,22 @@ function GoalTracker() {
   const removeGoal = (id: number) => setGoals(prev => prev.filter(g => g.id !== id));
 
   const updateGoalCurrent = (id: number, current: number) => {
-    setGoals(prev => prev.map(g => g.id === id ? { ...g, current } : g));
+    setGoals(prev => prev.map(g => {
+      if (g.id !== id) return g;
+      // Persist emergency-fund updates into the shared profile's savings
+      if (g.category === "savings") {
+        persistEmergencyFund(current);
+      }
+      return { ...g, current };
+    }));
   };
 
   return (
     <div className="space-y-4">
+      <FinancialProfileBanner
+        onPrefill={handlePrefill}
+        usesFields={["savings", "desiredRetirementIncome", "retirementAge"]}
+      />
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">Track progress toward your financial milestones</p>
         <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="gap-1.5">

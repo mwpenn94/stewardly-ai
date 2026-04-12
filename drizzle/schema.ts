@@ -428,6 +428,36 @@ export const workflowInstances = mysqlTable("workflow_instances", {
 
 export type WorkflowInstance = typeof workflowInstances.$inferSelect;
 
+// ─── FINANCIAL PROFILES (G9 — server-side persistence of the shared
+// financial profile) ───────────────────────────────────────────────────
+// Mirrors the client-side `FinancialProfile` shape stored in localStorage.
+// One row per user; the JSON blob is the canonical sanitized profile.
+// The client hook treats localStorage as L1 and these rows as L2 so a
+// signed-in user keeps their profile across devices.
+//
+// Why JSON instead of typed columns: the profile shape evolves rapidly
+// during the build loop (new fields land per-pass) and the client store
+// is the source of truth for the schema. A typed table would force a
+// migration on every new field; the JSON blob lets the client own the
+// shape with the server staying out of the way. The version int + meta
+// columns let downstream analytics still join + query without parsing
+// the JSON.
+export const financialProfiles = mysqlTable("financial_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull().unique(),
+  version: int("version").notNull().default(1),
+  profileJson: json("profile_json").notNull(),
+  source: varchar("source", { length: 32 }).default("user"),
+  completeness: float("completeness"),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: uniqueIndex("uniq_financial_profiles_user").on(table.userId),
+}));
+
+export type FinancialProfileRow = typeof financialProfiles.$inferSelect;
+export type InsertFinancialProfile = typeof financialProfiles.$inferInsert;
+
 // ─── PROFESSIONAL CONTEXT ────────────────────────────────────────────────
 export const professionalContext = mysqlTable("professional_context", {
   id: int("id").autoincrement().primaryKey(),
