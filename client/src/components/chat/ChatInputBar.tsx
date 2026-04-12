@@ -118,6 +118,31 @@ export function ChatInputBar({
         <input ref={fileInputRef} type="file" className="hidden" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,.xml,.yaml,.yml" onChange={handleFileSelect} />
         <input ref={imageInputRef} type="file" className="hidden" multiple accept="image/*" onChange={handleFileSelect} />
 
+        {/* Pass 4 (Delight): slash-command hint ribbon. Surfaces the
+            multisensory slash vocabulary the moment the user types "/".
+            aria-hidden so screen readers don't double-announce — they
+            already get the command via LiveAnnouncer when it fires. */}
+        {input.startsWith("/") && !input.startsWith("//") && (
+          <div
+            aria-hidden="true"
+            className="mb-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/30 text-[11px] text-muted-foreground flex items-center gap-3 overflow-x-auto"
+          >
+            <span className="font-medium text-accent shrink-0">Try:</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-card/80 border border-border/60 text-[10px] font-mono shrink-0">
+              /go learning
+            </kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-card/80 border border-border/60 text-[10px] font-mono shrink-0">
+              /read
+            </kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-card/80 border border-border/60 text-[10px] font-mono shrink-0">
+              /hands-free
+            </kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-card/80 border border-border/60 text-[10px] font-mono shrink-0">
+              /help
+            </kbd>
+          </div>
+        )}
+
         {/* Textarea */}
         <div data-tour="chat-input" className="relative bg-secondary/30 rounded-2xl border border-border focus-within:border-accent/40 focus-within:shadow-[0_0_0_1px_oklch(0.68_0.16_230_/_0.15)] transition-all px-3 py-1.5">
           <Textarea
@@ -129,6 +154,9 @@ export function ChatInputBar({
             className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[36px] max-h-[160px] text-sm py-2 px-0"
             rows={1}
             disabled={isStreaming}
+            aria-label="Chat message input. Type a message or a slash command like /go learning."
+            data-chat-input
+            data-testid="chat-input"
           />
         </div>
 
