@@ -44,6 +44,12 @@ import DiffView from "@/components/codeChat/DiffView";
 import SlashCommandPopover from "@/components/codeChat/SlashCommandPopover";
 import MarkdownMessage from "@/components/codeChat/MarkdownMessage";
 import FileMentionPopover from "@/components/codeChat/FileMentionPopover";
+import SymbolMentionPopover, {
+  type SymbolMentionHit,
+} from "@/components/codeChat/SymbolMentionPopover";
+import {
+  replaceMentionWithCitation,
+} from "@/components/codeChat/symbolMentions";
 const KeyboardShortcutsOverlay = lazy(() => import("@/components/codeChat/KeyboardShortcutsOverlay"));
 const SessionsLibraryPopover = lazy(() => import("@/components/codeChat/SessionsLibraryPopover"));
 import {
@@ -401,6 +407,15 @@ function CodeChatInterface() {
   const mentionFilesQuery = trpc.codeChat.listWorkspaceFiles.useQuery(
     { query: mentionQuery ?? "", limit: 12 },
     { enabled: mentionQuery !== null, staleTime: 30_000 },
+  );
+
+  // Build-loop Pass 13 (G23): #-symbol mention popover state
+  const [symbolMentionQuery, setSymbolMentionQuery] = useState<string | null>(null);
+  const [symbolMentionActiveIdx, setSymbolMentionActiveIdx] = useState(0);
+  const symbolMentionState = useRef<import("@/components/codeChat/symbolMentions").SymbolMentionState | null>(null);
+  const symbolMentionResults = trpc.codeChat.findSymbols.useQuery(
+    { query: symbolMentionQuery ?? "", limit: 12 },
+    { enabled: symbolMentionQuery !== null && symbolMentionQuery.length >= 1, staleTime: 30_000 },
   );
 
   // Command history (up/down arrow)
@@ -886,8 +901,38 @@ function CodeChatInterface() {
     }
   }, [input]);
 
+  // Build-loop Pass 13 (G23): detect `#symbol` at the caret. Drives
+  // the SymbolMentionPopover via the `symbolMentions` parser. Uses
+  // the textarea selectionStart so the cursor position is exact.
+  useEffect(() => {
+    const cursor = inputRef.current?.selectionStart ?? input.length;
+    // Lazy import to avoid pulling the parser into the critical path.
+    import("@/components/codeChat/symbolMentions").then(({ extractActiveSymbolMention }) => {
+      const state = extractActiveSymbolMention(input, cursor);
+      symbolMentionState.current = state;
+      if (state) {
+        setSymbolMentionQuery(state.query);
+        setSymbolMentionActiveIdx(0);
+      } else {
+        setSymbolMentionQuery(null);
+      }
+    });
+  }, [input]);
+
   const mentionFiles = mentionFilesQuery.data?.files ?? [];
   const mentionOpen = mentionQuery !== null && mentionFiles.length > 0;
+
+  // Build-loop Pass 13 (G23): #-symbol mention popover derived state
+  const symbolMentionHits = (symbolMentionResults.data?.matches ?? []) as Array<{
+    name: string;
+    kind: string;
+    path: string;
+    line: number;
+    snippet: string;
+    exported: boolean;
+  }>;
+  const symbolMentionOpen =
+    symbolMentionQuery !== null && symbolMentionHits.length > 0;
 
   // Pass 210: compute per-message usage + running session total
   const messageUsages = useMemo<Map<string, TokenUsage>>(() => {
@@ -1164,6 +1209,31 @@ function CodeChatInterface() {
     inputRef.current?.focus();
   }, []);
 
+  // Build-loop Pass 13 (G23): symbol mention picker — pulls the
+  // active mention state out of the ref, replaces it with a
+  // bracketed citation, and resets the popover.
+  const handleSymbolMentionSelect = useCallback((hit: SymbolMentionHit) => {
+    const state = symbolMentionState.current;
+    if (!state) return;
+    setInput((prev) => {
+      const out = replaceMentionWithCitation(prev, state, {
+        name: hit.name,
+        path: hit.path,
+        line: hit.line,
+      });
+      // Restore the cursor on the next tick after React commits.
+      requestAnimationFrame(() => {
+        const ta = inputRef.current;
+        if (ta) {
+          ta.focus();
+          ta.setSelectionRange(out.cursor, out.cursor);
+        }
+      });
+      return out.next;
+    });
+    setSymbolMentionQuery(null);
+  }, []);
+
   // Arrow key navigation for command history + slash popover
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     // Mention popover nav takes precedence over slash
@@ -1186,6 +1256,29 @@ function CodeChatInterface() {
       if (e.key === "Escape") {
         e.preventDefault();
         setMentionQuery(null);
+        return;
+      }
+    }
+    // Build-loop Pass 13 (G23): symbol mention popover nav
+    if (symbolMentionOpen) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSymbolMentionActiveIdx((i) => Math.min(i + 1, symbolMentionHits.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSymbolMentionActiveIdx((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+        e.preventDefault();
+        handleSymbolMentionSelect(symbolMentionHits[symbolMentionActiveIdx]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setSymbolMentionQuery(null);
         return;
       }
     }
@@ -1229,7 +1322,7 @@ function CodeChatInterface() {
       e.preventDefault();
       abort();
     }
-  }, [handleSend, input, commandHistory, historyIndex, slashOpen, slashSuggestions, slashActiveIdx, handleSlashSelect, mentionOpen, mentionFiles, mentionActiveIdx, handleMentionSelect, isExecuting, abort]);
+  }, [handleSend, input, commandHistory, historyIndex, slashOpen, slashSuggestions, slashActiveIdx, handleSlashSelect, mentionOpen, mentionFiles, mentionActiveIdx, handleMentionSelect, symbolMentionOpen, symbolMentionHits, symbolMentionActiveIdx, handleSymbolMentionSelect, isExecuting, abort]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)]">
@@ -1961,7 +2054,14 @@ function CodeChatInterface() {
               onSelect={handleMentionSelect}
             />
           )}
-          {slashOpen && !mentionOpen && (
+          {symbolMentionOpen && !mentionOpen && (
+            <SymbolMentionPopover
+              symbols={symbolMentionHits}
+              activeIndex={symbolMentionActiveIdx}
+              onSelect={handleSymbolMentionSelect}
+            />
+          )}
+          {slashOpen && !mentionOpen && !symbolMentionOpen && (
             <SlashCommandPopover
               commands={slashSuggestions}
               activeIndex={slashActiveIdx}
