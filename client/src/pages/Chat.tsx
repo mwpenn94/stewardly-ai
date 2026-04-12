@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { PERSONA_LAYERS as SIDEBAR_PERSONA_LAYERS, ROLE_LEVEL as SIDEBAR_ROLE_LEVEL } from "@/components/PersonaSidebar5";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadCalculatorContext, buildContextOverlay } from "@/lib/calculatorContext";
 import { SEOHead } from "@/components/SEOHead";
@@ -1593,42 +1594,12 @@ export default function Chat() {
     ? "All Modes"
     : selectedFocus.map(f => FOCUS_OPTIONS.find(o => o.value === f)?.label).filter(Boolean).join(" + ");
 
-  // ─── SIDEBAR NAV — 5 persona layers matching PersonaSidebar5 ────
-  // Mirrors the PERSONA_LAYERS from PersonaSidebar5.tsx so the Chat
-  // sidebar is consistent with AppShell's navigation structure.
-  type PersonaNavItem = { label: string; icon: React.ReactNode; path: string; match: string[] };
-  type PersonaLayer = { key: string; label: string; minRole: string; items: PersonaNavItem[] };
-  const ROLE_LEVEL: Record<string, number> = { guest: 0, user: 1, advisor: 2, manager: 3, admin: 4 };
-  const personaLayers: PersonaLayer[] = [
-    { key: "person", label: "People", minRole: "guest", items: [
-      { label: "Code Chat", icon: <Monitor className="w-4 h-4" />, path: "/code-chat", match: ["/code-chat"] },
-      { label: "Documents", icon: <FileText className="w-4 h-4" />, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },
-      { label: "My Progress", icon: <BarChart3 className="w-4 h-4" />, path: "/proficiency", match: ["/proficiency"] },
-      { label: "Audio", icon: <Volume2 className="w-4 h-4" />, path: "/settings/audio", match: ["/settings/audio"] },
-    ]},
-    { key: "client", label: "Clients", minRole: "user", items: [
-      { label: "My Financial Twin", icon: <Fingerprint className="w-4 h-4" />, path: "/financial-twin", match: ["/financial-twin"] },
-      { label: "Insights", icon: <Sparkles className="w-4 h-4" />, path: "/intelligence-hub", match: ["/intelligence-hub", "/insights"] },
-      { label: "Suitability", icon: <Scale className="w-4 h-4" />, path: "/settings/suitability", match: ["/settings/suitability", "/suitability"] },
-    ]},
-    { key: "advisor", label: "Professionals", minRole: "advisor", items: [
-      { label: "Clients", icon: <Users className="w-4 h-4" />, path: "/relationships", match: ["/relationships", "/portal"] },
-      { label: "Cases & Work", icon: <Briefcase className="w-4 h-4" />, path: "/my-work", match: ["/my-work", "/operations", "/workflows"] },
-      { label: "Compliance", icon: <Shield className="w-4 h-4" />, path: "/compliance-audit", match: ["/compliance-audit"] },
-      { label: "Market Data", icon: <TrendingUp className="w-4 h-4" />, path: "/market-data", match: ["/market-data"] },
-      { label: "Calculators", icon: <Calculator className="w-4 h-4" />, path: "/calculators", match: ["/calculators", "/wealth-engine"] },
-    ]},
-    { key: "manager", label: "Leaders", minRole: "manager", items: [
-      { label: "Team Dashboard", icon: <Users className="w-4 h-4" />, path: "/manager", match: ["/manager"] },
-    ]},
-    { key: "steward", label: "Stewards", minRole: "admin", items: [
-      { label: "Platform Admin", icon: <Settings className="w-4 h-4" />, path: "/admin", match: ["/admin"] },
-      { label: "AI Intelligence", icon: <Brain className="w-4 h-4" />, path: "/admin/intelligence", match: ["/admin/intelligence"] },
-      { label: "System Health", icon: <Monitor className="w-4 h-4" />, path: "/admin/system-health", match: ["/admin/system-health"] },
-    ]},
-  ];
-  const roleLevel = ROLE_LEVEL[userRole] ?? ROLE_LEVEL.user;
-  const visibleLayers = personaLayers.filter(l => roleLevel >= (ROLE_LEVEL[l.minRole] ?? 0));
+  // ─── SIDEBAR NAV — shared persona layers from PersonaSidebar5 ────
+  // Single source of truth: imports PERSONA_LAYERS + ROLE_LEVEL from
+  // PersonaSidebar5 so Chat's sidebar nav is always in sync with
+  // AppShell's navigation. No duplicate hardcoded arrays.
+  const roleLevel = SIDEBAR_ROLE_LEVEL[userRole as keyof typeof SIDEBAR_ROLE_LEVEL] ?? SIDEBAR_ROLE_LEVEL.user;
+  const visibleLayers = SIDEBAR_PERSONA_LAYERS.filter(l => roleLevel >= (SIDEBAR_ROLE_LEVEL[l.minRole] ?? 0));
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
@@ -1907,7 +1878,9 @@ export default function Chat() {
         <div className="border-t border-border shrink-0 max-h-[45%] overflow-y-auto">
           {sidebarCollapsed ? (
             <div className="p-1 space-y-0.5">
-              {visibleLayers.flatMap(layer => layer.items).map(item => (
+              {visibleLayers.flatMap(layer => layer.items).map(item => {
+                const Icon = item.icon;
+                return (
                 <Tooltip key={item.path}>
                   <TooltipTrigger asChild>
                     <button
@@ -1919,12 +1892,12 @@ export default function Chat() {
                           : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                       }`}
                     >
-                      {item.icon}
+                      <Icon className="w-4 h-4" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right">{item.label}</TooltipContent>
                 </Tooltip>
-              ))}
+              );})}
               <Separator className="mx-1" />
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1956,6 +1929,7 @@ export default function Chat() {
                     <div className="space-y-[1px]">
                       {layer.items.map(item => {
                         const active = item.match.some(m => location === m || location.startsWith(m + "/"));
+                        const Icon = item.icon;
                         return (
                           <button
                             key={item.path}
@@ -1964,7 +1938,7 @@ export default function Chat() {
                               active ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                             }`}
                           >
-                            {item.icon} <span className="truncate">{item.label}</span>
+                            <Icon className="w-4 h-4" /> <span className="truncate">{item.label}</span>
                           </button>
                         );
                       })}
@@ -3213,24 +3187,33 @@ export default function Chat() {
         aria-label="Mobile navigation"
       >
         {[
-          { label: "Chat", icon: <MessageSquare className="w-5 h-5" />, path: "/chat", active: true },
-          { label: "Tools", icon: <Calculator className="w-5 h-5" />, path: "/calculators", active: false },
-          { label: "Insights", icon: <Brain className="w-5 h-5" />, path: "/intelligence-hub", active: false },
-          { label: "Learn", icon: <GraduationCap className="w-5 h-5" />, path: "/learning", active: false },
-        ].map(tab => (
+          { label: "Chat", icon: MessageSquare, path: "/chat", active: true, isVoice: false },
+          { label: "Tools", icon: Calculator, path: "/calculators", active: false, isVoice: false },
+          { label: "Insights", icon: Brain, path: "/intelligence-hub", active: false, isVoice: false },
+          { label: "Learn", icon: GraduationCap, path: "/learning", active: false, isVoice: false },
+          { label: "Voice", icon: AudioLines, path: "", active: false, isVoice: true },
+        ].map(tab => {
+          const TabIcon = tab.icon;
+          return (
           <button
             key={tab.label}
-            onClick={() => { if (!tab.active) navigate(tab.path); }}
+            onClick={() => {
+              if (tab.isVoice) {
+                window.dispatchEvent(new CustomEvent("chat:toggle-handsfree"));
+              } else if (!tab.active) {
+                navigate(tab.path);
+              }
+            }}
             className={`flex flex-col items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] px-2 transition-colors ${
               tab.active ? "text-accent" : "text-muted-foreground hover:text-foreground"
             }`}
             aria-current={tab.active ? "page" : undefined}
             aria-label={tab.label}
           >
-            {tab.icon}
+            <TabIcon className="w-5 h-5" />
             <span className="text-[10px]">{tab.label}</span>
           </button>
-        ))}
+        );})}
       </nav>
     </div>
   );

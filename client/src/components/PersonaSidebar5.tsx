@@ -25,27 +25,27 @@ import {
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
-type Role = "guest" | "user" | "advisor" | "manager" | "admin";
+export type Role = "guest" | "user" | "advisor" | "manager" | "admin";
 
-interface NavItem {
+export interface NavItem {
   label: string;
   icon: any;
   path: string;
   match: string[];
 }
 
-interface PersonaLayer {
+export interface PersonaLayer {
   key: string;
   label: string;
   minRole: Role;
   items: NavItem[];
 }
 
-const ROLE_LEVEL: Record<Role, number> = {
+export const ROLE_LEVEL: Record<Role, number> = {
   guest: 0, user: 1, advisor: 2, manager: 3, admin: 4,
 };
 
-const PERSONA_LAYERS: PersonaLayer[] = [
+export const PERSONA_LAYERS: PersonaLayer[] = [
   {
     key: "person",
     label: "People",

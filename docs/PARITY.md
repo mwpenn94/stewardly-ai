@@ -970,6 +970,8 @@ Columns:
 | PARITY-NAV-0006       | PersonaSidebar5 coverage gap (was 40%, now ~62%) | navigation | in_progress | P1 | build | 6 | (CBL-RqDMj-P1) | CBL-RqDMj Pass 1: expanded from 32→53 items. Still missing some low-traffic admin pages (Platform Guide, Lead Sources). |
 | PARITY-MOBILE-0005    | Mobile bottom tab bar restored | mobile_ux | done | P1 | build | 8 | (CBL-RqDMj-P1) | CBL-RqDMj Pass 1: Chat/Tools/Insights/Learn/Voice tabs, 44px+ WCAG 2.5.5, aria-current, safe-area-bottom. Main content pb-16 lg:pb-0 padding restored. |
 | PARITY-ROUTE-0001     | Duplicate /financial-protection-score removed | routing | done | P2 | build | 3 | (CBL-RqDMj-P1) | Canonical route is /protection-score. Removed duplicate from App.tsx. Updated quickQuoteRegistry.ts. |
+| PARITY-NAV-0007       | Chat.tsx sidebar synced with PersonaSidebar5 | navigation | done | P1 | build | 9 | (CBL-RqDMj-P2) | Chat.tsx had 18 hardcoded nav items diverged from PersonaSidebar5's 53. Replaced with import of shared PERSONA_LAYERS. Now always in sync. |
+| PARITY-MOBILE-0006    | Chat.tsx mobile bottom tabs gained Voice tab | mobile_ux | done | P1 | build | 8 | (CBL-RqDMj-P2) | Chat's bottom tabs now match AppShell: Chat/Tools/Insights/Learn/Voice. Voice tab dispatches chat:toggle-handsfree. |
 
 ---
 
