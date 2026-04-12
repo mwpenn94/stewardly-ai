@@ -13,6 +13,7 @@
 
 import { useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -121,6 +122,7 @@ export default function QuickQuoteFlowPage() {
 
   return (
     <AppShell title="Quick Quote">
+      <SectionErrorBoundary sectionName="Quick Quote">
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         <header className="space-y-1">
           <h1 className="text-2xl font-bold">Quick Quote</h1>
@@ -241,6 +243,7 @@ export default function QuickQuoteFlowPage() {
           </Card>
         )}
       </div>
+      </SectionErrorBoundary>
     </AppShell>
   );
 }

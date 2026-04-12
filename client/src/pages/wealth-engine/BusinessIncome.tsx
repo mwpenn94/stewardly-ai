@@ -16,6 +16,7 @@ import { ArrowLeft, TrendingUp, Loader2, Users, DollarSign, Target, Calculator }
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { useState } from "react";
 
 function fmt(n: number) {
@@ -76,6 +77,7 @@ export default function BusinessIncome() {
 
   return (
     <AppShell title="Business Income">
+      <SectionErrorBoundary sectionName="Business Income">
       <SEOHead title="Business Income Engine" description="Practice income modeling with role-based projections and team economics" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="flex items-center gap-3">
@@ -253,6 +255,7 @@ export default function BusinessIncome() {
           Income projections are illustrative based on industry averages and the WealthBridge v7 BIE model. Actual results will vary.
         </p>
       </div>
+      </SectionErrorBoundary>
     </AppShell>
   );
 }

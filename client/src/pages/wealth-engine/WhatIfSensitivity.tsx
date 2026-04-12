@@ -8,6 +8,7 @@
 
 import { useState, useCallback } from "react";
 import AppShell from "@/components/AppShell";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -187,6 +188,7 @@ export default function WhatIfSensitivity() {
 
   return (
     <AppShell title="What-If Sensitivity">
+      <SectionErrorBoundary sectionName="What-If Analysis">
       <div className="max-w-5xl mx-auto space-y-6 p-4">
         {/* Header */}
         <div>
@@ -335,6 +337,7 @@ export default function WhatIfSensitivity() {
           </div>
         )}
       </div>
+      </SectionErrorBoundary>
     </AppShell>
   );
 }

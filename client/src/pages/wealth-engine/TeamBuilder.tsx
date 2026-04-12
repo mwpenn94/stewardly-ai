@@ -14,6 +14,7 @@
 
 import { useState, useMemo } from "react";
 import AppShell from "@/components/AppShell";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -194,6 +195,7 @@ export default function TeamBuilder() {
 
   return (
     <AppShell title="BIE Team Builder">
+      <SectionErrorBoundary sectionName="Team Builder">
       <div className="max-w-6xl mx-auto space-y-6 p-4">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -712,6 +714,7 @@ export default function TeamBuilder() {
           </TabsContent>
         </Tabs>
       </div>
+      </SectionErrorBoundary>
     </AppShell>
   );
 }
