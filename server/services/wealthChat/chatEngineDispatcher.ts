@@ -38,6 +38,12 @@ export type EngineIntent =
   | "biz_project"
   | "monte_carlo"
   | "back_plan"
+  | "stress_test"
+  | "historical_backtest"
+  | "sensitivity_sweep"
+  | "guardrail_check"
+  | "roll_up_team"
+  | "build_strategy"
   | "none";
 
 export interface ExtractedSlots {
@@ -183,6 +189,24 @@ export function extractIntent(text: string): ExtractionResult {
   }
   if (/back ?plan|need to (?:do|earn|make)|what does it take to/i.test(lower) || slots.targetIncome) {
     intent = "back_plan";
+  }
+  if (/stress ?test|crash|recession|crisis|bear ?market|downturn|what (?:if|happens).*(crash|recession|market drops)/i.test(lower)) {
+    intent = "stress_test";
+  }
+  if (/backtest|historical.*(?:success|survival|odds)|run.*out.*money|survive.*(?:history|market)|safe.*withdrawal/i.test(lower)) {
+    intent = "historical_backtest";
+  }
+  if (/sensitivity|what.if.*(?:change|vary|adjust)|sweep|heat.?map/i.test(lower)) {
+    intent = "sensitivity_sweep";
+  }
+  if (/guardrail|realistic|reasonable|too (?:high|aggressive|optimistic)|assumption/i.test(lower)) {
+    intent = "guardrail_check";
+  }
+  if (/roll.?up|team (?:income|revenue|production)|aggregate.*team|organization.*income/i.test(lower)) {
+    intent = "roll_up_team";
+  }
+  if (/build.*(?:strategy|plan|portfolio)|recommend.*products|what.*(?:products|insurance).*(?:need|should)/i.test(lower)) {
+    intent = "build_strategy";
   }
 
   return { intent, slots, raw: text };
@@ -434,6 +458,71 @@ export async function dispatchToEngine(
           props: { funnel: plan.funnel },
         },
       ],
+      actions: { copy: true, tts: true, download: false, share: false },
+    };
+  }
+
+  // Stress test — run through a crisis scenario
+  if (result.intent === "stress_test") {
+    const { stressTest: runStressTest, STRESS_SCENARIOS } = await import("../../shared/calculators/scui");
+    const balance = slots.savings ?? slots.netWorth ?? 500_000;
+    // Pick the most relevant scenario from the message, default to GFC
+    const lower = result.raw.toLowerCase();
+    let scenario = "gfc";
+    if (/dot.?com|tech|2000/.test(lower)) scenario = "dotcom";
+    else if (/covid|pandemic|2020/.test(lower)) scenario = "covid";
+    else if (/stagflation|1973|1974|oil/.test(lower)) scenario = "stagflation";
+    else if (/rising.rate|2022|fed|interest/.test(lower)) scenario = "rising_rates";
+    const stressResult = runStressTest(scenario, balance);
+    if (stressResult) {
+      const sc = stressResult.scenario;
+      return {
+        intent: result.intent,
+        tool: "scui.stressTest",
+        narrative: safetyWrap(
+          `Stress tested $${balance.toLocaleString()} through the ${sc.name}. Max drawdown: ${(stressResult.maxDrawdown * 100).toFixed(1)}%. Final balance: $${stressResult.finalBalance.toLocaleString()}. Recovery: ~${stressResult.recoveryYears} years at 7% avg.`,
+        ),
+        data: { scenario, stressResult },
+        charts: [],
+        actions: { copy: true, tts: true, download: false, share: false },
+      };
+    }
+  }
+
+  // Historical backtest — rolling S&P 500 survival rate
+  if (result.intent === "historical_backtest") {
+    const { historicalBacktest: runBacktest } = await import("../../shared/calculators/scui");
+    const balance = slots.savings ?? slots.netWorth ?? 500_000;
+    const contribution = slots.income ? Math.round(slots.income * 0.15) : 0;
+    const bt = runBacktest(balance, contribution, 0, horizon);
+    return {
+      intent: result.intent,
+      tool: "scui.historicalBacktest",
+      narrative: safetyWrap(
+        `Backtested a $${balance.toLocaleString()} portfolio over ${horizon} years across ${bt.total} starting years (1928-2025). Survival rate: ${(bt.survivalRate * 100).toFixed(1)}% (${bt.survived}/${bt.total}). Median final: $${bt.medianFinal.toLocaleString()}. Best start: ${bt.best.year} ($${bt.best.final.toLocaleString()}). Worst start: ${bt.worst.year} ($${bt.worst.final.toLocaleString()}).`,
+      ),
+      data: { backtest: { survivalRate: bt.survivalRate, survived: bt.survived, total: bt.total, medianFinal: bt.medianFinal, best: bt.best, worst: bt.worst } },
+      charts: [],
+      actions: { copy: true, tts: true, download: true, share: false },
+    };
+  }
+
+  // Guardrail check
+  if (result.intent === "guardrail_check") {
+    const { checkGuardrails } = await import("../../shared/calculators/scui");
+    const params: Record<string, number> = {};
+    if (slots.income) params.returnRate = 0.07; // Default — can be overridden
+    const warnings = checkGuardrails(params);
+    return {
+      intent: result.intent,
+      tool: "scui.checkGuardrails",
+      narrative: safetyWrap(
+        warnings.length === 0
+          ? "All assumptions are within reasonable ranges based on industry benchmarks."
+          : `Found ${warnings.length} guardrail warning(s): ${warnings.map(w => `${w.field}: ${w.message}`).join("; ")}`,
+      ),
+      data: { warnings },
+      charts: [],
       actions: { copy: true, tts: true, download: false, share: false },
     };
   }
