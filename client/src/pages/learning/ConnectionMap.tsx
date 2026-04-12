@@ -11,6 +11,7 @@ import { zoom as d3Zoom } from "d3-zoom";
 import { drag as d3Drag } from "d3-drag";
 import { Search, Volume2, X } from "lucide-react";
 import { useAudioCompanion } from "@/components/AudioCompanion";
+import { trpc } from "@/lib/trpc";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -82,8 +83,44 @@ export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const audio = useAudioCompanion();
 
-  const graphNodes = nodes ?? DEMO_NODES;
-  const graphEdges = edges ?? DEMO_EDGES;
+  // Fetch definitions + connections from DB when no props provided
+  const defsQ = trpc.learning.content.listDefinitions.useQuery(
+    { limit: 200 },
+    { enabled: !nodes, retry: false },
+  );
+  const connsQ = trpc.learning.content.listConnections.useQuery(
+    undefined,
+    { enabled: !edges, retry: false },
+  );
+
+  const dbNodes: ConceptNode[] = useMemo(() => {
+    if (nodes) return nodes;
+    const defs = defsQ.data ?? [];
+    if (defs.length === 0) return DEMO_NODES;
+    return defs.map((d: any) => ({
+      id: String(d.id),
+      term: d.term,
+      discipline: d.category ?? "General",
+      definition: d.definition ?? "",
+      mastered: false,
+      audioScript: `${d.term}. ${(d.definition ?? "").slice(0, 200)}`,
+    }));
+  }, [nodes, defsQ.data]);
+
+  const dbEdges: ConceptEdge[] = useMemo(() => {
+    if (edges) return edges;
+    const conns = connsQ.data ?? [];
+    if (conns.length === 0) return DEMO_EDGES;
+    return conns.map((c: any) => ({
+      source: String(c.fromDefinitionId),
+      target: String(c.toDefinitionId),
+      relationship: c.relationship ?? "relates to",
+      strength: 0.6,
+    }));
+  }, [edges, connsQ.data]);
+
+  const graphNodes = dbNodes;
+  const graphEdges = dbEdges;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedNode, setSelectedNode] = useState<ConceptNode | null>(null);

@@ -104,6 +104,7 @@ export const TOOLS_NAV: NavItemDef[] = [
 
   // ── INTELLIGENCE — multi-model AI + analysis tools
   { iconName: "Brain", label: "Intelligence", href: "/intelligence-hub", minRole: "user", section: "intelligence" },
+  { iconName: "Calculator", label: "Calculators", href: "/calculators", minRole: "user", section: "intelligence" },
   { iconName: "Calculator", label: "Engine Dashboard", href: "/engine-dashboard", minRole: "user", section: "intelligence" },
   { iconName: "Users", label: "Team Builder", href: "/wealth-engine/team-builder", minRole: "advisor", section: "intelligence" },
   { iconName: "Grid3X3", label: "What-If Analysis", href: "/wealth-engine/sensitivity", minRole: "user", section: "intelligence" },
@@ -115,6 +116,9 @@ export const TOOLS_NAV: NavItemDef[] = [
   // ── RELATIONSHIPS — client + document + integration management
   { iconName: "Users", label: "Relationships", href: "/relationships", minRole: "user", section: "relationships" },
   { iconName: "LayoutDashboard", label: "Client Dashboard", href: "/client-dashboard", minRole: "user", section: "relationships" },
+  { iconName: "Target", label: "Lead Pipeline", href: "/leads", minRole: "advisor", section: "relationships" },
+  { iconName: "RefreshCw", label: "CRM Sync", href: "/crm-sync", minRole: "advisor", section: "relationships" },
+  { iconName: "ShieldCheck", label: "Compliance Audit", href: "/compliance-audit", minRole: "advisor", section: "relationships" },
   { iconName: "FileText", label: "Documents", href: "/documents", minRole: "user", section: "relationships" },
   { iconName: "Link2", label: "Integrations", href: "/integrations", minRole: "user", section: "relationships" },
   { iconName: "HeartPulse", label: "Integration Health", href: "/integration-health", minRole: "advisor", section: "relationships" },
@@ -147,6 +151,9 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "TrendingUp", label: "Rate Management", href: "/admin/rate-management", minRole: "admin" },
   { iconName: "FileText", label: "Platform Reports", href: "/admin/platform-reports", minRole: "admin" },
   { iconName: "Compass", label: "Comparables", href: "/comparables", minRole: "advisor" },
+  { iconName: "Key", label: "API Keys", href: "/admin/api-keys", minRole: "admin" },
+  { iconName: "Webhook", label: "Webhooks", href: "/admin/webhooks", minRole: "admin" },
+  { iconName: "Users", label: "Team", href: "/admin/team", minRole: "admin" },
 ];
 
 // ─── UTILITY section (always visible at bottom) ──────────────────────────────

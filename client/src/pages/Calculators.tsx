@@ -17,7 +17,7 @@ import {
   ChevronRight, Info, Heart, Scale, GraduationCap, Stethoscope,
   HandCoins, Briefcase, ListChecks, Users, Grid3X3, BookOpen,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -164,6 +164,9 @@ export default function Calculators() {
               { label: "Retirement Planner", path: "/wealth-engine/retirement", icon: <PiggyBank className="w-4 h-4" />, desc: "Goal, smooth, guardrails" },
               { label: "Practice to Wealth", path: "/wealth-engine/practice-to-wealth", icon: <TrendingUp className="w-4 h-4" />, desc: "Practice growth modeling" },
               { label: "Quick Quote", path: "/wealth-engine/quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Instant client proposal" },
+              { label: "Team Builder", path: "/wealth-engine/team-builder", icon: <Users className="w-4 h-4" />, desc: "Roll-up, roll-down, economics" },
+              { label: "What-If Analysis", path: "/wealth-engine/sensitivity", icon: <Grid3X3 className="w-4 h-4" />, desc: "2D parameter heat map" },
+              { label: "Reference Hub", path: "/wealth-engine/references", icon: <BookOpen className="w-4 h-4" />, desc: "Products, benchmarks, methodology" },
               { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
               { label: "Team Builder", path: "/wealth-engine/team-builder", icon: <Users className="w-4 h-4" />, desc: "BIE roll-up/roll-down" },
               { label: "What-If Analysis", path: "/wealth-engine/sensitivity", icon: <Grid3X3 className="w-4 h-4" />, desc: "2D sensitivity grid" },
