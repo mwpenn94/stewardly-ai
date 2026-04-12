@@ -141,7 +141,7 @@ export function IntentRouter() {
           // is already running so we don't interrupt the continuous loop.
           // Pass 5: listenOnce already plays mic_on internally via PIL.
           announce("Listening for one command", "polite");
-          void pil.listenOnce();
+          window.dispatchEvent(new CustomEvent("pil:listen-once"));
           return;
 
         // ── Accessibility ──

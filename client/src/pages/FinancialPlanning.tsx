@@ -141,7 +141,7 @@ export default function FinancialPlanning() {
 
 // ─── Retirement Projection (Monte Carlo) ───────────────────────────────
 function RetirementProjection() {
-  const { profile, setProfile } = useFinancialProfile();
+  const { profile, updateProfile } = useFinancialProfile();
   const [params, setParams] = useState(() => ({
     currentSavings: profile.savings ?? 500000,
     annualContribution: profile.monthlySavings !== undefined ? profile.monthlySavings * 12 : 25000,
@@ -172,16 +172,14 @@ function RetirementProjection() {
   };
 
   const persistRetirementToProfile = () => {
-    setProfile(
+    updateProfile(
       {
         savings: params.currentSavings,
         monthlySavings: Math.round(params.annualContribution / 12),
         yearsInRetirement: params.yearsInRetirement,
         desiredRetirementIncome: params.annualWithdrawal,
         equitiesReturn: params.avgReturn,
-      },
-      "user",
-    );
+      });
   };
   const [results, setResults] = useState<ReturnType<typeof runMonteCarlo> | null>(null);
   const [running, setRunning] = useState(false);
@@ -402,7 +400,7 @@ function RetirementProjection() {
 
 // ─── Social Security Optimizer ─────────────────────────────────────────
 function SocialSecurityOptimizer() {
-  const { profile, setProfile } = useFinancialProfile();
+  const { profile, updateProfile } = useFinancialProfile();
   // FRA is 67 for most users today; don't derive it from the profile.
   const [fra, setFra] = useState(67);
   const [fraMonthly, setFraMonthly] = useState(2800);
@@ -418,10 +416,9 @@ function SocialSecurityOptimizer() {
     // Persist the implied life expectancy back via
     // yearsInRetirement = lifeExpectancy - retirementAge.
     const retire = profile.retirementAge ?? 67;
-    setProfile(
-      { yearsInRetirement: Math.max(0, lifeExpectancy - retire) },
-      "user",
-    );
+    updateProfile(
+      { yearsInRetirement: Math.max(0, lifeExpectancy - retire) });
+
   };
 
   const ss = useMemo(() => calcSocialSecurity(fra, fraMonthly), [fra, fraMonthly]);
@@ -509,7 +506,7 @@ function SocialSecurityOptimizer() {
 
 // ─── Roth Conversion Analysis ──────────────────────────────────────────
 function RothConversion() {
-  const { profile, setProfile } = useFinancialProfile();
+  const { profile, updateProfile } = useFinancialProfile();
   const [traditionalBalance, setTraditionalBalance] = useState(500000);
   const [conversionAmount, setConversionAmount] = useState(50000);
   const [currentTaxRate, setCurrentTaxRate] = useState(
@@ -529,13 +526,11 @@ function RothConversion() {
   };
 
   const persist = () => {
-    setProfile(
+    updateProfile(
       {
         marginalRate: currentTaxRate / 100,
         equitiesReturn: avgReturn / 100,
-      },
-      "user",
-    );
+      });
   };
 
   const analysis = useMemo(() => {
@@ -654,7 +649,7 @@ function RothConversion() {
 
 // ─── Goal Tracker ──────────────────────────────────────────────────────
 function GoalTracker() {
-  const { profile, setProfile } = useFinancialProfile();
+  const { profile, updateProfile } = useFinancialProfile();
   // Seed the retirement goal from the shared profile when present.
   const defaultRetirementTarget =
     profile.desiredRetirementIncome !== undefined
@@ -687,7 +682,7 @@ function GoalTracker() {
   // Persist the emergency-fund "current" back to the profile as savings
   // so the calculator tabs pick it up.
   const persistEmergencyFund = (newCurrent: number) => {
-    setProfile({ savings: newCurrent }, "user");
+    updateProfile({ savings: newCurrent });
   };
   const [showAdd, setShowAdd] = useState(false);
   const [newGoal, setNewGoal] = useState({ name: "", target: 0, current: 0, deadline: "", category: "savings" });

@@ -194,8 +194,8 @@ describe("Reference data integrity", () => {
     expect(years.length).toBeGreaterThanOrEqual(90);
   });
 
-  it("STRESS_SCENARIOS has 3 scenarios with correct structure", () => {
-    expect(Object.keys(STRESS_SCENARIOS)).toEqual(["dotcom", "gfc", "covid"]);
+  it("STRESS_SCENARIOS has 5 scenarios with correct structure", () => {
+    expect(Object.keys(STRESS_SCENARIOS)).toEqual(["dotcom", "gfc", "covid", "stagflation", "rising_rates"]);
     for (const [, s] of Object.entries(STRESS_SCENARIOS)) {
       expect(s.name).toBeTruthy();
       expect(s.description).toBeTruthy();

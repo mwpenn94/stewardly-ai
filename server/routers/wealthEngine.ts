@@ -61,6 +61,10 @@ import {
   stressTest as scuiStressTest,
 } from "../shared/calculators/scui";
 import {
+  compareEntities,
+  type OwnerCompInput,
+} from "../shared/calculators/ownerComp";
+import {
   persistComputation,
   getLatestRun,
   diffRuns,
@@ -1139,5 +1143,164 @@ export const wealthEngineRouter = router({
         });
       }
       return response;
+    }),
+
+  // ── Owner Compensation — entity comparison ────────────────────────
+  ownerCompCompareEntities: protectedProcedure
+    .input(
+      z.object({
+        netBusinessProfit: z.number().min(0).max(100_000_000),
+        filingStatus: z.enum(["single", "mfj", "hoh"]),
+        age: z.number().int().min(18).max(100),
+        stateRate: z.number().min(0).max(0.2).optional(),
+        isSstb: z.boolean().optional(),
+        hasEmployees: z.boolean().optional(),
+        targetYearsToRetire: z.number().int().min(1).max(50).optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const start = Date.now();
+      const result = compareEntities(input);
+      persistComputation({
+        tool: "owner_comp_compare" as any,
+        input,
+        result,
+        durationMs: Date.now() - start,
+        meta: { userId: ctx.user.id, trigger: "user_ui" },
+      }).catch(() => {/* persistence is best-effort */});
+      return { data: result };
+    }),
+
+  // ── Multi-line Quick Quote (needs-based bundle estimation) ──────────
+  multiLineQuickQuote: protectedProcedure
+    .input(
+      z.object({
+        age: z.number().int().min(18).max(100),
+        income: z.number().min(0).optional().default(100_000),
+        dependents: z.number().int().min(0).max(20).optional().default(0),
+        isBizOwner: z.boolean().optional().default(false),
+        hasHome: z.boolean().optional().default(false),
+        netWorth: z.number().min(0).optional().default(0),
+        stateCode: z.string().max(5).optional().default("TX"),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { age, income, dependents, isBizOwner, hasHome } = input;
+      const ageFactor = 1 + Math.max(0, age - 30) * 0.025;
+
+      // Compute coverage amounts from needs
+      const lifeNeed = Math.max(income * 10, income * 5 + dependents * 100_000);
+      const diNeed = income * 0.6;
+      const ltcNeed = 100_000 * ageFactor;
+
+      type CoverageLine = {
+        type: string;
+        product: string;
+        coverage: number;
+        annualPremium: number;
+        monthlyPremium: number;
+        priority: "critical" | "recommended" | "optional";
+        rationale: string;
+      };
+
+      const coverageLines: CoverageLine[] = [];
+
+      // Term life (critical if dependents)
+      const termPremium = Math.round(lifeNeed * 0.004 * ageFactor);
+      coverageLines.push({
+        type: "term_life",
+        product: "Term Life (20 yr)",
+        coverage: lifeNeed,
+        annualPremium: termPremium,
+        monthlyPremium: Math.round(termPremium / 12),
+        priority: dependents > 0 ? "critical" : "recommended",
+        rationale: dependents > 0 ? `${dependents} dependents — income replacement` : "Income replacement for estate",
+      });
+
+      // Disability (critical if working)
+      const diPremium = Math.round(diNeed * 0.025);
+      coverageLines.push({
+        type: "disability",
+        product: "Long-term Disability",
+        coverage: diNeed,
+        annualPremium: diPremium,
+        monthlyPremium: Math.round(diPremium / 12),
+        priority: "critical",
+        rationale: "Replaces 60% of income if unable to work",
+      });
+
+      // IUL (important for accumulation)
+      if (income > 75_000) {
+        const iulPremium = Math.round(lifeNeed * 0.5 * 0.008 * ageFactor);
+        coverageLines.push({
+          type: "iul",
+          product: "Indexed Universal Life",
+          coverage: Math.round(lifeNeed * 0.5),
+          annualPremium: iulPremium,
+          monthlyPremium: Math.round(iulPremium / 12),
+          priority: "recommended",
+          rationale: "Tax-advantaged cash value accumulation + death benefit",
+        });
+      }
+
+      // Business overhead expense (biz owners)
+      if (isBizOwner) {
+        const boePremium = Math.round(income * 0.3 * 0.03);
+        coverageLines.push({
+          type: "boe",
+          product: "Business Overhead Expense",
+          coverage: Math.round(income * 0.3),
+          annualPremium: boePremium,
+          monthlyPremium: Math.round(boePremium / 12),
+          priority: "recommended",
+          rationale: "Covers fixed business expenses if owner is disabled",
+        });
+      }
+
+      // LTC (optional, more important at higher ages)
+      if (age >= 35) {
+        const ltcPremium = Math.round(ltcNeed * 0.015 * ageFactor);
+        coverageLines.push({
+          type: "ltc",
+          product: "Long-term Care",
+          coverage: ltcNeed,
+          annualPremium: ltcPremium,
+          monthlyPremium: Math.round(ltcPremium / 12),
+          priority: age >= 50 ? "recommended" : "optional",
+          rationale: `${age >= 50 ? "Age 50+ — strongly recommended" : "Consider locking in lower rates now"}`,
+        });
+      }
+
+      const annualPremiumAll = coverageLines.reduce((s, l) => s + l.annualPremium, 0);
+      const annualPremiumCritical = coverageLines
+        .filter((l) => l.priority === "critical")
+        .reduce((s, l) => s + l.annualPremium, 0);
+      const asPctOfIncome = income > 0 ? annualPremiumAll / income : 0;
+
+      type PlanningAction = { priority: "critical" | "recommended" | "optional"; action: string; impact: string };
+      const planningActions: PlanningAction[] = [
+        annualPremiumAll > income * 0.1
+          ? { priority: "critical" as const, action: "Review total premium vs income", impact: `Total premium (${Math.round(asPctOfIncome * 100)}% of income) exceeds 10% guideline — consider phasing coverage.` }
+          : { priority: "optional" as const, action: "Coverage is affordable", impact: "Total premium is within standard affordability guidelines." },
+        isBizOwner ? { priority: "recommended" as const, action: "Evaluate buy-sell agreement", impact: "Business owner should also consider key-person coverage and succession planning." } : null,
+        hasHome ? { priority: "recommended" as const, action: "Include mortgage payoff in coverage", impact: "Ensure life insurance coverage accounts for mortgage balance to protect surviving family." } : null,
+        dependents > 2 ? { priority: "recommended" as const, action: "Consider education funding", impact: `${dependents} dependents — evaluate education funding riders or 529 savings.` } : null,
+        age >= 55 ? { priority: "recommended" as const, action: "Plan Medicare coordination", impact: "Medicare supplement coordination recommended at age 65 — review health coverage overlap." } : null,
+      ].filter(Boolean) as PlanningAction[];
+
+      const data = {
+        coverageLines,
+        totals: { annualPremiumAll, annualPremiumCritical, asPctOfIncome },
+        planningActions,
+        input,
+      };
+      persistComputation({
+        tool: "multi_line_quick_quote" as any,
+        input,
+        result: data,
+        durationMs: 0,
+        meta: { userId: ctx.user.id, trigger: "user_ui" },
+      }).catch(() => {/* persistence is best-effort */});
+      return { data };
     }),
 });

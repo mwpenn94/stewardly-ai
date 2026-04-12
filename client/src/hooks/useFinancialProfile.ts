@@ -67,6 +67,36 @@ export interface FinancialProfile {
   // ─── Education ──────────────────────────────────────
   educationCostPerChild?: number;
 
+  // ─── Retirement Planning ─────────────────────────────
+  desiredRetirementIncome?: number;
+  yearsInRetirement?: number;
+  equitiesReturn?: number;
+  marginalRate?: number;
+
+  // ─── Aliases (used by some calculator pages) ────────
+  /** Alias for portfolioBalance — used by FinancialPlanning */
+  savings?: number;
+  /** Alias for monthlyContribution — used by FinancialPlanning */
+  monthlySavings?: number;
+  /** Alias for currentAge — used by FinancialPlanning */
+  age?: number;
+  /** Alias for annualIncome — used by some pages */
+  income?: number;
+  /** Alias for childrenCount — used by some pages */
+  dependents?: number;
+  /** Alias for mortgageBalance */
+  mortgage?: number;
+  /** Alias for otherDebts */
+  debts?: number;
+  /** Alias for stateCode */
+  stateOfResidence?: string;
+  /** Business owner flag */
+  isBizOwner?: boolean;
+  /** Homeowner flag */
+  hasHomeowner?: boolean;
+  /** Alias for existingLifeInsurance */
+  lifeInsuranceCoverage?: number;
+
   // ─── Meta ───────────────────────────────────────────
   lastUpdated?: string;
   lastUpdatedBy?: string; // page name that last wrote
@@ -94,15 +124,33 @@ function saveProfile(profile: FinancialProfile): void {
   }
 }
 
+/** Compute how complete the profile is (0..1). */
+function computeCompleteness(profile: FinancialProfile): number {
+  const coreFields: (keyof FinancialProfile)[] = [
+    "currentAge", "retirementAge", "annualIncome", "portfolioBalance",
+    "filingStatus", "stateCode", "monthlyContribution",
+  ];
+  const filled = coreFields.filter(k => profile[k] != null).length;
+  return coreFields.length > 0 ? filled / coreFields.length : 0;
+}
+
+/** Map completeness ratio to a labeled status. */
+function completenessStatus(pct: number): { label: string; tone: "empty" | "sparse" | "partial" | "full" } {
+  if (pct <= 0) return { label: "No profile yet", tone: "empty" };
+  if (pct < 0.34) return { label: "Just started", tone: "sparse" };
+  if (pct < 0.75) return { label: "Partial profile", tone: "partial" };
+  return { label: "Profile ready", tone: "full" };
+}
+
 /**
  * Hook: read/write the shared financial profile.
  *
  * @param pageName — identifier for which page is using the hook
- * (e.g., "tax-planning", "estate-planning")
+ * (e.g., "tax-planning", "estate-planning"). Optional for read-only consumers.
  *
- * @returns {profile, updateProfile, hasData, clearProfile}
+ * @returns {profile, updateProfile, hasData, hasProfile, completeness, completenessStatus, clearProfile, replaceProfile}
  */
-export function useFinancialProfile(pageName: string) {
+export function useFinancialProfile(pageName?: string) {
   const [profile, setProfile] = useState<FinancialProfile>(loadProfile);
 
   // Reload from localStorage if another tab or page changed it
@@ -123,7 +171,7 @@ export function useFinancialProfile(pageName: string) {
         ...prev,
         ...updates,
         lastUpdated: new Date().toISOString(),
-        lastUpdatedBy: pageName,
+        lastUpdatedBy: pageName ?? "unknown",
       };
       saveProfile(next);
       return next;
@@ -136,16 +184,43 @@ export function useFinancialProfile(pageName: string) {
     try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
   }, []);
 
+  /** Replace the entire profile (for imports/library loads). */
+  const replaceProfile = useCallback((newProfile: FinancialProfile) => {
+    const stamped = {
+      ...newProfile,
+      lastUpdated: new Date().toISOString(),
+      lastUpdatedBy: pageName ?? "import",
+    };
+    setProfile(stamped);
+    saveProfile(stamped);
+  }, [pageName]);
+
   /** Whether there is any meaningful data in the profile. */
   const hasData = useMemo(() => {
     const { lastUpdated, lastUpdatedBy, ...rest } = profile;
     return Object.values(rest).some(v => v != null && v !== 0);
   }, [profile]);
 
+  /** Alias for hasData — used by banner components. */
+  const hasProfile = hasData;
+
+  /** 0..1 completeness fraction. */
+  const completeness = useMemo(() => computeCompleteness(profile), [profile]);
+
   /** Derive which pages have contributed data. */
   const source = profile.lastUpdatedBy;
 
-  return { profile, updateProfile, hasData, clearProfile, source };
+  return {
+    profile,
+    updateProfile,
+    hasData,
+    hasProfile,
+    completeness,
+    completenessStatus: useMemo(() => completenessStatus(completeness), [completeness]),
+    clearProfile,
+    replaceProfile,
+    source,
+  };
 }
 
 /**

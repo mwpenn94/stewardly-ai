@@ -101,6 +101,12 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Package", label: "Advisory", href: "/advisory", minRole: "user", section: "work" },
   { iconName: "GitBranch", label: "Workflows", href: "/workflows", minRole: "user", section: "work" },
   { iconName: "RefreshCw", label: "Passive Actions", href: "/passive-actions", minRole: "user", section: "work" },
+  { iconName: "FileCheck", label: "Insurance Apps", href: "/insurance-applications", minRole: "advisor", section: "work" },
+  { iconName: "Play", label: "Advisory Execution", href: "/advisory-execution", minRole: "advisor", section: "work" },
+  { iconName: "Truck", label: "Carrier Connector", href: "/carrier-connector", minRole: "advisor", section: "work" },
+  { iconName: "ClipboardCheck", label: "Suitability Panel", href: "/suitability-panel", minRole: "advisor", section: "work" },
+  { iconName: "UserPlus", label: "Client Onboarding", href: "/client-onboarding", minRole: "user", section: "work" },
+  { iconName: "Upload", label: "Import Data", href: "/import", minRole: "advisor", section: "work" },
 
   // ── INTELLIGENCE — multi-model AI + analysis tools + calculators
   { iconName: "Brain", label: "Intelligence", href: "/intelligence-hub", minRole: "user", section: "intelligence" },
@@ -110,9 +116,8 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "BarChart3", label: "Strategy Compare", href: "/wealth-engine/strategy-comparison", minRole: "user", section: "intelligence" },
   { iconName: "Zap", label: "Quick Quote", href: "/wealth-engine/quick-quote", minRole: "user", section: "intelligence" },
   { iconName: "Briefcase", label: "Practice → Wealth", href: "/wealth-engine/practice-to-wealth", minRole: "advisor", section: "intelligence" },
-  { iconName: "Briefcase", label: "Business Income", href: "/wealth-engine/business-income", minRole: "advisor", section: "intelligence" },
-  { iconName: "Users", label: "Team Builder", href: "/wealth-engine/team-builder", minRole: "advisor", section: "intelligence" },
   { iconName: "DollarSign", label: "Business Income", href: "/wealth-engine/business-income", minRole: "advisor", section: "intelligence" },
+  { iconName: "Users", label: "Team Builder", href: "/wealth-engine/team-builder", minRole: "advisor", section: "intelligence" },
   { iconName: "Grid3X3", label: "What-If Grid", href: "/wealth-engine/what-if", minRole: "user", section: "intelligence" },
   { iconName: "ShieldCheck", label: "Wealth Configurator", href: "/wealth-engine/configurator", minRole: "user", section: "intelligence" },
   { iconName: "BookOpen", label: "Reference Hub", href: "/wealth-engine/references", minRole: "user", section: "intelligence" },
@@ -128,6 +133,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "HeartPulse", label: "Social Security", href: "/social-security", minRole: "user", section: "intelligence" },
   { iconName: "Stethoscope", label: "Medicare", href: "/medicare", minRole: "user", section: "intelligence" },
   { iconName: "Package", label: "Products", href: "/products", minRole: "user", section: "intelligence" },
+  { iconName: "Lightbulb", label: "Product Intelligence", href: "/product-intelligence", minRole: "advisor", section: "intelligence" },
 
   // ── RELATIONSHIPS — client + document + integration management
   { iconName: "Users", label: "Relationships", href: "/relationships", minRole: "user", section: "relationships" },
@@ -139,6 +145,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Link2", label: "Integrations", href: "/integrations", minRole: "user", section: "relationships" },
   { iconName: "Plug", label: "Dynamic Integrations", href: "/dynamic-integrations", minRole: "advisor", section: "relationships" },
   { iconName: "HeartPulse", label: "Integration Health", href: "/integration-health", minRole: "advisor", section: "relationships" },
+  { iconName: "Link", label: "My Integrations", href: "/my-integrations", minRole: "advisor", section: "relationships" },
   { iconName: "Users2", label: "Community", href: "/community", minRole: "advisor", section: "relationships" },
 
   // ── LEARNING — EMBA tracks, licenses, content authoring
@@ -171,6 +178,12 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "Key", label: "API Keys", href: "/admin/api-keys", minRole: "admin" },
   { iconName: "Webhook", label: "Webhooks", href: "/admin/webhooks", minRole: "admin" },
   { iconName: "Users", label: "Team", href: "/admin/team", minRole: "admin" },
+  { iconName: "CreditCard", label: "Billing", href: "/admin/billing", minRole: "admin" },
+  { iconName: "Cpu", label: "AI Intelligence", href: "/admin/intelligence", minRole: "admin" },
+  { iconName: "Shield", label: "BCP Dashboard", href: "/admin/bcp", minRole: "admin" },
+  { iconName: "Scale", label: "Fairness Audit", href: "/admin/fairness", minRole: "admin" },
+  { iconName: "Link2", label: "Admin Integrations", href: "/admin/integrations", minRole: "admin" },
+  { iconName: "BookOpen", label: "Knowledge Base", href: "/admin/knowledge", minRole: "admin" },
 ];
 
 // ─── UTILITY section (always visible at bottom) ──────────────────────────────

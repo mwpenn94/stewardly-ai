@@ -271,7 +271,7 @@ export async function registerPlatformJobs(apiKeys: {
       // Find stale caches for users who were recently active
       const staleCaches = await db.select()
         .from(userInsightsCache)
-        .where(lte(userInsightsCache.refreshedAt, staleThreshold))
+        .where(lte(userInsightsCache.computedAt, staleThreshold.getTime()))
         .limit(50);
 
       let refreshed = 0;
