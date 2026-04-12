@@ -14,6 +14,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
+import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { ArrowLeft, FileText, Users, DollarSign, CheckCircle2, XCircle, Clock, AlertTriangle, Scale, Calculator } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useMemo, useEffect, useCallback } from "react";
@@ -145,6 +146,8 @@ export default function EstatePlanning() {
     <div className="relative container max-w-5xl py-8 space-y-6">
       <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
       <SEOHead title="Estate Planning" description="Interactive estate planning with tax projections and document management" />
+
+      <PlanningCrossNav />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">

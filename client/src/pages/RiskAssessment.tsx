@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
+import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { ArrowLeft, BarChart3, Shield, TrendingDown, AlertTriangle, Target, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useMemo } from "react";
@@ -159,6 +160,8 @@ export default function RiskAssessment() {
     <AppShell title="Risk Assessment">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Risk Assessment" description="Interactive risk profiling and portfolio analysis" />
+
+      <PlanningCrossNav />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">

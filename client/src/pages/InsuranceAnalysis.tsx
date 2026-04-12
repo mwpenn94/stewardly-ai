@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
+import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { ArrowLeft, Shield, Heart, Home, Car, Umbrella, AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useMemo } from "react";
@@ -190,6 +191,8 @@ export default function InsuranceAnalysis() {
     <AppShell title="Insurance Analysis">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Insurance Analysis" description="Interactive insurance needs analysis with DIME method and coverage gap identification" />
+
+      <PlanningCrossNav />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">

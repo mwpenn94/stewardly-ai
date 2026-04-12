@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
+import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { ArrowLeft, DollarSign, TrendingUp, PiggyBank, BarChart3, Clock, Plus, Trash2, Loader2, Play } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -205,6 +206,8 @@ export default function IncomeProjection() {
     <AppShell title="Income Projection">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Income Projection" description="Interactive retirement income projection and sustainability analysis" />
+
+      <PlanningCrossNav />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">

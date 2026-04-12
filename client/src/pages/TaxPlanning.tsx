@@ -16,6 +16,7 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
+import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, BarChart3, Loader2, Play } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -133,6 +134,8 @@ export default function TaxPlanning() {
     <AppShell title="Tax Planning">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Tax Planning" description="Tax planning analysis and optimization strategies" />
+
+      <PlanningCrossNav />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -375,6 +378,24 @@ export default function TaxPlanning() {
               title="Max Out Retirement Contributions"
               summary={`You're contributing ${fmt(retirementContributions)} of the ${fmt(23000)} 401(k) limit. Increasing saves ${fmt((23000 - retirementContributions) * (result.marginalRate ?? 0.22))} in taxes.`}
               severity="success"
+            />
+          )}
+          {profile.netEstate && profile.netEstate > 5_000_000 && (
+            <CalculatorInsight
+              title="Estate Tax Interaction"
+              summary={`Your estate profile shows ${fmt(profile.netEstate)} in net estate. Tax-efficient strategies like charitable giving and Roth conversions also reduce your eventual taxable estate.`}
+              severity="info"
+              actionLabel="View Estate Planning"
+              onAction={() => navigate("/estate")}
+            />
+          )}
+          {profile.existingLifeInsurance && !profile.existingLifeInsurance && wages > 100000 && (
+            <CalculatorInsight
+              title="Insurance Gap Detected"
+              summary="No life insurance found in your profile. At your income level, consider running an insurance needs analysis."
+              severity="warning"
+              actionLabel="Insurance Analysis"
+              onAction={() => navigate("/insurance-analysis")}
             />
           )}
         </div>
