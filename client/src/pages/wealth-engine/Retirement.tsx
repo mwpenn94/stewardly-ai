@@ -26,9 +26,11 @@ import { sendFeedback } from "@/lib/feedbackSpecs";
 import { GuardrailsGauge } from "@/components/wealth-engine/GuardrailsGauge";
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
+import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
+import StressTestPanel from "@/components/StressTestPanel";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
-import { Loader2, Target, Sliders, ShieldCheck } from "lucide-react";
+import { Loader2, Target, Sliders, ShieldCheck, AlertTriangle, BarChart3 } from "lucide-react";
 
 export default function RetirementPage() {
   const [age, setAge] = useState(40);
@@ -53,15 +55,38 @@ export default function RetirementPage() {
     [age, income, savings],
   );
 
+  const [savingsRate] = useState(0.15);
+  const [investmentReturn] = useState(0.07);
+
   const runPreset = trpc.wealthEngine.runPreset.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
   const backPlan = trpc.wealthEngine.backPlanHolistic.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
 
+  // Stress testing + historical backtest
+  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation();
+  const stressGFC = trpc.calculatorEngine.stressTest.useMutation();
+  const stressCovid = trpc.calculatorEngine.stressTest.useMutation();
+  const backtest = trpc.calculatorEngine.historicalBacktest.useMutation();
+
+  const annualContribution = income * savingsRate;
+
   const onRunGoal = () => {
-    runPreset.mutate({
-      preset: "wealthbridgeClient",
-      profile,
-      years: horizon,
-    });
+    runPreset.mutate(
+      {
+        preset: "wealthbridgeClient",
+        profile,
+        years: horizon,
+      },
+      {
+        onSuccess: () => {
+          // Auto-run stress tests + backtest with the user's savings as starting balance
+          const stressInput = { startBalance: savings, annualContribution };
+          stressDotcom.mutate({ ...stressInput, scenarioKey: "dotcom" });
+          stressGFC.mutate({ ...stressInput, scenarioKey: "gfc" });
+          stressCovid.mutate({ ...stressInput, scenarioKey: "covid" });
+          backtest.mutate({ startBalance: savings, annualContribution, annualCost: 0, horizon });
+        },
+      },
+    );
   };
 
   const onRunBackPlan = () => {
@@ -182,6 +207,26 @@ export default function RetirementPage() {
                   />
                 </CardContent>
               </Card>
+            )}
+
+            {/* Guardrail warnings + benchmarks */}
+            <CalculatorContextBar
+              params={{ returnRate: investmentReturn, savingsRate }}
+              className="space-y-3"
+            />
+
+            {/* Stress testing — auto-runs after projection */}
+            {(stressDotcom.data || stressGFC.data || stressCovid.data || backtest.data) && (
+              <StressTestPanel
+                stressResults={{
+                  dotcom: stressDotcom.data ?? null,
+                  gfc: stressGFC.data ?? null,
+                  covid: stressCovid.data ?? null,
+                }}
+                backtestSummary={backtest.data ?? null}
+                startBalance={savings}
+                title="How Would Your Savings Survive Market Crashes?"
+              />
             )}
           </TabsContent>
 

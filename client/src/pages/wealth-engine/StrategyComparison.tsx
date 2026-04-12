@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { StrategyCard } from "@/components/wealth-engine/StrategyCard";
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
+import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { Loader2, PlayCircle, Award } from "lucide-react";
@@ -268,6 +269,15 @@ export default function StrategyComparisonPage() {
               <TrajectoryChart milestones={result.data.milestones} />
             </CardContent>
           </Card>
+        )}
+
+        {/* Guardrail warnings + benchmarks */}
+        {rows.length > 0 && (
+          <CalculatorContextBar
+            params={{ returnRate: 0.07, savingsRate: 0.15 }}
+            showBenchmarks
+            className="space-y-3"
+          />
         )}
 
         {compare.isError && (
