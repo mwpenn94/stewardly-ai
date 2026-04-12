@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { ArrowLeft, Shield, Heart, Home, Car, Umbrella, AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useMemo } from "react";
@@ -76,19 +77,20 @@ const TYPE_ICONS: Record<string, typeof Heart> = {
 
 export default function InsuranceAnalysis() {
   const [, navigate] = useLocation();
+  const { profile } = useFinancialProfile("insurance-analysis");
 
-  // ─── DIME Method Inputs ─────────────────────────────────
-  const [annualIncome, setAnnualIncome] = useState(150000);
+  // ─── DIME Method Inputs (initialized from shared profile) ──
+  const [annualIncome, setAnnualIncome] = useState(profileValue(profile, "annualIncome", 150000));
   const [yearsToReplace, setYearsToReplace] = useState(10);
-  const [mortgageBalance, setMortgageBalance] = useState(350000);
-  const [otherDebts, setOtherDebts] = useState(25000);
-  const [childrenCount, setChildrenCount] = useState(2);
-  const [educationPerChild, setEducationPerChild] = useState(100000);
+  const [mortgageBalance, setMortgageBalance] = useState(profileValue(profile, "mortgageBalance", 350000));
+  const [otherDebts, setOtherDebts] = useState(profileValue(profile, "otherDebts", 25000));
+  const [childrenCount, setChildrenCount] = useState(profileValue(profile, "childrenCount", 2));
+  const [educationPerChild, setEducationPerChild] = useState(profileValue(profile, "educationCostPerChild", 100000));
   const [finalExpenses, setFinalExpenses] = useState(15000);
-  const [existingLifeInsurance, setExistingLifeInsurance] = useState(500000);
-  const [spouseIncome, setSpouseIncome] = useState(60000);
-  const [currentAge, setCurrentAge] = useState(40);
-  const [netWorth, setNetWorth] = useState(1_250_000);
+  const [existingLifeInsurance, setExistingLifeInsurance] = useState(profileValue(profile, "existingLifeInsurance", 500000));
+  const [spouseIncome, setSpouseIncome] = useState(profileValue(profile, "spouseIncome", 60000));
+  const [currentAge, setCurrentAge] = useState(profileValue(profile, "currentAge", 40));
+  const [netWorth, setNetWorth] = useState(profileValue(profile, "netWorth", 1_250_000));
 
   // ─── Policy tracker ─────────────────────────────────────
   const [policies, setPolicies] = useState<PolicyEntry[]>([

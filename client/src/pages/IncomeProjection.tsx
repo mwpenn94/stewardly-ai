@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { ArrowLeft, DollarSign, TrendingUp, PiggyBank, BarChart3, Clock, Plus, Trash2, Loader2, Play } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -88,13 +89,14 @@ function runMonteCarloSim(totalMonthly: number, targetMonthly: number, portfolio
 
 export default function IncomeProjection() {
   const [, navigate] = useLocation();
+  const { profile, updateProfile } = useFinancialProfile("income-projection");
 
-  // ─── Global Inputs ──────────────────────────────────────
-  const [currentAge, setCurrentAge] = useState(55);
-  const [retirementAge, setRetirementAge] = useState(65);
-  const [lifeExpectancy, setLifeExpectancy] = useState(90);
+  // ─── Global Inputs (initialized from shared profile) ────
+  const [currentAge, setCurrentAge] = useState(profileValue(profile, "currentAge", 55));
+  const [retirementAge, setRetirementAge] = useState(profileValue(profile, "retirementAge", 65));
+  const [lifeExpectancy, setLifeExpectancy] = useState(profileValue(profile, "lifeExpectancy", 90));
   const [targetMonthly, setTargetMonthly] = useState(10000);
-  const [portfolioBalance, setPortfolioBalance] = useState(1_200_000);
+  const [portfolioBalance, setPortfolioBalance] = useState(profileValue(profile, "portfolioBalance", 1_200_000));
   const [expectedReturn, setExpectedReturn] = useState(7);
   const [inflationRate, setInflationRate] = useState(3);
 

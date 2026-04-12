@@ -13,9 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { ArrowLeft, FileText, Users, DollarSign, CheckCircle2, XCircle, Clock, AlertTriangle, Scale, Calculator } from "lucide-react";
 import { useLocation } from "wouter";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import AppShell from "@/components/AppShell";
 
 function fmt(n: number) {
@@ -75,15 +76,24 @@ function computeEstateTax(netEstate: number, isMarried: boolean, portabilityUsed
 
 export default function EstatePlanning() {
   const [, navigate] = useLocation();
+  const { profile, updateProfile } = useFinancialProfile("estate-planning");
 
-  // ─── Inputs ─────────────────────────────────────────────
-  const [netEstate, setNetEstate] = useState(2_800_000);
-  const [isMarried, setIsMarried] = useState(true);
+  // ─── Inputs (initialized from shared profile if available) ──
+  const [netEstate, setNetEstate] = useState(profileValue(profile, "netEstate", 2_800_000));
+  const [isMarried, setIsMarried] = useState(profileValue(profile, "isMarried", true));
   const [portabilityUsed, setPortabilityUsed] = useState(0);
-  const [lifeInsurance, setLifeInsurance] = useState(500_000);
+  const [lifeInsurance, setLifeInsurance] = useState(profileValue(profile, "lifeInsuranceInEstate", profileValue(profile, "existingLifeInsurance", 500_000)));
   const [annualGrowthRate, setAnnualGrowthRate] = useState(6);
-  const [currentAge, setCurrentAge] = useState(45);
-  const [lifeExpectancy, setLifeExpectancy] = useState(85);
+  const [currentAge, setCurrentAge] = useState(profileValue(profile, "currentAge", 45));
+  const [lifeExpectancy, setLifeExpectancy] = useState(profileValue(profile, "lifeExpectancy", 85));
+
+  // Sync estate data back to shared profile when user changes values
+  const syncToProfile = useCallback(() => {
+    updateProfile({
+      netEstate, isMarried, lifeInsuranceInEstate: lifeInsurance,
+      currentAge, lifeExpectancy,
+    });
+  }, [netEstate, isMarried, lifeInsurance, currentAge, lifeExpectancy, updateProfile]);
 
   // ─── Document tracker state ─────────────────────────────
   const [docStatus, setDocStatus] = useState<Record<string, "current" | "outdated" | "missing">>(() => {
@@ -91,6 +101,12 @@ export default function EstatePlanning() {
     DOCUMENT_TYPES.forEach(d => { initial[d.name] = "missing"; });
     return initial;
   });
+
+  // Sync to shared profile on significant value changes (debounced)
+  useMemo(() => {
+    const t = setTimeout(syncToProfile, 500);
+    return () => clearTimeout(t);
+  }, [syncToProfile]);
 
   // ─── Calculations ───────────────────────────────────────
   const totalEstate = netEstate + lifeInsurance;

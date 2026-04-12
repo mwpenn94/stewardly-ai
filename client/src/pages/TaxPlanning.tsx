@@ -15,10 +15,11 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, BarChart3, Loader2, Play } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import AppShell from "@/components/AppShell";
 
 function fmt(n: number) {
@@ -55,20 +56,32 @@ function SliderInput({
 
 export default function TaxPlanning() {
   const [, navigate] = useLocation();
+  const { profile, updateProfile, hasData } = useFinancialProfile("tax-planning");
+  const initialized = useRef(false);
 
-  // ─── Inputs ─────────────────────────────────────────────
-  const [filingStatus, setFilingStatus] = useState<"single" | "mfj" | "hoh">("mfj");
-  const [wages, setWages] = useState(150000);
-  const [selfEmployment, setSelfEmployment] = useState(0);
-  const [interestIncome, setInterestIncome] = useState(2000);
-  const [dividendIncome, setDividendIncome] = useState(5000);
-  const [longTermCapGains, setLongTermCapGains] = useState(0);
-  const [rentalIncome, setRentalIncome] = useState(0);
-  const [itemizedDeductions, setItemizedDeductions] = useState(30000);
-  const [retirementContributions, setRetirementContributions] = useState(23000);
-  const [hsaContributions, setHsaContributions] = useState(4150);
-  const [stateCode, setStateCode] = useState("TX");
+  // ─── Inputs (initialized from shared profile if available) ──
+  const [filingStatus, setFilingStatus] = useState<"single" | "mfj" | "hoh">(profileValue(profile, "filingStatus", "mfj"));
+  const [wages, setWages] = useState(profileValue(profile, "annualIncome", 150000));
+  const [selfEmployment, setSelfEmployment] = useState(profileValue(profile, "selfEmploymentIncome", 0));
+  const [interestIncome, setInterestIncome] = useState(profileValue(profile, "interestIncome", 2000));
+  const [dividendIncome, setDividendIncome] = useState(profileValue(profile, "dividendIncome", 5000));
+  const [longTermCapGains, setLongTermCapGains] = useState(profileValue(profile, "longTermCapGains", 0));
+  const [rentalIncome, setRentalIncome] = useState(profileValue(profile, "rentalIncome", 0));
+  const [itemizedDeductions, setItemizedDeductions] = useState(profileValue(profile, "itemizedDeductions", 30000));
+  const [retirementContributions, setRetirementContributions] = useState(profileValue(profile, "retirementContributions", 23000));
+  const [hsaContributions, setHsaContributions] = useState(profileValue(profile, "hsaContributions", 4150));
+  const [stateCode, setStateCode] = useState(profileValue(profile, "stateCode", "TX"));
   const [rothConversion, setRothConversion] = useState(0);
+
+  // Write inputs back to shared profile when analysis runs
+  const syncToProfile = useCallback(() => {
+    updateProfile({
+      filingStatus, annualIncome: wages, selfEmploymentIncome: selfEmployment,
+      interestIncome, dividendIncome, longTermCapGains, rentalIncome,
+      itemizedDeductions, retirementContributions, hsaContributions, stateCode,
+      isMarried: filingStatus === "mfj",
+    });
+  }, [filingStatus, wages, selfEmployment, interestIncome, dividendIncome, longTermCapGains, rentalIncome, itemizedDeductions, retirementContributions, hsaContributions, stateCode, updateProfile]);
 
   // ─── tRPC mutations ─────────────────────────────────────
   const taxCalc = trpc.taxProjector.project.useMutation({ onError: (e) => toast.error(e.message) });
@@ -98,7 +111,8 @@ export default function TaxPlanning() {
   const runProjection = useCallback(() => {
     const input = buildInput();
     taxCalc.mutate(input);
-  }, [buildInput, taxCalc]);
+    syncToProfile();
+  }, [buildInput, taxCalc, syncToProfile]);
 
   const runMultiYear = useCallback(() => {
     const input = buildInput();
