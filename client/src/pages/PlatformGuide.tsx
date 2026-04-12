@@ -137,12 +137,14 @@ export default function PlatformGuide() {
             className="pl-8 h-9 bg-background"
           />
         </div>
-        <nav className="flex-1 space-y-1">
+        <nav className="flex-1 space-y-1" role="tablist" aria-label="Guide sections" aria-orientation="vertical">
           {sections
             .filter(s => !search || s.label.toLowerCase().includes(search.toLowerCase()))
             .map(s => (
               <button
                 key={s.id}
+                role="tab"
+                aria-selected={activeTab === s.id}
                 onClick={() => setActiveTab(s.id)}
                 className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors cursor-pointer ${
                   activeTab === s.id

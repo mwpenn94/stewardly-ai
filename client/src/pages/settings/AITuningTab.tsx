@@ -891,10 +891,12 @@ export default function AITuningTab() {
       </div>
 
       {/* Layer tab navigation */}
-      <div className="flex gap-1 mb-5 overflow-x-auto pb-1">
+      <div className="flex gap-1 mb-5 overflow-x-auto pb-1" role="tablist" aria-label="AI tuning layers">
         {LAYER_TABS.filter(t => visibleTabs.includes(t.id)).map((tab) => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${
               activeTab === tab.id

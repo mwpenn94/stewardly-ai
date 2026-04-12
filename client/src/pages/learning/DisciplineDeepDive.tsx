@@ -232,11 +232,13 @@ export default function DisciplineDeepDive() {
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 border-b">
+        <div className="flex gap-1 border-b" role="tablist" aria-label="Deep dive sections">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
+              role="tab"
+              aria-selected={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={[
                 "flex items-center gap-1.5 px-4 py-2.5 text-sm transition-colors border-b-2 -mb-px cursor-pointer",
@@ -258,6 +260,8 @@ export default function DisciplineDeepDive() {
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
+            role="tabpanel"
+            aria-label={`${activeTab} content`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}

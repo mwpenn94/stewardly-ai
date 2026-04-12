@@ -946,10 +946,12 @@ export default function AISettings() {
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Tab navigation */}
-        <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
+        <div className="flex gap-1 mb-6 overflow-x-auto pb-1" role="tablist" aria-label="AI configuration layers">
           {LAYER_TABS.filter(t => visibleTabs.includes(t.id)).map((tab) => (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-all ${
                 activeTab === tab.id
