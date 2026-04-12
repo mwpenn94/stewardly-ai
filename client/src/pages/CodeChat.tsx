@@ -161,6 +161,10 @@ import {
   emptyThrottleState,
   type ThrottleState,
 } from "@/components/codeChat/a11yAnnouncer";
+import {
+  extractDiffFromTrace,
+  extractEditSnapshotsFromToolEvents,
+} from "@/components/codeChat/traceDiffExtractor";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -174,39 +178,9 @@ interface TraceStep {
   durationMs?: number;
 }
 
-/**
- * Try to extract before/after snapshots from a serialized dispatch
- * result. Returns null if the tool isn't edit/write or the snapshots
- * aren't present. Pass 205.
- */
-function extractDiffFromTrace(
-  toolName: string | undefined,
-  rawPreview: string | undefined,
-): { before: string; after: string; path: string } | null {
-  if (!rawPreview) return null;
-  if (
-    toolName !== "edit_file" &&
-    toolName !== "write_file" &&
-    toolName !== "multi_edit"
-  )
-    return null;
-  try {
-    const parsed = JSON.parse(rawPreview);
-    // dispatch result shape: { kind: "edit"|"write"|"multi_edit", result: { before, after, path } }
-    const inner = parsed?.result;
-    if (!inner) return null;
-    if (typeof inner.before !== "string" || typeof inner.after !== "string") {
-      return null;
-    }
-    return {
-      before: inner.before,
-      after: inner.after,
-      path: typeof inner.path === "string" ? inner.path : "",
-    };
-  } catch {
-    return null;
-  }
-}
+// extractDiffFromTrace + extractEditSnapshotsFromToolEvents moved to
+// `@/components/codeChat/traceDiffExtractor` in Parity Pass 5 so the
+// logic is unit-testable without React.
 
 // ─── Tool Trace Visualization ──────────────────────────────────────────────
 
@@ -591,30 +565,10 @@ function CodeChatInterface() {
         recordedMsgIdsRef.current.add(msg.id);
         continue;
       }
-      const toRecord: Array<{ path: string; before: string; after: string; kind: "write" | "edit" }> = [];
-      for (const ev of msg.toolEvents) {
-        if (
-          ev.toolName !== "edit_file" &&
-          ev.toolName !== "write_file" &&
-          ev.toolName !== "multi_edit"
-        )
-          continue;
-        if (typeof ev.preview !== "string") continue;
-        try {
-          const parsed = JSON.parse(ev.preview);
-          const inner = parsed?.result;
-          if (!inner || typeof inner.before !== "string" || typeof inner.after !== "string") continue;
-          if (typeof inner.path !== "string") continue;
-          toRecord.push({
-            path: inner.path,
-            before: inner.before,
-            after: inner.after,
-            // multi_edit folds into "edit" for history purposes — the
-            // final before/after snapshot captures the net change.
-            kind: ev.toolName === "write_file" ? "write" : "edit",
-          });
-        } catch { /* skip */ }
-      }
+      // Parity Pass 5: extract via pure tested module so the logic
+      // round-trips through unit tests instead of living inside this
+      // useEffect where it's impossible to reach from vitest.
+      const toRecord = extractEditSnapshotsFromToolEvents(msg.toolEvents);
       if (toRecord.length > 0) {
         setEditHistory((prev) => {
           let next = prev;
