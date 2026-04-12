@@ -19,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
-import IncomeStreamBreakdown from "@/components/IncomeStreamBreakdown";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import {
@@ -211,14 +210,6 @@ export default function PracticeToWealthPage() {
         )}
         {/* Income Stream Breakdown — shows which revenue streams contribute */}
         {bizYears.length > 0 && <IncomeStreamBreakdown bizYears={bizYears} />}
-
-        {/* Income Stream Breakdown — 13-stream BIE visualization */}
-        {bizYears.length > 0 && (
-          <IncomeStreamBreakdown
-            results={bizYears}
-            title="Income Stream Breakdown"
-          />
-        )}
 
         {/* Guardrail warnings + benchmarks */}
         {(bizYears.length > 0 || holisticYears.length > 0) && (

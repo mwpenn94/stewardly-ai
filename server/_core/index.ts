@@ -239,6 +239,15 @@ async function startServer() {
         return;
       }
 
+      // Validate individual message objects have required shape
+      const invalidMsg = messages.find(
+        (m: any) => !m || typeof m.role !== "string" || (m.content !== undefined && m.content !== null && typeof m.content !== "string"),
+      );
+      if (invalidMsg) {
+        res.status(400).json({ error: "each message must have a string role and optional string content" });
+        return;
+      }
+
       // Validate sessionId is a number if provided
       const validSessionId = sessionId != null ? Number(sessionId) : undefined;
       if (sessionId != null && (isNaN(validSessionId!) || validSessionId! <= 0)) {

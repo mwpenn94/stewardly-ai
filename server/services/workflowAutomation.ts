@@ -185,7 +185,7 @@ export async function executeWorkflow(workflowId: string, userId: number, contex
           try {
             if (toolPath === "deepContextAssembler" || toolPath.startsWith("deepContext")) {
               const { assembleDeepContext } = await import("./deepContextAssembler");
-              const ctx = await assembleDeepContext(userId);
+              const ctx = await assembleDeepContext({ userId, query: `Workflow step: ${action}`, contextType: "chat" });
               output = `Assembled context: ${Object.keys(ctx).length} tiers, ${JSON.stringify(ctx).length} bytes`;
             } else if (toolPath === "notifications.send") {
               // Log notification intent — actual send depends on notification service availability

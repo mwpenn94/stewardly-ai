@@ -113,7 +113,7 @@ const tasks: ScheduledTask[] = [
         const activeUsers = await db
           .select({ id: users.id, role: users.role, email: users.email })
           .from(users)
-          .where(gte(users.lastLoginAt, sevenDaysAgo))
+          .where(gte(users.updatedAt, sevenDaysAgo))
           .limit(100);
 
         let generated = 0;
@@ -167,11 +167,11 @@ const tasks: ScheduledTask[] = [
           for (const insight of toInsert) {
             await db.insert(proactiveInsights).values({
               userId: user.id,
-              category: insight.category,
-              priority: insight.priority,
+              category: insight.category as any,
+              priority: insight.priority as any,
               title: insight.title,
               description: insight.description,
-              status: "new",
+              status: "new" as const,
             });
             generated++;
           }

@@ -388,8 +388,6 @@ export default function LearningFlashcardStudy() {
                 className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${flipped ? "animate-card-flip-in" : ""}`}
                 style={{ perspective: "600px" }}
                 onClick={() => { setFlipped((f) => !f); sendFeedback("learning.flashcard_flip"); }}
-                onClick={() => { setFlipped((f) => !f); pil.giveFeedback("learning.flashcard_flip"); }}
-                onClick={() => setFlipped((f) => !f)}
                 onKeyDown={(e) => {
                   if (e.key === " " || e.key === "Enter") {
                     e.preventDefault();

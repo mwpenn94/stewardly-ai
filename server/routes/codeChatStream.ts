@@ -55,11 +55,14 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
     return;
   }
 
-  const { message, model, allowMutations = false, maxIterations = 5, enabledTools, includeProjectInstructions = true, memoryOverlay } = req.body;
+  const { message, model, allowMutations = false, maxIterations: rawMaxIter = 5, enabledTools, includeProjectInstructions = true, memoryOverlay } = req.body;
   if (!message || typeof message !== "string") {
     res.status(400).json({ error: "message is required" });
     return;
   }
+
+  // Cap maxIterations to prevent DoS — client can request up to 25
+  const maxIterations = Math.min(Math.max(1, Number(rawMaxIter) || 5), 25);
 
   const isAdmin = user.role === "admin";
   const canMutate = isAdmin && allowMutations;

@@ -16,10 +16,7 @@ import {
   ArrowLeft, Calculator, TrendingUp, Building2, PiggyBank, Loader2,
   Sparkles, DollarSign, BarChart3, ArrowUpRight, ArrowDownRight,
   ChevronRight, Info, Heart, Scale, GraduationCap, Stethoscope,
-  HandCoins, Briefcase, ListChecks, Users, Grid3X3, BookOpen,
-} from "lucide-react";
-import { useState } from "react";
-  HandCoins, Briefcase, ListChecks, ShieldAlert, Dice5,
+  HandCoins, Briefcase, ListChecks, ShieldAlert, Dice5, Users, Grid3X3, BookOpen,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";

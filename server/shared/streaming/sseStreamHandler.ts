@@ -275,12 +275,20 @@ export async function createSSEStreamHandler(
             });
 
             try {
+              if (!toolCall.function?.arguments) {
+                throw new Error("Tool call missing function arguments");
+              }
               const args = JSON.parse(toolCall.function.arguments);
               observation = await Promise.race([
                 executeSearchTool(toolName, args),
                 new Promise<string>((_, reject) =>
                   setTimeout(() => reject(new Error(`Tool '${toolName}' timed out`)), 30_000),
                 ),
+                // Abort immediately on client disconnect
+                new Promise<string>((_, reject) => {
+                  if (abortController.signal.aborted) reject(new Error("Client disconnected"));
+                  abortController.signal.addEventListener("abort", () => reject(new Error("Client disconnected")), { once: true });
+                }),
               ]);
             } catch (err: any) {
               observation = JSON.stringify({ error: err.message });

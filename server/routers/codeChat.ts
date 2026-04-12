@@ -1505,7 +1505,7 @@ Based on the progress so far, what is the next concrete subtask to work on? Repl
               try {
                 const traceText = steps.map((s, i) => {
                   const obs = s.result.kind === "error"
-                    ? `Error: ${(s.result.result as any)?.message || "unknown"}`
+                    ? `Error: ${(s.result as any)?.error || "unknown"}`
                     : `OK (${s.durationMs}ms)`;
                   return `Step ${i + 1}: ${s.toolCall.name}(${JSON.stringify(s.toolCall.args).slice(0, 200)}) → ${obs}`;
                 }).join("\n");

@@ -527,6 +527,7 @@ export default function StrategyComparisonPage() {
               </CardContent>
             )}
           </Card>
+        )}
         {/* Guardrail warnings + benchmarks */}
         {rows.length > 0 && (
           <CalculatorContextBar

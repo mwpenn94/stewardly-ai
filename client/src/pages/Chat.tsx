@@ -31,7 +31,6 @@ import {
   Pin, FolderOpen, FolderPlus, ChevronRight, Phone,
   LogIn, GitBranch,
 } from "lucide-react";
-import { Streamdown } from "streamdown";
 import { ReasoningChain } from "@/components/ReasoningChain";
 import { LiveSession } from "@/components/LiveSession";
 // Round C3 / Round E1 — inline multi-model consensus panel
@@ -71,7 +70,6 @@ import {
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { useLocation, useRoute, Link } from "wouter";
 import { consumePendingPrompt } from "@/lib/navigateToChat";
-import { prefetchRoute } from "@/lib/routePrefetch";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
 import { ConvItem, SortableConvItem } from "@/components/chat/ConvItem";

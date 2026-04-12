@@ -31,7 +31,7 @@ interface AppShellProps {
 }
 
 export default function AppShell({ children, title }: AppShellProps) {
-  const { user, loading, logout } = useAuth();
+  const { user } = useAuth();
   const [location, navigate] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   useKeyboardShortcuts(); // Global shortcuts: ?, /, g+h, g+s, g+c, g+d, g+l, g+o

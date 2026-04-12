@@ -38,7 +38,6 @@ import {
 } from "lucide-react";
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
-import { trpc } from "@/lib/trpc";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import AppShell from "@/components/AppShell";
 
