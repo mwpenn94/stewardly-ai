@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ConsentBanner from "./components/ConsentBanner";
 import OfflineBanner from "./components/OfflineBanner";
@@ -152,15 +153,15 @@ function Router() {
         <Route path={"/chat"} component={Chat} />
         <Route path={"/chat/:id"} component={Chat} />
         <Route path={"/calculators"} component={Calculators} />
-        {/* ── Wealth Engine (Phase 4) ──────────────────────────────────── */}
-        <Route path={"/wealth-engine/strategy-comparison"} component={WeStrategyComparison} />
-        <Route path={"/wealth-engine/retirement"} component={WeRetirement} />
-        <Route path={"/wealth-engine/practice-to-wealth"} component={WePracticeToWealth} />
-        <Route path={"/wealth-engine/quick-quote"} component={WeQuickQuote} />
-        <Route path={"/wealth-engine/team-builder"} component={WeTeamBuilder} />
-        <Route path={"/wealth-engine/sensitivity"} component={WeSensitivity} />
-        <Route path={"/wealth-engine/references"} component={WeReferenceHub} />
-        <Route path={"/wealth-engine/business-income"} component={WeBusinessIncome} />
+        {/* ── Wealth Engine (Phase 4) — wrapped in SectionErrorBoundary ─── */}
+        <Route path={"/wealth-engine/strategy-comparison"}>{() => <SectionErrorBoundary sectionName="Strategy Comparison"><WeStrategyComparison /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/retirement"}>{() => <SectionErrorBoundary sectionName="Retirement Calculator"><WeRetirement /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/practice-to-wealth"}>{() => <SectionErrorBoundary sectionName="Practice to Wealth"><WePracticeToWealth /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/quick-quote"}>{() => <SectionErrorBoundary sectionName="Quick Quote"><WeQuickQuote /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/team-builder"}>{() => <SectionErrorBoundary sectionName="Team Builder"><WeTeamBuilder /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/sensitivity"}>{() => <SectionErrorBoundary sectionName="Sensitivity Analysis"><WeSensitivity /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/references"}>{() => <SectionErrorBoundary sectionName="Reference Hub"><WeReferenceHub /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/business-income"}>{() => <SectionErrorBoundary sectionName="Business Income"><WeBusinessIncome /></SectionErrorBoundary>}</Route>
         {/* Code Chat (admin foundation) */}
         <Route path={"/code-chat"} component={CodeChatPage} />
         {/* Consensus (Round C — multi-model consensus stream) */}

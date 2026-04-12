@@ -4,8 +4,8 @@
  * Pass 113. Financial case studies with branching decisions.
  */
 
-import { useState, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useState, useCallback, useMemo } from "react";
+import { useLocation, useRoute } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, ShieldCheck, AlertTriangle, CheckCircle2,
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { sendFeedback } from "@/lib/feedbackSpecs";
+import { trpc } from "@/lib/trpc";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -49,38 +50,133 @@ interface Props {
   onComplete?: (score: number, maxScore: number, complianceFlags: string[]) => void;
 }
 
-const DEMO_CASE: CaseStudyData = {
-  id: "demo-1",
-  title: "High Net Worth Estate Planning",
-  moduleSlug: "estate-planning",
-  clientProfile: "A 62-year-old business owner with $8M in assets, married, 3 adult children.",
-  situation: "The client wants to minimize estate taxes while ensuring equitable distribution among children, one of whom works in the family business.",
-  decisions: [
-    {
-      prompt: "The client asks about transferring the business to the child who works there. What's your first recommendation?",
-      options: [
-        { key: "A", text: "Recommend an immediate full transfer via gift", consequence: "A full gift transfer could trigger significant gift tax liability and remove the client's control prematurely.", score: 3, complianceFlag: "Suitability concern: gift tax implications not fully disclosed" },
-        { key: "B", text: "Suggest a buy-sell agreement with installment payments", consequence: "A buy-sell agreement provides a structured transition with fair market value documentation, useful for estate planning purposes.", score: 8, nextDecisionIndex: 1 },
-        { key: "C", text: "Propose a family limited partnership (FLP)", consequence: "An FLP can provide valuation discounts and gradual transfer of ownership while retaining management control.", score: 9, nextDecisionIndex: 1 },
-        { key: "D", text: "Recommend doing nothing until retirement", consequence: "Delaying planning could result in higher estate tax exposure and missed discount opportunities.", score: 2 },
-      ],
-    },
-    {
-      prompt: "The client is interested in your recommendation. They also want to ensure the other two children receive equitable value. How do you address this?",
-      options: [
-        { key: "A", text: "Recommend equal ownership splits across all three children", consequence: "Equal splits regardless of involvement can lead to conflicts and doesn't account for the working child's sweat equity.", score: 4 },
-        { key: "B", text: "Use life insurance to equalize for non-business children", consequence: "An ILIT with sufficient coverage can provide equitable value to the non-business children without fragmenting business ownership.", score: 9 },
-        { key: "C", text: "Suggest the business child buy out siblings over time", consequence: "This works but may strain the business with debt obligations and doesn't provide immediate security for the other children.", score: 6 },
-      ],
-    },
-  ],
-};
+const DEMO_CASES: CaseStudyData[] = [
+  {
+    id: "demo-1",
+    title: "High Net Worth Estate Planning",
+    moduleSlug: "estate-planning",
+    clientProfile: "A 62-year-old business owner with $8M in assets, married, 3 adult children.",
+    situation: "The client wants to minimize estate taxes while ensuring equitable distribution among children, one of whom works in the family business.",
+    decisions: [
+      {
+        prompt: "The client asks about transferring the business to the child who works there. What's your first recommendation?",
+        options: [
+          { key: "A", text: "Recommend an immediate full transfer via gift", consequence: "A full gift transfer could trigger significant gift tax liability and remove the client's control prematurely.", score: 3, complianceFlag: "Suitability concern: gift tax implications not fully disclosed" },
+          { key: "B", text: "Suggest a buy-sell agreement with installment payments", consequence: "A buy-sell agreement provides a structured transition with fair market value documentation, useful for estate planning purposes.", score: 8, nextDecisionIndex: 1 },
+          { key: "C", text: "Propose a family limited partnership (FLP)", consequence: "An FLP can provide valuation discounts and gradual transfer of ownership while retaining management control.", score: 9, nextDecisionIndex: 1 },
+          { key: "D", text: "Recommend doing nothing until retirement", consequence: "Delaying planning could result in higher estate tax exposure and missed discount opportunities.", score: 2 },
+        ],
+      },
+      {
+        prompt: "The client is interested in your recommendation. They also want to ensure the other two children receive equitable value. How do you address this?",
+        options: [
+          { key: "A", text: "Recommend equal ownership splits across all three children", consequence: "Equal splits regardless of involvement can lead to conflicts and doesn't account for the working child's sweat equity.", score: 4 },
+          { key: "B", text: "Use life insurance to equalize for non-business children", consequence: "An ILIT with sufficient coverage can provide equitable value to the non-business children without fragmenting business ownership.", score: 9 },
+          { key: "C", text: "Suggest the business child buy out siblings over time", consequence: "This works but may strain the business with debt obligations and doesn't provide immediate security for the other children.", score: 6 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "demo-2",
+    title: "Retirement Income Strategy",
+    moduleSlug: "retirement-planning",
+    clientProfile: "A 58-year-old couple, both employed. Combined income $220K, $1.2M in 401(k), $300K in taxable brokerage, $50K in Roth IRA.",
+    situation: "They want to retire at 62 but worry about the Medicare gap (62-65) and whether their savings can last 30+ years.",
+    decisions: [
+      {
+        prompt: "The couple asks: 'Should we both retire at 62, or should one of us keep working until 65 for health insurance?' What do you recommend?",
+        options: [
+          { key: "A", text: "Both retire at 62 and use ACA marketplace insurance", consequence: "ACA coverage is viable but requires careful income management to stay within premium subsidy thresholds. Their 401(k) withdrawals could push them above the cliff.", score: 7 },
+          { key: "B", text: "One spouse works until 65 for employer insurance", consequence: "This provides a bridge to Medicare and keeps one income stream. The working spouse's coverage can often extend to the retired spouse via COBRA or spousal benefits.", score: 9, nextDecisionIndex: 1 },
+          { key: "C", text: "Both retire at 62 and rely on COBRA for 18 months", consequence: "COBRA premiums are typically 2-3x employee cost and only last 18 months — doesn't bridge the full gap to 65.", score: 4, complianceFlag: "Incomplete analysis: COBRA duration insufficient for Medicare gap" },
+        ],
+      },
+      {
+        prompt: "They agree with your recommendation. Now they ask about their withdrawal strategy for the first few years. What's the optimal sequence?",
+        options: [
+          { key: "A", text: "Draw from the taxable brokerage first, let tax-deferred grow", consequence: "Drawing from taxable first preserves tax-deferred growth and keeps their income low for ACA subsidies. Capital gains in the brokerage may be taxed at 0% if income is low enough.", score: 9 },
+          { key: "B", text: "Take 401(k) distributions immediately since they're the largest bucket", consequence: "401(k) distributions are ordinary income — this could trigger higher ACA premiums, push them into a higher tax bracket, and accelerate depletion of the largest retirement asset.", score: 3, complianceFlag: "Tax efficiency concern: suboptimal withdrawal sequencing" },
+          { key: "C", text: "Convert some 401(k) to Roth during low-income years", consequence: "Strategic Roth conversions during the income gap can fill up lower tax brackets. But must be balanced against ACA MAGI thresholds.", score: 8 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "demo-3",
+    title: "Premium Financing Suitability",
+    moduleSlug: "premium-financing",
+    clientProfile: "A 45-year-old surgeon earning $800K/yr, net worth $3M, $2M in real estate, $500K in securities, $500K in retirement accounts.",
+    situation: "A carrier agent has proposed a $10M IUL policy financed at SOFR + 2%. The client asks you to evaluate whether this is suitable.",
+    decisions: [
+      {
+        prompt: "You review the premium financing proposal. The projected credited rate is 7.5% with a 10% cap and 0% floor. Loan rate is 7.3%. What's your initial assessment?",
+        options: [
+          { key: "A", text: "The 0.2% positive spread is adequate — approve the plan", consequence: "A 0.2% spread is dangerously thin. If SOFR rises even slightly or credited rates underperform, the client goes underwater. This spread doesn't account for policy charges (COI, admin fees).", score: 2, complianceFlag: "Reg BI concern: thin spread does not justify the risk for a non-accredited suitability profile" },
+          { key: "B", text: "Request a stress test showing what happens if SOFR rises 200bps", consequence: "This is the right move. A 200bps rate shock would flip the spread negative, and the client's collateral ($500K securities) would be at risk of a margin call. The stress test reveals the true risk profile.", score: 9, nextDecisionIndex: 1 },
+          { key: "C", text: "Decline the proposal — premium financing is inherently unsuitable", consequence: "While caution is warranted, premium financing isn't categorically unsuitable for HNW clients. A blanket rejection misses the fiduciary duty to evaluate on its merits.", score: 5 },
+        ],
+      },
+      {
+        prompt: "The stress test shows that at SOFR + 400bps, the client would need to post an additional $300K in collateral by year 5. The client says 'I can handle it.' How do you proceed?",
+        options: [
+          { key: "A", text: "Accept the client's risk tolerance statement and proceed", consequence: "A verbal 'I can handle it' is insufficient documentation under Reg BI. The client may not understand the compounding nature of the loan balance in a rising-rate environment.", score: 3, complianceFlag: "Reg BI violation: insufficient documentation of risk disclosure and client understanding" },
+          { key: "B", text: "Document the risks formally and require a signed acknowledgment", consequence: "Proper documentation with a detailed risk disclosure letter and signed acknowledgment protects both the client and the advisor. Include specific dollar amounts at various rate scenarios.", score: 9 },
+          { key: "C", text: "Suggest reducing the face amount to lower the risk exposure", consequence: "A reasonable compromise. A $5M policy with the same structure halves the downside risk while still providing significant coverage. This balances the client's desire with suitability requirements.", score: 8 },
+        ],
+      },
+    ],
+  },
+];
+
+/** Parse a DB case row's content field into CaseStudyData structure */
+function parseCaseFromDb(row: { id: number; title: string; content: string; tags?: unknown }): CaseStudyData | null {
+  try {
+    const parsed = JSON.parse(row.content);
+    if (!parsed.decisions || !Array.isArray(parsed.decisions)) return null;
+    return {
+      id: `db-${row.id}`,
+      title: row.title,
+      moduleSlug: parsed.moduleSlug || "general",
+      clientProfile: parsed.clientProfile || "",
+      situation: parsed.situation || "",
+      decisions: parsed.decisions,
+      audioIntro: parsed.audioIntro,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Props) {
   const [, navigate] = useLocation();
+  const [, params] = useRoute("/learning/case-study/:id");
   const audio = useAudioCompanion();
   const celebrate = useCelebration();
-  const cs = caseStudy ?? DEMO_CASE;
+
+  // Fetch cases from DB (graceful fallback to demo data)
+  const dbCases = trpc.learning.content.listCases.useQuery(undefined, {
+    staleTime: 300_000,
+    retry: false,
+  });
+
+  // Build available cases: DB cases (parsed) + demo fallbacks
+  const availableCases = useMemo(() => {
+    const parsed: CaseStudyData[] = [];
+    if (dbCases.data && Array.isArray(dbCases.data)) {
+      for (const row of dbCases.data as any[]) {
+        const c = parseCaseFromDb(row);
+        if (c) parsed.push(c);
+      }
+    }
+    // Always include demo cases as fallbacks
+    return parsed.length > 0 ? [...parsed, ...DEMO_CASES] : DEMO_CASES;
+  }, [dbCases.data]);
+
+  // Select case: prop > URL param > first available
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const resolvedCaseId = caseStudy?.id ?? selectedCaseId ?? params?.id ?? null;
+  const cs = caseStudy ?? availableCases.find(c => c.id === resolvedCaseId) ?? availableCases[0];
 
   const [phase, setPhase] = useState<"intro" | "active" | "consequence" | "results">("intro");
   const [currentDecisionIdx, setCurrentDecisionIdx] = useState(0);
@@ -136,6 +232,31 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
         <button onClick={handleBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground cursor-pointer mb-6">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
+
+        {/* Case picker — show when multiple cases available and no specific case was passed */}
+        {!caseStudy && availableCases.length > 1 && (
+          <div className="mb-6 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Choose a Case Study</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {availableCases.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => { setSelectedCaseId(c.id); restart(); }}
+                  className={`text-left p-3 rounded-lg border transition-colors cursor-pointer ${
+                    cs.id === c.id
+                      ? "border-accent bg-accent/5"
+                      : "border-border/50 bg-card/30 hover:border-border"
+                  }`}
+                  aria-label={`Select case study: ${c.title}`}
+                >
+                  <p className="text-sm font-medium">{c.title}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{c.clientProfile}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="p-6 rounded-xl border border-border bg-card/60">
           <h1 className="font-heading text-xl font-bold mb-4">{cs.title}</h1>
           <div className="flex items-start gap-3 mb-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
