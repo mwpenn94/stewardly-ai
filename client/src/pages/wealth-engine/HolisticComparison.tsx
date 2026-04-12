@@ -174,7 +174,7 @@ export default function HolisticComparisonPage() {
 
   return (
     <AppShell title="Holistic Comparison">
-      <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
         <header className="space-y-1">
           <div className="flex items-center gap-2">
             <Scale className="w-5 h-5 text-accent" />
@@ -281,7 +281,7 @@ export default function HolisticComparisonPage() {
               <CardTitle className="text-base">{headline}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <ProjectionPanel
                   label={presetMetaA?.label ?? presetA}
                   color={presetMetaA?.color ?? "#94A3B8"}
@@ -297,7 +297,7 @@ export default function HolisticComparisonPage() {
                   peerMax={Math.max(delta.finalA, delta.finalB)}
                 />
               </div>
-              <div className="mt-4 rounded-lg border p-4 flex items-center gap-3">
+              <div className="mt-4 rounded-lg border p-4 flex flex-wrap items-center gap-3">
                 <div className="flex-shrink-0">
                   {delta.delta > 0 ? (
                     <ArrowUp className="w-6 h-6 text-emerald-500" />

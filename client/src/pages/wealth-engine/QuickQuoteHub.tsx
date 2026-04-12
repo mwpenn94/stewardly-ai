@@ -102,7 +102,7 @@ export default function QuickQuoteHubPage() {
 
   return (
     <AppShell title="Quick Quote Hub">
-      <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
         <header className="space-y-1">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>

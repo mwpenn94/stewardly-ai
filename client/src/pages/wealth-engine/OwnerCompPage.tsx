@@ -108,7 +108,7 @@ export default function OwnerCompPage() {
               Engine compares all 4 entities and ranks them by net take-home.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             <div className="space-y-1">
               <Label className="text-[10px] uppercase text-muted-foreground">Net Profit</Label>
               <Input
@@ -199,7 +199,7 @@ export default function OwnerCompPage() {
                   </p>
                 </div>
                 {best && (
-                  <div className="grid grid-cols-3 gap-3 text-right">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-right">
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase">Net take-home</p>
                       <p className="text-base font-semibold text-emerald-400 tabular-nums">{fmt(best.netTakeHome)}</p>
@@ -277,7 +277,7 @@ export default function OwnerCompPage() {
                     </CardHeader>
                     <CardContent className="space-y-2 text-xs">
                       <p className="text-muted-foreground">{(best.retirementPlan as any).reasoning ?? "Retirement plan analysis"}</p>
-                      <div className="grid grid-cols-3 gap-2 pt-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
                         <StatChip label="Plan" value={((best.retirementPlan as any).plan ?? "401k").replace("_", " ")} />
                         <StatChip label="Employee" value={fmt((best.retirementPlan as any).employeeContribution ?? 0)} />
                         <StatChip label="Employer" value={fmt((best.retirementPlan as any).employerContribution ?? 0)} />
@@ -297,7 +297,7 @@ export default function OwnerCompPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-2 text-xs">
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         <StatChip label="Deduction" value={fmt(best.qbi.deduction)} accent="text-emerald-400" />
                         <StatChip label="Phase-out" value={(best.qbi as any).phaseoutApplied ? "Yes" : "No"} />
                         <StatChip label="Reason" value={((best.qbi as any).reason ?? "eligible").replace(/-/g, " ")} />
