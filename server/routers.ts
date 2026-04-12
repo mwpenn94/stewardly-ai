@@ -80,6 +80,7 @@ import { clientRouter } from "./routers/client";
 import { comparablesRouter } from "./routers/comparables";
 import { rebalancingRouter } from "./routers/rebalancing";
 import { taxRouter } from "./routers/tax";
+import { portfolioLedgerRouter } from "./routers/portfolioLedger";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -2126,6 +2127,7 @@ export const appRouter = router({
   comparables: comparablesRouter,
   rebalancing: rebalancingRouter,
   tax: taxRouter,
+  portfolioLedger: portfolioLedgerRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -109,8 +109,8 @@ export const FEATURE_AXES: readonly FeatureAxis[] = [
     id: "portfolio_mgmt",
     label: "Portfolio accounting",
     description: "Aggregates held-away + managed accounts, positions, performance.",
-    stewardlyScore: 1,
-    stewardlyEvidence: "Plaid perception in server/services/improvement/; no dedicated portfolio accounting ledger.",
+    stewardlyScore: 2,
+    stewardlyEvidence: "server/services/portfolio/ledger.ts (Pass 5) — pure cost-basis ledger with FIFO/LIFO/HIFO/LCFO/avgCost/specific-lot methods, lot tracking, realized/unrealized P&L, splits, dividends, splitRealized helper, lossHarvestCandidates picker + 49 tests. Live multi-custodian aggregation (Plaid feed → ledger) still open.",
   },
   {
     id: "rebalancing",
