@@ -130,8 +130,8 @@ export const FEATURE_AXES: readonly FeatureAxis[] = [
     id: "estate_planning",
     label: "Estate planning",
     description: "Document tracking, beneficiary mapping, trust structure modeling.",
-    stewardlyScore: 2,
-    stewardlyEvidence: "client/src/pages/EstatePlanning.tsx + calculators; no automated doc intake / flowchart.",
+    stewardlyScore: 3,
+    stewardlyEvidence: "client/src/pages/EstatePlanning.tsx + calculators + server/services/estate/documentParser.ts (Pass 7) — pure offline text parser that extracts testators, executors, trustees, beneficiaries (with per-stirpes + percentage/amount), specific bequests, guardians, governing state, trust kind. 32 tests. estate.parseDocumentOffline tRPC procedure.",
   },
   {
     id: "insurance_analysis",
