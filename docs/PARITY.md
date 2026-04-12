@@ -97,6 +97,8 @@ Each row has:
 | R7 | Dead-letter failed tool results | open | 0 | persist across refresh | — |
 | R8 | Offline graceful degradation | open | 1 | errors bubble, no local fallback | — |
 | R9 | Admin audit log of write ops | open | 2 | some logging but no consolidated view | — |
+| R10 | Stream request input validation | done | 9 | pure validateStreamRequest + 47 tests, 64KB message cap, iteration bounds, tool list caps, memory byte cap | P4 (this pass) |
+| R11 | Client-side input byte meter | done | 8 | chars-remaining indicator appears at 50% of 64KB limit, amber at 80%, red at 95% | P4 (this pass) |
 
 ### Accessibility
 
@@ -117,7 +119,7 @@ Each row has:
 These are improvements from the git log that must not regress:
 
 - SSE streaming for live tool events (`useCodeChatStream` + `codeChatStream.ts`)
-- Admin + writeMode gating for `write_file`/`edit_file`/`run_bash`
+- Admin + writeMode gating for `write_file`/`edit_file`/`multi_edit`/`run_bash`
 - SSRF guard in `webFetch.ts` — loopback, RFC1918, link-local, metadata hosts blocked
 - Symbol index 60s cache (perf regression risk)
 - Plan mode `PlanReviewPanel` — approval before execution for destructive steps
@@ -126,6 +128,9 @@ These are improvements from the git log that must not regress:
 - Per-tool enabled list intersection on server (non-admin can't enable write tools)
 - File mention expansion hard-caps to 5 files @ 32KB each
 - Context window meter flipping to amber at 60%, red at 80%
+- `validateStreamRequest` byte + iteration + tool-list caps (P4 — never accept unbounded input)
+- Multi-edit atomicity: if any step fails, file on disk is untouched (P2)
+- Live SR announcer throttle reducer: never flood AT queue with rapid tool events (P3)
 
 ---
 
@@ -149,3 +154,4 @@ Append-only tail. One line per completed pass:
 - Pass 1 · angle: missing-tool assessment · queue: [A1 web_fetch tool] · items completed: [web_fetch tool end-to-end (server service + dispatcher + SSE route allowlist + tool def + /web slash + permission popover + action palette + badge bump 8→9 + toolSummary + autonomousCoding summarizer + tests)] · items deferred: [] · sha: 3aa8672
 - Pass 2 · angle: T16 PARITY row — atomic multi-edit · queue: [R1 T16 from PARITY matrix] · items completed: [multi_edit tool (fileTools.multiEditFile with atomicity + before/after snapshots + 50-step cap + validation + TOO_LARGE guard), wired through codeChatExecutor.CodeToolName/CodeToolResult/dispatchCodeTool/CODE_CHAT_TOOL_DEFINITIONS/stats counter, autonomousCoding summarizer + stats aggregation, codeChatStream.mutation list + system prompt, ToolPermissionsPopover 9→10, CodeChat.tsx badge 9→10 + extractDiffFromTrace + edit-history capture, toolSummary counted, 17 new tests, TS clean, 794/794 suite, build 18.43s] · items deferred: [] · sha: e911c50
 - Pass 3 · angle: accessibility · queue: [A1 ARIA live region + A7 throttled announcer + new Accessibility matrix section] · items completed: [a11yAnnouncer.ts pure module with buildToolStartAnnouncement/buildToolFinishAnnouncement/buildMessageAnnouncement/buildAbortAnnouncement/buildStreamErrorAnnouncement/trimPreview + throttleAnnouncement/flushPending reducer, live-region JSX in CodeChat.tsx (role=status aria-live=polite sr-only data-testid), 4 useEffect hooks wiring tool start + finish + reply + error through the throttle, 37 new tests covering every builder + throttle + reducer flush, new "Accessibility" section in PARITY.md matrix (A1-A7)] · items deferred: [A4 focus trap in modals] · sha: 22c3384
+- Pass 4 · angle: input validation + graceful degradation · queue: [R10 server-side stream request validator + R11 client-side byte meter] · items completed: [requestValidation.ts pure validator (message byte cap 64KB, iteration range 1-20, enabledTools max 20 with control-char + length filters, memoryOverlay 16KB cap, model id 128-char + control-char check, discriminated union with 12 specific error codes), 47 unit tests covering every positive + negative case including emoji multi-byte size check + message exactly at limit, codeChatStream.ts integration (early exit with 400 + specific code before SSE headers open), client-side byte meter above input (appears at 50%, amber at 80%, red at 95%), PARITY.md new R10/R11 rows + updated protected improvements list] · items deferred: [] · sha: pending-commit

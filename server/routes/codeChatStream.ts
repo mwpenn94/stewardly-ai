@@ -22,6 +22,7 @@ import {
   loadProjectInstructions,
   buildInstructionsPromptOverlay,
 } from "../services/codeChat/projectInstructions";
+import { validateStreamRequest } from "../services/codeChat/requestValidation";
 import { logger } from "../_core/logger";
 
 const codeChatStreamRouter = Router();
@@ -52,11 +53,31 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
     return;
   }
 
-  const { message, model, allowMutations = false, maxIterations = 5, enabledTools, includeProjectInstructions = true, memoryOverlay } = req.body;
-  if (!message || typeof message !== "string") {
-    res.status(400).json({ error: "message is required" });
+  // Parity Pass 4: centralized input validation. Every field that
+  // used to have ad-hoc checks is now enforced here with specific
+  // error codes. The pure validator is unit-tested separately.
+  const validation = validateStreamRequest(req.body);
+  if (!validation.ok) {
+    logger.warn(
+      { userId: user.id, field: validation.field, code: validation.code },
+      "codeChatStream request rejected",
+    );
+    res.status(400).json({
+      error: validation.message,
+      code: validation.code,
+      field: validation.field,
+    });
     return;
   }
+  const {
+    message,
+    model,
+    allowMutations,
+    maxIterations,
+    enabledTools,
+    includeProjectInstructions,
+    memoryOverlay,
+  } = validation.value;
 
   const isAdmin = user.role === "admin";
   const canMutate = isAdmin && allowMutations;
@@ -66,11 +87,8 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
   // omitted, every tool the caller's role allows stays available.
   // If provided, we intersect it with the role-based allowlist so a
   // non-admin can never enable write tools by passing `enabledTools`.
-  const userAllowed: Set<string> | null = Array.isArray(enabledTools)
-    ? new Set(
-        enabledTools.filter((t: unknown): t is string => typeof t === "string"),
-      )
-    : null;
+  const userAllowed: Set<string> | null =
+    enabledTools !== null ? new Set(enabledTools) : null;
 
   // SSE headers
   res.setHeader("Content-Type", "text/event-stream");
@@ -129,11 +147,11 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
 
     // Pass 241: agent memory overlay from the client (the client
     // owns the memory store in localStorage and serializes it into
-    // a system-prompt block per request)
+    // a system-prompt block per request). Pass 4 validator already
+    // trimmed + byte-capped this field, but keep a belt-and-braces
+    // slice() here in case limits diverge later.
     const memorySnippet =
-      typeof memoryOverlay === "string" && memoryOverlay.trim().length > 0
-        ? memoryOverlay.trim().slice(0, 8192) // hard cap for safety
-        : "";
+      memoryOverlay.length > 0 ? memoryOverlay.slice(0, 8192) : "";
 
     const systemPrompt = [
       "You are a Claude-Code-style coding assistant inside Stewardly.",

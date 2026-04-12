@@ -2054,6 +2054,37 @@ function CodeChatInterface() {
 
       {/* Input area */}
       <div className="border-t border-border/40 p-3">
+        {/*
+          Parity Pass 4: soft chars-remaining indicator. Server
+          enforces a 64KB byte cap, but we show a friendly warning
+          at 80% so users can split a long prompt before the
+          network round-trip bounces back with MESSAGE_TOO_LARGE.
+          Byte count because emoji / multibyte UTF-8 pays more.
+        */}
+        {(() => {
+          const INPUT_MAX_BYTES = 64 * 1024;
+          // byteLength in bytes (TextEncoder works in both Node and browser)
+          const bytes = new TextEncoder().encode(input).byteLength;
+          const pct = bytes / INPUT_MAX_BYTES;
+          if (pct < 0.5) return null;
+          const severity = pct >= 0.95 ? "critical" : pct >= 0.8 ? "warning" : "info";
+          const colorClass =
+            severity === "critical"
+              ? "text-destructive"
+              : severity === "warning"
+                ? "text-amber-500"
+                : "text-muted-foreground";
+          return (
+            <div
+              className={`text-[10px] font-mono tabular-nums mb-1 text-right ${colorClass}`}
+              aria-live="polite"
+              title={`${bytes.toLocaleString()} of ${INPUT_MAX_BYTES.toLocaleString()} bytes used`}
+            >
+              {(bytes / 1024).toFixed(1)} / 64 KB
+              {pct >= 0.95 && " — at limit"}
+            </div>
+          );
+        })()}
         <div className="flex gap-2 relative">
           {mentionOpen && (
             <FileMentionPopover
