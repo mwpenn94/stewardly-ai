@@ -125,18 +125,47 @@ export default function IncomeProjection() {
   };
 
   // ─── Social Security optimizer ──────────────────────────
-  const ssCalc = trpc.ssOptimizer.optimize.useMutation({ onError: (e) => toast.error(e.message) });
+  const [ssFallbackUsed, setSsFallbackUsed] = useState(false);
+  const ssCalc = trpc.ssOptimizer.optimize.useMutation({
+    onError: (e) => {
+      // CBL18: client-side SS claiming fallback when server is unavailable
+      const ssSrc = sources.find(s => s.id === "ss");
+      if (ssSrc) {
+        const pia = ssSrc.monthlyAmount;
+        const fra = 67; // 1960+ birth year FRA
+        // Simple early/delayed reduction: -6.67%/yr before FRA, +8%/yr after (up to 70)
+        const claimAge = retirementAge;
+        const yearsFromFRA = claimAge - fra;
+        const adjFactor = yearsFromFRA < 0
+          ? Math.max(0.70, 1 + yearsFromFRA * 0.0667)  // early: reduce ~6.67%/yr
+          : Math.min(1.24, 1 + Math.min(yearsFromFRA, 3) * 0.08); // delayed: +8%/yr up to 70
+        const adjustedBenefit = Math.round(pia * adjFactor);
+        // Provide a minimal fallback response shape
+        (ssCalc as any).data = {
+          optimalAge: fra,
+          monthlyBenefit: adjustedBenefit,
+          totalLifetimeBenefit: adjustedBenefit * 12 * (lifeExpectancy - claimAge),
+          recommendation: `Claim at ${claimAge} for ~${fmt(adjustedBenefit)}/mo (client-side estimate)`,
+        };
+        setSsFallbackUsed(true);
+        toast.warning("SS optimizer unavailable — using simplified estimate");
+      } else {
+        toast.error(e.message);
+      }
+    },
+  });
 
   const runSSOptimizer = useCallback(() => {
     const ssSrc = sources.find(s => s.id === "ss");
     if (!ssSrc) return;
+    setSsFallbackUsed(false);
     ssCalc.mutate({
       birthYear: new Date().getFullYear() - currentAge,
       estimatedPIA: ssSrc.monthlyAmount,
       filingStatus: "single",
       lifeExpectancy,
     });
-  }, [sources, currentAge, lifeExpectancy, ssCalc]);
+  }, [sources, currentAge, lifeExpectancy, ssCalc, retirementAge]);
 
   // ─── Calculations ───────────────────────────────────────
   const activeSources = useMemo(() =>
@@ -309,7 +338,14 @@ export default function IncomeProjection() {
       {/* ─── SS Optimizer Results ──────────────────────────── */}
       {ssResult && (
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Social Security Optimization</CardTitle></CardHeader>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              Social Security Optimization
+              {ssFallbackUsed && (
+                <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-600">client-side estimate</Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
           <CardContent className="text-sm space-y-2">
             <div className="flex justify-between"><span className="text-muted-foreground">Optimal Claiming Age</span><span className="font-mono font-medium">{ssResult.optimalAge ?? ssResult.optimalClaimingAge ?? "—"}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Full Retirement Age</span><span className="font-mono">{ssResult.fullRetirementAge ?? ssResult.fra ?? "—"}</span></div>

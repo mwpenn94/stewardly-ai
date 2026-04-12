@@ -65,6 +65,29 @@ export async function handleSMSiTWebhook(
   const eventId = nanoid();
 
   try {
+    // CBL17 security hardening: verify webhook signature before processing
+    const smsitSecret = process.env.SMSIT_WEBHOOK_SECRET || "";
+    const signature = headers["x-smsit-signature"] || headers["x-hook-signature"];
+    let signatureValid = true;
+    if (smsitSecret) {
+      if (!signature) {
+        signatureValid = false;
+      } else {
+        const expected = crypto.createHmac("sha256", smsitSecret).update(rawBody).digest("hex");
+        try {
+          signatureValid = crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+        } catch {
+          signatureValid = false;
+        }
+      }
+      if (!signatureValid) {
+        logger.warn({ eventId }, "SMS-iT webhook rejected: invalid signature");
+        return { status: 401, body: { error: "Invalid signature" } };
+      }
+    } else {
+      logger.warn({ eventId }, "SMSIT_WEBHOOK_SECRET not set — signature verification skipped");
+    }
+
     const payload = JSON.parse(rawBody) as Record<string, unknown>;
     const eventType = (payload.event || payload.type || "unknown") as string;
 
@@ -75,7 +98,7 @@ export async function handleSMSiTWebhook(
       providerSlug: "smsit",
       eventType,
       payloadJson: payload as any,
-      signatureValid: true,
+      signatureValid,
       processingStatus: "pending",
     });
 

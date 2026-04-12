@@ -634,8 +634,8 @@ function YearByYearTable({ simData }: { simData: any[] }) {
         <CardDescription className="text-xs">{simData.length} years of compound growth</CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="w-full max-h-[500px]">
-          <Table>
+        <ScrollArea className="w-full max-h-[60vh] md:max-h-[500px]">
+          <Table className="min-w-[500px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs sticky top-0 bg-card">Year</TableHead>
@@ -694,8 +694,8 @@ function MonteCarloResults({ mcData }: { mcData: any }) {
           <CardTitle className="text-sm">Percentile Bands Over Time</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="w-full max-h-[400px]">
-            <Table>
+          <ScrollArea className="w-full max-h-[50vh] md:max-h-[400px]">
+            <Table className="min-w-[450px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">Year</TableHead>

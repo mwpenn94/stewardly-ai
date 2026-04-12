@@ -110,14 +110,57 @@ export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
   const dbEdges: ConceptEdge[] = useMemo(() => {
     if (edges) return edges;
     const conns = connsQ.data ?? [];
-    if (conns.length === 0) return DEMO_EDGES;
-    return conns.map((c: any) => ({
-      source: String(c.fromDefinitionId),
-      target: String(c.toDefinitionId),
-      relationship: c.relationship ?? "relates to",
-      strength: 0.6,
-    }));
-  }, [edges, connsQ.data]);
+    if (conns.length > 0) {
+      return conns.map((c: any) => ({
+        source: String(c.fromDefinitionId),
+        target: String(c.toDefinitionId),
+        relationship: c.relationship ?? "relates to",
+        strength: 0.6,
+      }));
+    }
+    // CBL22: Auto-infer relationships from shared disciplines when no
+    // explicit connections exist. Connects concepts within the same
+    // discipline using a lightweight neighbor sampling so the graph
+    // is useful even before an admin curates relationships.
+    if (dbNodes.length > 0 && dbNodes !== DEMO_NODES) {
+      const byDiscipline = new Map<string, ConceptNode[]>();
+      dbNodes.forEach(n => {
+        const list = byDiscipline.get(n.discipline) || [];
+        list.push(n);
+        byDiscipline.set(n.discipline, list);
+      });
+      const inferred: ConceptEdge[] = [];
+      byDiscipline.forEach((members) => {
+        // Connect each node to next 2 neighbors in same discipline (ring topology)
+        for (let i = 0; i < members.length && inferred.length < 200; i++) {
+          for (let j = 1; j <= 2 && i + j < members.length; j++) {
+            inferred.push({
+              source: members[i].id,
+              target: members[i + j].id,
+              relationship: "same discipline",
+              strength: 0.3,
+            });
+          }
+        }
+      });
+      // Add a few cross-discipline links for the top nodes
+      const disciplines = Array.from(byDiscipline.keys());
+      for (let d = 0; d < disciplines.length - 1 && inferred.length < 250; d++) {
+        const a = byDiscipline.get(disciplines[d])!;
+        const b = byDiscipline.get(disciplines[d + 1])!;
+        if (a.length > 0 && b.length > 0) {
+          inferred.push({
+            source: a[0].id,
+            target: b[0].id,
+            relationship: "cross-discipline",
+            strength: 0.2,
+          });
+        }
+      }
+      return inferred;
+    }
+    return DEMO_EDGES;
+  }, [edges, connsQ.data, dbNodes]);
 
   const graphNodes = dbNodes;
   const graphEdges = dbEdges;

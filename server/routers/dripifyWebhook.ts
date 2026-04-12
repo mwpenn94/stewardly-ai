@@ -65,6 +65,21 @@ export async function handleDripifyWebhook(
   if (!db) return { status: 503, body: { error: "Database unavailable" } };
 
   try {
+    // CBL17 security hardening: verify webhook signature before processing
+    const dripifySecret = process.env.DRIPIFY_WEBHOOK_SECRET || "";
+    const signature = headers["x-dripify-signature"] || headers["x-hook-signature"];
+    const signatureValid = dripifySecret
+      ? verifyDripifySignature(rawBody, signature, dripifySecret)
+      : true; // no secret configured = skip verification
+
+    if (dripifySecret && !signatureValid) {
+      logger.warn("Dripify webhook rejected: invalid signature");
+      return { status: 401, body: { error: "Invalid signature" } };
+    }
+    if (!dripifySecret) {
+      logger.warn("DRIPIFY_WEBHOOK_SECRET not set — signature verification skipped");
+    }
+
     const payload = JSON.parse(rawBody) as Record<string, unknown>;
     const eventType = (payload.event || payload.type || "unknown") as string;
 

@@ -51,26 +51,9 @@ const CATEGORY_COLORS: Record<string, string> = {
   case: "text-chart-3", milestone: "text-chart-4",
 };
 
-const DEMO_DATA: AchievementData = {
-  streak: { current: 5, longest: 12, todayComplete: true },
-  dailyGoals: [
-    { id: "g1", label: "Review flashcards", current: 15, target: 20, unit: "cards" },
-    { id: "g2", label: "Study time", current: 25, target: 30, unit: "min" },
-    { id: "g3", label: "Practice questions", current: 8, target: 10, unit: "questions" },
-  ],
-  achievements: [
-    { id: "a1", title: "First Steps", description: "Complete your first study session", category: "milestone", progress: 100, earnedAt: "2026-03-15" },
-    { id: "a2", title: "Week Warrior", description: "7-day study streak", category: "streak", progress: 100, earnedAt: "2026-03-22" },
-    { id: "a3", title: "Term Master", description: "Master 50 definitions", category: "mastery", progress: 72 },
-    { id: "a4", title: "Exam Ready", description: "Pass 3 practice exams", category: "exam", progress: 33 },
-    { id: "a5", title: "Case Closer", description: "Complete 5 case studies", category: "case", progress: 20 },
-    { id: "a6", title: "Fortnight Focus", description: "14-day study streak", category: "streak", progress: 36 },
-  ],
-  totalMastered: 36,
-  totalStudyMinutes: 1240,
-  examsCompleted: 1,
-  casesCompleted: 1,
-};
+// CBL22: Removed DEMO_DATA constant — deriveAchievements() now handles
+// the empty-state case cleanly with real mastery data (0 mastered shows
+// "First Steps" at 0% and real daily goal targets).
 
 /**
  * Derives achievement data from real mastery + due-item stats.
@@ -167,7 +150,7 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
       </p>
 
       {/* Stats bar */}
-      <div className="grid grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
         <div className="p-3 rounded-xl border border-border bg-card/60 text-center">
           <Flame className={`w-5 h-5 mx-auto mb-1 ${d.streak.current > 0 ? "text-amber-400" : "text-muted-foreground/30"}`} />
           <div className="text-lg font-heading font-bold">{d.streak.current}</div>

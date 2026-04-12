@@ -662,6 +662,11 @@ export default function Chat() {
     const trimmed = text.trim();
     if (!trimmed && attachments.length === 0) return;
     if (isStreaming) return;
+    // CBL18: prevent sends while offline — saves user from a confusing network error
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      toast.error("You're offline — message not sent. Check your connection and try again.");
+      return;
+    }
 
     const userMsg = { role: "user" as const, content: trimmed, createdAt: new Date() };
     setMessages(prev => [...prev, userMsg]);
