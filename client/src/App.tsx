@@ -48,6 +48,12 @@ const WeWhatIfSensitivity = lazy(() => import("./pages/wealth-engine/WhatIfSensi
 const WeReferenceHub = lazy(() => import("./pages/wealth-engine/ReferenceHub"));
 const WeBusinessIncome = lazy(() => import("./pages/wealth-engine/BusinessIncome"));
 const WeWealthConfigurator = lazy(() => import("./pages/wealth-engine/WealthConfigurator"));
+const WeBusinessValuation = lazy(() => import("./pages/wealth-engine/BusinessValuationPage"));
+const WeBusinessIncomeQuickQuote = lazy(() => import("./pages/wealth-engine/BusinessIncomeQuickQuote"));
+const WeOwnerComp = lazy(() => import("./pages/wealth-engine/OwnerCompPage"));
+const WeQuickQuoteHub = lazy(() => import("./pages/wealth-engine/QuickQuoteHub"));
+const WeHolisticComparison = lazy(() => import("./pages/wealth-engine/HolisticComparison"));
+const WeWealthEngineHub = lazy(() => import("./pages/wealth-engine/WealthEngineHub"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 // Consensus (Round C3 — multi-model consensus stream UI)
@@ -172,6 +178,12 @@ function Router() {
         <Route path={"/wealth-engine/business-income"}>{() => <SectionErrorBoundary sectionName="Business Income"><WeBusinessIncome /></SectionErrorBoundary>}</Route>
         <Route path={"/wealth-engine/configurator"}>{() => <SectionErrorBoundary sectionName="Wealth Configurator"><WeWealthConfigurator /></SectionErrorBoundary>}</Route>
         <Route path={"/wealth-engine/what-if"}>{() => <SectionErrorBoundary sectionName="What-If Analysis"><WeWhatIfSensitivity /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/business-valuation"}>{() => <SectionErrorBoundary sectionName="Business Valuation"><WeBusinessValuation /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/business-income-quick-quote"}>{() => <SectionErrorBoundary sectionName="Business Income Quick Quote"><WeBusinessIncomeQuickQuote /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/owner-comp"}>{() => <SectionErrorBoundary sectionName="Owner Compensation"><WeOwnerComp /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/quick-quote-hub"}>{() => <SectionErrorBoundary sectionName="Quick Quote Hub"><WeQuickQuoteHub /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/holistic-comparison"}>{() => <SectionErrorBoundary sectionName="Holistic Comparison"><WeHolisticComparison /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine"}>{() => <SectionErrorBoundary sectionName="Wealth Engine"><WeWealthEngineHub /></SectionErrorBoundary>}</Route>
         {/* Code Chat (admin foundation) */}
         <Route path={"/code-chat"} component={CodeChatPage} />
         {/* Consensus (Round C — multi-model consensus stream) */}

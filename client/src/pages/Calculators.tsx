@@ -16,7 +16,7 @@ import {
   ArrowLeft, Calculator, TrendingUp, Building2, PiggyBank, Loader2,
   Sparkles, DollarSign, BarChart3, ArrowUpRight, ArrowDownRight,
   ChevronRight, Info, Heart, Scale, GraduationCap, Stethoscope,
-  HandCoins, Briefcase, ListChecks, ShieldAlert, Dice5, Users, Grid3X3, BookOpen,
+  HandCoins, Briefcase, ListChecks, ShieldAlert, Dice5, Users, Grid3X3, BookOpen, Rocket,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
@@ -197,6 +197,11 @@ export default function Calculators() {
               { label: "Reference Hub", path: "/wealth-engine/references", icon: <BookOpen className="w-4 h-4" />, desc: "Products, benchmarks, methodology" },
               { label: "Business Income", path: "/wealth-engine/business-income", icon: <DollarSign className="w-4 h-4" />, desc: "BIE practice income modeling" },
               { label: "Wealth Configurator", path: "/wealth-engine/configurator", icon: <ShieldAlert className="w-4 h-4" />, desc: "UWE — 14 products, 7 strategies" },
+              { label: "Business Valuation", path: "/wealth-engine/business-valuation", icon: <Rocket className="w-4 h-4" />, desc: "SDE multiple + exit projection" },
+              { label: "Biz Income Quick Quote", path: "/wealth-engine/business-income-quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Fast business income proposal" },
+              { label: "Owner Compensation", path: "/wealth-engine/owner-comp", icon: <DollarSign className="w-4 h-4" />, desc: "Owner comp + succession analysis" },
+              { label: "Holistic Comparison", path: "/wealth-engine/holistic-comparison", icon: <BarChart3 className="w-4 h-4" />, desc: "Unified multi-strategy view" },
+              { label: "Wealth Engine Hub", path: "/wealth-engine", icon: <Grid3X3 className="w-4 h-4" />, desc: "All wealth engine tools" },
               { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
             ].map(tool => (
               <button
