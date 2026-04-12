@@ -53,6 +53,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G29 | P2   | dev-ergonomics  | Natural-language prompt parser for onboarding (bearer/api_key/rate hints)  | done        | build-loop-p17   | 5/10  | pending |
 | G30 | P0   | integration     | tRPC wiring for onboardSource/parseOnboardPrompt/detectDrift/extractHints  | done        | build-loop-p18   | 5/10  | pending |
 | G31 | P1   | test-coverage   | tRPC router-level integration tests for Pass 18 wiring                     | done        | build-loop-p19   | 5/10  | pending |
+| G32 | P2   | docs            | Module README with public API surface + design principles                  | done        | build-loop-p20   | 4/10  | pending |
 
 ## Protected Improvements
 
@@ -116,4 +117,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 - Pass 16 · onboarding wizard · [F1 Pass 7 deferred entrypoint, A1: tie passes 1-15 into one call, A2: 10-phase pipeline] · 045a4bb · G28 done
 - Pass 17 · NL prompt parser · [A1 dev-ergonomics: regex-based parsing, A2: auth/url/endpoint/rate hints] · 44bf8e6 · G29 done
 - Pass 18 · tRPC wiring · [F1: expose new modules via router, A1: 5 new procs] · c64af47 · G30 done
-- Pass 19 · router integration tests · [A1 test-coverage: createCaller tests, A2: auth/zod/happy paths] · pending · G31 done
+- Pass 19 · router integration tests · [A1 test-coverage: createCaller tests, A2: auth/zod/happy paths] · ca73bcf · G31 done
+- Pass 20 · module README · [A1 docs: public API surface + design principles + module tables] · pending · G32 done
