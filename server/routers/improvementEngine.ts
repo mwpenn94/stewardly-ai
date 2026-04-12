@@ -874,4 +874,83 @@ export const improvementEngineRouter = router({
       });
       return { success: true };
     }),
+
+  // ─── Hypothesis generation from improvement cycle signals ──────────
+  generateHypotheses: protectedProcedure
+    .input(z.object({
+      enrichWithLLM: z.boolean().default(false),
+    }).optional())
+    .mutation(async ({ input }) => {
+      const { runImprovementCycle, generateHypotheses, enrichHypothesesWithLLM } =
+        await import("../services/improvement/improvementLoops");
+
+      // Build a minimal input from what we can gather without DB
+      // In production, these would come from model_runs and usage tables
+      const computationLogs: Array<{
+        id: string; timestamp: Date; toolName: string; trigger: string;
+        input: Record<string, unknown>; result: Record<string, unknown>;
+        userAction?: "accepted" | "rejected" | "modified" | "ignored";
+      }> = [];
+
+      // Try to pull recent computation logs from DB
+      try {
+        const db = await (await import("../db")).getDb();
+        if (db) {
+          const recentActions = await db.select().from(improvementActions)
+            .orderBy(desc(improvementActions.createdAt))
+            .limit(100);
+
+          for (const a of recentActions) {
+            computationLogs.push({
+              id: String(a.id),
+              timestamp: new Date(Number(a.createdAt) || Date.now()),
+              toolName: a.direction || "unknown",
+              trigger: a.layer || "platform",
+              input: {},
+              result: {},
+              userAction: a.status === "implemented" ? "accepted" : "ignored",
+            });
+          }
+        }
+      } catch {
+        // DB unavailable — run with empty logs (hypotheses still generated from structure)
+      }
+
+      const cycleResult = runImprovementCycle({
+        computationLogs,
+        alertOutcomes: [],
+        userActivity: [],
+        sensitivityInputs: [],
+        competitorFeatures: [],
+      });
+      let hypotheses = generateHypotheses(cycleResult);
+
+      if (input?.enrichWithLLM && hypotheses.length > 0) {
+        try {
+          hypotheses = await enrichHypothesesWithLLM(hypotheses, async (prompt) => {
+            const response = await contextualLLM({
+              messages: [{ role: "user", content: prompt }],
+              temperature: 0.3,
+              maxTokens: 1000,
+            });
+            return response.choices?.[0]?.message?.content || "[]";
+          });
+        } catch {
+          // LLM enrichment is optional — hypotheses remain with original text
+        }
+      }
+
+      return {
+        hypotheses,
+        cycleMetrics: {
+          calibrationAdjustments: cycleResult.defaultCalibration.proposedAdjustments.length,
+          qualityAdjustments: cycleResult.recommendationQuality.proposedAdjustments.length,
+          triggerAdjustments: cycleResult.triggerTuning.proposedAdjustments.length,
+          sensitivityRankings: cycleResult.sensitivityRanking.length,
+          featureGaps: cycleResult.featureGaps.length,
+          userClusters: Object.keys(cycleResult.userClusters).length,
+          ranAt: cycleResult.ranAt,
+        },
+      };
+    }),
 });

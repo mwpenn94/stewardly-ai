@@ -303,3 +303,188 @@ export function runImprovementCycle(
     ranAt: new Date(),
   };
 }
+
+// ─── Hypothesis Generator ──────────────────────────────────────────────
+// Takes the output of runImprovementCycle and produces actionable
+// hypotheses for the improvement engine to test. Each hypothesis has
+// a measurable prediction, a proposed change, and success criteria.
+
+export interface Hypothesis {
+  id: string;
+  source: "calibration" | "recommendation_quality" | "trigger_tuning" | "sensitivity" | "feature_gap" | "user_cluster";
+  title: string;
+  description: string;
+  proposedChange: string;
+  measurableOutcome: string;
+  successThreshold: number;
+  priority: "high" | "medium" | "low";
+  estimatedEffortHours: number;
+  autoTestable: boolean;
+}
+
+/**
+ * Pure function: generates hypotheses from improvement cycle results.
+ * Does NOT call LLM — produces structured hypotheses from the data
+ * patterns detected by the 6 loops. Can be enriched with LLM
+ * descriptions via `enrichHypothesesWithLLM` below.
+ */
+export function generateHypotheses(cycle: ImprovementCycleResult): Hypothesis[] {
+  const hypotheses: Hypothesis[] = [];
+  let counter = 0;
+  const mkId = () => `hyp-${Date.now()}-${++counter}`;
+
+  // From default calibration: if adjustments are proposed, hypothesize
+  // that applying them will reduce prediction error
+  for (const adj of cycle.defaultCalibration.proposedAdjustments) {
+    if (adj.confidence >= 0.5) {
+      hypotheses.push({
+        id: mkId(),
+        source: "calibration",
+        title: `Calibrate ${adj.field} from ${adj.oldValue.toFixed(3)} to ${adj.newValue.toFixed(3)}`,
+        description: adj.rationale,
+        proposedChange: `Update engine default for ${adj.field} to ${adj.newValue.toFixed(3)}`,
+        measurableOutcome: `Prediction error on ${adj.field} decreases by ≥20% in next cycle`,
+        successThreshold: 0.2,
+        priority: adj.confidence >= 0.8 ? "high" : "medium",
+        estimatedEffortHours: 0.5,
+        autoTestable: true,
+      });
+    }
+  }
+
+  // From recommendation quality: if acceptance rate is low, hypothesize
+  // that adjusting recommendation thresholds will improve acceptance
+  for (const adj of cycle.recommendationQuality.proposedAdjustments) {
+    hypotheses.push({
+      id: mkId(),
+      source: "recommendation_quality",
+      title: `Tune recommendation threshold: ${adj.field}`,
+      description: adj.rationale,
+      proposedChange: `Adjust ${adj.field} from ${adj.oldValue.toFixed(3)} to ${adj.newValue.toFixed(3)}`,
+      measurableOutcome: `Recommendation acceptance rate increases by ≥10%`,
+      successThreshold: 0.1,
+      priority: "medium",
+      estimatedEffortHours: 1,
+      autoTestable: true,
+    });
+  }
+
+  // From trigger tuning: threshold adjustments
+  for (const adj of cycle.triggerTuning.proposedAdjustments) {
+    hypotheses.push({
+      id: mkId(),
+      source: "trigger_tuning",
+      title: `Adjust alert threshold: ${adj.field}`,
+      description: adj.rationale,
+      proposedChange: `Move ${adj.field} threshold from ${adj.oldValue} to ${adj.newValue}`,
+      measurableOutcome: `False positive rate decreases by ≥15%`,
+      successThreshold: 0.15,
+      priority: adj.confidence >= 0.7 ? "high" : "low",
+      estimatedEffortHours: 0.5,
+      autoTestable: true,
+    });
+  }
+
+  // From sensitivity ranking: highest-sensitivity inputs deserve
+  // better default values or more prominent UI placement
+  const topSensitive = cycle.sensitivityRanking.slice(0, 3);
+  for (const item of topSensitive) {
+    if (item.sensitivity > 0.5) {
+      hypotheses.push({
+        id: mkId(),
+        source: "sensitivity",
+        title: `Improve guidance for high-sensitivity input: ${item.metric}`,
+        description: `${item.metric} has sensitivity ${item.sensitivity.toFixed(2)} — small changes in this input cause large outcome changes. Users may benefit from guardrails or contextual guidance.`,
+        proposedChange: `Add inline guardrail warning when ${item.metric} deviates >2σ from population median`,
+        measurableOutcome: `User-modified ${item.metric} values cluster closer to population median`,
+        successThreshold: 0.15,
+        priority: "medium",
+        estimatedEffortHours: 2,
+        autoTestable: false,
+      });
+    }
+  }
+
+  // From feature gaps: each unmatched competitor feature is a hypothesis
+  for (const gap of cycle.featureGaps) {
+    hypotheses.push({
+      id: mkId(),
+      source: "feature_gap",
+      title: `Close feature gap: ${gap.feature} (${gap.competitor})`,
+      description: `${gap.competitor} launched "${gap.feature}" (${gap.category}) on ${gap.launchedAt}. No equivalent exists in Stewardly.`,
+      proposedChange: `Build equivalent of ${gap.feature}`,
+      measurableOutcome: `Feature parity score for ${gap.category} increases`,
+      successThreshold: 1,
+      priority: gap.category === "compliance" ? "high" : "medium",
+      estimatedEffortHours: gap.category === "ux" ? 8 : 16,
+      autoTestable: false,
+    });
+  }
+
+  // From user clusters: identify underserved clusters
+  const clusterEntries = Object.entries(cycle.userClusters) as [UserCluster, number[]][];
+  for (const [cluster, userIds] of clusterEntries) {
+    if (userIds.length > 0) {
+      hypotheses.push({
+        id: mkId(),
+        source: "user_cluster",
+        title: `Tailor experience for "${cluster}" user segment (${userIds.length} users)`,
+        description: `${userIds.length} users cluster as "${cluster}". This segment may benefit from tailored defaults, content emphasis, or UI density adjustments.`,
+        proposedChange: `Create a ${cluster}-optimized preset in the recommendation engine`,
+        measurableOutcome: `Engagement score for ${cluster} users increases by ≥10%`,
+        successThreshold: 0.1,
+        priority: userIds.length > 10 ? "high" : "low",
+        estimatedEffortHours: 4,
+        autoTestable: true,
+      });
+    }
+  }
+
+  // Sort by priority then estimated effort
+  const priorityOrder = { high: 0, medium: 1, low: 2 };
+  hypotheses.sort((a, b) => {
+    const pd = priorityOrder[a.priority] - priorityOrder[b.priority];
+    if (pd !== 0) return pd;
+    return a.estimatedEffortHours - b.estimatedEffortHours;
+  });
+
+  return hypotheses;
+}
+
+/**
+ * Enriches hypotheses with LLM-generated descriptions and implementation plans.
+ * This is the async LLM-dependent step — call only when contextualLLM is available.
+ * Falls back to the original hypothesis text on LLM failure.
+ */
+export async function enrichHypothesesWithLLM(
+  hypotheses: Hypothesis[],
+  invokeLLM: (prompt: string) => Promise<string>,
+): Promise<Hypothesis[]> {
+  if (hypotheses.length === 0) return hypotheses;
+
+  // Batch the top 5 hypotheses to avoid excessive LLM calls
+  const toEnrich = hypotheses.slice(0, 5);
+  const prompt = `You are a financial technology improvement analyst. For each hypothesis below, provide a one-sentence refined description and a concrete implementation plan (2-3 steps max).
+
+${toEnrich.map((h, i) => `${i + 1}. [${h.source}] ${h.title}\n   Current: ${h.description}\n   Proposed: ${h.proposedChange}`).join("\n\n")}
+
+Respond as JSON array: [{"index": 0, "description": "...", "plan": "..."}]`;
+
+  try {
+    const response = await invokeLLM(prompt);
+    const enrichments = JSON.parse(response);
+    if (Array.isArray(enrichments)) {
+      for (const e of enrichments) {
+        const idx = typeof e.index === "number" ? e.index : -1;
+        if (idx >= 0 && idx < toEnrich.length) {
+          if (e.description) toEnrich[idx].description = e.description;
+          if (e.plan) toEnrich[idx].proposedChange = e.plan;
+        }
+      }
+    }
+  } catch {
+    // LLM failure is non-fatal — hypotheses remain with their original text
+  }
+
+  return hypotheses;
+}

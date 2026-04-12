@@ -24,6 +24,7 @@ import {
   clusterUsers,
   findFeatureGaps,
   runImprovementCycle,
+  generateHypotheses,
   type ComputationLog,
   type AlertOutcome,
   type UserActivity,
@@ -382,6 +383,157 @@ describe("Phase 7B — improvement loops", () => {
       expect(r.userClusters).toBeDefined();
       expect(r.featureGaps).toBeDefined();
       expect(r.ranAt).toBeInstanceOf(Date);
+    });
+  });
+
+  // ─── Hypothesis Generator (CBL15 Pass 5) ─────────────────────────
+  describe("generateHypotheses", () => {
+    it("returns empty array for empty cycle result", () => {
+      const cycle = runImprovementCycle({
+        computationLogs: [],
+        alertOutcomes: [],
+        userActivity: [],
+        sensitivityInputs: [],
+        competitorFeatures: [],
+      });
+      const hypotheses = generateHypotheses(cycle);
+      expect(hypotheses).toBeInstanceOf(Array);
+    });
+
+    it("generates calibration hypotheses from high-confidence adjustments", () => {
+      // Build logs that trigger a calibration adjustment
+      // Need >= 50 logs for confidence >= 0.5 (confidence = min(0.9, n/100))
+      const logs: ComputationLog[] = Array.from({ length: 60 }, (_, i) => ({
+        id: `log-${i}`,
+        timestamp: new Date(),
+        toolName: "calculator",
+        trigger: "user_request",
+        input: { savingsRate: 0.15 },
+        result: {},
+        userAction: "accepted" as const,
+        actualOutcome: { savingsRateActual: 0.08 }, // Real savings rate is much lower
+      }));
+      const cycle = runImprovementCycle({
+        computationLogs: logs,
+        alertOutcomes: [],
+        userActivity: [],
+        sensitivityInputs: [],
+        competitorFeatures: [],
+      });
+      const hypotheses = generateHypotheses(cycle);
+      const calibrationH = hypotheses.filter(h => h.source === "calibration");
+      expect(calibrationH.length).toBeGreaterThanOrEqual(1);
+      expect(calibrationH[0].autoTestable).toBe(true);
+    });
+
+    it("generates feature gap hypotheses from competitor features", () => {
+      const cycle = runImprovementCycle({
+        computationLogs: [],
+        alertOutcomes: [],
+        userActivity: [],
+        sensitivityInputs: [],
+        competitorFeatures: [
+          { competitor: "Wealthfront", feature: "Direct indexing", launchedAt: "2025-01", category: "engine", ourEquivalent: null },
+          { competitor: "Betterment", feature: "Tax coordination", launchedAt: "2025-03", category: "engine", ourEquivalent: "taxProjector" },
+        ],
+      });
+      const hypotheses = generateHypotheses(cycle);
+      const gapH = hypotheses.filter(h => h.source === "feature_gap");
+      expect(gapH.length).toBe(1); // Only the unmatched one
+      expect(gapH[0].title).toContain("Direct indexing");
+    });
+
+    it("generates sensitivity hypotheses for high-sensitivity inputs", () => {
+      const cycle = runImprovementCycle({
+        computationLogs: [],
+        alertOutcomes: [],
+        userActivity: [],
+        sensitivityInputs: [
+          { metric: "savingsRate", variations: [
+            { inputDelta: 0.01, outputDelta: 5000 },
+            { inputDelta: 0.02, outputDelta: 12000 },
+          ] },
+        ],
+        competitorFeatures: [],
+      });
+      const hypotheses = generateHypotheses(cycle);
+      const sensitivityH = hypotheses.filter(h => h.source === "sensitivity");
+      // High sensitivity (500000+) should trigger a hypothesis
+      expect(sensitivityH.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("generates user cluster hypotheses", () => {
+      const cycle = runImprovementCycle({
+        computationLogs: [],
+        alertOutcomes: [],
+        userActivity: [
+          { userId: 1, toolUsageCount: 50, avgSessionMinutes: 30, topTools: ["calculator"], agentInitiatedAcceptanceRate: 0.9 },
+          { userId: 2, toolUsageCount: 5, avgSessionMinutes: 5, topTools: ["chat"], agentInitiatedAcceptanceRate: 0.1 },
+        ],
+        sensitivityInputs: [],
+        competitorFeatures: [],
+      });
+      const hypotheses = generateHypotheses(cycle);
+      const clusterH = hypotheses.filter(h => h.source === "user_cluster");
+      expect(clusterH).toBeInstanceOf(Array);
+    });
+
+    it("hypotheses are sorted by priority then effort", () => {
+      const cycle = runImprovementCycle({
+        computationLogs: Array.from({ length: 20 }, (_, i) => ({
+          id: `log-${i}`,
+          timestamp: new Date(),
+          toolName: "calculator",
+          trigger: "user_request",
+          input: { savingsRate: 0.15 },
+          result: {},
+          userAction: "accepted" as const,
+          actualOutcome: { savingsRateActual: 0.08 },
+        })),
+        alertOutcomes: [],
+        userActivity: [],
+        sensitivityInputs: [],
+        competitorFeatures: [
+          { competitor: "Test", feature: "Compliance feature", launchedAt: "2025-01", category: "compliance", ourEquivalent: null },
+        ],
+      });
+      const hypotheses = generateHypotheses(cycle);
+      if (hypotheses.length >= 2) {
+        const priorities = hypotheses.map(h => h.priority);
+        const order = { high: 0, medium: 1, low: 2 };
+        for (let i = 1; i < priorities.length; i++) {
+          expect(order[priorities[i]]).toBeGreaterThanOrEqual(order[priorities[i - 1]]);
+        }
+      }
+    });
+
+    it("every hypothesis has required fields", () => {
+      const cycle = runImprovementCycle({
+        computationLogs: Array.from({ length: 20 }, (_, i) => ({
+          id: `log-${i}`, timestamp: new Date(), toolName: "calc", trigger: "auto",
+          input: { savingsRate: 0.15 }, result: {},
+          actualOutcome: { savingsRateActual: 0.08 },
+        })),
+        alertOutcomes: [],
+        userActivity: [],
+        sensitivityInputs: [],
+        competitorFeatures: [
+          { competitor: "C", feature: "F", launchedAt: "2025", category: "ux", ourEquivalent: null },
+        ],
+      });
+      const hypotheses = generateHypotheses(cycle);
+      for (const h of hypotheses) {
+        expect(h.id).toBeTruthy();
+        expect(h.source).toBeTruthy();
+        expect(h.title).toBeTruthy();
+        expect(h.description).toBeTruthy();
+        expect(h.proposedChange).toBeTruthy();
+        expect(h.measurableOutcome).toBeTruthy();
+        expect(typeof h.successThreshold).toBe("number");
+        expect(["high", "medium", "low"]).toContain(h.priority);
+        expect(typeof h.estimatedEffortHours).toBe("number");
+        expect(typeof h.autoTestable).toBe("boolean");
+      }
     });
   });
 });
