@@ -70,7 +70,9 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     items: [
       { label: "Clients", icon: Users, path: "/relationships", match: ["/relationships", "/portal", "/client-dashboard"] },
       { label: "Cases & Work", icon: Briefcase, path: "/my-work", match: ["/my-work", "/operations", "/advisory", "/workflows"] },
+      { label: "Lead Pipeline", icon: ClipboardList, path: "/leads", match: ["/leads"] },
       { label: "Compliance", icon: ShieldCheck, path: "/compliance-audit", match: ["/compliance-audit"] },
+      { label: "CRM Sync", icon: LineChart, path: "/crm-sync", match: ["/crm-sync"] },
       { label: "Market Data", icon: TrendingUp, path: "/market-data", match: ["/market-data"] },
       { label: "Calculators", icon: Calculator, path: "/calculators", match: ["/calculators", "/wealth-engine"] },
       { label: "Rebalancing", icon: Scale, path: "/rebalancing", match: ["/rebalancing"] },
@@ -92,6 +94,8 @@ const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "Platform Admin", icon: Cog, path: "/admin", match: ["/admin"] },
       { label: "AI Intelligence", icon: Brain, path: "/admin/intelligence", match: ["/admin/intelligence"] },
       { label: "System Health", icon: Activity, path: "/admin/system-health", match: ["/admin/system-health"] },
+      { label: "Data Freshness", icon: Activity, path: "/admin/data-freshness", match: ["/admin/data-freshness"] },
+      { label: "Rate Management", icon: TrendingUp, path: "/admin/rate-management", match: ["/admin/rate-management"] },
       { label: "Comparables", icon: Compass, path: "/comparables", match: ["/comparables"] },
     ],
   },
@@ -99,7 +103,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
 
 const LEARN_ITEM: NavItem = {
   label: "Learn", icon: GraduationCap, path: "/learning",
-  match: ["/learning", "/learning/tracks", "/learning/exam", "/learning/discipline", "/learning/case", "/learning/connections", "/learning/achievements", "/learning/licenses", "/learning/studio"],
+  match: ["/learning", "/learning/tracks", "/learning/exam", "/learning/discipline", "/learning/case", "/learning/connections", "/learning/achievements", "/learning/licenses", "/learning/studio", "/learning/review", "/learning/search", "/learning/flashcards", "/learning/quiz"],
 };
 
 const FOOTER_ITEMS: NavItem[] = [
