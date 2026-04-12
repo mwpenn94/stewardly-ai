@@ -42,6 +42,7 @@ const WeSensitivity = lazy(() => import("./pages/wealth-engine/Sensitivity"));
 const WeWhatIfSensitivity = lazy(() => import("./pages/wealth-engine/WhatIfSensitivity"));
 const WeReferenceHub = lazy(() => import("./pages/wealth-engine/ReferenceHub"));
 const WeBusinessIncome = lazy(() => import("./pages/wealth-engine/BusinessIncome"));
+const WeWealthConfigurator = lazy(() => import("./pages/wealth-engine/WealthConfigurator"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 // Consensus (Round C3 — multi-model consensus stream UI)
@@ -162,6 +163,7 @@ function Router() {
         <Route path={"/wealth-engine/sensitivity"}>{() => <SectionErrorBoundary sectionName="Sensitivity Analysis"><WeSensitivity /></SectionErrorBoundary>}</Route>
         <Route path={"/wealth-engine/references"}>{() => <SectionErrorBoundary sectionName="Reference Hub"><WeReferenceHub /></SectionErrorBoundary>}</Route>
         <Route path={"/wealth-engine/business-income"}>{() => <SectionErrorBoundary sectionName="Business Income"><WeBusinessIncome /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/configurator"}>{() => <SectionErrorBoundary sectionName="Wealth Configurator"><WeWealthConfigurator /></SectionErrorBoundary>}</Route>
         {/* Code Chat (admin foundation) */}
         <Route path={"/code-chat"} component={CodeChatPage} />
         {/* Consensus (Round C — multi-model consensus stream) */}

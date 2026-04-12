@@ -195,10 +195,8 @@ export default function Calculators() {
               { label: "What-If Analysis", path: "/wealth-engine/sensitivity", icon: <Grid3X3 className="w-4 h-4" />, desc: "2D parameter heat map" },
               { label: "Reference Hub", path: "/wealth-engine/references", icon: <BookOpen className="w-4 h-4" />, desc: "Products, benchmarks, methodology" },
               { label: "Business Income", path: "/wealth-engine/business-income", icon: <DollarSign className="w-4 h-4" />, desc: "BIE practice income modeling" },
+              { label: "Wealth Configurator", path: "/wealth-engine/configurator", icon: <ShieldAlert className="w-4 h-4" />, desc: "UWE — 14 products, 7 strategies" },
               { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
-              { label: "Team Builder", path: "/wealth-engine/team-builder", icon: <Users className="w-4 h-4" />, desc: "BIE roll-up/roll-down" },
-              { label: "What-If Analysis", path: "/wealth-engine/sensitivity", icon: <Grid3X3 className="w-4 h-4" />, desc: "2D sensitivity grid" },
-              { label: "Reference Hub", path: "/wealth-engine/references", icon: <BookOpen className="w-4 h-4" />, desc: "Benchmarks & methodology" },
             ].map(tool => (
               <button
                 key={tool.path}
