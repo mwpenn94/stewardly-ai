@@ -30,6 +30,10 @@ import {
   canHarvestWithoutWashSale,
   earliestSafeRepurchase,
 } from "../services/portfolio/washSale";
+import {
+  trackShortPositions,
+  valueShortPositions,
+} from "../services/portfolio/shortPositions";
 
 const txnKindSchema = z.enum([
   "buy",
@@ -178,4 +182,37 @@ export const portfolioLedgerRouter = router({
       ),
       earliestSafeRepurchase: earliestSafeRepurchase(input.saleDate),
     })),
+
+  /**
+   * Short-position tracker (Pass 13, PARITY-PORT-0003). Scans the
+   * same transaction list used by `run` but looks for sells that
+   * exceed long exposure (opening short lots) and buys that cover
+   * outstanding shorts (recording cover gains).
+   */
+  trackShorts: protectedProcedure
+    .input(
+      z.object({
+        transactions: z.array(transactionSchema).max(MAX_TXNS),
+      }),
+    )
+    .query(({ input }) => trackShortPositions(input.transactions as Transaction[])),
+
+  /** Attach market prices to open short positions for unrealized P&L. */
+  valueShorts: protectedProcedure
+    .input(
+      z.object({
+        transactions: z.array(transactionSchema).max(MAX_TXNS),
+        prices: z.array(priceSchema).max(MAX_TXNS),
+      }),
+    )
+    .query(({ input }) => {
+      const tracked = trackShortPositions(input.transactions as Transaction[]);
+      return {
+        ...tracked,
+        positions: valueShortPositions(
+          tracked.positions,
+          input.prices as MarketPrice[],
+        ),
+      };
+    }),
 });
