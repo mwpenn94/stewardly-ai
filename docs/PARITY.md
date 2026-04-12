@@ -866,6 +866,8 @@ prior-pass-you did and didn't finish.
 | 20   | accessibility | aria-labels + input linkage on planning pages | 200318f | Slider aria-labels on ~30 sliders across 5 pages, EstatePlanning toggle labels, IncomeProjection + InsuranceAnalysis input id/htmlFor linkage. | — |
 | 21   | dead-code + correctness | Fix useMemo misuse + unused refs | d811a8c | EstatePlanning useMemo→useEffect for debounced sync, TaxPlanning unused ref/import cleanup. | — |
 | 22   | cross-page-navigation | PlanningCrossNav + cross-calculator insights | 5326fbf | Shared nav bar on all 5 planning pages showing related tools + data indicators. Cross-page estate/insurance insights on TaxPlanning. | — |
+| 23   | learning-data-wiring | ExamSimulator fetches real questions from backend | ac36d57 | useParams → getTrackBySlug → listQuestions → mapDbQuestion. Loading/error/empty states in AppShell. | — |
+| 24   | learning-achievements | AchievementSystem wired to real mastery data | bc6e9d7 | mastery.summary + mastery.dueNow → deriveAchievements(). Streak via localStorage. AppShell wrapped. | — |
 
 ---
 

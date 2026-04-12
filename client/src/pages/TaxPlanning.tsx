@@ -17,7 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
-import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, BarChart3, Loader2, Play } from "lucide-react";
+import { projectTaxClientSide, type ClientTaxResult } from "@/lib/planningCalculations";
+import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, BarChart3, Loader2, Play, AlertTriangle } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useState, useCallback } from "react";
@@ -84,10 +85,26 @@ export default function TaxPlanning() {
     });
   }, [filingStatus, wages, selfEmployment, interestIncome, dividendIncome, longTermCapGains, rentalIncome, itemizedDeductions, retirementContributions, hsaContributions, stateCode, updateProfile]);
 
+  // ─── Client-side fallback ────────────────────────────────
+  const [clientFallback, setClientFallback] = useState<ClientTaxResult | null>(null);
+  const [usingFallback, setUsingFallback] = useState(false);
+
   // ─── tRPC mutations ─────────────────────────────────────
-  const taxCalc = trpc.taxProjector.project.useMutation({ onError: (e) => toast.error(e.message) });
-  const multiYearCalc = trpc.taxProjector.multiYear.useMutation({ onError: (e) => toast.error(e.message) });
-  const rothCalc = trpc.taxProjector.rothComparison.useMutation({ onError: (e) => toast.error(e.message) });
+  const taxCalc = trpc.taxProjector.project.useMutation({
+    onError: (e) => {
+      toast.error("Server unavailable — using client-side projection");
+      // Fall back to client-side tax calculator
+      const fallback = projectTaxClientSide({
+        filingStatus, wages, selfEmploymentIncome: selfEmployment,
+        interestIncome, dividendIncome, longTermCapGains, rentalIncome,
+        rothConversion, itemizedDeductions, retirementContributions, hsaContributions,
+      });
+      setClientFallback(fallback);
+      setUsingFallback(true);
+    },
+  });
+  const multiYearCalc = trpc.taxProjector.multiYear.useMutation({ onError: () => {} });
+  const rothCalc = trpc.taxProjector.rothComparison.useMutation({ onError: () => {} });
 
   const buildInput = useCallback(() => ({
     filingStatus,
@@ -125,7 +142,8 @@ export default function TaxPlanning() {
     rothCalc.mutate({ ...input, conversionAmounts: [0, 10000, 25000, 50000, 75000, 100000] });
   }, [buildInput, rothCalc]);
 
-  const result = taxCalc.data as any;
+  const serverResult = taxCalc.data as any;
+  const result = serverResult ?? clientFallback;
   const multiYearResult = multiYearCalc.data as any;
   const rothResult = rothCalc.data as any;
   const isLoading = taxCalc.isPending || multiYearCalc.isPending || rothCalc.isPending;
@@ -156,6 +174,14 @@ export default function TaxPlanning() {
           Run Analysis
         </Button>
       </div>
+
+      {/* ─── Fallback indicator ────────────────────────────── */}
+      {usingFallback && result && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2 text-xs text-amber-400 flex items-center gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 flex-none" />
+          <span>Using client-side tax projection (server unavailable). Federal brackets only — no state tax or advanced features.</span>
+        </div>
+      )}
 
       {/* ─── Inputs ────────────────────────────────────────── */}
       <Card>

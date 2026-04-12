@@ -5,6 +5,7 @@ import {
   computeRiskScore,
   getRiskProfile,
   monteCarloSuccessRate,
+  projectTaxClientSide,
   FEDERAL_EXEMPTION_2026,
   FEDERAL_EXEMPTION_SUNSET,
   ESTATE_TAX_RATE,
@@ -211,5 +212,86 @@ describe("monteCarloSuccessRate", () => {
     const rate = monteCarloSuccessRate(3000, 8000, 500_000, 0.07, 0.03, 25, 100);
     expect(rate).toBeGreaterThanOrEqual(0);
     expect(rate).toBeLessThanOrEqual(100);
+  });
+});
+
+// ─── Client-Side Tax Projector ────────────────────────────────
+describe("projectTaxClientSide", () => {
+  const baseInput = {
+    filingStatus: "mfj" as const,
+    wages: 150_000,
+    selfEmploymentIncome: 0,
+    interestIncome: 2_000,
+    dividendIncome: 5_000,
+    longTermCapGains: 0,
+    rentalIncome: 0,
+    rothConversion: 0,
+    itemizedDeductions: 30_000,
+    retirementContributions: 23_000,
+    hsaContributions: 4_150,
+  };
+
+  it("computes gross income as sum of all income sources", () => {
+    const result = projectTaxClientSide(baseInput);
+    expect(result.grossIncome).toBe(157_000);
+  });
+
+  it("subtracts retirement + HSA from AGI", () => {
+    const result = projectTaxClientSide(baseInput);
+    expect(result.agiDeductions).toBe(23_000 + 4_150); // no SE deduction
+    expect(result.agi).toBe(157_000 - 27_150);
+  });
+
+  it("uses standard deduction when itemized is lower", () => {
+    const input = { ...baseInput, itemizedDeductions: 10_000 };
+    const result = projectTaxClientSide(input);
+    expect(result.deduction).toBe(31_400); // MFJ standard deduction
+  });
+
+  it("uses itemized deduction when higher than standard", () => {
+    const result = projectTaxClientSide(baseInput);
+    expect(result.deduction).toBe(31_400); // 30k < 31.4k standard, so standard wins
+  });
+
+  it("computes positive federal tax for typical income", () => {
+    const result = projectTaxClientSide(baseInput);
+    expect(result.federalTax).toBeGreaterThan(0);
+    expect(result.federalTax).toBeLessThan(result.grossIncome);
+  });
+
+  it("returns zero tax for zero income", () => {
+    const input = { ...baseInput, wages: 0, interestIncome: 0, dividendIncome: 0 };
+    const result = projectTaxClientSide(input);
+    expect(result.federalTax).toBe(0);
+    expect(result.taxableIncome).toBe(0);
+  });
+
+  it("computes SE deduction for self-employment income", () => {
+    const input = { ...baseInput, selfEmploymentIncome: 100_000 };
+    const result = projectTaxClientSide(input);
+    expect(result.agiDeductions).toBe(23_000 + 4_150 + Math.round(100_000 * 0.0765));
+  });
+
+  it("effective rate is less than marginal rate", () => {
+    const result = projectTaxClientSide(baseInput);
+    expect(result.effectiveRate).toBeLessThan(result.marginalRate);
+    expect(result.effectiveRate).toBeGreaterThan(0);
+  });
+
+  it("handles single filer brackets correctly", () => {
+    const input = { ...baseInput, filingStatus: "single" as const };
+    const result = projectTaxClientSide(input);
+    // Single has lower bracket thresholds, so should have higher tax
+    const mfjResult = projectTaxClientSide(baseInput);
+    expect(result.federalTax).toBeGreaterThan(mfjResult.federalTax);
+  });
+
+  it("brackets fill correctly", () => {
+    const result = projectTaxClientSide(baseInput);
+    expect(result.brackets).toHaveLength(7); // 7 brackets
+    // First bracket should be fully filled
+    expect(result.brackets[0].fill).toBeCloseTo(1, 1);
+    // At least one bracket should be partially filled
+    expect(result.brackets.some(b => b.fill > 0 && b.fill < 1)).toBe(true);
   });
 });
