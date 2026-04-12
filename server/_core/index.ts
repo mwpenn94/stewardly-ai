@@ -28,6 +28,7 @@ import { initSentry, captureException } from "./sentry";
 import { initOTel } from "../shared/telemetry/otel";
 import { registerMCPEndpoint } from "../mcp/stewardlyServer";
 import { runWithTenant } from "../shared/tenantContext";
+import { sseConnectionLimiter } from "../shared/sseConnectionLimiter";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -201,16 +202,22 @@ async function startServer() {
 
   // ─── TTS Audio endpoint (Edge TTS for AudioCompanion) ──────────────
   const ttsRouter = (await import("../routes/tts")).default;
-  app.use(ttsRouter);
 
   // ─── Code Chat SSE streaming endpoint ─────────────────────────────
   const codeChatStreamRouter = (await import("../routes/codeChatStream")).default;
   // ─── Automation telemetry SSE stream (pass 6) ────────────────────
   const automationTelemetryStreamRouter = (await import("../routes/automationTelemetryStream")).default;
+
+  // ─── Auth middleware for TTS, MCP, CodeChat, Automation SSE ──────
+  // CBL17 security hardening: TTS + MCP were previously unauthenticated
   app.use(async (req, res, next) => {
     const needsAuth =
       (req.path === "/api/codechat/stream" && req.method === "POST") ||
-      (req.path === "/api/automation/telemetry/stream" && req.method === "GET");
+      (req.path === "/api/automation/telemetry/stream" && req.method === "GET") ||
+      (req.path === "/api/tts" && req.method === "POST") ||
+      (req.path === "/api/tts/voices" && req.method === "GET") ||
+      (req.path === "/mcp/sse" && req.method === "GET") ||
+      (req.path === "/mcp/call" && req.method === "POST");
     if (needsAuth) {
       try {
         const user = await sdk.authenticateRequest(req);
@@ -220,6 +227,7 @@ async function startServer() {
       } catch { res.status(401).json({ error: "Unauthorized" }); }
     } else { next(); }
   });
+  app.use(ttsRouter);
   app.use(codeChatStreamRouter);
   app.use(automationTelemetryStreamRouter);
 
@@ -232,6 +240,14 @@ async function startServer() {
         res.status(401).json({ error: "Unauthorized" });
         return;
       }
+
+      // CBL17: per-user SSE connection limit
+      const connId = sseConnectionLimiter.acquire(user.id, "chat");
+      if (!connId) {
+        res.status(429).json({ error: "Too many concurrent chat streams" });
+        return;
+      }
+      req.on("close", () => sseConnectionLimiter.release(connId));
 
       const { messages, sessionId, contextType, model } = req.body;
       if (!messages || !Array.isArray(messages)) {
@@ -255,11 +271,15 @@ async function startServer() {
         return;
       }
 
+      // CBL17: validate contextType against whitelist
+      const VALID_CONTEXT_TYPES = new Set(["chat", "document", "financial", "legal", "learning", "code"]);
+      const safeContextType = VALID_CONTEXT_TYPES.has(contextType) ? contextType : "chat";
+
       await createSSEStreamHandler(req, res, {
         contextualLLM,
         userId: user.id,
         sessionId: validSessionId,
-        contextType: contextType || "chat",
+        contextType: safeContextType,
         messages,
         model: model || undefined,
         tools: SEARCH_TOOLS as Array<Record<string, unknown>>,
@@ -290,18 +310,51 @@ async function startServer() {
         return;
       }
 
+      // CBL17: per-user SSE connection limit
+      const connId = sseConnectionLimiter.acquire(user.id, "consensus");
+      if (!connId) {
+        res.status(429).json({ error: "Too many concurrent consensus streams" });
+        return;
+      }
+      req.on("close", () => sseConnectionLimiter.release(connId));
+
       const {
         question,
-        selectedModels,
-        modelWeights,
-        timeBudgetMs,
-        maxModels,
-        domain,
+        selectedModels: rawSelectedModels,
+        modelWeights: rawModelWeights,
+        timeBudgetMs: rawTimeBudgetMs,
+        maxModels: rawMaxModels,
+        domain: rawDomain,
       } = req.body ?? {};
       if (!question || typeof question !== "string") {
         res.status(400).json({ error: "question (string) is required" });
         return;
       }
+      if (question.length > 10_000) {
+        res.status(400).json({ error: "question exceeds 10000 character limit" });
+        return;
+      }
+
+      // CBL17: strict input validation — bound arrays and numbers
+      const selectedModels = Array.isArray(rawSelectedModels)
+        ? rawSelectedModels.filter((m: unknown) => typeof m === "string").slice(0, 10) as string[]
+        : undefined;
+      const modelWeights = (typeof rawModelWeights === "object" && rawModelWeights !== null && !Array.isArray(rawModelWeights))
+        ? Object.fromEntries(
+            Object.entries(rawModelWeights as Record<string, unknown>)
+              .filter(([k, v]) => typeof k === "string" && typeof v === "number" && v >= 0 && v <= 10)
+              .slice(0, 10),
+          ) as Record<string, number>
+        : undefined;
+      const timeBudgetMs = typeof rawTimeBudgetMs === "number" && rawTimeBudgetMs > 0 && rawTimeBudgetMs <= 300_000
+        ? rawTimeBudgetMs
+        : undefined;
+      const maxModels = typeof rawMaxModels === "number" && rawMaxModels > 0 && rawMaxModels <= 10
+        ? rawMaxModels
+        : undefined;
+      const domain = typeof rawDomain === "string" && rawDomain.length <= 100
+        ? rawDomain
+        : undefined;
 
       // Lazy-import so we don't pull the consensus core into the cold-start path
       const { streamConsensus, encodeSseEvent } = await import(

@@ -156,7 +156,10 @@ export async function callTool(name: string, input: unknown): Promise<unknown> {
 
 export async function registerMCPEndpoint(app: any): Promise<void> {
   // SSE endpoint for MCP protocol
-  app.get("/mcp/sse", (_req: any, res: any) => {
+  // Auth enforced by middleware in index.ts (CBL17 security hardening)
+  app.get("/mcp/sse", (req: any, res: any) => {
+    const user = req.__user;
+    if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -164,8 +167,14 @@ export async function registerMCPEndpoint(app: any): Promise<void> {
   });
 
   app.post("/mcp/call", async (req: any, res: any) => {
+    const user = req.__user;
+    if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
     try {
       const { name, input } = req.body;
+      if (typeof name !== "string" || !name) {
+        res.status(400).json({ error: "tool name (string) is required" });
+        return;
+      }
       const result = await callTool(name, input);
       res.json({ result });
     } catch (err: any) {
@@ -173,5 +182,5 @@ export async function registerMCPEndpoint(app: any): Promise<void> {
     }
   });
 
-  log.info(`[MCP] Registered ${tools.length} tools at /mcp/sse and /mcp/call`);
+  log.info(`[MCP] Registered ${tools.length} tools at /mcp/sse and /mcp/call (auth-gated)`);
 }

@@ -61,6 +61,21 @@ export async function handleGHLWebhook(
   const eventId = nanoid();
 
   try {
+    // CBL17 security hardening: verify webhook signature before processing
+    const ghlSecret = process.env.GHL_WEBHOOK_SECRET || "";
+    const signature = headers["x-ghl-signature"] || headers["x-hook-signature"];
+    const signatureValid = ghlSecret
+      ? verifyGHLSignature(rawBody, signature, ghlSecret)
+      : true; // no secret configured = skip verification (log warning)
+
+    if (ghlSecret && !signatureValid) {
+      logger.warn({ eventId }, "GHL webhook rejected: invalid signature");
+      return { status: 401, body: { error: "Invalid signature" } };
+    }
+    if (!ghlSecret) {
+      logger.warn({ eventId }, "GHL_WEBHOOK_SECRET not set — signature verification skipped");
+    }
+
     const payload = JSON.parse(rawBody) as Record<string, unknown>;
     const eventType = (payload.event || payload.type || "unknown") as string;
 
@@ -71,7 +86,7 @@ export async function handleGHLWebhook(
       providerSlug: "ghl",
       eventType,
       payloadJson: payload as any,
-      signatureValid: true,
+      signatureValid,
       processingStatus: "pending",
     });
 

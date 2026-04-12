@@ -1195,9 +1195,19 @@ const documentsRouter = router({
   importFromUrls: protectedProcedure
     .input(z.object({ urls: z.array(z.string().url()).min(1).max(20) }))
     .mutation(async ({ ctx, input }) => {
+      // CBL17: lazy-import SSRF guard from automation module
+      const { isPrivateHost } = await import("./shared/automation/webNavigator");
       const results: { url: string; success: boolean; documentId?: number; filename?: string; error?: string }[] = [];
       for (const url of input.urls) {
         try {
+          // CBL17 security hardening: block SSRF to private/internal networks
+          const parsed = new URL(url);
+          if (!["http:", "https:"].includes(parsed.protocol)) {
+            results.push({ url, success: false, error: "Only HTTP(S) URLs allowed" }); continue;
+          }
+          if (isPrivateHost(parsed.hostname)) {
+            results.push({ url, success: false, error: "Private/internal hosts are blocked" }); continue;
+          }
           const response = await fetch(url, { headers: { "User-Agent": "Stewardly-KnowledgeBot/1.0" }, signal: AbortSignal.timeout(30000) });
           if (!response.ok) { results.push({ url, success: false, error: `HTTP ${response.status}` }); continue; }
           const contentType = response.headers.get("content-type") || "text/html";

@@ -290,6 +290,17 @@ const DENYLIST_PATTERNS: RegExp[] = [
   /\bdd\s+if=\/dev\/zero\s+of=\/dev/i, // disk wipe
   /\bmkfs\b/i, // format filesystem
   /\bshutdown\b|\breboot\b|\bhalt\b|\bpoweroff\b/i,
+  // CBL17 security hardening: block network exfiltration + privilege escalation
+  /\b(nc|ncat|socat)\s+-/i, // netcat reverse shells
+  /\bcurl\b.*\|\s*(ba)?sh/i, // curl-pipe-to-shell
+  /\bwget\b.*\|\s*(ba)?sh/i, // wget-pipe-to-shell
+  />\s*\/dev\/tcp\//i, // bash TCP redirect (data exfiltration)
+  /\bsudo\b/i, // privilege escalation
+  /\bsu\s+-?\s/i, // switch user
+  /\bchmod\s+[0-7]*s/i, // setuid/setgid
+  /\bchown\b.*\/(?!home\/user\/stewardly-ai)/i, // chown outside workspace
+  /\bwhile\s+true\s*;\s*do/i, // infinite loops
+  /\bfor\s*\(\s*;\s*;\s*\)/i, // C-style infinite loop
 ];
 
 export interface BashResult {

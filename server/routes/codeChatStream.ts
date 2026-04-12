@@ -23,6 +23,7 @@ import {
   buildInstructionsPromptOverlay,
 } from "../services/codeChat/projectInstructions";
 import { logger } from "../_core/logger";
+import { sseConnectionLimiter } from "../shared/sseConnectionLimiter";
 
 const codeChatStreamRouter = Router();
 
@@ -54,6 +55,14 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+
+  // CBL17: per-user SSE connection limit
+  const connId = sseConnectionLimiter.acquire(user.id, "codechat");
+  if (!connId) {
+    res.status(429).json({ error: "Too many concurrent Code Chat streams" });
+    return;
+  }
+  req.on("close", () => sseConnectionLimiter.release(connId));
 
   const { message, model, allowMutations = false, maxIterations: rawMaxIter = 5, enabledTools, includeProjectInstructions = true, memoryOverlay } = req.body;
   if (!message || typeof message !== "string") {
