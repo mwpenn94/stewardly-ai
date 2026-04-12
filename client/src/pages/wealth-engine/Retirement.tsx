@@ -35,7 +35,7 @@ import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import {
   Loader2, Target, Sliders, ShieldCheck, TrendingDown, Shield,
-  ChevronDown, ChevronUp, Info,
+  ChevronDown, ChevronUp, Info, AlertTriangle,
 } from "lucide-react";
 
 // ─── Benchmark helpers ───────────────────────────────────────────
@@ -82,8 +82,14 @@ export default function RetirementPage() {
   const [savingsRate] = useState(0.15);
   const [investmentReturn] = useState(0.07);
 
-  const runPreset = trpc.wealthEngine.runPreset.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
-  const backPlan = trpc.wealthEngine.backPlanHolistic.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
+  const runPreset = trpc.wealthEngine.runPreset.useMutation({
+    onSuccess: () => sendFeedback("calculator.result"),
+    onError: (e) => toast.error(`Projection failed: ${e.message ?? "server unavailable"}`),
+  });
+  const backPlan = trpc.wealthEngine.backPlanHolistic.useMutation({
+    onSuccess: () => sendFeedback("calculator.result"),
+    onError: (e) => toast.error(`Back-plan failed: ${e.message ?? "server unavailable"}`),
+  });
 
   // Risk context — auto-fire after goal projection runs
   const onStressError = () => toast.error("Stress test failed — results may be incomplete");
@@ -202,6 +208,12 @@ export default function RetirementPage() {
                 {runPreset.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Target className="mr-2 h-4 w-4" />}
                 Run Goal Projection ({horizon} yrs)
               </Button>
+              {runPreset.isError && (
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  {runPreset.error?.message || "Projection failed — check your connection and try again"}
+                </p>
+              )}
               {finalSnap && (
                 <DownloadReportButton
                   template="executive_summary"

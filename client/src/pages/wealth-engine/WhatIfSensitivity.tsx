@@ -101,6 +101,8 @@ export default function WhatIfSensitivity() {
   const [gridSize, setGridSize] = useState(5);
   const [grid, setGrid] = useState<GridCell[] | null>(null);
   const [running, setRunning] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
+  const [failedCells, setFailedCells] = useState(0);
 
   const heSimulate = trpc.calculatorEngine.heSimulate.useMutation();
 
@@ -115,11 +117,14 @@ export default function WhatIfSensitivity() {
 
     setRunning(true);
     setGrid(null);
+    setRunError(null);
+    setFailedCells(0);
 
     const rows = genRange(rowDef.min, rowDef.max, rowDef.step, gridSize);
     const cols = genRange(colDef.min, colDef.max, colDef.step, gridSize);
 
     const cells: GridCell[] = [];
+    let errorCount = 0;
 
     try {
       // Run all cells sequentially to avoid hammering the server
@@ -162,15 +167,22 @@ export default function WhatIfSensitivity() {
 
             cells.push({ rowVal: rVal, colVal: cVal, result: finalValue });
           } catch {
+            errorCount++;
             cells.push({ rowVal: rVal, colVal: cVal, result: 0 });
           }
         }
       }
 
       setGrid(cells);
+      setFailedCells(errorCount);
+      if (errorCount > 0 && errorCount < cells.length) {
+        toast.warning(`${errorCount} of ${cells.length} cells failed — values shown as $0`);
+      }
       sendFeedback("calculator.result");
     } catch (err: any) {
-      toast.error(`Sensitivity run failed: ${err.message ?? "unknown error"}`);
+      const msg = err.message ?? "unknown error";
+      toast.error(`Sensitivity run failed: ${msg}`);
+      setRunError(msg);
     } finally {
       setRunning(false);
     }
@@ -244,6 +256,28 @@ export default function WhatIfSensitivity() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Error state */}
+        {runError && !grid && (
+          <Card className="border-destructive/30">
+            <CardContent className="p-6 text-center space-y-2">
+              <AlertTriangle className="h-8 w-8 text-destructive mx-auto" />
+              <p className="text-sm font-medium text-destructive">Sensitivity analysis failed</p>
+              <p className="text-xs text-muted-foreground">{runError}</p>
+              <p className="text-xs text-muted-foreground">Check your connection and try again, or reduce the grid size.</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Partial failure warning */}
+        {grid && failedCells > 0 && (
+          <div className="flex items-center gap-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              {failedCells} of {grid.length} cells failed to compute (shown as $0). This may indicate server load — try reducing grid size.
+            </p>
+          </div>
+        )}
 
         {/* Grid */}
         {grid && (
