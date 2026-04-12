@@ -17,7 +17,7 @@ import {
   ChevronRight, Info, Heart, Scale, GraduationCap, Stethoscope,
   HandCoins, Briefcase, ListChecks, Grid3X3, BookOpen, Users,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
