@@ -57,7 +57,7 @@ export function CompletenessGate({
   hideWhenReady = false,
   className,
 }: CompletenessGateProps) {
-  const { profile } = useFinancialProfile();
+  const { profile } = useFinancialProfile("completeness-gate");
 
   const gate = useMemo(
     () => evaluateGate(profile, requiredFields, optionalFields),

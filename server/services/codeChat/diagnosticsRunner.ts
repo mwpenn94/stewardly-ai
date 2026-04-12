@@ -17,10 +17,10 @@
 
 import { spawn } from "node:child_process";
 import path from "node:path";
-import { parseTscOutput, type TsDiagnostic } from "./diagnostics";
+import { parseTscOutput, type Diagnostic } from "./diagnostics";
 
 export interface DiagnosticsRunResult {
-  diagnostics: TsDiagnostic[];
+  diagnostics: Diagnostic[];
   startedAt: number;
   durationMs: number;
   cached: boolean;

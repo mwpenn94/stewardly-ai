@@ -15,6 +15,7 @@
 import { z } from "zod";
 import path from "path";
 import fs from "fs";
+import { TRPCError } from "@trpc/server";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import {
   dispatchCodeTool,
@@ -211,7 +212,6 @@ import {
 } from "../services/codeChat/fileIndex";
 import {
   getDiagnostics,
-  clearDiagnosticsCache,
 } from "../services/codeChat/diagnosticsRunner";
 import { findReferencesInWorkspace } from "../services/codeChat/findReferencesRunner";
 import {
@@ -226,7 +226,6 @@ import {
   type BatchOp,
 } from "../services/codeChat/batchApply";
 import { buildWorkspaceRenamePlan } from "../services/codeChat/renameSymbolRunner";
-import { parseVitestOutput } from "../services/codeChat/testRunner";
 import { inspectPackages } from "../services/codeChat/packageInspector";
 import {
   buildEnvSnapshot as buildEnvReport,
@@ -246,12 +245,6 @@ import {
   filterReferences,
   type ReferenceKind,
 } from "../services/codeChat/findReferences";
-import {
-  summarizeDiagnostics,
-  filterDiagnostics,
-  groupByFile as groupDiagnosticsByFile,
-  type DiagnosticSeverity,
-} from "../services/codeChat/diagnostics";
 import { contextualLLM, executeReActLoop } from "../shared/stewardlyWiring";
 import { logger } from "../_core/logger";
 
@@ -502,11 +495,6 @@ export const codeChatRouter = router({
     return await inspectPackages(WORKSPACE_ROOT);
   }),
 
-  // Pass 263: env var inspector (safe masking)
-  inspectEnv: adminProcedure.query(async () => {
-    return buildEnvReport(process.env as Record<string, string | undefined>);
-  }),
-
   // Pass 262: commit message composer (pure stats-based draft)
   composeCommitMessage: protectedProcedure
     .input(
@@ -544,28 +532,6 @@ export const codeChatRouter = router({
     }),
 
   // Pass 258: vitest runner
-  runTests: protectedProcedure
-    .input(
-      z.object({
-        target: z.string().max(500).optional(),
-      }).optional(),
-    )
-    .mutation(async ({ input }) => {
-      const { execSync } = await import("node:child_process");
-      const timeoutMs = input?.target ? 60_000 : 5 * 60_000;
-      try {
-        const raw = execSync(
-          `npx vitest run ${input?.target ?? ""} --reporter=verbose 2>&1`,
-          { cwd: WORKSPACE_ROOT, timeout: timeoutMs, encoding: "utf-8" },
-        );
-        return parseVitestOutput(raw);
-      } catch (e: any) {
-        // vitest exits non-zero on test failures — still parse output
-        if (e.stdout) return parseVitestOutput(e.stdout);
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: e.message });
-      }
-    }),
-
   applyRenameSymbol: protectedProcedure
     .input(
       z.object({
@@ -2047,7 +2013,9 @@ export const codeChatRouter = router({
     .query(async ({ input }) => {
       const run = await getDiagnostics(WORKSPACE_ROOT, { force: input?.force });
       const filtered = filterDiagnostics(run.diagnostics, {
-        severity: input?.severity as DiagnosticSeverity | "all" | undefined,
+        severity: input?.severity && input.severity !== "all"
+          ? [input.severity as DiagnosticSeverity]
+          : undefined,
         pathPrefix: input?.pathPrefix,
         search: input?.search,
       });

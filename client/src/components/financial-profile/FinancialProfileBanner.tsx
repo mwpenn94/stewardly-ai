@@ -12,11 +12,10 @@
  * `FinancialProfile` shape into the calculator's local state.
  */
 
-import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { useFinancialProfile, type FinancialProfile } from "@/hooks/useFinancialProfile";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Sparkles, Wand2 } from "lucide-react";
-import type { FinancialProfile } from "@/stores/financialProfile";
 import { cn } from "@/lib/utils";
 
 interface FinancialProfileBannerProps {
