@@ -41,6 +41,9 @@ const TRPC_MAP: Record<string, string> = {
   we_backplan_income: "wealthEngine.backPlanBizIncome",
   we_monte_carlo: "wealthEngine.monteCarloSim",
   we_detect_opportunities: "agent.calculatorOrchestrator.detectOpportunities",
+  we_sensitivity_sweep: "wealthEngine.sensitivitySweep",
+  we_guardrail_check: "wealthEngine.checkGuardrail",
+  we_roll_up_team: "wealthEngine.rollUpTeam",
 
   // Phase 6A — chat tools (no direct tRPC, dispatched via aiToolCalling)
   chat_explain_number: "wealthChat.explainNumber",

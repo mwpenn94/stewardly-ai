@@ -550,6 +550,83 @@ export const WEALTH_ENGINE_TOOLS: Tool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "we_sensitivity_sweep",
+      description:
+        "Run a 2D what-if sensitivity sweep. Varies two parameters simultaneously across a grid and returns the result metric for every combination. Use when asked 'how does X and Y affect my outcome' or 'what if I change savings rate and return rate'.",
+      parameters: {
+        type: "object",
+        properties: {
+          xParam: { type: "string", enum: ["savingsRate", "investmentReturn", "taxRate", "age", "income"], description: "Parameter for the X axis." },
+          yParam: { type: "string", enum: ["savingsRate", "investmentReturn", "taxRate", "age", "income"], description: "Parameter for the Y axis." },
+          xRange: { type: "array", items: { type: "number" }, description: "[min, max] range for X param." },
+          yRange: { type: "array", items: { type: "number" }, description: "[min, max] range for Y param." },
+          metric: { type: "string", enum: ["totalValue", "netValue", "roi", "savingsBalance"], description: "Result metric to measure.", default: "totalValue" },
+          steps: { type: "number", description: "Grid size (NxN). Default 5.", default: 5 },
+          age: { type: "number", description: "Base profile age." },
+          income: { type: "number", description: "Base profile income." },
+        },
+        required: ["xParam", "yParam"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "we_guardrail_check",
+      description:
+        "Validate one or more financial assumptions against SCUI guardrail rules. Returns warn/error/ok for each parameter. Use when the user enters extreme values or asks 'is this return rate realistic'.",
+      parameters: {
+        type: "object",
+        properties: {
+          checks: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                key: { type: "string", description: "Guardrail key: returnRate, savingsRate, inflationRate, aumFee, loanRate, creditingRate." },
+                value: { type: "number", description: "The value to validate." },
+              },
+              required: ["key", "value"],
+            },
+            description: "Array of {key, value} pairs to validate.",
+          },
+        },
+        required: ["checks"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "we_roll_up_team",
+      description:
+        "Aggregate income across a team of financial professionals. Takes an array of role-count pairs and returns total GDC, income, override, AUM, and breakdowns by role and stream. Use when asked 'what would a team of 5 advisors produce' or 'roll up my organization'.",
+      parameters: {
+        type: "object",
+        properties: {
+          team: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                role: { type: "string", enum: ["new", "exp", "sa", "dir", "md", "rvp", "affB", "affC", "partner"], description: "Role key." },
+                count: { type: "number", description: "Number of people in this role." },
+              },
+              required: ["role", "count"],
+            },
+            description: "Team composition as role-count pairs.",
+          },
+        },
+        required: ["team"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ─── Chat-level Wealth Tools (Phase 6A) ───────────────────────────
@@ -1370,6 +1447,74 @@ export async function executeAITool(name: string, args: Record<string, any>): Pr
           opportunities: opps,
           count: opps.length,
         });
+      }
+      case "we_sensitivity_sweep": {
+        const mod = await import("./shared/calculators");
+        const xParam = String(args.xParam);
+        const yParam = String(args.yParam);
+        const steps = Math.min(Math.max(args.steps ?? 5, 3), 10);
+        const metric = String(args.metric || "totalValue");
+        const xRange = (args.xRange as number[]) ?? [0.05, 0.30];
+        const yRange = (args.yRange as number[]) ?? [0.03, 0.12];
+        const baseProfile = { age: args.age ?? 40, income: args.income ?? 150000, savings: 50000 };
+
+        const xValues = Array.from({ length: steps }, (_, i) => xRange[0] + (i * (xRange[1] - xRange[0])) / (steps - 1));
+        const yValues = Array.from({ length: steps }, (_, i) => yRange[0] + (i * (yRange[1] - yRange[0])) / (steps - 1));
+
+        const applyParam = (profile: Record<string, any>, overrides: Record<string, any>, param: string, value: number) => {
+          switch (param) {
+            case "savingsRate": overrides.savingsRate = value; break;
+            case "investmentReturn": overrides.investmentReturn = value; break;
+            case "taxRate": profile.marginalRate = value; overrides.taxRate = value; break;
+            case "age": profile.age = Math.round(value); break;
+            case "income": profile.income = Math.round(value); break;
+          }
+        };
+
+        const grid: number[][] = [];
+        for (const yv of yValues) {
+          const row: number[] = [];
+          for (const xv of xValues) {
+            const p = { ...baseProfile };
+            const o: Record<string, any> = {};
+            applyParam(p, o, xParam, xv);
+            applyParam(p, o, yParam, yv);
+            const strategy = mod.createHolisticStrategy("sweep", {
+              profile: p as any,
+              companyKey: "wealthbridge",
+              savingsRate: o.savingsRate ?? 0.15,
+              investmentReturn: o.investmentReturn ?? 0.07,
+              taxRate: o.taxRate ?? 0.32,
+              hasBizIncome: false,
+            });
+            const snaps = mod.heSimulate(strategy, 30);
+            const final = snaps[snaps.length - 1];
+            row.push(Math.round((final as any)[metric] ?? 0));
+          }
+          grid.push(row);
+        }
+        return JSON.stringify({ xParam, yParam, metric, steps, xValues, yValues, grid });
+      }
+      case "we_guardrail_check": {
+        const mod = await import("./shared/calculators");
+        const checks = (args.checks as Array<{ key: string; value: number }>) ?? [];
+        const results = checks.map((c) => ({
+          key: c.key,
+          value: c.value,
+          check: mod.checkGuardrail(c.key, c.value),
+        }));
+        return JSON.stringify({ results });
+      }
+      case "we_roll_up_team": {
+        const mod = await import("./shared/calculators");
+        const team = (args.team as Array<{ role: string; count: number }>) ?? [];
+        const strategies = team.flatMap((t) =>
+          Array.from({ length: t.count }, () =>
+            mod.bieCreateStrategy(t.role, { role: t.role as any, streams: { personal: true, expanded: true } }),
+          ),
+        );
+        const result = mod.rollUp(strategies);
+        return JSON.stringify(result);
       }
 
       // ─── Wealth Chat dispatch (Phase 6A) ───────────────────────
