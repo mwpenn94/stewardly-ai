@@ -27,6 +27,11 @@ import {
   getDueItems,
   getMasterySummary,
   assessTrackReadiness,
+  parseItemKey,
+  listNewFlashcards,
+  listNewQuestions,
+  getNewItemCount,
+  buildReviewSession,
 } from "../services/learning/mastery";
 
 import { getDueReviewDeck } from "../services/learning/dueReview";
@@ -62,6 +67,8 @@ import {
   createPracticeQuestion,
   listFlashcardsForTrack,
   createFlashcard,
+  getFlashcardsByIds,
+  getQuestionsByIds,
   searchContent,
   explainConcept,
   getContentHistory,
@@ -103,7 +110,21 @@ const masteryRouter = router({
   }),
 
   summary: protectedProcedure.query(async ({ ctx }) => {
-    return getMasterySummary(ctx.user.id);
+    // Augment the mastery summary with a "new items" count so the
+    // Learning Home can show a first-time "Start learning" CTA even
+    // when the SRS due-count is 0 — without this, a fresh user who
+    // just imported 366 flashcards sees "nothing due" and never finds
+    // the review path.
+    const [core, newItems] = await Promise.all([
+      getMasterySummary(ctx.user.id),
+      getNewItemCount(ctx.user.id),
+    ]);
+    return {
+      ...core,
+      newFlashcards: newItems.newFlashcards,
+      newQuestions: newItems.newQuestions,
+      newTotal: newItems.total,
+    };
   }),
 
   recordReview: protectedProcedure
@@ -145,6 +166,85 @@ const masteryRouter = router({
     .input(z.object({ limit: z.number().min(1).max(500).default(50) }).optional())
     .query(async ({ ctx, input }) => {
       return getDueItems(ctx.user.id, input?.limit ?? 50);
+    }),
+
+  /**
+   * Returns a ready-to-render mixed-modality review session.
+   *
+   * Shape: the user's overdue flashcards + practice questions
+   * (hydrated), interleaved most-overdue-first, OPTIONALLY padded
+   * with "new cards" (items the user has never seen) up to `limit`
+   * when the due queue is shorter than `limit`. The padding is what
+   * turns this from "review only what's overdue" into a classical
+   * Anki-style mixed queue that also works for first-time users.
+   *
+   * Pass `newQuota=0` to opt out of the new-card queue (strict
+   * review-only mode).
+   */
+  dueReview: protectedProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().int().min(1).max(100).default(20),
+          /** Max new-card items to include when the due queue is short. */
+          newQuota: z.number().int().min(0).max(100).default(10),
+          /** If true, ONLY return new cards (ignore due items). */
+          studyAhead: z.boolean().default(false),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 20;
+      const newQuota = input?.newQuota ?? 10;
+      const studyAhead = input?.studyAhead ?? false;
+
+      // 1. Hydrate the due queue (or skip it in studyAhead mode).
+      const due = studyAhead ? [] : await getDueItems(ctx.user.id, limit * 2);
+      const flashcardIds: number[] = [];
+      const questionIds: number[] = [];
+      for (const row of due) {
+        const parsed = parseItemKey(row.itemKey);
+        if (parsed.kind === "flashcard" && parsed.id != null) flashcardIds.push(parsed.id);
+        else if (parsed.kind === "question" && parsed.id != null) questionIds.push(parsed.id);
+      }
+      const [flashcards, questions] = await Promise.all([
+        getFlashcardsByIds(flashcardIds),
+        getQuestionsByIds(questionIds),
+      ]);
+      const flashcardById = new Map<number, any>(flashcards.map((f: any) => [f.id, f]));
+      const questionById = new Map<number, any>(questions.map((q: any) => [q.id, q]));
+
+      // 2. Fetch new-card candidates. Worst case we fetch more than we
+      //    need (when `due` already fills the limit), which is acceptable
+      //    because both helpers have their own `limit` parameter and we
+      //    cap at the right size inside `buildReviewSession`.
+      const padTarget = studyAhead ? limit : Math.min(newQuota, limit);
+      const [newFcs, newQs] = padTarget > 0
+        ? await Promise.all([
+            listNewFlashcards(ctx.user.id, Math.ceil(padTarget / 2)),
+            listNewQuestions(ctx.user.id, Math.floor(padTarget / 2)),
+          ])
+        : [[], []];
+
+      // 3. Assemble the final session via the pure helper (unit-tested).
+      const session = buildReviewSession({
+        due,
+        flashcardById,
+        questionById,
+        newFlashcards: newFcs as any,
+        newQuestions: newQs as any,
+        limit,
+        newQuota,
+        studyAhead,
+      });
+
+      return {
+        items: session.items,
+        total: session.items.length,
+        dueTotal: due.length,
+        newItems: session.newItems,
+        reviewItems: session.reviewItems,
+      };
     }),
 
   assessReadiness: protectedProcedure

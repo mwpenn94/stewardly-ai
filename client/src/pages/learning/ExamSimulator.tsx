@@ -365,6 +365,64 @@ const params = useParams<{ moduleSlug?: string }>();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, config.mode, currentQuestion?.id]);
 
+  // Keyboard shortcuts: 1-6/A-F to pick, Enter to submit/next, Esc back, F flag.
+  useEffect(() => {
+    if (finished || !currentQuestion) return;
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        handleBack();
+        return;
+      }
+      if (e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        toggleFlag();
+        return;
+      }
+      if (!revealed) {
+        const digit = Number(e.key);
+        if (Number.isFinite(digit) && digit >= 1 && digit <= currentQuestion.options.length) {
+          e.preventDefault();
+          setSelectedKey(currentQuestion.options[digit - 1].key);
+          return;
+        }
+        const upper = e.key.toUpperCase();
+        const letterIdx = upper.charCodeAt(0) - 65;
+        if (letterIdx >= 0 && letterIdx < currentQuestion.options.length && upper !== e.key) {
+          // Only intercept when the user actually typed a letter (not "1" → "A")
+          e.preventDefault();
+          setSelectedKey(currentQuestion.options[letterIdx].key);
+          return;
+        }
+        // Match A/B/C/D exactly from the key field
+        const byKey = currentQuestion.options.find(
+          (o) => o.key.toUpperCase() === upper,
+        );
+        if (byKey) {
+          e.preventDefault();
+          setSelectedKey(byKey.key);
+          return;
+        }
+        if (e.key === "Enter" && selectedKey) {
+          e.preventDefault();
+          submitAnswer();
+        }
+        return;
+      }
+      if (e.key === "Enter" || e.key === "ArrowRight") {
+        e.preventDefault();
+        advanceQuestion();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQuestion?.id, revealed, selectedKey, finished]);
+
   const toggleFlag = useCallback(() => {
     if (!currentQuestion) return;
     setFlagged((prev) => {
@@ -842,6 +900,13 @@ const params = useParams<{ moduleSlug?: string }>();
           {flagged.size} question{flagged.size !== 1 ? "s" : ""} flagged for review
         </p>
       )}
+
+      {/* Keyboard hint footer */}
+      <p className="text-[11px] text-muted-foreground text-center">
+        1–{currentQuestion.options.length} or A–{String.fromCharCode(64 + currentQuestion.options.length)} select
+        {" · "}
+        Enter submit/next · F flag · Esc back
+      </p>
     </div>
   );
 }

@@ -26,7 +26,7 @@ import {
   learningFlashcards,
   learningContentHistory,
 } from "../../../drizzle/schema";
-import { and, eq, or, like, desc, sql, isNull } from "drizzle-orm";
+import { and, eq, or, like, desc, sql, isNull, inArray } from "drizzle-orm";
 import { logger } from "../../_core/logger";
 
 const log = logger.child({ module: "learning/content" });
@@ -554,6 +554,63 @@ export async function listFlashcardsForTrack(trackId: number) {
     return await db.select().from(learningFlashcards).where(eq(learningFlashcards.trackId, trackId));
   } catch (err) {
     log.warn({ err: String(err) }, "listFlashcardsForTrack failed");
+    return [];
+  }
+}
+
+export async function getFlashcardById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const [row] = await db.select().from(learningFlashcards).where(eq(learningFlashcards.id, id));
+    return row ?? null;
+  } catch (err) {
+    log.warn({ err: String(err) }, "getFlashcardById failed");
+    return null;
+  }
+}
+
+export async function getQuestionById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const [row] = await db
+      .select()
+      .from(learningPracticeQuestions)
+      .where(eq(learningPracticeQuestions.id, id));
+    return row ?? null;
+  } catch (err) {
+    log.warn({ err: String(err) }, "getQuestionById failed");
+    return null;
+  }
+}
+
+export async function getFlashcardsByIds(ids: number[]) {
+  if (ids.length === 0) return [];
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db
+      .select()
+      .from(learningFlashcards)
+      .where(inArray(learningFlashcards.id, ids));
+  } catch (err) {
+    log.warn({ err: String(err) }, "getFlashcardsByIds failed");
+    return [];
+  }
+}
+
+export async function getQuestionsByIds(ids: number[]) {
+  if (ids.length === 0) return [];
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db
+      .select()
+      .from(learningPracticeQuestions)
+      .where(inArray(learningPracticeQuestions.id, ids));
+  } catch (err) {
+    log.warn({ err: String(err) }, "getQuestionsByIds failed");
     return [];
   }
 }
