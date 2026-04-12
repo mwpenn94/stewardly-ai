@@ -96,11 +96,51 @@ export function LifeEventsBanner({
   const [snapshot, setSnapshot] = useState<FinancialProfile | null>(() =>
     readSnapshot(),
   );
+  // Events pushed up from the server via the stewardly-lifeevents-
+  // server window event. Keyed by event.key so we merge uniquely
+  // with the client-detected set below.
+  const [serverEvents, setServerEvents] = useState<
+    Record<string, ReturnType<typeof detectLifeEvents>[number]>
+  >({});
 
-  const events = useMemo(
-    () => detectLifeEvents(snapshot, profile),
-    [snapshot, profile],
-  );
+  // Listen for server-side event pushes (cross-device detection)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ events: unknown[] }>).detail;
+      if (!detail?.events || !Array.isArray(detail.events)) return;
+      setServerEvents((prev) => {
+        const next = { ...prev };
+        for (const ev of detail.events) {
+          if (!ev || typeof ev !== "object") continue;
+          const eo = ev as { key?: string };
+          if (typeof eo.key === "string") {
+            next[eo.key] = ev as never;
+          }
+        }
+        return next;
+      });
+    };
+    window.addEventListener("stewardly-lifeevents-server", handler);
+    return () =>
+      window.removeEventListener("stewardly-lifeevents-server", handler);
+  }, []);
+
+  const events = useMemo(() => {
+    // Merge client-detected events with server-pushed events,
+    // preferring the client version when keys collide since that's
+    // the freshest local snapshot.
+    const clientDetected = detectLifeEvents(snapshot, profile);
+    const merged: Record<string, typeof clientDetected[number]> = { ...serverEvents };
+    for (const e of clientDetected) {
+      merged[e.key] = e;
+    }
+    const all = Object.values(merged);
+    // Re-sort by severity (high first) — same convention as the
+    // detector module.
+    const severityRank: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    return all.sort((a, b) => severityRank[a.severity] - severityRank[b.severity]);
+  }, [snapshot, profile, serverEvents]);
 
   const visible = useMemo(
     () => events.filter((e) => !dismissed.has(e.key)).slice(0, maxEvents),
@@ -129,6 +169,7 @@ export function LifeEventsBanner({
     // events don't fire again after the user acts on them.
     writeSnapshot(profile);
     setSnapshot(profile);
+    setServerEvents({});
     setDismissed(new Set());
   };
 

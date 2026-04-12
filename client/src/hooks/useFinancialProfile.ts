@@ -154,8 +154,28 @@ export function useFinancialProfile(): UseFinancialProfileResult {
         if (isAuthenticated) {
           serverSet.mutate(
             { patch: patch as Record<string, never>, source },
-            // Errors are non-fatal — the local copy is still right.
-            { onError: () => undefined },
+            {
+              // Errors are non-fatal — the local copy is still right.
+              onError: () => undefined,
+              onSuccess: (data) => {
+                // Pass 19: surface server-detected life events to
+                // any listener (LifeEventsBanner) via a custom
+                // window event. The server may detect events the
+                // client hasn't seen yet (e.g., cross-device
+                // update arriving via the next set call's prior
+                // snapshot comparison).
+                if (typeof window !== "undefined" && data?.events) {
+                  const evts = data.events as unknown[];
+                  if (Array.isArray(evts) && evts.length > 0) {
+                    window.dispatchEvent(
+                      new CustomEvent("stewardly-lifeevents-server", {
+                        detail: { events: evts },
+                      }),
+                    );
+                  }
+                }
+              },
+            },
           );
         }
         return next;
