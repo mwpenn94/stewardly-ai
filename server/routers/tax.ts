@@ -23,6 +23,12 @@ import {
   summarizeYears,
   type YearContext,
 } from "../services/tax/projector";
+import {
+  projectStateTax,
+  combinedEffectiveRate,
+  SUPPORTED_STATES,
+  type StateCode,
+} from "../services/tax/stateTax";
 
 const filingStatusSchema = z.enum(["single", "mfj", "mfs", "hoh"]);
 
@@ -91,4 +97,35 @@ export const taxRouter = router({
   irmaa: protectedProcedure
     .input(z.object({ magi: z.number(), status: filingStatusSchema }))
     .query(({ input }) => irmaaTier(input.magi, input.status)),
+
+  /**
+   * State tax projection (Pass 10, PARITY-TAX-0003). Takes the
+   * output of `projectYear` (federal) and returns the state tax
+   * delta. CA, NY, IL, TX supported.
+   */
+  projectStateTax: protectedProcedure
+    .input(
+      z.object({
+        year: yearCtxSchema,
+        state: z.enum(["CA", "NY", "IL", "TX"]),
+        livesInNYC: z.boolean().optional(),
+      }),
+    )
+    .query(({ input }) => {
+      const federal = projectYear(input.year as YearContext);
+      const state = projectStateTax({
+        state: input.state as StateCode,
+        federal,
+        filingStatus: input.year.filingStatus,
+        livesInNYC: input.livesInNYC,
+      });
+      return {
+        federal,
+        state,
+        combinedEffectiveRate: combinedEffectiveRate(federal, state),
+      };
+    }),
+
+  /** List supported states for UI dropdowns. */
+  supportedStates: protectedProcedure.query(() => SUPPORTED_STATES),
 });
