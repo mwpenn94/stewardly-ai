@@ -8,6 +8,10 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { meetings, meetingActionItems } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { contextualLLM } from "../shared/stewardlyWiring";
+import {
+  extractNotes,
+  renderNotesMarkdown,
+} from "../services/meetings/noteExtractor";
 
 async function db() {
   return (await import("../db")).getDb();
@@ -294,5 +298,26 @@ The email should:
       await d.delete(meetingActionItems).where(eq(meetingActionItems.meetingId, input.id));
       await d.delete(meetings).where(and(eq(meetings.id, input.id), eq(meetings.userId, ctx.user!.id)));
       return { success: true };
+    }),
+
+  /**
+   * Offline note extraction — pure regex/heuristic parse of a
+   * transcript with no LLM round-trip. Use this for:
+   *   (a) real-time in-flight preview while the advisor types
+   *   (b) fallback when the LLM summary is unavailable
+   *   (c) deterministic audit baseline
+   *
+   * Pass 3 of the hybrid build loop — PARITY-MEET-0001 partial.
+   * Returns the full extracted notes object + a rendered markdown
+   * summary.
+   */
+  extractNotesOffline: protectedProcedure
+    .input(z.object({
+      transcript: z.string().min(1).max(200_000),
+    }))
+    .query(({ input }) => {
+      const notes = extractNotes(input.transcript);
+      const markdown = renderNotesMarkdown(notes);
+      return { notes, markdown };
     }),
 });

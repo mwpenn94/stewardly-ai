@@ -105,6 +105,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   // ── INTELLIGENCE — multi-model AI + analysis tools
   { iconName: "Brain", label: "Intelligence", href: "/intelligence-hub", minRole: "user", section: "intelligence" },
   { iconName: "Calculator", label: "Engine Dashboard", href: "/engine-dashboard", minRole: "user", section: "intelligence" },
+  { iconName: "Scale", label: "Rebalancing", href: "/rebalancing", minRole: "advisor", section: "intelligence" },
   { iconName: "TrendingUp", label: "Market Data", href: "/market-data", minRole: "user", section: "intelligence" },
   { iconName: "Shield", label: "Protection Score", href: "/protection-score", minRole: "user", section: "intelligence" },
 
@@ -121,6 +122,8 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Shield", label: "Licenses", href: "/learning/licenses", minRole: "user", section: "learning" },
   { iconName: "Award", label: "Achievements", href: "/learning/achievements", minRole: "user", section: "learning" },
   { iconName: "Brain", label: "Concept Map", href: "/learning/connections", minRole: "user", section: "learning" },
+  { iconName: "RefreshCw", label: "Due Review", href: "/learning/review", minRole: "user", section: "learning" },
+  { iconName: "Search", label: "Search Content", href: "/learning/search", minRole: "user", section: "learning" },
   { iconName: "Sparkles", label: "Content Studio", href: "/learning/studio", minRole: "advisor", section: "learning" },
 ];
 
@@ -140,6 +143,7 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "Target", label: "Lead Sources", href: "/admin/lead-sources", minRole: "admin" },
   { iconName: "TrendingUp", label: "Rate Management", href: "/admin/rate-management", minRole: "admin" },
   { iconName: "FileText", label: "Platform Reports", href: "/admin/platform-reports", minRole: "admin" },
+  { iconName: "Compass", label: "Comparables", href: "/comparables", minRole: "advisor" },
 ];
 
 // ─── UTILITY section (always visible at bottom) ──────────────────────────────
