@@ -102,9 +102,13 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "GitBranch", label: "Workflows", href: "/workflows", minRole: "user", section: "work" },
   { iconName: "RefreshCw", label: "Passive Actions", href: "/passive-actions", minRole: "user", section: "work" },
 
-  // ── INTELLIGENCE — multi-model AI + analysis tools
+  // ── INTELLIGENCE — multi-model AI + analysis tools + calculators
   { iconName: "Brain", label: "Intelligence", href: "/intelligence-hub", minRole: "user", section: "intelligence" },
   { iconName: "Calculator", label: "Engine Dashboard", href: "/engine-dashboard", minRole: "user", section: "intelligence" },
+  { iconName: "Target", label: "Retirement", href: "/wealth-engine/retirement", minRole: "user", section: "intelligence" },
+  { iconName: "BarChart3", label: "Strategy Compare", href: "/wealth-engine/strategy-comparison", minRole: "user", section: "intelligence" },
+  { iconName: "Zap", label: "Quick Quote", href: "/wealth-engine/quick-quote", minRole: "user", section: "intelligence" },
+  { iconName: "Briefcase", label: "Practice → Wealth", href: "/wealth-engine/practice-to-wealth", minRole: "advisor", section: "intelligence" },
   { iconName: "Users", label: "Team Builder", href: "/wealth-engine/team-builder", minRole: "advisor", section: "intelligence" },
   { iconName: "Grid3X3", label: "What-If Analysis", href: "/wealth-engine/sensitivity", minRole: "user", section: "intelligence" },
   { iconName: "BookOpen", label: "Reference Hub", href: "/wealth-engine/references", minRole: "user", section: "intelligence" },
