@@ -31,6 +31,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { PremiumEstimator } from "@/components/wealth-engine/PremiumEstimator";
 
 interface QuickQuoteInputs {
   age: number;
@@ -214,6 +215,9 @@ export default function QuickQuoteFlowPage() {
                   </div>
                 </>
               )}
+              {/* Premium estimation table */}
+              <PremiumEstimator initialAge={inputs.age} initialAmount={inputs.income * 10} />
+
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={() => setStep(2)}>
                   <ChevronLeft className="mr-2 h-4 w-4" /> Back
