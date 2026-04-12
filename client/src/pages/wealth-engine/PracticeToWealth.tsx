@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
-import { Loader2, Briefcase, PiggyBank } from "lucide-react";
+import {
+  Loader2, Briefcase, PiggyBank, ChevronDown, ChevronUp,
+  BarChart3, Users, TrendingUp,
+} from "lucide-react";
 
 const ROLES = [
   { key: "new", label: "New Associate" },
@@ -203,9 +207,110 @@ export default function PracticeToWealthPage() {
             </CardContent>
           </Card>
         )}
+        {/* Income Stream Breakdown — shows which revenue streams contribute */}
+        {bizYears.length > 0 && <IncomeStreamBreakdown bizYears={bizYears} />}
       </div>
     </AppShell>
   );
+}
+
+// ─── Income Stream Breakdown ────────────────────────────────────
+function IncomeStreamBreakdown({ bizYears }: { bizYears: any[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Extract final-year stream breakdown
+  const finalYear = bizYears[bizYears.length - 1];
+  const streams = finalYear?.streams ?? {};
+  const streamEntries = Object.entries(streams)
+    .map(([key, val]: [string, any]) => ({
+      key,
+      label: formatStreamKey(key),
+      value: val?.amount ?? val?.value ?? val ?? 0,
+    }))
+    .filter((s) => typeof s.value === "number" && s.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  const totalFromStreams = streamEntries.reduce((s, e) => s + e.value, 0);
+
+  if (streamEntries.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader className="py-3 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-accent" />
+            Income Stream Breakdown (Year {finalYear?.year ?? "N"})
+            <Badge variant="outline" className="text-[10px] ml-1">
+              {streamEntries.length} streams
+            </Badge>
+          </CardTitle>
+          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </div>
+      </CardHeader>
+      {expanded && (
+        <CardContent className="pt-0 space-y-3">
+          {/* Stream bars */}
+          {streamEntries.map((s) => {
+            const pct = totalFromStreams > 0 ? (s.value / totalFromStreams) * 100 : 0;
+            return (
+              <div key={s.key} className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{s.label}</span>
+                  <span className="font-mono font-semibold">{formatCurrency(s.value)}</span>
+                </div>
+                <div className="h-2 bg-secondary/30 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-accent/70 transition-all duration-500"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Year-by-year summary strip */}
+          <div className="pt-2 border-t border-border/30">
+            <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" /> Year-by-Year Summary
+            </p>
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+              {bizYears.filter((_, i) => i % Math.max(1, Math.floor(bizYears.length / 5)) === 0 || i === bizYears.length - 1).map((yr: any) => (
+                <div key={yr.year} className="p-2 rounded bg-secondary/20 text-center">
+                  <p className="text-[9px] text-muted-foreground">Yr {yr.year}</p>
+                  <p className="text-xs font-mono font-semibold">{formatCurrency(yr.totalIncome)}</p>
+                  {yr.teamSize > 0 && (
+                    <p className="text-[8px] text-muted-foreground flex items-center justify-center gap-0.5">
+                      <Users className="h-2.5 w-2.5" /> {yr.teamSize}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+function formatStreamKey(key: string): string {
+  const map: Record<string, string> = {
+    personalWBCore: "Personal WB Core",
+    expandedPlatform: "Expanded Platform",
+    teamOverride: "Team Override",
+    gen2Override: "Gen 2 Override",
+    aumTrail: "AUM/Advisory Trail",
+    affiliateA: "Affiliate Track A",
+    affiliateB: "Affiliate Track B",
+    affiliateC: "Affiliate Track C",
+    affiliateD: "Affiliate Track D",
+    channelRevenue: "Channel Revenue",
+    partnerIncome: "Partner Income",
+    renewalIncome: "Renewal Income",
+    bonus: "Bonus",
+  };
+  return map[key] || key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase());
 }
 
 function HeadlineCard({
