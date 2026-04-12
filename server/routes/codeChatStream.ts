@@ -25,7 +25,13 @@ import {
   buildInstructionsPromptOverlay,
 } from "../services/codeChat/projectInstructions";
 import { validateStreamRequest } from "../services/codeChat/requestValidation";
-import { buildToolCallAuditEvent } from "../services/codeChat/toolTelemetry";
+import { buildToolCallAuditEvent, classifyToolKind } from "../services/codeChat/toolTelemetry";
+import {
+  consumeFromStore,
+  getGlobalRateLimitStore,
+  DEFAULT_RATE_LIMIT_CONFIG,
+  gcStore,
+} from "../services/codeChat/toolRateLimiter";
 import { logger } from "../_core/logger";
 
 const codeChatStreamRouter = Router();
@@ -65,6 +71,20 @@ const KNOWN_TOOL_NAMES = new Set<CodeToolName>([
 function isCodeToolName(name: string): name is CodeToolName {
   return KNOWN_TOOL_NAMES.has(name as CodeToolName);
 }
+
+// Parity Pass 11: periodic GC of stale rate-limit buckets so idle
+// users don't permanently retain memory. 5-minute interval, 60-minute
+// max-age. Safe in tests because the interval is unref'd so it
+// doesn't keep the process alive.
+const RL_GC_INTERVAL_MS = 5 * 60 * 1000;
+const RL_GC_MAX_AGE_MS = 60 * 60 * 1000;
+const rlGcTimer = setInterval(() => {
+  const removed = gcStore(getGlobalRateLimitStore(), Date.now(), RL_GC_MAX_AGE_MS);
+  if (removed > 0) {
+    logger.debug({ removed }, "codechat.rate_limit.gc");
+  }
+}, RL_GC_INTERVAL_MS);
+rlGcTimer.unref?.();
 
 function writeSse(res: any, data: Record<string, unknown>): void {
   if (!res.writableEnded) {
@@ -273,6 +293,44 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
           const errResult = JSON.stringify({ error: `${rawName} requires admin + write mode` });
           writeSse(res, { type: "tool_result", stepIndex, toolName: rawName, kind: "error", truncated: false, durationMs: 0 });
           return errResult;
+        }
+
+        // Parity Pass 11: per-user token-bucket rate limit before
+        // dispatch. Read tools and meta tools are unlimited; write,
+        // shell, network, and unknown each get their own bucket. A
+        // denial short-circuits with a structured error the LLM can
+        // observe + react to (retry with a different strategy,
+        // finish early, etc).
+        const kind = classifyToolKind(rawName);
+        const rlResult = consumeFromStore(
+          getGlobalRateLimitStore(),
+          String(user.id),
+          kind,
+          DEFAULT_RATE_LIMIT_CONFIG,
+          Date.now(),
+        );
+        if (!rlResult.allowed) {
+          const errPayload = {
+            kind: "error" as const,
+            error: rlResult.message,
+            code: rlResult.code,
+            retryAfterMs: rlResult.retryAfterMs,
+          };
+          const errStr = JSON.stringify(errPayload);
+          logger.warn(
+            { userId: user.id, kind, toolName: rawName, retryAfterMs: rlResult.retryAfterMs },
+            "codechat.rate_limited",
+          );
+          writeSse(res, {
+            type: "tool_result",
+            stepIndex,
+            toolName: rawName,
+            kind: "error",
+            preview: errStr,
+            truncated: false,
+            durationMs: 0,
+          });
+          return errStr;
         }
 
         const toolStart = Date.now();
