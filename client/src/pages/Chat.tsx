@@ -1999,7 +1999,13 @@ export default function Chat() {
       </aside>
 
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
-      <main id="chat-main" tabIndex={-1} className="flex-1 flex flex-col min-w-0">
+      <main
+        id="chat-main"
+        tabIndex={-1}
+        className="flex-1 flex flex-col min-w-0"
+        aria-label="Chat"
+        aria-busy={isStreaming ? true : undefined}
+      >
         {/* Pass 99 + Pass 5 (G3): aria-live region announces the ACTUAL
             streamed content sentence-by-sentence (debounced ≥800ms
             between announcements by `shouldEmitChunk`) instead of the

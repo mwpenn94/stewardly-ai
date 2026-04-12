@@ -43,6 +43,22 @@ export default function AppShell({ children, title }: AppShellProps) {
   // requestAnimationFrame so the new route has actually mounted.
   useFocusOnRouteChange({ mainId: "main-content" });
 
+  // Build Loop Pass 14 (G35): global busy signal for the <main>
+  // landmark's aria-busy attribute. Pages emit `pil:busy` when a
+  // long-running fetch starts and `pil:idle` when it ends. SR users
+  // hear "busy" announced when the state changes.
+  const [globalBusy, setGlobalBusy] = useState(false);
+  useEffect(() => {
+    const onBusy = () => setGlobalBusy(true);
+    const onIdle = () => setGlobalBusy(false);
+    window.addEventListener("pil:busy", onBusy);
+    window.addEventListener("pil:idle", onIdle);
+    return () => {
+      window.removeEventListener("pil:busy", onBusy);
+      window.removeEventListener("pil:idle", onIdle);
+    };
+  }, []);
+
   // Auto-propagate title to browser tab
   useEffect(() => {
     if (title) {
@@ -213,17 +229,42 @@ export default function AppShell({ children, title }: AppShellProps) {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile header bar */}
-        <div className="lg:hidden flex items-center h-12 px-3 shrink-0 border-b border-border/50 bg-card/30 backdrop-blur-sm">
+        {/*
+          Build Loop Pass 14 (G19): mobile header is now a semantic
+          <header> element with role=banner. This gives SR users a
+          landmark they can jump to (Rotor / Landmark navigation)
+          instead of having to tab through every nav item.
+        */}
+        <header
+          role="banner"
+          className="lg:hidden flex items-center h-12 px-3 shrink-0 border-b border-border/50 bg-card/30 backdrop-blur-sm"
+          aria-label={title || "Page header"}
+        >
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
             <Menu className="w-5 h-5" />
           </Button>
           {title && <span className="text-sm font-medium truncate ml-2">{title}</span>}
-        </div>
+        </header>
 
-        {/* Page content — scrollable. pb-16 lg:pb-0 reserves space for the
-            mobile bottom tab bar so the last row of content isn't covered. */}
-        <main id="main-content" className="flex-1 overflow-y-auto pb-16 lg:pb-0" tabIndex={-1}>
+        {/*
+          Build Loop Pass 14 (G35 + G19): <main> landmark with
+          aria-label for SR Rotor navigation. The aria-busy attribute
+          reflects a global "work in progress" signal dispatched via
+          `pil:busy` / `pil:idle` window events — pages can emit them
+          when a long-running fetch starts/stops so SR users know
+          loading is in flight.
+
+          Page content — scrollable. pb-16 lg:pb-0 reserves space for
+          the mobile bottom tab bar so the last row of content isn't
+          covered.
+        */}
+        <main
+          id="main-content"
+          className="flex-1 overflow-y-auto pb-16 lg:pb-0"
+          tabIndex={-1}
+          aria-label="Main content"
+          aria-busy={globalBusy ? true : undefined}
+        >
           {children}
         </main>
 
