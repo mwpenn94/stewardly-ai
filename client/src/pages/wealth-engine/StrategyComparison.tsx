@@ -37,6 +37,7 @@ import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportB
 import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
+import { loadCalculatorContext, recordCalculation, saveCalculatorContext, type CalculationResult } from "@/lib/calculatorContext";
 import {
   Loader2, PlayCircle, Award, ChevronDown, ChevronUp,
   AlertTriangle, TrendingDown, History, BarChart3,
@@ -192,6 +193,27 @@ export default function StrategyComparisonPage() {
   const result = compare.data;
   const rows = result?.data?.compareRows ?? [];
   const winners = result?.data?.winners ?? {};
+
+  // ── Persist to calculator context bridge so Chat knows the results ──
+  useEffect(() => {
+    if (!rows.length || !winners.totalValue) return;
+    const ctx = loadCalculatorContext();
+    const calcResult: CalculationResult = {
+      id: `strategy-comparison-${Date.now()}`,
+      type: "custom",
+      title: "Strategy Comparison",
+      summary: `Compared ${rows.length} strategies over ${horizon} years. Winner: ${winners.totalValue?.name} with ${formatCurrency(winners.totalValue?.value ?? 0)} total value.`,
+      inputs: { age, income, netWorth, savings, horizon, savingsRate, investReturn, strategiesCompared: rows.length },
+      outputs: {
+        winner: winners.totalValue?.name,
+        winnerValue: winners.totalValue?.value,
+        strategies: rows.map((r: any) => ({ name: r.name, totalValue: r.totalValue })),
+      },
+      timestamp: Date.now(),
+    };
+    saveCalculatorContext(recordCalculation(ctx, calcResult));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows.length, winners.totalValue?.name]);
 
   // After comparison runs, auto-fire stress tests + backtest for the winning strategy
   // AND batch stress test across all strategies

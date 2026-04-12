@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { sendFeedback } from "@/lib/feedbackSpecs";
+import { loadCalculatorContext, recordCalculation, saveCalculatorContext, type CalculationResult } from "@/lib/calculatorContext";
 import { GuardrailsGauge } from "@/components/wealth-engine/GuardrailsGauge";
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
@@ -104,6 +105,12 @@ export default function RetirementPage() {
   const backtest = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: onBacktestError });
   const monteCarlo = trpc.wealthEngine.monteCarloSim.useMutation({ onError: () => toast.error("Monte Carlo simulation failed") });
 
+  // ── Input guardrail validation via SCUI.checkGuardrails ──
+  const guardrailCheck = trpc.calculatorEngine.checkGuardrails.useQuery(
+    { params: { returnRate: investmentReturn, savingsRate, taxRate: 0.25 } },
+    { staleTime: 60_000 },
+  );
+
   const annualContribution = income * savingsRate;
 
   const onRunGoal = () => {
@@ -158,6 +165,28 @@ export default function RetirementPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalSnap?.totalLiquidWealth]);
 
+  // ── Persist to calculator context bridge so Chat knows the results ──
+  useEffect(() => {
+    if (!finalSnap) return;
+    const ctx = loadCalculatorContext();
+    const result: CalculationResult = {
+      id: `retirement-${Date.now()}`,
+      type: "retirement",
+      title: "Retirement Projection",
+      summary: `${horizon}-year WealthBridge plan: final liquid wealth ${formatCurrency(finalSnap.totalLiquidWealth)}, total value ${formatCurrency(finalSnap.totalValue)}, death benefit ${formatCurrency(finalSnap.productDeathBenefit)}`,
+      inputs: { age, income, savings, horizon, savingsRate, investmentReturn },
+      outputs: {
+        finalLiquidWealth: finalSnap.totalLiquidWealth,
+        finalTotalValue: finalSnap.totalValue,
+        deathBenefit: finalSnap.productDeathBenefit,
+        yearsProjected: projection.length,
+      },
+      timestamp: Date.now(),
+    };
+    saveCalculatorContext(recordCalculation(ctx, result));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalSnap?.totalLiquidWealth]);
+
   // Guardrail thresholds: ±15% of final liquid wealth (placeholder until
   // Phase 7 wires in the consumption-smoothing engine)
   const lowerThreshold = finalSnap ? finalSnap.totalLiquidWealth * 0.85 : 0;
@@ -186,6 +215,22 @@ export default function RetirementPage() {
             <NumberInput label="Current Savings" value={savings} onChange={setSavings} step={5000} />
           </CardContent>
         </Card>
+
+        {/* Input guardrail warnings */}
+        {guardrailCheck.data && (guardrailCheck.data as any[]).length > 0 && (
+          <div className="space-y-1">
+            {(guardrailCheck.data as any[]).map((w: any, i: number) => (
+              <div key={i} className={`flex items-start gap-2 text-xs p-2 rounded ${
+                w.severity === "error" ? "bg-destructive/10 text-destructive" :
+                w.severity === "warning" ? "bg-amber-500/10 text-amber-400" :
+                "bg-accent/10 text-accent"
+              }`}>
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <span>{w.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Mode tabs */}
         <Tabs defaultValue="goal" className="w-full">
