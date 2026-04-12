@@ -22,6 +22,7 @@ import path from "path";
 import fs from "fs/promises";
 import { existsSync } from "fs";
 import { spawn } from "child_process";
+import { notifyFileChanged } from "./cacheInvalidation";
 
 // ─── Sandbox guard ────────────────────────────────────────────────────────
 
@@ -153,6 +154,10 @@ export async function writeFile(
   }
   await fs.mkdir(path.dirname(abs), { recursive: true });
   await fs.writeFile(abs, content, "utf8");
+  // Build-loop Pass 9 (G10): eager cache invalidation so the next
+  // find_symbol / glob_files / @mention call sees the new content
+  // instead of stale TTL data.
+  notifyFileChanged(relativePath, "write");
   const beforeSnap = snapshot(before);
   const afterSnap = snapshot(content);
   return {
@@ -219,6 +224,8 @@ export async function editFile(
     replacements = 1;
   }
   await fs.writeFile(abs, after, "utf8");
+  // Build-loop Pass 9 (G10): eager cache invalidation.
+  notifyFileChanged(relativePath, "edit");
   const beforeSnap = snapshot(before);
   const afterSnap = snapshot(after);
   return {

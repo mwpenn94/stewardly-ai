@@ -134,4 +134,7 @@ export const DEFAULT_ACTIONS: PaletteAction[] = [
   { id: "slash:explain", label: "/explain — explain a file", category: "slash", keywords: ["describe"] },
   { id: "slash:find", label: "/find — grep across codebase", category: "slash", keywords: ["search"] },
   { id: "slash:diff", label: "/diff — show file diff", category: "slash", keywords: ["changes"] },
+  // Build-loop Pass 4: edit-history slash commands
+  { id: "slash:undo", label: "/undo — revert most-recent edit", category: "slash", hint: "⌃Z", keywords: ["revert", "back"] },
+  { id: "slash:redo", label: "/redo — re-apply undone edit", category: "slash", hint: "⌃⇧Z", keywords: ["forward", "again"] },
 ];

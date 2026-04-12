@@ -10,6 +10,8 @@ import {
   bytesRatio,
   durationStats,
   analyzeSession,
+  latencyHistogram,
+  percentile,
 } from "./sessionAnalytics";
 import type { CodeChatMessage, ToolEvent } from "@/hooks/useCodeChatStream";
 
@@ -293,5 +295,144 @@ describe("analyzeSession", () => {
     expect(summary.userTurns).toBe(2);
     expect(summary.assistantTurns).toBe(2);
     expect(summary.byModel).toHaveLength(1);
+    // Build-loop Pass 6: latency stats are part of the summary
+    expect(summary.latency).toBeDefined();
+    expect(summary.latency.count).toBe(2);
+  });
+});
+
+// Build-loop Pass 6: percentile + latency histogram
+describe("percentile", () => {
+  it("returns 0 for an empty sample set", () => {
+    expect(percentile([], 50)).toBe(0);
+    expect(percentile([], 99)).toBe(0);
+  });
+
+  it("returns the only sample for a 1-element list", () => {
+    expect(percentile([42], 50)).toBe(42);
+    expect(percentile([42], 99)).toBe(42);
+  });
+
+  it("computes p50 (median) for a sorted list", () => {
+    expect(percentile([1, 2, 3, 4, 5], 50)).toBe(3);
+  });
+
+  it("interpolates linearly between ranks", () => {
+    // p50 of [10, 20] should be the midpoint (15)
+    expect(percentile([10, 20], 50)).toBe(15);
+  });
+
+  it("computes p95 / p99", () => {
+    const sorted = Array.from({ length: 100 }, (_, i) => i + 1);
+    // 100 samples, p50 = 50.5, p95 = 95.05, p99 = 99.01
+    expect(percentile(sorted, 50)).toBeCloseTo(50.5, 1);
+    expect(percentile(sorted, 95)).toBeCloseTo(95.05, 1);
+    expect(percentile(sorted, 99)).toBeCloseTo(99.01, 1);
+  });
+
+  it("clamps p > 100 to the max", () => {
+    expect(percentile([1, 2, 3], 150)).toBe(3);
+  });
+
+  it("clamps p < 0 to the min", () => {
+    expect(percentile([1, 2, 3], -50)).toBe(1);
+  });
+});
+
+describe("latencyHistogram", () => {
+  it("returns the empty histogram when no assistant messages have durations", () => {
+    const h = latencyHistogram([mkUser("q")]);
+    expect(h.count).toBe(0);
+    expect(h.p50Ms).toBe(0);
+    expect(h.p95Ms).toBe(0);
+    expect(h.p99Ms).toBe(0);
+    expect(h.buckets).toHaveLength(9);
+    expect(h.buckets.every((b) => b.count === 0)).toBe(true);
+  });
+
+  it("buckets a single short turn into ≤100ms", () => {
+    const msgs: CodeChatMessage[] = [
+      mkAssistant("a", { id: "m1", totalDurationMs: 50 }),
+    ];
+    const h = latencyHistogram(msgs);
+    expect(h.count).toBe(1);
+    expect(h.minMs).toBe(50);
+    expect(h.maxMs).toBe(50);
+    expect(h.p50Ms).toBe(50);
+    expect(h.buckets[0].count).toBe(1); // ≤100ms bucket
+  });
+
+  it("distributes mixed durations across buckets", () => {
+    const durations = [50, 200, 600, 800, 3000, 7000, 25000, 60000];
+    const msgs = durations.map((dur, i) =>
+      mkAssistant("a", { id: `m${i}`, totalDurationMs: dur }),
+    );
+    const h = latencyHistogram(msgs);
+    expect(h.count).toBe(8);
+    expect(h.minMs).toBe(50);
+    expect(h.maxMs).toBe(60000);
+    expect(h.buckets[0].count).toBe(1); // ≤100ms (50)
+    expect(h.buckets[1].count).toBe(1); // ≤250ms (200)
+    expect(h.buckets[2].count).toBe(0); // ≤500ms (none)
+    expect(h.buckets[3].count).toBe(2); // ≤1s (600 + 800)
+    expect(h.buckets[4].count).toBe(0); // ≤2.5s (none — 3000 > 2500)
+    expect(h.buckets[5].count).toBe(1); // ≤5s (3000)
+    expect(h.buckets[6].count).toBe(1); // ≤10s (7000)
+    expect(h.buckets[7].count).toBe(1); // ≤30s (25000)
+    expect(h.buckets[8].count).toBe(1); // >30s (60000)
+  });
+
+  it("computes the mean correctly", () => {
+    const msgs = [100, 200, 300].map((dur, i) =>
+      mkAssistant("a", { id: `m${i}`, totalDurationMs: dur }),
+    );
+    const h = latencyHistogram(msgs);
+    expect(h.meanMs).toBe(200);
+  });
+
+  it("ignores assistant messages without totalDurationMs", () => {
+    const msgs: CodeChatMessage[] = [
+      mkAssistant("a1", { id: "m1", totalDurationMs: 100 }),
+      // override to undefined explicitly
+      { ...mkAssistant("a2", { id: "m2" }), totalDurationMs: undefined } as CodeChatMessage,
+    ];
+    const h = latencyHistogram(msgs);
+    expect(h.count).toBe(1);
+  });
+
+  it("ignores corrupted (negative or NaN) durations", () => {
+    const msgs: CodeChatMessage[] = [
+      mkAssistant("a1", { id: "m1", totalDurationMs: 100 }),
+      mkAssistant("a2", { id: "m2", totalDurationMs: -50 }),
+      mkAssistant("a3", { id: "m3", totalDurationMs: NaN }),
+      mkAssistant("a4", { id: "m4", totalDurationMs: Infinity }),
+    ];
+    const h = latencyHistogram(msgs);
+    expect(h.count).toBe(1);
+    expect(h.minMs).toBe(100);
+  });
+
+  it("ignores user messages entirely", () => {
+    const msgs: CodeChatMessage[] = [mkUser("q"), mkUser("q2")];
+    const h = latencyHistogram(msgs);
+    expect(h.count).toBe(0);
+  });
+
+  it("returns deterministic bucket labels", () => {
+    const h = latencyHistogram([
+      mkAssistant("a", { id: "m1", totalDurationMs: 1 }),
+    ]);
+    const labels = h.buckets.map((b) => b.label);
+    expect(labels).toEqual([
+      "≤100ms",
+      "≤250ms",
+      "≤500ms",
+      "≤1s",
+      "≤2.5s",
+      "≤5s",
+      "≤10s",
+      "≤30s",
+      ">30s",
+    ]);
   });
 });

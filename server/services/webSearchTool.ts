@@ -213,3 +213,132 @@ export function getSearchProvider(): "tavily" | "brave" | "manus-google" | "llm-
   if (process.env.BUILT_IN_FORGE_API_KEY) return "manus-google";
   return "llm-fallback";
 }
+
+// ─── Structured search (Build-loop Pass 5) ───────────────────────────
+//
+// `executeWebSearch` returns a single formatted string (intended for
+// the chat ReAct loop's tool result). The Code Chat agent benefits
+// from a richer shape — title, url, snippet — so it can decide which
+// links to follow up on with `web_fetch`. This wrapper returns the
+// raw `SearchResult[]` plus the provider that handled the request.
+//
+// The provider cascade matches `executeWebSearch` exactly so the two
+// stay in sync. Falls back through the same Tavily → Brave → Google
+// → LLM path. The LLM fallback returns a single synthesized result so
+// the structured shape always has at least one entry.
+
+export interface StructuredSearchResult {
+  provider: "tavily" | "brave" | "manus-google" | "llm-fallback";
+  query: string;
+  results: SearchResult[];
+  truncated: boolean;
+  error?: string;
+}
+
+export async function executeWebSearchStructured(
+  query: string,
+  options: SearchOptions = {},
+): Promise<StructuredSearchResult> {
+  const opts: SearchOptions = {
+    includeDomains: options.includeDomains,
+    maxResults: Math.min(Math.max(1, options.maxResults ?? 5), 20),
+    maxChars: options.maxChars ?? 2000,
+  };
+
+  // Try Tavily first
+  if (process.env.TAVILY_API_KEY) {
+    try {
+      const raw = await searchTavily(query, opts);
+      return {
+        provider: "tavily",
+        query,
+        results: raw.slice(0, opts.maxResults!),
+        truncated: raw.length > (opts.maxResults ?? 5),
+      };
+    } catch (err) {
+      log.warn(
+        { provider: "tavily", error: (err as Error).message },
+        "tavily structured search failed",
+      );
+    }
+  }
+
+  // Brave next
+  if (process.env.BRAVE_SEARCH_API_KEY) {
+    try {
+      const raw = await searchBrave(query, opts);
+      return {
+        provider: "brave",
+        query,
+        results: raw.slice(0, opts.maxResults!),
+        truncated: raw.length > (opts.maxResults ?? 5),
+      };
+    } catch (err) {
+      log.warn(
+        { provider: "brave", error: (err as Error).message },
+        "brave structured search failed",
+      );
+    }
+  }
+
+  // Manus Data API (Google) third
+  try {
+    const raw = await searchManusDataApi(query, opts);
+    return {
+      provider: "manus-google",
+      query,
+      results: raw.slice(0, opts.maxResults!),
+      truncated: raw.length > (opts.maxResults ?? 5),
+    };
+  } catch (err) {
+    log.warn(
+      { provider: "manus-google", error: (err as Error).message },
+      "manus-google structured search failed",
+    );
+  }
+
+  // LLM fallback — always returns a single synthesized result so the
+  // shape stays consistent. Caller can detect via `provider === "llm-fallback"`.
+  try {
+    const text = await searchWithLLM(query);
+    return {
+      provider: "llm-fallback",
+      query,
+      results: [
+        {
+          title: `Synthesized answer for "${query.slice(0, 80)}"`,
+          url: "",
+          snippet: text.slice(0, 1500),
+        },
+      ],
+      truncated: text.length > 1500,
+    };
+  } catch (err) {
+    return {
+      provider: "llm-fallback",
+      query,
+      results: [],
+      truncated: false,
+      error: (err as Error).message,
+    };
+  }
+}
+
+// ─── Test seam (Build-loop Pass 5) ───────────────────────────────────
+//
+// Pure-function helper so `web_search` dispatcher tests can drive
+// branch coverage without an env var or live HTTP call. NOT exported
+// from the public surface — the production callers go through
+// `executeWebSearchStructured`.
+export function _formatWebSearchEmptyResult(
+  query: string,
+  reason: string,
+): StructuredSearchResult {
+  return {
+    provider: "llm-fallback",
+    query,
+    results: [],
+    truncated: false,
+    error: reason,
+  };
+}

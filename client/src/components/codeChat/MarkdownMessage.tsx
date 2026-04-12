@@ -19,12 +19,25 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Check, Copy } from "lucide-react";
 import { highlightCode, normalizeLanguage } from "./shikiHighlight";
+import {
+  safeMarkdownUrl,
+  safeImageSrc,
+  safeLinkProps,
+  trustedShikiHtml,
+} from "./markdownSafety";
 
 export default function MarkdownMessage({ content }: { content: string }) {
   return (
     <div className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-headings:font-heading prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-code:bg-muted prose-code:rounded prose-code:px-1 prose-code:text-[0.85em] prose-code:before:content-none prose-code:after:content-none prose-pre:bg-transparent prose-pre:p-0 prose-pre:m-0 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        // Build-loop Pass 7 (G20): hardened URL filter on top of
+        // react-markdown@10's `defaultUrlTransform`. Only allows
+        // http/https/mailto/tel + relative + anchor links. Drops
+        // `javascript:`, `data:` (except base64 PNG/JPG/GIF/WEBP via
+        // safeImageSrc on `<img>`), `vbscript:`, `blob:`, `file:`,
+        // and any obfuscation tricks like leading control chars.
+        urlTransform={safeMarkdownUrl}
         components={{
           code: ({ inline, className, children, ...props }: any) => {
             if (inline) {
@@ -42,12 +55,26 @@ export default function MarkdownMessage({ content }: { content: string }) {
               </CodeBlock>
             );
           },
-          // Make links open in a new tab safely
-          a: ({ children, ...props }: any) => (
-            <a {...props} target="_blank" rel="noopener noreferrer">
-              {children}
-            </a>
-          ),
+          // Make links open in a new tab safely AND filter spread
+          // props through `safeLinkProps` so a future remark plugin
+          // can't smuggle in an `onclick`/`onerror` attribute.
+          a: ({ children, ...props }: any) => {
+            const safe = safeLinkProps(props);
+            return (
+              <a {...safe} target="_blank" rel="noopener noreferrer">
+                {children}
+              </a>
+            );
+          },
+          // Build-loop Pass 7 (G20): force img src through the
+          // image-specific allowlist (which permits `data:image/png`
+          // but rejects `data:image/svg+xml` because SVG carries
+          // scripts).
+          img: ({ src, alt, ...rest }: any) => {
+            const safeSrc = safeImageSrc(src);
+            if (!safeSrc) return null;
+            return <img src={safeSrc} alt={alt ?? ""} {...rest} />;
+          },
         }}
       >
         {content}
@@ -116,18 +143,26 @@ function CodeBlock({
           )}
         </button>
       </div>
-      {highlightedHtml ? (
-        <div
-          className="shiki-container overflow-x-auto text-xs leading-relaxed [&_pre]:m-0 [&_pre]:p-3 [&_pre]:bg-transparent [&_pre]:!bg-transparent"
-          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-        />
-      ) : (
-        <pre
-          className={`overflow-x-auto text-xs font-mono p-3 leading-relaxed ${language ? `language-${language}` : ""}`}
-        >
-          <code className={language ? `language-${language}` : ""}>{raw}</code>
-        </pre>
-      )}
+      {(() => {
+        // Build-loop Pass 7 (G20): even though Shiki is a trusted
+        // source, gate the dangerouslySetInnerHTML path through a
+        // shape check so a corrupted/poisoned highlight payload
+        // can't slip a `<script>` or `onerror=` past the renderer.
+        // Falls through to the plain `<pre>` if validation fails.
+        const trusted = highlightedHtml ? trustedShikiHtml(highlightedHtml) : null;
+        return trusted ? (
+          <div
+            className="shiki-container overflow-x-auto text-xs leading-relaxed [&_pre]:m-0 [&_pre]:p-3 [&_pre]:bg-transparent [&_pre]:!bg-transparent"
+            dangerouslySetInnerHTML={{ __html: trusted }}
+          />
+        ) : (
+          <pre
+            className={`overflow-x-auto text-xs font-mono p-3 leading-relaxed ${language ? `language-${language}` : ""}`}
+          >
+            <code className={language ? `language-${language}` : ""}>{raw}</code>
+          </pre>
+        );
+      })()}
     </div>
   );
 }

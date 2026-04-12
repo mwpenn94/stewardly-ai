@@ -256,6 +256,140 @@ export function durationStats(messages: CodeChatMessage[]): DurationStats {
   };
 }
 
+// ─── Latency histogram (Build-loop Pass 6 — G14) ──────────────────────
+//
+// p50/p95/p99 over the assistant turn durations + a logarithmic
+// histogram so users can spot tail-latency outliers in the session
+// analytics popover. Bucketing is fixed (≤100ms, ≤250ms, ≤500ms,
+// ≤1s, ≤2.5s, ≤5s, ≤10s, ≤30s, >30s) to keep the UI deterministic
+// regardless of sample size.
+
+export interface LatencyHistogramBucket {
+  /** Inclusive upper bound in ms (Infinity for the overflow bucket). */
+  upperBoundMs: number;
+  /** Human-readable label (e.g. "≤500ms" or ">30s"). */
+  label: string;
+  /** How many turns landed in this bucket. */
+  count: number;
+}
+
+export interface LatencyHistogram {
+  /** Total turns sampled (sum of bucket counts). */
+  count: number;
+  /** Lowest observed latency. */
+  minMs: number;
+  /** Highest observed latency. */
+  maxMs: number;
+  /** Mean. */
+  meanMs: number;
+  /** 50th percentile (median). */
+  p50Ms: number;
+  /** 95th percentile. */
+  p95Ms: number;
+  /** 99th percentile. */
+  p99Ms: number;
+  /** Sorted bucket counts (always 9 buckets). */
+  buckets: LatencyHistogramBucket[];
+}
+
+const HISTOGRAM_BOUNDS_MS: Array<{ upperBoundMs: number; label: string }> = [
+  { upperBoundMs: 100, label: "≤100ms" },
+  { upperBoundMs: 250, label: "≤250ms" },
+  { upperBoundMs: 500, label: "≤500ms" },
+  { upperBoundMs: 1_000, label: "≤1s" },
+  { upperBoundMs: 2_500, label: "≤2.5s" },
+  { upperBoundMs: 5_000, label: "≤5s" },
+  { upperBoundMs: 10_000, label: "≤10s" },
+  { upperBoundMs: 30_000, label: "≤30s" },
+  { upperBoundMs: Infinity, label: ">30s" },
+];
+
+const EMPTY_HISTOGRAM: LatencyHistogram = {
+  count: 0,
+  minMs: 0,
+  maxMs: 0,
+  meanMs: 0,
+  p50Ms: 0,
+  p95Ms: 0,
+  p99Ms: 0,
+  buckets: HISTOGRAM_BOUNDS_MS.map(({ upperBoundMs, label }) => ({
+    upperBoundMs,
+    label,
+    count: 0,
+  })),
+};
+
+/**
+ * Pure percentile calculator using "nearest-rank" interpolation.
+ * `samples` must be sorted ascending; `p` is in [0, 100]. Returns 0
+ * for an empty sample set rather than NaN so the UI can render
+ * unconditionally.
+ *
+ * Exported for direct testing.
+ */
+export function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  if (sorted.length === 1) return sorted[0];
+  const clamped = Math.min(100, Math.max(0, p));
+  // Linear interpolation between the two ranks straddling the percentile.
+  const rank = (clamped / 100) * (sorted.length - 1);
+  const lower = Math.floor(rank);
+  const upper = Math.ceil(rank);
+  if (lower === upper) return sorted[lower];
+  const frac = rank - lower;
+  return sorted[lower] * (1 - frac) + sorted[upper] * frac;
+}
+
+/**
+ * Build a latency histogram + percentile summary from the assistant
+ * `totalDurationMs` field on every assistant message that has one.
+ *
+ * Skips messages without `totalDurationMs` (for example, the streaming
+ * placeholder turn during execution) and silently drops negative or
+ * non-finite values so a corrupted message can't poison the math.
+ */
+export function latencyHistogram(messages: CodeChatMessage[]): LatencyHistogram {
+  const samples: number[] = [];
+  for (const msg of messages) {
+    if (msg.role !== "assistant") continue;
+    const dur = msg.totalDurationMs;
+    if (typeof dur !== "number" || !Number.isFinite(dur) || dur < 0) continue;
+    samples.push(dur);
+  }
+  if (samples.length === 0) {
+    // Return a fresh copy so callers can safely mutate.
+    return {
+      ...EMPTY_HISTOGRAM,
+      buckets: EMPTY_HISTOGRAM.buckets.map((b) => ({ ...b })),
+    };
+  }
+  const sorted = [...samples].sort((a, b) => a - b);
+  const buckets = HISTOGRAM_BOUNDS_MS.map(({ upperBoundMs, label }) => ({
+    upperBoundMs,
+    label,
+    count: 0,
+  }));
+  for (const sample of sorted) {
+    for (const bucket of buckets) {
+      if (sample <= bucket.upperBoundMs) {
+        bucket.count++;
+        break;
+      }
+    }
+  }
+  const sum = sorted.reduce((acc, n) => acc + n, 0);
+  return {
+    count: sorted.length,
+    minMs: sorted[0],
+    maxMs: sorted[sorted.length - 1],
+    meanMs: sum / sorted.length,
+    p50Ms: percentile(sorted, 50),
+    p95Ms: percentile(sorted, 95),
+    p99Ms: percentile(sorted, 99),
+    buckets,
+  };
+}
+
 // ─── Top-level summary ─────────────────────────────────────────────────
 
 export interface SessionAnalytics {
@@ -264,6 +398,8 @@ export interface SessionAnalytics {
   tools: ToolUsageBucket[];
   bytes: BytesRatio;
   duration: DurationStats;
+  /** Build-loop Pass 6: per-turn latency histogram + percentiles. */
+  latency: LatencyHistogram;
   totalMessages: number;
   userTurns: number;
   assistantTurns: number;
@@ -282,6 +418,7 @@ export function analyzeSession(messages: CodeChatMessage[]): SessionAnalytics {
     tools: toolUsageStats(messages),
     bytes: bytesRatio(messages),
     duration: durationStats(messages),
+    latency: latencyHistogram(messages),
     totalMessages: messages.length,
     userTurns,
     assistantTurns,

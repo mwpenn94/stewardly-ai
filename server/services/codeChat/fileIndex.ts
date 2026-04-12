@@ -14,6 +14,10 @@
 import path from "path";
 import fs from "fs/promises";
 import { logger } from "../../_core/logger";
+import {
+  registerCacheSubscriber,
+  allChanges,
+} from "./cacheInvalidation";
 
 const CACHE_TTL_MS = 60_000;
 const MAX_FILES = 5_000;
@@ -220,3 +224,16 @@ export function extractFileMentions(
 export function __resetFileIndexCache(): void {
   _cache = null;
 }
+
+// Build-loop Pass 9 (G10): subscribe to file-change notifications so
+// newly-created or deleted files show up in @mentions, glob_files,
+// and listWorkspaceFiles immediately rather than waiting for the
+// 60s TTL. The predicate is `allChanges` because the file index
+// cares about the entire workspace tree.
+registerCacheSubscriber({
+  name: "workspaceFileIndex",
+  predicate: allChanges,
+  clear: () => {
+    _cache = null;
+  },
+});

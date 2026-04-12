@@ -11,7 +11,7 @@
  *   5. Bytes read/write — ratio bar showing read vs write output
  */
 
-import { X, BarChart3, Clock, Cpu, Wrench, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { X, BarChart3, Clock, Cpu, Wrench, ArrowDownToLine, ArrowUpFromLine, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   analyzeSession,
@@ -181,11 +181,12 @@ export default function SessionAnalyticsPopover({
                 <button
                   key={turn.messageId}
                   type="button"
-                  className="w-full flex items-start justify-between gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-secondary/20 transition-colors"
+                  className="w-full flex items-start justify-between gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-secondary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                   onClick={() => {
                     onJumpToMessage?.(turn.messageId);
                     onClose();
                   }}
+                  aria-label={`Jump to expensive turn #${idx + 1}: ${turn.promptPreview || "(empty prompt)"}`}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
@@ -249,6 +250,94 @@ export default function SessionAnalyticsPopover({
                   </div>
                 </div>
               ))}
+            </section>
+          )}
+
+          {/* Latency histogram (Build-loop Pass 6 — G14) */}
+          {analytics.latency.count > 0 && (
+            <section className="py-2">
+              <div className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-muted-foreground">
+                <Activity className="h-3 w-3" /> Per-turn latency
+                <Badge
+                  variant="outline"
+                  className="ml-1 text-[9px] h-4 px-1.5 border-border/60 text-muted-foreground"
+                >
+                  {analytics.latency.count} sample{analytics.latency.count === 1 ? "" : "s"}
+                </Badge>
+              </div>
+              <div className="px-3 py-1.5 grid grid-cols-3 gap-1.5 text-[11px]">
+                <div>
+                  <div className="text-[9px] text-muted-foreground uppercase tracking-wide">p50</div>
+                  <div className="font-mono tabular-nums text-foreground">
+                    {formatDuration(analytics.latency.p50Ms)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-muted-foreground uppercase tracking-wide">p95</div>
+                  <div className="font-mono tabular-nums text-accent">
+                    {formatDuration(analytics.latency.p95Ms)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-muted-foreground uppercase tracking-wide">p99</div>
+                  <div className="font-mono tabular-nums text-destructive">
+                    {formatDuration(analytics.latency.p99Ms)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-muted-foreground uppercase tracking-wide">min</div>
+                  <div className="font-mono tabular-nums text-muted-foreground">
+                    {formatDuration(analytics.latency.minMs)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-muted-foreground uppercase tracking-wide">mean</div>
+                  <div className="font-mono tabular-nums text-foreground">
+                    {formatDuration(analytics.latency.meanMs)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-muted-foreground uppercase tracking-wide">max</div>
+                  <div className="font-mono tabular-nums text-foreground">
+                    {formatDuration(analytics.latency.maxMs)}
+                  </div>
+                </div>
+              </div>
+              <div className="px-3 pt-1 pb-2 space-y-0.5">
+                {analytics.latency.buckets.map((bucket) => {
+                  const pct =
+                    analytics.latency.count > 0
+                      ? (bucket.count / analytics.latency.count) * 100
+                      : 0;
+                  // Color the bar by latency severity: short = emerald,
+                  // mid = accent, tail = destructive.
+                  const color =
+                    bucket.upperBoundMs <= 1000
+                      ? "bg-emerald-500"
+                      : bucket.upperBoundMs <= 10000
+                        ? "bg-accent"
+                        : "bg-destructive";
+                  return (
+                    <div
+                      key={bucket.label}
+                      className="flex items-center gap-2 text-[10px]"
+                    >
+                      <span className="w-12 text-right text-muted-foreground tabular-nums">
+                        {bucket.label}
+                      </span>
+                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${color}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="w-6 text-right font-mono tabular-nums text-muted-foreground">
+                        {bucket.count}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </section>
           )}
 

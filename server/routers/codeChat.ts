@@ -276,11 +276,18 @@ function setRoadmap(next: Roadmap): Roadmap {
 const CodeToolCallSchema = z.object({
   name: z.enum([
     "read_file",
+    "multi_read",
     "write_file",
     "edit_file",
     "list_directory",
     "grep_search",
+    "glob_files",
+    "web_fetch",
+    "web_search",
     "run_bash",
+    "update_todos",
+    "find_symbol",
+    "task",
     "finish",
   ]),
   args: z.record(z.string(), z.any()),
@@ -1852,8 +1859,15 @@ export const codeChatRouter = router({
 
       const READ_ONLY_TOOLS = new Set([
         "read_file",
+        "multi_read", // Build-loop Pass 2: batch read
         "list_directory",
         "grep_search",
+        "glob_files", // Build-loop Pass 1: Claude-Code Glob parity
+        "web_fetch", // Build-loop Pass 3: Claude-Code WebFetch parity
+        "web_search", // Build-loop Pass 5: Claude-Code WebSearch parity
+        "task", // Build-loop Pass 11: subagent (read-only by construction)
+        "update_todos", // Pass 237: live progress reporter
+        "find_symbol", // Pass 242: workspace symbol index
       ]);
 
       // Shape the code chat tool definitions into the OpenAI
@@ -1883,6 +1897,11 @@ export const codeChatRouter = router({
         "You are a Claude-Code-style coding assistant inside Stewardly.",
         "Work step-by-step. Use the `code_list_directory` and `code_read_file` tools to explore the codebase",
         "before answering questions about it. Use `code_grep_search` to find specific symbols or strings.",
+        "Use `code_glob_files` to find files by pattern (e.g. `src/**/*.tsx`) — faster than `list_directory` when you know the filename shape.",
+        "Use `code_multi_read` to read up to 10 files in one call whenever you already know 2+ files you need to inspect.",
+        "Use `code_web_search` for fresh information beyond your training cutoff; pair with `code_web_fetch` to read top results in full.",
+        "Use `code_web_fetch` to pull external docs (MDN, React, Node, GitHub READMEs, regulatory sites) into context when the question depends on vendor documentation.",
+        "Use `code_find_symbol` to jump to a function/class/interface definition by name.",
         allowMutations
           ? "You also have `code_write_file`, `code_edit_file`, and `code_run_bash` available — use them sparingly and explain every change."
           : "Write/edit/bash tools are disabled for this session. Return diffs as code blocks instead of attempting to apply them.",
