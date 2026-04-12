@@ -868,6 +868,7 @@ prior-pass-you did and didn't finish.
 | 22   | cross-page-navigation | PlanningCrossNav + cross-calculator insights | 5326fbf | Shared nav bar on all 5 planning pages showing related tools + data indicators. Cross-page estate/insurance insights on TaxPlanning. | — |
 | 23   | learning-data-wiring | ExamSimulator fetches real questions from backend | ac36d57 | useParams → getTrackBySlug → listQuestions → mapDbQuestion. Loading/error/empty states in AppShell. | — |
 | 24   | learning-achievements | AchievementSystem wired to real mastery data | bc6e9d7 | mastery.summary + mastery.dueNow → deriveAchievements(). Streak via localStorage. AppShell wrapped. | — |
+| 25   | graceful-degradation | Client-side tax fallback + 10 tests | 68cca8c | projectTaxClientSide (2026 MFJ/Single/HOH brackets), auto-fallback on server failure, amber banner. 37 planning tests total. | — |
 
 ---
 
