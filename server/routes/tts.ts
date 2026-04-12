@@ -36,6 +36,11 @@ ttsRouter.post("/api/tts", async (req, res) => {
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
   if (!checkTtsRateLimit(user.id)) { res.status(429).json({ error: "TTS rate limit exceeded (30/min)" }); return; }
   try {
+    // Auth check — injected by the mount-point middleware in _core/index.ts
+    if (!(req as any).__user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { text, voice = "en-US-GuyNeural", speed = 1.0, pitch = "default" } = req.body;
     if (!text || text.length === 0) return res.status(400).json({ error: "Text is required" });
     if (text.length > 5000) return res.status(400).json({ error: "Text exceeds 5000 character limit" });

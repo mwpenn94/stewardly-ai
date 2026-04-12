@@ -153,6 +153,20 @@ export default function RiskAssessment() {
   const allAnswered = answeredCount === QUESTIONS.length;
   const profile = getProfile(overallScore);
 
+  // Persist risk assessment to calculator context for chat follow-up
+  useEffect(() => {
+    if (!allAnswered) return;
+    persistCalculation({
+      id: `risk-${overallScore}`,
+      type: "risk",
+      title: "Risk Assessment",
+      summary: `Risk profile: ${profile.name} (score ${overallScore}/100). Recommended allocation: ${profile.equity}% equity, ${profile.fixed}% fixed income, ${profile.alternatives}% alternatives, ${profile.cash}% cash.`,
+      inputs: { answers },
+      outputs: { overallScore, profileName: profile.name, equity: profile.equity, fixed: profile.fixed, alternatives: profile.alternatives, cash: profile.cash },
+      timestamp: Date.now(),
+    });
+  }, [allAnswered, overallScore, profile]);
+
   const handleAnswer = (qId: string, score: number) => {
     setAnswers(prev => ({ ...prev, [qId]: score }));
   };
