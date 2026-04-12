@@ -209,6 +209,50 @@ import {
   getWorkspaceFileIndex,
   fuzzyFilterFiles,
 } from "../services/codeChat/fileIndex";
+import {
+  getDiagnostics,
+  clearDiagnosticsCache,
+} from "../services/codeChat/diagnosticsRunner";
+import { findReferencesInWorkspace } from "../services/codeChat/findReferencesRunner";
+import {
+  checkFreshness,
+  summarizeFreshness,
+  statFile,
+} from "../services/codeChat/fileWatcher";
+import {
+  applyBatch,
+  previewBatch,
+  validateBatch,
+  type BatchOp,
+} from "../services/codeChat/batchApply";
+import { buildWorkspaceRenamePlan } from "../services/codeChat/renameSymbolRunner";
+import { runVitest } from "../services/codeChat/testRunner";
+import { inspectPackages } from "../services/codeChat/packageInspector";
+import {
+  loadTemplates as loadEnvTemplates,
+  buildReport as buildEnvReport,
+} from "../services/codeChat/envInspector";
+import {
+  parseDiffStats,
+  composeMessage,
+  formatMessage,
+} from "../services/codeChat/commitComposer";
+import {
+  validateRename,
+  planToBatchOps,
+} from "../services/codeChat/renameSymbol";
+import {
+  groupReferences,
+  summarizeReferences,
+  filterReferences,
+  type ReferenceKind,
+} from "../services/codeChat/findReferences";
+import {
+  summarizeDiagnostics,
+  filterDiagnostics,
+  groupByFile as groupDiagnosticsByFile,
+  type DiagnosticSeverity,
+} from "../services/codeChat/diagnostics";
 import { contextualLLM, executeReActLoop } from "../shared/stewardlyWiring";
 import { logger } from "../_core/logger";
 
@@ -337,6 +381,231 @@ export const codeChatRouter = router({
         workspaceRoot: WORKSPACE_ROOT,
         allowMutations: input.allowMutations,
       });
+    }),
+
+  // Pass 256: multi-file atomic batch apply (admin-only, rollback on failure)
+  batchApply: protectedProcedure
+    .input(
+      z.object({
+        ops: z.array(
+          z.union([
+            z.object({
+              kind: z.literal("write"),
+              path: z.string().min(1),
+              content: z.string(),
+            }),
+            z.object({
+              kind: z.literal("edit"),
+              path: z.string().min(1),
+              oldString: z.string().min(1),
+              newString: z.string(),
+              replaceAll: z.boolean().optional(),
+            }),
+          ]),
+        ).max(100),
+        dryRun: z.boolean().optional(),
+        confirmDangerous: z.boolean().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin") {
+        return {
+          ok: false,
+          dryRun: Boolean(input.dryRun),
+          operations: [],
+          totalBytes: 0,
+          durationMs: 0,
+          error: "batch apply requires admin role",
+        };
+      }
+      // Mutations without dryRun require explicit confirmation
+      if (!input.dryRun && !input.confirmDangerous) {
+        return {
+          ok: false,
+          dryRun: false,
+          operations: [],
+          totalBytes: 0,
+          durationMs: 0,
+          error: "set confirmDangerous: true to commit a batch apply",
+        };
+      }
+      const sandbox = {
+        workspaceRoot: WORKSPACE_ROOT,
+        allowMutations: true as const,
+      };
+      return await applyBatch(sandbox, input.ops as BatchOp[], {
+        dryRun: input.dryRun,
+      });
+    }),
+
+  previewBatchApply: protectedProcedure
+    .input(
+      z.object({
+        ops: z.array(z.any()).max(100),
+      }),
+    )
+    .query(({ input }) => {
+      // Pure validation — doesn't touch the filesystem
+      return validateBatch(input.ops as BatchOp[]);
+    }),
+
+  // Pass 257: rename-symbol refactor
+  planRenameSymbol: protectedProcedure
+    .input(
+      z.object({
+        oldName: z.string().min(2).max(120),
+        newName: z.string().min(2).max(120),
+        includeComments: z.boolean().optional(),
+        pathPrefix: z.string().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const validation = validateRename(input.oldName, input.newName);
+      if (!validation.ok) {
+        return {
+          ok: false,
+          issues: validation.issues,
+          plan: null,
+        };
+      }
+      const plan = await buildWorkspaceRenamePlan(
+        WORKSPACE_ROOT,
+        input.oldName,
+        input.newName,
+        {
+          includeComments: input.includeComments,
+          pathPrefix: input.pathPrefix,
+        },
+      );
+      return {
+        ok: true,
+        issues: [],
+        plan: {
+          oldName: plan.oldName,
+          newName: plan.newName,
+          summary: plan.summary,
+          filesScanned: plan.filesScanned,
+          // Truncate per-entry preview to 1KB each to keep the response small
+          entries: plan.entries.map((e) => ({
+            path: e.path,
+            replacements: e.replacements,
+            beforePreview: e.before.slice(0, 4096),
+            afterPreview: e.after.slice(0, 4096),
+            hits: e.hits.slice(0, 50),
+          })),
+          skipped: plan.skipped.slice(0, 50),
+        },
+      };
+    }),
+
+  // Pass 261: package.json dependency inspector
+  inspectPackages: protectedProcedure.query(async () => {
+    return await inspectPackages(WORKSPACE_ROOT);
+  }),
+
+  // Pass 263: env var inspector (safe masking)
+  inspectEnv: adminProcedure.query(async () => {
+    const declared = await loadEnvTemplates(WORKSPACE_ROOT);
+    return buildEnvReport(declared, process.env as Record<string, string | undefined>);
+  }),
+
+  // Pass 262: commit message composer (pure stats-based draft)
+  composeCommitMessage: protectedProcedure
+    .input(
+      z.object({
+        staged: z.boolean().optional().default(true),
+      }).optional(),
+    )
+    .query(async ({ input }) => {
+      const { spawn } = await import("node:child_process");
+      const args = input?.staged === false ? ["diff"] : ["diff", "--cached"];
+      const diff = await new Promise<string>((resolve) => {
+        const child = spawn("git", args, {
+          cwd: WORKSPACE_ROOT,
+          shell: false,
+        });
+        let out = "";
+        const timer = setTimeout(() => {
+          try { child.kill("SIGKILL"); } catch {}
+          resolve(out);
+        }, 15_000);
+        child.stdout.on("data", (b: Buffer) => {
+          if (out.length < 5 * 1024 * 1024) out += b.toString("utf8");
+        });
+        child.on("close", () => { clearTimeout(timer); resolve(out); });
+        child.on("error", () => { clearTimeout(timer); resolve(""); });
+      });
+      const stats = parseDiffStats(diff);
+      const message = composeMessage(stats);
+      return {
+        stats,
+        message,
+        formatted: formatMessage(message),
+        diffLength: diff.length,
+      };
+    }),
+
+  // Pass 258: vitest runner
+  runTests: protectedProcedure
+    .input(
+      z.object({
+        target: z.string().max(500).optional(),
+      }).optional(),
+    )
+    .mutation(async ({ input }) => {
+      return await runVitest(WORKSPACE_ROOT, input?.target ?? "", {
+        timeoutMs: input?.target ? 60_000 : 5 * 60_000,
+      });
+    }),
+
+  applyRenameSymbol: protectedProcedure
+    .input(
+      z.object({
+        oldName: z.string().min(2).max(120),
+        newName: z.string().min(2).max(120),
+        includeComments: z.boolean().optional(),
+        pathPrefix: z.string().optional(),
+        confirmDangerous: z.boolean(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin") {
+        return { ok: false, error: "rename requires admin role" };
+      }
+      if (!input.confirmDangerous) {
+        return { ok: false, error: "set confirmDangerous: true to commit" };
+      }
+      const validation = validateRename(input.oldName, input.newName);
+      if (!validation.ok) {
+        return { ok: false, error: validation.issues.join(", ") };
+      }
+      const plan = await buildWorkspaceRenamePlan(
+        WORKSPACE_ROOT,
+        input.oldName,
+        input.newName,
+        {
+          includeComments: input.includeComments,
+          pathPrefix: input.pathPrefix,
+        },
+      );
+      if (plan.entries.length === 0) {
+        return {
+          ok: false,
+          error: `no files matched "${input.oldName}"`,
+          plan: { summary: plan.summary, filesScanned: plan.filesScanned },
+        };
+      }
+      const ops = planToBatchOps(plan);
+      const result = await applyBatch(
+        { workspaceRoot: WORKSPACE_ROOT, allowMutations: true },
+        ops as BatchOp[],
+      );
+      return {
+        ok: result.ok,
+        totalReplacements: plan.summary.totalReplacements,
+        fileCount: plan.summary.fileCount,
+        batchResult: result,
+      };
     }),
 
   // ─── Roadmap procedures ────────────────────────────────────────
@@ -1753,6 +2022,116 @@ export const codeChatRouter = router({
     const markers = await getTodoMarkers(WORKSPACE_ROOT);
     return { count: markers.length };
   }),
+
+  // Pass 251: TypeScript diagnostics
+  getTsDiagnostics: protectedProcedure
+    .input(
+      z
+        .object({
+          severity: z.enum(["error", "warning", "info", "all"]).optional(),
+          pathPrefix: z.string().optional(),
+          search: z.string().optional(),
+          limit: z.number().min(1).max(5000).optional(),
+          force: z.boolean().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      const run = await getDiagnostics(WORKSPACE_ROOT, { force: input?.force });
+      const filtered = filterDiagnostics(run.diagnostics, {
+        severity: input?.severity as DiagnosticSeverity | "all" | undefined,
+        pathPrefix: input?.pathPrefix,
+        search: input?.search,
+      });
+      const limit = input?.limit ?? 500;
+      return {
+        diagnostics: filtered.slice(0, limit),
+        total: filtered.length,
+        totalUnfiltered: run.diagnostics.length,
+        summary: summarizeDiagnostics(run.diagnostics),
+        groups: groupDiagnosticsByFile(filtered.slice(0, limit)),
+        startedAt: run.startedAt,
+        durationMs: run.durationMs,
+        cached: run.cached,
+        fatalError: run.fatalError,
+      };
+    }),
+
+  rebuildTsDiagnostics: protectedProcedure.mutation(async () => {
+    clearDiagnosticsCache();
+    const run = await getDiagnostics(WORKSPACE_ROOT, { force: true });
+    return {
+      total: run.diagnostics.length,
+      durationMs: run.durationMs,
+      fatalError: run.fatalError,
+    };
+  }),
+
+  // Pass 255: file freshness checker
+  checkFileFreshness: protectedProcedure
+    .input(
+      z.object({
+        checks: z.array(
+          z.object({
+            path: z.string(),
+            expectedMtime: z.number().nullable(),
+          }),
+        ),
+      }),
+    )
+    .query(async ({ input }) => {
+      const result = await checkFreshness(WORKSPACE_ROOT, input.checks);
+      return {
+        ...result,
+        summary: summarizeFreshness(result),
+      };
+    }),
+
+  getFileMtime: protectedProcedure
+    .input(z.object({ path: z.string() }))
+    .query(async ({ input }) => {
+      return await statFile(WORKSPACE_ROOT, input.path);
+    }),
+
+  // Pass 252: find-references across the workspace
+  findReferences: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(2).max(120),
+        includeComments: z.boolean().optional(),
+        pathPrefix: z.string().optional(),
+        kinds: z
+          .array(
+            z.enum(["import", "definition", "call", "property", "reference"]),
+          )
+          .optional(),
+        limit: z.number().min(1).max(2000).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const result = await findReferencesInWorkspace(
+        WORKSPACE_ROOT,
+        input.name,
+        {
+          includeComments: input.includeComments,
+          pathPrefix: input.pathPrefix,
+        },
+      );
+      const filtered = filterReferences(result.hits, {
+        kinds: input.kinds as ReferenceKind[] | undefined,
+      });
+      const limit = input.limit ?? 500;
+      return {
+        query: result.query,
+        hits: filtered.slice(0, limit),
+        total: filtered.length,
+        totalUnfiltered: result.hits.length,
+        filesScanned: result.filesScanned,
+        truncated: result.truncated,
+        summary: summarizeReferences(result.hits),
+        groups: groupReferences(filtered.slice(0, limit)),
+      };
+    }),
 
   // ─── Synthesizer procedures ────────────────────────────────────
   diffResponses: protectedProcedure

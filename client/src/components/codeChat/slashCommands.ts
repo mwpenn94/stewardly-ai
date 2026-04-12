@@ -280,6 +280,27 @@ export const BUILT_IN_COMMANDS: SlashCommand[] = [
       ctx.toast("success", `Saved to memory: "${fact.slice(0, 60)}${fact.length > 60 ? "…" : ""}"`);
     },
   },
+  {
+    name: "refs",
+    aliases: ["references", "xref"],
+    description: "Find workspace references to a symbol (Pass 252)",
+    args: "<symbolName>",
+    handler: (ctx, args) => {
+      const name = args.trim();
+      if (!name || name.length < 2) {
+        ctx.toast("error", "usage: /refs <symbolName>");
+        return;
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("codechat-find-references", {
+            detail: { name },
+          }),
+        );
+      }
+      ctx.toast("info", `Finding references for "${name}"…`);
+    },
+  },
 ];
 
 // ─── Parser + lookup ─────────────────────────────────────────────────────
