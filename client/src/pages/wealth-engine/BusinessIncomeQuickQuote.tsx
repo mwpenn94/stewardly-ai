@@ -48,6 +48,7 @@ import {
 import { useLocation } from "wouter";
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import { useRunTimeline } from "@/hooks/useRunTimeline";
 import type { FinancialProfile } from "@/stores/financialProfile";
 import {
   ROLE_OPTIONS,
@@ -63,6 +64,7 @@ export type { BizRoleKey };
 export default function BusinessIncomeQuickQuotePage() {
   const [, navigate] = useLocation();
   const { profile, setProfile, hasProfile } = useFinancialProfile();
+  const { recordRun } = useRunTimeline();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [role, setRole] = useState<BizRoleKey>("dir");
@@ -154,6 +156,35 @@ export default function BusinessIncomeQuickQuotePage() {
   // Result data shape: { data: { years: [...], ... }, durationMs, runId }
   const yearsData = (projectBiz.data?.data as { years?: Array<{ year?: number; totalIncome?: number }> } | undefined)?.years;
   const summary = useMemo(() => summarizeBizProjection(yearsData), [yearsData]);
+
+  // Record the run into the timeline after the BIE mutation resolves.
+  // We watch `projectBiz.data` + summary so the effect runs exactly once
+  // per completed mutation (useMemo returns the same object ref until
+  // yearsData changes, so this is cheap).
+  useEffect(() => {
+    if (!yearsData || yearsData.length === 0) return;
+    if (summary.totalEarnings === 0) return;
+    recordRun({
+      tool: "bie.simulate",
+      label: `BIE: ${selectedRole.label}`,
+      inputSummary: `${selectedRole.label}, $${personalGDC.toLocaleString()} GDC, ${teamSize} direct reports, ${yearsHorizon}y`,
+      outputSummary: `$${summary.totalEarnings.toLocaleString()} total · peak ${formatCurrency(summary.peakIncome)} @ y${summary.peakYear}`,
+      route: "/wealth-engine/business-income-quote",
+      confidence: 0.75,
+      inputs: {
+        role,
+        personalGDC,
+        teamSize,
+        yearsHorizon,
+        streamPersonal,
+        streamOverride,
+        streamAUM,
+        streamChannels,
+        streamAffiliate,
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [yearsData, summary.totalEarnings]);
 
   return (
     <AppShell title="Business Income Quick Quote">

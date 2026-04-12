@@ -41,10 +41,13 @@ import {
   Zap,
   ArrowRight,
   Library,
+  History,
 } from "lucide-react";
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
 import { ProfileLibraryPanel } from "@/components/financial-profile/ProfileLibraryPanel";
+import { RunTimelinePanel } from "@/components/financial-profile/RunTimelinePanel";
+import { useRunTimeline } from "@/hooks/useRunTimeline";
 import {
   QUICK_QUOTE_REGISTRY,
   groupQuotesByCategory,
@@ -85,6 +88,8 @@ export default function QuickQuoteHubPage() {
   const { profile, hasProfile, completenessStatus } = useFinancialProfile();
   const [scope, setScope] = useState<ScopeKey>("user");
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const { stats: timelineStatsData } = useRunTimeline();
 
   const visible = useMemo(() => visibleQuotes(scope), [scope]);
   const grouped = useMemo(() => groupQuotesByCategory(visible), [visible]);
@@ -110,6 +115,20 @@ export default function QuickQuoteHubPage() {
             </div>
             <div className="flex items-center gap-2">
               <ScopePicker scope={scope} onChange={setScope} />
+              <button
+                type="button"
+                onClick={() => setTimelineOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-accent/40 hover:text-accent transition-colors"
+                aria-label="Open run timeline"
+              >
+                <History className="w-3 h-3" />
+                Timeline
+                {timelineStatsData.totalRuns > 0 && (
+                  <Badge variant="outline" className="h-3.5 px-1 text-[9px] font-mono">
+                    {timelineStatsData.totalRuns}
+                  </Badge>
+                )}
+              </button>
               {scope !== "user" && (
                 <button
                   type="button"
@@ -126,6 +145,7 @@ export default function QuickQuoteHubPage() {
         </header>
 
         <ProfileLibraryPanel open={libraryOpen} onClose={() => setLibraryOpen(false)} />
+        <RunTimelinePanel open={timelineOpen} onClose={() => setTimelineOpen(false)} />
 
         <FinancialProfileBanner
           onPrefill={() => undefined}

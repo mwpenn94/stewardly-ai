@@ -41,6 +41,7 @@ import {
 import { useLocation } from "wouter";
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import { useRunTimeline } from "@/hooks/useRunTimeline";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import {
   HE_PRESET_REGISTRY,
@@ -99,6 +100,7 @@ function normalizeProjection(
 export default function HolisticComparisonPage() {
   const [, navigate] = useLocation();
   const { profile, completeness, hasProfile } = useFinancialProfile();
+  const { recordRun } = useRunTimeline();
 
   const [presetA, setPresetA] = useState<HePresetKey>("doNothing");
   const [presetB, setPresetB] = useState<HePresetKey>("wealthbridgeClient");
@@ -142,6 +144,24 @@ export default function HolisticComparisonPage() {
     () => comparisonConfidence(completeness, delta.years),
     [completeness, delta.years],
   );
+
+  // Record the comparison into the timeline once both sides resolve.
+  useEffect(() => {
+    if (projectionA.length === 0 || projectionB.length === 0) return;
+    if (delta.years === 0) return;
+    const metaA = findPreset(presetA);
+    const metaB = findPreset(presetB);
+    recordRun({
+      tool: "he.compareAt",
+      label: `HE: ${metaA?.short ?? presetA} vs ${metaB?.short ?? presetB}`,
+      inputSummary: `${years}y horizon · profile ${Math.round(completeness * 100)}% complete`,
+      outputSummary: `Δ ${formatCurrency(delta.delta)} (${Math.round(delta.pctImprovement * 100)}%)`,
+      route: "/wealth-engine/holistic-comparison",
+      confidence,
+      inputs: { presetA, presetB, years },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectionA.length, projectionB.length, delta.finalA, delta.finalB]);
 
   const isRunning = runA.isPending || runB.isPending;
 
