@@ -29,6 +29,8 @@ export default defineConfig({
       "client/src/components/CommandPalette.test.ts",
       "client/src/components/codeChat/**/*.test.ts",
       "client/src/pages/learning/lib/**/*.test.ts",
+      // Pass 7 (automation): include hook-level client tests
+      "client/src/hooks/**/*.test.ts",
     ],
   },
 });

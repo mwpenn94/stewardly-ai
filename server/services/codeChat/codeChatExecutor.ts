@@ -44,6 +44,10 @@ export type CodeToolName =
   | "run_bash"
   | "update_todos"
   | "find_symbol"
+  | "web_read"
+  | "web_extract"
+  | "web_crawl"
+  | "web_search"
   | "finish";
 
 export interface CodeToolCall {
@@ -70,6 +74,56 @@ export interface SymbolLookupHit {
   exported: boolean;
 }
 
+export interface WebReadResultPayload {
+  url: string;
+  finalUrl: string;
+  status: number;
+  title: string;
+  description: string;
+  text: string;
+  headings: Array<{ level: number; text: string }>;
+  links: Array<{ href: string; text: string; nofollow: boolean }>;
+  forms: Array<{ action: string; method: string; fieldCount: number }>;
+  wordCount: number;
+  truncated: boolean;
+  fetchMs: number;
+}
+
+export interface WebExtractResultPayload {
+  url: string;
+  finalUrl: string;
+  status: number;
+  data: Record<string, unknown>;
+  warnings: string[];
+  fieldCount: number;
+  fetchMs: number;
+}
+
+export interface WebSearchResultPayload {
+  query: string;
+  provider: string;
+  results: string;
+  charCount: number;
+}
+
+export interface WebCrawlResultPayload {
+  startUrl: string;
+  pagesAttempted: number;
+  pagesSuccessful: number;
+  pagesFailed: number;
+  totalMs: number;
+  pages: Array<{
+    url: string;
+    depth: number;
+    title: string;
+    wordCount: number;
+    links: number;
+    status: number;
+    error?: string;
+  }>;
+  skipped: Array<{ url: string; reason: string }>;
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -79,6 +133,10 @@ export type CodeToolResult =
   | { kind: "bash"; result: BashResult }
   | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
+  | { kind: "web"; result: WebReadResultPayload }
+  | { kind: "web_extract"; result: WebExtractResultPayload }
+  | { kind: "web_crawl"; result: WebCrawlResultPayload }
+  | { kind: "web_search"; result: WebSearchResultPayload }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -216,6 +274,213 @@ export async function dispatchCodeTool(
             truncated: raw.length > limit,
           },
         };
+      }
+      case "web_read": {
+        // Pass 1 (automation scope): read a URL via the shared
+        // WebNavigator primitive. Pure-fetch, rate-limited,
+        // allow/deny-listed. No headless browser required.
+        const url = String(call.args.url ?? "").trim();
+        if (!url) {
+          return { kind: "error", error: "url required", code: "BAD_ARGS" };
+        }
+        const { getWebNavigator } = await import("./webTool");
+        try {
+          const view = await getWebNavigator().readPage(url);
+          const MAX_TEXT = 20_000;
+          const payload: WebReadResultPayload = {
+            url: view.url,
+            finalUrl: view.finalUrl,
+            status: view.status,
+            title: view.title,
+            description: view.description,
+            text: view.text.length > MAX_TEXT ? view.text.slice(0, MAX_TEXT) + "…" : view.text,
+            headings: view.headings.slice(0, 30),
+            links: view.links.slice(0, 40).map((l) => ({
+              href: l.href,
+              text: l.text,
+              nofollow: l.nofollow,
+            })),
+            forms: view.forms.slice(0, 10).map((f) => ({
+              action: f.action,
+              method: f.method,
+              fieldCount: f.fields.length,
+            })),
+            wordCount: view.wordCount,
+            truncated: view.truncated || view.text.length > MAX_TEXT,
+            fetchMs: view.fetchMs,
+          };
+          return { kind: "web", result: payload };
+        } catch (err) {
+          const code =
+            err && typeof err === "object" && "code" in err
+              ? String((err as { code: unknown }).code)
+              : "WEB_FAILED";
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : "web read failed",
+            code,
+          };
+        }
+      }
+      case "web_search": {
+        // Pass 5: bridge the agent to the existing multi-provider
+        // web search tool (Tavily → Brave → Manus → LLM fallback).
+        // Formatting lives in webSearchTool; we just ferry the result
+        // into the tool-result envelope.
+        const query = String(call.args.query ?? "").trim();
+        if (!query) {
+          return { kind: "error", error: "query required", code: "BAD_ARGS" };
+        }
+        const maxResults = Math.min(Math.max(Number(call.args.maxResults ?? 5), 1), 20);
+        const maxChars = Math.min(Math.max(Number(call.args.maxChars ?? 2000), 200), 8000);
+        const includeDomains = Array.isArray(call.args.includeDomains)
+          ? (call.args.includeDomains as unknown[]).filter((d): d is string => typeof d === "string")
+          : undefined;
+        try {
+          const { executeWebSearch, getSearchProvider } = await import(
+            "../webSearchTool"
+          );
+          const results = await executeWebSearch(query, {
+            maxResults,
+            maxChars,
+            includeDomains,
+          });
+          return {
+            kind: "web_search",
+            result: {
+              query,
+              provider: getSearchProvider(),
+              results,
+              charCount: results.length,
+            },
+          };
+        } catch (err) {
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : "web_search failed",
+            code: "SEARCH_FAILED",
+          };
+        }
+      }
+      case "web_crawl": {
+        // Pass 4: bounded BFS crawl using the shared crawlSession
+        // primitive. Enforces per-URL dedupe, depth+page budgets,
+        // same-origin-by-default, and SSRF-safe protocol filtering.
+        const startUrl = String(call.args.startUrl ?? call.args.url ?? "").trim();
+        if (!startUrl) {
+          return { kind: "error", error: "startUrl required", code: "BAD_ARGS" };
+        }
+        const maxPages = Number(call.args.maxPages ?? 10);
+        const maxDepth = Number(call.args.maxDepth ?? 2);
+        if (!Number.isFinite(maxPages) || !Number.isFinite(maxDepth)) {
+          return { kind: "error", error: "maxPages and maxDepth must be numbers", code: "BAD_ARGS" };
+        }
+        const { getWebNavigator } = await import("./webTool");
+        const { runCrawl } = await import("../../shared/automation/crawlSession");
+        try {
+          const result = await runCrawl(getWebNavigator(), {
+            startUrl,
+            maxPages,
+            maxDepth,
+            sameOriginOnly: call.args.sameOriginOnly !== false,
+            allowHosts: Array.isArray(call.args.allowHosts)
+              ? (call.args.allowHosts as unknown[]).filter((h): h is string => typeof h === "string")
+              : undefined,
+            includePatterns: Array.isArray(call.args.includePatterns)
+              ? (call.args.includePatterns as unknown[]).filter((p): p is string => typeof p === "string")
+              : undefined,
+            excludePatterns: Array.isArray(call.args.excludePatterns)
+              ? (call.args.excludePatterns as unknown[]).filter((p): p is string => typeof p === "string")
+              : undefined,
+            concurrency: typeof call.args.concurrency === "number"
+              ? call.args.concurrency
+              : undefined,
+          });
+          return {
+            kind: "web_crawl",
+            result: {
+              startUrl: result.startUrl,
+              pagesAttempted: result.pagesAttempted,
+              pagesSuccessful: result.pagesSuccessful,
+              pagesFailed: result.pagesFailed,
+              totalMs: result.totalMs,
+              pages: result.pages.slice(0, 100).map((p) => ({
+                url: p.url,
+                depth: p.depth,
+                title: p.title,
+                wordCount: p.wordCount,
+                links: p.links,
+                status: p.status,
+                error: p.error,
+              })),
+              skipped: result.skipped.slice(0, 100),
+            },
+          };
+        } catch (err) {
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : "web_crawl failed",
+            code: "CRAWL_FAILED",
+          };
+        }
+      }
+      case "web_extract": {
+        // Pass 2 (automation scope): fetch a URL then apply a
+        // schema-guided extraction so the agent gets typed structured
+        // data back instead of raw text.
+        const url = String(call.args.url ?? "").trim();
+        if (!url) {
+          return { kind: "error", error: "url required", code: "BAD_ARGS" };
+        }
+        const rawSchema = call.args.schema;
+        if (!rawSchema || typeof rawSchema !== "object") {
+          return {
+            kind: "error",
+            error: "schema required (object of {fieldName: {selector, type?}})",
+            code: "BAD_ARGS",
+          };
+        }
+        const { getWebNavigator } = await import("./webTool");
+        const { extractFromPageView, validateSchema } = await import(
+          "../../shared/automation/webExtractor"
+        );
+        const schemaForValidation = rawSchema as Parameters<typeof validateSchema>[0];
+        const validationErrors = validateSchema(schemaForValidation);
+        if (validationErrors.length > 0) {
+          return {
+            kind: "error",
+            error:
+              "schema validation failed: " +
+              validationErrors.map((e) => `${e.field}: ${e.message}`).join("; "),
+            code: "BAD_ARGS",
+          };
+        }
+        try {
+          const view = await getWebNavigator().readPage(url);
+          const extraction = extractFromPageView(view, rawSchema as any, {
+            rawHtml: view.raw?.body,
+          });
+          const payload: WebExtractResultPayload = {
+            url: view.url,
+            finalUrl: view.finalUrl,
+            status: view.status,
+            data: extraction.data,
+            warnings: extraction.warnings,
+            fieldCount: extraction.fieldCount,
+            fetchMs: view.fetchMs,
+          };
+          return { kind: "web_extract", result: payload };
+        } catch (err) {
+          const code =
+            err && typeof err === "object" && "code" in err
+              ? String((err as { code: unknown }).code)
+              : "WEB_FAILED";
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : "web_extract failed",
+            code,
+          };
+        }
       }
       case "update_todos": {
         // Validate + normalize the todos array. No file system side
@@ -488,6 +753,73 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         },
       },
       required: ["todos"],
+    },
+  },
+  {
+    name: "web_read",
+    description:
+      "Fetch a URL and return a structured page view (title, text, headings, links, forms). Use this to read public web pages: regulatory docs, market data, documentation, news. Read-only, rate-limited per domain, enforces an allow/deny hostname list, capped at 2MB per response. No JavaScript execution (a Playwright adapter will replace this in a future pass without breaking callers).",
+    parameters: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Absolute http(s) URL to read" },
+      },
+      required: ["url"],
+    },
+  },
+  {
+    name: "web_search",
+    description:
+      "Search the public web for a query via Stewardly's cascading provider chain (Tavily → Brave → Manus Google → LLM fallback). Returns a pre-formatted markdown result list with title/URL/snippet per hit. Prefer this when you need to find URLs you don't already know. `maxResults` defaults to 5 (cap 20); `maxChars` defaults to 2000 (cap 8000); `includeDomains` narrows by site suffix.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Free-text search query" },
+        maxResults: { type: "number", description: "Max results to return (1-20)" },
+        maxChars: { type: "number", description: "Max output characters (200-8000)" },
+        includeDomains: {
+          type: "array",
+          items: { type: "string" },
+          description: "Restrict results to these domain suffixes",
+        },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "web_crawl",
+    description:
+      "Run a bounded breadth-first crawl starting at `startUrl`. Follows links up to `maxDepth` (default 2, cap 5) and reads at most `maxPages` unique pages (default 10, cap 100). Same-origin by default; pass sameOriginOnly=false + allowHosts=[...] to cross origins. includePatterns/excludePatterns are regex strings matched against full URLs. Returns a per-page summary (title, word count, link count) plus a skipped list. Use this for site research ('read every page under /docs/2026', 'find me every chapter in this book index') rather than for single-page reads.",
+    parameters: {
+      type: "object",
+      properties: {
+        startUrl: { type: "string", description: "Starting URL for the crawl" },
+        maxPages: { type: "number", description: "Max unique pages to read (default 10, cap 100)" },
+        maxDepth: { type: "number", description: "Max link depth (default 2, cap 5)" },
+        sameOriginOnly: { type: "boolean", description: "Restrict to the start URL's origin (default true)" },
+        allowHosts: { type: "array", items: { type: "string" }, description: "Extra host suffixes to allow when sameOriginOnly=false" },
+        includePatterns: { type: "array", items: { type: "string" }, description: "Regex patterns — URL must match at least one" },
+        excludePatterns: { type: "array", items: { type: "string" }, description: "Regex patterns — URLs matching any are skipped" },
+        concurrency: { type: "number", description: "Parallel workers per BFS level (default 1, cap 6)" },
+      },
+      required: ["startUrl"],
+    },
+  },
+  {
+    name: "web_extract",
+    description:
+      "Fetch a URL and apply a schema-guided extraction. Returns structured typed data without forcing you to re-read the raw page. Prefer this over web_read whenever you already know what fields you want. The schema is an object keyed by field name: each value has {selector, type?, where?, fallback?, limit?}. Selectors: 'title' | 'description' | 'text' | 'h1'..'h6' | 'heading' | 'link' | 'image' | 'form' | 'table' | 'tables' | 'regex:<PATTERN>' | 'css:<TAG>'. Types: string | string[] | number | number[] | boolean | date | url | url[] | table | table[]. Regex patterns capture group 1 if provided. Honors the same rate limits and host allow/deny list as web_read.",
+    parameters: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Absolute http(s) URL to read" },
+        schema: {
+          type: "object",
+          description:
+            "Field map { name: { selector, type?, where?, fallback?, limit? } }",
+        },
+      },
+      required: ["url", "schema"],
     },
   },
   {

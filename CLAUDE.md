@@ -123,6 +123,26 @@ Every 3rd pass: `node toolkit.js check-gaming`
 - Compliance review not yet performed (FINRA 2210, CAN-SPAM, TCPA, CCPA, Reg BI, Fair Lending)
 - ~~2 pre-existing CSP nonce infrastructure tests fail~~ → RESOLVED: comment reword removed literal 'unsafe-inline' string
 
+## Automation Subsystem (passes 1-7 of the hybrid build loop)
+Browser/device automation primitives under `server/shared/automation/`:
+- `webNavigator.ts` — pure-fetch URL reader with SSRF defense, allow/deny hosts, token-bucket rate limiter, pluggable PageFetcher adapter (for future Playwright)
+- `webExtractor.ts` — schema-guided structured extraction (`title`/`h1..h6`/`link`/`regex:`/`css:`/`table` selectors; `string`/`number`/`date`/`url`/`table` types)
+- `robotsPolicy.ts` — REP parser + RobotsChecker with TTL-cached per-host policy store
+- `responseCache.ts` — LRU + ETag + stale-while-revalidate HTTP cache with 304 handling
+- `crawlSession.ts` — bounded BFS crawl with canonicalizing dedupe, depth/page budgets, same-origin guard, SSRF-safe protocol filter
+- `automationTelemetry.ts` — fan-out event bus (subscribe/subscribeOnce, type filters, ring buffer, sink error isolation)
+
+Agent tools exposed to Code Chat: `web_read`, `web_extract`, `web_crawl`, `web_search`.
+
+HTTP surfaces:
+- `GET /api/automation/telemetry/stream` — admin-gated SSE bridge to the telemetry bus (types=/replay= params)
+
+Client UI: `useAutomationTelemetryStream` hook + `AutomationActivityStrip` component render live browser activity in the Code Chat config bar.
+
+Env vars: `WEB_TOOL_ALLOW_HOSTS`, `WEB_TOOL_DENY_HOSTS`, `WEB_TOOL_RATE_LIMIT_PER_MIN`, `WEB_TOOL_MAX_BYTES`, `WEB_TOOL_HONOR_ROBOTS`, `WEB_TOOL_CACHE`, `WEB_TOOL_CACHE_MAX_AGE_MS`, `WEB_TOOL_CACHE_STALE_MS`, `WEB_TOOL_TELEMETRY`.
+
+See `docs/AUTOMATION.md` for the architecture diagram, extension points, and open gap list; see `docs/PARITY.md` for the gap matrix + pass log.
+
 ## Intelligence Layer (wired and functional)
 - contextualLLM: RAG-enabled with guardrails (PII + injection screening on all I/O)
 - 5-layer config: platform → organization → manager → professional → user

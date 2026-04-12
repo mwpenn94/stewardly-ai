@@ -3,10 +3,11 @@
 > Canonical parity tracking doc. Written in parallel by multiple build-loop
 > processes. Always re-read immediately before writing. Merge, don't overwrite.
 >
-> This file carries **two independent tracks** that build-loop passes run
+> This file carries **three independent tracks** that build-loop passes run
 > against. Each track has its own ID namespace — multisensory uses `G1..G68`
-> (no dash), learning uses `G-1..G-N` (with dash). Passes from either track
-> append to their own section and leave the other alone.
+> (no dash), learning uses `G-1..G-N` (with dash), automation uses
+> `AU-1..AU-N`. Passes from any track append to their own section and
+> leave the others alone.
 
 ## Tracks
 
@@ -16,6 +17,11 @@
 - **Track B — Learning Experience** — SRS flow, cross-track study, quiz
   and flashcard runners, importer resilience, agent tool coverage.
   Branches: learning track build loops.
+- **Track C — AI Chat + Agentic Automation** — browser/device automation
+  primitives (WebNavigator, webExtractor, robotsPolicy, responseCache,
+  crawlSession, telemetry bus, SSE stream, parallelFetch) to push beyond
+  Claude/Manus comparables. Branch: `claude/ai-chat-optimization-loop-unMju`.
+  Uses `AU-1..AU-N` ID namespace.
 
 ---
 
@@ -536,3 +542,175 @@ Pass 6 · angle: accessibility (FRESH) · queue: [A1 flashcard flip surface is c
 Pass 7 · angle: motivation + habit formation (FRESH) · queue: [A1 `LearningHome` docstring has promised streak since pass 58 but never shipped the UI half; A2 zero habit-formation signal for daily learners] · completed: G-9 (new `studyStreak.ts` with UTC-anchored day keys, 90-day ring cap, idempotent same-day markStudyDay, today-or-yesterday window on currentStreak, 4-tier streakStatus, defensive parser, localStorage I/O; 36 unit tests; `recordStudyNow()` wired into every review handler across `LearningDueReview`, `LearningFlashcardStudy`, `LearningQuizRunner`; new `<StreakCard>` on LearningHome with tone-aware paint + "Save your streak →" CTA) · deferred: — · tests: +36 studyStreak → 206 tests green across 12 files · build: ✓ (22.57s)
 Pass 8 · angle: content discovery (FRESH) · queue: [A1 `learning.content.search` tRPC proc exists but has zero consumers in the client; A2 366+ emba_modules definitions unreachable by keyword] · completed: G-10 (extended `searchContent` server-side to match body text + practice questions; new pure `searchRank.ts` with 5-tier scoring + grouping + pure `highlightMatches`; 23 unit tests; new `LearningSearch` page at `/learning/search` with 200ms debounced query, grouped results sections, `<mark>` highlighted matches, tracks click-through to detail; Search button added to LearningHome header) · deferred: — · tests: +23 searchRank → 229 tests green across 13 files · build: ✓ (19.98s)
 
+
+---
+
+# Track C — AI Chat + Agentic Automation
+
+## Meta
+
+- **Scope:** Optimize AI chat + agentic capabilities (browser/device/
+  other automation) to achieve and excel beyond Claude, Manus, and
+  other top comparables.
+- **Comparable benchmark:** Claude Code (VS-Code Go-to-Symbol, TodoWrite,
+  project instructions auto-load, computer-use), Manus (automate_browser,
+  multi-URL research, agent replay), browser-use, AutoGen, Perplexity.
+- **Core purpose:** Give the Code Chat ReAct loop (and any other
+  agentic caller) a safe, observable, production-quality browser
+  primitive stack without requiring a headless browser. Future
+  Playwright / computer-use adapters slot in behind the same
+  `PageFetcher` interface without touching callers.
+- **ID namespace:** `AU-1..AU-N`.
+
+## Gap Matrix
+
+| ID  | Capability                                                 | Comparable                | Before | After | Status       | Owner   | Commit(s)        |
+| --- | ---------------------------------------------------------- | ------------------------- | -----: | ----: | ------------ | ------- | ---------------- |
+| AU-1  | Fetch + read a URL without a headless browser (read-only)  | Manus browser_read        |      0 |     5 | done · P1    | build   | pass-1           |
+| AU-2  | Extract structured page view (title/text/links/headings)   | Claude computer-use read  |      0 |     5 | done · P1    | build   | pass-1           |
+| AU-3  | Per-domain rate limiting for outbound fetches              | defensive infra           |      0 |     5 | done · P1    | build   | pass-1           |
+| AU-4  | Allow/deny domain list for browser-read tool               | security ceiling          |      0 |     5 | done · P1    | build   | pass-1           |
+| AU-5  | Navigation history record (back/forward trace)             | browser-use               |      0 |     4 | done · P1    | build   | pass-1           |
+| AU-6  | Pluggable page-fetcher adapter (fetch → future playwright) | future-proofing           |      0 |     3 | done · P1    | build   | pass-1           |
+| AU-7  | Headless browser (Playwright) adapter for JS-rendered pgs  | Claude computer-use       |      0 |     0 | open         |         |                  |
+| AU-8  | Visual screenshot + OCR for vision-driven clicks           | Claude computer-use       |      0 |     0 | open         |         |                  |
+| AU-9  | DOM click/type/scroll action layer                         | Manus automate_browser    |      0 |     0 | open         |         |                  |
+| AU-10 | Form-filling with schema detection                         | AutoGPT / Manus           |      0 |     0 | open         |         |                  |
+| AU-11 | Multi-tab session state                                    | browser-use               |      0 |     0 | open         |         |                  |
+| AU-12 | Cookies + auth hand-off from user session                  | browser-use               |      0 |     0 | open         |         |                  |
+| AU-13 | Device-automation shell (mobile/desktop UI automation)     | Manus / ADB               |      0 |     0 | open         |         |                  |
+| AU-14 | Computer-use vision loop (screenshot→plan→click)           | Claude computer-use       |      0 |     0 | open         |         |                  |
+| AU-15 | Structured data extraction (schema-guided LLM)             | LlamaExtract / Manus      |      0 |     0 | open         |         |                  |
+| AU-16 | Download files from navigated page                         | browser-use               |      0 |     0 | open         |         |                  |
+| AU-17 | Browser-tool telemetry (step-level spans, timings)         | observability             |      0 |     5 | done · P3    | build   | pass-3           |
+| AU-18 | Agent replay of browser sessions                           | Manus replay              |      0 |     0 | open         |         |                  |
+| AU-19 | Multi-agent browser orchestration                          | AutoGen / Manus           |      0 |     0 | open         |         |                  |
+| AU-20 | Compliance guardrails on web-retrieved content             | Stewardly-specific        |      0 |     0 | open         |         |                  |
+| AU-21 | Chat agent exposes `web_read` tool end-to-end              | parity w/ Manus chat      |      0 |     5 | done · P1    | build   | pass-1           |
+| AU-22 | Chat agent exposes `web_extract` structured extraction     | parity w/ Manus chat      |      0 |     6 | done · P2    | build   | pass-2           |
+| AU-23 | SSE streaming of browser events to UI                      | Claude computer-use UI    |      0 |     7 | done · P6+7  | build   | pass-6, pass-7   |
+| AU-30 | Client-side hook + component consuming the SSE stream      | Claude/Manus activity UI  |      0 |     5 | done · P7    | build   | pass-7           |
+| AU-31 | Architecture doc covering every automation primitive       | dev-onboarding            |      0 |     6 | done · P8    | build   | pass-8           |
+| AU-32 | Parallel multi-URL fetch primitive (concurrency limited)   | Manus batch / Claude      |      0 |     6 | done · P9    | build   | pass-9           |
+| AU-33 | Crawl BFS level-batched parallelism (concurrency option)   | browser-use / crawler     |      0 |     5 | done · P9    | build   | pass-9           |
+| AU-24 | Browser read result caching with ETag/stale-while-revalid  | performance               |      0 |     6 | done · P3    | build   | pass-3           |
+| AU-25 | Robots.txt honoring                                        | defensive infra           |      0 |     6 | done · P2    | build   | pass-2           |
+| AU-26 | Bounded crawl session (BFS + depth + dedupe + budget)      | browser-use / Manus       |      0 |     5 | done · P4    | build   | pass-4           |
+| AU-27 | Hostile-input resilience on URL inputs (found by build)    | security / SSRF           |      0 |     5 | done · P4    | build   | pass-4           |
+| AU-28 | Chat agent exposes `web_search` (find URLs you don't know) | Manus / Claude search     |      0 |     6 | done · P5    | build   | pass-5           |
+| AU-29 | Automation telemetry fan-out bus (multi-sink)              | observability infra       |      0 |     6 | done · P5    | build   | pass-5           |
+
+Legend: `open` = not started; `in-progress` = under active work by build or
+parallel process; `done · P<N>` = shipped in pass N. Depth scores are rough
+self-assessments, 0=missing, 5=usable parity, 10=exceeds comparables.
+
+## Protected Improvements
+
+These are load-bearing upgrades the build loop has shipped in this chat that
+must not be weakened by any subsequent pass (this applies to every parallel
+process reading PARITY.md, not just next-pass-self).
+
+- **webNavigator service** — pass 1. Pure-TS, fetch-based URL reader with
+  domain allow/deny lists + per-domain rate limiting + HTML → PageView
+  extraction + pluggable adapter interface. File:
+  `server/shared/automation/webNavigator.ts`. Tests:
+  `server/shared/automation/webNavigator.test.ts`. Do not inline an HTTP
+  library, do not drop the adapter interface, do not remove rate limits.
+- **webExtractor service** — pass 2. Schema-guided structured extraction
+  over PageView. Supports `title`/`description`/`h1..h6`/`heading`/`link`/
+  `image`/`form`/`table`/`regex:`/`css:` selectors with string|number|
+  date|url|boolean|table coercion. File: `server/shared/automation/
+  webExtractor.ts`. Do not collapse into webNavigator, do not drop
+  schema validation.
+- **robotsPolicy service** — pass 2. REP parser + RobotsChecker with a
+  TTL-cached per-host policy store. WebNavigator honors policy decisions
+  when given a checker. File: `server/shared/automation/robotsPolicy.ts`.
+  Do not remove the `honorRobots` default-true path.
+- **responseCache service** — pass 3. LRU + ETag + stale-while-revalidate
+  cache. Wired into WebNavigator.fetchPage so fresh hits skip the entire
+  fetch pipeline (adapter, rate limiter, robots), stale hits trigger
+  conditional GETs, and 304 responses short-circuit back to the stored
+  body. File: `server/shared/automation/responseCache.ts`. Do not
+  collapse into WebNavigator, do not break 304 → cached-body handling.
+- **NavigationTelemetrySink** — pass 3. Pluggable per-step telemetry
+  contract (request.start / request.cached / request.network /
+  request.blocked / request.error). Never let a sink throw interrupt
+  navigation (the emit helper wraps sinks in try/catch). File:
+  `server/shared/automation/webNavigator.ts`. Do not remove the
+  try/catch wrapper, do not drop the start→network lifecycle pairing.
+- **AutomationTelemetryBus** — pass 5. Fan-out event bus for the
+  NavigationTelemetryEvent stream. Multiple sinks (OTel, SSE, logs)
+  subscribe to the same underlying events. Type filters via
+  `subscribe({ types: [...] })`. `subscribeOnce` auto-unsubscribes.
+  Swallows both sync throws and async rejections from sinks so bad
+  downstream code can't break navigation. Ring buffer for snapshot
+  debugging. File: `server/shared/automation/automationTelemetry.ts`.
+  Do not drop the try/catch wrappers, do not expose `publish` to
+  untrusted code paths.
+- **automationTelemetryStream route** — pass 6. SSE bridge at
+  `GET /api/automation/telemetry/stream` that subscribes each client
+  to the global bus. Admin-only (role gate), heartbeats every 15s,
+  supports `types=` filter + `replay=N` ring-buffer replay. Always
+  cleans up the bus subscription + heartbeat interval on client
+  disconnect. File: `server/routes/automationTelemetryStream.ts`.
+  Do not weaken the admin gate, do not drop the close→unsubscribe
+  cleanup.
+- **useAutomationTelemetryStream hook + AutomationActivityStrip** —
+  pass 7. Client-side consumer for the pass-6 SSE route. Hook exposes
+  live events + connection state + exponential-backoff reconnect
+  (1s → 30s cap) + ring buffer. Strip component renders the most
+  recent events newest-first with per-type icon + color, event-type
+  counts in the header, `role="log" aria-live="polite"` so screen
+  readers announce new entries. Files:
+  `client/src/hooks/useAutomationTelemetryStream.ts`,
+  `client/src/components/codeChat/AutomationActivityStrip.tsx`. Do
+  not drop the backoff, do not drop the aria-live region.
+- **parallelFetch primitive + crawlSession concurrency option** —
+  pass 9. Bounded worker pool for batch URL reads. Preserves input
+  order, isolates per-URL failures, dedupes inputs, respects
+  `perUrlTimeoutMs`. Hard cap 10 concurrency / 200 URLs. crawlSession
+  layered concurrency on top (default 1 for back-compat, cap 6) via
+  level-batched Promise.all with sequential child-enqueue to keep
+  dedupe invariants correct. Files:
+  `server/shared/automation/parallelFetch.ts`,
+  `server/shared/automation/crawlSession.ts`. Do not drop the hard
+  caps, do not parallelize the child-enqueue step (races the
+  visited set).
+- **crawlSession primitive** — pass 4. Bounded BFS over any PageReader
+  shape (duck-typed so a future Playwright adapter can plug in). Hard
+  caps: maxPages=100, maxDepth=5. Canonicalizing dedupe (fragment,
+  trailing slash, query sort), same-origin guard, allowHosts suffix
+  check, include/exclude regex filters, SSRF-safe protocol filter
+  (http/https only — javascript:, file:, data: are refused), swallows
+  onPage callback errors. File:
+  `server/shared/automation/crawlSession.ts`. Do not drop the hard
+  caps, do not drop the non-http(s) protocol refusal, do not drop the
+  canonicalizing dedupe.
+
+## Known-Bad
+
+Dead ends future passes should not re-attempt without new evidence.
+
+_(empty — populate as the loop discovers them)_
+
+## Reconciliation Log
+
+Conflicts between build-loop writes and parallel process writes get logged
+here with the resolution rationale. Resolved by evidence recency + git log.
+
+_(empty)_
+
+## Build Loop Pass Log
+
+Append-only log of what each pass accomplished. Format:
+`Pass N · angle · queue · commit SHA · items completed · items deferred`
+
+- Pass 1 · correctness-first · [bootstrap PARITY + AU-1..AU-6, AU-21] · 8baaeed · webNavigator service + 30 tests + code_web_read tool + client popover entry · deferred: AU-7 (playwright adapter), AU-9 (click/type layer), AU-22 (web_extract schema-guided), AU-25 (robots.txt)
+- Pass 2 · graceful-degradation + input-validation · [AU-22, AU-25, AU-20 partial] · d0a82b9 · webExtractor + robotsPolicy + code_web_extract tool + robotsChecker wired into WebNavigator + 35 new tests · deferred: AU-7 (playwright), AU-9 (click/type), AU-23 (SSE streaming of browser events), AU-17 (OTel spans for automation)
+- Pass 3 · observability + dead-code-prevention · [AU-17, AU-24] · afb47b5 · responseCache (LRU + ETag + SWR) + NavigationTelemetrySink + cache/telemetry wired through fetchPage + env-driven singletons in webTool · 25 new tests · deferred: AU-7, AU-9, AU-23, AU-16 (download files), AU-19 (multi-agent browser orchestration)
+- Pass 4 · accessibility + hostile-input-security · [AU-26+AU-27 new gaps, AU-19 groundwork] · c06a175 · crawlSession primitive + code_web_crawl tool + canonicalizing dedupe + SSRF protocol filter + client popover entry · 23 new tests · deferred: AU-7 (playwright still not started), AU-9 (click/type layer), AU-14 (computer-use vision), AU-23 (SSE of browser events)
+- Pass 5 · edge-cases + bundle-size · [AU-28+AU-29 new, AU-17 extension] · 3493822 · AutomationTelemetryBus (sync+async sink error isolation, type filter, ring buffer) + wired as the default telemetry sink for the WebNavigator singleton + code_web_search tool bridging to existing executeWebSearch (Tavily/Brave/Manus/LLM fallback) + vi.mock in codeChat test · 13 new tests · deferred: AU-7, AU-9, AU-14, AU-23 (SSE bridge for telemetry events)
+- Pass 6 · type-safety + dev-ergonomics · [AU-23] · 3780225 · automationTelemetryStream SSE route + admin gate + types=/replay= query params + client-disconnect cleanup + mounted in _core/index.ts auth middleware + 10 tests via in-process fake req/res harness · deferred: AU-7, AU-9, AU-14, AU-16 (download files), AU-19 (multi-agent browser orchestration)
+- Pass 7 · responsive + i18n · [AU-23 extension, AU-30 new gap] · 615e51b · useAutomationTelemetryStream hook (EventSource consumer with exponential backoff reconnect + ring buffer) + pure helpers (summarizeEvent, eventBadgeColor, formatBytes) + AutomationActivityStrip component with per-event icons + aria-live log + config-bar Browser button in CodeChat page + vitest include pattern extended to client/src/hooks · 17 new tests · deferred: AU-7 (playwright), AU-9 (click/type), AU-14 (vision), AU-16 (downloads)
+- Pass 8 · migration-safety + docs-staleness · [AU-31 new, doc sync] · 4931c39 · docs/AUTOMATION.md (architecture diagram, per-primitive API reference, env vars table, extension points for Playwright adapter, agent tool catalog, open gap list) + CLAUDE.md automation subsystem section (points at the new doc) · zero new tests (doc-only) · deferred: AU-7, AU-9, AU-14, AU-16, AU-19
+- Pass 9 · race-conditions + slow-network · [AU-32+AU-33 new] · bdb1dae · parallelFetch primitive (worker pool, per-URL failure isolation, input-order preservation, auto dedupe across inputs, per-URL timeout wrap, onProgress callback with error isolation, hard caps: 10 concurrency / 200 URLs) + crawlSession BFS level-batched parallelism (opts.concurrency, default 1 for back-compat, cap 6, preserves dedupe invariants via sequential child-enqueue step) + code_web_crawl tool schema now accepts concurrency · 13 new tests (11 parallelFetch + 2 crawl concurrency) · deferred: AU-7, AU-9, AU-14, AU-16, AU-19

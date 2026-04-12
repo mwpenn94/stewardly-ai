@@ -215,5 +215,13 @@ export function summarizeStep(step: CodeChatStep): string {
       return `todos updated (${result.result.count} items, ${ms})`;
     case "symbols":
       return `find_symbol ${result.result.query} → ${result.result.matches.length} matches (${ms})`;
+    case "web":
+      return `web_read ${result.result.url} → ${result.result.status} · ${result.result.wordCount} words (${ms})`;
+    case "web_extract":
+      return `web_extract ${result.result.url} → ${result.result.fieldCount} fields${result.result.warnings.length > 0 ? ` (${result.result.warnings.length} warnings)` : ""} (${ms})`;
+    case "web_crawl":
+      return `web_crawl ${result.result.startUrl} → ${result.result.pagesSuccessful}/${result.result.pagesAttempted} pages (depth: ${Math.max(...result.result.pages.map((p) => p.depth), 0)}, ${ms})`;
+    case "web_search":
+      return `web_search "${result.result.query.slice(0, 60)}" via ${result.result.provider} → ${result.result.charCount}B (${ms})`;
   }
 }

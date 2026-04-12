@@ -11,7 +11,18 @@
  *   - Synthesizer wordDiff + timeBudgetSelector + costEstimator
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+// Mock the webSearchTool service module so web_search dispatcher tests
+// don't hit the network or require env vars. Must live at module top
+// level to be hoisted before any dynamic import.
+vi.mock("../webSearchTool", () => ({
+  executeWebSearch: vi.fn(async (query: string) => {
+    if (query === "fail") throw new Error("forced failure");
+    return `**Result for ${query}**\nhttps://example.com/${encodeURIComponent(query)}\nSnippet here.\n`;
+  }),
+  getSearchProvider: vi.fn(() => "tavily" as const),
+}));
 import path from "path";
 import fs from "fs/promises";
 import { existsSync } from "fs";
@@ -330,6 +341,232 @@ describe("Round B1 — codeChatExecutor", () => {
       );
       expect(r.kind).toBe("todos");
       if (r.kind === "todos") expect(r.result.todos[0].status).toBe("pending");
+    });
+
+    it("web_read rejects missing url", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_read", args: {} },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_read returns a structured page view via stub adapter", async () => {
+      const { WebNavigator } = await import("../../shared/automation/webNavigator");
+      const { __setWebNavigator, __resetWebNavigator } = await import("./webTool");
+      const nav = new WebNavigator({
+        adapter: {
+          async fetch(url) {
+            const body = `<html><head><title>Stub</title></head><body><h1>H</h1><a href="/x">link</a></body></html>`;
+            return {
+              status: 200,
+              finalUrl: url,
+              headers: { "content-type": "text/html" },
+              body,
+              bytes: new TextEncoder().encode(body).length,
+              truncated: false,
+              redirects: 0,
+            };
+          },
+        },
+        rateLimitPerMin: 100,
+      });
+      __setWebNavigator(nav);
+      try {
+        const r = await dispatchCodeTool(
+          { name: "web_read", args: { url: "https://example.com/x" } },
+          sandboxRO(),
+        );
+        expect(r.kind).toBe("web");
+        if (r.kind === "web") {
+          expect(r.result.title).toBe("Stub");
+          expect(r.result.headings).toContainEqual({ level: 1, text: "H" });
+          expect(r.result.links[0].href).toBe("https://example.com/x");
+          expect(r.result.status).toBe(200);
+          expect(r.result.wordCount).toBeGreaterThan(0);
+        }
+      } finally {
+        __resetWebNavigator();
+      }
+    });
+
+    it("web_read surfaces navigation errors (blocked private host)", async () => {
+      const { __resetWebNavigator } = await import("./webTool");
+      __resetWebNavigator(); // use default env singleton
+      const r = await dispatchCodeTool(
+        { name: "web_read", args: { url: "http://127.0.0.1:8080/x" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BLOCKED_HOST");
+    });
+
+    it("web_extract rejects missing schema", async () => {
+      const { __resetWebNavigator } = await import("./webTool");
+      __resetWebNavigator();
+      const r = await dispatchCodeTool(
+        { name: "web_extract", args: { url: "https://example.com/" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_extract returns typed fields via stub adapter", async () => {
+      const { WebNavigator } = await import("../../shared/automation/webNavigator");
+      const { __setWebNavigator, __resetWebNavigator } = await import("./webTool");
+      const nav = new WebNavigator({
+        adapter: {
+          async fetch(url) {
+            const body = `<html><head><title>Doc</title></head><body>
+<h2>A</h2><h2>B</h2>
+<p>Price: $99.99</p>
+</body></html>`;
+            return {
+              status: 200,
+              finalUrl: url,
+              headers: { "content-type": "text/html" },
+              body,
+              bytes: new TextEncoder().encode(body).length,
+              truncated: false,
+              redirects: 0,
+            };
+          },
+        },
+        rateLimitPerMin: 100,
+      });
+      __setWebNavigator(nav);
+      try {
+        const r = await dispatchCodeTool(
+          {
+            name: "web_extract",
+            args: {
+              url: "https://example.com/",
+              schema: {
+                t: { selector: "title" },
+                subs: { selector: "h2", type: "string[]" },
+                price: { selector: "regex:\\$([0-9.]+)", type: "number" },
+              },
+            },
+          },
+          sandboxRO(),
+        );
+        expect(r.kind).toBe("web_extract");
+        if (r.kind === "web_extract") {
+          expect(r.result.data.t).toBe("Doc");
+          expect(r.result.data.subs).toEqual(["A", "B"]);
+          expect(r.result.data.price).toBe(99.99);
+          expect(r.result.fieldCount).toBe(3);
+        }
+      } finally {
+        __resetWebNavigator();
+      }
+    });
+
+    it("web_extract surfaces schema validation errors", async () => {
+      const r = await dispatchCodeTool(
+        {
+          name: "web_extract",
+          args: {
+            url: "https://example.com/",
+            schema: { bad: { selector: "regex:(unclosed" } },
+          },
+        },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_crawl rejects missing startUrl", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_crawl", args: {} },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_search rejects missing query", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_search", args: {} },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("BAD_ARGS");
+    });
+
+    it("web_search returns formatted results via mocked provider", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_search", args: { query: "IRA limits 2026" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("web_search");
+      if (r.kind === "web_search") {
+        expect(r.result.query).toBe("IRA limits 2026");
+        expect(r.result.provider).toBe("tavily");
+        expect(r.result.results).toContain("example.com");
+        expect(r.result.charCount).toBeGreaterThan(0);
+      }
+    });
+
+    it("web_search surfaces provider errors", async () => {
+      const r = await dispatchCodeTool(
+        { name: "web_search", args: { query: "fail" } },
+        sandboxRO(),
+      );
+      expect(r.kind).toBe("error");
+      if (r.kind === "error") expect(r.code).toBe("SEARCH_FAILED");
+    });
+
+    it("web_crawl runs a 2-page BFS via stub adapter", async () => {
+      const { WebNavigator } = await import("../../shared/automation/webNavigator");
+      const { __setWebNavigator, __resetWebNavigator } = await import("./webTool");
+      const pages: Record<string, string> = {
+        "https://example.com/": `<html><head><title>Home</title></head><body><a href="/a">A</a></body></html>`,
+        "https://example.com/a": `<html><head><title>Inner A</title></head><body></body></html>`,
+      };
+      const nav = new WebNavigator({
+        adapter: {
+          async fetch(url) {
+            const body = pages[url] ?? "<html><title>404</title></html>";
+            return {
+              status: 200,
+              finalUrl: url,
+              headers: { "content-type": "text/html" },
+              body,
+              bytes: new TextEncoder().encode(body).length,
+              truncated: false,
+              redirects: 0,
+            };
+          },
+        },
+        rateLimitPerMin: 100,
+      });
+      __setWebNavigator(nav);
+      try {
+        const r = await dispatchCodeTool(
+          {
+            name: "web_crawl",
+            args: {
+              startUrl: "https://example.com/",
+              maxPages: 5,
+              maxDepth: 1,
+            },
+          },
+          sandboxRO(),
+        );
+        expect(r.kind).toBe("web_crawl");
+        if (r.kind === "web_crawl") {
+          expect(r.result.pagesSuccessful).toBeGreaterThanOrEqual(2);
+          const titles = r.result.pages.map((p) => p.title).sort();
+          expect(titles).toContain("Home");
+          expect(titles).toContain("Inner A");
+        }
+      } finally {
+        __resetWebNavigator();
+      }
     });
   });
 
