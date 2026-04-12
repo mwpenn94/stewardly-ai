@@ -25,6 +25,11 @@ import {
   type Transaction,
   type MarketPrice,
 } from "../services/portfolio/ledger";
+import {
+  detectWashSales,
+  canHarvestWithoutWashSale,
+  earliestSafeRepurchase,
+} from "../services/portfolio/washSale";
 
 const txnKindSchema = z.enum([
   "buy",
@@ -132,4 +137,45 @@ export const portfolioLedgerRouter = router({
       );
       return lossHarvestCandidates(valued, input.minLossUSD ?? 100);
     }),
+
+  /**
+   * Wash sale detector — scan the ledger's realized losses for IRS
+   * §1091 wash sale violations (any BUY of the same symbol within
+   * ±30 days of a loss sale disallows the loss). Pass 9 extension.
+   */
+  detectWashSales: protectedProcedure
+    .input(
+      z.object({
+        transactions: z.array(transactionSchema).max(MAX_TXNS),
+        method: methodSchema.optional(),
+      }),
+    )
+    .query(({ input }) => {
+      const ledger = runLedger(
+        input.transactions as Transaction[],
+        input.method ?? "FIFO",
+      );
+      return detectWashSales(
+        input.transactions as Transaction[],
+        ledger.realizedGains,
+      );
+    }),
+
+  /** Ask whether a given sell date is "safe" (no recent buy of same symbol). */
+  canHarvest: protectedProcedure
+    .input(
+      z.object({
+        transactions: z.array(transactionSchema).max(MAX_TXNS),
+        symbol: z.string().min(1).max(64),
+        saleDate: z.string().min(1),
+      }),
+    )
+    .query(({ input }) => ({
+      canHarvest: canHarvestWithoutWashSale(
+        input.transactions as Transaction[],
+        input.symbol,
+        input.saleDate,
+      ),
+      earliestSafeRepurchase: earliestSafeRepurchase(input.saleDate),
+    })),
 });
