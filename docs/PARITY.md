@@ -55,6 +55,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G31 | P1   | test-coverage   | tRPC router-level integration tests for Pass 18 wiring                     | done        | build-loop-p19   | 5/10  | pending |
 | G32 | P2   | docs            | Module README with public API surface + design principles                  | done        | build-loop-p20   | 4/10  | pending |
 | G33 | P2   | performance     | Perf floors for schemaInference/adapterGen/drift/hints/crm/distillation    | done        | build-loop-p21   | 4/10  | pending |
+| G34 | P0   | security        | Record sanitizer — prototype pollution / circular / depth / length defenses | done        | build-loop-p22   | 5/10  | pending |
 
 ## Protected Improvements
 
@@ -120,4 +121,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 - Pass 18 · tRPC wiring · [F1: expose new modules via router, A1: 5 new procs] · c64af47 · G30 done
 - Pass 19 · router integration tests · [A1 test-coverage: createCaller tests, A2: auth/zod/happy paths] · ca73bcf · G31 done
 - Pass 20 · module README · [A1 docs: public API surface + design principles + module tables] · 1f08226 · G32 done
-- Pass 21 · performance floors · [A1 perf: benchmarks for 8 hot paths, A2: regression detection] · pending · G33 done
+- Pass 21 · performance floors · [A1 perf: benchmarks for 8 hot paths, A2: regression detection] · 2a906a4 · G33 done
+- Pass 22 · record sanitizer · [A1 input-validation: proto-pollution + circular + depth + length] · pending · G34 done
