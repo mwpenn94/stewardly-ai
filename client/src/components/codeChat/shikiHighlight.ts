@@ -9,6 +9,13 @@
  *
  * Returns HTML (trusted shiki output) or null on failure — callers
  * fall back to the plain `<code>` render.
+ *
+ * Pass v5 #81: transient import failures (flaky network, CDN hiccup)
+ * no longer poison the session. When the inner factory resolves to
+ * null, we reset the cached promise so the next call retries, capped
+ * at MAX_RETRIES attempts to avoid storming a broken endpoint.
+ * Pass v5 #82: expanded BUNDLED_LANGS to cover Dockerfile, GraphQL,
+ * HCL, Prisma, Proto, Nginx, Vue, Svelte.
  */
 
 type Highlighter = {
@@ -19,6 +26,32 @@ type Highlighter = {
 };
 
 let _highlighter: Promise<Highlighter | null> | null = null;
+let _retryCount = 0;
+const MAX_RETRIES = 3;
+let _failureToastedThisPageLoad = false;
+
+/** Optional hook for callers (MarkdownMessage) to surface a one-time
+ *  toast. Set via `setShikiFailureNotifier()`. */
+let _failureNotifier: (() => void) | null = null;
+
+export function setShikiFailureNotifier(fn: (() => void) | null): void {
+  _failureNotifier = fn;
+}
+
+/**
+ * Test-only hook so unit tests can inject a stubbed highlighter
+ * factory without poking at the dynamic `import("shiki")` call. The
+ * factory receives the bundled langs and theme name and is expected
+ * to return a Highlighter (or throw to simulate a load failure).
+ */
+type HighlighterFactory = () => Promise<Highlighter>;
+let _factoryOverride: HighlighterFactory | null = null;
+
+export function __setShikiFactoryForTests(
+  factory: HighlighterFactory | null,
+): void {
+  _factoryOverride = factory;
+}
 
 const BUNDLED_LANGS = [
   "ts",
@@ -42,6 +75,15 @@ const BUNDLED_LANGS = [
   "swift",
   "ruby",
   "php",
+  // Pass v5 #82
+  "dockerfile",
+  "graphql",
+  "hcl",
+  "prisma",
+  "proto",
+  "nginx",
+  "vue",
+  "svelte",
 ] as const;
 
 const LANG_ALIASES: Record<string, string> = {
@@ -54,19 +96,44 @@ const LANG_ALIASES: Record<string, string> = {
   yml: "yaml",
   rs: "rust",
   rb: "ruby",
+  // Pass v5 #82 aliases
+  docker: "dockerfile",
+  gql: "graphql",
+  terraform: "hcl",
+  tf: "hcl",
+  protobuf: "proto",
 };
 
 const DARK_THEME = "github-dark-dimmed";
 
 /**
+ * Reset the cached highlighter state. Exposed for tests; production
+ * code relies on the automatic retry path inside `getHighlighter`.
+ */
+export function __resetShikiForTests(): void {
+  _highlighter = null;
+  _retryCount = 0;
+  _failureToastedThisPageLoad = false;
+}
+
+/**
  * Lazy-initialize the Shiki highlighter. Uses the `createHighlighter`
  * bundled-languages API so we don't pay for all 200+ Shiki grammars.
- * Cached forever after the first call.
+ *
+ * Pass v5 #81: after a transient failure, we reset the cached promise
+ * so the next call retries. A max-retries counter prevents a retry
+ * storm against a persistently broken endpoint. A one-time toast is
+ * shown via `_failureNotifier` so the user knows highlighting will
+ * auto-retry on the next code block.
  */
 async function getHighlighter(): Promise<Highlighter | null> {
   if (_highlighter) return _highlighter;
+  if (_retryCount >= MAX_RETRIES) return null;
   _highlighter = (async () => {
     try {
+      if (_factoryOverride) {
+        return await _factoryOverride();
+      }
       const shiki = await import("shiki");
       const hl = await shiki.createHighlighter({
         themes: [DARK_THEME],
@@ -79,7 +146,21 @@ async function getHighlighter(): Promise<Highlighter | null> {
       return null;
     }
   })();
-  return _highlighter;
+  const resolved = await _highlighter;
+  if (resolved === null) {
+    // Pass v5 #81: reset the cached promise so the next call retries.
+    _highlighter = null;
+    _retryCount += 1;
+    if (!_failureToastedThisPageLoad && _failureNotifier) {
+      _failureToastedThisPageLoad = true;
+      try {
+        _failureNotifier();
+      } catch {
+        /* notifier is best-effort */
+      }
+    }
+  }
+  return resolved;
 }
 
 export function normalizeLanguage(lang: string | undefined): string {

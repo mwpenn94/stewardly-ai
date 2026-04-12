@@ -15,6 +15,8 @@ import {
   reorderStep,
   approveAllSteps,
   rejectPlan,
+  unapprovePlan,
+  discardPlan,
   buildExecutionPrompt,
   snapshotPlan,
   restorePlan,
@@ -305,6 +307,53 @@ describe("mutations", () => {
     const plan = mkPlan(2);
     const next = rejectPlan(plan);
     expect(next.status).toBe("aborted");
+  });
+});
+
+// Pass v5 #83: unapprove/discard mutators
+describe("unapprovePlan", () => {
+  it("flips an approved plan with only pending/approved steps back to draft", () => {
+    const plan = approveAllSteps(mkPlan(3));
+    expect(plan.status).toBe("approved");
+    expect(plan.steps.every((s) => s.status === "approved")).toBe(true);
+    const next = unapprovePlan(plan);
+    expect(next.status).toBe("draft");
+    expect(next.steps.every((s) => s.status === "pending")).toBe(true);
+  });
+
+  it("refuses to unapprove if any step is executing", () => {
+    const plan = approveAllSteps(mkPlan(3));
+    plan.steps[1].status = "executing";
+    const next = unapprovePlan(plan);
+    expect(next).toBe(plan); // no-op
+  });
+
+  it("refuses to unapprove if any step is done or failed", () => {
+    const p1 = approveAllSteps(mkPlan(3));
+    p1.steps[0].status = "done";
+    expect(unapprovePlan(p1)).toBe(p1);
+    const p2 = approveAllSteps(mkPlan(3));
+    p2.steps[0].status = "failed";
+    expect(unapprovePlan(p2)).toBe(p2);
+  });
+
+  it("tolerates skipped steps when unapproving", () => {
+    const plan = approveAllSteps(mkPlan(3));
+    plan.steps[1].status = "skipped";
+    const next = unapprovePlan(plan);
+    expect(next.status).toBe("draft");
+    // Skipped stays skipped; approved flips to pending
+    expect(next.steps[0].status).toBe("pending");
+    expect(next.steps[1].status).toBe("skipped");
+    expect(next.steps[2].status).toBe("pending");
+  });
+});
+
+describe("discardPlan", () => {
+  it("returns null for any plan", () => {
+    expect(discardPlan(mkPlan(3))).toBeNull();
+    expect(discardPlan(mkPlan(0))).toBeNull();
+    expect(discardPlan(approveAllSteps(mkPlan(2)))).toBeNull();
   });
 });
 

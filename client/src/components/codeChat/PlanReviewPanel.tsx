@@ -31,6 +31,7 @@ import {
   X,
   Loader2,
   MinusCircle,
+  Undo2,
 } from "lucide-react";
 import {
   type Plan,
@@ -42,6 +43,7 @@ import {
   updateStepDescription,
   approveAllSteps,
   rejectPlan,
+  unapprovePlan,
   planProgress,
 } from "./planMode";
 
@@ -50,6 +52,9 @@ export interface PlanReviewPanelProps {
   onChange: (next: Plan) => void;
   onApprove: (plan: Plan) => void;
   onReject?: (plan: Plan) => void;
+  /** Pass v5 #83: fully drop the plan from the parent's message→plan
+   *  map. Discard always confirms first via `window.confirm`. */
+  onDiscard?: (plan: Plan) => void;
   /** When true, renders the panel as read-only — used once execution is
    *  under way so the user can see live status but not edit. */
   readOnly?: boolean;
@@ -69,6 +74,7 @@ export default function PlanReviewPanel({
   onChange,
   onApprove,
   onReject,
+  onDiscard,
   readOnly = false,
 }: PlanReviewPanelProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -77,6 +83,31 @@ export default function PlanReviewPanel({
 
   const progress = planProgress(plan);
   const canEdit = !readOnly && plan.status === "draft";
+
+  // Pass v5 #83: show Unapprove only when plan is approved but no step
+  // has actually started executing yet. Once any step hits executing/
+  // done/failed, the plan is locked.
+  const canUnapprove =
+    !readOnly &&
+    plan.status === "approved" &&
+    plan.steps.every(
+      (s) => s.status === "pending" || s.status === "approved" || s.status === "skipped",
+    );
+
+  const handleUnapprove = () => {
+    const next = unapprovePlan(plan);
+    if (next !== plan) onChange(next);
+  };
+
+  const handleDiscard = () => {
+    if (typeof window !== "undefined") {
+      const ok = window.confirm(
+        "Discard this plan? This cannot be undone.",
+      );
+      if (!ok) return;
+    }
+    onDiscard?.(plan);
+  };
 
   const startEdit = (step: PlanStep) => {
     setEditingId(step.id);
@@ -344,6 +375,18 @@ export default function PlanReviewPanel({
       {/* Action bar */}
       {canEdit && (
         <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-border/30 bg-background/20">
+          {onDiscard && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleDiscard}
+              className="h-7 text-[11px] text-muted-foreground hover:text-destructive"
+              aria-label="Discard plan"
+              title="Discard plan (cannot be undone)"
+            >
+              <Trash2 className="h-3 w-3 mr-1" /> Discard
+            </Button>
+          )}
           {onReject && (
             <Button
               size="sm"
@@ -364,6 +407,38 @@ export default function PlanReviewPanel({
           >
             <Play className="h-3 w-3 mr-1" /> Approve &amp; Execute
           </Button>
+        </div>
+      )}
+
+      {/* Pass v5 #83: post-approval action bar — lets the user flip
+          back to draft mode (if no step has executed yet) or discard
+          the plan entirely. */}
+      {!canEdit && !readOnly && (canUnapprove || onDiscard) && (
+        <div className="flex items-center justify-end gap-2 px-4 py-2 border-t border-border/30 bg-background/10">
+          {canUnapprove && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleUnapprove}
+              className="h-7 text-[11px]"
+              aria-label="Unapprove plan — flip back to draft mode"
+              title="Unapprove — resume editing the plan"
+            >
+              <Undo2 className="h-3 w-3 mr-1" /> Unapprove
+            </Button>
+          )}
+          {onDiscard && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleDiscard}
+              className="h-7 text-[11px] text-muted-foreground hover:text-destructive"
+              aria-label="Discard plan"
+              title="Discard plan (cannot be undone)"
+            >
+              <Trash2 className="h-3 w-3 mr-1" /> Discard
+            </Button>
+          )}
         </div>
       )}
     </div>

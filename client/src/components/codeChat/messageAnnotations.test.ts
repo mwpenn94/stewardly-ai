@@ -11,6 +11,7 @@ import {
   setReaction,
   getReaction,
   countReactions,
+  saveReactions,
 } from "./messageAnnotations";
 
 describe("parseBookmarks", () => {
@@ -111,5 +112,92 @@ describe("countReactions", () => {
       up: 2,
       down: 1,
     });
+  });
+});
+
+// Pass v5 #79: reactions cap at 1000 entries to prevent runaway growth.
+describe("reactions cap", () => {
+  it("drops oldest entries when parseReactions exceeds MAX_REACTIONS", () => {
+    const over: Record<string, "up" | "down"> = {};
+    for (let i = 0; i < 1500; i++) {
+      over[`m${i}`] = i % 2 === 0 ? "up" : "down";
+    }
+    const parsed = parseReactions(JSON.stringify(over));
+    const keys = Object.keys(parsed);
+    expect(keys).toHaveLength(1000);
+    // Oldest dropped, newest kept
+    expect(parsed["m0"]).toBeUndefined();
+    expect(parsed["m1499"]).toBe("down");
+  });
+
+  it("setReaction drops oldest when adding a new message past the cap", () => {
+    const map: Record<string, "up" | "down"> = {};
+    for (let i = 0; i < 1000; i++) map[`m${i}`] = "up";
+    const next = setReaction(map, "mNEW", "down");
+    const keys = Object.keys(next);
+    expect(keys).toHaveLength(1000);
+    expect(next["m0"]).toBeUndefined();
+    expect(next["mNEW"]).toBe("down");
+  });
+
+  it("setReaction does not drop when replacing an existing entry", () => {
+    const map: Record<string, "up" | "down"> = {};
+    for (let i = 0; i < 1000; i++) map[`m${i}`] = "up";
+    const next = setReaction(map, "m500", "down");
+    expect(Object.keys(next)).toHaveLength(1000);
+    expect(next["m0"]).toBe("up");
+    expect(next["m500"]).toBe("down");
+  });
+
+  it("saveReactions returns ok:true on success", () => {
+    // Node env has no localStorage — stub a minimal in-memory one.
+    const store: Record<string, string> = {};
+    const stub = {
+      getItem: (k: string) => store[k] ?? null,
+      setItem: (k: string, v: string) => { store[k] = v; },
+      removeItem: (k: string) => { delete store[k]; },
+      clear: () => { for (const k of Object.keys(store)) delete store[k]; },
+      key: (_i: number) => null,
+      length: 0,
+    };
+    const hadGlobal = "localStorage" in globalThis;
+    const prior = (globalThis as unknown as { localStorage?: unknown }).localStorage;
+    (globalThis as unknown as { localStorage: unknown }).localStorage = stub;
+    try {
+      const result = saveReactions({ a: "up" });
+      expect(result).toEqual({ ok: true });
+    } finally {
+      if (hadGlobal) {
+        (globalThis as unknown as { localStorage: unknown }).localStorage = prior;
+      } else {
+        delete (globalThis as unknown as { localStorage?: unknown }).localStorage;
+      }
+    }
+  });
+
+  it("saveReactions returns ok:false reason quota on setItem failure", () => {
+    const stub = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error("quota");
+      },
+      removeItem: () => {},
+      clear: () => {},
+      key: () => null,
+      length: 0,
+    };
+    const hadGlobal = "localStorage" in globalThis;
+    const prior = (globalThis as unknown as { localStorage?: unknown }).localStorage;
+    (globalThis as unknown as { localStorage: unknown }).localStorage = stub;
+    try {
+      const result = saveReactions({ a: "up" });
+      expect(result).toEqual({ ok: false, reason: "quota" });
+    } finally {
+      if (hadGlobal) {
+        (globalThis as unknown as { localStorage: unknown }).localStorage = prior;
+      } else {
+        delete (globalThis as unknown as { localStorage?: unknown }).localStorage;
+      }
+    }
   });
 });

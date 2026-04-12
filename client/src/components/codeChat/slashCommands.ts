@@ -72,14 +72,14 @@ export const BUILT_IN_COMMANDS: SlashCommand[] = [
   {
     name: "help",
     aliases: ["h", "?"],
-    description: "Show a list of slash commands",
-    handler: (ctx) => {
-      const text = BUILT_IN_COMMANDS.map(
-        (c) =>
-          `/${c.name}${c.args ? ` ${c.args}` : ""} — ${c.description}` +
-          (c.aliases?.length ? ` (aliases: ${c.aliases.map((a) => `/${a}`).join(", ")})` : ""),
-      ).join("\n");
-      ctx.toast("info", `Available slash commands:\n${text}`);
+    description: "Open the keyboard shortcuts + slash command help overlay",
+    handler: (_ctx) => {
+      // Pass v5 #80: dispatch a window event so CodeChatInterface can
+      // open the KeyboardShortcutsOverlay instead of dumping a 12+ line
+      // wall of text into a toast (which is the wrong UI surface).
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("codechat-show-shortcuts"));
+      }
     },
   },
   {
