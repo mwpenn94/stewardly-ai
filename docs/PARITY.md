@@ -50,6 +50,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G26 | P1   | observability   | Pipeline run telemetry store + health summaries (per-source + global)     | done        | build-loop-p14   | 5/10  | pending |
 | G27 | P0   | security        | PII/secret redaction for sample records (SSN/CC/API key/JWT/PEM/bearer)    | done        | build-loop-p15   | 6/10  | pending |
 | G28 | P0   | agentic-ai      | Autonomous source-onboarding wizard — single-call entrypoint (P1-15)       | done        | build-loop-p16   | 6/10  | pending |
+| G29 | P2   | dev-ergonomics  | Natural-language prompt parser for onboarding (bearer/api_key/rate hints)  | done        | build-loop-p17   | 5/10  | pending |
 
 ## Protected Improvements
 
@@ -110,4 +111,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 - Pass 13 · deep auth probe · [A1: error-body keyword detection, A2: header conventions + OAuth discovery] · c88ae96 · G25 done
 - Pass 14 · pipeline telemetry · [A1 observability: ring-buffer store + per-source/global health, A2: flaky detection] · 75413d0 · G26 done
 - Pass 15 · sensitive redaction · [A1 security: mask/tokenize/nullify strategies, A2: field-name + value-pattern matchers] · 9f1481d · G27 done
-- Pass 16 · onboarding wizard · [F1 Pass 7 deferred entrypoint, A1: tie passes 1-15 into one call, A2: 10-phase pipeline] · pending · G28 done
+- Pass 16 · onboarding wizard · [F1 Pass 7 deferred entrypoint, A1: tie passes 1-15 into one call, A2: 10-phase pipeline] · 045a4bb · G28 done
+- Pass 17 · NL prompt parser · [A1 dev-ergonomics: regex-based parsing, A2: auth/url/endpoint/rate hints] · pending · G29 done
