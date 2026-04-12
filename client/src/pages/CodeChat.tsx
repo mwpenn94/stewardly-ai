@@ -57,6 +57,11 @@ import {
   type VoiceRecognizer,
   type VoiceRecognizerState,
 } from "@/components/codeChat/voiceInput";
+import {
+  computeWindow,
+  segmentWindow,
+  type WindowSegment,
+} from "@/components/codeChat/messageVirtualization";
 const KeyboardShortcutsOverlay = lazy(() => import("@/components/codeChat/KeyboardShortcutsOverlay"));
 const SessionsLibraryPopover = lazy(() => import("@/components/codeChat/SessionsLibraryPopover"));
 import {
@@ -1389,6 +1394,28 @@ function CodeChatInterface() {
     }
   }, [handleSend, input, commandHistory, historyIndex, slashOpen, slashSuggestions, slashActiveIdx, handleSlashSelect, mentionOpen, mentionFiles, mentionActiveIdx, handleMentionSelect, symbolMentionOpen, symbolMentionHits, symbolMentionActiveIdx, handleSymbolMentionSelect, isExecuting, abort]);
 
+  // Build-loop Pass 19 (G16-UI): virtualization window for the
+  // message list. Activates above 100 messages, otherwise the
+  // map below renders every message unchanged.
+  const virtWindow = useMemo(
+    () =>
+      computeWindow(
+        messages.map((m) => m.id),
+        {
+          threshold: 100,
+          headCount: 5,
+          tailCount: 30,
+          anchorWindow: 10,
+          pinnedIds: bookmarks,
+        },
+      ),
+    [messages, bookmarks],
+  );
+  const virtVisibleSet = useMemo(
+    () => (virtWindow.active ? new Set(virtWindow.visibleIndices) : null),
+    [virtWindow],
+  );
+
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)]">
       {/* Config bar */}
@@ -1799,7 +1826,29 @@ function CodeChatInterface() {
           </div>
         )}
 
+        {/* Build-loop Pass 19 (G16-UI): virtualized message list.
+            For sessions <=100 messages this is a passthrough — every
+            message renders. Above the threshold we hide all but
+            head/tail/bookmarked messages and surface a placeholder
+            card that explains the gap. */}
+        {virtWindow.active && virtWindow.visibleIndices.length < messages.length && (
+          <div
+            key="virt-placeholder"
+            className="my-3 mx-auto max-w-md text-center text-[10px] uppercase tracking-wide text-muted-foreground/70 px-3 py-2 rounded-lg border border-dashed border-border/40 bg-muted/13"
+            role="status"
+            aria-label={`${messages.length - virtWindow.visibleIndices.length} messages hidden for performance`}
+          >
+            ··· {messages.length - virtWindow.visibleIndices.length} older message{messages.length - virtWindow.visibleIndices.length === 1 ? "" : "s"} hidden for performance ···
+            <div className="text-[9px] normal-case text-muted-foreground/40 mt-0.5">
+              Bookmark older messages or use Outline to jump back
+            </div>
+          </div>
+        )}
         {messages.map((msg, msgIdx) => {
+          // Build-loop Pass 19 (G16-UI): skip messages outside the
+          // virtualization window when active. The placeholder card
+          // above explains the gap.
+          if (virtVisibleSet && !virtVisibleSet.has(msgIdx)) return null;
           // Only the most recent assistant message shows the Regenerate button
           const isLastAssistant =
             msg.role === "assistant" &&

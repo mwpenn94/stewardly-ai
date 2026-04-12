@@ -113,8 +113,11 @@ export function computeWindow(
   }
   // Pinned (bookmarks, outline targets, etc)
   if (opts.pinnedIds) {
-    for (const id of opts.pinnedIds) {
-      const idx = messageIds.indexOf(id);
+    // Use Array.from() instead of `for...of` so we don't need
+    // --downlevelIteration on the project's TS target.
+    const pinnedArray = Array.from(opts.pinnedIds);
+    for (let p = 0; p < pinnedArray.length; p++) {
+      const idx = messageIds.indexOf(pinnedArray[p]);
       if (idx >= 0) visible.add(idx);
     }
   }
