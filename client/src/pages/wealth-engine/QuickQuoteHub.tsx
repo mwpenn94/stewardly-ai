@@ -48,6 +48,7 @@ import { FinancialProfileBanner } from "@/components/financial-profile/Financial
 import { ProfileLibraryPanel } from "@/components/financial-profile/ProfileLibraryPanel";
 import { RunTimelinePanel } from "@/components/financial-profile/RunTimelinePanel";
 import { LifeEventsBanner } from "@/components/financial-profile/LifeEventsBanner";
+import { LocalePicker } from "@/components/financial-profile/LocalePicker";
 import { useRunTimeline } from "@/hooks/useRunTimeline";
 import {
   QUICK_QUOTE_REGISTRY,
@@ -116,6 +117,7 @@ export default function QuickQuoteHubPage() {
             </div>
             <div className="flex items-center gap-2">
               <ScopePicker scope={scope} onChange={setScope} />
+              <LocalePicker />
               <button
                 type="button"
                 onClick={() => setTimelineOpen(true)}

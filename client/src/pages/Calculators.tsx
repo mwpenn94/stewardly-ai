@@ -20,6 +20,7 @@ import {
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import { LocalePicker } from "@/components/financial-profile/LocalePicker";
 import type { FinancialProfile } from "@/stores/financialProfile";
 
 function fmt(n: number) {
@@ -179,6 +180,9 @@ export default function Calculators() {
           <div className="flex items-center gap-2">
             <Calculator className="w-4 h-4 text-accent" />
             <span className="font-semibold text-sm">Financial Calculators</span>
+          </div>
+          <div className="ml-auto">
+            <LocalePicker />
           </div>
         </div>
       </div>
