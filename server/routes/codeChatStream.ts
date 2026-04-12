@@ -306,7 +306,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       const subMaxIter = Math.min(Math.max(1, input.maxIterations ?? 5), 10);
       // Subagent always gets the read-only set, never write tools.
       const subToolDefs = CODE_CHAT_TOOL_DEFINITIONS
-        .filter((t) => READ_ONLY_TOOLS.has(t.name) && t.name !== "task")
+        .filter((t) => READ_ONLY_TOOLS.has(t.name))
         .filter((t) => (userAllowed ? userAllowed.has(t.name) : true))
         .map((t) => ({
           type: "function" as const,
@@ -348,8 +348,6 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
           const dispatchResult = await dispatchCodeTool(
             { name: rawName as any, args } as CodeToolCall,
             { workspaceRoot: WORKSPACE_ROOT, allowMutations: false },
-            // Recursion guard: subagents can't spawn sub-subagents.
-            { taskRunner: undefined },
           );
           // Stream a subagent_tool_call event so the UI can show
           // what the subagent is doing without polluting the parent
@@ -415,10 +413,6 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         const dispatchResult = await dispatchCodeTool(
           { name: rawName as any, args } as CodeToolCall,
           { workspaceRoot: WORKSPACE_ROOT, allowMutations: canMutate },
-          // Build-loop Pass 11 (G7): inject the subagent runner so
-          // the parent agent can spawn focused side-tasks via the
-          // `task` tool.
-          { taskRunner },
         );
         const durationMs = Date.now() - toolStart;
 
