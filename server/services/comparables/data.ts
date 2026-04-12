@@ -179,8 +179,8 @@ export const FEATURE_AXES: readonly FeatureAxis[] = [
     id: "api_first",
     label: "Public API / webhooks",
     description: "Developer-facing API with stable contract + webhook events.",
-    stewardlyScore: 2,
-    stewardlyEvidence: "tRPC internally; webhook routers (dripify/ghl/smsit) exist; no versioned external REST yet.",
+    stewardlyScore: 3,
+    stewardlyEvidence: "server/api/v1/* (Pass 6) — versioned REST API mounted at /api/v1 with bearer auth (stwly_ prefix), token-bucket rate limiter (60 burst / 60 rpm), OpenAPI 3.1 spec at /api/v1/openapi.json, and 6 endpoints (health, openapi.json, comparables/summary, comparables/gaps, rebalancing/simulate, tax/project-year, portfolio-ledger/run). Webhook routers remain for inbound events.",
   },
   {
     id: "agent_framework",

@@ -362,6 +362,17 @@ async function startServer() {
     }
   });
 
+  // ─── Public API v1 — PARITY-API-0001 (hybrid build loop pass 6) ─────
+  // Mounts BEFORE /api/trpc so /api/v1/* is not accidentally caught by
+  // the tRPC catch-all middleware. Bearer-auth gated via an env-backed
+  // validator; set STWLY_API_KEYS env var to a JSON array of
+  // `{token, record}` pairs to enable keys in production.
+  const { buildApiV1Router, defaultEnvValidator } = await import("../api/v1/router");
+  app.use(
+    "/api/v1",
+    buildApiV1Router({ validate: defaultEnvValidator() }),
+  );
+
   // ─── tRPC API with sensitive route rate limiting ─────────────────────
   app.use("/api/trpc", sensitiveTrpcGuard);
   app.use(
