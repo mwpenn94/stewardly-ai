@@ -266,6 +266,23 @@ async function runImprovementEngine(): Promise<void> {
       logger.warn({ operation: "scheduler" }, `[Scheduler] Improvement cycle failed (non-fatal): ${cycleError.message}`);
     }
 
+    // ── Backfill quality ratings for unrated assistant messages ────────
+    try {
+      const { backfillQualityRatings } = await import("./improvement/autoQualityRater");
+      const ratingResult = await backfillQualityRatings(db);
+      if (ratingResult.rated > 0) {
+        logger.info({ operation: "scheduler" }, JSON.stringify({
+          event: "quality_rating_backfill",
+          timestamp: new Date().toISOString(),
+          scanned: ratingResult.scanned,
+          rated: ratingResult.rated,
+          avgScore: ratingResult.avgScore.toFixed(3),
+        }));
+      }
+    } catch (ratingError: any) {
+      logger.warn({ operation: "scheduler" }, `[Scheduler] Quality rating backfill failed (non-fatal): ${ratingError.message}`);
+    }
+
     logger.info({ operation: "scheduler" }, `[Scheduler] Improvement engine complete: ${signals.length} signals, convergence=${convergence.status}`);
   } catch (e: any) {
     logger.warn({ operation: "scheduler" }, `[Scheduler] Improvement engine failed: ${e.message}`);
