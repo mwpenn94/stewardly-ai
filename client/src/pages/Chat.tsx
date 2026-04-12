@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadCalculatorContext, buildContextOverlay } from "@/lib/calculatorContext";
 import { SEOHead } from "@/components/SEOHead";
 import TypingIndicator from "@/components/TypingIndicator";
@@ -64,7 +65,6 @@ import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
 import { useSelfDiscovery } from "@/hooks/useSelfDiscovery";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
   type DragEndEvent,

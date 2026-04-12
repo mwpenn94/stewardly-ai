@@ -3608,3 +3608,7 @@
 - [x] Skeleton-gold shimmer — warm gold shimmer CSS class + upgraded PageSuspenseFallback with card grid skeleton
 - [x] Test fix — updated uxResilience test to match new skeleton-gold pattern (123/123 tests pass, 3241/3241 assertions)
 - [x] Convergence check — all 7 Transformations and 6 Invisible Dimensions verified CONVERGED (temperature 0.15, δ < 0.2)
+
+## Bug Fixes & Migrations — Pass (Apr 12)
+- [x] Fix 'Cannot access lazy before initialization' error in Chat.tsx line 80 (moved React import above lazy() calls)
+- [x] Apply pending database migrations from drizzle/ directory (42 tables: weight_presets, 33 learning_*, workflow_instances, 3 audio_*, 4 integration_blueprint_*, financial_profiles)
