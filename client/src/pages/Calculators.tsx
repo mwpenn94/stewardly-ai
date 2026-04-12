@@ -151,9 +151,9 @@ export default function Calculators() {
   const [stressCost, setStressCost] = useState(5000);
   const [stressHorizon, setStressHorizon] = useState(30);
   const [stressScenario, setStressScenario] = useState("gfc2008");
-  const backtestCalc = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: (e) => toast.error(e.message) });
-  const stressCalc = trpc.calculatorEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
-  const scenariosQuery = trpc.calculatorEngine.stressScenarios.useQuery();
+  const backtestCalc = trpc.wealthEngine.historicalBacktest.useMutation({ onError: (e) => toast.error(e.message) });
+  const stressCalc = trpc.wealthEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
+  const scenariosQuery = trpc.wealthEngine.stressScenarios.useQuery();
 
   // Monte Carlo state
   const [mcBalance, setMcBalance] = useState(500000);

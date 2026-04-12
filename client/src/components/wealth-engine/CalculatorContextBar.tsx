@@ -40,12 +40,12 @@ export function CalculatorContextBar({ params, showBenchmarks = true, className 
     return mapped;
   }, [params]);
 
-  const { data: warnings } = trpc.calculatorEngine.checkGuardrails.useQuery(
+  const { data: warnings } = trpc.wealthEngine.checkGuardrails.useQuery(
     { params: guardrailParams },
     { enabled: Object.keys(guardrailParams).length > 0, retry: false },
   );
 
-  const { data: benchmarks } = trpc.calculatorEngine.industryBenchmarks.useQuery(
+  const { data: benchmarks } = trpc.wealthEngine.industryBenchmarks.useQuery(
     undefined,
     { enabled: showBenchmarks, retry: false },
   );
