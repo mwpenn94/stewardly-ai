@@ -184,6 +184,12 @@ See `docs/AUTOMATION.md` for the architecture diagram, extension points, and ope
 - BranchComparison.tsx: conversation branching with fork button on assistant messages
 - LeadCaptureGate: wrapping calculator results on EstatePlanning, TaxPlanning, RiskAssessment
 - Workflows page: /workflows with 5 predefined templates, run/progress tracking, step visualization
+- **Planning Pages (Hybrid Pass 1):** 5 standalone planning pages upgraded from hardcoded stubs to interactive calculators:
+  - TaxPlanning.tsx → wired to taxProjector.project/multiYear/rothComparison (3 tRPC endpoints), 10 input sliders, live bracket visualization, 5-year projection table
+  - EstatePlanning.tsx → interactive estate tax calculator with current law vs TCJA sunset comparison, growth projection table, clickable document checklist, strategy insights
+  - RiskAssessment.tsx → 7-question weighted risk questionnaire (time horizon, loss tolerance, income stability, investment knowledge, liquidity needs, goal priority, market experience), 5-tier risk profiles with recommended allocation
+  - IncomeProjection.tsx → configurable income sources with add/remove, Social Security optimizer integration, Monte Carlo sustainability analysis (1,000 trials), year-by-year projection with depletion detection
+  - InsuranceAnalysis.tsx → DIME-method insurance needs calculator, editable policy tracker with add/remove, coverage gap analysis with dynamic insights
 
 ## Business Domains
 - Lead pipeline: capture, enrichment, propensity scoring, qualification, distribution
