@@ -111,6 +111,6 @@ Pass 16 · angle: ergonomics / mobile · queue: G13 (voice input adapter) · a10
 Pass 17 · angle: ergonomics / mobile · queue: G13-UI follow-on · 8da633a · shipped: lazy-created VoiceRecognizer in CodeChat.tsx + pulsing mic button next to Send + onTranscript merge with spliceTranscript + permission/error handling + CODE_CHAT.md doc + a11y lint passes · deferred: G5, G6, G8, G9, G11, G12-UI, G16, G18, G22, G24
 Pass 18 · angle: performance · queue: G16 (message list virtualization core) · b169033 · shipped: messageVirtualization.ts (computeWindow head/anchor/tail/pinned union + segmentWindow run-collapse + countRendered) + 19 new tests · deferred: G5, G6, G8, G9, G11, G12-UI, G16-UI, G18, G22, G24
 Pass 19 · angle: performance · queue: G16-UI follow-on · 1af5d88 · shipped: useMemo virtWindow + virtVisibleSet + messages.map skip-on-out-of-window + placeholder card with bookmark/outline hint + bookmarks act as pinned anchors · deferred: G5, G6, G8, G9, G11, G12-UI, G18, G22, G24
-Pass 20 · angle: input validation / defensive · queue: G25 (NEW row from build assessment) · shipped: requireStringArg + badArgs helpers + dispatcher boundary hardening across 7 tools + 13 new tests · deferred: G5, G6, G8, G9, G11, G12-UI, G18, G22, G24
+Pass 20 · angle: input validation / defensive · queue: G25 (NEW row from build assessment) · a5c32c6 · shipped: requireStringArg + badArgs helpers + dispatcher boundary hardening across 7 tools + 13 new tests · deferred: G5, G6, G8, G9, G11, G12-UI, G18, G22, G24
 
 <!-- PASS_LOG_APPEND_HERE -->
