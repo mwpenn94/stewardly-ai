@@ -861,7 +861,9 @@ prior-pass-you did and didn't finish.
 
 | 16   | planning-page-activation | Wire 5 stub planning pages to real calculator backends (PARITY-PLAN-0001) | abf388d | TaxPlanning.tsx → taxProjector tRPC, EstatePlanning.tsx → estate tax math, RiskAssessment.tsx → 7-question questionnaire, IncomeProjection.tsx → Monte Carlo + SS optimizer, InsuranceAnalysis.tsx → DIME method. 0 regressions. | — |
 | 17   | navigation-cohesion | Activate FinancialPlanning + fix nav gaps (PARITY-NAV-0001) | 5c381a8 | /financial-planning route, broken /financial-protection-score link fix, 7 planning pages + Calculators added to sidebar. Nav reachability 6/6. | — |
-| 18   | cross-calculator-data-bridge | Shared financial profile for cross-page data persistence (PARITY-PLAN-0002) | (pending) | useFinancialProfile hook (localStorage cross-tab sync), wired into TaxPlanning (r/w), EstatePlanning (r/w), IncomeProjection (r), InsuranceAnalysis (r). Users enter data once, flows everywhere. | — |
+| 18   | cross-calculator-data-bridge | Shared financial profile for cross-page data persistence (PARITY-PLAN-0002) | 0867e7b | useFinancialProfile hook (localStorage cross-tab sync), wired into TaxPlanning (r/w), EstatePlanning (r/w), IncomeProjection (r), InsuranceAnalysis (r). Users enter data once, flows everywhere. | — |
+| 19   | test-coverage | 42 tests for planning calculations + shared profile | 5b3d393 | planningCalculations.test.ts (27: estate tax, DIME, risk scoring, Monte Carlo) + useFinancialProfile.test.ts (15: profileValue, localStorage). 4638 passing total. | — |
+| 20   | accessibility | aria-labels + input linkage on planning pages | 200318f | Slider aria-labels on ~30 sliders across 5 pages, EstatePlanning toggle labels, IncomeProjection + InsuranceAnalysis input id/htmlFor linkage. | — |
 
 ---
 

@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { ArrowLeft, FileText, Users, DollarSign, CheckCircle2, XCircle, Clock, AlertTriangle, Scale, Calculator } from "lucide-react";
 import { useLocation } from "wouter";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import AppShell from "@/components/AppShell";
 
 function fmt(n: number) {
@@ -104,7 +104,7 @@ export default function EstatePlanning() {
   });
 
   // Sync to shared profile on significant value changes (debounced)
-  useMemo(() => {
+  useEffect(() => {
     const t = setTimeout(syncToProfile, 500);
     return () => clearTimeout(t);
   }, [syncToProfile]);

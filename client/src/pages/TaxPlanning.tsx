@@ -19,7 +19,7 @@ import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, BarChart3, Loader2, Play } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import AppShell from "@/components/AppShell";
 
 function fmt(n: number) {
@@ -57,8 +57,7 @@ function SliderInput({
 
 export default function TaxPlanning() {
   const [, navigate] = useLocation();
-  const { profile, updateProfile, hasData } = useFinancialProfile("tax-planning");
-  const initialized = useRef(false);
+  const { profile, updateProfile } = useFinancialProfile("tax-planning");
 
   // ─── Inputs (initialized from shared profile if available) ──
   const [filingStatus, setFilingStatus] = useState<"single" | "mfj" | "hoh">(profileValue(profile, "filingStatus", "mfj"));
