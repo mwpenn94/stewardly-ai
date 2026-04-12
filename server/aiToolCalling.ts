@@ -659,6 +659,48 @@ export const WEALTH_ENGINE_TOOLS: Tool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "we_stress_test",
+      description:
+        "Run a stress test on a portfolio balance through a specific historical crisis scenario. Returns the year-by-year path, maximum drawdown, and estimated recovery years. Scenarios: dotcom (2000-2002 tech bust), gfc (2007-2009 financial crisis), covid (2020 pandemic), stagflation (1973-1974 oil embargo + inflation), rising_rates (2022 Fed rate hikes). Use when asked 'how would my portfolio survive a crash' or 'stress test my plan' or 'what happens in a recession'.",
+      parameters: {
+        type: "object",
+        properties: {
+          scenario: {
+            type: "string",
+            enum: ["dotcom", "gfc", "covid", "stagflation", "rising_rates"],
+            description: "Historical crisis scenario to simulate.",
+          },
+          startBalance: { type: "number", description: "Portfolio balance at the start of the crisis." },
+          annualContribution: { type: "number", description: "Annual contribution during the crisis (default 0)." },
+          annualCost: { type: "number", description: "Annual withdrawal/cost during the crisis (default 0)." },
+        },
+        required: ["scenario", "startBalance"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "we_historical_backtest",
+      description:
+        "Backtest a savings/withdrawal plan against every starting year in the S&P 500 history (1928-2025, 98 data points). Returns survival rate, best/worst/median outcomes. Use when asked 'what are my odds of running out of money' or 'backtest my retirement plan' or 'historical success rate'.",
+      parameters: {
+        type: "object",
+        properties: {
+          startBalance: { type: "number", description: "Starting portfolio balance." },
+          annualContribution: { type: "number", description: "Annual savings (default 0)." },
+          annualCost: { type: "number", description: "Annual withdrawal (default 0)." },
+          horizon: { type: "number", description: "Number of years (1-50)." },
+        },
+        required: ["startBalance", "horizon"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ─── Chat-level Wealth Tools (Phase 6A) ───────────────────────────
@@ -1598,6 +1640,55 @@ export async function executeAITool(name: string, args: Record<string, any>): Pr
               totalValue: snapshots[y - 1]?.totalValue ?? 0,
               netValue: snapshots[y - 1]?.netValue ?? 0,
             })),
+        });
+      }
+
+      case "we_stress_test": {
+        const scui = await import("./shared/calculators/scui");
+        const scenario = String(args.scenario);
+        const startBalance = Number(args.startBalance) || 500000;
+        const annualContribution = Number(args.annualContribution) || 0;
+        const annualCost = Number(args.annualCost) || 0;
+        const result = scui.stressTest(scenario, startBalance, annualContribution, annualCost);
+        if (!result) return JSON.stringify({ error: `Unknown scenario: ${scenario}. Valid: dotcom, gfc, covid, stagflation, rising_rates.` });
+        return JSON.stringify({
+          scenario: result.scenario.name,
+          description: result.scenario.description,
+          startBalance,
+          finalBalance: result.finalBalance,
+          maxDrawdown: `${(result.maxDrawdown * 100).toFixed(1)}%`,
+          recoveryYears: result.recoveryYears,
+          yearByYear: result.path.map((v, i) => ({
+            year: i === 0 ? "Start" : result.scenario.years[i - 1],
+            balance: v,
+            return: i === 0 ? null : `${(result.scenario.returns[i - 1] * 100).toFixed(1)}%`,
+          })),
+        });
+      }
+
+      case "we_historical_backtest": {
+        const scui = await import("./shared/calculators/scui");
+        const startBalance = Number(args.startBalance) || 500000;
+        const annualContribution = Number(args.annualContribution) || 0;
+        const annualCost = Number(args.annualCost) || 0;
+        const horizon = Math.min(Math.max(Number(args.horizon) || 20, 1), 50);
+        const result = scui.historicalBacktest(startBalance, annualContribution, annualCost, horizon);
+        return JSON.stringify({
+          horizon,
+          startBalance,
+          annualContribution,
+          annualCost,
+          survivalRate: `${(result.survivalRate * 100).toFixed(1)}%`,
+          survived: result.survived,
+          total: result.total,
+          medianFinal: result.medianFinal,
+          best: { startYear: result.best.year, finalBalance: result.best.final },
+          worst: { startYear: result.worst.year, finalBalance: result.worst.final, minBalance: result.worst.min },
+          insight: result.survivalRate >= 0.95
+            ? "Historically robust — this plan survived 95%+ of all starting years."
+            : result.survivalRate >= 0.80
+              ? "Moderate risk — consider increasing contributions or reducing withdrawals."
+              : "High depletion risk — this plan failed in over 20% of historical periods. Review assumptions.",
         });
       }
 

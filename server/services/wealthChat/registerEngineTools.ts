@@ -45,6 +45,8 @@ const TRPC_MAP: Record<string, string> = {
   we_guardrail_check: "wealthEngine.checkGuardrail",
   we_roll_up_team: "wealthEngine.rollUpTeam",
   we_build_strategy: "wealthEngine.buildStrategy",
+  we_stress_test: "wealthEngine.stressTest",
+  we_historical_backtest: "wealthEngine.historicalBacktest",
 
   // Phase 6A — chat tools (no direct tRPC, dispatched via aiToolCalling)
   chat_explain_number: "wealthChat.explainNumber",
