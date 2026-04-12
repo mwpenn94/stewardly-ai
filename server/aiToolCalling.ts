@@ -627,6 +627,38 @@ export const WEALTH_ENGINE_TOOLS: Tool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "we_build_strategy",
+      description:
+        "Build and simulate a UWE (Unified Wealth Engine) strategy for a specific company and client profile. Returns the strategy with auto-selected products and a year-by-year simulation showing total value, net value, ROI, protection, savings, and product details. Use this when the user wants to see a specific company's product recommendations for their situation, or asks 'what would WealthBridge recommend' or 'build me a plan with an RIA'.",
+      parameters: {
+        type: "object",
+        properties: {
+          companyKey: {
+            type: "string",
+            enum: ["wealthbridge", "captivemutual", "wirehouse", "ria", "communitybd", "diy", "donothing", "bestoverall"],
+            description: "Company strategy to build. Use 'bestoverall' to pick the best product from each category across all companies.",
+          },
+          age: { type: "number", description: "Client age (18-80)." },
+          income: { type: "number", description: "Annual income." },
+          netWorth: { type: "number", description: "Net worth." },
+          savings: { type: "number", description: "Current savings balance." },
+          monthlySavings: { type: "number", description: "Monthly savings contribution." },
+          dependents: { type: "number", description: "Number of dependents." },
+          mortgage: { type: "number", description: "Mortgage balance." },
+          debts: { type: "number", description: "Other debts." },
+          marginalRate: { type: "number", description: "Marginal tax rate (0-1)." },
+          equitiesReturn: { type: "number", description: "Expected return on equities (e.g. 0.07 for 7%)." },
+          isBizOwner: { type: "boolean", description: "Is the client a business owner?" },
+          years: { type: "number", description: "Projection horizon in years (default 30)." },
+        },
+        required: ["companyKey"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 // ─── Chat-level Wealth Tools (Phase 6A) ───────────────────────────
@@ -1515,6 +1547,58 @@ export async function executeAITool(name: string, args: Record<string, any>): Pr
         );
         const result = mod.rollUp(strategies);
         return JSON.stringify(result);
+      }
+
+      case "we_build_strategy": {
+        const mod = await import("./shared/calculators");
+        const profile = {
+          age: args.age ?? 40,
+          income: args.income ?? 150000,
+          netWorth: args.netWorth ?? 500000,
+          savings: args.savings ?? 100000,
+          monthlySavings: args.monthlySavings ?? 2000,
+          dependents: args.dependents ?? 2,
+          mortgage: args.mortgage ?? 300000,
+          debts: args.debts ?? 25000,
+          marginalRate: args.marginalRate ?? 0.24,
+          equitiesReturn: args.equitiesReturn ?? 0.07,
+          isBizOwner: args.isBizOwner ?? false,
+        };
+        const years = args.years ?? 30;
+        const companyKey = String(args.companyKey);
+        const strategy = companyKey === "bestoverall"
+          ? mod.generateBestOverall(profile)
+          : mod.uweBuildStrategy(companyKey, profile);
+        const snapshots = mod.uweSimulate(strategy, years);
+        const final = snapshots[snapshots.length - 1];
+        return JSON.stringify({
+          companyKey,
+          companyName: strategy.companyName,
+          productCount: strategy.products.length,
+          products: strategy.products.map((p: any) => ({
+            type: p.type,
+            annualPremium: p.annualPremium,
+            face: p.face,
+          })),
+          years,
+          final: {
+            totalValue: final.totalValue,
+            netValue: final.netValue,
+            roi: final.roi,
+            totalProtection: final.totalProtection,
+            savingsBalance: final.savingsBalance,
+            productCashValue: final.productCashValue,
+            cumulativeTaxSaving: final.cumulativeTaxSaving,
+            cumulativeCost: final.cumulativeCost,
+          },
+          milestones: [5, 10, 15, 20, 25, 30]
+            .filter((y) => y <= years)
+            .map((y) => ({
+              year: y,
+              totalValue: snapshots[y - 1]?.totalValue ?? 0,
+              netValue: snapshots[y - 1]?.netValue ?? 0,
+            })),
+        });
       }
 
       // ─── Wealth Chat dispatch (Phase 6A) ───────────────────────

@@ -44,6 +44,7 @@ const TRPC_MAP: Record<string, string> = {
   we_sensitivity_sweep: "wealthEngine.sensitivitySweep",
   we_guardrail_check: "wealthEngine.checkGuardrail",
   we_roll_up_team: "wealthEngine.rollUpTeam",
+  we_build_strategy: "wealthEngine.buildStrategy",
 
   // Phase 6A — chat tools (no direct tRPC, dispatched via aiToolCalling)
   chat_explain_number: "wealthChat.explainNumber",
