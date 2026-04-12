@@ -20,6 +20,8 @@ export default defineConfig({
       "shared/**/*.test.ts",
       "client/src/lib/wealth-engine/**/*.test.ts",
       "client/src/components/codeChat/**/*.test.ts",
+      // Pass 7 (automation): include hook-level client tests
+      "client/src/hooks/**/*.test.ts",
     ],
   },
 });

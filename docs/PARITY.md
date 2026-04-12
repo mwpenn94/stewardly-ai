@@ -37,7 +37,8 @@ bottom. The Build Loop Pass Log at the very bottom is append-only.
 | G20 | Compliance guardrails on web-retrieved content             | Stewardly-specific        |      0 |     0 | open         |         |                  |
 | G21 | Chat agent exposes `web_read` tool end-to-end              | parity w/ Manus chat      |      0 |     5 | done · P1    | build   | pass-1           |
 | G22 | Chat agent exposes `web_extract` structured extraction     | parity w/ Manus chat      |      0 |     6 | done · P2    | build   | pass-2           |
-| G23 | SSE streaming of browser events to UI                      | Claude computer-use UI    |      0 |     5 | done · P6    | build   | pass-6           |
+| G23 | SSE streaming of browser events to UI                      | Claude computer-use UI    |      0 |     7 | done · P6+7  | build   | pass-6, pass-7   |
+| G30 | Client-side hook + component consuming the SSE stream      | Claude/Manus activity UI  |      0 |     5 | done · P7    | build   | pass-7           |
 | G24 | Browser read result caching with ETag/stale-while-revalid  | performance               |      0 |     6 | done · P3    | build   | pass-3           |
 | G25 | Robots.txt honoring                                        | defensive infra           |      0 |     6 | done · P2    | build   | pass-2           |
 | G26 | Bounded crawl session (BFS + depth + dedupe + budget)      | browser-use / Manus       |      0 |     5 | done · P4    | build   | pass-4           |
@@ -100,6 +101,16 @@ process reading PARITY.md, not just next-pass-self).
   disconnect. File: `server/routes/automationTelemetryStream.ts`.
   Do not weaken the admin gate, do not drop the close→unsubscribe
   cleanup.
+- **useAutomationTelemetryStream hook + AutomationActivityStrip** —
+  pass 7. Client-side consumer for the pass-6 SSE route. Hook exposes
+  live events + connection state + exponential-backoff reconnect
+  (1s → 30s cap) + ring buffer. Strip component renders the most
+  recent events newest-first with per-type icon + color, event-type
+  counts in the header, `role="log" aria-live="polite"` so screen
+  readers announce new entries. Files:
+  `client/src/hooks/useAutomationTelemetryStream.ts`,
+  `client/src/components/codeChat/AutomationActivityStrip.tsx`. Do
+  not drop the backoff, do not drop the aria-live region.
 - **crawlSession primitive** — pass 4. Bounded BFS over any PageReader
   shape (duck-typed so a future Playwright adapter can plug in). Hard
   caps: maxPages=100, maxDepth=5. Canonicalizing dedupe (fragment,
@@ -134,4 +145,5 @@ Append-only log of what each pass accomplished. Format:
 - Pass 3 · observability + dead-code-prevention · [G17, G24] · afb47b5 · responseCache (LRU + ETag + SWR) + NavigationTelemetrySink + cache/telemetry wired through fetchPage + env-driven singletons in webTool · 25 new tests · deferred: G7, G9, G23, G16 (download files), G19 (multi-agent browser orchestration)
 - Pass 4 · accessibility + hostile-input-security · [G26+G27 new gaps, G19 groundwork] · c06a175 · crawlSession primitive + code_web_crawl tool + canonicalizing dedupe + SSRF protocol filter + client popover entry · 23 new tests · deferred: G7 (playwright still not started), G9 (click/type layer), G14 (computer-use vision), G23 (SSE of browser events)
 - Pass 5 · edge-cases + bundle-size · [G28+G29 new, G17 extension] · 3493822 · AutomationTelemetryBus (sync+async sink error isolation, type filter, ring buffer) + wired as the default telemetry sink for the WebNavigator singleton + code_web_search tool bridging to existing executeWebSearch (Tavily/Brave/Manus/LLM fallback) + vi.mock in codeChat test · 13 new tests · deferred: G7, G9, G14, G23 (SSE bridge for telemetry events)
-- Pass 6 · type-safety + dev-ergonomics · [G23] · (pending commit) · automationTelemetryStream SSE route + admin gate + types=/replay= query params + client-disconnect cleanup + mounted in _core/index.ts auth middleware + 10 tests via in-process fake req/res harness · deferred: G7, G9, G14, G16 (download files), G19 (multi-agent browser orchestration)
+- Pass 6 · type-safety + dev-ergonomics · [G23] · 3780225 · automationTelemetryStream SSE route + admin gate + types=/replay= query params + client-disconnect cleanup + mounted in _core/index.ts auth middleware + 10 tests via in-process fake req/res harness · deferred: G7, G9, G14, G16 (download files), G19 (multi-agent browser orchestration)
+- Pass 7 · responsive + i18n · [G23 extension, G30 new gap] · (pending commit) · useAutomationTelemetryStream hook (EventSource consumer with exponential backoff reconnect + ring buffer) + pure helpers (summarizeEvent, eventBadgeColor, formatBytes) + AutomationActivityStrip component with per-event icons + aria-live log + config-bar Browser button in CodeChat page + vitest include pattern extended to client/src/hooks · 17 new tests · deferred: G7 (playwright), G9 (click/type), G14 (vision), G16 (downloads)

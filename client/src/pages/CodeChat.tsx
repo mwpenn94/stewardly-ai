@@ -27,7 +27,7 @@ import {
   Activity, Save, Pencil, X, SplitSquareHorizontal,
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
-  BookOpen, History, StickyNote, Brain, BarChart3,
+  BookOpen, History, StickyNote, Brain, BarChart3, Globe,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -58,6 +58,7 @@ import {
   emptyChordState,
   stepChord,
 } from "@/components/codeChat/keyChords";
+import AutomationActivityStrip from "@/components/codeChat/AutomationActivityStrip";
 import ToolPermissionsPopover, {
   DEFAULT_ENABLED_TOOLS,
 } from "@/components/codeChat/ToolPermissionsPopover";
@@ -665,6 +666,9 @@ function CodeChatInterface() {
   const [enabledTools, setEnabledTools] = useState<string[]>(
     DEFAULT_ENABLED_TOOLS,
   );
+
+  // Pass 7 (automation): live browser activity strip
+  const [automationActivityOpen, setAutomationActivityOpen] = useState(false);
 
   // Pass 214: prompt template library
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -1323,6 +1327,19 @@ function CodeChatInterface() {
         >
           <ShieldCheck className="w-3 h-3" /> {enabledTools.length}/12
         </button>
+        <button
+          onClick={() => setAutomationActivityOpen((v) => !v)}
+          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${
+            automationActivityOpen
+              ? "border-accent text-accent"
+              : "border-border text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Toggle browser activity"
+          title="Live browser activity from agent web tools (admin only)"
+          aria-pressed={automationActivityOpen}
+        >
+          <Globe className="w-3 h-3" /> Browser
+        </button>
         {(() => {
           const s = summarizeHistory(editHistory);
           if (s.total === 0) return null;
@@ -1524,6 +1541,12 @@ function CodeChatInterface() {
           <FolderOpen className="w-3 h-3" /> Files
         </button>
       </div>
+
+      {/* Pass 7 (automation): live browser activity strip */}
+      <AutomationActivityStrip
+        open={automationActivityOpen}
+        onClose={() => setAutomationActivityOpen(false)}
+      />
 
       {/* Split layout: chat + optional file panel + optional outline rail */}
       <div className="flex flex-1 min-h-0">
