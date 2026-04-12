@@ -164,6 +164,7 @@ function Router() {
         <Route path={"/wealth-engine/references"}>{() => <SectionErrorBoundary sectionName="Reference Hub"><WeReferenceHub /></SectionErrorBoundary>}</Route>
         <Route path={"/wealth-engine/business-income"}>{() => <SectionErrorBoundary sectionName="Business Income"><WeBusinessIncome /></SectionErrorBoundary>}</Route>
         <Route path={"/wealth-engine/configurator"}>{() => <SectionErrorBoundary sectionName="Wealth Configurator"><WeWealthConfigurator /></SectionErrorBoundary>}</Route>
+        <Route path={"/wealth-engine/what-if"}>{() => <SectionErrorBoundary sectionName="What-If Analysis"><WeWhatIfSensitivity /></SectionErrorBoundary>}</Route>
         {/* Code Chat (admin foundation) */}
         <Route path={"/code-chat"} component={CodeChatPage} />
         {/* Consensus (Round C — multi-model consensus stream) */}
