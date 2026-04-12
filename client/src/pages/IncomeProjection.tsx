@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { persistCalculation } from "@/lib/calculatorContext";
+import { DiscussInChatButton } from "@/components/wealth-engine/DiscussInChatButton";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -255,6 +256,9 @@ export default function IncomeProjection() {
       <PlanningCrossNav />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
+        {projection.length > 0 && (
+          <DiscussInChatButton prompt="Based on my income projection, how can I improve my retirement readiness?" className="ml-auto" />
+        )}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate("/calculators")} aria-label="Back to calculators">
             <ArrowLeft className="h-4 w-4 mr-1" /> Back

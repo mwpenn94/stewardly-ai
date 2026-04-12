@@ -29,6 +29,7 @@ import { loadCalculatorContext, recordCalculation, saveCalculatorContext, type C
 import { GuardrailsGauge } from "@/components/wealth-engine/GuardrailsGauge";
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
+import { DiscussInChatButton } from "@/components/wealth-engine/DiscussInChatButton";
 import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
 import StressTestPanel from "@/components/StressTestPanel";
 import MonteCarloFan from "@/components/MonteCarloFan";
@@ -274,6 +275,9 @@ export default function RetirementPage() {
                     },
                   }}
                 />
+              )}
+              {finalSnap && (
+                <DiscussInChatButton prompt="Based on my retirement projection, what should I focus on to improve my outcome?" />
               )}
             </div>
             {projection.length > 0 && (

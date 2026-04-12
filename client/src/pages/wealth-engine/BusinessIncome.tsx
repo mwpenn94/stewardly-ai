@@ -19,6 +19,7 @@ import AppShell from "@/components/AppShell";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { persistCalculation } from "@/lib/calculatorContext";
+import { DiscussInChatButton } from "@/components/wealth-engine/DiscussInChatButton";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -152,6 +153,7 @@ export default function BusinessIncome() {
                   {simMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <TrendingUp className="w-4 h-4 mr-1" />}
                   Run Projection
                 </Button>
+                {results && <DiscussInChatButton prompt="Based on my business income projection, what strategies could help me grow faster?" />}
               </CardContent>
             </Card>
 

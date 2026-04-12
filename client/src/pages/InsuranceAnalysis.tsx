@@ -21,6 +21,7 @@ import { useLocation } from "wouter";
 import { useState, useMemo, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { persistCalculation } from "@/lib/calculatorContext";
+import { DiscussInChatButton } from "@/components/wealth-engine/DiscussInChatButton";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -208,6 +209,7 @@ export default function InsuranceAnalysis() {
       <SEOHead title="Insurance Analysis" description="Interactive insurance needs analysis with DIME method and coverage gap identification" />
 
       <PlanningCrossNav />
+      <DiscussInChatButton prompt="Based on my insurance analysis, what coverage gaps should I address first?" className="ml-auto flex" />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
