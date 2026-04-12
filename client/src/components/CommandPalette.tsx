@@ -157,8 +157,18 @@ const ACTIONS: ActionEntry[] = [
     icon: <Keyboard className="w-4 h-4" />,
     keywords: ["hotkeys", "keys", "shortcuts", "help"],
     action: () => {
-      // Dispatch a "?" keypress to open the shortcuts overlay
-      window.dispatchEvent(new KeyboardEvent("keydown", { key: "?", bubbles: true }));
+      // Pass 8 (G68 — focus trap stack conflict): dispatch a dedicated
+      // `toggle-help` event instead of synthesizing a `?` keypress.
+      // CommandPalette's onSelect handler already calls setOpen(false)
+      // synchronously before running this action, so by the time the
+      // browser mounts KeyboardShortcutsOverlay the palette's focus
+      // trap has fully unwound and no two dialogs compete for focus.
+      // Defer to a microtask so the palette's close animation starts
+      // first — even a 0ms timeout is enough for the focus-trap stack
+      // to unwind.
+      setTimeout(() => {
+        document.dispatchEvent(new CustomEvent("toggle-help"));
+      }, 0);
     },
   },
   // Pass 7 (G5 extension): multisensory actions exposed in the palette

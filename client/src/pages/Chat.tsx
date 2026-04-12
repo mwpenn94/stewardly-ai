@@ -937,11 +937,46 @@ export default function Chat() {
         };
         setMessages(prev => [...prev, placeholderMsg]);
 
+        // Pass 8 (G62): hoist watchdog + offline listener state above
+        // the try block so the catch handler can also clean them up.
+        let streamWatchdog: ReturnType<typeof setTimeout> | null = null;
+        let onOffline: (() => void) | null = null;
         try {
+          // Pass 8 (G62): fail fast when the browser says we're offline.
+          // Prevents the SSE pipeline from making a request that's
+          // destined to hang + leaves the user with a stale "AI is
+          // responding…" aria-live stub forever.
+          if (typeof navigator !== "undefined" && navigator.onLine === false) {
+            pil.giveFeedback("chat.error", { code: "NETWORK" });
+            setMessages(prev => prev.slice(0, -1)); // remove placeholder
+            setIsStreaming(false);
+            return;
+          }
           // Abort any previous stream before starting a new one
           streamAbortRef.current?.abort();
           const abortController = new AbortController();
           streamAbortRef.current = abortController;
+
+          // Pass 8 (G62): hard stream timeout. If the server stops
+          // writing tokens for 60s we abort — better to surface a
+          // retry than hang forever. Reset on every token below.
+          const STREAM_IDLE_TIMEOUT_MS = 60_000;
+          const resetWatchdog = () => {
+            if (streamWatchdog) clearTimeout(streamWatchdog);
+            streamWatchdog = setTimeout(() => {
+              console.warn("[Chat] Stream idle > 60s — aborting");
+              abortController.abort();
+            }, STREAM_IDLE_TIMEOUT_MS);
+          };
+          resetWatchdog();
+
+          // Pass 8 (G62): if the browser fires an `offline` event
+          // mid-stream, abort immediately so the UI doesn't hang.
+          onOffline = () => {
+            console.warn("[Chat] Network went offline mid-stream — aborting");
+            abortController.abort();
+          };
+          window.addEventListener("offline", onOffline);
 
           const sseResponse = await fetch("/api/chat/stream", {
             method: "POST",
@@ -981,6 +1016,9 @@ export default function Chat() {
               try {
                 const event = JSON.parse(trimmedLine.slice(6));
                 if (event.type === "token" && event.content) {
+                  // Pass 8 (G62): every token resets the watchdog.
+                  // 60s of complete silence = abort.
+                  resetWatchdog();
                   accumulated += event.content;
                   setStreamingContent(accumulated);
                   // Update the last message in-place
@@ -1067,9 +1105,16 @@ export default function Chat() {
               }
             }
           }
+          // Pass 8 (G62): release the idle watchdog + offline listener
+          // now that the stream closed cleanly.
+          if (streamWatchdog) { clearTimeout(streamWatchdog); streamWatchdog = null; }
+          if (onOffline) window.removeEventListener("offline", onOffline);
           setStreamingContent("");
           streamAbortRef.current = null;
         } catch (streamErr: any) {
+          // Pass 8 (G62): same cleanup on the error path.
+          if (streamWatchdog) { clearTimeout(streamWatchdog); streamWatchdog = null; }
+          if (onOffline) window.removeEventListener("offline", onOffline);
           streamAbortRef.current = null;
           // If aborted (user navigated away or sent new message), don't fallback
           if (streamErr?.name === "AbortError") {

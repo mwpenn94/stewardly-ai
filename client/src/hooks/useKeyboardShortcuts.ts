@@ -79,6 +79,12 @@ export function useKeyboardShortcuts() {
     const target = e.target as HTMLElement;
     if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
 
+    // Pass 8 (G63 — dual chord handler race): AppShell.tsx ALSO attaches
+    // a window keydown listener for customizable g-chords. If it already
+    // handled this event (called preventDefault), skip so we don't
+    // double-fire navigation.
+    if (e.defaultPrevented) return;
+
     const key = e.key.toLowerCase();
 
     // Pass 6 (G58): Ctrl/Cmd+K for command palette — let this pass

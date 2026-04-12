@@ -194,6 +194,10 @@ export default function AppShell({ children, title }: AppShellProps) {
   const gTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Pass 8 (G63): the `useKeyboardShortcuts` hook also attaches a
+      // window keydown listener. Either handler can fire first; skip
+      // if the other already consumed the event.
+      if (e.defaultPrevented) return;
       const target = e.target as HTMLElement;
       const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
       const isMod = e.metaKey || e.ctrlKey;

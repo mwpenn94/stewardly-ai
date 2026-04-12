@@ -79,8 +79,18 @@ export function KeyboardShortcuts() {
         setOpen(false);
       }
     };
+    // Pass 8 (G68 — focus trap stack conflict): listen for an explicit
+    // `toggle-help` custom event so CommandPalette can dispatch it
+    // after closing its own dialog (rather than synthesizing a
+    // keydown which fires while both dialogs overlap in the focus
+    // trap stack and whichever mounts last wins).
+    const toggleHandler = () => toggle();
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    document.addEventListener("toggle-help", toggleHandler as EventListener);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.removeEventListener("toggle-help", toggleHandler as EventListener);
+    };
   }, [open, toggle]);
 
   if (!open) return null;
