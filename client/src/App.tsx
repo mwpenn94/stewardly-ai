@@ -109,6 +109,7 @@ const FinancialProtectionScore = lazy(() => import("./pages/FinancialProtectionS
 const Community = lazy(() => import("./pages/Community"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const AdminSystemHealth = lazy(() => import("./pages/AdminSystemHealth"));
+const ImprovementDashboard = lazy(() => import("./pages/ImprovementDashboard"));
 const AdminDataFreshness = lazy(() => import("./pages/AdminDataFreshness"));
 const AdminLeadSources = lazy(() => import("./pages/AdminLeadSources"));
 const AdminRateManagement = lazy(() => import("./pages/AdminRateManagement"));
@@ -225,6 +226,7 @@ function Router() {
         <Route path="/community" component={Community} />
         <Route path="/unsubscribe" component={Unsubscribe} />
         <Route path="/admin/system-health" component={AdminSystemHealth} />
+        <Route path="/admin/improvement" component={ImprovementDashboard} />
         <Route path="/admin/data-freshness" component={AdminDataFreshness} />
         <Route path="/admin/lead-sources" component={AdminLeadSources} />
         <Route path="/admin/rate-management" component={AdminRateManagement} />

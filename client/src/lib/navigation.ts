@@ -157,7 +157,7 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "Globe", label: "Global Admin", href: "/admin", minRole: "admin" },
   { iconName: "Bot", label: "AI Agents", href: "/agents", minRole: "advisor" },
   { iconName: "Terminal", label: "Code Chat", href: "/code-chat", minRole: "admin" },
-  { iconName: "Wrench", label: "Improvement Engine", href: "/improvement", minRole: "advisor" },
+  { iconName: "Brain", label: "Improvement Engine", href: "/admin/improvement", minRole: "admin" },
   { iconName: "BookOpen", label: "Platform Guide", href: "/admin/guide", minRole: "admin" },
   { iconName: "Activity", label: "System Health", href: "/admin/system-health", minRole: "admin" },
   { iconName: "Database", label: "Data Freshness", href: "/admin/data-freshness", minRole: "admin" },
