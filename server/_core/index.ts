@@ -241,7 +241,7 @@ async function startServer() {
 
       // Validate individual message objects have required shape
       const invalidMsg = messages.find(
-        (m: any) => !m || typeof m.role !== "string" || (m.content !== undefined && m.content !== null && typeof m.content !== "string"),
+        (m: any) => !m || typeof m !== "object" || typeof m.role !== "string" || (m.content !== undefined && m.content !== null && typeof m.content !== "string"),
       );
       if (invalidMsg) {
         res.status(400).json({ error: "each message must have a string role and optional string content" });
