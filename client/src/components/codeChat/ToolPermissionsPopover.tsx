@@ -15,6 +15,14 @@
  */
 
 import { X, ShieldCheck } from "lucide-react";
+import { DEFAULT_ENABLED_TOOLS } from "./toolPermissionsDefaults";
+
+// Re-export DEFAULT_ENABLED_TOOLS so existing call sites that
+// `import { DEFAULT_ENABLED_TOOLS } from "./ToolPermissionsPopover"`
+// keep working. The constant lives in toolPermissionsDefaults.ts so
+// it can be imported eagerly even when the popover itself is
+// lazy-loaded.
+export { DEFAULT_ENABLED_TOOLS };
 
 interface ToolSpec {
   id: string;
@@ -109,21 +117,9 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
   },
 ];
 
-export const DEFAULT_ENABLED_TOOLS: string[] = [
-  "read_file",
-  "multi_read",
-  "list_directory",
-  "grep_search",
-  "glob_files",
-  "web_fetch",
-  "web_search",
-  "task",
-  "write_file",
-  "edit_file",
-  "run_bash",
-  "update_todos",
-  "find_symbol",
-];
+// Note: DEFAULT_ENABLED_TOOLS is now defined in toolPermissionsDefaults.ts
+// and re-exported above. This split lets ToolPermissionsPopover be
+// lazy-loaded without dragging the constant into the deferred chunk.
 
 export default function ToolPermissionsPopover({
   open,

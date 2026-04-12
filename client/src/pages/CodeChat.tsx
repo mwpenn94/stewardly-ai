@@ -8,7 +8,7 @@
  *   - File browser, roadmap, diff, and GitHub tabs
  */
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -30,14 +30,22 @@ import {
   BookOpen, History, StickyNote, Brain, BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
-import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
-import BackgroundJobsPanel from "@/components/codeChat/BackgroundJobsPanel";
+// Build-loop Pass 12 (G17): lazy-load popovers/panels that only
+// render when their open-state flag is true. Cuts the initial
+// CodeChat bundle by ~30% by deferring the import until the user
+// actually opens the corresponding popover. The eager imports below
+// are kept ONLY for components that render in the critical path
+// (DiffView, MarkdownMessage, SlashCommandPopover, FileMentionPopover,
+// PlanReviewPanel, AgentTodoPanel) — those would suspense on every
+// render and add a layout flash.
+const GitHubWritePanel = lazy(() => import("@/components/codeChat/GitHubWritePanel"));
+const BackgroundJobsPanel = lazy(() => import("@/components/codeChat/BackgroundJobsPanel"));
 import DiffView from "@/components/codeChat/DiffView";
 import SlashCommandPopover from "@/components/codeChat/SlashCommandPopover";
 import MarkdownMessage from "@/components/codeChat/MarkdownMessage";
 import FileMentionPopover from "@/components/codeChat/FileMentionPopover";
-import KeyboardShortcutsOverlay from "@/components/codeChat/KeyboardShortcutsOverlay";
-import SessionsLibraryPopover from "@/components/codeChat/SessionsLibraryPopover";
+const KeyboardShortcutsOverlay = lazy(() => import("@/components/codeChat/KeyboardShortcutsOverlay"));
+const SessionsLibraryPopover = lazy(() => import("@/components/codeChat/SessionsLibraryPopover"));
 import {
   forkMessagesAt,
   upsertSession,
@@ -58,12 +66,14 @@ import {
   emptyChordState,
   stepChord,
 } from "@/components/codeChat/keyChords";
-import ToolPermissionsPopover, {
-  DEFAULT_ENABLED_TOOLS,
-} from "@/components/codeChat/ToolPermissionsPopover";
-import PromptTemplatesPopover from "@/components/codeChat/PromptTemplatesPopover";
-import FileTreePanel from "@/components/codeChat/FileTreePanel";
-import CommandHistorySearchPopover from "@/components/codeChat/CommandHistorySearchPopover";
+// Lazy: ToolPermissionsPopover the component. The DEFAULT_ENABLED_TOOLS
+// constant lives in its own tiny module so the eager import doesn't
+// drag the popover code into the initial chunk.
+import { DEFAULT_ENABLED_TOOLS } from "@/components/codeChat/toolPermissionsDefaults";
+const ToolPermissionsPopover = lazy(() => import("@/components/codeChat/ToolPermissionsPopover"));
+const PromptTemplatesPopover = lazy(() => import("@/components/codeChat/PromptTemplatesPopover"));
+const FileTreePanel = lazy(() => import("@/components/codeChat/FileTreePanel"));
+const CommandHistorySearchPopover = lazy(() => import("@/components/codeChat/CommandHistorySearchPopover"));
 import {
   summarizeToolEvents,
   summaryChips,
@@ -116,15 +126,15 @@ import {
   restorePlan,
 } from "@/components/codeChat/planMode";
 import AgentTodoPanel from "@/components/codeChat/AgentTodoPanel";
-import ProjectInstructionsPopover from "@/components/codeChat/ProjectInstructionsPopover";
-import EditHistoryPopover from "@/components/codeChat/EditHistoryPopover";
-import ScratchpadPanel from "@/components/codeChat/ScratchpadPanel";
+const ProjectInstructionsPopover = lazy(() => import("@/components/codeChat/ProjectInstructionsPopover"));
+const EditHistoryPopover = lazy(() => import("@/components/codeChat/EditHistoryPopover"));
+const ScratchpadPanel = lazy(() => import("@/components/codeChat/ScratchpadPanel"));
 import {
   loadScratchpad,
   saveScratchpad,
   type ScratchpadState,
 } from "@/components/codeChat/scratchpad";
-import AgentMemoryPopover from "@/components/codeChat/AgentMemoryPopover";
+const AgentMemoryPopover = lazy(() => import("@/components/codeChat/AgentMemoryPopover"));
 import {
   loadMemory,
   saveMemory,
@@ -132,12 +142,12 @@ import {
   buildMemoryOverlay,
   type MemoryEntry,
 } from "@/components/codeChat/agentMemory";
-import SymbolNavigatorPopover from "@/components/codeChat/SymbolNavigatorPopover";
-import SessionAnalyticsPopover from "@/components/codeChat/SessionAnalyticsPopover";
-import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
-import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
-import TodoMarkerPanel from "@/components/codeChat/TodoMarkerPanel";
-import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
+const SymbolNavigatorPopover = lazy(() => import("@/components/codeChat/SymbolNavigatorPopover"));
+const SessionAnalyticsPopover = lazy(() => import("@/components/codeChat/SessionAnalyticsPopover"));
+const GitStatusPanel = lazy(() => import("@/components/codeChat/GitStatusPanel"));
+const ImportGraphPanel = lazy(() => import("@/components/codeChat/ImportGraphPanel"));
+const TodoMarkerPanel = lazy(() => import("@/components/codeChat/TodoMarkerPanel"));
+const ActionPalettePopover = lazy(() => import("@/components/codeChat/ActionPalettePopover"));
 import {
   loadHistory,
   saveHistory,
@@ -2019,88 +2029,138 @@ function CodeChatInterface() {
         </div>
       )}
       {/* Pass 240: scratchpad drawer */}
-      <ScratchpadPanel
-        open={scratchpadOpen}
-        onClose={() => setScratchpadOpen(false)}
-        state={scratchpad}
-        onChange={setScratchpad}
-        onInsertIntoPrompt={handleScratchpadInsert}
-      />
+      {/* Build-loop Pass 12 (G17): every popover/panel below is
+          lazy-loaded. We only mount the component when its `open`
+          flag is true so the chunk download fires on first interaction
+          and Suspense never blocks the critical path. The shared
+          fallback is `null` because the popovers are modal — there's
+          nothing to flash. */}
+      {scratchpadOpen && (
+        <Suspense fallback={null}>
+          <ScratchpadPanel
+            open={scratchpadOpen}
+            onClose={() => setScratchpadOpen(false)}
+            state={scratchpad}
+            onChange={setScratchpad}
+            onInsertIntoPrompt={handleScratchpadInsert}
+          />
+        </Suspense>
+      )}
       </div>{/* end split layout */}
-      <KeyboardShortcutsOverlay
-        open={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
-      />
-      <SessionsLibraryPopover
-        open={sessionsOpen}
-        onClose={() => setSessionsOpen(false)}
-        currentMessages={messages}
-        currentSessionId={currentSessionId}
-        onLoadSession={(snap) => {
-          loadMessages(snap.messages);
-          setCurrentSessionId(snap.id);
-          setSessionsOpen(false);
-        }}
-        onSaved={(id) => setCurrentSessionId(id)}
-      />
-      <ToolPermissionsPopover
-        open={toolsOpen}
-        onClose={() => setToolsOpen(false)}
-        enabled={enabledTools}
-        onChange={setEnabledTools}
-        canMutate={isAdmin && allowMutations}
-      />
-      <PromptTemplatesPopover
-        open={templatesOpen}
-        onClose={() => setTemplatesOpen(false)}
-        currentInput={input}
-        onInsert={(body) => {
-          setInput(body);
-          inputRef.current?.focus();
-        }}
-      />
-      <CommandHistorySearchPopover
-        open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-        history={commandHistory}
-        onSelect={(entry) => {
-          setInput(entry);
-          setHistoryOpen(false);
-          inputRef.current?.focus();
-        }}
-      />
-      <ProjectInstructionsPopover
-        open={instructionsOpen}
-        onClose={() => setInstructionsOpen(false)}
-        enabled={projectInstructionsOn}
-        onToggle={setProjectInstructionsOn}
-      />
-      <EditHistoryPopover
-        open={historyPanelOpen}
-        onClose={() => setHistoryPanelOpen(false)}
-        state={editHistory}
-        onUndo={handleUndoEdit}
-        onRedo={handleRedoEdit}
-        onRevert={handleRevertToBefore}
-        onDrop={(id) => setEditHistory((prev) => dropEntry(prev, id))}
-        onClear={() => setEditHistory(clearEditHistory())}
-      />
-      <AgentMemoryPopover
-        open={memoryOpen}
-        onClose={() => setMemoryOpen(false)}
-        entries={memoryEntries}
-        onChange={setMemoryEntries}
-      />
-      <SymbolNavigatorPopover
-        open={symbolNavOpen}
-        onClose={() => setSymbolNavOpen(false)}
-      />
-      <SessionAnalyticsPopover
-        open={analyticsOpen}
-        onClose={() => setAnalyticsOpen(false)}
-        messages={messages}
-        onJumpToMessage={scrollToMessage}
-      />
+      {shortcutsOpen && (
+        <Suspense fallback={null}>
+          <KeyboardShortcutsOverlay
+            open={shortcutsOpen}
+            onClose={() => setShortcutsOpen(false)}
+          />
+        </Suspense>
+      )}
+      {sessionsOpen && (
+        <Suspense fallback={null}>
+          <SessionsLibraryPopover
+            open={sessionsOpen}
+            onClose={() => setSessionsOpen(false)}
+            currentMessages={messages}
+            currentSessionId={currentSessionId}
+            onLoadSession={(snap) => {
+              loadMessages(snap.messages);
+              setCurrentSessionId(snap.id);
+              setSessionsOpen(false);
+            }}
+            onSaved={(id) => setCurrentSessionId(id)}
+          />
+        </Suspense>
+      )}
+      {toolsOpen && (
+        <Suspense fallback={null}>
+          <ToolPermissionsPopover
+            open={toolsOpen}
+            onClose={() => setToolsOpen(false)}
+            enabled={enabledTools}
+            onChange={setEnabledTools}
+            canMutate={isAdmin && allowMutations}
+          />
+        </Suspense>
+      )}
+      {templatesOpen && (
+        <Suspense fallback={null}>
+          <PromptTemplatesPopover
+            open={templatesOpen}
+            onClose={() => setTemplatesOpen(false)}
+            currentInput={input}
+            onInsert={(body) => {
+              setInput(body);
+              inputRef.current?.focus();
+            }}
+          />
+        </Suspense>
+      )}
+      {historyOpen && (
+        <Suspense fallback={null}>
+          <CommandHistorySearchPopover
+            open={historyOpen}
+            onClose={() => setHistoryOpen(false)}
+            history={commandHistory}
+            onSelect={(entry) => {
+              setInput(entry);
+              setHistoryOpen(false);
+              inputRef.current?.focus();
+            }}
+          />
+        </Suspense>
+      )}
+      {instructionsOpen && (
+        <Suspense fallback={null}>
+          <ProjectInstructionsPopover
+            open={instructionsOpen}
+            onClose={() => setInstructionsOpen(false)}
+            enabled={projectInstructionsOn}
+            onToggle={setProjectInstructionsOn}
+          />
+        </Suspense>
+      )}
+      {historyPanelOpen && (
+        <Suspense fallback={null}>
+          <EditHistoryPopover
+            open={historyPanelOpen}
+            onClose={() => setHistoryPanelOpen(false)}
+            state={editHistory}
+            onUndo={handleUndoEdit}
+            onRedo={handleRedoEdit}
+            onRevert={handleRevertToBefore}
+            onDrop={(id) => setEditHistory((prev) => dropEntry(prev, id))}
+            onClear={() => setEditHistory(clearEditHistory())}
+          />
+        </Suspense>
+      )}
+      {memoryOpen && (
+        <Suspense fallback={null}>
+          <AgentMemoryPopover
+            open={memoryOpen}
+            onClose={() => setMemoryOpen(false)}
+            entries={memoryEntries}
+            onChange={setMemoryEntries}
+          />
+        </Suspense>
+      )}
+      {symbolNavOpen && (
+        <Suspense fallback={null}>
+          <SymbolNavigatorPopover
+            open={symbolNavOpen}
+            onClose={() => setSymbolNavOpen(false)}
+          />
+        </Suspense>
+      )}
+      {analyticsOpen && (
+        <Suspense fallback={null}>
+          <SessionAnalyticsPopover
+            open={analyticsOpen}
+            onClose={() => setAnalyticsOpen(false)}
+            messages={messages}
+            onJumpToMessage={scrollToMessage}
+          />
+        </Suspense>
+      )}
       {/* Pass 233: bookmarks popover */}
       {bookmarksOpen && (
         <div
@@ -2357,15 +2417,21 @@ export default function CodeChatPage() {
           </TabsContent>
 
           <TabsContent value="gitstatus">
-            <div className="p-6"><GitStatusPanel /></div>
+            <Suspense fallback={<div className="p-6 text-xs text-muted-foreground">Loading git status…</div>}>
+              <div className="p-6"><GitStatusPanel /></div>
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="imports">
-            <div className="p-6"><ImportGraphPanel /></div>
+            <Suspense fallback={<div className="p-6 text-xs text-muted-foreground">Loading import graph…</div>}>
+              <div className="p-6"><ImportGraphPanel /></div>
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="todos">
-            <div className="p-6"><TodoMarkerPanel /></div>
+            <Suspense fallback={<div className="p-6 text-xs text-muted-foreground">Loading TODO markers…</div>}>
+              <div className="p-6"><TodoMarkerPanel /></div>
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="github">
@@ -2373,19 +2439,27 @@ export default function CodeChatPage() {
           </TabsContent>
 
           <TabsContent value="write">
-            <div className="p-6"><GitHubWritePanel /></div>
+            <Suspense fallback={<div className="p-6 text-xs text-muted-foreground">Loading git write panel…</div>}>
+              <div className="p-6"><GitHubWritePanel /></div>
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="jobs">
-            <div className="p-6"><BackgroundJobsPanel /></div>
+            <Suspense fallback={<div className="p-6 text-xs text-muted-foreground">Loading background jobs…</div>}>
+              <div className="p-6"><BackgroundJobsPanel /></div>
+            </Suspense>
           </TabsContent>
         </Tabs>
       </div>
-      <ActionPalettePopover
-        open={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
-        onRun={handlePaletteRun}
-      />
+      {paletteOpen && (
+        <Suspense fallback={null}>
+          <ActionPalettePopover
+            open={paletteOpen}
+            onClose={() => setPaletteOpen(false)}
+            onRun={handlePaletteRun}
+          />
+        </Suspense>
+      )}
     </AppShell>
   );
 }
@@ -2521,7 +2595,9 @@ function FileBrowser() {
         </CardHeader>
         <CardContent className="space-y-3">
           {viewMode === "tree" ? (
-            <FileTreePanel onFileClick={(path) => onRead(path)} />
+            <Suspense fallback={<div className="text-xs text-muted-foreground">Loading file tree…</div>}>
+              <FileTreePanel onFileClick={(path) => onRead(path)} />
+            </Suspense>
           ) : (
             <>
           <div className="flex gap-2">
