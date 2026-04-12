@@ -12,6 +12,7 @@
  * regulatory review queue.
  */
 
+import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
@@ -19,8 +20,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale } from "lucide-react";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame } from "lucide-react";
 import { Link } from "wouter";
+import {
+  loadStreakFromStorage,
+  summarizeStreak,
+  type StreakSummary,
+} from "./lib/studyStreak";
 
 export default function LearningHome() {
   const meQ = trpc.auth.me.useQuery();
@@ -29,6 +35,24 @@ export default function LearningHome() {
   const alertsQ = trpc.learning.licenses.alerts.useQuery();
   const recsQ = trpc.learning.recommendations.forMe.useQuery(undefined);
   const tracksQ = trpc.learning.content.listTracks.useQuery(undefined);
+
+  // Pass 7 (build loop) — streak is read from localStorage on mount
+  // and refreshed when the page regains focus so a fresh session
+  // picks up days marked on another device / tab. Hooks live at
+  // component top per React rules.
+  const [streak, setStreak] = useState<StreakSummary>({
+    current: 0,
+    longest: 0,
+    lastDay: null,
+    status: "none",
+  });
+  useEffect(() => {
+    const read = () => setStreak(summarizeStreak(loadStreakFromStorage(), new Date()));
+    read();
+    const onFocus = () => read();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   const role = meQ.data?.role ?? "user";
   const isAdvisorPlus = role === "advisor" || role === "manager" || role === "admin";
@@ -76,7 +100,7 @@ export default function LearningHome() {
         </header>
 
         {/* Snapshot row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Mastery</CardTitle>
@@ -89,6 +113,8 @@ export default function LearningHome() {
               </div>
             </CardContent>
           </Card>
+
+          <StreakCard streak={streak} />
 
           <Card>
             <CardHeader className="pb-2">
@@ -300,5 +326,61 @@ export default function LearningHome() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+// ─── Pass 7 (build loop) — Study streak card ──────────────────────────────
+//
+// Reads from the pure `studyStreak` module's localStorage snapshot.
+// Tone shifts to amber when the streak is "at risk" (user studied
+// yesterday but not yet today) and muted when broken. The CLAUDE.md
+// docstring has promised a streak since pass 58 — this is the UI.
+
+function StreakCard({ streak }: { streak: StreakSummary }) {
+  const isActive = streak.status === "active";
+  const isAtRisk = streak.status === "at-risk";
+  const isNone = streak.status === "none";
+  const isBroken = streak.status === "broken";
+
+  const tone = isActive
+    ? "text-accent"
+    : isAtRisk
+      ? "text-amber-600 dark:text-amber-400"
+      : "text-muted-foreground";
+
+  const label = isNone
+    ? "Start a streak"
+    : isActive
+      ? "day streak"
+      : isAtRisk
+        ? "day streak — study today to keep it"
+        : "day streak — last session";
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+          <Flame className={`h-4 w-4 ${tone}`} aria-hidden />
+          Streak
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className={`text-3xl font-semibold ${tone}`}>{streak.current}</div>
+        <div className="text-xs text-muted-foreground mt-2">{label}</div>
+        {streak.longest > 0 && (
+          <div className="text-[11px] text-muted-foreground mt-1">
+            longest {streak.longest}
+            {streak.lastDay && isBroken && ` · last ${streak.lastDay}`}
+          </div>
+        )}
+        {isAtRisk && (
+          <Link href="/learning/review">
+            <Button variant="link" size="sm" className="px-0 mt-1 text-amber-600">
+              Save your streak →
+            </Button>
+          </Link>
+        )}
+      </CardContent>
+    </Card>
   );
 }

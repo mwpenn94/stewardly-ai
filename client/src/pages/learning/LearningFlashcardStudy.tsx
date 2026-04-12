@@ -42,6 +42,7 @@ import {
   formatSessionLabel,
   type StudyMode,
 } from "./lib/deckBuilder";
+import { recordStudyNow } from "./lib/studyStreak";
 
 export default function LearningFlashcardStudy() {
   const params = useParams<{ slug: string }>();
@@ -118,6 +119,9 @@ export default function LearningFlashcardStudy() {
       .catch((err) => {
         toast.error(`Review not saved: ${err.message ?? "network error"}`);
       });
+
+    // Pass 7 — streak-day tracker (idempotent per-day).
+    recordStudyNow();
 
     if (correct) setCorrectCount((c) => c + 1);
     else setIncorrectCount((c) => c + 1);

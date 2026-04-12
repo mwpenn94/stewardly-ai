@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCelebration } from "@/lib/CelebrationEngine";
+import { recordStudyNow } from "./lib/studyStreak";
 
 type KindFilter = "all" | "flashcard" | "question";
 
@@ -120,6 +121,8 @@ export default function LearningDueReview() {
       .catch((err) => {
         toast.error(`Review not saved: ${err.message ?? "network error"}`);
       });
+    // Pass 7 (build loop) — every answer counts as studying today.
+    recordStudyNow();
     if (ok) setCorrect((c) => c + 1);
     else setIncorrect((c) => c + 1);
     advance();
@@ -138,6 +141,7 @@ export default function LearningDueReview() {
       .catch((err) => {
         toast.error(`Review not saved: ${err.message ?? "network error"}`);
       });
+    recordStudyNow();
     if (ok) setCorrect((c) => c + 1);
     else setIncorrect((c) => c + 1);
   };

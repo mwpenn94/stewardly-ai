@@ -39,6 +39,7 @@ import {
   formatSessionLabel,
   type StudyMode,
 } from "./lib/deckBuilder";
+import { recordStudyNow } from "./lib/studyStreak";
 
 export default function LearningQuizRunner() {
   const params = useParams<{ slug: string }>();
@@ -116,6 +117,9 @@ export default function LearningQuizRunner() {
       .catch((err) => {
         toast.error(`Review not saved: ${err.message ?? "network error"}`);
       });
+
+    // Pass 7 — streak day marker (idempotent per-day).
+    recordStudyNow();
   };
 
   const next = () => {
