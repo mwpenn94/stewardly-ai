@@ -42,6 +42,7 @@ function SliderInput({
         value={[value]}
         onValueChange={([v]) => onChange(v)}
         min={min} max={max} step={step}
+        aria-label={label}
         className="[&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
       />
     </div>
@@ -246,16 +247,18 @@ export default function IncomeProjection() {
           {sources.map(src => (
             <div key={src.id} className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end py-2 border-b border-border/30 last:border-0">
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Name</Label>
+                <Label htmlFor={`name-${src.id}`} className="text-[10px] text-muted-foreground">Name</Label>
                 <Input
+                  id={`name-${src.id}`}
                   value={src.name}
                   onChange={e => updateSource(src.id, { name: e.target.value })}
                   className="h-8 text-xs"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Monthly Amount</Label>
+                <Label htmlFor={`amount-${src.id}`} className="text-[10px] text-muted-foreground">Monthly Amount</Label>
                 <Input
+                  id={`amount-${src.id}`}
                   type="number"
                   value={src.monthlyAmount}
                   onChange={e => updateSource(src.id, { monthlyAmount: Number(e.target.value) || 0 })}
@@ -263,8 +266,9 @@ export default function IncomeProjection() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] text-muted-foreground">Start Age</Label>
+                <Label htmlFor={`age-${src.id}`} className="text-[10px] text-muted-foreground">Start Age</Label>
                 <Input
+                  id={`age-${src.id}`}
                   type="number"
                   value={src.startAge}
                   onChange={e => updateSource(src.id, { startAge: Number(e.target.value) || 60 })}

@@ -41,6 +41,7 @@ function SliderInput({
         value={[value]}
         onValueChange={([v]) => onChange(v)}
         min={min} max={max} step={step}
+        aria-label={label}
         className="[&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
       />
     </div>
@@ -304,9 +305,9 @@ export default function InsuranceAnalysis() {
                 return (
                   <div key={pol.id} className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end py-2 border-b border-border/30 last:border-0">
                     <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Type</Label>
+                      <Label htmlFor={`type-${pol.id}`} className="text-[10px] text-muted-foreground">Type</Label>
                       <Select value={pol.type} onValueChange={v => updatePolicy(pol.id, { type: v as any })}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectTrigger id={`type-${pol.id}`} aria-label="Policy type" className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {Object.entries(TYPE_LABELS).map(([k, v]) => (
                             <SelectItem key={k} value={k}>{v}</SelectItem>
@@ -315,8 +316,9 @@ export default function InsuranceAnalysis() {
                       </Select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Carrier</Label>
+                      <Label htmlFor={`carrier-${pol.id}`} className="text-[10px] text-muted-foreground">Carrier</Label>
                       <Input
+                        id={`carrier-${pol.id}`}
                         value={pol.carrier}
                         onChange={e => updatePolicy(pol.id, { carrier: e.target.value })}
                         placeholder="Carrier name"
@@ -324,8 +326,9 @@ export default function InsuranceAnalysis() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Coverage ($)</Label>
+                      <Label htmlFor={`coverage-${pol.id}`} className="text-[10px] text-muted-foreground">Coverage ($)</Label>
                       <Input
+                        id={`coverage-${pol.id}`}
                         type="number"
                         value={pol.coverage}
                         onChange={e => updatePolicy(pol.id, { coverage: Number(e.target.value) || 0 })}
@@ -333,8 +336,9 @@ export default function InsuranceAnalysis() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[10px] text-muted-foreground">Monthly Premium</Label>
+                      <Label htmlFor={`premium-${pol.id}`} className="text-[10px] text-muted-foreground">Monthly Premium</Label>
                       <Input
+                        id={`premium-${pol.id}`}
                         type="number"
                         value={pol.premium}
                         onChange={e => updatePolicy(pol.id, { premium: Number(e.target.value) || 0 })}

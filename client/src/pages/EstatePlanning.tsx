@@ -40,6 +40,7 @@ function SliderInput({
         value={[value]}
         onValueChange={([v]) => onChange(v)}
         min={min} max={max} step={step}
+        aria-label={label}
         className="[&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
       />
     </div>
@@ -295,7 +296,7 @@ export default function EstatePlanning() {
                         onClick={() => {
                           setDocStatus(prev => ({ ...prev, [doc.name]: statusCycle[prev[doc.name]] }));
                         }}
-                        aria-label={`Toggle status of ${doc.name}`}
+                        aria-label={`${doc.name}, currently ${statusLabel[status]}. Click to change status`}
                       >
                         {statusLabel[status]}
                       </Button>

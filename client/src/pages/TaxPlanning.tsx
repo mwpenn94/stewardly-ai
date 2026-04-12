@@ -48,6 +48,7 @@ function SliderInput({
         value={[value]}
         onValueChange={([v]) => onChange(v)}
         min={min} max={max} step={step}
+        aria-label={label}
         className="[&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
       />
     </div>
