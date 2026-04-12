@@ -1466,25 +1466,81 @@ export const codeChatRouter = router({
             maxWritesTotal: input.maxWritesTotal,
             maxBashRunsTotal: input.maxBashRunsTotal,
             maxDurationMs: input.maxDurationMinutes * 60_000,
-            subtaskPlanner: async (goal, _history) => {
+            subtaskPlanner: async (goal, history) => {
               if (jobCtx.isCancelled()) return null;
               subtaskIndex++;
-              // Simple heuristic planner: on subtask 1, derive a read-only
-              // exploration step; on subsequent subtasks, return null to
-              // stop unless the caller provided explicit criteria. A
-              // full LLM planner would go here, but this keeps the
-              // background job useful without a live API key.
-              if (subtaskIndex === 1) {
-                return `Explore the workspace and outline an approach for: ${goal.description}`;
+              try {
+                const historyText = history.map((h, i) =>
+                  `Subtask ${i + 1}: ${h.description}\nResult: ${h.result.summary.slice(0, 300)}`
+                ).join("\n\n");
+                const criteriaText = goal.acceptanceCriteria?.length
+                  ? `\nAcceptance criteria:\n${goal.acceptanceCriteria.map(c => `- ${c}`).join("\n")}`
+                  : "";
+                const prompt = `You are an autonomous coding agent planner. Your high-level goal is:
+${goal.description}${criteriaText}
+
+${history.length > 0 ? `Completed subtasks so far:\n${historyText}` : "No subtasks completed yet."}
+
+Based on the progress so far, what is the next concrete subtask to work on? Reply with ONLY the subtask description (one paragraph, actionable). If the goal is fully accomplished, reply with exactly "DONE".`;
+                const result = await contextualLLM({
+                  messages: [{ role: "user", content: prompt }],
+                  userId,
+                  model: input.model,
+                  maxTokens: 500,
+                });
+                const text = (result?.text || result?.response || "").trim();
+                if (!text || text === "DONE" || text.startsWith("DONE")) return null;
+                return text;
+              } catch (err) {
+                logger.error({ err }, "subtaskPlanner LLM call failed");
+                // Fallback: on first call, explore; on subsequent, stop
+                if (subtaskIndex === 1) {
+                  return `Explore the workspace and outline an approach for: ${goal.description}`;
+                }
+                return null;
               }
-              return null;
             },
-            toolPlanner: async () => {
+            toolPlanner: async (instruction, steps) => {
               if (jobCtx.isCancelled()) return null;
-              // Without a connected model, we terminate gracefully.
-              // This keeps the primitive honest: when a planner LLM
-              // is wired in, it'll emit real tool calls here.
-              return null;
+              try {
+                const traceText = steps.map((s, i) => {
+                  const obs = s.result.kind === "error"
+                    ? `Error: ${(s.result.result as any)?.message || "unknown"}`
+                    : `OK (${s.durationMs}ms)`;
+                  return `Step ${i + 1}: ${s.toolCall.name}(${JSON.stringify(s.toolCall.args).slice(0, 200)}) → ${obs}`;
+                }).join("\n");
+                const prompt = `You are an autonomous coding agent. Your current task is:
+${instruction}
+
+${steps.length > 0 ? `Steps completed so far:\n${traceText}` : "No steps taken yet."}
+
+Decide the next tool call. Available tools: read_file, write_file, edit_file, list_directory, grep_search, run_bash, find_symbol, web_read, web_search, finish.
+
+Reply with a JSON object: {"name": "tool_name", "args": {...}, "reason": "why"}.
+If the task is complete, use: {"name": "finish", "args": {"summary": "what was accomplished"}, "reason": "done"}.
+Reply with ONLY the JSON object, no markdown fences.`;
+                const result = await contextualLLM({
+                  messages: [{ role: "user", content: prompt }],
+                  userId,
+                  model: input.model,
+                  maxTokens: 800,
+                });
+                const text = (result?.text || result?.response || "").trim();
+                if (!text) return null;
+                // Parse the tool call JSON from the response
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) return null;
+                const parsed = JSON.parse(jsonMatch[0]);
+                if (!parsed.name) return null;
+                return {
+                  name: parsed.name,
+                  args: parsed.args || {},
+                  reason: parsed.reason,
+                };
+              } catch (err) {
+                logger.error({ err }, "toolPlanner LLM call failed");
+                return null;
+              }
             },
             onSubtaskComplete: (sub) => {
               jobCtx.append({

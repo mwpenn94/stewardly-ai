@@ -102,8 +102,82 @@ const tasks: ScheduledTask[] = [
     enabled: true,
     handler: async () => {
       try {
-        // In production, analyze user activity patterns and generate coaching
-        return { success: true, message: "Coaching generation complete" };
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (!db) return { success: true, message: "No DB — skipped" };
+        const { users, proactiveInsights } = await import("../../drizzle/schema");
+        const { eq, sql, and, gte } = await import("drizzle-orm");
+
+        // Find active users (logged in within 7 days)
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+        const activeUsers = await db
+          .select({ id: users.id, role: users.role, email: users.email })
+          .from(users)
+          .where(gte(users.lastLoginAt, sevenDaysAgo))
+          .limit(100);
+
+        let generated = 0;
+
+        for (const user of activeUsers) {
+          // Check if user already has recent unread insights (avoid spamming)
+          const recentInsights = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(proactiveInsights)
+            .where(
+              and(
+                eq(proactiveInsights.userId, user.id),
+                eq(proactiveInsights.status, "new"),
+                gte(proactiveInsights.createdAt, sevenDaysAgo),
+              ),
+            );
+          const existingCount = Number(recentInsights[0]?.count ?? 0);
+          if (existingCount >= 5) continue; // Max 5 unread insights per user
+
+          // Generate role-appropriate insights
+          const insightCandidates: Array<{ category: string; priority: string; title: string; description: string }> = [];
+
+          if (user.role === "advisor" || user.role === "manager" || user.role === "admin") {
+            insightCandidates.push({
+              category: "productivity",
+              priority: "medium",
+              title: "Review your weekly pipeline",
+              description: "Check your lead pipeline for new opportunities and follow up on pending proposals. Regular pipeline review improves close rates by 20-30%.",
+            });
+          }
+
+          if (user.role === "user") {
+            insightCandidates.push({
+              category: "financial",
+              priority: "medium",
+              title: "Check your protection score",
+              description: "Your financial protection assessment may need updating. Regular reviews help identify coverage gaps before they become problems.",
+            });
+          }
+
+          // Always suggest learning content
+          insightCandidates.push({
+            category: "learning",
+            priority: "low",
+            title: "Continue your learning streak",
+            description: "You have flashcards due for review. Consistent spaced repetition improves retention by up to 90% compared to cramming.",
+          });
+
+          // Insert up to 2 insights per cycle
+          const toInsert = insightCandidates.slice(0, Math.max(1, 5 - existingCount));
+          for (const insight of toInsert) {
+            await db.insert(proactiveInsights).values({
+              userId: user.id,
+              category: insight.category,
+              priority: insight.priority,
+              title: insight.title,
+              description: insight.description,
+              status: "new",
+            });
+            generated++;
+          }
+        }
+
+        return { success: true, message: `Generated ${generated} insights for ${activeUsers.length} active users` };
       } catch (error: any) {
         return { success: false, message: error.message };
       }
