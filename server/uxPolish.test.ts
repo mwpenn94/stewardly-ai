@@ -89,13 +89,14 @@ describe("Route Prefetch on Hover", () => {
     expect(source).toContain("delete");
   });
 
-  it("should be wired into AppShell sidebar buttons", async () => {
+  it("should be wired into Chat sidebar navigation", async () => {
+    // Pass 9 removed the old sidebar code from AppShell (G56 — dead code
+    // purge). PersonaSidebar5 is the real sidebar. prefetchRoute is consumed
+    // by Chat.tsx sidebar nav items.
     const fs = await import("fs");
-    const source = fs.readFileSync("client/src/components/AppShell.tsx", "utf-8");
+    const source = fs.readFileSync("client/src/pages/Chat.tsx", "utf-8");
 
     expect(source).toContain("prefetchRoute");
-    expect(source).toContain("onMouseEnter");
-    expect(source).toContain("onFocus");
   });
 
   it("should also export usePrefetchProps hook", async () => {

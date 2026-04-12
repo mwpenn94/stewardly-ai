@@ -15,7 +15,7 @@ import {
   ArrowLeft, Calculator, TrendingUp, Building2, PiggyBank, Loader2,
   Sparkles, DollarSign, BarChart3, ArrowUpRight, ArrowDownRight,
   ChevronRight, Info, Heart, Scale, GraduationCap, Stethoscope,
-  HandCoins, Briefcase, ListChecks, Grid3X3, BookOpen, Users,
+  HandCoins, Briefcase, ListChecks, Users, Grid3X3, BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -168,6 +168,9 @@ export default function Calculators() {
               { label: "What-If Analysis", path: "/wealth-engine/sensitivity", icon: <Grid3X3 className="w-4 h-4" />, desc: "2D parameter heat map" },
               { label: "Reference Hub", path: "/wealth-engine/references", icon: <BookOpen className="w-4 h-4" />, desc: "Products, benchmarks, methodology" },
               { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
+              { label: "Team Builder", path: "/wealth-engine/team-builder", icon: <Users className="w-4 h-4" />, desc: "BIE roll-up/roll-down" },
+              { label: "What-If Analysis", path: "/wealth-engine/sensitivity", icon: <Grid3X3 className="w-4 h-4" />, desc: "2D sensitivity grid" },
+              { label: "Reference Hub", path: "/wealth-engine/references", icon: <BookOpen className="w-4 h-4" />, desc: "Benchmarks & methodology" },
             ].map(tool => (
               <button
                 key={tool.path}

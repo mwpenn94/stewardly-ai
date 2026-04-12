@@ -43,6 +43,7 @@ import {
   type StudyMode,
 } from "./lib/deckBuilder";
 import { recordStudyNow } from "./lib/studyStreak";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 
 export default function LearningFlashcardStudy() {
   const params = useParams<{ slug: string }>();
@@ -122,6 +123,9 @@ export default function LearningFlashcardStudy() {
 
     // Pass 7 — streak-day tracker (idempotent per-day).
     recordStudyNow();
+
+    // Pass 16 — PIL feedback dispatch (G1/G8).
+    sendFeedback(correct ? "learning.answer_correct" : "learning.answer_incorrect");
 
     if (correct) setCorrectCount((c) => c + 1);
     else setIncorrectCount((c) => c + 1);
@@ -370,11 +374,12 @@ export default function LearningFlashcardStudy() {
                 }
                 className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${flipped ? "animate-card-flip-in" : ""}`}
                 style={{ perspective: "600px" }}
-                onClick={() => setFlipped((f) => !f)}
+                onClick={() => { setFlipped((f) => !f); sendFeedback("learning.flashcard_flip"); }}
                 onKeyDown={(e) => {
                   if (e.key === " " || e.key === "Enter") {
                     e.preventDefault();
                     setFlipped((f) => !f);
+                    sendFeedback("learning.flashcard_flip");
                   }
                 }}
               >

@@ -40,6 +40,7 @@ import {
   type StudyMode,
 } from "./lib/deckBuilder";
 import { recordStudyNow } from "./lib/studyStreak";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 
 export default function LearningQuizRunner() {
   const params = useParams<{ slug: string }>();
@@ -120,6 +121,9 @@ export default function LearningQuizRunner() {
 
     // Pass 7 — streak day marker (idempotent per-day).
     recordStudyNow();
+
+    // Pass 16 — PIL feedback dispatch (G1/G8).
+    sendFeedback(correct ? "learning.answer_correct" : "learning.answer_incorrect");
   };
 
   const next = () => {

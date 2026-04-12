@@ -51,6 +51,8 @@ export interface OnboardingFlowProps {
   onSkipAll: () => void;
 }
 
+import { sendFeedback } from "@/lib/feedbackSpecs";
+
 // ── Animation variants ──────────────────────────────────────────────
 import type { Variants } from "framer-motion";
 
@@ -257,8 +259,10 @@ export default function OnboardingFlow({
 
   const goNext = useCallback(() => {
     if (isLast) {
+      sendFeedback("onboarding.complete");
       onComplete();
     } else {
+      sendFeedback("onboarding.step_complete");
       setDirection(1);
       setCurrentIndex((prev) => Math.min(prev + 1, steps.length - 1));
     }

@@ -83,9 +83,9 @@ Also remove from `vite.config.ts`: `vite-plugin-manus-runtime` and `@builder.io/
 ## Current Scale
 
 ```
-352 tables (351 schema defs + workflow_instances) | 259 services | 78 routers | 119 pages | 130 components
-123 test files / 3,215 total tests — 3,103 passing across 109 files in local dev;
-14 pre-existing env-dependent files (112 tests) clear in the deployed environment
+356 tables (353 schema defs + 3 audio system) | 260 services | 78 routers | 131 pages | 142 components
+191 test files / 4,719 total tests — 4,596 passing across 173 files in local dev;
+18 pre-existing env-dependent files (123 tests) clear in the deployed environment
 with DB + env vars present
 23 AI models (8 families) | 5 search tools
 37 cron jobs | 17 seed files (40+ modules) | 35 navigation items

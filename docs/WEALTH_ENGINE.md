@@ -19,6 +19,7 @@ This doc covers everything you need to know to:
 ┌──────────────────────────────────────────────────────────────┐
 │  React UI (client/src/pages/wealth-engine/)                  │
 │  - StrategyComparison, Retirement, PracticeToWealth, Quote   │
+│  - TeamBuilder, WhatIfSensitivity, ReferenceHub              │
 │  - DownloadReportButton, ChatMessageActions                  │
 └─────────────────┬────────────────────────────────────────────┘
                   │ tRPC

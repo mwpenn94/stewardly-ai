@@ -1,7 +1,7 @@
 # Stewardly — Remaining Items & Step-by-Step Completion Guide
 
 **Date:** April 10, 2026 (Wealth Engine Phase 1-7 + Rounds A/B/C/D/E complete + EMBA Learning integration + Passes 45-139 optimization — latest: Pass 137-139 QA convergence)
-**Current State:** 356 tables, 260 services, 78 routers (75 files + 3 webhook routers), 128 pages, 142 components, 123 test files (3,215 total tests; 3,103 passing in local dev across 109 files, 14 pre-existing env-dependent failing files that clear in deployed env), 23 AI models, 17 seed files, 37 cron jobs, 39 navigation items, 0 TS errors, 0 TODOs
+**Current State:** 356 tables, 260 services, 78 routers (75 files + 3 webhook routers), 131 pages, 142 components, 191 test files (4,719 total tests; 4,596 passing in local dev across 173 files, 18 pre-existing env-dependent failing files that clear in deployed env), 23 AI models, 17 seed files, 37 cron jobs, 42 navigation items, 0 TS errors, 0 TODOs
 **Visual Identity:** Stewardship Gold (warm gold `oklch(0.76 0.14 80)` + deep navy, DM Serif Display headings + Plus Jakarta Sans body) — replaced the prior sky-blue OKLCH palette at pass 98
 **Wealth Engine + Consensus + Code Chat + Parallel Engines:** 656 tests across 12 files (see docs/WEALTH_ENGINE.md + docs/CONSENSUS.md + docs/ENGINES_MIGRATION.md)
 **Recursive Optimization:** Converged after 139 passes. Pass 136 (external QA) wired missing P125-127 code, dead code removal, bundle optimization, brand consistency. **Pass 137 ran a 5-track recursive QA audit** fixing P0 issues (tRPC `client` router collision → `clientPortal`, client.ts type errors, audio.ts missing await/null guards, Chat.tsx missing `getNavIcon()`, robots.txt stewardry→stewardly URL) and P1 issues (aria-labels on 30+ icon buttons across 25 files, IncomeStreamBreakdown div→button, "log in"→"sign in" standardization). **Pass 138** convergence scan caught 3 remaining send/stop buttons without aria-labels — fixed. **Pass 139** second consecutive convergence — 0 TS errors, build 23.57s, 3,103/3,215 tests, 0 new P0/P1 items. Recursive optimization declared complete.
@@ -36,9 +36,9 @@
 | Database tables | 356 | COMPLETE (all deployed via 0000-0012 migrations) |
 | Backend services | 260 | COMPLETE |
 | tRPC routers | 78 (75 files + 3 webhook) | COMPLETE |
-| UI pages | 128 (119 + 9 new from pass 120) | COMPLETE (all routed and navigable) |
+| UI pages | 131 (119 + 9 new from pass 120 + 3 calculator UI pages) | COMPLETE (all routed and navigable) |
 | UI components | 142 (130 + 12 new from pass 120) | COMPLETE |
-| Test files | 123 (3,215 total; 3,103 passing in local dev across 109 files; 14 env-dependent failing files clear in deployed env) | COMPLETE |
+| Test files | 191 (4,719 total; 4,596 passing in local dev across 173 files; 18 env-dependent failing files clear in deployed env) | COMPLETE |
 | Seed files | 17 (40+ modules across 6 phases) | COMPLETE |
 | Cron jobs | 37 | COMPLETE (monitored via healthMonitor) |
 | AI models | 23 (8 families) | COMPLETE (multi-select consensus mode) |
@@ -291,9 +291,9 @@ Pass 50: Final convergence scan. No changes needed. Delta=[0,0]. Converged at 9.
 ## Architecture Summary
 
 ```
-119 pages | 100+ routes | 78 routers | 259 services | 352 tables
-130 components (HonestPlaceholder added at pass 91) | 17 seed files (40+ modules) | 37 cron jobs
-123 test files / 3,215 total tests — 3,103 passing in local dev, 14 pre-existing env-dependent files clear in deployed env | 23 AI models (8 families)
+131 pages | 100+ routes | 78 routers | 260 services | 356 tables
+142 components | 17 seed files (40+ modules) | 37 cron jobs
+191 test files / 4,719 total tests — 4,596 passing in local dev, 18 pre-existing env-dependent files clear in deployed env | 23 AI models (8 families)
 5-layer AI config | 6-phase seed orchestrator | 15 context functions
 Chrome extension (LinkedIn capture, Gmail compliance, side panel)
 5 predefined workflows | 5 autonomous processing foci (incl. general)

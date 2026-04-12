@@ -284,3 +284,16 @@ export function getFeedback(key: string, data?: any): FeedbackSpec | undefined {
   const factory = FEEDBACK_SPECS[key];
   return factory ? factory(data) : undefined;
 }
+
+/**
+ * Fire-and-forget feedback dispatch via the PIL window-event bus.
+ * Use this from components that don't have access to the
+ * `usePlatformIntelligence` hook (avoids adding a context dependency).
+ * The PIL provider listens for `pil:send-feedback` and routes through
+ * `giveFeedback` which resolves the spec + fires visual/audio/haptic.
+ */
+export function sendFeedback(key: string, data?: Record<string, unknown>): void {
+  window.dispatchEvent(
+    new CustomEvent("pil:send-feedback", { detail: { key, data } }),
+  );
+}
