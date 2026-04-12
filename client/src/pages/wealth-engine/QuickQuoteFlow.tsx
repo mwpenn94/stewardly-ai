@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import {
@@ -221,6 +222,12 @@ export default function QuickQuoteFlowPage() {
               )}
               {/* Premium estimation table */}
               <PremiumEstimator initialAge={inputs.age} initialAmount={inputs.income * 10} />
+              {/* Context: guardrail warnings + industry benchmarks */}
+              <CalculatorContextBar
+                params={{ savingsRate: inputs.income > 0 ? (inputs.monthlySavings * 12) / inputs.income : 0 }}
+                showBenchmarks
+                className="space-y-3"
+              />
 
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={() => setStep(2)}>
@@ -247,7 +254,7 @@ function StepBar({ step }: { step: 1 | 2 | 3 }) {
           className="h-1 flex-1 rounded-full"
           style={{
             background:
-              s <= step ? chartTokens.colors.wealthbridge : "#e2e8f0",
+              s <= step ? chartTokens.colors.wealthbridge : "hsl(var(--muted))",
             transition: "background 240ms ease",
           }}
         />
@@ -310,7 +317,7 @@ function ScoreRing({ total, max }: { total: number; max: number }) {
   return (
     <div className="flex items-center justify-center py-2">
       <svg width={160} height={160} viewBox="0 0 160 160">
-        <circle cx={80} cy={80} r={radius} fill="none" stroke="#e2e8f0" strokeWidth={12} />
+        <circle cx={80} cy={80} r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth={12} />
         <circle
           cx={80}
           cy={80}

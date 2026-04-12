@@ -28,6 +28,7 @@ export default defineConfig({
       "client/src/hooks/usePushToTalk.test.ts",
       "client/src/components/CommandPalette.test.ts",
       "client/src/components/codeChat/**/*.test.ts",
+      "client/src/components/wealth-engine/**/*.test.ts",
       "client/src/pages/learning/lib/**/*.test.ts",
       // Pass 7 (automation): include hook-level client tests
       "client/src/hooks/**/*.test.ts",

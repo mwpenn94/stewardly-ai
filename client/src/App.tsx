@@ -124,7 +124,7 @@ const LearningSearch = lazy(() => import("./pages/learning/LearningSearch"));
 const NewLanding = lazy(() => import("./pages/NewLanding"));
 const MyWork = lazy(() => import("./pages/MyWork"));
 const MyFinancialTwin = lazy(() => import("./pages/MyFinancialTwin"));
-const ExamSimulator = lazy(() => import("./pages/learning/ExamSimulator"));
+const ExamSimulatorPage = lazy(() => import("./pages/learning/ExamSimulatorPage"));
 const DisciplineDeepDive = lazy(() => import("./pages/learning/DisciplineDeepDive"));
 const CaseStudySimulator = lazy(() => import("./pages/learning/CaseStudySimulator"));
 const AchievementSystem = lazy(() => import("./pages/learning/AchievementSystem"));
@@ -241,7 +241,7 @@ function Router() {
         <Route path="/learning/review" component={LearningDueReview} />
         <Route path="/learning/search" component={LearningSearch} />
         {/* Pass 120+ learning extensions */}
-        <Route path="/learning/exam/:moduleSlug">{() => <ExamSimulator />}</Route>
+        <Route path="/learning/exam/:moduleSlug">{() => <ExamSimulatorPage />}</Route>
         <Route path="/learning/discipline/:slug">{() => <DisciplineDeepDive />}</Route>
         <Route path="/learning/case/:caseId">{() => <CaseStudySimulator />}</Route>
         <Route path="/learning/connections">{() => <ConnectionMap />}</Route>

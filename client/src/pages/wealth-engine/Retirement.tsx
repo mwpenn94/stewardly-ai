@@ -27,6 +27,9 @@ import { sendFeedback } from "@/lib/feedbackSpecs";
 import { GuardrailsGauge } from "@/components/wealth-engine/GuardrailsGauge";
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
+import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
+import StressTestPanel from "@/components/StressTestPanel";
+import MonteCarloFan from "@/components/MonteCarloFan";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import {
@@ -75,6 +78,8 @@ export default function RetirementPage() {
   );
 
   const [showRiskContext, setShowRiskContext] = useState(false);
+  const [savingsRate] = useState(0.15);
+  const [investmentReturn] = useState(0.07);
 
   const runPreset = trpc.wealthEngine.runPreset.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
   const backPlan = trpc.wealthEngine.backPlanHolistic.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
@@ -83,13 +88,34 @@ export default function RetirementPage() {
   const stressGfc = trpc.calculatorEngine.stressTest.useMutation();
   const backtestRun = trpc.calculatorEngine.historicalBacktest.useMutation();
   const benchmarks = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
+  // Stress testing + historical backtest + Monte Carlo
+  const stressDotcom = trpc.calculatorEngine.stressTest.useMutation();
+  const stressGFC = trpc.calculatorEngine.stressTest.useMutation();
+  const stressCovid = trpc.calculatorEngine.stressTest.useMutation();
+  const backtest = trpc.calculatorEngine.historicalBacktest.useMutation();
+  const monteCarlo = trpc.wealthEngine.monteCarloSim.useMutation();
+
+  const annualContribution = income * savingsRate;
 
   const onRunGoal = () => {
-    runPreset.mutate({
-      preset: "wealthbridgeClient",
-      profile,
-      years: horizon,
-    });
+    runPreset.mutate(
+      {
+        preset: "wealthbridgeClient",
+        profile,
+        years: horizon,
+      },
+      {
+        onSuccess: () => {
+          // Auto-run stress tests + backtest + Monte Carlo
+          const stressInput = { startBalance: savings, annualContribution };
+          stressDotcom.mutate({ ...stressInput, scenarioKey: "dotcom" });
+          stressGFC.mutate({ ...stressInput, scenarioKey: "gfc" });
+          stressCovid.mutate({ ...stressInput, scenarioKey: "covid" });
+          backtest.mutate({ startBalance: savings, annualContribution, annualCost: 0, horizon });
+          monteCarlo.mutate({ strategyConfig: { investReturn: investmentReturn, volatility: 0.15 }, maxYears: horizon });
+        },
+      },
+    );
   };
 
   const onRunBackPlan = () => {
@@ -219,6 +245,41 @@ export default function RetirementPage() {
                   />
                 </CardContent>
               </Card>
+            )}
+
+            {/* Monte Carlo fan chart — probability distribution */}
+            {monteCarlo.data && (
+              <MonteCarloFan
+                data={(monteCarlo.data.data ?? []).map((p: any, i: number) => ({
+                  year: i,
+                  p10: p.p10 ?? 0,
+                  p25: p.p25 ?? 0,
+                  p50: p.p50 ?? 0,
+                  p75: p.p75 ?? 0,
+                  p90: p.p90 ?? 0,
+                })).filter((_: any, i: number) => i > 0)}
+                title={`Monte Carlo — ${horizon}-Year Probability Distribution`}
+              />
+            )}
+
+            {/* Guardrail warnings + benchmarks */}
+            <CalculatorContextBar
+              params={{ returnRate: investmentReturn, savingsRate }}
+              className="space-y-3"
+            />
+
+            {/* Stress testing — auto-runs after projection */}
+            {(stressDotcom.data || stressGFC.data || stressCovid.data || backtest.data) && (
+              <StressTestPanel
+                stressResults={{
+                  dotcom: stressDotcom.data ?? null,
+                  gfc: stressGFC.data ?? null,
+                  covid: stressCovid.data ?? null,
+                }}
+                backtestSummary={backtest.data ?? null}
+                startBalance={savings}
+                title="How Would Your Savings Survive Market Crashes?"
+              />
             )}
           </TabsContent>
 
