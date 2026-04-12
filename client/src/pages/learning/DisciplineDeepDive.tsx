@@ -168,29 +168,47 @@ export default function DisciplineDeepDive() {
     [],
   );
 
-  // Placeholder cases (would be fetched from API in production)
-  const cases: CaseItem[] = useMemo(
-    () => [
-      { id: "estate-high-net-worth", title: "High Net Worth Estate Plan", description: "A couple with $12M in assets needs an estate plan that minimizes federal estate taxes while ensuring liquidity for surviving spouse.", difficulty: "advanced", tags: ["estate", "tax", "trust"] },
-      { id: "retirement-gap", title: "Retirement Income Gap Analysis", description: "Client retiring in 5 years with a $400K shortfall. Evaluate annuity vs. systematic withdrawal strategies.", difficulty: "intermediate", tags: ["retirement", "income", "annuity"] },
-      { id: "young-professional", title: "Young Professional Financial Plan", description: "28-year-old with $80K income, $35K student loans, and $0 savings. Build a comprehensive plan.", difficulty: "beginner", tags: ["planning", "debt", "savings"] },
-      { id: "business-succession", title: "Business Succession Planning", description: "Owner of a $5M manufacturing firm wants to retire in 3 years. Evaluate buy-sell agreements and transition strategies.", difficulty: "advanced", tags: ["business", "succession", "insurance"] },
-      { id: "insurance-review", title: "Life Insurance Policy Review", description: "Client has 3 overlapping policies totaling $2M. Evaluate coverage adequacy and cost optimization.", difficulty: "intermediate", tags: ["insurance", "review", "optimization"] },
-    ],
-    [],
-  );
+  // Cases — DB-backed with static fallback
+  const casesQ = trpc.learning.content.listCases.useQuery(undefined, { retry: false });
+  const cases: CaseItem[] = useMemo(() => {
+    const dbCases = (casesQ.data ?? []).map((c: any) => ({
+      id: String(c.id),
+      title: c.title,
+      description: (c.content ?? "").slice(0, 300),
+      difficulty: (Array.isArray(c.tags) && c.tags.includes("advanced") ? "advanced" : c.tags?.includes?.("beginner") ? "beginner" : "intermediate") as CaseItem["difficulty"],
+      tags: Array.isArray(c.tags) ? c.tags : [],
+    }));
+    if (dbCases.length > 0) return dbCases;
+    // Fallback demo data when DB has no cases yet
+    return [
+      { id: "estate-high-net-worth", title: "High Net Worth Estate Plan", description: "A couple with $12M in assets needs an estate plan that minimizes federal estate taxes while ensuring liquidity for surviving spouse.", difficulty: "advanced" as const, tags: ["estate", "tax", "trust"] },
+      { id: "retirement-gap", title: "Retirement Income Gap Analysis", description: "Client retiring in 5 years with a $400K shortfall. Evaluate annuity vs. systematic withdrawal strategies.", difficulty: "intermediate" as const, tags: ["retirement", "income", "annuity"] },
+      { id: "young-professional", title: "Young Professional Financial Plan", description: "28-year-old with $80K income, $35K student loans, and $0 savings. Build a comprehensive plan.", difficulty: "beginner" as const, tags: ["planning", "debt", "savings"] },
+      { id: "business-succession", title: "Business Succession Planning", description: "Owner of a $5M manufacturing firm wants to retire in 3 years. Evaluate buy-sell agreements and transition strategies.", difficulty: "advanced" as const, tags: ["business", "succession", "insurance"] },
+      { id: "insurance-review", title: "Life Insurance Policy Review", description: "Client has 3 overlapping policies totaling $2M. Evaluate coverage adequacy and cost optimization.", difficulty: "intermediate" as const, tags: ["insurance", "review", "optimization"] },
+    ];
+  }, [casesQ.data]);
 
-  // Placeholder FS application items
-  const fsApps: FSAppItem[] = useMemo(
-    () => [
+  // FS Applications — DB-backed with static fallback
+  const fsAppsQ = trpc.learning.content.listFsApplications.useQuery(undefined, { retry: false });
+  const fsApps: FSAppItem[] = useMemo(() => {
+    const dbApps = (fsAppsQ.data ?? []).map((a: any) => ({
+      id: String(a.id),
+      title: a.title,
+      content: a.content ?? "",
+      category: (Array.isArray(a.tags) && a.tags[0]) ? a.tags[0] : "General",
+      audioScript: `${a.title}. ${(a.content ?? "").slice(0, 200)}`,
+    }));
+    if (dbApps.length > 0) return dbApps;
+    // Fallback demo data when DB has no FS applications yet
+    return [
       { id: "fs-fiduciary", title: "Fiduciary Standard of Care", content: "The fiduciary standard requires advisors to act in the best interest of their clients at all times. This includes full disclosure of conflicts, reasonable compensation, and ongoing monitoring of recommendations.", category: "Compliance", audioScript: "Fiduciary Standard of Care. The fiduciary standard requires advisors to act in the best interest of their clients at all times." },
       { id: "fs-kyc", title: "Know Your Customer (KYC)", content: "KYC procedures verify client identity, assess risk tolerance, and determine suitability. FINRA Rule 2111 requires a reasonable basis for any recommendation based on client-specific factors.", category: "Compliance", audioScript: "Know Your Customer. KYC procedures verify client identity, assess risk tolerance, and determine suitability." },
       { id: "fs-asset-allocation", title: "Modern Portfolio Theory Application", content: "MPT optimizes portfolio construction by considering the mean-variance trade-off. Efficient frontier analysis helps advisors select asset mixes that maximize expected return for a given risk level.", category: "Investment", audioScript: "Modern Portfolio Theory Application. MPT optimizes portfolio construction by considering the mean-variance trade-off." },
       { id: "fs-tax-harvesting", title: "Tax-Loss Harvesting", content: "Systematic selling of securities at a loss to offset capital gains tax liability. Wash sale rules (30-day window) must be observed. Can generate 0.5-1.5% annual alpha for taxable accounts.", category: "Tax", audioScript: "Tax Loss Harvesting. Systematic selling of securities at a loss to offset capital gains tax liability." },
       { id: "fs-risk-assessment", title: "Risk Capacity vs. Risk Tolerance", content: "Risk capacity is the objective financial ability to absorb losses. Risk tolerance is the subjective emotional willingness. A complete assessment considers both dimensions before making allocation decisions.", category: "Planning", audioScript: "Risk Capacity vs Risk Tolerance. Risk capacity is the objective financial ability to absorb losses. Risk tolerance is the subjective emotional willingness." },
-    ],
-    [],
-  );
+    ];
+  }, [fsAppsQ.data]);
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode; count: number }[] = [
     { key: "definitions", label: "Definitions", icon: <BookOpen className="h-4 w-4" />, count: definitions.length },

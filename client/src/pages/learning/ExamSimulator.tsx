@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
+import { trpc } from "@/lib/trpc";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -145,8 +146,42 @@ export default function ExamSimulator({
   const celebrate = useCelebration();
   const [, navigate] = useLocation();
   const config = configProp ?? DEFAULT_CONFIG;
-  const questionPool = poolProp ?? [];
   const handleBack = onBack ?? (() => navigate("/learning"));
+
+  // Self-fetch questions from DB when no pool provided
+  const tracksQ = trpc.learning.content.listTracks.useQuery(
+    undefined,
+    { enabled: !poolProp, retry: false },
+  );
+  const firstTrackId = (tracksQ.data as any)?.[0]?.id;
+  const questionsQ = trpc.learning.content.listQuestions.useQuery(
+    { trackId: firstTrackId! },
+    { enabled: !poolProp && !!firstTrackId, retry: false },
+  );
+
+  const questionPool: Question[] = useMemo(() => {
+    if (poolProp && poolProp.length > 0) return poolProp;
+    const dbQuestions = questionsQ.data ?? [];
+    if (dbQuestions.length === 0) return [];
+    return (dbQuestions as any[]).map((q: any) => ({
+      id: String(q.id),
+      text: q.text ?? q.question ?? "",
+      options: Array.isArray(q.options)
+        ? q.options.map((o: any, i: number) => ({
+            key: typeof o === "string" ? String.fromCharCode(65 + i) : (o.key ?? String.fromCharCode(65 + i)),
+            text: typeof o === "string" ? o : (o.text ?? String(o)),
+          }))
+        : [],
+      correctKey: typeof q.correct === "number"
+        ? String.fromCharCode(65 + q.correct)
+        : (q.correctKey ?? q.correct ?? "A"),
+      explanation: q.explanation ?? "",
+      topic: q.topic ?? q.tags?.[0] ?? "general",
+      difficulty: (q.difficulty === "hard" || q.difficulty === "easy" ? q.difficulty : "medium") as Question["difficulty"],
+      moduleSlug: q.moduleSlug ?? config.moduleSlug,
+      audioScript: q.audioScript ?? q.text ?? q.question ?? "",
+    }));
+  }, [poolProp, questionsQ.data, config.moduleSlug]);
 
   // Build the question list based on mode
   const questions = useMemo(() => {

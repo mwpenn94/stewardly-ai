@@ -65,6 +65,9 @@ import {
   searchContent,
   explainConcept,
   getContentHistory,
+  listCases,
+  listFsApplications,
+  listConnections,
 } from "../services/learning/content";
 
 import {
@@ -484,6 +487,20 @@ const contentRouter = router({
     .mutation(async ({ ctx, input }) => {
       return createFlashcard({ ...input, createdBy: ctx.user.id });
     }),
+
+  // Cases
+  listCases: protectedProcedure
+    .input(z.object({ disciplineId: z.number().int().optional() }).optional())
+    .query(async ({ input }) => listCases(input ?? {})),
+
+  // FS Applications
+  listFsApplications: protectedProcedure
+    .input(z.object({ disciplineId: z.number().int().optional() }).optional())
+    .query(async ({ input }) => listFsApplications(input ?? {})),
+
+  // Connections (concept graph edges)
+  listConnections: protectedProcedure
+    .query(async () => listConnections()),
 
   // Unified search
   search: protectedProcedure

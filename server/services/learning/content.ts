@@ -732,3 +732,63 @@ export async function explainConcept(concept: string): Promise<{
     return null;
   }
 }
+
+// ─── Cases ──────────────────────────────────────────────────────────────
+
+export async function listCases(filters: { disciplineId?: number; status?: PublishStatus } = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const conditions = [eq(learningCases.status, filters.status ?? "published")];
+    if (filters.disciplineId) conditions.push(eq(learningCases.disciplineId, filters.disciplineId));
+    return db
+      .select()
+      .from(learningCases)
+      .where(and(...conditions))
+      .orderBy(desc(learningCases.updatedAt));
+  } catch (err) {
+    log.warn({ err: String(err) }, "listCases failed");
+    return [];
+  }
+}
+
+// ─── FS Applications ─────────────────────────────────────────────────────
+
+export async function listFsApplications(filters: { disciplineId?: number; status?: PublishStatus } = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const conditions = [eq(learningFsApplications.status, filters.status ?? "published")];
+    if (filters.disciplineId) conditions.push(eq(learningFsApplications.disciplineId, filters.disciplineId));
+    return db
+      .select()
+      .from(learningFsApplications)
+      .where(and(...conditions))
+      .orderBy(desc(learningFsApplications.updatedAt));
+  } catch (err) {
+    log.warn({ err: String(err) }, "listFsApplications failed");
+    return [];
+  }
+}
+
+// ─── Connections (concept graph edges) ──────────────────────────────────
+
+export async function listConnections(filters: { status?: string } = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return db
+      .select({
+        id: learningConnections.id,
+        fromDefinitionId: learningConnections.fromDefinitionId,
+        toDefinitionId: learningConnections.toDefinitionId,
+        relationship: learningConnections.relationship,
+        status: learningConnections.status,
+      })
+      .from(learningConnections)
+      .where(eq(learningConnections.status, (filters.status as "published" | "draft" | "archived") ?? "published"));
+  } catch (err) {
+    log.warn({ err: String(err) }, "listConnections failed");
+    return [];
+  }
+}
