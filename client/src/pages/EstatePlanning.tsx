@@ -19,6 +19,7 @@ import { ArrowLeft, FileText, Users, DollarSign, CheckCircle2, XCircle, Clock, A
 import { useLocation } from "wouter";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import AppShell from "@/components/AppShell";
+import { persistCalculation } from "@/lib/calculatorContext";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -132,6 +133,19 @@ export default function EstatePlanning() {
     }
     return rows;
   }, [totalEstate, annualGrowthRate, yearsToLE, currentAge, isMarried, portabilityUsed]);
+
+  // Persist estate results to calculator context for chat follow-up
+  useEffect(() => {
+    persistCalculation({
+      id: `estate-${totalEstate}-${isMarried}`,
+      type: "estate",
+      title: "Estate Planning Analysis",
+      summary: `Estate ${fmt(totalEstate)}, exemption ${fmt(currentTax.exemption)}, estate tax ${fmt(currentTax.estateTax)}${currentTax.headroom > 0 ? ", headroom " + fmt(currentTax.headroom) : ""}, projected at LE: ${fmt(projectedEstate)} → tax ${fmt(projectedTaxCurrent.estateTax)}`,
+      inputs: { netEstate, lifeInsurance, isMarried, portabilityUsed, annualGrowthRate, currentAge, lifeExpectancy },
+      outputs: { estateTax: currentTax.estateTax, exemption: currentTax.exemption, headroom: currentTax.headroom, projectedEstate, projectedTax: projectedTaxCurrent.estateTax },
+      timestamp: Date.now(),
+    });
+  }, [totalEstate, isMarried, currentTax, projectedEstate, projectedTaxCurrent]);
 
   const docCurrent = Object.values(docStatus).filter(s => s === "current").length;
   const docTotal = DOCUMENT_TYPES.length;

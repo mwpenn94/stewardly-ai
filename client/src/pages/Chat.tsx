@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { loadCalculatorContext, buildContextOverlay } from "@/lib/calculatorContext";
 import { SEOHead } from "@/components/SEOHead";
 import TypingIndicator from "@/components/TypingIndicator";
 import { EmptyConversations } from "@/components/EmptyStates";
@@ -983,6 +984,11 @@ export default function Chat() {
             signal: abortController.signal,
             body: JSON.stringify({
               messages: [
+                // Inject recent calculator results as system context
+                ...(() => {
+                  const calcOverlay = buildContextOverlay(loadCalculatorContext());
+                  return calcOverlay ? [{ role: "system", content: calcOverlay }] : [];
+                })(),
                 ...messages.map(m => ({ role: m.role, content: m.content })),
                 { role: "user", content: trimmed },
               ],

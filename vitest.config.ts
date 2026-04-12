@@ -34,6 +34,8 @@ export default defineConfig({
       "client/src/hooks/**/*.test.ts",
       // Hybrid pass 4: planning calculator pure functions
       "client/src/lib/planningCalculations.test.ts",
+      // CBL11: calculator-to-chat context bridge
+      "client/src/lib/calculatorContext.test.ts",
       "client/src/pages/learning/lib/**/*.test.ts",
     ],
   },

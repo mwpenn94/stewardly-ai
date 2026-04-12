@@ -21,8 +21,9 @@ import { projectTaxClientSide, type ClientTaxResult } from "@/lib/planningCalcul
 import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, BarChart3, Loader2, Play, AlertTriangle } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { persistCalculation } from "@/lib/calculatorContext";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -147,6 +148,21 @@ export default function TaxPlanning() {
   const multiYearResult = multiYearCalc.data as any;
   const rothResult = rothCalc.data as any;
   const isLoading = taxCalc.isPending || multiYearCalc.isPending || rothCalc.isPending;
+
+  // Persist tax results to calculator context for chat follow-up
+  useEffect(() => {
+    if (!result) return;
+    const r = result as any;
+    persistCalculation({
+      id: `tax-${filingStatus}-${wages}`,
+      type: "tax",
+      title: "Tax Planning Analysis",
+      summary: `Filing ${filingStatus.toUpperCase()}, income ${fmt(wages + selfEmployment)}, effective rate ${r.effectiveRate != null ? (r.effectiveRate * 100).toFixed(1) + "%" : "N/A"}, federal tax ${r.federalTax != null ? fmt(r.federalTax) : "N/A"}${r.stateTax ? ", state tax " + fmt(r.stateTax) : ""}`,
+      inputs: { filingStatus, wages, selfEmployment, stateCode },
+      outputs: { effectiveRate: r.effectiveRate, federalTax: r.federalTax, stateTax: r.stateTax, marginalRate: r.marginalRate },
+      timestamp: Date.now(),
+    });
+  }, [result, filingStatus, wages, selfEmployment, stateCode]);
 
   return (
     <AppShell title="Tax Planning">
