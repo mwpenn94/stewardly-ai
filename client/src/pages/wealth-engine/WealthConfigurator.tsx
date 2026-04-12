@@ -25,6 +25,7 @@ import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import { persistCalculation } from "@/lib/calculatorContext";
 
 // ─── UTILITIES ──────────────────────────────────────────────────────
 function fmt(n: number) {
@@ -129,12 +130,28 @@ export default function WealthConfigurator() {
   const bestMut = trpc.wealthEngine.generateBestOverall.useMutation({ onError: (e) => toast.error(e.message) });
   const mcMut = trpc.wealthEngine.monteCarloSim.useMutation({ onError: (e) => toast.error(e.message) });
 
+  // ── Persist to calculator-to-chat context bridge ──
+  function persistUWEResult(strat: any, simData: any[]) {
+    const final = simData[simData.length - 1];
+    if (!final) return;
+    persistCalculation({
+      id: `uwe-${strat.company}-${Date.now()}`,
+      type: "uwe",
+      title: `${strat.companyName} — ${simData.length}yr UWE Projection`,
+      summary: `${strat.companyName} strategy with ${strat.products?.length || 0} products over ${simData.length} years. Total value: ${fmt(final.totalValue)}, net value: ${fmt(final.netValue)}, ROI: ${pct(final.roi)}, protection: ${fmt(final.totalProtection)}.`,
+      inputs: { companyKey: strat.company, age, income, netWorth, savings, dependents, horizon },
+      outputs: { totalValue: final.totalValue, netValue: final.netValue, roi: final.roi, protection: final.totalProtection, savingsBalance: final.savingsBalance, productCount: strat.products?.length },
+      timestamp: Date.now(),
+    });
+  }
+
   // ── Actions ──
   async function runStrategy() {
     try {
       const built = await buildMut.mutateAsync({ companyKey, profile });
       const strategy = built.data;
       const sim = await simMut.mutateAsync({ strategy, maxYears: horizon });
+      persistUWEResult(strategy, sim.data);
       setActiveTab("results");
       toast.success(`${strategy.companyName} — ${sim.data.length} year projection complete`);
     } catch {
@@ -147,6 +164,7 @@ export default function WealthConfigurator() {
       const built = await bestMut.mutateAsync({ profile });
       const strategy = built.data;
       const sim = await simMut.mutateAsync({ strategy, maxYears: horizon });
+      persistUWEResult(strategy, sim.data);
       setActiveTab("results");
       toast.success(`Best Overall — ${sim.data.length} year projection complete`);
     } catch {
@@ -241,10 +259,15 @@ export default function WealthConfigurator() {
                 Generate Best Overall
               </Button>
               {simData && (
-                <Button variant="outline" className="w-full gap-2" onClick={runMonteCarlo} disabled={mcMut.isPending}>
-                  {mcMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
-                  Monte Carlo (1,000 trials)
-                </Button>
+                <>
+                  <Button variant="outline" className="w-full gap-2" onClick={runMonteCarlo} disabled={mcMut.isPending}>
+                    {mcMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
+                    Monte Carlo (1,000 trials)
+                  </Button>
+                  <Button variant="ghost" className="w-full gap-2 text-xs" onClick={() => navigate("/chat")}>
+                    Discuss results in Chat →
+                  </Button>
+                </>
               )}
             </div>
 

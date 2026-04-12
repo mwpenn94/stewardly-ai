@@ -17,7 +17,7 @@ const MAX_SUMMARY_LENGTH = 2000;
 
 export interface CalculationResult {
   id: string;
-  type: "tax" | "estate" | "retirement" | "income" | "insurance" | "risk" | "iul" | "bie" | "monte_carlo" | "custom";
+  type: "tax" | "estate" | "retirement" | "income" | "insurance" | "risk" | "iul" | "bie" | "uwe" | "monte_carlo" | "custom";
   title: string;
   summary: string; // Human-readable summary of key results
   inputs: Record<string, unknown>; // Key input parameters
