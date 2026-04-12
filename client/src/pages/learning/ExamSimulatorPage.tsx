@@ -16,7 +16,8 @@ import { trpc } from "@/lib/trpc";
 import { Loader2, BookOpen, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import ExamSimulator, { type Question, type ExamConfig } from "./ExamSimulator";
+import ExamSimulator, { type ExamConfig } from "./ExamSimulator";
+import { transformDbQuestions } from "@/components/wealth-engine/calculatorHelpers";
 
 export default function ExamSimulatorPage() {
   const params = useParams<{ moduleSlug: string }>();
@@ -37,31 +38,10 @@ export default function ExamSimulatorPage() {
   );
 
   // 3. Transform database questions into ExamSimulator format
-  const questionPool = useMemo<Question[]>(() => {
-    if (!rawQuestions || !Array.isArray(rawQuestions)) return [];
-
-    return rawQuestions
-      .filter((q: any) => q.status === "published" || !q.status)
-      .map((q: any) => {
-        // Parse options — stored as string[] in DB
-        const options: string[] = Array.isArray(q.options) ? q.options : [];
-        const correctIndex = typeof q.correctIndex === "number" ? q.correctIndex : (q.correct ?? 0);
-
-        return {
-          id: String(q.id),
-          text: q.prompt ?? q.text ?? "",
-          options: options.map((opt: string, i: number) => ({
-            key: String.fromCharCode(65 + i), // A, B, C, D
-            text: opt,
-          })),
-          correctKey: String.fromCharCode(65 + correctIndex),
-          explanation: q.explanation ?? "",
-          topic: q.tags?.[0] ?? track?.name ?? slug,
-          difficulty: (q.difficulty as "easy" | "medium" | "hard") ?? "medium",
-          moduleSlug: slug,
-        };
-      });
-  }, [rawQuestions, slug, track?.name]);
+  const questionPool = useMemo(
+    () => transformDbQuestions(rawQuestions ?? [], slug, track?.name),
+    [rawQuestions, slug, track?.name],
+  );
 
   // Config for the exam
   const config = useMemo<ExamConfig>(() => ({

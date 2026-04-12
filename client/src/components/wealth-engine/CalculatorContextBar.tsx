@@ -22,42 +22,13 @@ interface Props {
   className?: string;
 }
 
-const PARAM_LABELS: Record<string, string> = {
-  returnRate: "Investment Return",
-  savingsRate: "Savings Rate",
-  growthRate: "Growth Rate",
-  inflationRate: "Inflation",
-  taxRate: "Tax Rate",
-  investmentReturn: "Investment Return",
-};
+import { formatBenchmarkValue, BENCHMARK_LABELS, PARAM_LABELS } from "./calculatorHelpers";
 
 const SEVERITY_STYLES = {
   info: { border: "border-chart-3/30", bg: "bg-chart-3/5", icon: Info, color: "text-chart-3" },
   warning: { border: "border-amber-500/30", bg: "bg-amber-500/5", icon: AlertTriangle, color: "text-amber-400" },
   error: { border: "border-destructive/30", bg: "bg-destructive/5", icon: AlertTriangle, color: "text-destructive" },
 };
-
-const BENCHMARK_LABELS: Record<string, string> = {
-  savingsRate: "National Savings Rate",
-  investorBehaviorGap: "Investor Behavior Gap",
-  lifeInsuranceGap: "Life Insurance Gap",
-  retirementReadiness: "Retirement Readiness",
-  estatePlanningGap: "Estate Planning Gap",
-  advisorAlpha: "Advisor Alpha",
-  avgAdvisoryFee: "Avg Advisory Fee",
-  avgWealthGrowth: "Avg Wealth Growth",
-};
-
-function formatBenchmarkValue(key: string, bm: any): string {
-  if (bm.national != null) return `${(bm.national * 100).toFixed(1)}%`;
-  if (bm.gap != null) return `${(bm.gap * 100).toFixed(1)}%/yr`;
-  if (bm.pct != null) return `${(bm.pct * 100).toFixed(0)}%`;
-  if (key === "avgAdvisoryFee" && bm.value != null) return `${(bm.value * 100).toFixed(2)}%`;
-  if (key === "advisorAlpha" && bm.value != null) return `~${(bm.value * 100).toFixed(0)}%/yr`;
-  if (bm.sp500 != null) return `S&P: ${(bm.sp500 * 100).toFixed(1)}%`;
-  if (bm.value != null) return String(bm.value);
-  return "—";
-}
 
 export function CalculatorContextBar({ params, showBenchmarks = true, className }: Props) {
   // Check guardrails against user's current inputs
