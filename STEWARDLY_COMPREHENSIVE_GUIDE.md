@@ -40,12 +40,12 @@ The system is built on a modern TypeScript full-stack architecture with 220,000+
 |--------|-------|
 | Total lines of code | 220,000+ |
 | Source files (non-test) | 1,000+ |
-| Test files | 123 |
-| Total tests | 3,215 (3,103 passing in local dev; 14 pre-existing env-dependent files clear in deployed env) |
-| Database tables | 352 (351 + `workflow_instances` from pass 61) |
+| Test files | 191 |
+| Total tests | 4,719 (4,596 passing in local dev; 18 pre-existing env-dependent files clear in deployed env) |
+| Database tables | 356 (353 + 3 audio system tables from pass 120) |
 | tRPC routers | 78 (75 files + 3 mounted webhook routers from pass 46) |
-| Frontend pages | 119 (116 + 3 Learning consumer UIs from pass 58) |
-| Custom components | 129 |
+| Frontend pages | 131 (119 + 9 pass 120 + 3 calculator UI pages) |
+| Custom components | 142 |
 | UI primitives (shadcn) | 53 |
 | Custom hooks | 17 |
 | Server services | 259 |
@@ -657,7 +657,7 @@ The platform runs automated background jobs via `server/services/scheduler.ts`:
 | Nav reachability (pass 54) | 1 | 6 | App.tsx routes ↔ navigation.ts hrefs invariant enforcement |
 | CodeChat roadmap persist (pass 58) | 1 | 3 | JSON round-trip, corrupted-file tolerance, priority ordering |
 | Workflow instances (pass 61) | 1 | 5 | Drizzle shape, router procedure surface, template ID zod coverage |
-| **Total** | **123** | **3,215** (3,103 local, 14 pre-existing env files clear in deployed env) | **100% pass rate in deployed env** |
+| **Total** | **191** | **4,719** (4,596 local, 18 pre-existing env files clear in deployed env) | **100% pass rate in deployed env** |
 
 ### 12.2 Test Patterns
 
