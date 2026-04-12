@@ -23,6 +23,7 @@ import {
   buildInstructionsPromptOverlay,
 } from "../services/codeChat/projectInstructions";
 import { validateStreamRequest } from "../services/codeChat/requestValidation";
+import { buildToolCallAuditEvent } from "../services/codeChat/toolTelemetry";
 import { logger } from "../_core/logger";
 
 const codeChatStreamRouter = Router();
@@ -258,11 +259,35 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
         const resultStr = JSON.stringify(dispatchResult);
         const truncated = resultStr.length > 10000;
 
+        // Parity Pass 7: emit a structured audit event for every
+        // tool dispatch — writable to logs/DB/webhooks by the
+        // logger transport. Args are redacted in place via the
+        // pure toolTelemetry module so secrets never hit the log.
+        const resultKind = (dispatchResult as any).kind || "unknown";
+        const isError = resultKind === "error";
+        const auditEvent = buildToolCallAuditEvent(
+          {
+            userId: user.id,
+            role: user.role,
+            toolName: rawName,
+            args,
+            resultKind,
+            error: isError,
+            errorMessage: isError ? (dispatchResult as any).error : undefined,
+            errorCode: isError ? (dispatchResult as any).code : undefined,
+            durationMs,
+            resultBytes: resultStr.length,
+            source: "react-loop",
+          },
+          { workspaceRoot: WORKSPACE_ROOT },
+        );
+        logger.info({ audit: auditEvent }, "codechat.tool_call");
+
         writeSse(res, {
           type: "tool_result",
           stepIndex,
           toolName: rawName,
-          kind: (dispatchResult as any).kind || "unknown",
+          kind: resultKind,
           preview: truncated ? resultStr.slice(0, 10000) : resultStr,
           truncated,
           durationMs,
