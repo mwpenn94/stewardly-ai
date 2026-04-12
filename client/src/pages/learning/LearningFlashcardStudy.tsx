@@ -131,19 +131,14 @@ export default function LearningFlashcardStudy() {
     // Pass 16 — PIL feedback dispatch (G1/G8).
     sendFeedback(correct ? "learning.answer_correct" : "learning.answer_incorrect");
 
-    if (correct) setCorrectCount((c) => c + 1);
-    else setIncorrectCount((c) => c + 1);
     if (correct) {
       setCorrectCount((c) => c + 1);
-      pil.giveFeedback("learning.answer_correct");
     } else {
       setIncorrectCount((c) => c + 1);
-      pil.giveFeedback("learning.answer_incorrect");
     }
 
     if (index + 1 >= total) {
       setComplete(true);
-      pil.giveFeedback("learning.exam_complete");
     } else {
       setIndex((i) => i + 1);
       setFlipped(false);
