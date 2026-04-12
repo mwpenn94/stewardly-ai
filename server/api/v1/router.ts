@@ -45,6 +45,10 @@ import {
   type Transaction,
   type CostBasisMethod,
 } from "../../services/portfolio/ledger";
+import {
+  buildFiduciaryReport,
+  type FiduciaryReportInput,
+} from "../../services/reports/fiduciaryReport";
 
 export interface ApiV1Options {
   validate: ApiKeyValidator;
@@ -179,6 +183,32 @@ export function buildApiV1Router(options: ApiV1Options): Router {
     }
     try {
       res.json(ledgerRun(body.transactions as Transaction[], body.method));
+    } catch (err) {
+      handleError(res, err);
+    }
+  });
+
+  // Pass 15 — cross-module fiduciary report via the public surface.
+  router.post("/reports/fiduciary", (req: Request, res: Response) => {
+    const body = req.body as Partial<FiduciaryReportInput>;
+    if (
+      !body ||
+      typeof body !== "object" ||
+      typeof body.clientName !== "string" ||
+      typeof body.advisorName !== "string" ||
+      typeof body.generatedAt !== "string"
+    ) {
+      res.status(400).json({
+        error: {
+          code: "invalid_request",
+          message:
+            "`clientName`, `advisorName`, and `generatedAt` (ISO string) are required.",
+        },
+      });
+      return;
+    }
+    try {
+      res.json(buildFiduciaryReport(body as FiduciaryReportInput));
     } catch (err) {
       handleError(res, err);
     }

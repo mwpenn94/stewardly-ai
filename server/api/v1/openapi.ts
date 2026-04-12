@@ -265,6 +265,23 @@ export function buildOpenApiDoc(options: OpenApiOptions = {}): Record<string, un
           },
         },
       },
+      "/reports/fiduciary": {
+        post: {
+          summary: "Build a cross-module fiduciary compliance report",
+          description:
+            "POST {clientName, advisorName, generatedAt} plus optional sub-reports (comparables, rebalancing, ledger, federalTax, stateTax, washSales, shorts). Returns a markdown document + structured summary.",
+          tags: ["reports"],
+          requestBody: {
+            required: true,
+            content: { "application/json": {} },
+          },
+          responses: {
+            "200": { description: "Fiduciary report" },
+            "400": { description: "Invalid request payload" },
+            "401": { description: "Missing or invalid credentials" },
+          },
+        },
+      },
     },
   };
 }

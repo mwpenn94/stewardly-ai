@@ -64,6 +64,12 @@ describe("api/v1/openapi — buildOpenApiDoc", () => {
     );
   });
 
+  it("includes the Pass-15 fiduciary report endpoint", () => {
+    const doc = buildOpenApiDoc();
+    const paths = doc.paths as Record<string, unknown>;
+    expect(paths["/reports/fiduciary"]).toBeDefined();
+  });
+
   it("references the Error schema on 401/429 responses", () => {
     const doc = buildOpenApiDoc();
     const summary = (doc.paths as any)["/comparables/summary"];
