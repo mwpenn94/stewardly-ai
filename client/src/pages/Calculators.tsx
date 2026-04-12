@@ -188,6 +188,7 @@ export default function Calculators() {
               { label: "Retirement Planner", path: "/wealth-engine/retirement", icon: <PiggyBank className="w-4 h-4" />, desc: "Goal, smooth, guardrails" },
               { label: "Practice to Wealth", path: "/wealth-engine/practice-to-wealth", icon: <TrendingUp className="w-4 h-4" />, desc: "Practice growth modeling" },
               { label: "Quick Quote", path: "/wealth-engine/quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Instant client proposal" },
+              { label: "Business Income", path: "/wealth-engine/business-income", icon: <DollarSign className="w-4 h-4" />, desc: "BIE practice income modeling" },
               { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
             ].map(tool => (
               <button
