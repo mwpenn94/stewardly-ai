@@ -18,6 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -241,7 +242,7 @@ function MyFinancialTwinView({
         {visibilityExpanded && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 space-y-2">
             {(["private", "professional", "management", "admin"] as const).map(level => (
-              <button key={level} onClick={() => onVisibilityChange?.(level)}
+              <button key={level} onClick={() => { onVisibilityChange?.(level); sendFeedback("client.visibility_changed", { level }); }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-left
                   ${data.visibility === level ? "border-primary bg-primary/5" : "border-border hover:border-primary/20"}`}>
                 <div className="flex-1">

@@ -22,6 +22,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 import { GuardrailsGauge } from "@/components/wealth-engine/GuardrailsGauge";
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
@@ -52,8 +53,8 @@ export default function RetirementPage() {
     [age, income, savings],
   );
 
-  const runPreset = trpc.wealthEngine.runPreset.useMutation();
-  const backPlan = trpc.wealthEngine.backPlanHolistic.useMutation();
+  const runPreset = trpc.wealthEngine.runPreset.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
+  const backPlan = trpc.wealthEngine.backPlanHolistic.useMutation({ onSuccess: () => sendFeedback("calculator.result") });
 
   const onRunGoal = () => {
     runPreset.mutate({

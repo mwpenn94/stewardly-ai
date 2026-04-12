@@ -139,6 +139,7 @@ import GitStatusPanel from "@/components/codeChat/GitStatusPanel";
 import ImportGraphPanel from "@/components/codeChat/ImportGraphPanel";
 import TodoMarkerPanel from "@/components/codeChat/TodoMarkerPanel";
 import ActionPalettePopover from "@/components/codeChat/ActionPalettePopover";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 import {
   loadHistory,
   saveHistory,
@@ -2910,6 +2911,15 @@ function GitHubPanel() {
     retry: false,
     enabled: status.data?.configured === true,
   });
+
+  // Pass 16 — PIL feedback dispatch on GitHub connect (G1/G8).
+  const didAnnounce = useRef(false);
+  useEffect(() => {
+    if (status.data?.configured && !didAnnounce.current) {
+      didAnnounce.current = true;
+      sendFeedback("codechat.connected");
+    }
+  }, [status.data?.configured]);
 
   return (
     <div className="space-y-4 mt-4">

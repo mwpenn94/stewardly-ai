@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -113,6 +114,8 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
       setPhase("results");
       const pct = maxPossibleScore > 0 ? Math.round((totalScore / maxPossibleScore) * 100) : 0;
       if (pct >= 70) celebrate("medium");
+      // Pass 16 — PIL feedback dispatch (G1/G8).
+      sendFeedback("learning.case_complete", { percentage: pct, complianceFlags });
       onComplete?.(totalScore, maxPossibleScore, complianceFlags);
     }
   }, [selectedOption, cs, totalScore, maxPossibleScore, complianceFlags, celebrate, onComplete]);

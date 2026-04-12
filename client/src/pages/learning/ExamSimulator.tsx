@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -370,6 +371,9 @@ export default function ExamSimulator({
     if (results.percentage >= PASS_THRESHOLD) {
       celebrate("medium");
     }
+
+    // Pass 16 — PIL feedback dispatch (G1/G8).
+    sendFeedback("learning.exam_complete", { percentage: results.percentage, weakTopics: results.weakTopics });
 
     onComplete?.(results);
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -16,6 +16,7 @@ import { useAudioCompanion } from "@/components/AudioCompanion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -76,7 +77,7 @@ export default function AudioPreferences({ preferences, onSave, voices, isLoadin
     retry: false,
   });
   const saveMut = trpc.audio.updatePreferences.useMutation({
-    onSuccess: () => { toast.success("Audio preferences saved"); prefsQ.refetch(); },
+    onSuccess: () => { toast.success("Audio preferences saved"); prefsQ.refetch(); sendFeedback("audio.preferences_saved"); },
     onError: () => toast.error("Failed to save preferences"),
   });
   const initialPrefs = preferences ?? (prefsQ.data as AudioPrefs | undefined) ?? DEFAULT_PREFS;
@@ -87,6 +88,7 @@ export default function AudioPreferences({ preferences, onSave, voices, isLoadin
 
   const update = <K extends keyof AudioPrefs>(key: K, value: AudioPrefs[K]) => {
     setPrefs(prev => ({ ...prev, [key]: value }));
+    if (key === "speed") sendFeedback("audio.speed_changed", { speed: value });
   };
 
   const previewVoice = useCallback(() => {
