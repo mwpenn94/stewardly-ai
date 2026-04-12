@@ -42,6 +42,7 @@ import { useLocation } from "wouter";
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
 import { useRunTimeline } from "@/hooks/useRunTimeline";
+import { announcePolite } from "@/lib/a11y";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import {
   HE_PRESET_REGISTRY,
@@ -160,6 +161,12 @@ export default function HolisticComparisonPage() {
       confidence,
       inputs: { presetA, presetB, years },
     });
+    // a11y (pass 16): narrate the comparison result for screen
+    // readers so users don't have to re-scan the DOM.
+    const winner = delta.delta > 0 ? metaB?.short ?? presetB : metaA?.short ?? presetA;
+    announcePolite(
+      `Comparison complete. ${winner} wins by ${formatCurrency(Math.abs(delta.delta))} (${Math.round(Math.abs(delta.pctImprovement) * 100)} percent).`,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectionA.length, projectionB.length, delta.finalA, delta.finalB]);
 

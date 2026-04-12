@@ -22,6 +22,7 @@ export default defineConfig({
       "client/src/components/codeChat/**/*.test.ts",
       "client/src/stores/**/*.test.ts",
       "client/src/pages/wealth-engine/**/*.test.ts",
+      "client/src/lib/a11y.test.ts",
     ],
   },
 });

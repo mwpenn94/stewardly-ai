@@ -30,6 +30,7 @@ import {
   X,
 } from "lucide-react";
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   PROFILE_LIBRARY_STORAGE_KEY,
   type LibraryEntry,
@@ -75,6 +76,7 @@ function writeLibraryToStorage(lib: ProfileLibrary) {
 
 export function ProfileLibraryPanel({ open, onClose }: ProfileLibraryPanelProps) {
   const { profile, replaceProfile } = useFinancialProfile();
+  const dialogRef = useFocusTrap<HTMLDivElement>(open);
   const [library, setLibrary] = useState<ProfileLibrary>(() =>
     readLibraryFromStorage(),
   );
@@ -180,6 +182,7 @@ export function ProfileLibraryPanel({ open, onClose }: ProfileLibraryPanelProps)
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-card border border-border rounded-lg shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >

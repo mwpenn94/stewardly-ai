@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useRunTimeline } from "@/hooks/useRunTimeline";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { TimelineEntry } from "@/stores/runTimeline";
 
 interface RunTimelinePanelProps {
@@ -31,6 +32,7 @@ interface RunTimelinePanelProps {
 export function RunTimelinePanel({ open, onClose }: RunTimelinePanelProps) {
   const [, navigate] = useLocation();
   const { timeline, stats, removeRun, clearRuns } = useRunTimeline();
+  const dialogRef = useFocusTrap<HTMLDivElement>(open);
 
   const sortedEntries = useMemo(() => {
     return [...timeline.entries];
@@ -67,6 +69,7 @@ export function RunTimelinePanel({ open, onClose }: RunTimelinePanelProps) {
       }}
     >
       <div
+        ref={dialogRef}
         className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card border border-border rounded-lg shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -194,7 +197,7 @@ export function RunTimelinePanel({ open, onClose }: RunTimelinePanelProps) {
                           variant="ghost"
                           onClick={() => removeRun(entry.id)}
                           aria-label={`Delete run ${entry.label}`}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                         >
                           <Trash2 className="w-3 h-3 text-destructive" />
                         </Button>
