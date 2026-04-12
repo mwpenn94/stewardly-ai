@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { detectLifeEvents, summarizeEvents } from "./lifeEventDetector";
+import { detectLifeEvents, summarizeEvents } from "@shared/lifeEventDetector";
 
 describe("lifeEventDetector / baseline", () => {
   it("returns no events when prev is null", () => {

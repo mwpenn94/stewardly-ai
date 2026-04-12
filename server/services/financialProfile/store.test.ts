@@ -15,6 +15,7 @@ import { describe, it, expect } from "vitest";
 import {
   getProfile,
   setProfile,
+  setProfileWithEvents,
   replaceProfile,
   deleteProfile,
 } from "./store";
@@ -88,5 +89,17 @@ describe("financialProfile store / no-DB graceful degradation", () => {
   it("deleteProfile is a no-op without a DB and does not throw", async () => {
     delete process.env.DATABASE_URL;
     await expect(deleteProfile(999)).resolves.toBeUndefined();
+  });
+
+  it("setProfileWithEvents returns sanitized patch and empty events without a DB", async () => {
+    delete process.env.DATABASE_URL;
+    const result = await setProfileWithEvents(
+      111,
+      { age: 40, income: 120000 },
+      "user",
+    );
+    expect(result.profile?.age).toBe(40);
+    // Without a DB we can't read the prior snapshot, so no events fire.
+    expect(result.events).toEqual([]);
   });
 });

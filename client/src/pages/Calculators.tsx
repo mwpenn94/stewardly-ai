@@ -380,6 +380,17 @@ export default function Calculators() {
                 <CardDescription className="text-xs">Leverage analysis for high-net-worth strategies</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <FinancialProfileBanner
+                  onPrefill={(p) => {
+                    // Premium finance is profile-context aware — high net worth
+                    // users get larger default face amounts. Scale face amount
+                    // to 5× income when income is known but face isn't.
+                    if (p.income !== undefined && p.income > 0) {
+                      setPfFace(Math.max(pfFace, p.income * 40));
+                    }
+                  }}
+                  usesFields={["income", "netWorth"]}
+                />
                 <SliderInput label="Face Amount" value={pfFace} onChange={setPfFace} min={500000} max={50000000} step={250000} format={(v) => fmt(v)} />
                 <SliderInput label="Annual Premium" value={pfPremium} onChange={setPfPremium} min={5000} max={1000000} step={5000} format={(v) => fmt(v)} />
                 <SliderInput label="Loan Rate" value={pfLoanRate} onChange={setPfLoanRate} min={2} max={12} step={0.25} suffix="%" />
@@ -835,13 +846,31 @@ function MedicarePanel() {
 }
 
 function HSAOptimizerPanel() {
-  const [age, setAge] = useState(40);
+  const { profile, setProfile } = useFinancialProfile();
+  const [age, setAge] = useState(profile.age ?? 40);
   const [contribution, setContribution] = useState(3850);
   const [medExpenses, setMedExpenses] = useState(3000);
   const hsaCalc = trpc.hsaOptimizer.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
+
+  const didHydrateRef = useRef(false);
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    if (profile.age !== undefined) {
+      setAge(profile.age);
+      didHydrateRef.current = true;
+    }
+  }, [profile.age]);
+
+  const handleHSAPrefill = (p: FinancialProfile) => {
+    if (p.age !== undefined) setAge(p.age);
+  };
+
   return (
     <CalcPanel title="HSA Optimizer" icon={<Heart className="w-4 h-4" />} color="text-pink-400"
-      onCalculate={() => hsaCalc.mutate({ age, coverageType: "self", annualContribution: contribution, annualMedicalExpenses: medExpenses, marginalTaxRate: 0.24, stateTaxRate: 0.05, yearsToRetirement: 65 - age })}
+      onCalculate={() => {
+        setProfile({ age }, "user");
+        hsaCalc.mutate({ age, coverageType: "self", annualContribution: contribution, annualMedicalExpenses: medExpenses, marginalTaxRate: profile.marginalRate ?? 0.24, stateTaxRate: 0.05, yearsToRetirement: (profile.retirementAge ?? 65) - age });
+      }}
       isLoading={hsaCalc.isPending}
       result={hsaCalc.data ? (
         <Card className="bg-card/60 border-border/50 h-full">
@@ -872,6 +901,7 @@ function HSAOptimizerPanel() {
         </div>
       )}
     >
+      <FinancialProfileBanner onPrefill={handleHSAPrefill} usesFields={["age"]} />
       <SliderInput label="Age" value={age} onChange={setAge} min={18} max={64} suffix=" yrs" />
       <SliderInput label="Annual Contribution" value={contribution} onChange={setContribution} min={0} max={8550} step={50} format={fmt} />
       <SliderInput label="Annual Medical Expenses" value={medExpenses} onChange={setMedExpenses} min={0} max={50000} step={500} format={fmt} />
@@ -880,12 +910,41 @@ function HSAOptimizerPanel() {
 }
 
 function CharitablePanel() {
+  const { profile, setProfile } = useFinancialProfile();
   const [donationGoal, setDonationGoal] = useState(25000);
-  const [agi, setAgi] = useState(250000);
+  const [agi, setAgi] = useState(profile.income ?? 250000);
   const charCalc = trpc.charitableGiving.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
+
+  const didHydrateRef = useRef(false);
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    if (profile.income !== undefined) {
+      setAgi(profile.income);
+      didHydrateRef.current = true;
+    }
+  }, [profile.income]);
+
+  const handleCharPrefill = (p: FinancialProfile) => {
+    if (p.income !== undefined) setAgi(p.income);
+  };
+
   return (
     <CalcPanel title="Charitable Giving" icon={<HandCoins className="w-4 h-4" />} color="text-orange-400"
-      onCalculate={() => charCalc.mutate({ annualDonationGoal: donationGoal, marginalTaxRate: 0.32, stateTaxRate: 0.05, age: 55, filingStatus: "mfj", agi, itemizesDeductions: true })}
+      onCalculate={() => {
+        setProfile({ income: agi }, "user");
+        // charitableGiving router only accepts "single" or "mfj"
+        const charFilingStatus: "single" | "mfj" =
+          profile.filingStatus === "single" ? "single" : "mfj";
+        charCalc.mutate({
+          annualDonationGoal: donationGoal,
+          marginalTaxRate: profile.marginalRate ?? 0.32,
+          stateTaxRate: 0.05,
+          age: profile.age ?? 55,
+          filingStatus: charFilingStatus,
+          agi,
+          itemizesDeductions: true,
+        });
+      }}
       isLoading={charCalc.isPending}
       result={charCalc.data ? (
         <Card className="bg-card/60 border-border/50 h-full">
@@ -921,6 +980,7 @@ function CharitablePanel() {
         </div>
       )}
     >
+      <FinancialProfileBanner onPrefill={handleCharPrefill} usesFields={["income", "marginalRate"]} />
       <SliderInput label="AGI" value={agi} onChange={setAgi} min={50000} max={2000000} step={5000} format={fmt} />
       <SliderInput label="Donation Goal" value={donationGoal} onChange={setDonationGoal} min={1000} max={500000} step={1000} format={fmt} />
     </CalcPanel>
@@ -928,21 +988,43 @@ function CharitablePanel() {
 }
 
 function DivorcePanel() {
-  const [totalAssets, setTotalAssets] = useState(2000000);
-  const [income1, setIncome1] = useState(150000);
+  const { profile, setProfile } = useFinancialProfile();
+  const [totalAssets, setTotalAssets] = useState(profile.netWorth ?? 2000000);
+  const [income1, setIncome1] = useState(profile.income ?? 150000);
   const [income2, setIncome2] = useState(80000);
   const [yearsMarried, setYearsMarried] = useState(15);
   const divCalc = trpc.divorce.analyze.useMutation({ onError: (e: any) => toast.error(e.message) });
+
+  const didHydrateRef = useRef(false);
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    if (profile.netWorth !== undefined) setTotalAssets(profile.netWorth);
+    if (profile.income !== undefined) setIncome1(profile.income);
+    if (profile.netWorth !== undefined || profile.income !== undefined) {
+      didHydrateRef.current = true;
+    }
+  }, [profile.netWorth, profile.income]);
+
+  const handleDivorcePrefill = (p: FinancialProfile) => {
+    if (p.netWorth !== undefined) setTotalAssets(p.netWorth);
+    if (p.income !== undefined) setIncome1(p.income);
+  };
   return (
     <CalcPanel title="Divorce Analysis" icon={<Scale className="w-4 h-4" />} color="text-red-400"
-      onCalculate={() => divCalc.mutate({
-        assets: [{ name: "Primary Home", type: "real_estate", fairMarketValue: totalAssets * 0.4, classification: "marital", owner: "joint" },
-                 { name: "Retirement", type: "retirement_pretax", fairMarketValue: totalAssets * 0.3, classification: "marital", owner: "joint" },
-                 { name: "Brokerage", type: "brokerage", fairMarketValue: totalAssets * 0.2, classification: "marital", owner: "joint" },
-                 { name: "Cash", type: "cash", fairMarketValue: totalAssets * 0.1, classification: "marital", owner: "joint" }],
-        spouse1Income: income1, spouse2Income: income2, spouse1Age: 50, spouse2Age: 48,
-        yearsMarried, state: "CA", marginalRate: 0.32
-      })}
+      onCalculate={() => {
+        setProfile({ netWorth: totalAssets, income: income1 }, "user");
+        divCalc.mutate({
+          assets: [{ name: "Primary Home", type: "real_estate", fairMarketValue: totalAssets * 0.4, classification: "marital", owner: "joint" },
+                   { name: "Retirement", type: "retirement_pretax", fairMarketValue: totalAssets * 0.3, classification: "marital", owner: "joint" },
+                   { name: "Brokerage", type: "brokerage", fairMarketValue: totalAssets * 0.2, classification: "marital", owner: "joint" },
+                   { name: "Cash", type: "cash", fairMarketValue: totalAssets * 0.1, classification: "marital", owner: "joint" }],
+          spouse1Income: income1, spouse2Income: income2,
+          spouse1Age: profile.age ?? 50, spouse2Age: 48,
+          yearsMarried,
+          state: profile.stateOfResidence ?? "CA",
+          marginalRate: profile.marginalRate ?? 0.32,
+        });
+      }}
       isLoading={divCalc.isPending}
       result={divCalc.data ? (
         <Card className="bg-card/60 border-border/50 h-full">
@@ -975,6 +1057,7 @@ function DivorcePanel() {
         </div>
       )}
     >
+      <FinancialProfileBanner onPrefill={handleDivorcePrefill} usesFields={["netWorth", "income"]} />
       <SliderInput label="Total Marital Assets" value={totalAssets} onChange={setTotalAssets} min={100000} max={20000000} step={50000} format={fmt} />
       <SliderInput label="Spouse 1 Income" value={income1} onChange={setIncome1} min={0} max={1000000} step={5000} format={fmt} />
       <SliderInput label="Spouse 2 Income" value={income2} onChange={setIncome2} min={0} max={1000000} step={5000} format={fmt} />
@@ -984,13 +1067,24 @@ function DivorcePanel() {
 }
 
 function EducationPanel() {
+  const { profile } = useFinancialProfile();
   const [childAge, setChildAge] = useState(5);
   const [annualCost, setAnnualCost] = useState(40000);
   const [monthlyContribution, setMonthlyContribution] = useState(500);
   const eduCalc = trpc.educationPlanner.plan.useMutation({ onError: (e: any) => toast.error(e.message) });
+
+  // No prefill handler — the Education panel's local state
+  // (childAge / annualCost / monthlyContribution) doesn't map
+  // cleanly to profile fields, but we still show the banner as
+  // context so users know the shared profile is in scope, and
+  // we pass marginalRate through to the mutation.
+  const handleEduPrefill = () => {
+    // no-op: nothing to prefill in the child-specific inputs
+  };
+
   return (
     <CalcPanel title="Education Planner" icon={<GraduationCap className="w-4 h-4" />} color="text-indigo-400"
-      onCalculate={() => eduCalc.mutate({ childAge, annualCostToday: annualCost, monthlyContribution, marginalTaxRate: 0.24, stateTaxRate: 0.05 })}
+      onCalculate={() => eduCalc.mutate({ childAge, annualCostToday: annualCost, monthlyContribution, marginalTaxRate: profile.marginalRate ?? 0.24, stateTaxRate: 0.05 })}
       isLoading={eduCalc.isPending}
       result={eduCalc.data ? (
         <Card className="bg-card/60 border-border/50 h-full">
@@ -1029,6 +1123,10 @@ function EducationPanel() {
         </div>
       )}
     >
+      <FinancialProfileBanner
+        onPrefill={handleEduPrefill}
+        usesFields={["marginalRate", "dependents"]}
+      />
       <SliderInput label="Child's Age" value={childAge} onChange={setChildAge} min={0} max={17} suffix=" yrs" />
       <SliderInput label="Annual Cost Today" value={annualCost} onChange={setAnnualCost} min={10000} max={100000} step={1000} format={fmt} />
       <SliderInput label="Monthly Contribution" value={monthlyContribution} onChange={setMonthlyContribution} min={100} max={5000} step={50} format={fmt} />

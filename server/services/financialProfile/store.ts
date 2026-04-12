@@ -24,6 +24,10 @@ import {
   profileCompleteness,
   sanitizeProfile,
 } from "../../../shared/financialProfile";
+import {
+  detectLifeEvents,
+  type LifeEvent,
+} from "../../../shared/lifeEventDetector";
 
 /**
  * Read the saved profile for a user. Returns null when no row exists
@@ -72,11 +76,24 @@ export async function setProfile(
   patch: Partial<FinancialProfile>,
   source: FinancialProfile["source"] = "user",
 ): Promise<FinancialProfile | null> {
+  return (await setProfileWithEvents(userId, patch, source)).profile;
+}
+
+/**
+ * Same as setProfile but also returns the life events that fired
+ * as a result of the transition. Used by the chat pipeline and
+ * webhook handlers that want to proactively nudge users after a
+ * profile update.
+ */
+export async function setProfileWithEvents(
+  userId: number,
+  patch: Partial<FinancialProfile>,
+  source: FinancialProfile["source"] = "user",
+): Promise<{ profile: FinancialProfile | null; events: LifeEvent[] }> {
   const db = await getDb();
   if (!db) {
-    // Without a DB, return the sanitized patch so the caller still
-    // gets a valid object to mirror into its cache.
-    return mergeProfile({}, patch, source);
+    const merged = mergeProfile({}, patch, source);
+    return { profile: merged, events: [] };
   }
 
   try {
@@ -85,6 +102,7 @@ export async function setProfile(
     const existing = await getProfile(userId);
     const merged = mergeProfile(existing ?? {}, patch, source);
     const completeness = profileCompleteness(merged);
+    const events = detectLifeEvents(existing, merged);
 
     // mysql2 + drizzle has no portable upsert, so emulate via
     // INSERT … ON DUPLICATE KEY UPDATE via the onDuplicateKeyUpdate
@@ -107,16 +125,16 @@ export async function setProfile(
         },
       });
 
-    return merged;
+    return { profile: merged, events };
   } catch (err) {
     logger.warn(
-      { operation: "financialProfile.setProfile", userId },
+      { operation: "financialProfile.setProfileWithEvents", userId },
       "[financialProfile] write failed:",
       err,
     );
     // Even on write failure, return the sanitized merge so the
     // caller still has consistent in-memory state.
-    return mergeProfile({}, patch, source);
+    return { profile: mergeProfile({}, patch, source), events: [] };
   }
 }
 

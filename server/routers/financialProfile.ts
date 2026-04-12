@@ -23,7 +23,7 @@ import {
   deleteProfile,
   getProfile,
   replaceProfile,
-  setProfile,
+  setProfileWithEvents,
 } from "../services/financialProfile/store";
 import { suggestQuickQuotes } from "../services/quickQuoteSuggestions";
 import type { FinancialProfile } from "../../shared/financialProfile";
@@ -90,12 +90,14 @@ export const financialProfileRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const profile = await setProfile(
+      const { profile, events } = await setProfileWithEvents(
         ctx.user.id,
         input.patch as Record<string, unknown>,
         input.source,
       );
-      return { profile };
+      // Return the detected life events so clients + webhooks can
+      // surface proactive nudges (matches gap G14 — server parity).
+      return { profile, events };
     }),
 
   // ── REPLACE (wholesale overwrite) ──────────────────────────────────
