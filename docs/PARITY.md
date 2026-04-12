@@ -864,6 +864,8 @@ prior-pass-you did and didn't finish.
 | 18   | cross-calculator-data-bridge | Shared financial profile for cross-page data persistence (PARITY-PLAN-0002) | 0867e7b | useFinancialProfile hook (localStorage cross-tab sync), wired into TaxPlanning (r/w), EstatePlanning (r/w), IncomeProjection (r), InsuranceAnalysis (r). Users enter data once, flows everywhere. | — |
 | 19   | test-coverage | 42 tests for planning calculations + shared profile | 5b3d393 | planningCalculations.test.ts (27: estate tax, DIME, risk scoring, Monte Carlo) + useFinancialProfile.test.ts (15: profileValue, localStorage). 4638 passing total. | — |
 | 20   | accessibility | aria-labels + input linkage on planning pages | 200318f | Slider aria-labels on ~30 sliders across 5 pages, EstatePlanning toggle labels, IncomeProjection + InsuranceAnalysis input id/htmlFor linkage. | — |
+| 21   | dead-code + correctness | Fix useMemo misuse + unused refs | d811a8c | EstatePlanning useMemo→useEffect for debounced sync, TaxPlanning unused ref/import cleanup. | — |
+| 22   | cross-page-navigation | PlanningCrossNav + cross-calculator insights | 5326fbf | Shared nav bar on all 5 planning pages showing related tools + data indicators. Cross-page estate/insurance insights on TaxPlanning. | — |
 
 ---
 
