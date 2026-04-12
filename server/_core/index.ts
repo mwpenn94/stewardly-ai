@@ -232,8 +232,7 @@ async function startServer() {
   app.use(codeChatStreamRouter);
   app.use(automationTelemetryStreamRouter);
 
-  // ─── Code Chat SSE streaming endpoint ─────────────────────────────
-  const codeChatStreamRouter = (await import("../routes/codeChatStream")).default;
+  // ─── Code Chat SSE streaming endpoint (auth middleware) ────────────
   app.use(async (req, res, next) => {
     if (req.path === "/api/codechat/stream" && req.method === "POST") {
       try {
@@ -244,7 +243,6 @@ async function startServer() {
       } catch { res.status(401).json({ error: "Unauthorized" }); }
     } else { next(); }
   });
-  app.use(codeChatStreamRouter);
 
   // ─── SSE Streaming endpoint ──────────────────────────────────────────
   app.post("/api/chat/stream", generalLimiter, async (req, res) => {

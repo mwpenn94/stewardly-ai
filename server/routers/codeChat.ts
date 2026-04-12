@@ -226,11 +226,10 @@ import {
   type BatchOp,
 } from "../services/codeChat/batchApply";
 import { buildWorkspaceRenamePlan } from "../services/codeChat/renameSymbolRunner";
-import { runVitest } from "../services/codeChat/testRunner";
+import { parseVitestOutput } from "../services/codeChat/testRunner";
 import { inspectPackages } from "../services/codeChat/packageInspector";
 import {
-  loadTemplates as loadEnvTemplates,
-  buildReport as buildEnvReport,
+  buildEnvSnapshot as buildEnvReport,
 } from "../services/codeChat/envInspector";
 import {
   parseDiffStats,
@@ -505,8 +504,7 @@ export const codeChatRouter = router({
 
   // Pass 263: env var inspector (safe masking)
   inspectEnv: adminProcedure.query(async () => {
-    const declared = await loadEnvTemplates(WORKSPACE_ROOT);
-    return buildEnvReport(declared, process.env as Record<string, string | undefined>);
+    return buildEnvReport(process.env as Record<string, string | undefined>);
   }),
 
   // Pass 262: commit message composer (pure stats-based draft)
@@ -553,9 +551,19 @@ export const codeChatRouter = router({
       }).optional(),
     )
     .mutation(async ({ input }) => {
-      return await runVitest(WORKSPACE_ROOT, input?.target ?? "", {
-        timeoutMs: input?.target ? 60_000 : 5 * 60_000,
-      });
+      const { execSync } = await import("node:child_process");
+      const timeoutMs = input?.target ? 60_000 : 5 * 60_000;
+      try {
+        const raw = execSync(
+          `npx vitest run ${input?.target ?? ""} --reporter=verbose 2>&1`,
+          { cwd: WORKSPACE_ROOT, timeout: timeoutMs, encoding: "utf-8" },
+        );
+        return parseVitestOutput(raw);
+      } catch (e: any) {
+        // vitest exits non-zero on test failures — still parse output
+        if (e.stdout) return parseVitestOutput(e.stdout);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: e.message });
+      }
     }),
 
   applyRenameSymbol: protectedProcedure

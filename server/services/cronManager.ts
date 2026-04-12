@@ -179,14 +179,14 @@ export function stopCronManager(): void {
 
 // ─── Default Platform Jobs ─────────────────────────────────────────────
 // These are registered when the server starts, using available API keys
-export function registerPlatformJobs(apiKeys: {
+export async function registerPlatformJobs(apiKeys: {
   fred?: string;
   bls?: string;
   census?: string;
   bea?: string;
-}): void {
+}): Promise<void> {
   // Lazy import to avoid circular deps
-  const pipelines = require("./platformPipelines");
+  const pipelines = await import("./platformPipelines");
 
   if (apiKeys.fred) {
     registerJob({
@@ -265,7 +265,7 @@ export function registerPlatformJobs(apiKeys: {
     handler: async () => {
       // Refresh insights for recently active users
       const db = await requireDb();
-      const { userInsightsCache } = require("../../drizzle/schema");
+      const { userInsightsCache } = await import("../../drizzle/schema");
       const staleThreshold = new Date(Date.now() - 15 * 60 * 1000);
       
       // Find stale caches for users who were recently active
@@ -277,7 +277,7 @@ export function registerPlatformJobs(apiKeys: {
       let refreshed = 0;
       for (const cache of staleCaches) {
         try {
-          const { buildInsightContext } = require("../insightCollectors");
+          const { buildInsightContext } = await import("../insightCollectors");
           await buildInsightContext(cache.userId, "user"); // Force refresh
           refreshed++;
         } catch (e) {
