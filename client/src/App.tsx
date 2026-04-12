@@ -93,6 +93,7 @@ const MedicareAnalysis = lazy(() => import("./pages/MedicareAnalysis"));
 const RiskAssessment = lazy(() => import("./pages/RiskAssessment"));
 const IncomeProjection = lazy(() => import("./pages/IncomeProjection"));
 const PublicCalculators = lazy(() => import("./pages/PublicCalculators"));
+const FinancialPlanning = lazy(() => import("./pages/FinancialPlanning"));
 const EmbedWidget = lazy(() => import("./pages/EmbedWidget"));
 const AdvisorProfile = lazy(() => import("./pages/AdvisorProfile"));
 const TeamManagement = lazy(() => import("./pages/TeamManagement"));
@@ -212,6 +213,7 @@ function Router() {
         <Route path="/admin/webhooks" component={WebhookManager} />
         <Route path="/client-onboarding" component={ClientOnboarding} />
         <Route path="/protection-score" component={FinancialProtectionScore} />
+        <Route path="/financial-planning" component={FinancialPlanning} />
         <Route path="/community" component={Community} />
         <Route path="/unsubscribe" component={Unsubscribe} />
         <Route path="/admin/system-health" component={AdminSystemHealth} />
