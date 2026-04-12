@@ -310,6 +310,25 @@ export default function AppearanceTab() {
               aria-label="Toggle compact sidebar"
             />
           </div>
+          {/* Pass 12 (G42 opt-out): earcons mute */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <Label htmlFor="appearance-earcons-muted" className="text-sm font-medium">
+                Mute UI sounds
+              </Label>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Silence the sub-200ms confirmation tones on keyboard shortcuts,
+                palette open, and send. Does NOT mute TTS announcements or the
+                AudioCompanion player.
+              </p>
+            </div>
+            <Switch
+              id="appearance-earcons-muted"
+              checked={settings.earconsMuted}
+              onCheckedChange={(v) => updateSettings({ earconsMuted: v })}
+              aria-label="Toggle UI sounds"
+            />
+          </div>
         </CardContent>
       </Card>
 

@@ -44,6 +44,14 @@ export interface AppearanceSettings {
    * (b) optionally remap chart colors to a color-blind-safe palette.
    */
   colorBlindMode: ColorBlindMode;
+  /**
+   * Build Loop Pass 12 (G42 opt-out): when true, adds the
+   * `body.earcons-muted` class which suppresses every earcon
+   * synthesized via `lib/earcons.ts`. TTS announcements and the
+   * AudioCompanion player are NOT affected — this only mutes the
+   * sub-200ms UI confirmation tones.
+   */
+  earconsMuted: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppearanceSettings = {
@@ -53,6 +61,7 @@ export const DEFAULT_SETTINGS: AppearanceSettings = {
   reducedMotion: false,
   sidebarCompact: false,
   colorBlindMode: "off",
+  earconsMuted: false,
 };
 
 /* ── localStorage keys (stable) ────────────────────────────────── */
@@ -64,6 +73,7 @@ const KEYS = {
   reducedMotion: "wb_reduced_motion",
   sidebarCompact: "wb_sidebar_compact",
   colorBlindMode: "wb_colorblind_mode",
+  earconsMuted: "wb_earcons_muted",
   // Legacy: AppShell uses "appshell-collapsed" — we keep both in sync on save.
   sidebarLegacy: "appshell-collapsed",
 } as const;
@@ -133,6 +143,7 @@ export function computeBodyClassList(
   classes.push(`chat-density-${s.chatDensity}`);
   if (s.reducedMotion) classes.push("reduced-motion-user");
   if (s.sidebarCompact) classes.push("sidebar-compact");
+  if (s.earconsMuted) classes.push("earcons-muted");
   // Pass 10 (G13): color-blind classes. "off" doesn't emit anything,
   // any non-off value emits the generic "color-blind-mode" class
   // (which adds shape + icon adornments to every status element)
@@ -160,6 +171,7 @@ export function loadAppearanceSettings(): AppearanceSettings {
         localStorage.getItem(KEYS.sidebarCompact) === "true" ||
         localStorage.getItem(KEYS.sidebarLegacy) === "true",
       colorBlindMode: validColorBlind(localStorage.getItem(KEYS.colorBlindMode)),
+      earconsMuted: localStorage.getItem(KEYS.earconsMuted) === "true",
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -175,6 +187,7 @@ export function saveAppearanceSettings(s: AppearanceSettings): void {
     localStorage.setItem(KEYS.reducedMotion, String(s.reducedMotion));
     localStorage.setItem(KEYS.sidebarCompact, String(s.sidebarCompact));
     localStorage.setItem(KEYS.colorBlindMode, s.colorBlindMode);
+    localStorage.setItem(KEYS.earconsMuted, String(s.earconsMuted));
     // Keep the legacy AppShell key in sync so existing code path still works.
     localStorage.setItem(KEYS.sidebarLegacy, String(s.sidebarCompact));
   } catch {
@@ -202,6 +215,7 @@ const ALL_MANAGED_CLASSES = [
   "color-blind-protanopia",
   "color-blind-tritanopia",
   "color-blind-all",
+  "earcons-muted",
 ];
 
 /**

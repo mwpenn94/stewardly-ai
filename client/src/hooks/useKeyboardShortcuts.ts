@@ -18,6 +18,7 @@
  */
 import { useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
+import { playEarconById } from "@/lib/earcons";
 
 interface ShortcutDef {
   key: string;
@@ -126,6 +127,8 @@ export function useKeyboardShortcuts() {
       const match = shortcuts.find(s => s.chord === chord && s.key === key);
       if (match) {
         e.preventDefault();
+        // Pass 12 (G42): confirm tone on successful chord match
+        playEarconById("chord_matched");
         match.action();
         return;
       }
@@ -134,6 +137,11 @@ export function useKeyboardShortcuts() {
     // Start a chord
     if (key === "g") {
       pendingChord.current = "g";
+      // Pass 12 (G42): short tick when the chord is primed so users
+      // know their first key was received and we're waiting for the
+      // second. Critical for keyboard users who can't see the
+      // pending-chord state visually.
+      playEarconById("chord_primed");
       chordTimeout.current = setTimeout(() => { pendingChord.current = null; }, 500);
       return;
     }

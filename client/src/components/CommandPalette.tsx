@@ -25,7 +25,7 @@
  * Uses the shadcn/ui Command (cmdk) primitives for accessible,
  * keyboard-driven interaction.
  */
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
   CommandDialog,
@@ -84,6 +84,7 @@ import { trpc } from "@/lib/trpc";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRecentPages } from "@/hooks/useRecentPages";
 import { hasMinRole, type UserRole } from "@/lib/navigation";
+import { playEarconById } from "@/lib/earcons";
 import {
   buildPages,
   type PageEntry,
@@ -251,6 +252,17 @@ export function CommandPalette() {
       window.removeEventListener("toggle-command-palette", toggleHandler as EventListener);
     };
   }, []);
+
+  // Pass 12 (G42): earcon on open/close so keyboard + SR users get a
+  // confirmation tone when they invoke the palette. Fires on state
+  // transitions only (not re-renders).
+  const prevOpenRef = useRef(open);
+  useEffect(() => {
+    if (prevOpenRef.current !== open) {
+      playEarconById(open ? "palette_open" : "palette_close");
+      prevOpenRef.current = open;
+    }
+  }, [open]);
 
   // Reset query when closing
   useEffect(() => {

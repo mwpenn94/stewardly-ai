@@ -22,7 +22,7 @@ import { recordPageVisit } from "@/hooks/useRecentPages";
 // were deleted because PersonaSidebar5 fully replaces them. AppShell now
 // imports only what it actually renders (mobile header, bottom tab bar,
 // skip-link, persona sidebar, bottom-banner).
-import { MessageSquare, Brain, Menu, Calculator, GraduationCap } from "lucide-react";
+import { MessageSquare, Brain, Menu, Calculator, GraduationCap, AudioLines } from "lucide-react";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -227,11 +227,14 @@ export default function AppShell({ children, title }: AppShellProps) {
           {children}
         </main>
 
-        {/* Pass 92 (Target 8): mobile bottom tab bar — 5 tabs max per the
-            v10.0 prompt. Hidden on lg+ where the persistent sidebar is
-            visible. Always-visible "Menu" tab opens the full sidebar
-            sheet so every other nav item is still reachable. Touch
-            targets are 44px+ tall (WCAG 2.5.5). */}
+        {/* Pass 92 (Target 8) + Pass 12 (G41): mobile bottom tab bar.
+            Pass 12 replaced the 4-nav-tab + Menu layout with a
+            4-nav-tab + Voice layout — the hamburger lives on the
+            mobile header bar at the top already, so using the
+            bottom-right slot for a dedicated Voice toggle gives
+            mobile users a thumb-reach entry point to hands-free
+            mode without having to go find the mic button inside
+            Chat. Touch targets 44px+ per WCAG 2.5.5. */}
         <nav
           aria-label="Primary mobile navigation"
           className="lg:hidden fixed bottom-0 left-0 right-0 z-30 h-16 bg-card/95 backdrop-blur-sm border-t border-border flex items-stretch"
@@ -249,7 +252,7 @@ export default function AppShell({ children, title }: AppShellProps) {
                 onClick={() => navigate(tab.href)}
                 aria-label={tab.label}
                 aria-current={active ? "page" : undefined}
-                className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 transition-colors ${
+                className={`flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 transition-colors min-h-[44px] ${
                   active
                     ? "text-accent"
                     : "text-muted-foreground hover:text-foreground"
@@ -260,10 +263,31 @@ export default function AppShell({ children, title }: AppShellProps) {
               </button>
             );
           })}
+          {/* Voice quick-access tab — dispatches the same event the
+              Shift+V keyboard shortcut does (chat:toggle-handsfree
+              when on /chat, pil:toggle-handsfree otherwise). Also
+              long-press → open the full menu so power users still
+              have a fallback. */}
+          <button
+            onClick={() => {
+              const onChat = location.startsWith("/chat");
+              window.dispatchEvent(
+                new CustomEvent(onChat ? "chat:toggle-handsfree" : "pil:toggle-handsfree"),
+              );
+            }}
+            onDoubleClick={() => setMobileOpen(true)}
+            aria-label="Toggle voice mode (double-tap to open menu)"
+            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-muted-foreground hover:text-accent transition-colors min-h-[44px]"
+          >
+            <AudioLines className="w-5 h-5" />
+            <span className="text-[10px] font-medium truncate">Voice</span>
+          </button>
+          {/* Menu tab moved next to Voice — keeps the original one-tap
+              path for users who never noticed the header hamburger. */}
           <button
             onClick={() => setMobileOpen(true)}
             aria-label="Open full menu"
-            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-muted-foreground hover:text-foreground transition-colors"
+            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 px-1 text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
           >
             <Menu className="w-5 h-5" />
             <span className="text-[10px] font-medium truncate">Menu</span>
