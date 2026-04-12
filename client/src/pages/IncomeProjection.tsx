@@ -19,8 +19,9 @@ import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { ArrowLeft, DollarSign, TrendingUp, PiggyBank, BarChart3, Clock, Plus, Trash2, Loader2, Play } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { persistCalculation } from "@/lib/calculatorContext";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -201,6 +202,20 @@ export default function IncomeProjection() {
   const depletionAge = projection.find(r => r.balance <= 0)?.age;
 
   const ssResult = ssCalc.data as any;
+
+  // Persist income projection results to calculator context for chat follow-up
+  useEffect(() => {
+    const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+    persistCalculation({
+      id: `income-${currentAge}-${retirementAge}-${portfolioBalance}`,
+      type: "income",
+      title: "Income Projection",
+      summary: `Retire at ${retirementAge}, portfolio ${fmt(portfolioBalance)}, target ${fmt(targetMonthly)}/mo, Monte Carlo ${successRate.toFixed(0)}% success${depletionAge ? `, depletion at age ${depletionAge}` : ", sustainable"}, withdrawal rate ${withdrawalRate.toFixed(1)}%`,
+      inputs: { currentAge, retirementAge, lifeExpectancy, portfolioBalance, targetMonthly, expectedReturn, inflationRate },
+      outputs: { successRate, withdrawalRate, depletionAge: depletionAge ?? null, totalMonthlyAtRetirement, totalMonthlyAtFull },
+      timestamp: Date.now(),
+    });
+  }, [successRate, withdrawalRate, depletionAge, currentAge, retirementAge, portfolioBalance, targetMonthly]);
 
   return (
     <AppShell title="Income Projection">

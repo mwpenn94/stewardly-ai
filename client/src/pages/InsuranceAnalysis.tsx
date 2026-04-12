@@ -18,8 +18,9 @@ import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { ArrowLeft, Shield, Heart, Home, Car, Umbrella, AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { persistCalculation } from "@/lib/calculatorContext";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -186,6 +187,20 @@ export default function InsuranceAnalysis() {
     score += Math.min(10, Math.round((dime.coverageRatio / 100) * 10));
     return Math.min(100, score);
   }, [needs, dime]);
+
+  // Persist insurance results to calculator context for chat follow-up
+  useEffect(() => {
+    const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+    persistCalculation({
+      id: `insurance-${annualIncome}-${childrenCount}`,
+      type: "insurance",
+      title: "Insurance Needs Analysis",
+      summary: `DIME need: ${fmt(dime.total)}, existing: ${fmt(existingLifeInsurance)}, gap: ${fmt(dime.gap)}, coverage score: ${coverageScore}/100${needs.lifeGap > 0 ? `, life gap: ${fmt(needs.lifeGap)}` : ""}`,
+      inputs: { annualIncome, yearsToReplace, mortgageBalance, otherDebts, childrenCount, educationPerChild, existingLifeInsurance },
+      outputs: { dimeTotal: dime.total, gap: dime.gap, recommended: dime.recommended, coverageScore, lifeGap: needs.lifeGap },
+      timestamp: Date.now(),
+    });
+  }, [dime, needs, coverageScore, annualIncome, childrenCount, existingLifeInsurance]);
 
   return (
     <AppShell title="Insurance Analysis">
