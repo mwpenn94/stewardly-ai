@@ -48,6 +48,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G24 | P2   | dynamic-crud    | Override diff + audit trail (diffOverrideSets)                             | done        | build-loop-p5    | 4/10  | pending |
 | G25 | P1   | dynamic-crud    | Deep auth probe — JWT/API-key/Basic/OAuth detection from error bodies      | done        | build-loop-p13   | 5/10  | pending |
 | G26 | P1   | observability   | Pipeline run telemetry store + health summaries (per-source + global)     | done        | build-loop-p14   | 5/10  | pending |
+| G27 | P0   | security        | PII/secret redaction for sample records (SSN/CC/API key/JWT/PEM/bearer)    | done        | build-loop-p15   | 6/10  | pending |
 
 ## Protected Improvements
 
@@ -106,4 +107,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 - Pass 11 · drift-aware pipeline orchestrator · [R1: G5, A1: 6-phase runner, A2: progress callback + abort signal] · 8946c4e · G5 done · G12 deferred
 - Pass 12 · adapter DSL serialization · [R1: G12, A1: canonical JSON + SHA256 fingerprint, A2: parser + bumpVersion] · 7951cf1 · G12 done · all original gaps closed
 - Pass 13 · deep auth probe · [A1: error-body keyword detection, A2: header conventions + OAuth discovery] · c88ae96 · G25 done
-- Pass 14 · pipeline telemetry · [A1 observability: ring-buffer store + per-source/global health, A2: flaky detection] · pending · G26 done
+- Pass 14 · pipeline telemetry · [A1 observability: ring-buffer store + per-source/global health, A2: flaky detection] · 75413d0 · G26 done
+- Pass 15 · sensitive redaction · [A1 security: mask/tokenize/nullify strategies, A2: field-name + value-pattern matchers] · pending · G27 done
