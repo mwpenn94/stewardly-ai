@@ -13,7 +13,7 @@
  *     final-year totalLiquidWealth ± a 15% band (matches v7 default).
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,13 +28,42 @@ import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportB
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { Loader2, Target, Sliders, ShieldCheck } from "lucide-react";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import { CompletenessGate } from "@/components/financial-profile/CompletenessGate";
+import type { FinancialProfile } from "@/stores/financialProfile";
 
 export default function RetirementPage() {
-  const [age, setAge] = useState(40);
-  const [retirementAge, setRetirementAge] = useState(65);
-  const [income, setIncome] = useState(120_000);
-  const [savings, setSavings] = useState(180_000);
+  const { profile: savedProfile, setProfile: setSavedProfile, hasProfile } =
+    useFinancialProfile();
+
+  const [age, setAge] = useState(savedProfile.age ?? 40);
+  const [retirementAge, setRetirementAge] = useState(
+    savedProfile.retirementAge ?? 65,
+  );
+  const [income, setIncome] = useState(savedProfile.income ?? 120_000);
+  const [savings, setSavings] = useState(savedProfile.savings ?? 180_000);
   const [targetValue, setTargetValue] = useState(2_000_000);
+
+  // One-shot late hydration for when the profile lands after mount
+  const didHydrateRef = useRef(hasProfile);
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    if (!hasProfile) return;
+    didHydrateRef.current = true;
+    if (savedProfile.age !== undefined) setAge(savedProfile.age);
+    if (savedProfile.retirementAge !== undefined)
+      setRetirementAge(savedProfile.retirementAge);
+    if (savedProfile.income !== undefined) setIncome(savedProfile.income);
+    if (savedProfile.savings !== undefined) setSavings(savedProfile.savings);
+  }, [hasProfile, savedProfile]);
+
+  const handlePrefill = (p: FinancialProfile) => {
+    if (p.age !== undefined) setAge(p.age);
+    if (p.retirementAge !== undefined) setRetirementAge(p.retirementAge);
+    if (p.income !== undefined) setIncome(p.income);
+    if (p.savings !== undefined) setSavings(p.savings);
+  };
 
   const horizon = retirementAge - age;
 
@@ -42,20 +71,33 @@ export default function RetirementPage() {
     () => ({
       age,
       income,
-      netWorth: 350_000,
+      netWorth: savedProfile.netWorth ?? 350_000,
       savings,
-      dependents: 2,
-      mortgage: 250_000,
-      debts: 30_000,
-      marginalRate: 0.25,
+      dependents: savedProfile.dependents ?? 2,
+      mortgage: savedProfile.mortgage ?? 250_000,
+      debts: savedProfile.debts ?? 30_000,
+      marginalRate: savedProfile.marginalRate ?? 0.25,
     }),
-    [age, income, savings],
+    [age, income, savings, savedProfile],
   );
+
+  const persistToProfile = () => {
+    setSavedProfile(
+      {
+        age,
+        retirementAge,
+        income,
+        savings,
+      },
+      "user",
+    );
+  };
 
   const runPreset = trpc.wealthEngine.runPreset.useMutation();
   const backPlan = trpc.wealthEngine.backPlanHolistic.useMutation();
 
   const onRunGoal = () => {
+    persistToProfile();
     runPreset.mutate({
       preset: "wealthbridgeClient",
       profile,
@@ -64,6 +106,7 @@ export default function RetirementPage() {
   };
 
   const onRunBackPlan = () => {
+    persistToProfile();
     backPlan.mutate({
       targetValue,
       targetYear: horizon,
@@ -106,11 +149,17 @@ export default function RetirementPage() {
           <CardHeader>
             <CardTitle className="text-base">Your Inputs</CardTitle>
           </CardHeader>
-          <CardContent className="grid md:grid-cols-4 gap-4">
-            <NumberInput label="Current Age" value={age} onChange={setAge} min={18} max={80} />
-            <NumberInput label="Retirement Age" value={retirementAge} onChange={setRetirementAge} min={age + 1} max={90} />
-            <NumberInput label="Annual Income" value={income} onChange={setIncome} step={5000} />
-            <NumberInput label="Current Savings" value={savings} onChange={setSavings} step={5000} />
+          <CardContent className="space-y-4">
+            <FinancialProfileBanner
+              onPrefill={handlePrefill}
+              usesFields={["age", "retirementAge", "income", "savings"]}
+            />
+            <div className="grid md:grid-cols-4 gap-4">
+              <NumberInput label="Current Age" value={age} onChange={setAge} min={18} max={80} />
+              <NumberInput label="Retirement Age" value={retirementAge} onChange={setRetirementAge} min={age + 1} max={90} />
+              <NumberInput label="Annual Income" value={income} onChange={setIncome} step={5000} />
+              <NumberInput label="Current Savings" value={savings} onChange={setSavings} step={5000} />
+            </div>
           </CardContent>
         </Card>
 
@@ -130,28 +179,42 @@ export default function RetirementPage() {
 
           {/* GOAL */}
           <TabsContent value="goal" className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Button onClick={onRunGoal} disabled={runPreset.isPending}>
-                {runPreset.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Target className="mr-2 h-4 w-4" />}
-                Run Goal Projection ({horizon} yrs)
-              </Button>
-              {finalSnap && (
-                <DownloadReportButton
-                  template="executive_summary"
-                  clientName="WealthBridge Client"
-                  payload={{
-                    kind: "executive_summary",
-                    input: {
-                      clientName: "WealthBridge Client",
-                      horizon,
-                      finalSnapshot: finalSnap,
-                      winners: {},
-                      topStrategies: [],
-                    },
-                  }}
-                />
+            <CompletenessGate
+              requiredFields={["age", "income", "savings"]}
+              optionalFields={[
+                "retirementAge",
+                "marginalRate",
+                "netWorth",
+                "monthlySavings",
+                "dependents",
+              ]}
+              title="Goal projection inputs"
+            >
+              {() => (
+                <div className="flex items-center gap-2">
+                  <Button onClick={onRunGoal} disabled={runPreset.isPending}>
+                    {runPreset.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Target className="mr-2 h-4 w-4" />}
+                    Run Goal Projection ({horizon} yrs)
+                  </Button>
+                  {finalSnap && (
+                    <DownloadReportButton
+                      template="executive_summary"
+                      clientName="WealthBridge Client"
+                      payload={{
+                        kind: "executive_summary",
+                        input: {
+                          clientName: "WealthBridge Client",
+                          horizon,
+                          finalSnapshot: finalSnap,
+                          winners: {},
+                          topStrategies: [],
+                        },
+                      }}
+                    />
+                  )}
+                </div>
               )}
-            </div>
+            </CompletenessGate>
             {projection.length > 0 && (
               <Card>
                 <CardHeader>
