@@ -166,6 +166,21 @@ export default function ComparablesPage() {
         title="Comparables · Stewardly"
         description="Competitive gap dashboard — how Stewardly compares to other advisor AI and wealth platforms."
       />
+      {/* Pass 8 accessibility audit: skip link + aria-live status region
+          for data loading. Pairs with the existing tabIndex={-1} main. */}
+      <a
+        href="#comparables-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-foreground"
+      >
+        Skip to main content
+      </a>
+      <div role="status" aria-live="polite" className="sr-only">
+        {isLoading
+          ? "Loading competitive catalog."
+          : summary
+            ? `Comparables loaded. Stewardly is ranked ${summary.stewardlyRank} of ${ranking.length} with ${summary.overallPct}% overall depth.`
+            : ""}
+      </div>
       <main
         id="comparables-main"
         tabIndex={-1}
@@ -322,7 +337,11 @@ export default function ComparablesPage() {
                   <p className="mt-1 text-sm text-muted-foreground">
                     {p.reason}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
+                  <div
+                    className="mt-2 flex flex-wrap gap-1.5"
+                    role="group"
+                    aria-label={`Comparables that ship ${p.axis.label}`}
+                  >
                     {p.exemplars.map((ex) => (
                       <Button
                         key={ex.id}
@@ -330,6 +349,7 @@ export default function ComparablesPage() {
                         variant="outline"
                         className="h-6 px-2 text-[11px]"
                         onClick={() => setSelectedId(ex.id)}
+                        aria-label={`Open ${ex.name} deep-dive — exemplar for ${p.axis.label}`}
                       >
                         {ex.name}
                       </Button>
@@ -424,10 +444,11 @@ export default function ComparablesPage() {
                                   key={l.app.id}
                                   type="button"
                                   onClick={() => setSelectedId(l.app.id)}
-                                  className="rounded border border-border/60 px-1.5 py-0.5 text-[11px] text-muted-foreground hover:border-accent hover:text-accent"
+                                  aria-label={`Open ${l.app.name} deep-dive — scored ${l.score} of 3 on ${row.axis.label}`}
+                                  className="rounded border border-border/60 px-1.5 py-0.5 text-[11px] text-muted-foreground hover:border-accent hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                                 >
                                   {l.app.name}
-                                  <span className="ml-1 tabular-nums">
+                                  <span className="ml-1 tabular-nums" aria-hidden="true">
                                     {l.score}
                                   </span>
                                 </button>
@@ -520,7 +541,8 @@ export default function ComparablesPage() {
                           key={app.id}
                           type="button"
                           onClick={() => setSelectedId(app.id)}
-                          className="group flex flex-col gap-1 rounded-md border border-border bg-card p-3 text-left transition-colors hover:border-accent"
+                          aria-label={`Open ${app.name} deep-dive — ${total} total points, beats Stewardly on ${beats} axes, status ${app.status}`}
+                          className="group flex flex-col gap-1 rounded-md border border-border bg-card p-3 text-left transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-medium group-hover:text-accent">
