@@ -655,7 +655,7 @@ export const wealthEngineRouter = router({
           });
           const snapshots = heSimulate(strategy, sweepHorizon);
           const final = snapshots[snapshots.length - 1];
-          const val = final ? (final as Record<string, unknown>)[metric] as number ?? 0 : 0;
+          const val = final ? (final as unknown as Record<string, unknown>)[metric] as number ?? 0 : 0;
           row.push(Math.round(val));
           if (val < minVal) minVal = val;
           if (val > maxVal) maxVal = val;

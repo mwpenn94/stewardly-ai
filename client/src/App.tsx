@@ -38,6 +38,7 @@ const WePracticeToWealth = lazy(() => import("./pages/wealth-engine/PracticeToWe
 const WeQuickQuote = lazy(() => import("./pages/wealth-engine/QuickQuoteFlow"));
 const WeSensitivity = lazy(() => import("./pages/wealth-engine/Sensitivity"));
 const WeReferenceHub = lazy(() => import("./pages/wealth-engine/ReferenceHub"));
+const WeTeamBuilder = lazy(() => import("./pages/wealth-engine/TeamBuilder"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 // Consensus (Round C3 — multi-model consensus stream UI)
@@ -155,6 +156,7 @@ function Router() {
         <Route path={"/wealth-engine/quick-quote"} component={WeQuickQuote} />
         <Route path={"/wealth-engine/sensitivity"} component={WeSensitivity} />
         <Route path={"/wealth-engine/references"} component={WeReferenceHub} />
+        <Route path={"/wealth-engine/team-builder"} component={WeTeamBuilder} />
         {/* Code Chat (admin foundation) */}
         <Route path={"/code-chat"} component={CodeChatPage} />
         {/* Consensus (Round C — multi-model consensus stream) */}
