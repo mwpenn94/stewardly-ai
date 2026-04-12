@@ -1413,10 +1413,18 @@ export function scoreRiskTolerance(input: RiskToleranceInput): RiskToleranceOutp
   else if (compositeScore < 75) category = "moderately_aggressive";
   else category = "aggressive";
 
-  // Recommended allocation
-  const stockAlloc = Math.round(Math.min(95, Math.max(20, compositeScore * 0.9 + 10)));
-  const bondAlloc = Math.round(Math.min(60, Math.max(5, (100 - compositeScore) * 0.7)));
-  const altAlloc = Math.round(Math.min(20, compositeScore > 50 ? (compositeScore - 50) * 0.4 : 0));
+  // Recommended allocation — normalize to exactly 100%
+  let stockAlloc = Math.round(Math.min(95, Math.max(20, compositeScore * 0.9 + 10)));
+  let bondAlloc = Math.round(Math.min(60, Math.max(5, (100 - compositeScore) * 0.7)));
+  let altAlloc = Math.round(Math.min(20, compositeScore > 50 ? (compositeScore - 50) * 0.4 : 0));
+  // Clamp stock+bond+alt to leave room for cash (min 0%)
+  const nonCashTotal = stockAlloc + bondAlloc + altAlloc;
+  if (nonCashTotal > 100) {
+    const scale = 100 / nonCashTotal;
+    stockAlloc = Math.round(stockAlloc * scale);
+    bondAlloc = Math.round(bondAlloc * scale);
+    altAlloc = 100 - stockAlloc - bondAlloc; // residual to avoid rounding drift
+  }
   const cashAlloc = Math.max(0, 100 - stockAlloc - bondAlloc - altAlloc);
 
   // Warnings for mismatches

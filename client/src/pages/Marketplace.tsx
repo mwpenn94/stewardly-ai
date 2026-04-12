@@ -632,12 +632,14 @@ export default function Marketplace() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1">
+          <div className="flex gap-1" role="tablist" aria-label="Marketplace sections">
             {tabs.map(tab => (
               <Button
                 key={tab.id}
                 variant="ghost"
                 size="sm"
+                role="tab"
+                aria-selected={activeTab === tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`gap-2 ${
                   activeTab === tab.id

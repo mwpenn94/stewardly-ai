@@ -23,6 +23,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -263,6 +264,7 @@ export default function StrategyComparisonPage() {
 
   return (
     <AppShell title="Strategy Comparison">
+      <SectionErrorBoundary sectionName="Strategy Comparison">
       <div className="p-6 max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
@@ -913,6 +915,7 @@ export default function StrategyComparisonPage() {
           </p>
         )}
       </div>
+      </SectionErrorBoundary>
     </AppShell>
   );
 }

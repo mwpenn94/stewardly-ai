@@ -16,6 +16,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
+import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -195,6 +196,7 @@ export default function RetirementPage() {
 
   return (
     <AppShell title="Retirement">
+      <SectionErrorBoundary sectionName="Retirement Calculator">
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Retirement Planning</h1>
@@ -537,6 +539,7 @@ export default function RetirementPage() {
           </Card>
         )}
       </div>
+      </SectionErrorBoundary>
     </AppShell>
   );
 }

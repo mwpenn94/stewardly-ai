@@ -124,12 +124,14 @@ export default function SettingsHub() {
           bg-card/20 md:bg-transparent
           fixed md:relative inset-0 top-14 z-20 md:z-0
         `}>
-          <div className="p-3 space-y-1">
+          <div className="p-3 space-y-1" role="tablist" aria-label="Settings sections" aria-orientation="vertical">
             {TABS.map((tab) => {
               const tabRequiresAuth = !isAuthenticated && !ANONYMOUS_TABS.includes(tab.id);
               return (
                 <button
                   key={tab.id}
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
                   onClick={() => { setActiveTab(tab.id); setMobileNavOpen(false); }}
                   className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
                     activeTab === tab.id
