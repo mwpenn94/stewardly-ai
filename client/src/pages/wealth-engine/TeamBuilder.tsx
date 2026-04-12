@@ -27,9 +27,10 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   Users, Plus, Trash2, Target, TrendingUp, DollarSign, BarChart3,
-  Loader2, Play, ArrowDown, ArrowUp, Briefcase, Megaphone, Calendar,
+  Loader2, Play, ArrowDown, ArrowUp, Briefcase, Megaphone, Calendar, Crosshair,
 } from "lucide-react";
 import { sendFeedback } from "@/lib/feedbackSpecs";
+import BackPlanFunnel from "@/components/BackPlanFunnel";
 
 /* ── helpers ───────────────────────────────────────────────────── */
 
@@ -103,6 +104,10 @@ export default function TeamBuilder() {
   const [teamGrowth, setTeamGrowth] = useState(0.08);
   const [years, setYears] = useState(5);
 
+  // Back-plan
+  const [targetIncome, setTargetIncome] = useState(200000);
+  const [backPlanRole, setBackPlanRole] = useState("dir");
+
   // Build strategies for API calls
   type BIERole = "new" | "exp" | "sa" | "dir" | "md" | "rvp" | "affA" | "affB" | "affC" | "affD" | "partner";
 
@@ -131,6 +136,9 @@ export default function TeamBuilder() {
     onSuccess: () => sendFeedback("calculator.result"),
   });
   const economics = trpc.calculatorEngine.bieEconomics.useMutation({
+    onSuccess: () => sendFeedback("calculator.result"),
+  });
+  const bieBackPlan = trpc.calculatorEngine.bieBackPlan.useMutation({
     onSuccess: () => sendFeedback("calculator.result"),
   });
 
@@ -179,7 +187,11 @@ export default function TeamBuilder() {
     economics.mutate({ strategy: strategies[0], years });
   };
 
-  const isLoading = rollUp.isPending || rollDown.isPending || economics.isPending;
+  const runBackPlan = () => {
+    bieBackPlan.mutate({ targetIncome, role: backPlanRole as any });
+  };
+
+  const isLoading = rollUp.isPending || rollDown.isPending || economics.isPending || bieBackPlan.isPending;
 
   return (
     <AppShell title="BIE Team Builder">
@@ -201,10 +213,11 @@ export default function TeamBuilder() {
         </div>
 
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid grid-cols-5 w-full">
+          <TabsList className="grid grid-cols-6 w-full">
             <TabsTrigger value="compose" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Compose</TabsTrigger>
             <TabsTrigger value="rollup" className="gap-1.5 text-xs"><ArrowUp className="h-3.5 w-3.5" /> Roll-Up</TabsTrigger>
             <TabsTrigger value="rolldown" className="gap-1.5 text-xs"><ArrowDown className="h-3.5 w-3.5" /> Roll-Down</TabsTrigger>
+            <TabsTrigger value="backplan" className="gap-1.5 text-xs"><Crosshair className="h-3.5 w-3.5" /> Back-Plan</TabsTrigger>
             <TabsTrigger value="economics" className="gap-1.5 text-xs"><BarChart3 className="h-3.5 w-3.5" /> Economics</TabsTrigger>
             <TabsTrigger value="campaigns" className="gap-1.5 text-xs"><Megaphone className="h-3.5 w-3.5" /> Campaigns</TabsTrigger>
           </TabsList>
@@ -456,6 +469,62 @@ export default function TeamBuilder() {
                   </div>
                 </CardContent>
               </Card>
+            )}
+          </TabsContent>
+
+          {/* ── BACK-PLAN TAB ───────────────────────────────── */}
+          <TabsContent value="backplan" className="space-y-4 mt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-heading font-semibold flex items-center gap-2">
+                  <Crosshair className="h-5 w-5 text-accent" /> Income Back-Plan
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Set a target annual income and see exactly what activity is required to achieve it.
+                </p>
+              </div>
+              <Button onClick={runBackPlan} disabled={isLoading} className="gap-1.5">
+                {bieBackPlan.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                Solve Back-Plan
+              </Button>
+            </div>
+
+            <Card>
+              <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Target Annual Income</Label>
+                  <div className="flex items-center gap-3">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      value={targetIncome}
+                      onChange={(e) => setTargetIncome(Number(e.target.value) || 0)}
+                      className="w-48"
+                      step={10000}
+                    />
+                    <span className="text-sm text-muted-foreground">{fmt(targetIncome)}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Role for Back-Plan</Label>
+                  <Select value={backPlanRole} onValueChange={setBackPlanRole}>
+                    <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ROLES.map((r) => (
+                        <SelectItem key={r.key} value={r.key}>{r.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {bieBackPlan.data && (
+              <BackPlanFunnel
+                result={bieBackPlan.data as any}
+                targetIncome={targetIncome}
+                title="Activity Funnel — What It Takes"
+              />
             )}
           </TabsContent>
 

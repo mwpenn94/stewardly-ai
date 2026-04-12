@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import {
@@ -214,6 +215,13 @@ export default function QuickQuoteFlowPage() {
                   </div>
                 </>
               )}
+              {/* Context: guardrail warnings + industry benchmarks */}
+              <CalculatorContextBar
+                params={{ savingsRate: inputs.income > 0 ? (inputs.monthlySavings * 12) / inputs.income : 0 }}
+                showBenchmarks
+                className="space-y-3"
+              />
+
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={() => setStep(2)}>
                   <ChevronLeft className="mr-2 h-4 w-4" /> Back
