@@ -32,7 +32,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G9  | P2   | crm             | CRM field auto-map from inferred schema → canonical CRM shape              | done        | build-loop-p1    | 6/10  | pending |
 | G10 | P1   | continuous      | Schema drift detector — re-infer, diff, flag for review                    | done        | build-loop-p1    | 6/10  | pending |
 | G11 | P2   | model-training  | Cross-model distillation loop (learn from other models' outputs)           | done        | build-loop-p1    | 5/10  | pending |
-| G12 | P2   | agentic-ai      | Universal adapter DSL — declarative integration spec the agent can emit    | open        | build-loop-p1    | 0/10  | —       |
+| G12 | P2   | agentic-ai      | Universal adapter DSL — declarative integration spec the agent can emit    | done        | build-loop-p1    | 6/10  | pending |
 
 | G13 | P1   | dynamic-crud    | Pagination probe — cursor/offset/page/link_header detection                | done        | build-loop-p2    | 5/10  | pending |
 | G14 | P1   | dynamic-crud    | Collection-path probe — detect where records live in response body        | done        | build-loop-p2    | 5/10  | pending |
@@ -101,4 +101,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 - Pass 8 · cross-model distillation · [R1: G11, A1: claim extraction + clustering + training examples] · f6677d4 · G11 done · G5/G6/G8/G12 deferred
 - Pass 9 · rate limiter · [R1: G6, A1: token bucket + per-source registry, A2: virtual-clock tests] · aedee23 · G6 done · G5/G8/G12 deferred
 - Pass 10 · personalization fold-back · [R1: G8, A1: trigger rules + dedup, A2: CRM-aware augment] · e6747bd · G8 done · G5/G12 deferred
-- Pass 11 · drift-aware pipeline orchestrator · [R1: G5, A1: 6-phase runner, A2: progress callback + abort signal] · pending · G5 done · G12 deferred
+- Pass 11 · drift-aware pipeline orchestrator · [R1: G5, A1: 6-phase runner, A2: progress callback + abort signal] · 8946c4e · G5 done · G12 deferred
+- Pass 12 · adapter DSL serialization · [R1: G12, A1: canonical JSON + SHA256 fingerprint, A2: parser + bumpVersion] · pending · G12 done · all original gaps closed
