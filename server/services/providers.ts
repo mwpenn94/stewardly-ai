@@ -11,7 +11,7 @@
  * - Client: Plaid, Yodlee, MX, manual upload, carrier import
  */
 
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { integrationConnections, integrationSyncLogs, enrichmentCache } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { encrypt, decrypt } from "./encryption";
@@ -43,7 +43,7 @@ export abstract class BaseProvider {
   abstract normalizeData(rawData: unknown[]): Record<string, unknown>[];
 
   async sync(config: ProviderConfig): Promise<SyncResult> {
-    const db = await getDb(); if (!db) return null as any;
+    const db = await requireDb();
     const startedAt = new Date();
     const syncId = uuid();
 
@@ -227,7 +227,7 @@ export class PlaidProvider extends BaseProvider {
     }
 
     // Cache normalized data
-    const db = await getDb(); if (!db) return null as any;
+    const db = await requireDb();
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 4);
 

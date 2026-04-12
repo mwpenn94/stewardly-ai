@@ -1,7 +1,7 @@
 /**
  * Meeting Intelligence — transcription pipeline, pre-meeting briefs, action items (1C)
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { meetings } from "../../drizzle/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { contextualLLM } from "../shared/stewardlyWiring";
@@ -45,7 +45,7 @@ export interface MeetingSummary {
 
 // ─── Pre-Meeting Brief ─────────────────────────────────────────────────────
 export async function generatePreMeetingBrief(userId: number, clientId: number): Promise<MeetingBrief> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const recentMeetings = await db.select().from(meetings)
     .where(and(eq(meetings.userId, userId)))
     .orderBy(desc(meetings.createdAt))

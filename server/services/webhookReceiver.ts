@@ -2,7 +2,7 @@
  * Webhook Receiver — POST /api/webhooks/provider/:connectionId
  * Validates signatures, routes events, logs to integration_webhook_events
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { integrationWebhookEvents } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import crypto from "crypto";
@@ -47,7 +47,7 @@ function detectEventType(provider: string, body: unknown): string {
 }
 
 export async function processWebhook(payload: WebhookPayload): Promise<WebhookResult> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const eventType = detectEventType(payload.provider, payload.body);
   const eventId = crypto.randomUUID();
 
@@ -77,12 +77,12 @@ export async function processWebhook(payload: WebhookPayload): Promise<WebhookRe
 }
 
 export async function listWebhookEvents(connectionId: string, limit = 50) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(integrationWebhookEvents).where(eq(integrationWebhookEvents.connectionId, connectionId)).orderBy(desc(integrationWebhookEvents.receivedAt)).limit(limit);
 }
 
 export async function retryWebhookEvent(eventId: string): Promise<WebhookResult> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [event] = await db.select().from(integrationWebhookEvents).where(eq(integrationWebhookEvents.id, eventId));
   if (!event) throw new Error("Event not found");
   return processWebhook({

@@ -1,7 +1,7 @@
 /**
  * Adaptive Suggested Prompts (1B) + UX Polish (5A) + Multi-Tenant (5B) + Data Ingestion Activation (5C)
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { conversations, messages } from "../../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 import { contextualLLM } from "../shared/stewardlyWiring";
@@ -28,7 +28,7 @@ const BASE_PROMPTS: SuggestedPrompt[] = [
 ];
 
 export async function getAdaptivePrompts(userId: number, limit = 4): Promise<SuggestedPrompt[]> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
 
   // Get recent conversation topics
   const recentConvos = await db.select({ topic: conversations.title })

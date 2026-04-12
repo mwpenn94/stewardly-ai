@@ -2,7 +2,7 @@
  * C6 — AI Tools Registry Service
  * Register tools, call them from chat, chain multiple tools, discover available tools
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { aiTools, aiToolCalls } from "../../drizzle/schema";
 import { eq, and, desc, like } from "drizzle-orm";
 
@@ -12,7 +12,7 @@ export async function registerTool(data: {
   description: string; inputSchema: any; outputSchema?: any;
   trpcProcedure: string; requiresAuth?: boolean; requiresConfirmation?: boolean;
 }) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [row] = await db.insert(aiTools).values({
     toolName: data.toolName,
     toolType: data.toolType,
@@ -30,19 +30,19 @@ export async function updateTool(id: number, data: Partial<{
   description: string; inputSchema: any; outputSchema: any;
   trpcProcedure: string; requiresAuth: boolean; requiresConfirmation: boolean; active: boolean;
 }>) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   await db.update(aiTools).set(data as any).where(eq(aiTools.id, id));
   return getTool(id);
 }
 
 export async function getTool(id: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [tool] = await db.select().from(aiTools).where(eq(aiTools.id, id));
   return tool ?? null;
 }
 
 export async function getToolByName(name: string) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [tool] = await db.select().from(aiTools).where(eq(aiTools.toolName, name));
   return tool ?? null;
 }
@@ -51,7 +51,7 @@ export async function getToolByName(name: string) {
 export async function discoverTools(opts?: {
   toolType?: string; query?: string; limit?: number;
 }) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const conditions: any[] = [eq(aiTools.active, true)];
   if (opts?.toolType) conditions.push(eq(aiTools.toolType, opts.toolType as any));
   if (opts?.query) {
@@ -67,7 +67,7 @@ export async function discoverTools(opts?: {
 
 // ─── Generate OpenAI-compatible tool definitions for LLM ─────────────────
 export async function getToolDefinitionsForLLM(toolTypes?: string[]) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const conditions: any[] = [eq(aiTools.active, true)];
   const tools = await db.select().from(aiTools).where(and(...conditions));
 
@@ -91,7 +91,7 @@ export async function logToolCall(data: {
   inputJson: any; outputJson: any; success: boolean; latencyMs: number;
   userModifiedInput?: boolean; errorMessage?: string;
 }) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   await db.insert(aiToolCalls).values({
     toolId: data.toolId,
     conversationId: data.conversationId ?? null,
@@ -121,7 +121,7 @@ export async function logToolCall(data: {
 export async function getToolCallHistory(opts?: {
   toolId?: number; userId?: number; conversationId?: number; limit?: number;
 }) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const conditions: any[] = [];
   if (opts?.toolId) conditions.push(eq(aiToolCalls.toolId, opts.toolId));
   if (opts?.userId) conditions.push(eq(aiToolCalls.userId, opts.userId));
@@ -153,7 +153,7 @@ export async function buildToolChainDescription(steps: ToolChainStep[]) {
 
 // ─── Tool Stats ──────────────────────────────────────────────────────────
 export async function getToolStats() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const tools = await db.select().from(aiTools).where(eq(aiTools.active, true));
   return {
     totalTools: tools.length,

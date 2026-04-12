@@ -2,7 +2,7 @@
  * Infrastructure Resilience (4A) + Browser Automation (4B.1) + Workflow Checkpoint (4B.2)
  * Carrier Integration (4B.3) + Paper Trading (4B.4)
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { eq, desc } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -30,7 +30,7 @@ export async function checkSystemHealth(): Promise<HealthStatus[]> {
 
   // Database health
   try {
-    const db = await getDb(); if (!db) return null as any;
+    const db = await requireDb();
     const dbStart = Date.now();
     await db.execute({ sql: "SELECT 1", params: [] } as any);
     checks.push({ service: "database", status: "healthy", latencyMs: Date.now() - dbStart, lastChecked: Date.now() });

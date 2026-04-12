@@ -2,7 +2,7 @@
  * C5 — Knowledge Base Service
  * CRUD, search, freshness scoring, gap detection, feedback tracking
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { knowledgeArticles, knowledgeArticleVersions, knowledgeArticleFeedback, knowledgeGaps } from "../../drizzle/schema";
 import { eq, and, desc, like, or, sql } from "drizzle-orm";
 import { contextualLLM } from "../shared/stewardlyWiring";
@@ -14,7 +14,7 @@ export async function createArticle(data: {
   metadata?: any; source?: "manual"|"ingested"|"ai_generated"|"conversation_mining";
   sourceUrl?: string; createdBy?: number; effectiveDate?: Date; expiryDate?: Date;
 }) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [row] = await db.insert(knowledgeArticles).values({
     category: data.category,
     subcategory: data.subcategory ?? null,
@@ -32,7 +32,7 @@ export async function createArticle(data: {
 }
 
 export async function getArticle(id: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [article] = await db.select().from(knowledgeArticles).where(eq(knowledgeArticles.id, id));
   return article ?? null;
 }
@@ -41,7 +41,7 @@ export async function updateArticle(id: number, data: Partial<{
   title: string; content: string; category: string; subcategory: string;
   contentType: string; metadata: any; active: boolean;
 }>, changedBy?: number, changeReason?: string) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const existing = await getArticle(id);
   if (!existing) return null;
 
@@ -60,7 +60,7 @@ export async function updateArticle(id: number, data: Partial<{
 }
 
 export async function deleteArticle(id: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   await db.update(knowledgeArticles).set({ active: false } as any).where(eq(knowledgeArticles.id, id));
   return true;
 }
@@ -69,7 +69,7 @@ export async function deleteArticle(id: number) {
 export async function searchArticles(query: string, opts?: {
   category?: string; contentType?: string; limit?: number; offset?: number;
 }) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const conditions: any[] = [eq(knowledgeArticles.active, true)];
   if (opts?.category) conditions.push(eq(knowledgeArticles.category, opts.category));
   if (opts?.contentType) conditions.push(eq(knowledgeArticles.contentType, opts.contentType as any));
@@ -103,7 +103,7 @@ export async function searchArticles(query: string, opts?: {
 export async function listArticles(opts?: {
   category?: string; limit?: number; offset?: number;
 }) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const conditions: any[] = [eq(knowledgeArticles.active, true)];
   if (opts?.category) conditions.push(eq(knowledgeArticles.category, opts.category));
 
@@ -115,7 +115,7 @@ export async function listArticles(opts?: {
 }
 
 export async function getCategories() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const rows = await db.select({ category: knowledgeArticles.category })
     .from(knowledgeArticles)
     .where(eq(knowledgeArticles.active, true))
@@ -125,7 +125,7 @@ export async function getCategories() {
 
 // ─── Freshness Scoring ───────────────────────────────────────────────────
 export async function recalculateFreshness() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const articles = await db.select().from(knowledgeArticles).where(eq(knowledgeArticles.active, true));
   const now = Date.now();
   let updated = 0;
@@ -148,7 +148,7 @@ export async function recalculateFreshness() {
 
 // ─── Feedback ────────────────────────────────────────────────────────────
 export async function submitFeedback(articleId: number, userId: number | null, helpful: boolean, feedbackText?: string, context?: string) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   await db.insert(knowledgeArticleFeedback).values({
     articleId,
     userId: userId ?? null,
@@ -208,7 +208,7 @@ export async function detectGaps(recentQueries: string[]) {
   const content = typeof resp.choices?.[0]?.message?.content === "string"
     ? resp.choices[0].message.content : "{}";
   const parsed = JSON.parse(content);
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
 
   for (const gap of parsed.gaps ?? []) {
     await db.insert(knowledgeGaps).values({
@@ -223,7 +223,7 @@ export async function detectGaps(recentQueries: string[]) {
 }
 
 export async function listGaps(status?: string) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const conditions: any[] = [];
   if (status) conditions.push(eq(knowledgeGaps.status, status as any));
   return db.select().from(knowledgeGaps)
@@ -233,7 +233,7 @@ export async function listGaps(status?: string) {
 
 // ─── Context Injection ───────────────────────────────────────────────────
 export async function getRelevantArticlesForContext(query: string, categories?: string[], limit = 5) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const conditions: any[] = [eq(knowledgeArticles.active, true)];
   const pattern = `%${query.split(" ").slice(0, 5).join("%")}%`;
   conditions.push(or(

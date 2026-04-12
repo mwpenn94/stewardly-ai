@@ -28,6 +28,17 @@ export async function getDb() {
   return _db;
 }
 
+/**
+ * Like getDb() but throws if DB is unavailable.
+ * Use in service functions that cannot meaningfully proceed without a database,
+ * replacing the `return null as any` anti-pattern.
+ */
+export async function requireDb() {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db;
+}
+
 // ─── USER HELPERS ─────────────────────────────────────────────────
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");

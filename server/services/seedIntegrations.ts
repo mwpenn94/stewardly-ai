@@ -1,4 +1,4 @@
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { integrationProviders, carrierImportTemplates } from "../../drizzle/schema";
 import crypto from "crypto";
 import { logger } from "../_core/logger";
@@ -246,7 +246,7 @@ const CARRIER_TEMPLATES = [
 ];
 
 export async function seedIntegrationProviders() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   logger.info( { operation: "seed" },"[Seed] Seeding integration providers...");
   for (const provider of PROVIDERS) {
     try {
@@ -272,7 +272,7 @@ export async function seedIntegrationProviders() {
 }
 
 export async function seedCarrierTemplates() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   logger.info( { operation: "seed" },"[Seed] Seeding carrier import templates...");
   for (const tmpl of CARRIER_TEMPLATES) {
     try {

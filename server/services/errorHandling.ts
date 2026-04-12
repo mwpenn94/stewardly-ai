@@ -3,7 +3,7 @@
  * Structured error boundaries, retry logic, graceful degradation,
  * and server-side error logging.
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { serverErrors } from "../../drizzle/schema";
 import { eq, desc, sql } from "drizzle-orm";
 
@@ -19,7 +19,7 @@ export interface StructuredError {
 
 // ─── Log Error ───────────────────────────────────────────────────────────
 export async function logError(error: StructuredError): Promise<number> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [result] = await db.insert(serverErrors).values({
     errorType: error.type,
     message: error.message,
@@ -87,12 +87,12 @@ export function recordCircuitSuccess(serviceName: string): void {
 
 // ─── Query Helpers ───────────────────────────────────────────────────────
 export async function getRecentErrors(limit = 50) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(serverErrors).orderBy(desc(serverErrors.createdAt)).limit(limit);
 }
 
 export async function getErrorStats() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [total] = await db.select({ count: sql<number>`COUNT(*)` }).from(serverErrors);
   const [unresolved] = await db.select({ count: sql<number>`COUNT(*)` }).from(serverErrors).where(eq(serverErrors.resolved, false));
   return {
@@ -103,6 +103,6 @@ export async function getErrorStats() {
 }
 
 export async function resolveError(errorId: number): Promise<void> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   await db.update(serverErrors).set({ resolved: true }).where(eq(serverErrors.id, errorId));
 }

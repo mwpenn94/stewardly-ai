@@ -3,7 +3,7 @@
  * Detects user sophistication level from conversation patterns,
  * adjusts explanation depth, and manages user guardrails.
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { userGuardrails } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 
@@ -88,7 +88,7 @@ export function assessLiteracy(messages: string[]): LiteracyAssessment {
 
 // ─── User Guardrails ─────────────────────────────────────────────────────
 export async function setGuardrail(userId: number, guardrailType: string, value: string, reason?: string): Promise<number> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [result] = await db.insert(userGuardrails).values({
     userId, guardrailType, value, reason,
   }).$returningId();
@@ -96,13 +96,13 @@ export async function setGuardrail(userId: number, guardrailType: string, value:
 }
 
 export async function getUserGuardrails(userId: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(userGuardrails)
     .where(eq(userGuardrails.userId, userId))
     .orderBy(desc(userGuardrails.createdAt));
 }
 
 export async function removeGuardrail(id: number, userId: number): Promise<void> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   await db.delete(userGuardrails).where(and(eq(userGuardrails.id, id), eq(userGuardrails.userId, userId)));
 }
