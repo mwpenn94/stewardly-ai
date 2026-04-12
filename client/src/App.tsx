@@ -113,6 +113,7 @@ const LearningTrackDetail = lazy(() => import("./pages/learning/LearningTrackDet
 const LearningFlashcardStudy = lazy(() => import("./pages/learning/LearningFlashcardStudy"));
 const LearningQuizRunner = lazy(() => import("./pages/learning/LearningQuizRunner"));
 const LearningDueReview = lazy(() => import("./pages/learning/LearningDueReview"));
+const LearningSearch = lazy(() => import("./pages/learning/LearningSearch"));
 // Pass 120+ new components
 const NewLanding = lazy(() => import("./pages/NewLanding"));
 const MyWork = lazy(() => import("./pages/MyWork"));
@@ -224,6 +225,7 @@ function Router() {
         <Route path="/learning/tracks/:slug/study" component={LearningFlashcardStudy} />
         <Route path="/learning/tracks/:slug/quiz" component={LearningQuizRunner} />
         <Route path="/learning/review" component={LearningDueReview} />
+        <Route path="/learning/search" component={LearningSearch} />
         {/* Pass 120+ learning extensions */}
         <Route path="/learning/exam/:moduleSlug">{() => <ExamSimulator />}</Route>
         <Route path="/learning/discipline/:slug">{() => <DisciplineDeepDive />}</Route>

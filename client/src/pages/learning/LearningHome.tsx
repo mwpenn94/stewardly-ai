@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame } from "lucide-react";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame, Search } from "lucide-react";
 import { Link } from "wouter";
 import {
   loadStreakFromStorage,
@@ -82,6 +82,12 @@ export default function LearningHome() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Link href="/learning/search">
+              <Button variant="outline" size="sm">
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </Button>
+            </Link>
             <Link href="/learning/licenses">
               <Button variant="outline" size="sm">
                 <Shield className="h-4 w-4 mr-2" />
