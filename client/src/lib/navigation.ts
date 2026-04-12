@@ -112,6 +112,13 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Scale", label: "Rebalancing", href: "/rebalancing", minRole: "advisor", section: "intelligence" },
   { iconName: "TrendingUp", label: "Market Data", href: "/market-data", minRole: "user", section: "intelligence" },
   { iconName: "Shield", label: "Protection Score", href: "/protection-score", minRole: "user", section: "intelligence" },
+  { iconName: "Calculator", label: "Calculators", href: "/calculators", minRole: "user", section: "intelligence" },
+  { iconName: "DollarSign", label: "Tax Planning", href: "/tax-planning", minRole: "user", section: "intelligence" },
+  { iconName: "Scale", label: "Estate Planning", href: "/estate", minRole: "user", section: "intelligence" },
+  { iconName: "BarChart3", label: "Risk Assessment", href: "/risk-assessment", minRole: "user", section: "intelligence" },
+  { iconName: "TrendingUp", label: "Income Projection", href: "/income-projection", minRole: "user", section: "intelligence" },
+  { iconName: "Heart", label: "Insurance Analysis", href: "/insurance-analysis", minRole: "user", section: "intelligence" },
+  { iconName: "LineChart", label: "Financial Planning", href: "/financial-planning", minRole: "user", section: "intelligence" },
 
   // ── RELATIONSHIPS — client + document + integration management
   { iconName: "Users", label: "Relationships", href: "/relationships", minRole: "user", section: "relationships" },

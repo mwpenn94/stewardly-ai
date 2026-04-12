@@ -31,6 +31,8 @@ export default defineConfig({
       "client/src/pages/learning/lib/**/*.test.ts",
       // Pass 7 (automation): include hook-level client tests
       "client/src/hooks/**/*.test.ts",
+      // Hybrid pass 4: planning calculator pure functions
+      "client/src/lib/planningCalculations.test.ts",
     ],
   },
 });

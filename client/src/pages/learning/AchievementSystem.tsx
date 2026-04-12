@@ -4,11 +4,13 @@
  * Pass 116. Gamification that reinforces learning behavior.
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
-  Flame, Crown, Award, Calendar, Zap, Star,
+  Flame, Crown, Award, Calendar, Zap, Star, Loader2,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { trpc } from "@/lib/trpc";
+import AppShell from "@/components/AppShell";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -69,13 +71,84 @@ const DEMO_DATA: AchievementData = {
   casesCompleted: 1,
 };
 
+/**
+ * Derives achievement data from real mastery + due-item stats.
+ */
+function deriveAchievements(
+  summary: { total: number; mastered: number; inProgress: number; dueNow: number; masteryPct: number } | null,
+  dueItems: any[] | null,
+): AchievementData {
+  const mastered = summary?.mastered ?? 0;
+  const total = summary?.total ?? 0;
+  const dueCount = summary?.dueNow ?? dueItems?.length ?? 0;
+
+  // Derive streak from localStorage (simple daily tracker)
+  let streak = { current: 0, longest: 0, todayComplete: false };
+  try {
+    const raw = localStorage.getItem("stewardly-learning-streak");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.current === "number") streak = parsed;
+    }
+  } catch { /* noop */ }
+
+  // Track study activity for today
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayReviewed = (() => {
+    try {
+      return Number(localStorage.getItem(`stewardly-reviews-${todayKey}`)) || 0;
+    } catch { return 0; }
+  })();
+
+  const achievements: Achievement[] = [
+    { id: "first-steps", title: "First Steps", description: "Complete your first study session", category: "milestone", progress: total > 0 ? 100 : 0, earnedAt: total > 0 ? "2026-01-01" : undefined },
+    { id: "week-warrior", title: "Week Warrior", description: "7-day study streak", category: "streak", progress: Math.min(100, Math.round((streak.current / 7) * 100)) },
+    { id: "term-master-10", title: "Getting Started", description: "Master 10 items", category: "mastery", progress: Math.min(100, Math.round((mastered / 10) * 100)), earnedAt: mastered >= 10 ? "earned" : undefined },
+    { id: "term-master-50", title: "Term Master", description: "Master 50 items", category: "mastery", progress: Math.min(100, Math.round((mastered / 50) * 100)), earnedAt: mastered >= 50 ? "earned" : undefined },
+    { id: "term-master-100", title: "Century", description: "Master 100 items", category: "mastery", progress: Math.min(100, Math.round((mastered / 100) * 100)), earnedAt: mastered >= 100 ? "earned" : undefined },
+    { id: "fortnight", title: "Fortnight Focus", description: "14-day study streak", category: "streak", progress: Math.min(100, Math.round((streak.current / 14) * 100)) },
+    { id: "review-champ", title: "Review Champion", description: "Review 20 items in one day", category: "milestone", progress: Math.min(100, Math.round((todayReviewed / 20) * 100)), earnedAt: todayReviewed >= 20 ? todayKey : undefined },
+  ];
+
+  return {
+    streak,
+    dailyGoals: [
+      { id: "g-reviews", label: "Review due items", current: todayReviewed, target: Math.max(10, dueCount), unit: "items" },
+      { id: "g-mastery", label: "Master new items", current: mastered, target: Math.max(mastered + 5, 10), unit: "items" },
+    ],
+    achievements,
+    totalMastered: mastered,
+    totalStudyMinutes: total * 3, // rough estimate: ~3 min per item touched
+    examsCompleted: 0, // would need exam history tracking
+    casesCompleted: 0,
+  };
+}
+
 interface Props {
   data?: AchievementData;
   onGoalTap?: (goalId: string) => void;
 }
 
 export default function AchievementSystem({ data, onGoalTap }: Props) {
-  const d = data ?? DEMO_DATA;
+  // Fetch real mastery data when used as a page (no data prop)
+  const summaryQuery = trpc.learning.mastery.summary.useQuery(undefined, {
+    enabled: !data,
+    retry: false,
+  });
+  const dueQuery = trpc.learning.mastery.dueNow.useQuery(undefined, {
+    enabled: !data,
+    retry: false,
+  });
+
+  const derivedData = useMemo(() => {
+    if (data) return data;
+    return deriveAchievements(
+      summaryQuery.data as any ?? null,
+      dueQuery.data as any[] ?? null,
+    );
+  }, [data, summaryQuery.data, dueQuery.data]);
+
+  const d = derivedData;
   const [filter, setFilter] = useState<string>("all");
 
   const earned = d.achievements.filter(a => a.progress >= 100);
@@ -84,6 +157,7 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
   const filtered = filter === "all" ? d.achievements : d.achievements.filter(a => a.category === filter);
 
   return (
+    <AppShell title="Achievements">
     <div className="max-w-3xl mx-auto px-4 py-6 pb-20 md:pb-6">
       <h1 className="font-heading text-2xl font-bold mb-1">Achievements</h1>
       <p className="text-sm text-muted-foreground mb-6">
@@ -184,5 +258,6 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
         })}
       </div>
     </div>
+    </AppShell>
   );
 }

@@ -11,12 +11,13 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
   ArrowRight,
@@ -33,11 +34,13 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
+  Loader2,
 } from "lucide-react";
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { trpc } from "@/lib/trpc";
 import { sendFeedback } from "@/lib/feedbackSpecs";
+import AppShell from "@/components/AppShell";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -136,6 +139,27 @@ const DEFAULT_CONFIG: ExamConfig = {
   questionCount: 10,
 };
 
+/**
+ * Maps a DB practice question row to the ExamSimulator Question interface.
+ */
+function mapDbQuestion(q: any): Question {
+  // DB stores options as JSON string array and correct as 0-based index
+  const optionTexts: string[] = Array.isArray(q.options) ? q.options : (() => {
+    try { return JSON.parse(q.options ?? "[]"); } catch { return []; }
+  })();
+  const keys = ["A", "B", "C", "D", "E", "F"];
+  return {
+    id: String(q.id),
+    text: q.prompt ?? q.question ?? "",
+    options: optionTexts.map((text: string, i: number) => ({ key: keys[i] ?? String(i), text })),
+    correctKey: keys[q.correctIndex ?? q.correct ?? 0] ?? "A",
+    explanation: q.explanation ?? "",
+    topic: q.topic ?? q.chapterTitle ?? "General",
+    difficulty: (q.difficulty as "easy" | "medium" | "hard") ?? "medium",
+    moduleSlug: q.trackSlug ?? "",
+  };
+}
+
 export default function ExamSimulator({
   config: configProp,
   questionPool: poolProp,
@@ -146,43 +170,82 @@ export default function ExamSimulator({
   const audio = useAudioCompanion();
   const celebrate = useCelebration();
   const [, navigate] = useLocation();
-  const config = configProp ?? DEFAULT_CONFIG;
+const params = useParams<{ moduleSlug?: string }>();
+  const moduleSlug = params?.moduleSlug;
+
+  // ─── Data Fetching (when used as a page, not as embedded component) ──
+  const trackQuery = trpc.learning.content.getTrackBySlug.useQuery(
+    { slug: moduleSlug ?? "" },
+    { enabled: !!moduleSlug && !poolProp, retry: false },
+  );
+  const questionsQuery = trpc.learning.content.listQuestions.useQuery(
+    { trackId: trackQuery.data?.id ?? 0 },
+    { enabled: !!trackQuery.data?.id && !poolProp, retry: false },
+  );
+
+  // Map DB questions to ExamSimulator format
+  const fetchedPool = useMemo(() => {
+    if (poolProp) return poolProp;
+    if (!questionsQuery.data) return [];
+    return (questionsQuery.data as any[]).map(mapDbQuestion).filter(q => q.options.length >= 2);
+  }, [poolProp, questionsQuery.data]);
+
+  const fetchedConfig = useMemo((): ExamConfig => {
+    if (configProp) return configProp;
+    return {
+      mode: "practice",
+      moduleSlug: moduleSlug ?? "general",
+      moduleTitle: trackQuery.data?.title ?? trackQuery.data?.name ?? "Practice Exam",
+      questionCount: Math.min(fetchedPool.length, 20),
+    };
+  }, [configProp, moduleSlug, trackQuery.data, fetchedPool.length]);
+
+  const config = fetchedConfig;
+  const questionPool = fetchedPool;
   const handleBack = onBack ?? (() => navigate("/learning"));
 
-  // Self-fetch questions from DB when no pool provided
-  const tracksQ = trpc.learning.content.listTracks.useQuery(
-    undefined,
-    { enabled: !poolProp, retry: false },
-  );
-  const firstTrackId = (tracksQ.data as any)?.[0]?.id;
-  const questionsQ = trpc.learning.content.listQuestions.useQuery(
-    { trackId: firstTrackId! },
-    { enabled: !poolProp && !!firstTrackId, retry: false },
-  );
+  // Loading state when fetching from backend
+  const isLoadingData = !!moduleSlug && !poolProp && (trackQuery.isLoading || questionsQuery.isLoading);
+  const loadError = trackQuery.error?.message ?? questionsQuery.error?.message;
 
-  const questionPool: Question[] = useMemo(() => {
-    if (poolProp && poolProp.length > 0) return poolProp;
-    const dbQuestions = questionsQ.data ?? [];
-    if (dbQuestions.length === 0) return [];
-    return (dbQuestions as any[]).map((q: any) => ({
-      id: String(q.id),
-      text: q.text ?? q.question ?? "",
-      options: Array.isArray(q.options)
-        ? q.options.map((o: any, i: number) => ({
-            key: typeof o === "string" ? String.fromCharCode(65 + i) : (o.key ?? String.fromCharCode(65 + i)),
-            text: typeof o === "string" ? o : (o.text ?? String(o)),
-          }))
-        : [],
-      correctKey: typeof q.correct === "number"
-        ? String.fromCharCode(65 + q.correct)
-        : (q.correctKey ?? q.correct ?? "A"),
-      explanation: q.explanation ?? "",
-      topic: q.topic ?? q.tags?.[0] ?? "general",
-      difficulty: (q.difficulty === "hard" || q.difficulty === "easy" ? q.difficulty : "medium") as Question["difficulty"],
-      moduleSlug: q.moduleSlug ?? config.moduleSlug,
-      audioScript: q.audioScript ?? q.text ?? q.question ?? "",
-    }));
-  }, [poolProp, questionsQ.data, config.moduleSlug]);
+  if (isLoadingData) {
+    return (
+      <AppShell title="Exam Simulator">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          <p className="text-sm text-muted-foreground">Loading exam questions...</p>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppShell title="Exam Simulator">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+          <AlertTriangle className="h-8 w-8 text-amber-400" />
+          <p className="text-sm text-muted-foreground">Could not load questions: {loadError}</p>
+          <Button variant="outline" onClick={handleBack}>Back to Learning</Button>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (questionPool.length === 0 && !poolProp) {
+    return (
+      <AppShell title="Exam Simulator">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+          <BookOpen className="h-8 w-8 text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground">
+            {moduleSlug
+              ? `No practice questions available for "${trackQuery.data?.title ?? moduleSlug}". Import content first.`
+              : "Select an exam track to begin."}
+          </p>
+          <Button variant="outline" onClick={handleBack}>Back to Learning</Button>
+        </div>
+      </AppShell>
+    );
+  }
 
   // Build the question list based on mode
   const questions = useMemo(() => {

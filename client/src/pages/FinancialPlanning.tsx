@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import AppShell from "@/components/AppShell";
 import {
   ArrowLeft, TrendingUp, Target, DollarSign, RefreshCw,
   ChevronDown, ChevronUp, PiggyBank, Shield, Loader2,
@@ -99,17 +100,18 @@ export default function FinancialPlanning() {
   const [activeTab, setActiveTab] = useState("retirement");
 
   return (
+    <AppShell title="Financial Planning">
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">
+      {/* Header — hidden on mobile where AppShell provides navigation */}
+      <div className="hidden lg:block border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" aria-label="Back to chat" onClick={() => navigate("/chat")}>
+          <Button variant="ghost" size="icon" aria-label="Back to calculators" onClick={() => navigate("/calculators")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-lg font-semibold">Financial Planning</h1>
-            <p className="text-xs text-muted-foreground">Projections, simulations, and goal tracking</p>
+            <h1 className="text-lg font-semibold font-heading">Financial Planning</h1>
+            <p className="text-xs text-muted-foreground">Monte Carlo projections, Social Security optimization, Roth analysis, and goal tracking</p>
           </div>
         </div>
       </div>
@@ -130,6 +132,7 @@ export default function FinancialPlanning() {
         </Tabs>
       </div>
     </div>
+    </AppShell>
   );
 }
 

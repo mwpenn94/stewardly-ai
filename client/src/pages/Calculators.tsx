@@ -198,6 +198,7 @@ export default function Calculators() {
               { label: "Income Projection", path: "/income-projection", icon: <TrendingUp className="w-4 h-4" />, desc: "Income modeling" },
               { label: "Insurance Analysis", path: "/insurance-analysis", icon: <Heart className="w-4 h-4" />, desc: "Coverage analysis" },
               { label: "Protection Score", path: "/protection-score", icon: <Calculator className="w-4 h-4" />, desc: "12-dimension scoring" },
+{ label: "Financial Planning", path: "/financial-planning", icon: <ListChecks className="w-4 h-4" />, desc: "Monte Carlo, SS optimizer, Roth" },
             ].map(tool => (
               <button
                 key={tool.path}
