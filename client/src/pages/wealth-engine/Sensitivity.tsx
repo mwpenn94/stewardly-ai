@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { GuardrailBadge } from "@/components/wealth-engine/GuardrailBadge";
-import { Loader2, Grid3X3, Info, ArrowLeft } from "lucide-react";
+import { Loader2, Grid3X3, Info, ArrowLeft, AlertTriangle } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
+import { toast } from "sonner";
 import { useLocation } from "wouter";
 
 // ─── PARAMETER DEFINITIONS ───────────────────────────────────────────
@@ -83,7 +84,9 @@ export default function Sensitivity() {
   // Selected cell
   const [selectedCell, setSelectedCell] = useState<{ xi: number; yi: number } | null>(null);
 
-  const sweep = trpc.wealthEngine.sensitivitySweep.useMutation();
+  const sweep = trpc.wealthEngine.sensitivitySweep.useMutation({
+    onError: (err) => toast.error(`Sweep failed: ${err.message}`),
+  });
 
   const xDef = PARAMS[xParam];
   const yDef = PARAMS[yParam];
@@ -251,6 +254,12 @@ export default function Sensitivity() {
               </Button>
               {xParam === yParam && (
                 <p className="text-xs text-destructive">X and Y must be different parameters</p>
+              )}
+              {sweep.error && (
+                <div className="flex items-center gap-1.5 text-xs text-destructive">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  {sweep.error.message}
+                </div>
               )}
               {data && (
                 <Badge variant="outline" className="text-xs">

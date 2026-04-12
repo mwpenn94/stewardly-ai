@@ -25,6 +25,7 @@ import {
   Loader2, Plus, X, TrendingUp, BarChart3, Target, Briefcase,
 } from "lucide-react";
 import { useState, useCallback } from "react";
+import { toast } from "sonner";
 import { useLocation } from "wouter";
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────
@@ -90,10 +91,18 @@ export default function TeamBuilder() {
   const [econYears, setEconYears] = useState(5);
 
   // tRPC mutations
-  const rollUp = trpc.wealthEngine.rollUpTeam.useMutation();
-  const rollDown = trpc.wealthEngine.rollDownOrg.useMutation();
-  const economics = trpc.wealthEngine.calcBizEconomics.useMutation();
-  const projectIncome = trpc.wealthEngine.projectBizIncome.useMutation();
+  const rollUp = trpc.wealthEngine.rollUpTeam.useMutation({
+    onError: (err) => toast.error(`Roll-up failed: ${err.message}`),
+  });
+  const rollDown = trpc.wealthEngine.rollDownOrg.useMutation({
+    onError: (err) => toast.error(`Roll-down failed: ${err.message}`),
+  });
+  const economics = trpc.wealthEngine.calcBizEconomics.useMutation({
+    onError: (err) => toast.error(`Economics calculation failed: ${err.message}`),
+  });
+  const projectIncome = trpc.wealthEngine.projectBizIncome.useMutation({
+    onError: (err) => toast.error(`Income projection failed: ${err.message}`),
+  });
 
   // Add team member
   const addMember = useCallback(() => {
@@ -361,6 +370,10 @@ export default function TeamBuilder() {
                   {rollUp.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpFromLine className="w-4 h-4" />}
                   Run Roll-Up
                 </Button>
+
+                {rollUp.error && (
+                  <p className="text-xs text-destructive mt-2">{rollUp.error.message}</p>
+                )}
 
                 {rollUp.data && (
                   <div className="space-y-4">
