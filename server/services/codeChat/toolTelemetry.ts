@@ -96,6 +96,7 @@ const READ_TOOLS = new Set([
   "list_directory",
   "grep_search",
   "find_symbol",
+  "git_blame",
 ]);
 
 const WRITE_TOOLS = new Set(["write_file", "edit_file", "multi_edit"]);

@@ -26,6 +26,7 @@ describe("classifyToolKind", () => {
     expect(classifyToolKind("list_directory")).toBe("read");
     expect(classifyToolKind("grep_search")).toBe("read");
     expect(classifyToolKind("find_symbol")).toBe("read");
+    expect(classifyToolKind("git_blame")).toBe("read");
   });
 
   it("buckets write tools", () => {

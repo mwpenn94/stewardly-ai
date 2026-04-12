@@ -38,6 +38,7 @@ const READ_ONLY_TOOLS = new Set([
   "update_todos", // Pass 237: no-op progress reporter, safe for all roles
   "find_symbol", // Pass 242: workspace symbol index lookup
   "web_fetch", // Parity Pass 1: SSRF-guarded external URL fetch
+  "git_blame", // Parity Pass 9 (T18): read-only per-line attribution
 ]);
 
 function writeSse(res: any, data: Record<string, unknown>): void {
@@ -160,6 +161,7 @@ codeChatStreamRouter.post("/api/codechat/stream", async (req, res) => {
       "Use `code_grep_search` to find occurrences of text across the codebase.",
       "Use `code_find_symbol` when you know the name of a function/class/interface/type/const and want to jump to its DEFINITION (faster than grep, and returns only definition sites).",
       "Use `code_web_fetch` to pull external documentation, API references, or reference material at runtime. Pass a full http(s) URL. The tool strips HTML to plain text, caps the body at 512KB, and blocks local/private hosts for SSRF safety. Prefer this over guessing when you need authoritative docs.",
+      "Use `code_git_blame` to answer 'who wrote this?' or 'when did this change last?' for any file. Pass path (and optional startLine/endLine). Returns per-line attribution + a summary of authors + most recent commit. Read-only, no write mode needed.",
       canMutate
         ? "You have `code_write_file`, `code_edit_file`, `code_multi_edit`, `code_run_bash` — use sparingly, explain every change. Prefer `code_multi_edit` when you need 2+ coordinated changes to the same file: it's atomic (either all edits apply or none do), so a file can never be left half-edited."
         : "Write/edit/bash disabled. Return diffs as code blocks.",

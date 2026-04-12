@@ -49,6 +49,7 @@ export type CodeToolName =
   | "update_todos"
   | "find_symbol"
   | "web_fetch"
+  | "git_blame"
   | "finish";
 
 export interface CodeToolCall {
@@ -86,6 +87,39 @@ export interface WebFetchToolResult {
   durationMs: number;
 }
 
+export interface GitBlameToolResult {
+  path: string;
+  totalLines: number;
+  entries: Array<{
+    line: number;
+    commit: string;
+    shortCommit: string;
+    author: string;
+    authorEmail: string;
+    authorTime: number;
+    authorTimeIso: string;
+    summary: string;
+    content: string;
+    uncommitted: boolean;
+  }>;
+  range?: { startLine: number; endLine: number };
+  summary: {
+    totalLines: number;
+    uncommittedLines: number;
+    distinctAuthors: number;
+    distinctCommits: number;
+    topAuthors: Array<{ author: string; lines: number }>;
+    oldestAuthorTime: number | null;
+    newestAuthorTime: number | null;
+    mostRecent: {
+      commit: string;
+      author: string;
+      summary: string;
+      authorTimeIso: string;
+    } | null;
+  };
+}
+
 export type CodeToolResult =
   | { kind: "read"; result: ReadFileResult }
   | { kind: "write"; result: WriteFileResult }
@@ -97,6 +131,7 @@ export type CodeToolResult =
   | { kind: "todos"; result: { todos: AgentTodoItem[]; count: number } }
   | { kind: "symbols"; result: { query: string; matches: SymbolLookupHit[]; truncated: boolean } }
   | { kind: "web"; result: WebFetchToolResult }
+  | { kind: "blame"; result: GitBlameToolResult }
   | { kind: "finish"; result: { summary: string } }
   | { kind: "error"; error: string; code: string };
 
@@ -121,6 +156,7 @@ export interface CodeChatRunResult {
     bashRuns: number;
     grepSearches: number;
     webFetches: number;
+    blames: number;
     errors: number;
   };
 }
@@ -309,6 +345,49 @@ export async function dispatchCodeTool(
           };
         }
       }
+      case "git_blame": {
+        // Parity Pass 9 (T18): per-line git blame for a file or
+        // line range. Read-only — wraps the git subprocess and
+        // returns structured attribution + a summary the agent can
+        // reason over.
+        const { runGitBlame, summarizeBlame } = await import("./gitBlame");
+        const relPath = String(call.args.path ?? "").trim();
+        if (!relPath) {
+          return { kind: "error", error: "path required", code: "BAD_ARGS" };
+        }
+        const startLineArg = Number(call.args.startLine);
+        const endLineArg = Number(call.args.endLine);
+        try {
+          const result = await runGitBlame({
+            workspaceRoot: sandbox.workspaceRoot,
+            relativePath: relPath,
+            startLine:
+              Number.isFinite(startLineArg) && startLineArg > 0
+                ? Math.floor(startLineArg)
+                : undefined,
+            endLine:
+              Number.isFinite(endLineArg) && endLineArg > 0
+                ? Math.floor(endLineArg)
+                : undefined,
+          });
+          return {
+            kind: "blame",
+            result: {
+              ...result,
+              summary: summarizeBlame(result.entries),
+            },
+          };
+        } catch (err) {
+          if (err instanceof SandboxError) {
+            return { kind: "error", error: err.message, code: err.code };
+          }
+          return {
+            kind: "error",
+            error: err instanceof Error ? err.message : "blame failed",
+            code: "GIT_FAILED",
+          };
+        }
+      }
       case "update_todos": {
         // Validate + normalize the todos array. No file system side
         // effect — this tool exists so the agent can stream progress
@@ -411,6 +490,7 @@ export async function executeCodeChat(
     bashRuns: 0,
     grepSearches: 0,
     webFetches: 0,
+    blames: 0,
     errors: 0,
   };
   let finished = false;
@@ -467,6 +547,9 @@ export async function executeCodeChat(
         break;
       case "web":
         stats.webFetches++;
+        break;
+      case "blame":
+        stats.blames++;
         break;
       case "error":
         stats.errors++;
@@ -616,6 +699,26 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         },
       },
       required: ["url"],
+    },
+  },
+  {
+    name: "git_blame",
+    description:
+      "Run `git blame` on a workspace file and return per-line attribution: commit sha, author, email, timestamp, commit summary, and the line content. Optionally narrow to a line range via startLine/endLine. Read-only — works for non-admin sessions. Great for answering 'who wrote this function / when did this break' without reaching for run_bash. Requires the workspace to be a git repo. Max 2MB output.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Workspace-relative path" },
+        startLine: {
+          type: "number",
+          description: "1-indexed start line (optional, blames whole file if omitted)",
+        },
+        endLine: {
+          type: "number",
+          description: "1-indexed end line (optional, inclusive)",
+        },
+      },
+      required: ["path"],
     },
   },
   {

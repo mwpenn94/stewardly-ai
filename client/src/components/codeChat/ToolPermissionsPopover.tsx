@@ -86,6 +86,13 @@ export const CODE_TOOL_SPECS: ToolSpec[] = [
       "Fetch external http(s) docs/APIs, SSRF-guarded, 512KB cap (Parity P1, read-only)",
     mutation: false,
   },
+  {
+    id: "git_blame",
+    label: "Git blame",
+    description:
+      "Per-line git blame with author + timestamp + commit summary (Parity P9, read-only)",
+    mutation: false,
+  },
 ];
 
 export const DEFAULT_ENABLED_TOOLS: string[] = [
@@ -99,6 +106,7 @@ export const DEFAULT_ENABLED_TOOLS: string[] = [
   "update_todos",
   "find_symbol",
   "web_fetch",
+  "git_blame",
 ];
 
 export default function ToolPermissionsPopover({
