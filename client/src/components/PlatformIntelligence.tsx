@@ -437,11 +437,23 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
       // via the same module.
       audioCompanion.readCurrentPage?.();
     };
+    // Build Loop Pass 10 (G7): PushToTalkButton dispatches pil:send-
+    // feedback so it can trigger designed feedback specs without
+    // importing the PIL context (and dragging the whole provider into
+    // a static button).
+    const onSendFeedback = (e: Event) => {
+      const current = actionsRef.current;
+      if (!current) return;
+      const detail = (e as CustomEvent).detail;
+      if (detail?.key) current.giveFeedback(detail.key, detail?.data);
+    };
     window.addEventListener("pil:toggle-handsfree", onToggle);
     window.addEventListener("pil:read-page", onReadPage);
+    window.addEventListener("pil:send-feedback", onSendFeedback);
     return () => {
       window.removeEventListener("pil:toggle-handsfree", onToggle);
       window.removeEventListener("pil:read-page", onReadPage);
+      window.removeEventListener("pil:send-feedback", onSendFeedback);
     };
   }, [state.handsFreeActive, audioCompanion]);
 

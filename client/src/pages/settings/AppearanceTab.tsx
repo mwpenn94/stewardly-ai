@@ -35,6 +35,7 @@ import {
 import { useTheme } from "@/contexts/ThemeContext";
 import type {
   ChatDensity,
+  ColorBlindMode,
   FontScale,
   ThemePreference,
 } from "@/lib/appearanceSettings";
@@ -53,12 +54,21 @@ const CHAT_DENSITIES: Array<{ label: string; value: ChatDensity; desc: string }>
   { label: "Spacious", value: "spacious", desc: "Roomier, easier to scan" },
 ];
 
+const COLOR_BLIND_MODES: Array<{ label: string; value: ColorBlindMode; desc: string }> = [
+  { label: "Off", value: "off", desc: "Default palette" },
+  { label: "Deuteranopia", value: "deuteranopia", desc: "Red/green (most common)" },
+  { label: "Protanopia", value: "protanopia", desc: "Red weakness" },
+  { label: "Tritanopia", value: "tritanopia", desc: "Blue weakness" },
+  { label: "All adornments", value: "all", desc: "Pattern + shifted palette" },
+];
+
 export default function AppearanceTab() {
   const { settings, updateSettings, preference } = useTheme();
 
   const pickTheme = (theme: ThemePreference) => updateSettings({ theme });
   const pickFont = (fontScale: FontScale) => updateSettings({ fontScale });
   const pickDensity = (chatDensity: ChatDensity) => updateSettings({ chatDensity });
+  const pickColorBlind = (colorBlindMode: ColorBlindMode) => updateSettings({ colorBlindMode });
 
   return (
     <div className="max-w-2xl space-y-6" data-testid="appearance-tab">
@@ -213,6 +223,48 @@ export default function AppearanceTab() {
               );
             })}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Color-blind mode — Pass 10 (G13) */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Eye className="w-4 h-4 text-accent" aria-hidden="true" /> Color vision
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Color vision mode">
+            {COLOR_BLIND_MODES.map((m) => {
+              const active = settings.colorBlindMode === m.value;
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  aria-label={`${m.label} — ${m.desc}`}
+                  onClick={() => pickColorBlind(m.value)}
+                  className={`min-w-[130px] px-3 py-2 rounded-md text-xs font-medium transition-all ${
+                    active
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <div className="flex flex-col items-start gap-0.5">
+                    <span>{m.label}</span>
+                    <span className="text-[9px] opacity-70">{m.desc}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-3">
+            Non-"Off" modes add ✓ / ✕ / ! pattern adornments next to status
+            colors so red/green isn't the only signal, bump focus rings to
+            3px, and shift chart colors to a color-blind-safe palette. Every
+            critical state indicator is readable without relying on hue alone.
+          </p>
         </CardContent>
       </Card>
 

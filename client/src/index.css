@@ -279,6 +279,93 @@ body.reduced-motion-user *::after {
   }
 }
 
+/*
+  Build Loop Pass 10 (G13) — color-blind mode.
+  When body has `color-blind-mode`:
+  - Every element with a semantic status class gets a PATTERN
+    adornment in addition to its color, so users who can't
+    distinguish red/green still see a shape difference.
+  - Focus-visible rings get bumped 1 step to 3px so the focus
+    indicator doesn't rely on hue alone.
+  - Chart-2 (emerald) gets a slight hue shift away from chart-3
+    (sky) so deuteranopia users can still distinguish them.
+*/
+body.color-blind-mode :focus-visible {
+  box-shadow:
+    0 0 0 3px var(--background),
+    0 0 0 6px oklch(0.76 0.14 80 / 0.75),
+    0 0 14px 3px oklch(0.76 0.14 80 / 0.25) !important;
+}
+
+/* Status indicator adornments — add a suffix glyph after semantic badges */
+body.color-blind-mode [data-status="success"]::after,
+body.color-blind-mode .bg-emerald-500\/10::after,
+body.color-blind-mode .text-emerald::after {
+  content: " ✓";
+  font-weight: 700;
+  margin-left: 0.125rem;
+}
+body.color-blind-mode [data-status="error"]::after,
+body.color-blind-mode .bg-destructive\/10::after,
+body.color-blind-mode .text-destructive::after {
+  content: " ✕";
+  font-weight: 700;
+  margin-left: 0.125rem;
+}
+body.color-blind-mode [data-status="warning"]::after,
+body.color-blind-mode .bg-amber-500\/10::after,
+body.color-blind-mode .text-amber::after {
+  content: " !";
+  font-weight: 700;
+  margin-left: 0.125rem;
+}
+
+/* Deuteranopia (red/green weakness — ~4.5% of men): shift emerald
+   toward teal so it separates cleanly from the gold accent. */
+body.color-blind-deuteranopia,
+body.color-blind-all {
+  --chart-2: oklch(0.68 0.16 180);   /* Teal instead of emerald */
+  --chart-4: oklch(0.62 0.22 30);    /* Orange instead of rose */
+}
+
+/* Protanopia (red blindness — ~1% of men): similar treatment +
+   stronger blue shift for chart-3. */
+body.color-blind-protanopia {
+  --chart-2: oklch(0.68 0.16 180);   /* Teal */
+  --chart-3: oklch(0.68 0.18 240);   /* Deeper blue */
+  --chart-4: oklch(0.68 0.18 40);    /* Orange */
+}
+
+/* Tritanopia (blue weakness — rare): shift sky + emerald so they
+   don't collapse toward each other. */
+body.color-blind-tritanopia {
+  --chart-2: oklch(0.68 0.17 155);
+  --chart-3: oklch(0.62 0.2 340);    /* Magenta instead of sky */
+}
+
+/*
+  Build Loop Pass 10 (G66) — disabled button contrast.
+  shadcn/ui's default `disabled:opacity-50` drops contrast below
+  WCAG AA (4.5:1) against most card backgrounds. We bump it to
+  ~65% so disabled text stays legible, AND add an explicit dashed
+  border pattern so color-blind users still see the disabled state.
+*/
+button:disabled,
+[type="button"]:disabled,
+[type="submit"]:disabled,
+[type="reset"]:disabled,
+[role="button"][aria-disabled="true"] {
+  opacity: 0.65 !important;
+  cursor: not-allowed;
+}
+body.color-blind-mode button:disabled,
+body.color-blind-mode [type="button"]:disabled,
+body.color-blind-mode [type="submit"]:disabled,
+body.color-blind-mode [type="reset"]:disabled,
+body.color-blind-mode [role="button"][aria-disabled="true"] {
+  border-style: dashed !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -24,6 +24,7 @@ export default defineConfig({
       "client/src/lib/appearanceSettings.test.ts",
       "client/src/lib/liveAnnouncer.test.ts",
       "client/src/hooks/useFocusOnRouteChange.test.ts",
+      "client/src/hooks/usePushToTalk.test.ts",
       "client/src/components/CommandPalette.test.ts",
       "client/src/components/codeChat/**/*.test.ts",
     ],

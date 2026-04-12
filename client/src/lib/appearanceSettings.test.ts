@@ -91,4 +91,23 @@ describe("computeBodyClassList", () => {
     // Only theme + font + density — no opt-in flags.
     expect(r.classes.length).toBe(3);
   });
+
+  /* Pass 10 (G13) — color-blind mode coverage */
+  it("colorBlindMode 'off' emits no color-blind classes", () => {
+    const r = computeBodyClassList(make({ colorBlindMode: "off" }), false);
+    expect(r.classes).not.toContain("color-blind-mode");
+    expect(r.classes.some((c) => c.startsWith("color-blind-"))).toBe(false);
+  });
+
+  it("colorBlindMode 'deuteranopia' adds base + per-type classes", () => {
+    const r = computeBodyClassList(make({ colorBlindMode: "deuteranopia" }), false);
+    expect(r.classes).toContain("color-blind-mode");
+    expect(r.classes).toContain("color-blind-deuteranopia");
+  });
+
+  it("colorBlindMode 'all' adds the 'all' class for full adornments", () => {
+    const r = computeBodyClassList(make({ colorBlindMode: "all" }), false);
+    expect(r.classes).toContain("color-blind-mode");
+    expect(r.classes).toContain("color-blind-all");
+  });
 });

@@ -27,6 +27,8 @@
 export type ThemePreference = "dark" | "light" | "system";
 export type FontScale = "compact" | "default" | "comfortable" | "large" | "xlarge";
 export type ChatDensity = "compact" | "default" | "spacious";
+/** Build Loop Pass 10 (G13): color-independent state indicator mode. */
+export type ColorBlindMode = "off" | "deuteranopia" | "protanopia" | "tritanopia" | "all";
 
 export interface AppearanceSettings {
   theme: ThemePreference;
@@ -34,6 +36,14 @@ export interface AppearanceSettings {
   chatDensity: ChatDensity;
   reducedMotion: boolean;
   sidebarCompact: boolean;
+  /**
+   * Build Loop Pass 10 (G13): when not "off", add body classes that
+   * (a) boost status-indicator borders so colors aren't the only
+   *     signal (green ring → green ring + ✓ pattern; red ring →
+   *     red ring + ✕ pattern)
+   * (b) optionally remap chart colors to a color-blind-safe palette.
+   */
+  colorBlindMode: ColorBlindMode;
 }
 
 export const DEFAULT_SETTINGS: AppearanceSettings = {
@@ -42,6 +52,7 @@ export const DEFAULT_SETTINGS: AppearanceSettings = {
   chatDensity: "default",
   reducedMotion: false,
   sidebarCompact: false,
+  colorBlindMode: "off",
 };
 
 /* ── localStorage keys (stable) ────────────────────────────────── */
@@ -52,6 +63,7 @@ const KEYS = {
   chatDensity: "wb_chat_density",
   reducedMotion: "wb_reduced_motion",
   sidebarCompact: "wb_sidebar_compact",
+  colorBlindMode: "wb_colorblind_mode",
   // Legacy: AppShell uses "appshell-collapsed" — we keep both in sync on save.
   sidebarLegacy: "appshell-collapsed",
 } as const;
@@ -85,6 +97,19 @@ function validChatDensity(v: string | null): ChatDensity {
   return DEFAULT_SETTINGS.chatDensity;
 }
 
+function validColorBlind(v: string | null): ColorBlindMode {
+  if (
+    v === "off" ||
+    v === "deuteranopia" ||
+    v === "protanopia" ||
+    v === "tritanopia" ||
+    v === "all"
+  ) {
+    return v;
+  }
+  return DEFAULT_SETTINGS.colorBlindMode;
+}
+
 /**
  * Pure function — compute the body class list that should be applied for
  * a given settings object. Exported for tests.
@@ -108,6 +133,15 @@ export function computeBodyClassList(
   classes.push(`chat-density-${s.chatDensity}`);
   if (s.reducedMotion) classes.push("reduced-motion-user");
   if (s.sidebarCompact) classes.push("sidebar-compact");
+  // Pass 10 (G13): color-blind classes. "off" doesn't emit anything,
+  // any non-off value emits the generic "color-blind-mode" class
+  // (which adds shape + icon adornments to every status element)
+  // plus a per-type class if the user picks a specific deficiency
+  // (so we can remap red/green/blue hues individually later).
+  if (s.colorBlindMode !== "off") {
+    classes.push("color-blind-mode");
+    classes.push(`color-blind-${s.colorBlindMode}`);
+  }
 
   return { classes, themeClass };
 }
@@ -125,6 +159,7 @@ export function loadAppearanceSettings(): AppearanceSettings {
       sidebarCompact:
         localStorage.getItem(KEYS.sidebarCompact) === "true" ||
         localStorage.getItem(KEYS.sidebarLegacy) === "true",
+      colorBlindMode: validColorBlind(localStorage.getItem(KEYS.colorBlindMode)),
     };
   } catch {
     return DEFAULT_SETTINGS;
@@ -139,6 +174,7 @@ export function saveAppearanceSettings(s: AppearanceSettings): void {
     localStorage.setItem(KEYS.chatDensity, s.chatDensity);
     localStorage.setItem(KEYS.reducedMotion, String(s.reducedMotion));
     localStorage.setItem(KEYS.sidebarCompact, String(s.sidebarCompact));
+    localStorage.setItem(KEYS.colorBlindMode, s.colorBlindMode);
     // Keep the legacy AppShell key in sync so existing code path still works.
     localStorage.setItem(KEYS.sidebarLegacy, String(s.sidebarCompact));
   } catch {
@@ -161,6 +197,11 @@ const ALL_MANAGED_CLASSES = [
   "chat-density-spacious",
   "reduced-motion-user",
   "sidebar-compact",
+  "color-blind-mode",
+  "color-blind-deuteranopia",
+  "color-blind-protanopia",
+  "color-blind-tritanopia",
+  "color-blind-all",
 ];
 
 /**
