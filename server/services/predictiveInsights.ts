@@ -2,13 +2,13 @@
  * Task #30 — Predictive Insights + Peer Benchmarks Service
  * Proactive alerts, peer comparison benchmarks, and predictive triggers.
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { predictiveTriggers, benchmarkAggregates } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 // ─── Peer Benchmark Comparison ───────────────────────────────────────────
 export async function getPeerBenchmark(dimension: string, ageBracket?: string, incomeBracket?: string) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const conditions = [eq(benchmarkAggregates.dimension, dimension)];
   if (ageBracket) conditions.push(eq(benchmarkAggregates.ageBracket, ageBracket));
   if (incomeBracket) conditions.push(eq(benchmarkAggregates.incomeBracket, incomeBracket));
@@ -37,7 +37,7 @@ export async function upsertBenchmark(
   incomeBracket: string | undefined,
   values: { p25: number; p50: number; p75: number; sampleSize: number }
 ): Promise<void> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const existing = await getPeerBenchmark(dimension, ageBracket, incomeBracket);
 
   if (existing) {
@@ -67,7 +67,7 @@ export async function evaluateTriggers(context: Record<string, any>): Promise<Ar
   actionType: string;
   actionJson: any;
 }>> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const triggers = await db.select().from(predictiveTriggers).where(eq(predictiveTriggers.active, true));
   const fired: Array<{ triggerId: number; triggerType: string; actionType: string; actionJson: any }> = [];
 
@@ -106,7 +106,7 @@ export async function createTrigger(
   actionType: string,
   actionJson: Record<string, any>
 ): Promise<number> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [result] = await db.insert(predictiveTriggers).values({
     triggerType, conditionJson, actionType, actionJson,
   }).$returningId();
@@ -114,11 +114,11 @@ export async function createTrigger(
 }
 
 export async function listTriggers() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(predictiveTriggers).orderBy(desc(predictiveTriggers.createdAt));
 }
 
 export async function listBenchmarks() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(benchmarkAggregates).orderBy(desc(benchmarkAggregates.updatedAt));
 }

@@ -3,7 +3,7 @@
  * Detects when human intervention is needed, manages professional availability,
  * and handles consultation booking with Daily.co video rooms.
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import {
   proactiveEscalationRules, professionalAvailability,
   consultationBookings,
@@ -43,7 +43,7 @@ export async function checkEscalationNeeded(context: EscalationContext): Promise
   }
 
   // Check custom rules
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const rules = await db.select().from(proactiveEscalationRules).where(eq(proactiveEscalationRules.active, true));
   for (const rule of rules) {
     const threshold = rule.threshold ?? 0;
@@ -63,7 +63,7 @@ export async function setAvailability(professionalId: number, slots: Array<{
   endTime: string;
   timezone?: string;
 }>): Promise<void> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   // Clear existing
   await db.delete(professionalAvailability).where(eq(professionalAvailability.professionalId, professionalId));
   // Insert new
@@ -79,7 +79,7 @@ export async function setAvailability(professionalId: number, slots: Array<{
 }
 
 export async function getAvailability(professionalId: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(professionalAvailability)
     .where(eq(professionalAvailability.professionalId, professionalId));
 }
@@ -92,7 +92,7 @@ export async function bookConsultation(params: {
   durationMinutes?: number;
   notes?: string;
 }): Promise<{ id: number; dailyRoomUrl: string }> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
 
   // Generate a Daily.co room URL (placeholder — real impl would call Daily API)
   const roomName = `stewardly-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -115,12 +115,12 @@ export async function updateBookingStatus(
   bookingId: number,
   status: "scheduled" | "confirmed" | "in_progress" | "completed" | "cancelled"
 ): Promise<void> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   await db.update(consultationBookings).set({ status }).where(eq(consultationBookings.id, bookingId));
 }
 
 export async function getUserBookings(userId: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(consultationBookings)
     .where(eq(consultationBookings.userId, userId))
     .orderBy(desc(consultationBookings.scheduledAt));
@@ -132,7 +132,7 @@ export async function createEscalationRule(params: {
   conditionText?: string;
   threshold?: number;
 }): Promise<number> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [result] = await db.insert(proactiveEscalationRules).values({
     triggerType: params.triggerType,
     conditionText: params.conditionText,
@@ -142,6 +142,6 @@ export async function createEscalationRule(params: {
 }
 
 export async function getEscalationRules() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(proactiveEscalationRules).orderBy(desc(proactiveEscalationRules.createdAt));
 }

@@ -3,13 +3,13 @@
  * Live A/B framework with 50/50 traffic split, auto-promote winner after p<0.05,
  * and golden test regression suite.
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { promptVariants, promptExperiments, promptExperimentResults, promptGoldenTests, promptRegressionRuns } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 // ─── A/B Split Assignment ────────────────────────────────────────────────
 export async function assignVariant(experimentId: number, conversationId: number): Promise<{ variantId: number; variantLabel: "A" | "B" }> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [experiment] = await db.select().from(promptExperimentResults).where(eq(promptExperimentResults.id, experimentId)).limit(1);
   if (!experiment || experiment.status !== "running") {
     return { variantId: experiment?.variantAId ?? 0, variantLabel: "A" };
@@ -29,7 +29,7 @@ export async function recordExperimentFeedback(
   positive: boolean,
   latencyMs?: number
 ): Promise<void> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [experiment] = await db.select().from(promptExperimentResults).where(eq(promptExperimentResults.id, experimentId)).limit(1);
   if (!experiment || experiment.status !== "running") return;
 
@@ -50,7 +50,7 @@ export async function recordExperimentFeedback(
 
 // ─── Statistical Significance Check (Chi-squared approximation) ─────────
 export async function checkSignificance(experimentId: number): Promise<boolean> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [exp] = await db.select().from(promptExperimentResults).where(eq(promptExperimentResults.id, experimentId)).limit(1);
   if (!exp || (exp.totalSamples ?? 0) < 100) return false;
 
@@ -102,7 +102,7 @@ function normalCDF(x: number): number {
 
 // ─── Auto-Promote Winner ─────────────────────────────────────────────────
 async function autoPromoteWinner(experimentId: number, winnerId: number): Promise<void> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   // Run regression tests first
   const regressionPassed = await runRegressionTests(winnerId);
   if (!regressionPassed) {
@@ -116,7 +116,7 @@ async function autoPromoteWinner(experimentId: number, winnerId: number): Promis
 
 // ─── Golden Test Regression Suite ────────────────────────────────────────
 export async function runRegressionTests(variantId: number): Promise<boolean> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const goldenTests = await db.select().from(promptGoldenTests).where(eq(promptGoldenTests.isActive, true));
   if (goldenTests.length === 0) return true; // No tests = pass
 
@@ -151,21 +151,21 @@ export async function runRegressionTests(variantId: number): Promise<boolean> {
 
 // ─── Get Active Experiments ──────────────────────────────────────────────
 export async function getActiveExperiments() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(promptExperimentResults).where(eq(promptExperimentResults.status, "running")).orderBy(desc(promptExperimentResults.createdAt));
 }
 
 export async function getExperimentHistory() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(promptExperimentResults).orderBy(desc(promptExperimentResults.createdAt)).limit(50);
 }
 
 export async function getGoldenTests() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(promptGoldenTests).orderBy(desc(promptGoldenTests.createdAt));
 }
 
 export async function getRegressionRuns() {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(promptRegressionRuns).orderBy(desc(promptRegressionRuns.runAt)).limit(20);
 }

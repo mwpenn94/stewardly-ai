@@ -3,7 +3,7 @@
  * Allows users to adjust model parameters and see projected outcomes,
  * plus backtest portfolios against historical market events.
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { modelScenarios, modelBacktests } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { contextualLLM } from "../shared/stewardlyWiring";
@@ -116,7 +116,7 @@ export async function runWhatIfScenario(
     yearByYear,
   };
 
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [result] = await db.insert(modelScenarios).values({
     userId,
     baseRunId,
@@ -165,7 +165,7 @@ export async function runBacktest(
   const recoveryFactor = Math.abs(weightedImpact) / Math.abs(event.spDrop / 100);
   const estimatedRecovery = Math.round(event.recoveryMonths * recoveryFactor);
 
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [result] = await db.insert(modelBacktests).values({
     userId,
     modelType,
@@ -189,14 +189,14 @@ export async function runBacktest(
 
 // ─── Query Helpers ───────────────────────────────────────────────────────
 export async function getUserScenarios(userId: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(modelScenarios)
     .where(eq(modelScenarios.userId, userId))
     .orderBy(desc(modelScenarios.createdAt)).limit(20);
 }
 
 export async function getUserBacktests(userId: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(modelBacktests)
     .where(eq(modelBacktests.userId, userId))
     .orderBy(desc(modelBacktests.createdAt)).limit(20);

@@ -2,12 +2,12 @@
  * C7 — Capability Modes Service
  * CRUD, auto-suggest based on user query, mode switching, prompt assembly
  */
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import { capabilityModes } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 export async function listModes(activeOnly = true) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const conditions: any[] = [];
   if (activeOnly) conditions.push(eq(capabilityModes.active, true));
   return db.select().from(capabilityModes)
@@ -16,13 +16,13 @@ export async function listModes(activeOnly = true) {
 }
 
 export async function getMode(id: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [mode] = await db.select().from(capabilityModes).where(eq(capabilityModes.id, id));
   return mode ?? null;
 }
 
 export async function getModeByName(name: string) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [mode] = await db.select().from(capabilityModes).where(eq(capabilityModes.name, name));
   return mode ?? null;
 }
@@ -33,7 +33,7 @@ export async function createMode(data: {
   availableTools?: string[]; availableModels?: string[];
   defaultForRoles?: string[]; sortOrder?: number;
 }) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const [row] = await db.insert(capabilityModes).values({
     name: data.name,
     description: data.description ?? null,
@@ -54,7 +54,7 @@ export async function updateMode(id: number, data: Partial<{
   availableTools: string[]; availableModels: string[];
   defaultForRoles: string[]; active: boolean; sortOrder: number;
 }>) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const updateData: any = { ...data };
   if (data.requiredKnowledgeCategories) updateData.requiredKnowledgeCategories = JSON.stringify(data.requiredKnowledgeCategories);
   if (data.availableTools) updateData.availableTools = JSON.stringify(data.availableTools);
@@ -65,7 +65,7 @@ export async function updateMode(id: number, data: Partial<{
 }
 
 export async function deleteMode(id: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   await db.update(capabilityModes).set({ active: false } as any).where(eq(capabilityModes.id, id));
   return true;
 }

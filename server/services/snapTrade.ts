@@ -8,7 +8,7 @@
  * - Higher roles (advisor/manager/admin) can view associated clients' connection status
  */
 import { Snaptrade } from "snaptrade-typescript-sdk";
-import { getDb } from "../db";
+import { requireDb } from "../db";
 import {
   snapTradeUsers,
   snapTradeBrokerageConnections,
@@ -38,7 +38,7 @@ async function getPlatformCredentials(): Promise<{ clientId: string; consumerKey
   }
 
   // 2. Fallback: check DB integration_connections
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const providers = await db.select().from(integrationProviders)
     .where(eq(integrationProviders.slug, "snaptrade"));
   if (!providers.length) return null;
@@ -92,7 +92,7 @@ export async function registerSnapTradeUser(userId: number): Promise<{
   snapTradeUserId: string;
   isNew: boolean;
 }> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
 
   // Check for existing registration
   const existing = await db.select().from(snapTradeUsers)
@@ -135,7 +135,7 @@ async function getSnapTradeUserCreds(userId: number): Promise<{
   snapTradeUserId: string;
   userSecret: string;
 }> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const rows = await db.select().from(snapTradeUsers)
     .where(and(eq(snapTradeUsers.userId, userId), eq(snapTradeUsers.status, "active")));
 
@@ -197,7 +197,7 @@ export async function syncBrokerageConnections(userId: number): Promise<{
 }> {
   const client = await getClient();
   const { snapTradeUserId, userSecret } = await getSnapTradeUserCreds(userId);
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
 
   // Fetch connections from SnapTrade
   const response = await client.connections.listBrokerageAuthorizations({
@@ -272,7 +272,7 @@ export async function syncAccountsAndPositions(userId: number): Promise<{
 }> {
   const client = await getClient();
   const { snapTradeUserId, userSecret } = await getSnapTradeUserCreds(userId);
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
 
   // Fetch accounts
   const accountsResp = await client.accountInformation.listUserAccounts({
@@ -415,7 +415,7 @@ export async function getSnapTradeStatus(userId: number): Promise<{
   connectionsCount: number;
   accountsCount: number;
 }> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
 
   const stUser = await db.select().from(snapTradeUsers)
     .where(and(eq(snapTradeUsers.userId, userId), eq(snapTradeUsers.status, "active")));
@@ -442,7 +442,7 @@ export async function getSnapTradeStatus(userId: number): Promise<{
  * Get all accounts for a user (local DB, no API call).
  */
 export async function getUserAccounts(userId: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(snapTradeAccounts)
     .where(eq(snapTradeAccounts.userId, userId));
 }
@@ -451,7 +451,7 @@ export async function getUserAccounts(userId: number) {
  * Get all positions for a user (local DB, no API call).
  */
 export async function getUserPositions(userId: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(snapTradePositions)
     .where(eq(snapTradePositions.userId, userId));
 }
@@ -460,7 +460,7 @@ export async function getUserPositions(userId: number) {
  * Get all brokerage connections for a user (local DB).
  */
 export async function getUserBrokerageConnections(userId: number) {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   return db.select().from(snapTradeBrokerageConnections)
     .where(eq(snapTradeBrokerageConnections.userId, userId));
 }
@@ -469,7 +469,7 @@ export async function getUserBrokerageConnections(userId: number) {
  * Remove a brokerage connection (soft delete locally, remove from SnapTrade).
  */
 export async function removeBrokerageConnection(userId: number, connectionId: string): Promise<boolean> {
-  const db = await getDb(); if (!db) return null as any;
+  const db = await requireDb();
   const conn = await db.select().from(snapTradeBrokerageConnections)
     .where(and(
       eq(snapTradeBrokerageConnections.id, connectionId),
