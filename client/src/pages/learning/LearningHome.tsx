@@ -27,6 +27,11 @@ import {
   summarizeStreak,
   type StreakSummary,
 } from "./lib/studyStreak";
+import {
+  loadRecentTracks,
+  getRecentTracks,
+  type RecentTrack,
+} from "./lib/recentTracks";
 
 export default function LearningHome() {
   const meQ = trpc.auth.me.useQuery();
@@ -46,8 +51,12 @@ export default function LearningHome() {
     lastDay: null,
     status: "none",
   });
+  const [recentTracks, setRecentTracks] = useState<RecentTrack[]>([]);
   useEffect(() => {
-    const read = () => setStreak(summarizeStreak(loadStreakFromStorage(), new Date()));
+    const read = () => {
+      setStreak(summarizeStreak(loadStreakFromStorage(), new Date()));
+      setRecentTracks(getRecentTracks(loadRecentTracks(), 4));
+    };
     read();
     const onFocus = () => read();
     window.addEventListener("focus", onFocus);
@@ -170,6 +179,37 @@ export default function LearningHome() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Continue Studying — recently visited tracks */}
+        {recentTracks.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BookOpen className="h-5 w-5" />
+                Continue Studying
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {recentTracks.map((rt) => {
+                  const age = Math.round((Date.now() - rt.lastVisited) / 60000);
+                  const ageStr = age < 60 ? `${age}m ago` : age < 1440 ? `${Math.round(age / 60)}h ago` : `${Math.round(age / 1440)}d ago`;
+                  return (
+                    <Link key={rt.slug} href={`/learning/tracks/${rt.slug}`}>
+                      <Card className="card-lift cursor-pointer min-w-[160px] flex-shrink-0">
+                        <CardContent className="p-3">
+                          <div className="text-2xl">{rt.emoji}</div>
+                          <div className="font-medium text-sm mt-1 line-clamp-1">{rt.name}</div>
+                          <div className="text-[10px] text-muted-foreground mt-1">{ageStr}</div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Agent recommendations */}
         <Card>

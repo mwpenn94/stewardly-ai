@@ -17,8 +17,9 @@
  * which in turn read from the DB tables populated by embaImport.ts.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
+import { persistTrackVisit } from "./lib/recentTracks";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
@@ -81,6 +82,13 @@ export default function LearningTrackDetail() {
   const chapters = chaptersQ.data ?? [];
   const questions = questionsQ.data ?? [];
   const flashcards = flashcardsQ.data ?? [];
+
+  // Record track visit for "Continue Studying" on LearningHome
+  useEffect(() => {
+    if (track?.slug && track?.name) {
+      persistTrackVisit(track.slug, track.name, track.emoji ?? "📘");
+    }
+  }, [track?.slug, track?.name, track?.emoji]);
 
   // Pure rollup — guarded by useMemo so we only recompute when the
   // four input arrays change (cheap O(n)).
