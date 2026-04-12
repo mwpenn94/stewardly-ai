@@ -110,19 +110,22 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "BarChart3", label: "Strategy Compare", href: "/wealth-engine/strategy-comparison", minRole: "user", section: "intelligence" },
   { iconName: "Zap", label: "Quick Quote", href: "/wealth-engine/quick-quote", minRole: "user", section: "intelligence" },
   { iconName: "Briefcase", label: "Practice → Wealth", href: "/wealth-engine/practice-to-wealth", minRole: "advisor", section: "intelligence" },
+  { iconName: "Briefcase", label: "Business Income", href: "/wealth-engine/business-income", minRole: "advisor", section: "intelligence" },
   { iconName: "Users", label: "Team Builder", href: "/wealth-engine/team-builder", minRole: "advisor", section: "intelligence" },
   { iconName: "Grid3X3", label: "What-If Analysis", href: "/wealth-engine/sensitivity", minRole: "user", section: "intelligence" },
   { iconName: "BookOpen", label: "Reference Hub", href: "/wealth-engine/references", minRole: "user", section: "intelligence" },
   { iconName: "Scale", label: "Rebalancing", href: "/rebalancing", minRole: "advisor", section: "intelligence" },
   { iconName: "TrendingUp", label: "Market Data", href: "/market-data", minRole: "user", section: "intelligence" },
   { iconName: "Shield", label: "Protection Score", href: "/protection-score", minRole: "user", section: "intelligence" },
-  { iconName: "Calculator", label: "Calculators", href: "/calculators", minRole: "user", section: "intelligence" },
   { iconName: "DollarSign", label: "Tax Planning", href: "/tax-planning", minRole: "user", section: "intelligence" },
   { iconName: "Scale", label: "Estate Planning", href: "/estate", minRole: "user", section: "intelligence" },
   { iconName: "BarChart3", label: "Risk Assessment", href: "/risk-assessment", minRole: "user", section: "intelligence" },
   { iconName: "TrendingUp", label: "Income Projection", href: "/income-projection", minRole: "user", section: "intelligence" },
   { iconName: "Heart", label: "Insurance Analysis", href: "/insurance-analysis", minRole: "user", section: "intelligence" },
   { iconName: "LineChart", label: "Financial Planning", href: "/financial-planning", minRole: "user", section: "intelligence" },
+  { iconName: "HeartPulse", label: "Social Security", href: "/social-security", minRole: "user", section: "intelligence" },
+  { iconName: "Stethoscope", label: "Medicare", href: "/medicare", minRole: "user", section: "intelligence" },
+  { iconName: "Package", label: "Products", href: "/products", minRole: "user", section: "intelligence" },
 
   // ── RELATIONSHIPS — client + document + integration management
   { iconName: "Users", label: "Relationships", href: "/relationships", minRole: "user", section: "relationships" },
@@ -130,7 +133,6 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Target", label: "Lead Pipeline", href: "/leads", minRole: "advisor", section: "relationships" },
   { iconName: "RefreshCw", label: "CRM Sync", href: "/crm-sync", minRole: "advisor", section: "relationships" },
   { iconName: "ShieldCheck", label: "Compliance Audit", href: "/compliance-audit", minRole: "advisor", section: "relationships" },
-  { iconName: "FileText", label: "Documents", href: "/documents", minRole: "user", section: "relationships" },
   { iconName: "FileText", label: "Documents", href: "/settings/knowledge", minRole: "user", section: "relationships" },
   { iconName: "Link2", label: "Integrations", href: "/integrations", minRole: "user", section: "relationships" },
   { iconName: "HeartPulse", label: "Integration Health", href: "/integration-health", minRole: "advisor", section: "relationships" },
@@ -172,5 +174,6 @@ export const ADMIN_NAV: NavItemDef[] = [
 
 export const UTILITY_NAV: NavItemDef[] = [
   { iconName: "HelpCircle", label: "Help & Support", href: "/help", minRole: "user" },
+  { iconName: "FileText", label: "Changelog", href: "/changelog", minRole: "user" },
   { iconName: "Settings", label: "Settings", href: "/settings/profile", minRole: "user" },
 ];
