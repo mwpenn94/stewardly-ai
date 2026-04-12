@@ -25,7 +25,7 @@ Columns: ID · Priority · Area · Description · Status · Source · Depth · C
 | G2  | P0   | dynamic-crud    | Adapter generator — turn inferred schema into a read/write CRUD adapter    | done        | build-loop-p1    | 4/10  | pending |
 | G3  | P1   | dynamic-crud    | Field mapping overrides UI (accept or edit inferred semantic hints)        | done        | build-loop-p1    | 6/10  | pending |
 | G4  | P1   | dynamic-crud    | Auth-shape probe — detect api-key/oauth/basic/bearer from a sample request | done        | build-loop-p1    | 4/10  | pending |
-| G5  | P1   | pipelines       | Idempotent upsert with drift detection (schema changed since last run)     | open        | build-loop-p1    | 0/10  | —       |
+| G5  | P1   | pipelines       | Idempotent upsert with drift detection (schema changed since last run)     | done        | build-loop-p1    | 6/10  | pending |
 | G6  | P1   | pipelines       | Rate limiting + exponential backoff honored per-source                     | done        | build-loop-p1    | 6/10  | pending |
 | G7  | P2   | code-chat       | Schema inference exposed as a Code Chat tool                               | done        | build-loop-p1    | 5/10  | pending |
 | G8  | P2   | learning        | Continuous training — fold sample data into learning recommendations       | done        | build-loop-p1    | 6/10  | pending |
@@ -100,4 +100,5 @@ One line per pass. Format: `Pass N · angle · queue · commit · done · deferr
 - Pass 7 · code chat agent tools · [R1: G7 schema inference tool, A1: 4 new read-only Code Chat tools, A2: dispatcher tests] · 2e93967 · G7 done · G5/G6/G8/G11/G12 deferred
 - Pass 8 · cross-model distillation · [R1: G11, A1: claim extraction + clustering + training examples] · f6677d4 · G11 done · G5/G6/G8/G12 deferred
 - Pass 9 · rate limiter · [R1: G6, A1: token bucket + per-source registry, A2: virtual-clock tests] · aedee23 · G6 done · G5/G8/G12 deferred
-- Pass 10 · personalization fold-back · [R1: G8, A1: trigger rules + dedup, A2: CRM-aware augment] · pending · G8 done · G5/G12 deferred
+- Pass 10 · personalization fold-back · [R1: G8, A1: trigger rules + dedup, A2: CRM-aware augment] · e6747bd · G8 done · G5/G12 deferred
+- Pass 11 · drift-aware pipeline orchestrator · [R1: G5, A1: 6-phase runner, A2: progress callback + abort signal] · pending · G5 done · G12 deferred

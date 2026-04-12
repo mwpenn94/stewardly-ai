@@ -46,6 +46,11 @@ export interface RuntimeOptions {
   pageLimit?: number;     // safety cap on total pages (default 100)
   maxPageSize?: number;   // override pagination.maxPageSize
   onPage?: (records: unknown[], pageIndex: number) => void;
+  skipTransforms?: boolean; // when true, return raw records without applying
+                            // spec.fieldMappings read transforms. Used by the
+                            // drift-aware pipeline orchestrator so newly-
+                            // appeared fields in the source show up in the
+                            // freshly-inferred schema.
 }
 
 export interface ListResult {
@@ -463,14 +468,16 @@ export async function listRecords(
 
   if (page >= pageLimit && !stopRequested) truncated = true;
 
-  // Apply read transforms
-  const transformed = records.map((r) =>
-    r && typeof r === "object"
-      ? applyReadTransform(r as Record<string, unknown>, spec.fieldMappings)
-      : r
-  );
+  // Apply read transforms (unless caller opts out, e.g. for drift inference)
+  const finalRecords = opts.skipTransforms
+    ? records
+    : records.map((r) =>
+        r && typeof r === "object"
+          ? applyReadTransform(r as Record<string, unknown>, spec.fieldMappings)
+          : r,
+      );
 
-  return { records: transformed, pages: page, retries: state.retries, truncated };
+  return { records: finalRecords, pages: page, retries: state.retries, truncated };
 }
 
 // ─── GET operation ────────────────────────────────────────────────────────
