@@ -392,6 +392,9 @@ export async function dispatchCodeTool(
             excludePatterns: Array.isArray(call.args.excludePatterns)
               ? (call.args.excludePatterns as unknown[]).filter((p): p is string => typeof p === "string")
               : undefined,
+            concurrency: typeof call.args.concurrency === "number"
+              ? call.args.concurrency
+              : undefined,
           });
           return {
             kind: "web_crawl",
@@ -797,6 +800,7 @@ export const CODE_CHAT_TOOL_DEFINITIONS = [
         allowHosts: { type: "array", items: { type: "string" }, description: "Extra host suffixes to allow when sameOriginOnly=false" },
         includePatterns: { type: "array", items: { type: "string" }, description: "Regex patterns — URL must match at least one" },
         excludePatterns: { type: "array", items: { type: "string" }, description: "Regex patterns — URLs matching any are skipped" },
+        concurrency: { type: "number", description: "Parallel workers per BFS level (default 1, cap 6)" },
       },
       required: ["startUrl"],
     },

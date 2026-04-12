@@ -40,6 +40,8 @@ bottom. The Build Loop Pass Log at the very bottom is append-only.
 | G23 | SSE streaming of browser events to UI                      | Claude computer-use UI    |      0 |     7 | done · P6+7  | build   | pass-6, pass-7   |
 | G30 | Client-side hook + component consuming the SSE stream      | Claude/Manus activity UI  |      0 |     5 | done · P7    | build   | pass-7           |
 | G31 | Architecture doc covering every automation primitive       | dev-onboarding            |      0 |     6 | done · P8    | build   | pass-8           |
+| G32 | Parallel multi-URL fetch primitive (concurrency limited)   | Manus batch / Claude      |      0 |     6 | done · P9    | build   | pass-9           |
+| G33 | Crawl BFS level-batched parallelism (concurrency option)   | browser-use / crawler     |      0 |     5 | done · P9    | build   | pass-9           |
 | G24 | Browser read result caching with ETag/stale-while-revalid  | performance               |      0 |     6 | done · P3    | build   | pass-3           |
 | G25 | Robots.txt honoring                                        | defensive infra           |      0 |     6 | done · P2    | build   | pass-2           |
 | G26 | Bounded crawl session (BFS + depth + dedupe + budget)      | browser-use / Manus       |      0 |     5 | done · P4    | build   | pass-4           |
@@ -112,6 +114,17 @@ process reading PARITY.md, not just next-pass-self).
   `client/src/hooks/useAutomationTelemetryStream.ts`,
   `client/src/components/codeChat/AutomationActivityStrip.tsx`. Do
   not drop the backoff, do not drop the aria-live region.
+- **parallelFetch primitive + crawlSession concurrency option** —
+  pass 9. Bounded worker pool for batch URL reads. Preserves input
+  order, isolates per-URL failures, dedupes inputs, respects
+  `perUrlTimeoutMs`. Hard cap 10 concurrency / 200 URLs. crawlSession
+  layered concurrency on top (default 1 for back-compat, cap 6) via
+  level-batched Promise.all with sequential child-enqueue to keep
+  dedupe invariants correct. Files:
+  `server/shared/automation/parallelFetch.ts`,
+  `server/shared/automation/crawlSession.ts`. Do not drop the hard
+  caps, do not parallelize the child-enqueue step (races the
+  visited set).
 - **crawlSession primitive** — pass 4. Bounded BFS over any PageReader
   shape (duck-typed so a future Playwright adapter can plug in). Hard
   caps: maxPages=100, maxDepth=5. Canonicalizing dedupe (fragment,
@@ -148,4 +161,5 @@ Append-only log of what each pass accomplished. Format:
 - Pass 5 · edge-cases + bundle-size · [G28+G29 new, G17 extension] · 3493822 · AutomationTelemetryBus (sync+async sink error isolation, type filter, ring buffer) + wired as the default telemetry sink for the WebNavigator singleton + code_web_search tool bridging to existing executeWebSearch (Tavily/Brave/Manus/LLM fallback) + vi.mock in codeChat test · 13 new tests · deferred: G7, G9, G14, G23 (SSE bridge for telemetry events)
 - Pass 6 · type-safety + dev-ergonomics · [G23] · 3780225 · automationTelemetryStream SSE route + admin gate + types=/replay= query params + client-disconnect cleanup + mounted in _core/index.ts auth middleware + 10 tests via in-process fake req/res harness · deferred: G7, G9, G14, G16 (download files), G19 (multi-agent browser orchestration)
 - Pass 7 · responsive + i18n · [G23 extension, G30 new gap] · 615e51b · useAutomationTelemetryStream hook (EventSource consumer with exponential backoff reconnect + ring buffer) + pure helpers (summarizeEvent, eventBadgeColor, formatBytes) + AutomationActivityStrip component with per-event icons + aria-live log + config-bar Browser button in CodeChat page + vitest include pattern extended to client/src/hooks · 17 new tests · deferred: G7 (playwright), G9 (click/type), G14 (vision), G16 (downloads)
-- Pass 8 · migration-safety + docs-staleness · [G31 new, doc sync] · (pending commit) · docs/AUTOMATION.md (architecture diagram, per-primitive API reference, env vars table, extension points for Playwright adapter, agent tool catalog, open gap list) + CLAUDE.md automation subsystem section (points at the new doc) · zero new tests (doc-only) · deferred: G7, G9, G14, G16, G19
+- Pass 8 · migration-safety + docs-staleness · [G31 new, doc sync] · 4931c39 · docs/AUTOMATION.md (architecture diagram, per-primitive API reference, env vars table, extension points for Playwright adapter, agent tool catalog, open gap list) + CLAUDE.md automation subsystem section (points at the new doc) · zero new tests (doc-only) · deferred: G7, G9, G14, G16, G19
+- Pass 9 · race-conditions + slow-network · [G32+G33 new] · (pending commit) · parallelFetch primitive (worker pool, per-URL failure isolation, input-order preservation, auto dedupe across inputs, per-URL timeout wrap, onProgress callback with error isolation, hard caps: 10 concurrency / 200 URLs) + crawlSession BFS level-batched parallelism (opts.concurrency, default 1 for back-compat, cap 6, preserves dedupe invariants via sequential child-enqueue step) + code_web_crawl tool schema now accepts concurrency · 13 new tests (11 parallelFetch + 2 crawl concurrency) · deferred: G7, G9, G14, G16, G19

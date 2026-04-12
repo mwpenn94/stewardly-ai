@@ -314,4 +314,68 @@ describe("runCrawl", () => {
     // Hard caps don't error out — they just clamp; single-page crawl still works.
     expect(result.pages).toHaveLength(1);
   });
+
+  it("concurrency=3 processes a BFS level in parallel (faster than sequential)", async () => {
+    // 1 root → 6 children, each with a 40ms fetch delay.
+    // Sequential (concurrency=1): ~6*40 = 240ms+ for level 1
+    // Parallel (concurrency=3):   ~2*40 = 80ms for level 1
+    const childUrls = Array.from({ length: 6 }, (_, i) => `https://ex.com/c${i}`);
+    const pagesMap: Record<string, PageView> = {
+      "https://ex.com/": makeView("https://ex.com/", "Home", childUrls),
+    };
+    for (const c of childUrls) pagesMap[c] = makeView(c, c, []);
+    const reader: PageReader = {
+      async readPage(url: string) {
+        await new Promise((r) => setTimeout(r, 40));
+        return pagesMap[url] ?? makeView(url, "?", []);
+      },
+    };
+    const t0 = Date.now();
+    const result = await runCrawl(reader, {
+      startUrl: "https://ex.com/",
+      maxPages: 10,
+      maxDepth: 1,
+      concurrency: 3,
+    });
+    const elapsed = Date.now() - t0;
+    expect(result.pages).toHaveLength(7);
+    // Sequential would take ~240ms for level 1 alone; parallel ~80ms.
+    // Allow generous slack for CI variance.
+    expect(elapsed).toBeLessThan(200);
+  });
+
+  it("concurrency preserves dedupe invariants", async () => {
+    // Two pages both link to the same child — the child must be fetched once.
+    let childFetches = 0;
+    const pagesMap: Record<string, PageView> = {
+      "https://ex.com/": makeView("https://ex.com/", "Home", [
+        "https://ex.com/a",
+        "https://ex.com/b",
+      ]),
+      "https://ex.com/a": makeView("https://ex.com/a", "A", [
+        "https://ex.com/shared",
+      ]),
+      "https://ex.com/b": makeView("https://ex.com/b", "B", [
+        "https://ex.com/shared",
+      ]),
+      "https://ex.com/shared": makeView("https://ex.com/shared", "Shared", []),
+    };
+    const reader: PageReader = {
+      async readPage(url: string) {
+        if (url === "https://ex.com/shared") childFetches++;
+        return pagesMap[url] ?? makeView(url, "?", []);
+      },
+    };
+    const result = await runCrawl(reader, {
+      startUrl: "https://ex.com/",
+      maxDepth: 2,
+      concurrency: 4,
+    });
+    expect(childFetches).toBe(1);
+    // Home + A + B + Shared — shared appears exactly once
+    const sharedCount = result.pages.filter(
+      (p) => p.url === "https://ex.com/shared",
+    ).length;
+    expect(sharedCount).toBe(1);
+  });
 });

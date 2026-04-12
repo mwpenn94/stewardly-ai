@@ -47,6 +47,12 @@ export interface CrawlOptions {
   onPage?: (page: CrawlVisit) => void | Promise<void>;
   /** Optional skip-on-error. Default: true — errors don't halt the crawl. */
   continueOnError?: boolean;
+  /**
+   * Pass 9: parallel worker count per BFS level. Default 1 (sequential).
+   * Clamped to 1..6. Results within a level are processed in parallel
+   * but level boundaries are still respected so depth limits work.
+   */
+  concurrency?: number;
 }
 
 export interface CrawlVisit {
@@ -148,6 +154,10 @@ export async function runCrawl(
   const sameOriginOnly = opts.sameOriginOnly ?? true;
   const excludeNofollow = opts.excludeNofollow ?? true;
   const continueOnError = opts.continueOnError ?? true;
+  // Pass 9: concurrency default is 1 (sequential, backwards compatible);
+  // callers opt in explicitly. Hard cap 6 so rate limiter + telemetry
+  // don't get overwhelmed.
+  const concurrency = Math.min(Math.max(opts.concurrency ?? 1, 1), 6);
 
   const include = compilePatterns(opts.includePatterns);
   const exclude = compilePatterns(opts.excludePatterns);
@@ -156,6 +166,7 @@ export async function runCrawl(
   const skipped: Array<{ url: string; reason: string }> = [];
   let pagesAttempted = 0;
   let pagesFailed = 0;
+  let halted = false;
 
   // Normalized visited set. Using URLs canonicalized via the helper so
   // `/x` + `/x/` + `/x?b=2&a=1` + `/x?a=1&b=2` all collapse.
@@ -168,33 +179,21 @@ export async function runCrawl(
   visited.add(startCanonical);
   queue.push({ url: startCanonical, depth: 0 });
 
-  while (queue.length > 0 && pages.length < maxPages) {
-    const { url, depth } = queue.shift()!;
-    pagesAttempted++;
+  // Fetch one URL — used as the unit of work for both sequential and
+  // parallel paths. Returns `{visit, view}` so the post-processing
+  // (child enqueue) can inspect the PageView without re-fetching.
+  async function fetchOne(url: string, depth: number): Promise<{
+    visit: CrawlVisit;
+    view: PageView | null;
+  }> {
     const t0 = Date.now();
-
     let view: PageView | null = null;
     let errorMsg: string | undefined;
     try {
       view = await reader.readPage(url);
     } catch (err) {
       errorMsg = err instanceof Error ? err.message : String(err);
-      pagesFailed++;
-      if (!continueOnError) {
-        pages.push({
-          url,
-          depth,
-          title: "",
-          wordCount: 0,
-          links: 0,
-          status: 0,
-          durationMs: Date.now() - t0,
-          error: errorMsg,
-        });
-        break;
-      }
     }
-
     const visit: CrawlVisit = {
       url,
       depth,
@@ -205,51 +204,77 @@ export async function runCrawl(
       durationMs: Date.now() - t0,
       error: errorMsg,
     };
-    pages.push(visit);
-    if (opts.onPage) {
+    return { visit, view };
+  }
+
+  // Enqueue children of a completed PageView respecting all filters.
+  // Sequential w.r.t. the visited set so parallel batches don't
+  // double-enqueue the same URL.
+  function enqueueChildren(view: PageView, parentDepth: number) {
+    if (parentDepth >= maxDepth) return;
+    for (const link of view.links) {
+      if (pages.length + queue.length >= maxPages) break;
+      if (excludeNofollow && link.nofollow) continue;
+      const href = canonicalizeUrl(link.href);
+      if (!href || visited.has(href)) continue;
+
+      let parsed: URL;
       try {
-        await opts.onPage(visit);
+        parsed = new URL(href);
       } catch {
-        /* caller callback error — don't let it halt the crawl */
+        skipped.push({ url: href, reason: "invalid URL" });
+        continue;
       }
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        skipped.push({ url: href, reason: `protocol ${parsed.protocol}` });
+        continue;
+      }
+      if (sameOriginOnly && !sameOrigin(href, opts.startUrl)) {
+        skipped.push({ url: href, reason: "cross-origin" });
+        continue;
+      }
+      if (opts.allowHosts && !hostMatches(parsed.hostname, opts.allowHosts)) {
+        skipped.push({ url: href, reason: "host not allowed" });
+        continue;
+      }
+      if (!passesPatternFilter(href, include, exclude)) {
+        skipped.push({ url: href, reason: "pattern filter" });
+        continue;
+      }
+
+      visited.add(href);
+      queue.push({ url: href, depth: parentDepth + 1 });
     }
+  }
 
-    // Enqueue children only if the read succeeded and we're not at depth cap.
-    if (view && depth < maxDepth) {
-      for (const link of view.links) {
-        if (pages.length + queue.length >= maxPages) break;
-        if (excludeNofollow && link.nofollow) continue;
-        const href = canonicalizeUrl(link.href);
-        if (!href || visited.has(href)) continue;
+  while (queue.length > 0 && pages.length < maxPages && !halted) {
+    // Pull a batch (up to `concurrency` items) respecting the page
+    // budget. Sequential path has concurrency=1 so this degrades to
+    // the original single-item shift.
+    const batchSize = Math.min(concurrency, queue.length, maxPages - pages.length);
+    const batch: Array<{ url: string; depth: number }> = [];
+    for (let i = 0; i < batchSize; i++) batch.push(queue.shift()!);
 
-        // SSRF prevention: we only enqueue http(s)
-        let parsed: URL;
+    const results = await Promise.all(
+      batch.map((item) => fetchOne(item.url, item.depth)),
+    );
+
+    for (const { visit, view } of results) {
+      pagesAttempted++;
+      if (visit.error) pagesFailed++;
+      pages.push(visit);
+      if (opts.onPage) {
         try {
-          parsed = new URL(href);
+          await opts.onPage(visit);
         } catch {
-          skipped.push({ url: href, reason: "invalid URL" });
-          continue;
+          /* swallow callback errors — don't halt the crawl */
         }
-        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-          skipped.push({ url: href, reason: `protocol ${parsed.protocol}` });
-          continue;
-        }
-        if (sameOriginOnly && !sameOrigin(href, opts.startUrl)) {
-          skipped.push({ url: href, reason: "cross-origin" });
-          continue;
-        }
-        if (opts.allowHosts && !hostMatches(parsed.hostname, opts.allowHosts)) {
-          skipped.push({ url: href, reason: "host not allowed" });
-          continue;
-        }
-        if (!passesPatternFilter(href, include, exclude)) {
-          skipped.push({ url: href, reason: "pattern filter" });
-          continue;
-        }
-
-        visited.add(href);
-        queue.push({ url: href, depth: depth + 1 });
       }
+      if (visit.error && !continueOnError) {
+        halted = true;
+        break;
+      }
+      if (view) enqueueChildren(view, visit.depth);
     }
   }
 
