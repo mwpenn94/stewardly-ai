@@ -2002,7 +2002,7 @@ export default function Chat() {
       <main
         id="chat-main"
         tabIndex={-1}
-        className="flex-1 flex flex-col min-w-0"
+        className="flex-1 flex flex-col min-w-0 pb-16 lg:pb-0"
         aria-label="Chat"
         aria-busy={isStreaming ? true : undefined}
       >
@@ -2584,6 +2584,62 @@ export default function Chat() {
                   for power users (one click to reveal). When a non-default
                   chat mode is active, a small badge replaces the toggle so
                   the user can see at a glance what mode they're in. */}
+              {/* Mobile model picker — always visible on mobile so users can
+                  switch models without needing the hidden More/Less toggle */}
+              <button
+                type="button"
+                onClick={() => setShowModelMenu(!showModelMenu)}
+                className={`md:hidden h-7 text-[10px] rounded-lg px-2 flex items-center gap-1 transition-all ${
+                  isMultiModel
+                    ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                    : "bg-secondary/30 border border-border text-muted-foreground"
+                }`}
+                aria-label={`Current model: ${modelLabel}. Tap to change.`}
+              >
+                <Brain className="w-3 h-3" />
+                <span className="max-w-[60px] truncate">{modelLabel}</span>
+              </button>
+
+              {/* Mobile model menu (shared with desktop — rendered here for mobile access) */}
+              {showModelMenu && (
+                <div className="md:hidden fixed inset-0 z-50 flex items-end justify-center">
+                  <div className="absolute inset-0 bg-black/50" onClick={() => setShowModelMenu(false)} />
+                  <div className="relative bg-popover text-popover-foreground border border-border rounded-t-2xl shadow-xl p-3 w-full max-h-[60vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-200 safe-bottom">
+                    <div className="w-8 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-3" />
+                    <div className="text-xs font-medium mb-2">Select Model</div>
+                    <div className="text-[10px] text-muted-foreground mb-3">Select multiple for consensus mode</div>
+                    {(() => {
+                      let lastFamily = "";
+                      return MODEL_OPTIONS.map(opt => {
+                        const showDivider = opt.family !== lastFamily && opt.family !== "auto";
+                        lastFamily = opt.family;
+                        return (
+                          <div key={opt.id}>
+                            {showDivider && <div className="h-px bg-border my-1" />}
+                            {showDivider && <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider py-1">{opt.family}</div>}
+                            <button
+                              className={`flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] ${
+                                selectedModels.includes(opt.id) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
+                              }`}
+                              onClick={() => toggleModel(opt.id)}
+                            >
+                              {opt.label}
+                              {selectedModels.includes(opt.id) && <Check className="w-4 h-4 ml-auto" />}
+                            </button>
+                          </div>
+                        );
+                      });
+                    })()}
+                    <button
+                      onClick={() => setShowModelMenu(false)}
+                      className="w-full mt-3 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-medium min-h-[44px]"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Mode badge — desktop only (mobile users switch via Focus menu) */}
               {!advancedOpen && chatMode !== "single" && (
                 <button
@@ -2983,6 +3039,35 @@ export default function Chat() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ─── MOBILE BOTTOM TAB BAR ──────────────────────────────
+           Matches AppShell's mobile tab bar for navigation consistency
+           so users switching between Chat and other pages always see
+           the same bottom nav. Hidden on lg+ where sidebar is visible. */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-30 h-16 border-t border-border/50 bg-background/95 backdrop-blur-sm flex items-center justify-around lg:hidden"
+        aria-label="Mobile navigation"
+      >
+        {[
+          { label: "Chat", icon: <MessageSquare className="w-5 h-5" />, path: "/chat", active: true },
+          { label: "Tools", icon: <Calculator className="w-5 h-5" />, path: "/calculators", active: false },
+          { label: "Insights", icon: <Brain className="w-5 h-5" />, path: "/intelligence-hub", active: false },
+          { label: "Learn", icon: <GraduationCap className="w-5 h-5" />, path: "/learning", active: false },
+        ].map(tab => (
+          <button
+            key={tab.label}
+            onClick={() => { if (!tab.active) navigate(tab.path); }}
+            className={`flex flex-col items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] px-2 transition-colors ${
+              tab.active ? "text-accent" : "text-muted-foreground hover:text-foreground"
+            }`}
+            aria-current={tab.active ? "page" : undefined}
+            aria-label={tab.label}
+          >
+            {tab.icon}
+            <span className="text-[10px]">{tab.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }

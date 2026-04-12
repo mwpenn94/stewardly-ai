@@ -12,8 +12,14 @@ export default function GlobalFooter() {
   const hiddenPaths = ["/chat", "/signin", "/org/"];
   if (hiddenPaths.some(p => location.startsWith(p))) return null;
 
+  // On mobile, AppShell's bottom tab bar provides navigation — showing a
+  // footer underneath creates double-nav overlap. Hide the footer on mobile
+  // for all authenticated (non-public) routes where AppShell is active.
+  const publicPaths = ["/", "/welcome", "/terms", "/privacy", "/not-found", "/unsubscribe", "/embed"];
+  const isPublicPage = publicPaths.includes(location) || location.startsWith("/org/");
+
   return (
-    <footer className="border-t border-border/30 bg-card/20 backdrop-blur-sm">
+    <footer className={`border-t border-border/30 bg-card/20 backdrop-blur-sm ${isPublicPage ? "" : "hidden lg:block"}`}>
       <div className="max-w-6xl mx-auto px-4 py-4">
         {/* Financial disclaimer */}
         <div className="flex items-start gap-2 mb-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
