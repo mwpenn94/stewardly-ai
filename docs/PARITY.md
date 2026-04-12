@@ -134,4 +134,4 @@ _empty — log three-way merges here when parallel processes conflict_
 
 Append-only tail. One line per completed pass:
 
-- Pass 1 · angle: missing-tool assessment · queue: [A1 web_fetch tool] · items completed: [web_fetch tool end-to-end (server service + dispatcher + SSE route allowlist + tool def + /web slash + permission popover + action palette + badge bump 8→9 + toolSummary + autonomousCoding summarizer + tests)] · items deferred: [] · sha: pending-commit
+- Pass 1 · angle: missing-tool assessment · queue: [A1 web_fetch tool] · items completed: [web_fetch tool end-to-end (server service + dispatcher + SSE route allowlist + tool def + /web slash + permission popover + action palette + badge bump 8→9 + toolSummary + autonomousCoding summarizer + tests)] · items deferred: [] · sha: 3aa8672
