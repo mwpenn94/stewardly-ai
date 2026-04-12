@@ -327,7 +327,7 @@ function AdvisorMatching() {
 
 // ─── PRODUCT COMPARISON ─────────────────────────────────────────────────
 function ProductComparison() {
-  const productsQuery = trpc.products.list.useQuery();
+  const productsQuery = trpc.products.list.useQuery(undefined, { staleTime: 60_000 });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");

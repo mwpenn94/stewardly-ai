@@ -42,8 +42,8 @@ export default function Insights() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const insightsList = trpc.insights.list.useQuery();
-  const stats = trpc.insights.stats.useQuery();
+  const insightsList = trpc.insights.list.useQuery(undefined, { staleTime: 30_000 });
+  const stats = trpc.insights.stats.useQuery(undefined, { staleTime: 30_000 });
   const generateInsights = trpc.insights.generate.useMutation({
     onSuccess: () => {
       insightsList.refetch();

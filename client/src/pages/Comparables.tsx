@@ -112,13 +112,13 @@ function BandBadge({
 }
 
 export default function ComparablesPage() {
-  const axesQ = trpc.comparables.listAxes.useQuery();
-  const summaryQ = trpc.comparables.summary.useQuery();
-  const matrixQ = trpc.comparables.gapMatrix.useQuery();
-  const rankingQ = trpc.comparables.ranking.useQuery();
-  const prioritiesQ = trpc.comparables.priorities.useQuery({ limit: 8 });
-  const byCategoryQ = trpc.comparables.byCategory.useQuery();
-  const appSummariesQ = trpc.comparables.appSummaries.useQuery();
+  const axesQ = trpc.comparables.listAxes.useQuery(undefined, { staleTime: 300_000 });
+  const summaryQ = trpc.comparables.summary.useQuery(undefined, { staleTime: 300_000 });
+  const matrixQ = trpc.comparables.gapMatrix.useQuery(undefined, { staleTime: 300_000 });
+  const rankingQ = trpc.comparables.ranking.useQuery(undefined, { staleTime: 300_000 });
+  const prioritiesQ = trpc.comparables.priorities.useQuery({ limit: 8 }, { staleTime: 300_000 });
+  const byCategoryQ = trpc.comparables.byCategory.useQuery(undefined, { staleTime: 300_000 });
+  const appSummariesQ = trpc.comparables.appSummaries.useQuery(undefined, { staleTime: 300_000 });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedQ = trpc.comparables.getComparable.useQuery(

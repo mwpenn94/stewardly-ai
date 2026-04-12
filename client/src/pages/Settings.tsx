@@ -382,7 +382,7 @@ export default function Settings() {
 
 // ─── VOICE SETTINGS COMPONENT ─────────────────────────────────────
 function VoiceSettings() {
-  const voicesQuery = trpc.voice.voices.useQuery();
+  const voicesQuery = trpc.voice.voices.useQuery(undefined, { staleTime: 60_000 });
   const speakMutation = trpc.voice.speak.useMutation();
   const [selectedVoice, setSelectedVoice] = useState<string>(() => {
     return localStorage.getItem("tts-voice") || "aria";
@@ -569,7 +569,7 @@ function TuningTooltip({ text }: { text: string }) {
 }
 
 function AITuningSettings() {
-  const prefsQuery = trpc.aiLayers.getUserPreferences.useQuery();
+  const prefsQuery = trpc.aiLayers.getUserPreferences.useQuery(undefined, { staleTime: 30_000 });
   const updatePrefs = trpc.aiLayers.updateUserPreferences.useMutation({
     onSuccess: () => toast.success("AI tuning saved"),
     onError: (e) => toast.error(e.message),
@@ -590,13 +590,13 @@ function AITuningSettings() {
   const [customInstructions, setCustomInstructions] = useState("");
 
   // Model weighting state
-  const perspectivesQuery = trpc.multiModel.perspectives.useQuery();
-  const presetsQuery = trpc.multiModel.presets.useQuery();
+  const perspectivesQuery = trpc.multiModel.perspectives.useQuery(undefined, { staleTime: 60_000 });
+  const presetsQuery = trpc.multiModel.presets.useQuery(undefined, { staleTime: 60_000 });
   const [activePreset, setActivePreset] = useState("balanced");
   const [weights, setWeights] = useState<Record<string, number>>({});
 
   // Model selector state
-  const modelsQuery = trpc.aiLayers.getAvailableModels.useQuery();
+  const modelsQuery = trpc.aiLayers.getAvailableModels.useQuery(undefined, { staleTime: 60_000 });
   const [primaryModel, setPrimaryModel] = useState("");
   const [fallbackModel, setFallbackModel] = useState("");
   const [synthesisModel, setSynthesisModel] = useState("");

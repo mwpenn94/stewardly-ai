@@ -34,10 +34,11 @@ import {
 } from "lucide-react";
 import { ReasoningChain } from "@/components/ReasoningChain";
 import { LiveSession } from "@/components/LiveSession";
-// Round C3 / Round E1 — inline multi-model consensus panel
-import { StreamingResults, type StreamEvent } from "@/components/consensus/StreamingResults";
-import { TimingBreakdown } from "@/components/consensus/TimingBreakdown";
-import { ComparisonView } from "@/components/consensus/ComparisonView";
+// Round C3 / Round E1 — inline multi-model consensus panel (lazy-loaded, only used in consensus mode)
+import type { StreamEvent } from "@/components/consensus/StreamingResults";
+const StreamingResults = lazy(() => import("@/components/consensus/StreamingResults").then(m => ({ default: m.StreamingResults })));
+const TimingBreakdown = lazy(() => import("@/components/consensus/TimingBreakdown").then(m => ({ default: m.TimingBreakdown })));
+const ComparisonView = lazy(() => import("@/components/consensus/ComparisonView").then(m => ({ default: m.ComparisonView })));
 import { VoiceOrb } from "@/components/VoiceOrb";
 import { ProgressiveMessage } from "@/components/ProgressiveMessage";
 import RichMediaEmbed, { type MediaEmbed } from "@/components/RichMediaEmbed";
@@ -63,7 +64,7 @@ import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
 import { useSelfDiscovery } from "@/hooks/useSelfDiscovery";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -382,12 +383,12 @@ export default function Chat() {
   });
 
   // ─── QUERIES ──────────────────────────────────────────────────
-  const conversationsQuery = trpc.conversations.list.useQuery(undefined, { enabled: isAuthenticated });
+  const conversationsQuery = trpc.conversations.list.useQuery(undefined, { enabled: isAuthenticated, staleTime: 30_000 });
   const messagesQuery = trpc.conversations.messages.useQuery(
     { conversationId: conversationId! },
     { enabled: !!conversationId && isAuthenticated }
   );
-  const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: isAuthenticated });
+  const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: isAuthenticated, staleTime: 60_000 });
   const avatarUrl = settingsQuery.data?.avatarUrl;
 
   // Pass 93: single proactive insight for the welcome banner. Only fires
@@ -434,7 +435,7 @@ export default function Chat() {
   const visualMutation = trpc.visual.generate.useMutation();
 
   // ─── FOLDER & PIN QUERIES/MUTATIONS ────────────────────────
-  const foldersQuery = trpc.conversations.folders.useQuery(undefined, { enabled: isAuthenticated });
+  const foldersQuery = trpc.conversations.folders.useQuery(undefined, { enabled: isAuthenticated, staleTime: 30_000 });
   const togglePinMutation = trpc.conversations.togglePin.useMutation({
     onSuccess: () => utils.conversations.list.invalidate(),
   });
@@ -2172,6 +2173,7 @@ export default function Chat() {
                               legacy consensus badge so users get both the expandable summary AND the
                               full per-model cards + timing chart + side-by-side diff. */}
                           {msg.metadata?.wealthConsensus && (
+                            <Suspense fallback={<div className="mt-3 text-xs text-muted-foreground">Loading consensus view…</div>}>
                             <div className="mt-3 space-y-3">
                               <StreamingResults
                                 modelsRequested={(msg.metadata.wealthConsensus.perModelResponses as Array<{ modelId: string }>).map((r) => r.modelId)}
@@ -2217,6 +2219,7 @@ export default function Chat() {
                                 />
                               )}
                             </div>
+                            </Suspense>
                           )}
                           {/* Render inline images if present in metadata */}
                           {msg.metadata?.imageUrl && (

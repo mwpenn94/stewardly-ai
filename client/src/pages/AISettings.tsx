@@ -159,7 +159,7 @@ function TagInput({
 // LAYER 5: USER PREFERENCES EDITOR
 // ═══════════════════════════════════════════════════════════════════════
 function UserPreferencesEditor() {
-  const { data: prefs, isLoading } = trpc.aiLayers.getUserPreferences.useQuery();
+  const { data: prefs, isLoading } = trpc.aiLayers.getUserPreferences.useQuery(undefined, { staleTime: 30_000 });
   const updateMut = trpc.aiLayers.updateUserPreferences.useMutation({
     onSuccess: () => toast.success("Preferences saved"),
     onError: (e) => toast.error(e.message),
