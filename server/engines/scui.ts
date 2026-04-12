@@ -54,6 +54,18 @@ export const STRESS_SCENARIOS: Record<string, StressScenario> = {
     returns: [0.314, 0.184, 0.286, -0.181, 0.263],
     description: "Pandemic shock. S&P 500 fell 34% in 23 trading days, then recovered within 5 months.",
   },
+  stagflation: {
+    name: "Stagflation (1973-1974)",
+    years: [1972, 1973, 1974, 1975, 1976],
+    returns: [0.189, -0.146, -0.264, 0.372, 0.239],
+    description: "Oil embargo + high inflation. S&P 500 fell 48% peak-to-trough. CPI hit 12.3%. Double whammy of declining portfolio + eroding purchasing power.",
+  },
+  rising_rates: {
+    name: "Rising Rates (2022)",
+    years: [2020, 2021, 2022, 2023, 2024],
+    returns: [0.184, 0.286, -0.181, 0.263, 0.250],
+    description: "Fed hiked rates from 0% to 5.25% in 16 months. S&P 500 fell 25%. Bonds fell simultaneously — traditional 60/40 portfolio offered no refuge.",
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════

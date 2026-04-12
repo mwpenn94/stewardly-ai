@@ -50,8 +50,8 @@ describe("SP500_HISTORY", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("STRESS_SCENARIOS", () => {
-  it("has 3 scenarios: dotcom, gfc, covid", () => {
-    expect(Object.keys(STRESS_SCENARIOS)).toEqual(["dotcom", "gfc", "covid"]);
+  it("has 5 scenarios: dotcom, gfc, covid, stagflation, rising_rates", () => {
+    expect(Object.keys(STRESS_SCENARIOS)).toEqual(["dotcom", "gfc", "covid", "stagflation", "rising_rates"]);
   });
 
   it("each scenario has name, years, returns, description", () => {
@@ -281,8 +281,8 @@ describe("reference data", () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe("SCUI public API", () => {
-  it("getStressScenarioKeys returns 3 keys", () => {
-    expect(SCUI.getStressScenarioKeys()).toEqual(["dotcom", "gfc", "covid"]);
+  it("getStressScenarioKeys returns 5 keys", () => {
+    expect(SCUI.getStressScenarioKeys()).toEqual(["dotcom", "gfc", "covid", "stagflation", "rising_rates"]);
   });
 
   it("getProductReferenceKeys returns 14 keys", () => {

@@ -6,8 +6,9 @@
  * Displays results as a color-coded heat map grid.
  */
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { persistCalculation } from "@/lib/calculatorContext";
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -199,6 +200,26 @@ export default function WhatIfSensitivity() {
       setRunning(false);
     }
   }, [rowParam, colParam, gridSize, rowDef, colDef, heSimulate]);
+
+  // ── Persist to calculator context bridge so Chat knows sensitivity results ──
+  useEffect(() => {
+    if (!grid || grid.length === 0) return;
+    const values = grid.map((c) => c.result);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const avg = Math.round(values.reduce((s, v) => s + v, 0) / values.length);
+    const fmt = (n: number) => "$" + Math.round(n).toLocaleString();
+    persistCalculation({
+      id: `whatif-${rowParam}-${colParam}-${gridSize}`,
+      type: "custom",
+      title: `What-If Sensitivity — ${rowParam} × ${colParam}`,
+      summary: `${gridSize}×${gridSize} grid (${grid.length} cells). Range: ${fmt(min)} – ${fmt(max)}, avg ${fmt(avg)}.${failedCells > 0 ? ` ${failedCells} cells failed.` : ""}`,
+      inputs: { rowParam, colParam, gridSize, profile: liveProfile },
+      outputs: { cellCount: grid.length, minValue: min, maxValue: max, avgValue: avg, failedCells },
+      timestamp: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grid]);
 
   // Derive grid dimensions
   const rows = grid ? Array.from(new Set(grid.map((c) => c.rowVal))).sort((a, b) => a - b) : [];
