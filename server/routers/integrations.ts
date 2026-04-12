@@ -915,4 +915,187 @@ export const integrationsRouter = router({
       const accounts = await st.getUserAccounts(input.clientUserId);
       return { ...status, connections, accounts };
     }),
+
+  // ─── Dynamic CRUD Integrations: Schema Inference (Pass 1) ────────────
+  /**
+   * Infer a schema from arbitrary sample records. Use this when a third-party
+   * integration has limited or nonexistent documentation but you can get
+   * sample data out of it. Returns field types, semantic hints, primary key
+   * candidates, and suggested CRUD field roles.
+   */
+  inferSchema: protectedProcedure
+    .input(z.object({
+      records: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+      sourceName: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { inferSchema, suggestCrudMapping, summarizeSchema } = await import("../services/dynamicIntegrations/schemaInference");
+      const schema = inferSchema(input.records);
+      const crudMapping = suggestCrudMapping(schema);
+      const summary = summarizeSchema(schema);
+      return { schema, crudMapping, summary, sourceName: input.sourceName || null };
+    }),
+
+  /**
+   * Merge two already-inferred schemas (e.g. from two paginated sample
+   * batches). Exposed so wizards can progressively improve schema confidence
+   * as more sample data arrives.
+   */
+  mergeInferredSchemas: protectedProcedure
+    .input(z.object({
+      a: z.any(),
+      b: z.any(),
+    }))
+    .mutation(async ({ input }) => {
+      const { mergeSchemas, suggestCrudMapping, summarizeSchema } = await import("../services/dynamicIntegrations/schemaInference");
+      const schema = mergeSchemas(input.a, input.b);
+      return { schema, crudMapping: suggestCrudMapping(schema), summary: summarizeSchema(schema) };
+    }),
+
+  /**
+   * Generate a full CRUD adapter spec from sample records + options.
+   * This is the one-shot "take sample data and spit out a working adapter"
+   * entry point. Pass sample records + base URL + (optional) auth hint and
+   * you get a complete AdapterSpec back with endpoints, field mappings,
+   * pagination probe, and a readiness report.
+   */
+  generateAdapter: protectedProcedure
+    .input(z.object({
+      records: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+      name: z.string().min(1).max(100),
+      baseUrl: z.string().url().optional(),
+      listEndpoint: z.string().optional(),
+      authHint: z.object({
+        type: z.enum(["none", "api_key_header", "api_key_query", "bearer", "basic", "oauth2", "unknown"]).optional(),
+        headerName: z.string().optional(),
+        queryParam: z.string().optional(),
+      }).optional(),
+      sampleListResponse: z.any().optional(),
+      collectionPath: z.string().optional(),
+      rateLimitHint: z.object({
+        requestsPerSecond: z.number().optional(),
+        requestsPerMinute: z.number().optional(),
+        burstBudget: z.number().optional(),
+        maxRetries: z.number().optional(),
+      }).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { inferSchema } = await import("../services/dynamicIntegrations/schemaInference");
+      const { generateAdapter, buildCurlExamples, summarizeAdapter } = await import("../services/dynamicIntegrations/adapterGenerator");
+      const schema = inferSchema(input.records);
+      const spec = generateAdapter(schema, {
+        name: input.name,
+        baseUrl: input.baseUrl,
+        listEndpoint: input.listEndpoint,
+        authHint: input.authHint,
+        sampleListResponse: input.sampleListResponse,
+        collectionPath: input.collectionPath,
+        rateLimitHint: input.rateLimitHint,
+      });
+      return {
+        schema,
+        spec,
+        curlExamples: buildCurlExamples(spec),
+        summary: summarizeAdapter(spec),
+      };
+    }),
+
+  /**
+   * One-shot autonomous source onboarding. Ties passes 1-15 together: redact
+   * → infer → auth probe → generate spec → apply overrides → CRM map →
+   * personalization hints → serialize → next-steps. Use this when you want
+   * everything in one call.
+   */
+  onboardSource: protectedProcedure
+    .input(z.object({
+      sampleRecords: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+      name: z.string().min(1).max(100),
+      baseUrl: z.string().url().optional(),
+      listEndpoint: z.string().optional(),
+      authHint: z.object({
+        type: z.enum(["none", "api_key_header", "api_key_query", "bearer", "basic", "oauth2", "unknown"]).optional(),
+        headerName: z.string().optional(),
+        queryParam: z.string().optional(),
+      }).optional(),
+      skipRedaction: z.boolean().optional(),
+      skipCrmMapping: z.boolean().optional(),
+      skipPersonalizationHints: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { runOnboardingWizard } = await import("../services/dynamicIntegrations/onboardingWizard");
+      return await runOnboardingWizard(input);
+    }),
+
+  /**
+   * Parse a natural-language prompt and return the extracted OnboardingInput
+   * hints. Use as a preview step before calling onboardSource.
+   */
+  parseOnboardPrompt: protectedProcedure
+    .input(z.object({ prompt: z.string().min(1).max(2000) }))
+    .query(async ({ input }) => {
+      const { parsePrompt, summarizeParsedPrompt } = await import("../services/dynamicIntegrations/naturalLanguageParser");
+      const parsed = parsePrompt(input.prompt);
+      return { parsed, summary: summarizeParsedPrompt(parsed) };
+    }),
+
+  /**
+   * Detect schema drift between a baseline sample and a current sample.
+   * Returns a structured DriftReport with breaking/warning/info severity.
+   */
+  detectDrift: protectedProcedure
+    .input(z.object({
+      baselineRecords: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+      currentRecords: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+    }))
+    .mutation(async ({ input }) => {
+      const { inferSchema } = await import("../services/dynamicIntegrations/schemaInference");
+      const { diffSchemas, summarizeDrift } = await import("../services/dynamicIntegrations/schemaDrift");
+      const baseline = inferSchema(input.baselineRecords);
+      const current = inferSchema(input.currentRecords);
+      const report = diffSchemas(baseline, current);
+      return { report, summary: summarizeDrift(report) };
+    }),
+
+  /**
+   * Extract personalization hints (learning tracks, calculators, risk,
+   * CRM segments) from sample records. Feeds the learning engine and
+   * spotlight logic.
+   */
+  extractHints: protectedProcedure
+    .input(z.object({
+      records: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+      minConfidence: z.number().min(0).max(1).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { inferSchema } = await import("../services/dynamicIntegrations/schemaInference");
+      const { extractPersonalizationHints, summarizeHints } = await import("../services/dynamicIntegrations/personalizationHints");
+      const schema = inferSchema(input.records);
+      const result = extractPersonalizationHints(schema, {
+        minConfidence: input.minConfidence,
+      });
+      return { result, summary: summarizeHints(result) };
+    }),
+
+  /**
+   * Deep-probe auth type from sample 401/403 responses. Use when you
+   * already have data you can fetch and want to confirm auth style.
+   */
+  probeAuth: protectedProcedure
+    .input(z.object({
+      samples: z.array(z.object({
+        status: z.number(),
+        headers: z.record(z.string(), z.string()),
+        body: z.any().optional(),
+        url: z.string().optional(),
+      })).min(1).max(100),
+      endpointsTried: z.array(z.string()).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { probeAuthDeep, summarizeAuthProbe } = await import("../services/dynamicIntegrations/authProbe");
+      const result = probeAuthDeep({
+        samples: input.samples,
+        endpointsTried: input.endpointsTried,
+      });
+      return { result, summary: summarizeAuthProbe(result) };
+    }),
 });
