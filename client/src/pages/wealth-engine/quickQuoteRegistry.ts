@@ -244,7 +244,7 @@ export const QUICK_QUOTE_REGISTRY: QuickQuoteEntry[] = [
     title: "Protection Score",
     description: "12-dimension financial protection scoring with gap analysis.",
     category: "protection",
-    route: "/financial-protection-score",
+    route: "/protection-score",
     icon: "Shield",
     estimatedMinutes: 2,
     consumesFields: ["age", "income", "savings", "dependents", "lifeInsuranceCoverage"],
