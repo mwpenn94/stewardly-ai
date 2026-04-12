@@ -13,8 +13,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, BookOpen, TrendingUp, ShieldCheck, BarChart3, AlertTriangle,
-  ExternalLink, Info, FileText,
+  ExternalLink, Info, FileText, Gauge,
 } from "lucide-react";
+import { GuardrailsSummary } from "@/components/wealth-engine/GuardrailBadge";
 import { useLocation } from "wouter";
 
 function fmt(n: number) {
@@ -64,6 +65,9 @@ export default function ReferenceHub() {
             </TabsTrigger>
             <TabsTrigger value="stress" className="gap-1.5 text-xs">
               <AlertTriangle className="w-3.5 h-3.5" /> Stress Scenarios
+            </TabsTrigger>
+            <TabsTrigger value="guardrails" className="gap-1.5 text-xs">
+              <Gauge className="w-3.5 h-3.5" /> Guardrails
             </TabsTrigger>
           </TabsList>
 
@@ -280,6 +284,25 @@ export default function ReferenceHub() {
             ) : (
               <p className="text-xs text-muted-foreground text-center py-8">Loading scenarios...</p>
             )}
+          </TabsContent>
+
+          {/* ── Guardrails ────────────────────────────────────────── */}
+          <TabsContent value="guardrails" className="space-y-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Gauge className="w-4 h-4 text-accent" />
+                  Assumption Guardrails
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Input validation ranges used by all calculator engines. Values outside these ranges
+                  trigger warnings or errors to prevent unrealistic assumptions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <GuardrailsSummary />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

@@ -17,6 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { GuardrailBadge } from "@/components/wealth-engine/GuardrailBadge";
 import { Loader2, Grid3X3, Info, ArrowLeft } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -215,6 +216,33 @@ export default function Sensitivity() {
                 </div>
               </div>
             </div>
+
+            {/* Guardrail validation for rate-based parameters */}
+            {(["savingsRate", "investmentReturn", "taxRate"].includes(xParam) ||
+              ["savingsRate", "investmentReturn", "taxRate"].includes(yParam)) && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {["savingsRate", "investmentReturn", "taxRate"].includes(xParam) && (
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <span>{xDef.label} max:</span>
+                    <GuardrailBadge
+                      param={xParam === "investmentReturn" ? "returnRate" : xParam}
+                      value={xDef.defaultRange[1]}
+                      showOk
+                    />
+                  </div>
+                )}
+                {["savingsRate", "investmentReturn", "taxRate"].includes(yParam) && (
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <span>{yDef.label} max:</span>
+                    <GuardrailBadge
+                      param={yParam === "investmentReturn" ? "returnRate" : yParam}
+                      value={yDef.defaultRange[1]}
+                      showOk
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-4 flex items-center gap-3">
               <Button onClick={handleRun} disabled={sweep.isPending || xParam === yParam} className="gap-2">
