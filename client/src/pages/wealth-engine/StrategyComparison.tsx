@@ -40,7 +40,7 @@ import { formatCurrency } from "@/lib/wealth-engine/animations";
 import {
   Loader2, PlayCircle, Award, ChevronDown, ChevronUp,
   AlertTriangle, TrendingDown, History, BarChart3,
-  Shield, Info, CheckCircle2,
+  Shield, Info, CheckCircle2, Target,
 } from "lucide-react";
 
 const PEER_SET = [
@@ -157,6 +157,11 @@ export default function StrategyComparisonPage() {
   });
 
   const [showProductRefs, setShowProductRefs] = useState(false);
+  const [showBackPlan, setShowBackPlan] = useState(false);
+  const [backPlanTarget, setBackPlanTarget] = useState(1_000_000);
+  const [backPlanYear, setBackPlanYear] = useState(20);
+  const [showMetricChart, setShowMetricChart] = useState(false);
+  const [chartMetric, setChartMetric] = useState("totalValue");
 
   // Enrichment queries — load reference data eagerly
   const benchmarks = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
@@ -175,6 +180,14 @@ export default function StrategyComparisonPage() {
   const [stressScenarioKey, setStressScenarioKey] = useState("gfc");
   const [showMultiStress, setShowMultiStress] = useState(false);
   const batchStress = trpc.calculatorEngine.batchStressTest.useMutation({ onError: onStressError });
+
+  // ── HE Back-Plan + Multi-Metric Chart (activating orphaned tRPC endpoints) ──
+  const heBackPlan = trpc.calculatorEngine.heBackPlan.useMutation({
+    onError: () => toast.error("Back-plan calculation failed"),
+  });
+  const heChartSeries = trpc.calculatorEngine.heChartSeries.useMutation({
+    onError: () => toast.error("Chart series calculation failed"),
+  });
 
   const result = compare.data;
   const rows = result?.data?.compareRows ?? [];
@@ -687,6 +700,181 @@ export default function StrategyComparisonPage() {
             )}
           </Card>
         )}
+        {/* ── HE Back-Plan: "What do I need to reach $X?" ─────────── */}
+        {rows.length > 0 && (
+          <Card>
+            <CardHeader className="py-3 cursor-pointer" onClick={() => setShowBackPlan(b => !b)}>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Target className="h-4 w-4 text-accent" /> Back-Plan: "What Do I Need?"
+                </CardTitle>
+                {showBackPlan ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+            </CardHeader>
+            {showBackPlan && (
+              <CardContent className="pt-0 space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  Set a target wealth amount and timeframe. The engine works backwards to show what savings rate, income, or strategy changes are needed to reach it.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Target Wealth</Label>
+                    <Input
+                      type="number"
+                      value={backPlanTarget}
+                      min={10000}
+                      step={50000}
+                      onChange={e => setBackPlanTarget(Number(e.target.value))}
+                      aria-label="Target wealth amount for back-plan"
+                    />
+                    <p className="text-[10px] text-muted-foreground">{formatCurrency(backPlanTarget)}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Target Year</Label>
+                    <Input
+                      type="number"
+                      value={backPlanYear}
+                      min={1}
+                      max={50}
+                      onChange={e => setBackPlanYear(Number(e.target.value))}
+                      aria-label="Target year for back-plan"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Year {backPlanYear} (age {age + backPlanYear})</p>
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        heBackPlan.mutate({
+                          targetValue: backPlanTarget,
+                          targetYear: backPlanYear,
+                          baseStrategy: {
+                            name: "WealthBridge Plan",
+                            companyKey: "wealthbridge",
+                            profile: { ...profile },
+                            savingsRate,
+                            investmentReturn: investReturn,
+                          },
+                        });
+                      }}
+                      disabled={heBackPlan.isPending}
+                      aria-label="Calculate back-plan"
+                    >
+                      {heBackPlan.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Calculate"}
+                    </Button>
+                  </div>
+                </div>
+                {heBackPlan.data && (
+                  <div className="p-4 rounded-lg border border-accent/30 bg-accent/5 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-accent" />
+                      <p className="text-sm font-semibold">Back-Plan Results</p>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {Object.entries(heBackPlan.data as Record<string, any>).map(([key, val]) => (
+                        <div key={key} className="space-y-0.5">
+                          <p className="text-[10px] text-muted-foreground/70 uppercase">{key.replace(/([A-Z])/g, " $1").trim()}</p>
+                          <p className="text-sm font-mono tabular-nums">
+                            {typeof val === "number"
+                              ? val > 100 ? formatCurrency(val) : val.toFixed(val < 1 ? 4 : 2)
+                              : String(val)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
+        )}
+
+        {/* ── HE Multi-Metric Chart: compare metrics across strategies ── */}
+        {rows.length > 0 && (
+          <Card>
+            <CardHeader className="py-3 cursor-pointer" onClick={() => setShowMetricChart(m => !m)}>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-chart-3" /> Multi-Metric Comparison
+                </CardTitle>
+                {showMetricChart ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </div>
+            </CardHeader>
+            {showMetricChart && (
+              <CardContent className="pt-0 space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  Compare strategies across different financial metrics over time.
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {["totalValue", "liquidWealth", "deathBenefit", "taxSavings", "netValue"].map(metric => (
+                    <Button
+                      key={metric}
+                      variant={chartMetric === metric ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => {
+                        setChartMetric(metric);
+                        heChartSeries.mutate({
+                          strategies: PEER_SET.map(key => ({
+                            name: PRESET_LABELS[key],
+                            companyKey: key === "wealthbridgeClient" ? "wealthbridge" : key === "doNothing" ? "donothing" : key,
+                            profile: { ...profile },
+                            savingsRate,
+                            investmentReturn: investReturn,
+                          })),
+                          metric,
+                          maxYear: horizon,
+                        });
+                      }}
+                      aria-label={`Show ${metric} chart`}
+                    >
+                      {metric.replace(/([A-Z])/g, " $1").trim()}
+                    </Button>
+                  ))}
+                </div>
+                {heChartSeries.isPending && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground p-3">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Generating chart series…
+                  </div>
+                )}
+                {heChartSeries.data && (
+                  <div className="space-y-3">
+                    <ScrollArea className="h-auto max-h-[400px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-border">
+                            <TableHead className="text-[10px] sticky left-0 bg-card z-10">Year</TableHead>
+                            {(heChartSeries.data as any)?.labels?.map((label: string) => (
+                              <TableHead key={label} className="text-[10px] text-right">{label}</TableHead>
+                            ))}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(heChartSeries.data as any)?.years?.map((year: number, yi: number) => (
+                            <TableRow key={year} className="border-border/30">
+                              <TableCell className="text-xs font-mono sticky left-0 bg-card z-10">Yr {year}</TableCell>
+                              {(heChartSeries.data as any)?.series?.map((s: any, si: number) => (
+                                <TableCell key={si} className="text-xs text-right font-mono tabular-nums">
+                                  {formatCurrency(s.data?.[yi] ?? 0)}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </ScrollArea>
+                    <p className="text-[9px] text-muted-foreground/50 flex items-center gap-1">
+                      <Info className="h-3 w-3" />
+                      Showing {chartMetric.replace(/([A-Z])/g, " $1").toLowerCase()} for all strategies over {horizon} years.
+                      Data sourced from the Holistic Engine year-by-year simulation.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
+        )}
+
         {/* Guardrail warnings + benchmarks */}
         {rows.length > 0 && (
           <CalculatorContextBar

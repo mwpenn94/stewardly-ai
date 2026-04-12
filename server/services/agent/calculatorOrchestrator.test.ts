@@ -94,8 +94,8 @@ describe("Phase 2 — calculator orchestrator", () => {
 });
 
 describe("Phase 2 — ReAct wealth-engine tool dispatch", () => {
-  it("WEALTH_ENGINE_TOOLS exposes exactly 9 tools", () => {
-    expect(WEALTH_ENGINE_TOOLS.length).toBe(9);
+  it("WEALTH_ENGINE_TOOLS exposes exactly 10 tools", () => {
+    expect(WEALTH_ENGINE_TOOLS.length).toBe(10);
   });
 
   it("every tool definition carries a name, description, parameters", () => {

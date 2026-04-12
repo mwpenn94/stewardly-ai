@@ -163,6 +163,7 @@ export async function contextualLLM(params: ContextualLLMParams) {
 
   // ── Primary Model Call ────────────────────────────────────────────
   let result: any;
+  const startMs = Date.now();
   try {
     result = await invokeLLM({
       messages: enhancedMessages as any,
@@ -199,6 +200,9 @@ export async function contextualLLM(params: ContextualLLMParams) {
     }
   }
 
+  // ── Duration tracking ─────────────────────────────────────────────
+  const durationMs = Date.now() - startMs;
+
   // ── OTel: end span with token usage ───────────────────────────────
   endSpan({
     model: result.model,
@@ -224,6 +228,7 @@ export async function contextualLLM(params: ContextualLLMParams) {
     model: result.model,
     inputTokens: result.usage?.prompt_tokens,
     outputTokens: result.usage?.completion_tokens,
+    durationMs,
   });
 
   // ── Usage Tracking ───────────────────────────────────────────────
@@ -247,6 +252,7 @@ export async function contextualLLM(params: ContextualLLMParams) {
       taskType,
       webSearchEnabled: enableWebSearch,
       ensembleUsed: routing.useEnsemble,
+      durationMs,
     };
     logger.debug(
       { operation: "contextualLLM", userId, model: result.model, requested: selectedModel },

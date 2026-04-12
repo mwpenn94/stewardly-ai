@@ -236,6 +236,36 @@ async function runImprovementEngine(): Promise<void> {
       );
     }
 
+    logger.info({ operation: "scheduler" }, `[Scheduler] Improvement engine signals: ${signals.length} signals, convergence=${convergence.status}`);
+
+    // ── Run the 6 learning loops with real DB data ─────────────────────
+    try {
+      const { executeImprovementCycle } = await import("./improvement/improvementCycleRunner");
+      const cycleResult = await executeImprovementCycle(db);
+      logger.info({ operation: "scheduler" }, JSON.stringify({
+        event: "improvement_cycle_complete",
+        timestamp: new Date().toISOString(),
+        hypothesesGenerated: cycleResult.hypothesesGenerated,
+        hypothesesPersisted: cycleResult.hypothesesPersisted,
+        dataStats: cycleResult.dataStats,
+        calibrationAdjustments: cycleResult.cycleResult.defaultCalibration.proposedAdjustments.length,
+        triggerAdjustments: cycleResult.cycleResult.triggerTuning.proposedAdjustments.length,
+      }));
+
+      if (cycleResult.hypothesesGenerated > 0) {
+        alertAdmins(
+          `🧠 Improvement Cycle: ${cycleResult.hypothesesGenerated} hypotheses generated`,
+          `The improvement engine learning loops analyzed ${cycleResult.dataStats.computationLogs} computation logs, ` +
+          `${cycleResult.dataStats.alertOutcomes} alert outcomes, and ${cycleResult.dataStats.userActivity} user activity records.\n\n` +
+          `Generated ${cycleResult.hypothesesGenerated} improvement hypotheses (${cycleResult.hypothesesPersisted} persisted to DB).\n` +
+          `View them in the admin dashboard under Improvement Hypotheses.`,
+          "medium"
+        );
+      }
+    } catch (cycleError: any) {
+      logger.warn({ operation: "scheduler" }, `[Scheduler] Improvement cycle failed (non-fatal): ${cycleError.message}`);
+    }
+
     logger.info({ operation: "scheduler" }, `[Scheduler] Improvement engine complete: ${signals.length} signals, convergence=${convergence.status}`);
   } catch (e: any) {
     logger.warn({ operation: "scheduler" }, `[Scheduler] Improvement engine failed: ${e.message}`);
