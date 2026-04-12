@@ -999,4 +999,103 @@ export const integrationsRouter = router({
         summary: summarizeAdapter(spec),
       };
     }),
+
+  /**
+   * One-shot autonomous source onboarding. Ties passes 1-15 together: redact
+   * → infer → auth probe → generate spec → apply overrides → CRM map →
+   * personalization hints → serialize → next-steps. Use this when you want
+   * everything in one call.
+   */
+  onboardSource: protectedProcedure
+    .input(z.object({
+      sampleRecords: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+      name: z.string().min(1).max(100),
+      baseUrl: z.string().url().optional(),
+      listEndpoint: z.string().optional(),
+      authHint: z.object({
+        type: z.enum(["none", "api_key_header", "api_key_query", "bearer", "basic", "oauth2", "unknown"]).optional(),
+        headerName: z.string().optional(),
+        queryParam: z.string().optional(),
+      }).optional(),
+      skipRedaction: z.boolean().optional(),
+      skipCrmMapping: z.boolean().optional(),
+      skipPersonalizationHints: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { runOnboardingWizard } = await import("../services/dynamicIntegrations/onboardingWizard");
+      return await runOnboardingWizard(input);
+    }),
+
+  /**
+   * Parse a natural-language prompt and return the extracted OnboardingInput
+   * hints. Use as a preview step before calling onboardSource.
+   */
+  parseOnboardPrompt: protectedProcedure
+    .input(z.object({ prompt: z.string().min(1).max(2000) }))
+    .query(async ({ input }) => {
+      const { parsePrompt, summarizeParsedPrompt } = await import("../services/dynamicIntegrations/naturalLanguageParser");
+      const parsed = parsePrompt(input.prompt);
+      return { parsed, summary: summarizeParsedPrompt(parsed) };
+    }),
+
+  /**
+   * Detect schema drift between a baseline sample and a current sample.
+   * Returns a structured DriftReport with breaking/warning/info severity.
+   */
+  detectDrift: protectedProcedure
+    .input(z.object({
+      baselineRecords: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+      currentRecords: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+    }))
+    .mutation(async ({ input }) => {
+      const { inferSchema } = await import("../services/dynamicIntegrations/schemaInference");
+      const { diffSchemas, summarizeDrift } = await import("../services/dynamicIntegrations/schemaDrift");
+      const baseline = inferSchema(input.baselineRecords);
+      const current = inferSchema(input.currentRecords);
+      const report = diffSchemas(baseline, current);
+      return { report, summary: summarizeDrift(report) };
+    }),
+
+  /**
+   * Extract personalization hints (learning tracks, calculators, risk,
+   * CRM segments) from sample records. Feeds the learning engine and
+   * spotlight logic.
+   */
+  extractHints: protectedProcedure
+    .input(z.object({
+      records: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+      minConfidence: z.number().min(0).max(1).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { inferSchema } = await import("../services/dynamicIntegrations/schemaInference");
+      const { extractPersonalizationHints, summarizeHints } = await import("../services/dynamicIntegrations/personalizationHints");
+      const schema = inferSchema(input.records);
+      const result = extractPersonalizationHints(schema, {
+        minConfidence: input.minConfidence,
+      });
+      return { result, summary: summarizeHints(result) };
+    }),
+
+  /**
+   * Deep-probe auth type from sample 401/403 responses. Use when you
+   * already have data you can fetch and want to confirm auth style.
+   */
+  probeAuth: protectedProcedure
+    .input(z.object({
+      samples: z.array(z.object({
+        status: z.number(),
+        headers: z.record(z.string(), z.string()),
+        body: z.any().optional(),
+        url: z.string().optional(),
+      })).min(1).max(100),
+      endpointsTried: z.array(z.string()).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { probeAuthDeep, summarizeAuthProbe } = await import("../services/dynamicIntegrations/authProbe");
+      const result = probeAuthDeep({
+        samples: input.samples,
+        endpointsTried: input.endpointsTried,
+      });
+      return { result, summary: summarizeAuthProbe(result) };
+    }),
 });
