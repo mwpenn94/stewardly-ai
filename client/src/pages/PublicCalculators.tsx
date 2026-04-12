@@ -1,8 +1,14 @@
 /**
  * PublicCalculators — Public-facing financial calculators with lead capture.
  * Embeddable calculators for retirement, tax, insurance, and estate planning.
+ *
+ * Pass 8 history: now wires the shared financial profile store via
+ * useFinancialProfile so guest visitors build a profile as they use
+ * the calculators. The profile is localStorage-only for guests (the
+ * server sync is gated on isAuthenticated inside the hook) so nothing
+ * leaks to the backend until a user signs up.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import { LeadCaptureGate } from "@/components/LeadCaptureGate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,15 +19,50 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calculator, DollarSign, PiggyBank, TrendingUp, Shield, Heart } from "lucide-react";
 import { toast } from "sonner";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
+import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
+import type { FinancialProfile } from "@/stores/financialProfile";
 
 function RetirementCalculator() {
-  const [age, setAge] = useState(35);
-  const [retireAge, setRetireAge] = useState(65);
-  const [savings, setSavings] = useState(250000);
-  const [monthly, setMonthly] = useState(1500);
+  const { profile, setProfile } = useFinancialProfile();
+  const [age, setAge] = useState(profile.age ?? 35);
+  const [retireAge, setRetireAge] = useState(profile.retirementAge ?? 65);
+  const [savings, setSavings] = useState(profile.savings ?? 250000);
+  const [monthly, setMonthly] = useState(profile.monthlySavings ?? 1500);
   const [result, setResult] = useState<number | null>(null);
 
+  // Late hydration: when the profile loads after mount (e.g.,
+  // localStorage is slow on first paint), apply its values once.
+  useEffect(() => {
+    if (profile.age !== undefined) setAge(profile.age);
+    if (profile.retirementAge !== undefined) setRetireAge(profile.retirementAge);
+    if (profile.savings !== undefined) setSavings(profile.savings);
+    if (profile.monthlySavings !== undefined) setMonthly(profile.monthlySavings);
+    // Only run on the very first render after hydration. The hook's
+    // setters are stable so re-runs are cheap if it fires again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.updatedAt]);
+
+  const handlePrefill = (p: FinancialProfile) => {
+    if (p.age !== undefined) setAge(p.age);
+    if (p.retirementAge !== undefined) setRetireAge(p.retirementAge);
+    if (p.savings !== undefined) setSavings(p.savings);
+    if (p.monthlySavings !== undefined) setMonthly(p.monthlySavings);
+  };
+
   const calculate = () => {
+    // Persist the current inputs to the profile so the Tax /
+    // Insurance / Social Security tabs can reuse them without
+    // asking again. Source "user" since this is a direct edit.
+    setProfile(
+      {
+        age,
+        retirementAge: retireAge,
+        savings,
+        monthlySavings: monthly,
+      },
+      "user",
+    );
     const years = retireAge - age;
     const rate = 0.07 / 12;
     const months = years * 12;
@@ -35,6 +76,10 @@ function RetirementCalculator() {
         <CardTitle className="text-sm flex items-center gap-2"><PiggyBank className="h-4 w-4" /> Retirement Savings Calculator</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <FinancialProfileBanner
+          onPrefill={handlePrefill}
+          usesFields={["age", "retirementAge", "savings", "monthlySavings"]}
+        />
         <div className="grid grid-cols-2 gap-3">
           <div><Label className="text-xs">Current Age</Label><Input type="number" value={age} onChange={e => setAge(+e.target.value)} /></div>
           <div><Label className="text-xs">Retirement Age</Label><Input type="number" value={retireAge} onChange={e => setRetireAge(+e.target.value)} /></div>
@@ -55,8 +100,18 @@ function RetirementCalculator() {
 }
 
 function TaxBracketCalculator() {
-  const [income, setIncome] = useState(150000);
-  const [result, setResult] = useState<{ effective: string; marginal: string; tax: number } | null>(null);
+  const { profile, setProfile } = useFinancialProfile();
+  const [income, setIncome] = useState(profile.income ?? 150000);
+  const [result, setResult] = useState<{ effective: string; marginal: string; tax: number; marginalRate: number } | null>(null);
+
+  useEffect(() => {
+    if (profile.income !== undefined) setIncome(profile.income);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile.updatedAt]);
+
+  const handlePrefill = (p: FinancialProfile) => {
+    if (p.income !== undefined) setIncome(p.income);
+  };
 
   const calculate = () => {
     const brackets = [
@@ -70,14 +125,19 @@ function TaxBracketCalculator() {
     ];
     let tax = 0;
     let marginal = "10%";
+    let marginalRate = 0.1;
     for (const b of brackets) {
       if (income > b.min) {
         const taxable = Math.min(income, b.max) - b.min;
         tax += taxable * b.rate;
         marginal = `${b.rate * 100}%`;
+        marginalRate = b.rate;
       }
     }
-    setResult({ effective: `${(tax / income * 100).toFixed(1)}%`, marginal, tax: Math.round(tax) });
+    // Persist the income + derived marginal rate to the shared
+    // profile so every downstream calc reuses them automatically.
+    setProfile({ income, marginalRate, filingStatus: "mfj" }, "user");
+    setResult({ effective: `${(tax / income * 100).toFixed(1)}%`, marginal, tax: Math.round(tax), marginalRate });
   };
 
   return (
@@ -86,6 +146,10 @@ function TaxBracketCalculator() {
         <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Tax Bracket Calculator</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <FinancialProfileBanner
+          onPrefill={handlePrefill}
+          usesFields={["income", "marginalRate"]}
+        />
         <div><Label className="text-xs">Taxable Income (MFJ)</Label><Input type="number" value={income} onChange={e => setIncome(+e.target.value)} /></div>
         <Button onClick={calculate} className="w-full"><Calculator className="h-4 w-4 mr-1" /> Calculate</Button>
         {result && (

@@ -17,7 +17,7 @@ import {
   ChevronRight, Info, Heart, Scale, GraduationCap, Stethoscope,
   HandCoins, Briefcase, ListChecks,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
 import type { FinancialProfile } from "@/stores/financialProfile";
@@ -616,13 +616,39 @@ function CalcPanel({ title, icon, color, children, onCalculate, isLoading, resul
 }
 
 function TaxProjectorPanel() {
-  const [wages, setWages] = useState(150000);
+  const { profile, setProfile } = useFinancialProfile();
+  const [wages, setWages] = useState(profile.income ?? 150000);
   const [deductions, setDeductions] = useState(0);
-  const [stateCode, setStateCode] = useState("TX");
+  const [stateCode, setStateCode] = useState(profile.stateOfResidence ?? "TX");
   const taxCalc = trpc.taxProjector.project.useMutation({ onError: (e: any) => toast.error(e.message) });
+
+  // Late hydration: when the profile arrives after initial render,
+  // pull wages + state from it once.
+  const didHydrateRef = useRef(false);
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    if (profile.income !== undefined) {
+      setWages(profile.income);
+      didHydrateRef.current = true;
+    }
+    if (profile.stateOfResidence) {
+      setStateCode(profile.stateOfResidence);
+    }
+  }, [profile.income, profile.stateOfResidence]);
+
+  const handleTaxPrefill = (p: FinancialProfile) => {
+    if (p.income !== undefined) setWages(p.income);
+    if (p.stateOfResidence) setStateCode(p.stateOfResidence);
+  };
+
   return (
     <CalcPanel title="Tax Projector" icon={<DollarSign className="w-4 h-4" />} color="text-violet-400"
-      onCalculate={() => taxCalc.mutate({ filingStatus: "mfj", wages, itemizedDeductions: deductions, stateCode })}
+      onCalculate={() => {
+        // Persist income + state + filingStatus back so downstream
+        // calcs (EstatePlanning, wealth engine) pick them up.
+        setProfile({ income: wages, stateOfResidence: stateCode, filingStatus: "mfj" }, "user");
+        taxCalc.mutate({ filingStatus: "mfj", wages, itemizedDeductions: deductions, stateCode });
+      }}
       isLoading={taxCalc.isPending}
       result={taxCalc.data ? (
         <Card className="bg-card/60 border-border/50 h-full">
@@ -665,6 +691,10 @@ function TaxProjectorPanel() {
         </div>
       )}
     >
+      <FinancialProfileBanner
+        onPrefill={handleTaxPrefill}
+        usesFields={["income", "stateOfResidence"]}
+      />
       <SliderInput label="W-2 Wages" value={wages} onChange={setWages} min={25000} max={2000000} step={5000} format={fmt} />
       <SliderInput label="Itemized Deductions" value={deductions} onChange={setDeductions} min={0} max={500000} step={1000} format={fmt} />
     </CalcPanel>
@@ -672,13 +702,38 @@ function TaxProjectorPanel() {
 }
 
 function SSOptimizerPanel() {
-  const [birthYear, setBirthYear] = useState(1963);
+  const { profile, setProfile } = useFinancialProfile();
+  // Seed birth year from profile.age when available. Current year
+  // minus age gives a rough approximation — fine for SS estimation.
+  const currentYear = new Date().getFullYear();
+  const defaultBirthYear =
+    profile.age !== undefined ? currentYear - profile.age : 1963;
+  const [birthYear, setBirthYear] = useState(defaultBirthYear);
   const [pia, setPia] = useState(2500);
   const [lifeExpectancy, setLifeExpectancy] = useState(85);
   const ssCalc = trpc.ssOptimizer.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
+
+  // Late hydration
+  const didHydrateRef = useRef(false);
+  useEffect(() => {
+    if (didHydrateRef.current) return;
+    if (profile.age !== undefined) {
+      setBirthYear(currentYear - profile.age);
+      didHydrateRef.current = true;
+    }
+  }, [profile.age, currentYear]);
+
+  const handleSSPrefill = (p: FinancialProfile) => {
+    if (p.age !== undefined) setBirthYear(currentYear - p.age);
+  };
+
   return (
     <CalcPanel title="Social Security Optimizer" icon={<Calculator className="w-4 h-4" />} color="text-cyan-400"
-      onCalculate={() => ssCalc.mutate({ birthYear, birthMonth: 6, earningsHistory: [], estimatedPIA: pia, filingStatus: "single", lifeExpectancy, discountRate: 0.03 })}
+      onCalculate={() => {
+        // Persist derived age back to the profile from birthYear.
+        setProfile({ age: currentYear - birthYear }, "user");
+        ssCalc.mutate({ birthYear, birthMonth: 6, earningsHistory: [], estimatedPIA: pia, filingStatus: "single", lifeExpectancy, discountRate: 0.03 });
+      }}
       isLoading={ssCalc.isPending}
       result={ssCalc.data ? (
         <Card className="bg-card/60 border-border/50 h-full">
@@ -718,6 +773,10 @@ function SSOptimizerPanel() {
         </div>
       )}
     >
+      <FinancialProfileBanner
+        onPrefill={handleSSPrefill}
+        usesFields={["age"]}
+      />
       <SliderInput label="Birth Year" value={birthYear} onChange={setBirthYear} min={1940} max={1990} />
       <SliderInput label="Estimated PIA (Monthly)" value={pia} onChange={setPia} min={500} max={5000} step={50} format={fmt} />
       <SliderInput label="Life Expectancy" value={lifeExpectancy} onChange={setLifeExpectancy} min={70} max={100} suffix=" yrs" />
