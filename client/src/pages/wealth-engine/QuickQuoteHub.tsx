@@ -47,6 +47,7 @@ import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
 import { ProfileLibraryPanel } from "@/components/financial-profile/ProfileLibraryPanel";
 import { RunTimelinePanel } from "@/components/financial-profile/RunTimelinePanel";
+import { LifeEventsBanner } from "@/components/financial-profile/LifeEventsBanner";
 import { useRunTimeline } from "@/hooks/useRunTimeline";
 import {
   QUICK_QUOTE_REGISTRY,
@@ -152,6 +153,8 @@ export default function QuickQuoteHubPage() {
           actionLabel="Refresh recommendations"
           hideWhenEmpty={false}
         />
+
+        <LifeEventsBanner />
 
         {/* Recommended row */}
         {recommendations.length > 0 && (
