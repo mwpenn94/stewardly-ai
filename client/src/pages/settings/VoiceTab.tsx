@@ -36,7 +36,7 @@ const LOCALE_LABELS: Record<string, string> = {
 
 export default function VoiceTab() {
   const { user } = useAuth();
-  const voicesQuery = trpc.voice.voices.useQuery();
+  const voicesQuery = trpc.voice.voices.useQuery(undefined, { staleTime: 60_000 });
   const speakMutation = trpc.voice.speak.useMutation();
 
   // ─── Voice selection state ─────────────────────────────────────
