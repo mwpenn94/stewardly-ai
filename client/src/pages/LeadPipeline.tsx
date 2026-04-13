@@ -200,9 +200,9 @@ export default function LeadPipeline() {
           </p>
         </div>
       ) : view === "kanban" ? (
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-2 px-2 snap-x snap-mandatory">
           {KANBAN_COLUMNS.filter((c) => c.id !== "lost").map((col) => (
-            <div key={col.id} className="min-w-[280px] flex-shrink-0 space-y-2">
+            <div key={col.id} className="min-w-[200px] sm:min-w-[280px] flex-shrink-0 space-y-2 snap-start">
               <div className="flex items-center justify-between px-1">
                 <span className="text-sm font-medium capitalize">{col.label}</span>
                 <Badge variant="outline" className="text-xs">

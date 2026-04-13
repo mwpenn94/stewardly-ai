@@ -546,7 +546,7 @@ export default function EngineDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
               <SliderInput label="Age" value={age} onChange={setAge} min={18} max={85} suffix=" yrs" />
               <SliderInput label="Income" value={income} onChange={setIncome} min={30000} max={2000000} step={10000} format={fmt} />
               <SliderInput label="Net Worth" value={netWorth} onChange={setNetWorth} min={0} max={20000000} step={50000} format={fmt} />

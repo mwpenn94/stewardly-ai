@@ -80,7 +80,7 @@ export default function LearningHome() {
     <AppShell title="Learning">
       <SEOHead title="Learning & Licensing" description="Track exam mastery, manage licenses, and access study tools" />
       <div className="mx-auto max-w-6xl p-6 space-y-6">
-        <header className="flex items-center justify-between">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
               <GraduationCap className="h-8 w-8 text-accent" />
