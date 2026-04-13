@@ -44,6 +44,12 @@ export default function BusinessIncome() {
   const rolesQ = trpc.calculatorEngine.bieRoles.useQuery(undefined, { staleTime: 5 * 60_000 });
   const presetsQ = trpc.calculatorEngine.biePresets.useQuery(undefined, { staleTime: 5 * 60_000 });
   const bracketsQ = trpc.calculatorEngine.bieBrackets.useQuery(undefined, { staleTime: 5 * 60_000 });
+  const channelsQ = trpc.calculatorEngine.bieChannels.useQuery(undefined, { staleTime: 5 * 60_000 });
+  const productsQ = trpc.calculatorEngine.productReferences.useQuery(undefined, { staleTime: 5 * 60_000 });
+
+  // Expandable sections
+  const [showChannels, setShowChannels] = useState(false);
+  const [showProducts, setShowProducts] = useState(false);
 
   // Mutations
   const simMutation = trpc.calculatorEngine.bieSimulate.useMutation({ onError: (e) => toast.error(e.message) });
@@ -369,6 +375,92 @@ export default function BusinessIncome() {
             )}
           </div>
         </div>
+
+        {/* Marketing Channels Reference */}
+        <Card className="bg-card/60 border-border/50">
+          <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowChannels(v => !v)}>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Target className="w-4 h-4 text-accent" /> Marketing Channels (CPL & ROI)
+              </CardTitle>
+              <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${showChannels ? "rotate-90" : ""}`} />
+            </div>
+            <CardDescription className="text-xs">10 channels with cost-per-lead, conversion rate, revenue per client, LTV, and growth rate</CardDescription>
+          </CardHeader>
+          {showChannels && channelsQ.data && (
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow className="border-border">
+                      <TableHead className="text-[10px]">Channel</TableHead>
+                      <TableHead className="text-[10px] text-right">CPL</TableHead>
+                      <TableHead className="text-[10px] text-right">Conv %</TableHead>
+                      <TableHead className="text-[10px] text-right">Rev/Client</TableHead>
+                      <TableHead className="text-[10px] text-right">LTV</TableHead>
+                      <TableHead className="text-[10px] text-right">ROI</TableHead>
+                      <TableHead className="text-[10px] text-right">Growth</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {channelsQ.data.map((ch: any) => {
+                      const roi = ch.cpl > 0 ? ((ch.revPerClient * ch.cv - ch.cpl) / ch.cpl * 100) : 0;
+                      return (
+                        <TableRow key={ch.key} className="border-border/30">
+                          <TableCell className="text-xs py-1.5 font-medium">{ch.name}</TableCell>
+                          <TableCell className="text-xs text-right py-1.5 font-mono">${ch.cpl}</TableCell>
+                          <TableCell className="text-xs text-right py-1.5 font-mono">{(ch.cv * 100).toFixed(0)}%</TableCell>
+                          <TableCell className="text-xs text-right py-1.5 font-mono">{fmt(ch.revPerClient)}</TableCell>
+                          <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{fmt(ch.ltv)}</TableCell>
+                          <TableCell className={`text-xs text-right py-1.5 font-mono ${roi > 500 ? "text-emerald-400" : roi > 100 ? "text-accent" : "text-amber-400"}`}>
+                            {roi.toFixed(0)}%
+                          </TableCell>
+                          <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{(ch.growthRate * 100).toFixed(0)}%/yr</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-3">
+                ROI = (Revenue per client × conversion rate − CPL) / CPL. LTV based on 10-year client retention models. Attribution represents measurable attribution %.
+              </p>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Product Library Reference */}
+        <Card className="bg-card/60 border-border/50">
+          <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowProducts(v => !v)}>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Layers className="w-4 h-4 text-accent" /> Product Reference Library
+              </CardTitle>
+              <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${showProducts ? "rotate-90" : ""}`} />
+            </div>
+            <CardDescription className="text-xs">14 product types with sources, benchmarks, and industry data</CardDescription>
+          </CardHeader>
+          {showProducts && productsQ.data && (
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {productsQ.data.map((p: any) => (
+                  <div key={p.key} className="p-3 rounded-lg border border-border/40 bg-card/30 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium uppercase tracking-wide">{p.key}</span>
+                      {p.url && (
+                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-accent hover:underline">
+                          Source
+                        </a>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">{p.benchmark}</p>
+                    <p className="text-[9px] text-muted-foreground/60 leading-relaxed">{p.src}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         <p className="text-[10px] text-muted-foreground text-center">
           Income projections are illustrative based on industry averages and the WealthBridge v7 BIE model. Actual results will vary.
