@@ -3861,3 +3861,57 @@
 - [x] Convergence Pass 3 of 3: PASS (zero actions needed)
 - [x] 3 consecutive fresh passes confirmed convergence
 - Final state: 0 TypeScript errors, 103/103 tests passing, 0 browser errors, 0 security/performance/cross-browser issues
+
+## Critical Regressions (April 2026)
+- [ ] FIX: Calculators page returns auth loop — page is inaccessible
+- [ ] FIX: Multiple/duplicate pages for Wealth Engine — consolidate
+- [x] FIX: Accessible pages show nothing substantive matching v7 HTML docs structure
+- [x] AUDIT: Compare every page against v7 HTML docs guidance and fix gaps
+- [x] VERIFY: Visually confirm every fix in the browser (not just grep/tsc)
+
+## Structural Rebuild — Match v7 HTML Docs (April 2026)
+- [x] Extract exact v7 HTML structure section-by-section
+- [x] Rebuild Calculators as ONE unified page matching v7 structure
+- [x] Include 7-domain Financial Health Scorecard with composite score ring
+- [x] Include radar chart visualization for domain scores
+- [x] Include What-If Scenario panel with sliders
+- [x] Include Recommended Products with cost-benefit analysis
+- [x] Include all calculator panels integrated (not separate pages)
+- [ ] Remove duplicate Wealth Engine / Engine Dashboard overlap from Calculators scope
+- [ ] Consolidate routing — Calculators is the single calculator hub
+- [x] Visual verification of every section in browser
+- [ ] Recursive convergence (3 fresh passes with 0 actions each)
+
+## Structural Rebuild — v7 HTML Match (Completed April 2026)
+- [x] Rebuilt Calculators as ONE unified page matching v7 HTML structure (13 panels)
+- [x] Panel 1: Client Profile with Financial Health Scorecard (7-domain table + gauge + pillar bars)
+- [x] Panel 2: Cash Flow Analysis (income/expense inputs + emergency fund + results grid)
+- [x] Panel 3: Protection Analysis (DIME life insurance + DI + LTC gap analysis)
+- [x] Panel 4: Growth — Multi-Vehicle Comparison (Taxable/401k/Roth/IUL/FIA + tax edge)
+- [x] Panel 5: Retirement Planning (SS claiming age comparison + portfolio withdrawal)
+- [x] Panel 6: Tax Planning (deductions + Roth explorer + tax savings table)
+- [x] Panel 7: Estate Planning (estate value + ILIT + will/trust analysis)
+- [x] Panel 8: Education Planning (529 plan + per-child projections)
+- [x] Panel 9: Cost-Benefit Analysis (What-If Explorer + Income Streams + Scenario Comparison + Back-Planning)
+- [x] Panel 10: Strategy Comparison (side-by-side vehicle comparison + compliance disclaimer)
+- [x] Panel 11: Summary (financial dashboard rollup + wealth trajectory + peer benchmark)
+- [x] Panel 12: Action Plan (12-month implementation timeline with standard/aggressive/gradual pacing)
+- [x] Panel 13: References (due diligence checklist + cited sources + disclaimers)
+- [x] In-page sidebar navigation with 4 groups (Your Profile, Planning Domains, Analysis, Resources)
+- [x] Global toolbar with Export PDF, Print, and Save Session buttons
+- [x] Per-panel Export PDF buttons on each panel header
+- [x] Cross-Calculator Insights section in Profile panel
+- [x] Scenario Comparison cards in Cost-Benefit panel
+- [x] Wealth Trajectory visualization in Summary panel
+- [x] Recommended Products table in Profile panel
+- [x] Holistic scoring engine integration (7 domains, 3 pillars, composite score)
+- [x] Income streams integration with rollup display
+- [x] All calculation engines wired (cash flow, protection, growth, retirement, tax, estate, education)
+- [x] Guest access supported (no auth gate)
+- [x] Mobile responsive with collapsible sidebar
+
+## Sidebar Consolidation — Single Entry Point
+- [ ] Remove redundant sidebar entries from PersonaSidebar5 (Wealth Engine, Engine Dashboard, Protection Score, Tax Planning, Estate Planning, Financial Planning, Risk Assessment, Income Projection, Insurance Analysis, Social Security, Medicare)
+- [ ] Keep single "Calculators" entry in sidebar as the unified hub entry point
+- [ ] Ensure v7 panel navigation lives inside the Calculators page only, not in AppShell sidebar
+- [ ] Verify no broken routes after consolidation

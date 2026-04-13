@@ -43,6 +43,8 @@ export default defineConfig({
       // CBL11: calculator-to-chat context bridge
       "client/src/lib/calculatorContext.test.ts",
       "client/src/pages/learning/lib/**/*.test.ts",
+      // v7 structural match: Calculators page integration tests
+      "client/src/pages/Calculators.test.ts",
     ],
   },
 });
