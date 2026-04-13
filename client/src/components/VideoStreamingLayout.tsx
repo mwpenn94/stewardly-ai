@@ -98,9 +98,9 @@ export default function VideoStreamingLayout({ streamType, onEnd, children, clas
   if (config.chatPosition === "overlay-right") {
     // Screen share: video fills area, chat overlays on right
     return (
-      <div className={`relative flex h-full bg-black ${className}`}>
-        {/* Video area — 70% */}
-        <div className="flex-1 relative">
+      <div className={`relative flex flex-col md:flex-row h-full bg-black ${className}`}>
+        {/* Video area — 70% on desktop, top portion on mobile */}
+        <div className="flex-1 relative min-h-[40vh] md:min-h-0">
           <video ref={videoRef} autoPlay playsInline muted={isMuted} className="w-full h-full object-contain bg-black" />
           {/* Controls overlay */}
           <div className="absolute top-3 left-3 flex items-center gap-2">
@@ -121,8 +121,8 @@ export default function VideoStreamingLayout({ streamType, onEnd, children, clas
             </button>
           </div>
         </div>
-        {/* Chat overlay — 320px */}
-        <div className="w-80 bg-background/95 backdrop-blur-sm border-l border-border/40 flex flex-col overflow-hidden">
+        {/* Chat overlay — 320px on desktop, full width stacked on mobile */}
+        <div className="w-full md:w-80 bg-background/95 backdrop-blur-sm border-t md:border-t-0 md:border-l border-border/40 flex flex-col overflow-hidden">
           {children}
         </div>
       </div>
@@ -155,10 +155,10 @@ export default function VideoStreamingLayout({ streamType, onEnd, children, clas
     );
   }
 
-  // Sidebar: co-browse (side by side)
+  // Sidebar: co-browse (side by side on desktop, stacked on mobile)
   return (
-    <div className={`flex h-full ${className}`}>
-      <div className="flex-1 relative bg-black">
+    <div className={`flex flex-col md:flex-row h-full ${className}`}>
+      <div className="flex-1 relative bg-black min-h-[40vh] md:min-h-0">
         <video ref={videoRef} autoPlay playsInline muted={isMuted} className="w-full h-full object-contain" />
         <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-blue-500/90 text-white text-[10px] font-medium">
           <Globe className="w-3 h-3" />
@@ -173,7 +173,7 @@ export default function VideoStreamingLayout({ streamType, onEnd, children, clas
           </button>
         </div>
       </div>
-      <div className="w-[400px] bg-background border-l border-border/40 flex flex-col overflow-hidden">
+      <div className="w-full md:w-[400px] bg-background border-t md:border-t-0 md:border-l border-border/40 flex flex-col overflow-hidden">
         {children}
       </div>
     </div>

@@ -12,6 +12,7 @@ import { drag as d3Drag } from "d3-drag";
 import { Search, Volume2, X } from "lucide-react";
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { trpc } from "@/lib/trpc";
+import AppShell from "@/components/AppShell";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -78,7 +79,7 @@ const DEMO_EDGES: ConceptEdge[] = [
   { source: "8", target: "2", relationship: "covers", strength: 0.4 },
 ];
 
-export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
+function ConnectionMapInner({ nodes, edges, onNodeClick }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const audio = useAudioCompanion();
@@ -327,5 +328,13 @@ export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ConnectionMap(props: Props) {
+  return (
+    <AppShell title="Concept Map">
+      <ConnectionMapInner {...props} />
+    </AppShell>
   );
 }

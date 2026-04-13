@@ -8,6 +8,7 @@ import {
 import { Streamdown } from "streamdown";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { detectStt } from "@/lib/sttSupport";
 
 type LiveMode = "camera" | "screen" | null;
 
@@ -171,8 +172,14 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
   const startListening = useCallback(() => {
     if (ttsGuardRef.current || isSpeaking) return;
 
+    // G59 fix: use centralized STT capability probe for cross-browser safety
+    const caps = detectStt();
+    if (caps.mode === "unsupported") {
+      toast.error(caps.userMessage);
+      return;
+    }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { toast.error("Speech recognition not supported"); return; }
+    if (!SR) { toast.error("Speech recognition not available"); return; }
 
     const recognition = new SR();
     recognition.continuous = false;

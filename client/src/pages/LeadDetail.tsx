@@ -53,14 +53,18 @@ export default function LeadDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => toast.info("Email compose coming soon")}>
-            <Mail className="h-3.5 w-3.5 mr-1" /> Email
+          <Button variant="outline" size="sm" asChild>
+            <a href={`mailto:${DEMO_LEAD.email}?subject=Following%20up%20on%20our%20conversation`}>
+              <Mail className="h-3.5 w-3.5 mr-1" /> Email
+            </a>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => toast.info("Call dialer coming soon")}>
-            <Phone className="h-3.5 w-3.5 mr-1" /> Call
+          <Button variant="outline" size="sm" asChild>
+            <a href={`tel:${DEMO_LEAD.phone}`}>
+              <Phone className="h-3.5 w-3.5 mr-1" /> Call
+            </a>
           </Button>
-          <Button size="sm" onClick={() => toast.info("Schedule meeting coming soon")}>
-            <Calendar className="h-3.5 w-3.5 mr-1" /> Schedule
+          <Button size="sm" onClick={() => navigate("/chat")}>
+            <MessageSquare className="h-3.5 w-3.5 mr-1" /> Chat
           </Button>
         </div>
       </div>

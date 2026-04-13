@@ -28,6 +28,8 @@ export default function RelationshipsHub() {
   // Wire to real data where available
   const leadsQ = trpc.leadPipeline.getPipeline.useQuery(undefined, { retry: false });
   const leadCount = ((leadsQ.data as any)?.leads ?? []).length;
+  const campaignsQ = trpc.emailCampaign.list.useQuery(undefined, { retry: false });
+  const campaignCount = Array.isArray(campaignsQ.data) ? campaignsQ.data.length : 0;
 
   return (
     <AppShell title="Relationships">
@@ -48,7 +50,7 @@ export default function RelationshipsHub() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <QuickStat icon={Users} label="Leads" value={String(leadCount)} color="text-blue-500" />
           <QuickStat icon={Calendar} label="Upcoming" value="0" color="text-purple-500" />
-          <QuickStat icon={Mail} label="Campaigns" value="0" color="text-green-500" />
+          <QuickStat icon={Mail} label="Campaigns" value={String(campaignCount)} color="text-green-500" />
           <QuickStat icon={Star} label="COI Partners" value="0" color="text-amber-500" />
         </div>
 
@@ -236,13 +238,18 @@ function MeetingsSection() {
 }
 
 function OutreachSection() {
+  const campaignsQ = trpc.emailCampaign.list.useQuery(undefined, { retry: false });
+  const campaigns = Array.isArray(campaignsQ.data) ? campaignsQ.data : [];
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Message Campaigns</h3>
-        <Button size="sm" onClick={() => navigateToChat("Help me create a new in-app message campaign. I need to define the audience, craft the message, and set up the sending schedule. What type of campaign should we create?")}>
-          <Plus className="h-3 w-3 mr-1" /> New Campaign
-        </Button>
+        <Link href="/email-campaigns">
+          <Button size="sm">
+            <Plus className="h-3 w-3 mr-1" /> New Campaign
+          </Button>
+        </Link>
       </div>
 
       <Card>
@@ -251,14 +258,46 @@ function OutreachSection() {
           <CardDescription>In-app message campaigns and their performance</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            <Mail className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            No active campaigns.
-            <br />
-            <Button variant="link" size="sm" className="mt-1 text-xs" onClick={() => navigateToChat("Help me create my first in-app message campaign. I want to reach out to my client base with a professional notification.")}>
-              Ask the AI to help create one →
-            </Button>
-          </div>
+          {campaignsQ.isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              <Mail className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              No campaigns yet.
+              <br />
+              <Link href="/email-campaigns">
+                <Button variant="link" size="sm" className="mt-1 text-xs">
+                  Create your first campaign →
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {campaigns.slice(0, 5).map((c: any) => (
+                <Link key={c.id} href="/email-campaigns">
+                  <div className="flex items-center justify-between p-3 rounded-lg border border-border/40 hover:bg-secondary/30 transition-colors cursor-pointer">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{c.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{c.subject}</div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="outline" className="text-xs">{c.status}</Badge>
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+              {campaigns.length > 5 && (
+                <Link href="/email-campaigns">
+                  <Button variant="link" size="sm" className="w-full text-xs">
+                    View all {campaigns.length} campaigns →
+                  </Button>
+                </Link>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

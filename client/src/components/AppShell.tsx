@@ -22,7 +22,7 @@ import { recordPageVisit } from "@/hooks/useRecentPages";
 // were deleted because PersonaSidebar5 fully replaces them. AppShell now
 // imports only what it actually renders (mobile header, bottom tab bar,
 // skip-link, persona sidebar, bottom-banner).
-import { MessageSquare, Brain, Menu, Calculator, GraduationCap, AudioLines, Keyboard } from "lucide-react";
+import { MessageSquare, Brain, Menu, Calculator, GraduationCap, Keyboard } from "lucide-react";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -281,21 +281,17 @@ export default function AppShell({ children, title }: AppShellProps) {
             { icon: Calculator, label: "Tools", href: "/calculators" },
             { icon: Brain, label: "Insights", href: "/intelligence-hub" },
             { icon: GraduationCap, label: "Learn", href: "/learning" },
-            { icon: AudioLines, label: "Voice", href: null as string | null },
+            { icon: Menu, label: "Menu", href: null as string | null },
           ].map((tab) => {
-            const isVoice = tab.href === null;
-            const isActive = !isVoice && (location === tab.href || location.startsWith(tab.href + "/"));
+            const isMenu = tab.href === null;
+            const isActive = !isMenu && (location === tab.href || location.startsWith(tab.href + "/"));
             return (
               <button
                 key={tab.label}
                 onClick={() => {
-                  if (isVoice) {
-                    // Dispatch hands-free toggle event matching keyboard Shift+V behavior
-                    if (location === "/chat" || location.startsWith("/chat/")) {
-                      window.dispatchEvent(new CustomEvent("chat:toggle-handsfree"));
-                    } else {
-                      window.dispatchEvent(new CustomEvent("pil:toggle-handsfree"));
-                    }
+                  if (isMenu) {
+                    // Open the sidebar drawer so users can access notifications, settings, etc.
+                    setMobileOpen(true);
                   } else {
                     navigate(tab.href!);
                   }
