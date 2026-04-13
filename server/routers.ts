@@ -39,6 +39,8 @@ import {
   addGapFeedback, getUserGapFeedback, getGapFeedbackByGapId,
   getDocumentAnnotations, createAnnotation, resolveAnnotation, deleteAnnotation,
   logAiToolExecution, logAiResponseQuality,
+  listCalculatorSessions, getCalculatorSession,
+  saveCalculatorSession, updateCalculatorSession, deleteCalculatorSession,
 } from "./db";
 import { buildInsightContext, invalidateInsightCache } from "./insightCollectors";
 import {
@@ -1964,6 +1966,46 @@ const calculatorsRouter = router({
     }),
 });
 
+// ─── CALCULATOR SESSION PERSISTENCE ROUTER ───────────────────────────────
+const calcSessionRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return listCalculatorSessions(ctx.user.id);
+  }),
+  get: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      return getCalculatorSession(input.id, ctx.user.id);
+    }),
+  save: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1).max(256),
+      calculatorType: z.string().max(64),
+      inputsJson: z.unknown(),
+      resultsJson: z.unknown(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return saveCalculatorSession(ctx.user.id, input);
+    }),
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().min(1).max(256).optional(),
+      inputsJson: z.unknown().optional(),
+      resultsJson: z.unknown().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      await updateCalculatorSession(id, ctx.user.id, data);
+      return { ok: true };
+    }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      await deleteCalculatorSession(input.id, ctx.user.id);
+      return { ok: true };
+    }),
+});
+
 // ─── MARKET DATA ROUTER ──────────────────────────────────────────
 const marketRouter = router({
   getQuote: protectedProcedure
@@ -2240,6 +2282,7 @@ export const appRouter = router({
   estate: estateRouter,
   reportsFiduciary: reportsFiduciaryRouter,
   dynamicIntegrations: dynamicIntegrationsRouter,
+  calcSession: calcSessionRouter,
 });
 
 export type AppRouter = typeof appRouter;

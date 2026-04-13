@@ -10,6 +10,7 @@ import {
   documentAnnotations,
   aiToolExecutions, aiResponseQuality,
   type InsertAiToolExecution, type InsertAiResponseQualityEntry,
+  calculatorScenarios,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { normalizeQualityScore } from './shared/intelligence/types';
@@ -1035,4 +1036,68 @@ export async function getOperationTypeBreakdown(userId?: number, days: number = 
     .where(and(...conditions))
     .groupBy(usageTracking.operationType)
     .orderBy(sql`COUNT(*) DESC`);
+}
+
+
+// ─── Calculator Session Persistence ──────────────────────────────────────
+
+export async function listCalculatorSessions(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: calculatorScenarios.id,
+    name: calculatorScenarios.name,
+    calculatorType: calculatorScenarios.calculatorType,
+    createdAt: calculatorScenarios.createdAt,
+    updatedAt: calculatorScenarios.updatedAt,
+  }).from(calculatorScenarios)
+    .where(eq(calculatorScenarios.userId, userId))
+    .orderBy(desc(calculatorScenarios.updatedAt))
+    .limit(50);
+}
+
+export async function getCalculatorSession(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(calculatorScenarios)
+    .where(and(eq(calculatorScenarios.id, id), eq(calculatorScenarios.userId, userId)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function saveCalculatorSession(userId: number, data: {
+  name: string;
+  calculatorType: string;
+  inputsJson: unknown;
+  resultsJson: unknown;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result = await db.insert(calculatorScenarios).values({
+    userId,
+    name: data.name,
+    calculatorType: data.calculatorType,
+    inputsJson: data.inputsJson,
+    resultsJson: data.resultsJson,
+  });
+  return { id: Number(result[0].insertId) };
+}
+
+export async function updateCalculatorSession(id: number, userId: number, data: {
+  name?: string;
+  inputsJson?: unknown;
+  resultsJson?: unknown;
+}) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(calculatorScenarios)
+    .set(data)
+    .where(and(eq(calculatorScenarios.id, id), eq(calculatorScenarios.userId, userId)));
+}
+
+export async function deleteCalculatorSession(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(calculatorScenarios)
+    .where(and(eq(calculatorScenarios.id, id), eq(calculatorScenarios.userId, userId)));
 }

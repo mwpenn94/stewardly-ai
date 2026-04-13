@@ -3863,8 +3863,8 @@
 - Final state: 0 TypeScript errors, 103/103 tests passing, 0 browser errors, 0 security/performance/cross-browser issues
 
 ## Critical Regressions (April 2026)
-- [ ] FIX: Calculators page returns auth loop — page is inaccessible
-- [ ] FIX: Multiple/duplicate pages for Wealth Engine — consolidate
+- [x] FIX: Calculators page returns auth loop — page is inaccessible
+- [x] FIX: Multiple/duplicate pages for Wealth Engine — consolidate
 - [x] FIX: Accessible pages show nothing substantive matching v7 HTML docs structure
 - [x] AUDIT: Compare every page against v7 HTML docs guidance and fix gaps
 - [x] VERIFY: Visually confirm every fix in the browser (not just grep/tsc)
@@ -3877,8 +3877,8 @@
 - [x] Include What-If Scenario panel with sliders
 - [x] Include Recommended Products with cost-benefit analysis
 - [x] Include all calculator panels integrated (not separate pages)
-- [ ] Remove duplicate Wealth Engine / Engine Dashboard overlap from Calculators scope
-- [ ] Consolidate routing — Calculators is the single calculator hub
+- [x] Remove duplicate Wealth Engine / Engine Dashboard overlap from Calculators scope
+- [x] Consolidate routing — Calculators is the single calculator hub
 - [x] Visual verification of every section in browser
 - [ ] Recursive convergence (3 fresh passes with 0 actions each)
 
@@ -3911,9 +3911,9 @@
 - [x] Mobile responsive with collapsible sidebar
 
 ## Sidebar Consolidation — Single Entry Point
-- [ ] Remove redundant sidebar entries from PersonaSidebar5 (Wealth Engine, Engine Dashboard, Protection Score, Tax Planning, Estate Planning, Financial Planning, Risk Assessment, Income Projection, Insurance Analysis, Social Security, Medicare)
-- [ ] Keep single "Calculators" entry in sidebar as the unified hub entry point
-- [ ] Ensure v7 panel navigation lives inside the Calculators page only, not in AppShell sidebar
+- [x] Remove redundant sidebar entries from PersonaSidebar5 (Wealth Engine, Engine Dashboard, Protection Score, Tax Planning, Estate Planning, Financial Planning, Risk Assessment, Income Projection, Insurance Analysis, Social Security, Medicare)
+- [x] Keep single "Calculators" entry in sidebar as the unified hub entry point
+- [x] Ensure v7 panel navigation lives inside the Calculators page only, not in AppShell sidebar
 - [ ] Verify no broken routes after consolidation
 
 ## Business Calculator v7 — Import Fix & Verification
@@ -3921,3 +3921,10 @@
 - [x] Verified all 13 panels render correctly with scorecard and product recommendations
 - [x] Confirmed no Vite compilation errors after fix
 - [x] TypeScript: No errors, LSP: No errors
+
+## Business Calculator v7 — Fix & Enhancements
+- [x] Fix Calculators.tsx dynamic import failure (Vite module crash)
+- [x] Consolidate sidebar entries — single "Calculators" hub entry, remove redundant links
+- [x] Wire save/load session to persist user inputs to database
+- [x] Wire Export PDF toolbar button
+- [x] Add business-specific inputs (entity type, revenue streams, seasonality, production plan)

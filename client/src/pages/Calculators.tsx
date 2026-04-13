@@ -1,532 +1,28 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Slider } from '@/components/ui/slider';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { trpc } from '@/lib/trpc';
 import {
   User, DollarSign, Shield, TrendingUp, Clock, Building2, GraduationCap,
-  Scale, BarChart3, GitCompare, FileText, ListChecks, BookOpen, ChevronRight,
-  Calculator, Briefcase, Target, AlertTriangle, CheckCircle2, XCircle,
-  Info, ArrowRight, Minus, Plus, Zap
+  Scale, BarChart3, GitCompare, FileText, ListChecks, BookOpen,
+  Calculator, CheckCircle2, XCircle, Zap, Save, FolderOpen, Download, Trash2
 } from 'lucide-react';
 
-/* ═══════════════════════════════════════════════════════════════
-   RATES — Age-based premium rate tables from industry data (2025-2026)
-   Sources: Ramsey Solutions, Guardian Life, LocalLifeAgents, LIMRA, NerdWallet
-   ═══════════════════════════════════════════════════════════════ */
-const RATES = {
-  termPer100K: [{age:20,rate:31},{age:25,rate:33},{age:30,rate:35},{age:35,rate:42},{age:40,rate:56},{age:45,rate:78},{age:50,rate:135},{age:55,rate:195},{age:60,rate:377},{age:65,rate:620},{age:70,rate:1557}],
-  iulPer100K: [{age:20,rate:480},{age:25,rate:540},{age:30,rate:660},{age:35,rate:840},{age:40,rate:1080},{age:45,rate:1380},{age:50,rate:1800},{age:55,rate:2400},{age:60,rate:3240},{age:65,rate:4500}],
-  wlPer100K: [{age:20,rate:603},{age:25,rate:720},{age:30,rate:862},{age:35,rate:1020},{age:40,rate:1277},{age:45,rate:1620},{age:50,rate:2014},{age:55,rate:2580},{age:60,rate:3360},{age:65,rate:4500}],
-  diPctBenefit: [{age:25,rate:.020},{age:30,rate:.022},{age:35,rate:.025},{age:40,rate:.030},{age:45,rate:.038},{age:50,rate:.048},{age:55,rate:.060},{age:60,rate:.080}],
-  ltcAnnual: [{age:40,rate:2400},{age:45,rate:3200},{age:50,rate:4200},{age:55,rate:5600},{age:60,rate:7800},{age:65,rate:10800},{age:70,rate:15600}],
-  aumFee: (aum: number) => { if(aum>=5e6) return .006; if(aum>=1e6) return .0085; if(aum>=5e5) return .01; return .0125; },
-  fiaRiderFee: .01,
-  groupPerEmp: 7911,
-  // Federal tax brackets 2024 (MFJ)
-  bracketsMFJ: [[23200,.10],[94300,.12],[201050,.22],[383900,.24],[487450,.32],[731200,.35],[1e9,.37]] as [number,number][],
-  bracketsSingle: [[11600,.10],[47150,.12],[100525,.22],[191950,.24],[243725,.32],[609350,.35],[1e9,.37]] as [number,number][],
-};
-
-/* ═══ HELPER FUNCTIONS (faithful port from v7 HTML) ═══ */
-function fmt(n: number | null | undefined): string {
-  if (n == null || !isFinite(n)) return '—';
-  if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
-  return '$' + Math.round(n).toLocaleString();
-}
-function fmtSm(n: number | null | undefined): string {
-  if (n == null || !isFinite(n)) return '—';
-  const a = Math.abs(n), s = n < 0 ? '-' : '';
-  if (a >= 1e9) return s + '$' + (a / 1e9).toFixed(1) + 'B';
-  if (a >= 1e6) { const m = a / 1e6; return s + '$' + (m >= 10 ? Math.round(m) : m.toFixed(1)) + 'M'; }
-  if (a >= 10000) { const k = Math.round(a / 1e3); return s + '$' + k + 'K'; }
-  if (a >= 1000) { const k = a / 1e3; return s + '$' + (k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)) + 'K'; }
-  return s + '$' + Math.round(a);
-}
-function pct(n: number): string { if (!isFinite(n)) return '—'; return (n * 100).toFixed(1) + '%'; }
-function fv(p: number, m: number, r: number, y: number): number {
-  const rm = r / 12;
-  if (rm === 0) return p + m * y * 12;
-  return p * Math.pow(1 + rm, y * 12) + m * (Math.pow(1 + rm, y * 12) - 1) / rm;
-}
-function interpRate(table: {age:number,rate:number}[], age: number): number {
-  if (age <= table[0].age) return table[0].rate;
-  if (age >= table[table.length - 1].age) return table[table.length - 1].rate;
-  for (let i = 0; i < table.length - 1; i++) {
-    if (age >= table[i].age && age <= table[i + 1].age) {
-      const p = (age - table[i].age) / (table[i + 1].age - table[i].age);
-      const r = table[i].rate + (table[i + 1].rate - table[i].rate) * p;
-      return r >= 1 ? Math.round(r) : r;
-    }
-  }
-  return table[table.length - 1].rate;
-}
-function estPrem(type: string, age: number, amount: number): number {
-  if (amount <= 0) return 0;
-  switch (type) {
-    case 'term': return Math.round(interpRate(RATES.termPer100K, age) * (amount / 100000));
-    case 'iul': return Math.round(interpRate(RATES.iulPer100K, age) * (amount / 100000));
-    case 'wl': return Math.round(interpRate(RATES.wlPer100K, age) * (amount / 100000));
-    case 'di': return Math.round(interpRate(RATES.diPctBenefit, age) * amount);
-    case 'ltc': return Math.round(interpRate(RATES.ltcAnnual, age) * (amount / 150000));
-    case 'group': return Math.round(RATES.groupPerEmp * amount);
-    default: return 0;
-  }
-}
-function sc(val: number): { label: string; color: string; icon: string } {
-  if (val >= 3) return { label: 'Strong', color: 'text-green-600', icon: '✓' };
-  if (val >= 2) return { label: 'Moderate', color: 'text-yellow-600', icon: '⚠' };
-  return { label: 'Needs Attention', color: 'text-red-600', icon: '✗' };
-}
-function getBracketRate(income: number, brackets: [number, number][]): number {
-  let tax = 0, prev = 0;
-  for (const [limit, rate] of brackets) {
-    if (income <= limit) { tax += (income - prev) * rate; break; }
-    tax += (limit - prev) * rate; prev = limit;
-  }
-  return income > 0 ? tax / income : 0;
-}
-
-/* ═══ PRODUCT MODEL FUNCTIONS (faithful port from v7 HTML) ═══ */
-interface ProductResult {
-  cashValue: number; deathBenefit: number; taxSaving: number;
-  livingBenefit: number; legacyValue: number; annualCost: number;
-  label: string; carrier: string; expectedValue?: number;
-  incomeValue?: number;
-}
-function modelTerm(age: number, face: number, termLen = 20): ProductResult {
-  const annPrem = estPrem('term', age, face);
-  return { cashValue: 0, deathBenefit: face, taxSaving: 0, livingBenefit: 0,
-    legacyValue: face, annualCost: annPrem, label: `Term ${termLen}yr`, carrier: 'NLG' };
-}
-function modelIUL(age: number, face: number, annPrem?: number): ProductResult {
-  const prem = annPrem || estPrem('iul', age, face);
-  const cashValue = Math.round(prem * 10 * 0.6); // ~yr10 approx
-  return { cashValue, deathBenefit: face, taxSaving: Math.round(cashValue * 0.25),
-    livingBenefit: Math.round(face * 0.5), legacyValue: face, annualCost: prem,
-    label: 'IUL', carrier: 'NLG FlexLife' };
-}
-function modelWL(age: number, face: number, annPrem?: number): ProductResult {
-  const prem = annPrem || estPrem('wl', age, face);
-  const cashValue = Math.round(prem * 10 * 0.45);
-  return { cashValue, deathBenefit: face, taxSaving: Math.round(cashValue * 0.25),
-    livingBenefit: 0, legacyValue: face, annualCost: prem,
-    label: 'Whole Life', carrier: 'NLG/MassMutual' };
-}
-function modelDI(age: number, annBenefit: number): ProductResult {
-  const prem = estPrem('di', age, annBenefit);
-  return { cashValue: 0, deathBenefit: 0, taxSaving: 0,
-    livingBenefit: annBenefit, legacyValue: 0, annualCost: prem,
-    expectedValue: Math.round(annBenefit * 0.012 * 2.88),
-    label: 'Disability Insurance', carrier: 'Guardian' };
-}
-function modelLTC(age: number, benefitPool = 150000): ProductResult {
-  const prem = estPrem('ltc', age, benefitPool);
-  return { cashValue: 0, deathBenefit: Math.round(prem * 10 * 0.8), taxSaving: Math.round(prem * 0.15),
-    livingBenefit: benefitPool, legacyValue: Math.round(prem * 10 * 0.8), annualCost: prem,
-    label: 'Hybrid LTC', carrier: 'Lincoln MoneyGuard' };
-}
-function modelFIA(deposit: number, annContrib = 0): ProductResult {
-  const value = Math.round((deposit + annContrib * 10) * Math.pow(1.055, 10));
-  const income = Math.round(value * 0.055);
-  return { cashValue: value, deathBenefit: Math.round(value * 1.1), taxSaving: Math.round(value * 0.15),
-    livingBenefit: 0, legacyValue: Math.round(value * 1.1), annualCost: Math.round(deposit * RATES.fiaRiderFee),
-    incomeValue: income, label: 'FIA', carrier: 'NLG/Athene' };
-}
-
-/* ═══ SCORING ENGINE — 7 domains + 3 pillars (faithful port from v7 cA/calcCProf) ═══ */
-interface DomainScore { name: string; score: number; maxScore: number; }
-interface Pillar { name: string; domains: string[]; score: number; maxScore: number; }
-interface Recommendation { product: string; coverage: string; premium: number; monthly: number; carrier: string; priority: string; }
-
-function computeScorecard(s: Record<string, number>): {
-  domains: DomainScore[]; pillars: Pillar[]; overall: number; maxScore: number; pctScore: number;
-} {
-  const domains: DomainScore[] = [
-    { name: 'Cash Flow', score: s.cash ?? 0, maxScore: 3 },
-    { name: 'Protection', score: s.protect ?? 0, maxScore: 3 },
-    { name: 'Growth', score: s.growth ?? 0, maxScore: 3 },
-    { name: 'Retirement', score: s.retire ?? 0, maxScore: 3 },
-    { name: 'Tax', score: s.tax ?? 0, maxScore: 3 },
-    { name: 'Estate', score: s.estate ?? 0, maxScore: 3 },
-    { name: 'Education', score: s.edu ?? 0, maxScore: 3 },
-  ];
-  const pillars: Pillar[] = [
-    { name: 'Plan', domains: ['Cash Flow', 'Tax'], score: (s.cash ?? 0) + (s.tax ?? 0), maxScore: 6 },
-    { name: 'Protect', domains: ['Protection', 'Estate'], score: (s.protect ?? 0) + (s.estate ?? 0), maxScore: 6 },
-    { name: 'Grow', domains: ['Growth', 'Retirement', 'Education'], score: (s.growth ?? 0) + (s.retire ?? 0) + (s.edu ?? 0), maxScore: 9 },
-  ];
-  const overall = domains.reduce((a, d) => a + d.score, 0);
-  const maxScore = domains.reduce((a, d) => a + d.maxScore, 0);
-  return { domains, pillars, overall, maxScore, pctScore: Math.round(overall / maxScore * 100) };
-}
-
-function buildRecommendations(age: number, income: number, dep: number, nw: number,
-  existIns: number, mortgage: number, debt: number, isBiz: boolean, scores: Record<string, number>): Recommendation[] {
-  const recs: Recommendation[] = [];
-  // DIME life insurance need
-  const dimeNeed = dep > 0 ? Math.round(income * 10 + mortgage + debt + dep * 50000 + 25000 - existIns) : Math.round(income * 6 + debt - existIns);
-  if (dimeNeed > 50000) {
-    const termFace = Math.round(Math.min(dimeNeed * 0.6, dimeNeed));
-    const iulFace = Math.round(dimeNeed * 0.4);
-    if (termFace > 0) {
-      const p = estPrem('term', age, termFace);
-      recs.push({ product: 'NLG Term 20yr', coverage: fmtSm(termFace), premium: p, monthly: Math.round(p / 12), carrier: 'National Life Group', priority: scores.protect < 2 ? 'High' : 'Medium' });
-    }
-    if (iulFace > 100000) {
-      const p = estPrem('iul', age, iulFace);
-      recs.push({ product: 'NLG IUL FlexLife', coverage: fmtSm(iulFace), premium: p, monthly: Math.round(p / 12), carrier: 'National Life Group', priority: 'Medium' });
-    }
-  }
-  // DI
-  if (income > 30000) {
-    const diBen = Math.round(income * 0.6);
-    const p = estPrem('di', age, diBen);
-    recs.push({ product: 'Guardian DI', coverage: fmt(diBen) + '/yr', premium: p, monthly: Math.round(p / 12), carrier: 'Guardian', priority: scores.protect < 2 ? 'High' : 'Medium' });
-  }
-  // LTC
-  if (age >= 35) {
-    const p = estPrem('ltc', age, 150000);
-    recs.push({ product: 'Lincoln MoneyGuard LTC', coverage: '$150K pool', premium: p, monthly: Math.round(p / 12), carrier: 'Lincoln Financial', priority: age >= 50 ? 'High' : 'Low' });
-  }
-  // FIA for retirement income
-  if (scores.retire < 3 && nw > 50000) {
-    const deposit = Math.round(Math.min(nw * 0.2, 200000));
-    const p = Math.round(deposit * RATES.fiaRiderFee);
-    recs.push({ product: 'NLG FIA + Income Rider', coverage: fmtSm(deposit) + ' deposit', premium: p, monthly: Math.round(p / 12), carrier: 'NLG/Athene', priority: 'Medium' });
-  }
-  // Business insurance
-  if (isBiz) {
-    const keyPrem = estPrem('term', age, income * 3);
-    recs.push({ product: 'Key Person (Term)', coverage: fmtSm(income * 3), premium: keyPrem, monthly: Math.round(keyPrem / 12), carrier: 'NLG', priority: 'High' });
-  }
-  return recs;
-}
-
-/* ═══ CALCULATION ENGINES — faithful port from v7 calc functions ═══ */
-
-// Cash Flow (calcCF)
-interface CFResult {
-  gross: number; taxRate: number; net: number; expenses: {label:string;amount:number}[];
-  totalExp: number; surplus: number; saveRate: number; dti: number;
-  emTarget: number; emGap: number; goalTarget?: number;
-}
-function calcCashFlow(gross: number, taxRate: number, housing: number, transport: number,
-  food: number, insurance: number, debtPmt: number, other: number,
-  emMonths: number, savings: number, goalRate?: number): CFResult {
-  const net = Math.round(gross * (1 - taxRate));
-  const expenses = [
-    {label:'Housing',amount:housing},{label:'Transport',amount:transport},{label:'Food',amount:food},
-    {label:'Insurance',amount:insurance},{label:'Debt Pmts',amount:debtPmt},{label:'Other',amount:other}
-  ];
-  const totalExp = expenses.reduce((a,e)=>a+e.amount,0);
-  const surplus = net - totalExp;
-  const saveRate = gross > 0 ? surplus / gross : 0;
-  const dti = gross > 0 ? (housing + debtPmt) / gross : 0;
-  const emTarget = emMonths * totalExp;
-  const emGap = Math.max(0, emTarget - Math.min(savings, emTarget));
-  return { gross, taxRate, net, expenses, totalExp, surplus, saveRate, dti, emTarget, emGap,
-    goalTarget: goalRate ? Math.round(gross * goalRate) : undefined };
-}
-
-// Protection (calcPR) — DIME method
-interface PRResult {
-  dimeNeed: number; components: {label:string;amount:number}[];
-  existingCoverage: number; gap: number; products: {need:string;coverage:number;product:string;premium:number;monthly:number;carrier:string}[];
-  totalPremium: number; diNeed: number; diPrem: number; ltcPool: number; ltcPrem: number;
-}
-function calcProtection(income: number, dep: number, mortgage: number, debt: number,
-  existIns: number, age: number, yrs: number, payoffRate: number, eduPerChild: number,
-  finalExp: number, ssBenefit: number, diPct: number): PRResult {
-  const components = [
-    {label:'Debt Payoff',amount:mortgage+debt},
-    {label:'Income Replace ('+yrs+'yr)',amount:Math.round(income*yrs*(1-payoffRate))},
-    {label:'Education ('+dep+' children)',amount:dep*eduPerChild},
-    {label:'Final Expenses',amount:finalExp},
-  ];
-  const dimeNeed = components.reduce((a,c)=>a+c.amount,0);
-  const gap = Math.max(0, dimeNeed - existIns);
-  // Split: 60% term, 40% IUL
-  const termFace = Math.round(gap * 0.6);
-  const iulFace = Math.round(gap * 0.4);
-  const products: PRResult['products'] = [];
-  if (termFace > 0) products.push({need:'Income Replace',coverage:termFace,product:'NLG Term 20yr',premium:estPrem('term',age,termFace),monthly:Math.round(estPrem('term',age,termFace)/12),carrier:'National Life Group'});
-  if (iulFace > 100000) products.push({need:'Wealth+Legacy',coverage:iulFace,product:'NLG IUL FlexLife',premium:estPrem('iul',age,iulFace),monthly:Math.round(estPrem('iul',age,iulFace)/12),carrier:'National Life Group'});
-  const diNeed = Math.round(income * diPct);
-  const diPrem = estPrem('di', age, diNeed);
-  products.push({need:'Disability Income',coverage:diNeed,product:'Guardian DI to 65',premium:diPrem,monthly:Math.round(diPrem/12),carrier:'Guardian'});
-  const ltcPool = 150000;
-  const ltcPrem = estPrem('ltc', age, ltcPool);
-  if (age >= 35) products.push({need:'LTC Coverage',coverage:ltcPool,product:'Lincoln MoneyGuard',premium:ltcPrem,monthly:Math.round(ltcPrem/12),carrier:'Lincoln Financial'});
-  const totalPremium = products.reduce((a,p)=>a+p.premium,0);
-  return { dimeNeed, components, existingCoverage: existIns, gap, products, totalPremium, diNeed, diPrem, ltcPool, ltcPrem };
-}
-
-// Growth (calcGR) — multi-vehicle comparison
-interface GRResult {
-  yrs: number; vehicles: {name:string;value:number;taxFree:boolean;note:string}[];
-  taxEdge: number;
-}
-function calcGrowth(age: number, retireAge: number, monthlySav: number, existing: number,
-  infRate: number, taxReturn: number, iul_return: number, fia_return: number): GRResult {
-  const yrs = Math.max(1, retireAge - age);
-  const taxable = Math.round(fv(existing, monthlySav, taxReturn * 0.75, yrs)); // after-tax
-  const four01k = Math.round(fv(existing, monthlySav, taxReturn, yrs));
-  const roth = Math.round(fv(existing, monthlySav, taxReturn, yrs));
-  const iul = Math.round(fv(0, monthlySav, iul_return, yrs));
-  const fia = Math.round(fv(existing * 0.3, 0, fia_return, yrs));
-  const vehicles = [
-    {name:'Taxable Brokerage',value:taxable,taxFree:false,note:'Capital gains tax on growth'},
-    {name:'401(k)/IRA',value:four01k,taxFree:false,note:'Tax-deferred; taxed at withdrawal'},
-    {name:'Roth IRA/401(k)',value:roth,taxFree:true,note:'Tax-free growth & withdrawal'},
-    {name:'IUL Cash Value',value:iul,taxFree:true,note:'Tax-free loans (IRC §7702)'},
-    {name:'FIA + Income Rider',value:fia,taxFree:false,note:'Principal protected, capped upside'},
-  ];
-  const taxEdge = roth + iul - taxable - Math.round(four01k * 0.75);
-  return { yrs, vehicles, taxEdge };
-}
-
-// Retirement (calcRT) — SS claiming comparison + portfolio withdrawal
-interface RTResult {
-  ssComparison: {age:number;monthly:number;annual:number;cumAt80:number;cumAt85:number;cumAt90:number}[];
-  bestAge: number; portfolioAtRetire: number; withdrawal: number; monthlyIncome: number;
-  incomeGap: number; rmd72: number;
-}
-function calcRetirement(age: number, retireAge: number, ss62: number, ss67: number, ss70: number,
-  pension: number, withdrawalRate: number, savings: number, monthlySav: number): RTResult {
-  const yrs = Math.max(1, retireAge - age);
-  const portfolio = Math.round(fv(savings, monthlySav, 0.07, yrs));
-  const withdrawal = Math.round(portfolio * withdrawalRate);
-  const ssOptions = [
-    {age:62,monthly:ss62},{age:67,monthly:ss67},{age:70,monthly:ss70}
-  ];
-  const ssComparison = ssOptions.map(o => {
-    const annual = o.monthly * 12;
-    const cumAt = (targetAge: number) => {
-      if (o.age > targetAge) return 0;
-      return annual * (targetAge - o.age);
-    };
-    return { age: o.age, monthly: o.monthly, annual, cumAt80: cumAt(80), cumAt85: cumAt(85), cumAt90: cumAt(90) };
-  });
-  const bestAge = ssComparison.reduce((a,b) => b.cumAt85 > a.cumAt85 ? b : a).age;
-  const bestSS = ssComparison.find(s => s.age === bestAge)!;
-  const monthlyIncome = Math.round(withdrawal / 12 + bestSS.monthly + pension);
-  const incomeGap = Math.max(0, Math.round(savings * 0.04 / 12) - monthlyIncome); // rough
-  const rmd72 = Math.round(portfolio / 27.4); // IRS Uniform Table divisor at 72
-  return { ssComparison, bestAge, portfolioAtRetire: portfolio, withdrawal, monthlyIncome, incomeGap, rmd72 };
-}
-
-// Tax Planning (calcTX)
-interface TXResult {
-  strategies: {name:string;saving:number;note:string}[];
-  totalSaving: number; effectiveRate: number; marginalRate: number;
-  rothConversion: {amount:number;taxNow:number;taxFreeFuture:number;netBenefit:number};
-}
-function calcTax(income: number, stateRate: number, isSelfEmployed: boolean,
-  filing: string, retirement401k: number, hsaContrib: number, charitableGiving: number): TXResult {
-  const brackets = filing === 'mfj' ? RATES.bracketsMFJ : RATES.bracketsSingle;
-  const fedTax = income > 0 ? (() => { let t=0,p=0; for(const[l,r]of brackets){if(income<=l){t+=(income-p)*r;break;}t+=(l-p)*r;p=l;} return t; })() : 0;
-  const marginalRate = brackets.find(([l]) => income <= l)?.[1] ?? 0.37;
-  const effectiveRate = income > 0 ? (fedTax + income * stateRate) / income : 0;
-  const strategies: TXResult['strategies'] = [];
-  // 401k/IRA
-  const max401k = 23500;
-  const gap401k = Math.max(0, max401k - retirement401k);
-  if (gap401k > 0) strategies.push({name:'Max 401(k)', saving: Math.round(gap401k * marginalRate), note: `Contribute additional ${fmt(gap401k)}/yr`});
-  // HSA
-  const maxHSA = filing === 'mfj' ? 8300 : 4150;
-  const gapHSA = Math.max(0, maxHSA - hsaContrib);
-  if (gapHSA > 0) strategies.push({name:'Max HSA', saving: Math.round(gapHSA * (marginalRate + 0.0765)), note: 'Triple tax advantage'});
-  // Roth conversion
-  const rothAmount = Math.min(50000, income * 0.1);
-  const rothTaxNow = Math.round(rothAmount * marginalRate);
-  const rothFuture = Math.round(rothAmount * Math.pow(1.07, 20));
-  const rothTaxFree = Math.round(rothFuture * marginalRate);
-  strategies.push({name:'Roth Conversion', saving: Math.round(rothTaxFree - rothTaxNow), note: `Convert ${fmt(rothAmount)} now, save ${fmt(rothTaxFree - rothTaxNow)} in taxes over 20yr`});
-  // Charitable
-  if (charitableGiving > 0) strategies.push({name:'Charitable Deduction', saving: Math.round(charitableGiving * marginalRate), note: `${fmt(charitableGiving)} giving × ${pct(marginalRate)} rate`});
-  // Self-employment
-  if (isSelfEmployed) strategies.push({name:'QBI Deduction (§199A)', saving: Math.round(Math.min(income * 0.2, 182100) * marginalRate), note: '20% of qualified business income'});
-  // Deductions only
-  const stdDeduction = filing === 'mfj' ? 29200 : 14600;
-  strategies.push({name:'Standard Deduction', saving: Math.round(stdDeduction * marginalRate), note: `${fmt(stdDeduction)} (${filing === 'mfj' ? 'MFJ' : 'Single'})`});
-  const totalSaving = strategies.reduce((a,s) => a + s.saving, 0);
-  return { strategies, totalSaving, effectiveRate, marginalRate,
-    rothConversion: { amount: rothAmount, taxNow: rothTaxNow, taxFreeFuture: rothFuture, netBenefit: rothTaxFree - rothTaxNow }};
-}
-
-// Estate (calcES)
-interface ESResult {
-  grossEstate: number; exemption: number; taxable: number; estateTax: number;
-  ilitSaving: number; netToHeirs: number; withPlanning: number;
-  documents: {name:string;status:string;priority:string}[];
-}
-function calcEstate(grossEstate: number, exemption: number, growthRate: number,
-  giftingAnnual: number, willStatus: string): ESResult {
-  const taxable = Math.max(0, grossEstate - exemption);
-  const estateTax = Math.round(taxable * 0.40);
-  const ilitFace = Math.round(estateTax * 1.2);
-  const ilitPrem = estPrem('iul', 50, ilitFace); // approximate
-  const ilitSaving = estateTax; // ILIT pays estate tax
-  const netToHeirs = grossEstate - estateTax;
-  const withPlanning = grossEstate - Math.round(estateTax * 0.1); // ILIT + gifting reduces tax ~90%
-  const documents: ESResult['documents'] = [
-    {name:'Last Will & Testament', status: willStatus === 'will' || willStatus === 'trust' ? 'Complete' : 'Missing', priority: 'High'},
-    {name:'Revocable Living Trust', status: willStatus === 'trust' ? 'Complete' : 'Missing', priority: 'High'},
-    {name:'Durable Power of Attorney', status: willStatus !== 'none' ? 'Likely' : 'Missing', priority: 'High'},
-    {name:'Healthcare Directive', status: willStatus !== 'none' ? 'Likely' : 'Missing', priority: 'High'},
-    {name:'Beneficiary Designations', status: 'Review Annually', priority: 'Medium'},
-    {name:'ILIT (if needed)', status: estateTax > 0 ? 'Recommended' : 'N/A', priority: estateTax > 0 ? 'High' : 'Low'},
-  ];
-  return { grossEstate, exemption, taxable, estateTax, ilitSaving, netToHeirs, withPlanning, documents };
-}
-
-// Education (calcED)
-interface EDResult {
-  children: number; avgAge: number; yrsToCollege: number;
-  futureCostPerChild: number; totalFutureCost: number;
-  projectedPer529: number; totalProjected: number;
-  gapPerChild: number; totalGap: number;
-  additionalMonthlyNeeded: number;
-}
-function calcEducation(children: number, avgAge: number, targetCost: number,
-  infRate: number, returnRate: number, currentBal: number, monthlyContrib: number): EDResult {
-  const yrs = Math.max(1, 18 - avgAge);
-  const futureCostPerChild = Math.round(targetCost * Math.pow(1 + infRate, yrs));
-  const totalFutureCost = futureCostPerChild * children;
-  const projectedPer529 = Math.round(fv(currentBal / children, monthlyContrib / children, returnRate, yrs));
-  const totalProjected = projectedPer529 * children;
-  const gapPerChild = Math.max(0, futureCostPerChild - projectedPer529);
-  const totalGap = gapPerChild * children;
-  const rm = returnRate / 12;
-  const additionalMonthlyNeeded = gapPerChild > 0 && yrs > 0
-    ? Math.round(gapPerChild / ((Math.pow(1 + rm, yrs * 12) - 1) / rm))
-    : 0;
-  return { children, avgAge, yrsToCollege: yrs, futureCostPerChild, totalFutureCost,
-    projectedPer529, totalProjected, gapPerChild, totalGap, additionalMonthlyNeeded };
-}
-
-/* ═══ COST-BENEFIT ANALYSIS ENGINE (faithful port from v7 buildCostBenDash) ═══ */
-interface HorizonData { yr: number; cost: number; benefit: number; net: number; roi: string; }
-function buildHorizonData(recs: Recommendation[], age: number, income: number, horizons: number[]): HorizonData[] {
-  return horizons.map(yr => {
-    let totalCost = 0, totalBenefit = 0;
-    recs.forEach(r => {
-      const annCost = r.premium;
-      // Simplified product-at-year calculation
-      const isIUL = r.product.includes('IUL');
-      const isTerm = r.product.includes('Term');
-      const isDI = r.product.includes('DI') || r.product.includes('Disability');
-      const isLTC = r.product.includes('LTC') || r.product.includes('MoneyGuard');
-      const isFIA = r.product.includes('FIA');
-      const termLen = isTerm ? 20 : 99;
-      const payYrs = isIUL ? Math.min(yr, 20) : isTerm ? Math.min(yr, termLen) : isDI ? Math.min(yr, Math.max(0, 65 - age)) : yr;
-      totalCost += annCost * payYrs;
-      // Benefits
-      const cvNum = parseInt(String(r.coverage).replace(/[^0-9]/g, '')) || 0;
-      if (isTerm && yr <= termLen) totalBenefit += cvNum;
-      if (isIUL) {
-        let cv = 0; for (let y = 1; y <= yr; y++) cv = (cv + (y <= 20 ? annCost : 0)) * (y <= 20 ? 1.04 : 1.05);
-        totalBenefit += cvNum + Math.round(cv) + Math.round(cv * 0.25) + Math.round(cvNum * 0.5);
-      }
-      if (isDI) totalBenefit += Math.round(cvNum * Math.min(yr, 65 - age) * 0.012 * 2.88);
-      if (isLTC) totalBenefit += Math.round(150000 * Math.pow(1.03, yr));
-      if (isFIA) totalBenefit += Math.round(cvNum * Math.pow(1.055, yr));
-    });
-    const net = totalBenefit - totalCost;
-    const roi = totalCost > 0 ? (totalBenefit / totalCost).toFixed(1) : '—';
-    return { yr, cost: totalCost, benefit: totalBenefit, net, roi };
-  });
-}
-
-/* ═══ STRATEGY COMPARISON DATA (faithful port from v7 calcCompare) ═══ */
-const STRATEGIES = [
-  { name: 'Conservative', color: '#3B82F6', annualCost: '$3K-8K',
-    bestFor: 'Risk-averse, near retirement',
-    description: 'Focus on guaranteed products: whole life, FIA with income rider, term for gap coverage. Minimal market exposure.',
-    products: ['Whole Life', 'FIA + Income Rider', 'Term 20yr', 'DI'],
-    scores: { Protection: 5, Growth: 2, 'Tax Efficiency': 3, Liquidity: 2, Legacy: 4, Complexity: 1 } },
-  { name: 'Balanced', color: '#10B981', annualCost: '$5K-15K',
-    bestFor: 'Most families, mid-career',
-    description: 'Blend of term + IUL for protection and growth, 401(k)/Roth for retirement, DI + LTC for income protection.',
-    products: ['Term 20yr', 'IUL', 'DI', 'LTC Hybrid', '401(k)', 'Roth IRA'],
-    scores: { Protection: 4, Growth: 4, 'Tax Efficiency': 4, Liquidity: 3, Legacy: 4, Complexity: 3 } },
-  { name: 'Growth', color: '#F59E0B', annualCost: '$8K-25K',
-    bestFor: 'High earners, long horizon',
-    description: 'Maximize IUL cash value + Roth conversions + FIA for tax-free retirement income. Aggressive accumulation.',
-    products: ['IUL (max-funded)', 'Roth IRA', 'FIA', 'Term (gap)', 'DI'],
-    scores: { Protection: 3, Growth: 5, 'Tax Efficiency': 5, Liquidity: 4, Legacy: 3, Complexity: 4 } },
-  { name: 'Legacy', color: '#8B5CF6', annualCost: '$15K-50K+',
-    bestFor: 'HNW, estate planning focus',
-    description: 'ILIT with survivorship life, premium finance for leverage, charitable strategies, dynasty trust funding.',
-    products: ['Survivorship IUL', 'ILIT', 'Premium Finance', 'Charitable Trust', 'FIA'],
-    scores: { Protection: 5, Growth: 4, 'Tax Efficiency': 5, Liquidity: 2, Legacy: 5, Complexity: 5 } },
-];
-
-/* ═══ CALCULATION METHODS REFERENCE ═══ */
-const CALC_METHODS = [
-  { domain: 'Cash Flow', method: 'Gross-to-net budget analysis with DTI ratio', source: 'BLS Consumer Expenditure Survey 2024' },
-  { domain: 'Protection', method: 'DIME method (Debt + Income + Mortgage + Education)', source: 'LIMRA 2024, SOA mortality tables' },
-  { domain: 'Growth', method: 'Future value with monthly contributions, multi-vehicle comparison', source: 'Morningstar 2024 capital market assumptions' },
-  { domain: 'Retirement', method: 'SS claiming age comparison + 4% withdrawal rule', source: 'SSA 2024, Trinity Study (Bengen)' },
-  { domain: 'Tax', method: 'Marginal bracket analysis + deduction optimization', source: 'IRS Rev Proc 2024-40, IRC §199A/§408A' },
-  { domain: 'Estate', method: 'Gross estate minus exemption, 40% federal rate', source: 'IRC §2010, 2024 exemption $13.61M' },
-  { domain: 'Education', method: '529 FV projection with inflation-adjusted cost', source: 'College Board 2024, Vanguard 529' },
-  { domain: 'Cost-Benefit', method: 'Multi-horizon NPV across all product dimensions', source: 'Industry actuarial tables, carrier illustrations' },
-  { domain: 'Premiums', method: 'Age-interpolated rate tables (term/IUL/WL/DI/LTC)', source: 'NLG, Guardian, Lincoln, Athene rate sheets' },
-];
-
-/* ═══ DUE DILIGENCE CHECKLIST ═══ */
-const DUE_DILIGENCE = [
-  { text: 'Verify client identity and suitability (KYC/AML)', category: 'Compliance' },
-  { text: 'Document risk tolerance assessment', category: 'Suitability' },
-  { text: 'Review existing coverage and avoid replacement issues', category: 'Compliance' },
-  { text: 'Confirm all income and asset figures with documentation', category: 'Data' },
-  { text: 'Run carrier-specific illustrations for recommended products', category: 'Products' },
-  { text: 'Obtain medical records for underwriting (life/DI)', category: 'Underwriting' },
-  { text: 'Review beneficiary designations on all accounts', category: 'Estate' },
-  { text: 'Confirm tax filing status and state of residence', category: 'Tax' },
-  { text: 'Document all recommendations and client decisions', category: 'Compliance' },
-  { text: 'Schedule follow-up review within 12 months', category: 'Service' },
-  { text: 'Provide client with policy delivery receipt and free-look notice', category: 'Compliance' },
-  { text: 'Verify carrier financial strength ratings (AM Best A- or better)', category: 'Products' },
-];
-
-/* ═══ ACTION PLAN BUILDER (faithful port from v7 calcTimeline) ═══ */
-interface ActionPhase { name: string; timeline: string; actions: string[]; priority: string; }
-function buildActionPlan(pace: 'standard'|'aggressive'|'gradual', recs: Recommendation[],
-  scores: Record<string,number>, pr: PRResult, cf: CFResult, ed: EDResult): ActionPhase[] {
-  const mult = pace === 'aggressive' ? 0.5 : pace === 'gradual' ? 1.5 : 1;
-  const phases: ActionPhase[] = [];
-  // Phase 1: Foundation
-  const p1Actions = ['Complete financial profile and risk assessment'];
-  if (cf.emGap > 0) p1Actions.push(`Build emergency fund: ${fmtSm(cf.emGap)} gap`);
-  if (scores.protect < 2) p1Actions.push('Apply for life insurance (DIME gap: ' + fmtSm(pr.gap) + ')');
-  p1Actions.push('Review and update beneficiary designations');
-  phases.push({ name: 'Foundation', timeline: `Month 1-${Math.round(2 * mult)}`, actions: p1Actions, priority: 'Critical' });
-  // Phase 2: Protection
-  const p2Actions: string[] = [];
-  if (pr.gap > 0) p2Actions.push(`Finalize life insurance: ${fmtSm(pr.gap)} coverage`);
-  p2Actions.push('Set up disability insurance');
-  if (scores.estate < 2) p2Actions.push('Schedule estate attorney consultation');
-  p2Actions.push('Automate savings transfers');
-  phases.push({ name: 'Protection', timeline: `Month ${Math.round(2*mult)+1}-${Math.round(4*mult)}`, actions: p2Actions, priority: 'High' });
-  // Phase 3: Growth
-  const p3Actions = ['Maximize 401(k) contributions', 'Open/fund Roth IRA', 'Review IUL illustration and apply'];
-  if (ed.totalGap > 0) p3Actions.push(`Increase 529 contributions (+${fmt(ed.additionalMonthlyNeeded)}/mo)`);
-  phases.push({ name: 'Growth & Tax', timeline: `Month ${Math.round(4*mult)+1}-${Math.round(8*mult)}`, actions: p3Actions, priority: 'High' });
-  // Phase 4: Optimization
-  const p4Actions = ['Review Roth conversion opportunity', 'Evaluate FIA for retirement income', 'Consider LTC hybrid coverage'];
-  if (scores.estate < 3) p4Actions.push('Finalize estate documents (will/trust/POA)');
-  phases.push({ name: 'Optimization', timeline: `Month ${Math.round(8*mult)+1}-${Math.round(12*mult)}`, actions: p4Actions, priority: 'Medium' });
-  return phases;
-}
+import {
+  RATES, STRATEGIES, CALC_METHODS, DUE_DILIGENCE,
+  fmt, fmtSm, pct, sc, getBracketRate,
+  computeScorecard, buildRecommendations, buildActionPlan, buildHorizonData,
+  calcCashFlow, calcProtection, calcGrowth, calcRetirement, calcTax, calcEstate, calcEducation,
+  type Recommendation, type CFResult, type PRResult, type GRResult, type RTResult, type TXResult, type ESResult, type EDResult, type HorizonData,
+} from './calculators/engine';
 
 /* ═══ PANEL TYPE DEFINITIONS ═══ */
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
@@ -575,7 +71,7 @@ function FormInput({ id, label, value, onChange, type = 'number', prefix, suffix
   );
 }
 
-function ScoreBadge({ score, max = 3 }: { score: number; max?: number }) {
+function ScoreBadge({ score }: { score: number }) {
   const s = sc(score);
   return (
     <span className={`inline-flex items-center gap-1 text-xs font-semibold ${s.color}`}>
@@ -632,6 +128,32 @@ export default function Calculators() {
   const { user } = useAuth();
   const [activePanel, setActivePanel] = useState<PanelId>('profile');
 
+  /* ─── SESSION MANAGEMENT STATE ─── */
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [sessionName, setSessionName] = useState('');
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
+  const sessionsQuery = trpc.calcSession.list.useQuery(undefined, { enabled: !!user });
+  const saveMut = trpc.calcSession.save.useMutation({
+    onSuccess: (res) => {
+      setActiveSessionId(res.id);
+      sessionsQuery.refetch();
+      setShowSaveDialog(false);
+      toast.success('Session saved');
+    },
+    onError: () => toast.error('Failed to save session'),
+  });
+  const updateMut = trpc.calcSession.update.useMutation({
+    onSuccess: () => { sessionsQuery.refetch(); toast.success('Session updated'); },
+    onError: () => toast.error('Failed to update session'),
+  });
+  const deleteMut = trpc.calcSession.delete.useMutation({
+    onSuccess: () => { sessionsQuery.refetch(); toast.success('Session deleted'); },
+  });
+  const getSessionMut = trpc.calcSession.get.useQuery(
+    { id: -1 }, { enabled: false }
+  );
+
   /* ─── CLIENT PROFILE INPUTS ─── */
   const [clientName, setClientName] = useState('');
   const [age, setAge] = useState(40);
@@ -649,6 +171,20 @@ export default function Calculators() {
   const [stateRate, setStateRate] = useState(0.05);
   const [riskTolerance, setRiskTolerance] = useState('moderate');
   const [isBiz, setIsBiz] = useState(false);
+
+  /* ─── BUSINESS-SPECIFIC INPUTS ─── */
+  const [bizEntityType, setBizEntityType] = useState('llc');
+  const [bizRevenue, setBizRevenue] = useState(0);
+  const [bizExpenses, setBizExpenses] = useState(0);
+  const [bizEmployees, setBizEmployees] = useState(0);
+  const [bizSeasonality, setBizSeasonality] = useState('even');
+  const [bizRevenueStreams, setBizRevenueStreams] = useState(1);
+  const [bizProductMix, setBizProductMix] = useState('services');
+  const [bizGrowthRate, setBizGrowthRate] = useState(0.10);
+  const [bizDebtService, setBizDebtService] = useState(0);
+  const [bizKeyPerson, setBizKeyPerson] = useState(false);
+  const [bizSuccessionPlan, setBizSuccessionPlan] = useState('none');
+  const [bizBuySell, setBizBuySell] = useState(false);
 
   /* ─── CASH FLOW INPUTS ─── */
   const [housing, setHousing] = useState(2500);
@@ -702,18 +238,172 @@ export default function Calculators() {
   const [monthly529, setMonthly529] = useState(300);
 
   /* ─── COST-BENEFIT INPUTS ─── */
-  const [cbHorizons, setCbHorizons] = useState<number[]>([5, 10, 15, 20, 30]);
-  const [cbCustomYr, setCbCustomYr] = useState('');
+  const [cbHorizons] = useState<number[]>([5, 10, 15, 20, 30]);
 
   /* ─── ACTION PLAN INPUTS ─── */
   const [pace, setPace] = useState<'standard'|'aggressive'|'gradual'>('standard');
+
+  /* ─── SESSION HELPERS ─── */
+  const gatherInputs = () => ({
+    clientName, age, spouseAge, dep, income, spouseIncome, nw, savings, retirement401k,
+    mortgage, debt, existIns, filing, stateRate, riskTolerance, isBiz,
+    bizEntityType, bizRevenue, bizExpenses, bizEmployees, bizSeasonality,
+    bizRevenueStreams, bizProductMix, bizGrowthRate, bizDebtService, bizKeyPerson, bizSuccessionPlan, bizBuySell,
+    housing, transport, food, insurancePmt, debtPmt, otherExp, emMonths,
+    replaceYrs, payoffRate, eduPerChild, finalExp, ssBenefit, diPct,
+    retireAge, monthlySav, infRate, taxReturn, iulReturn, fiaReturn,
+    ss62, ss67, ss70, pension, withdrawalRate,
+    hsaContrib, charitableGiving,
+    grossEstate, exemption, estateGrowth, giftingAnnual, willStatus,
+    numChildren, avgChildAge, targetCost, eduReturn, current529, monthly529,
+    pace,
+  });
+
+  const restoreInputs = (d: Record<string, any>) => {
+    if (d.clientName !== undefined) setClientName(d.clientName);
+    if (d.age !== undefined) setAge(d.age);
+    if (d.spouseAge !== undefined) setSpouseAge(d.spouseAge);
+    if (d.dep !== undefined) setDep(d.dep);
+    if (d.income !== undefined) setIncome(d.income);
+    if (d.spouseIncome !== undefined) setSpouseIncome(d.spouseIncome);
+    if (d.nw !== undefined) setNw(d.nw);
+    if (d.savings !== undefined) setSavings(d.savings);
+    if (d.retirement401k !== undefined) setRetirement401k(d.retirement401k);
+    if (d.mortgage !== undefined) setMortgage(d.mortgage);
+    if (d.debt !== undefined) setDebt(d.debt);
+    if (d.existIns !== undefined) setExistIns(d.existIns);
+    if (d.filing !== undefined) setFiling(d.filing);
+    if (d.stateRate !== undefined) setStateRate(d.stateRate);
+    if (d.riskTolerance !== undefined) setRiskTolerance(d.riskTolerance);
+    if (d.isBiz !== undefined) setIsBiz(d.isBiz);
+    if (d.bizEntityType !== undefined) setBizEntityType(d.bizEntityType);
+    if (d.bizRevenue !== undefined) setBizRevenue(d.bizRevenue);
+    if (d.bizExpenses !== undefined) setBizExpenses(d.bizExpenses);
+    if (d.bizEmployees !== undefined) setBizEmployees(d.bizEmployees);
+    if (d.bizSeasonality !== undefined) setBizSeasonality(d.bizSeasonality);
+    if (d.bizRevenueStreams !== undefined) setBizRevenueStreams(d.bizRevenueStreams);
+    if (d.bizProductMix !== undefined) setBizProductMix(d.bizProductMix);
+    if (d.bizGrowthRate !== undefined) setBizGrowthRate(d.bizGrowthRate);
+    if (d.bizDebtService !== undefined) setBizDebtService(d.bizDebtService);
+    if (d.bizKeyPerson !== undefined) setBizKeyPerson(d.bizKeyPerson);
+    if (d.bizSuccessionPlan !== undefined) setBizSuccessionPlan(d.bizSuccessionPlan);
+    if (d.bizBuySell !== undefined) setBizBuySell(d.bizBuySell);
+    if (d.housing !== undefined) setHousing(d.housing);
+    if (d.transport !== undefined) setTransport(d.transport);
+    if (d.food !== undefined) setFood(d.food);
+    if (d.insurancePmt !== undefined) setInsurancePmt(d.insurancePmt);
+    if (d.debtPmt !== undefined) setDebtPmt(d.debtPmt);
+    if (d.otherExp !== undefined) setOtherExp(d.otherExp);
+    if (d.emMonths !== undefined) setEmMonths(d.emMonths);
+    if (d.replaceYrs !== undefined) setReplaceYrs(d.replaceYrs);
+    if (d.payoffRate !== undefined) setPayoffRate(d.payoffRate);
+    if (d.eduPerChild !== undefined) setEduPerChild(d.eduPerChild);
+    if (d.finalExp !== undefined) setFinalExp(d.finalExp);
+    if (d.ssBenefit !== undefined) setSsBenefit(d.ssBenefit);
+    if (d.diPct !== undefined) setDiPct(d.diPct);
+    if (d.retireAge !== undefined) setRetireAge(d.retireAge);
+    if (d.monthlySav !== undefined) setMonthlySav(d.monthlySav);
+    if (d.infRate !== undefined) setInfRate(d.infRate);
+    if (d.taxReturn !== undefined) setTaxReturn(d.taxReturn);
+    if (d.iulReturn !== undefined) setIulReturn(d.iulReturn);
+    if (d.fiaReturn !== undefined) setFiaReturn(d.fiaReturn);
+    if (d.ss62 !== undefined) setSs62(d.ss62);
+    if (d.ss67 !== undefined) setSs67(d.ss67);
+    if (d.ss70 !== undefined) setSs70(d.ss70);
+    if (d.pension !== undefined) setPension(d.pension);
+    if (d.withdrawalRate !== undefined) setWithdrawalRate(d.withdrawalRate);
+    if (d.hsaContrib !== undefined) setHsaContrib(d.hsaContrib);
+    if (d.charitableGiving !== undefined) setCharitableGiving(d.charitableGiving);
+    if (d.grossEstate !== undefined) setGrossEstate(d.grossEstate);
+    if (d.exemption !== undefined) setExemption(d.exemption);
+    if (d.estateGrowth !== undefined) setEstateGrowth(d.estateGrowth);
+    if (d.giftingAnnual !== undefined) setGiftingAnnual(d.giftingAnnual);
+    if (d.willStatus !== undefined) setWillStatus(d.willStatus);
+    if (d.numChildren !== undefined) setNumChildren(d.numChildren);
+    if (d.avgChildAge !== undefined) setAvgChildAge(d.avgChildAge);
+    if (d.targetCost !== undefined) setTargetCost(d.targetCost);
+    if (d.eduReturn !== undefined) setEduReturn(d.eduReturn);
+    if (d.current529 !== undefined) setCurrent529(d.current529);
+    if (d.monthly529 !== undefined) setMonthly529(d.monthly529);
+    if (d.pace !== undefined) setPace(d.pace);
+  };
+
+  const handleSave = () => {
+    if (!user) { toast.error('Please sign in to save sessions'); return; }
+    const inputs = gatherInputs();
+    if (activeSessionId) {
+      updateMut.mutate({ id: activeSessionId, inputsJson: inputs, resultsJson: { scorecard, recommendations } });
+    } else {
+      setSessionName(clientName || `Session ${new Date().toLocaleDateString()}`);
+      setShowSaveDialog(true);
+    }
+  };
+
+  const handleSaveConfirm = () => {
+    saveMut.mutate({
+      name: sessionName,
+      calculatorType: 'business_v7',
+      inputsJson: gatherInputs(),
+      resultsJson: { scorecard, recommendations },
+    });
+  };
+
+  const handleLoad = async (id: number) => {
+    try {
+      const resp = await fetch(`/api/trpc/calcSession.get?input=${encodeURIComponent(JSON.stringify({ id }))}`, {
+        credentials: 'include',
+      });
+      const json = await resp.json();
+      const session = json?.result?.data;
+      if (session?.inputsJson) {
+        restoreInputs(session.inputsJson as Record<string, any>);
+        setActiveSessionId(session.id);
+        setShowLoadDialog(false);
+        toast.success(`Loaded: ${session.name}`);
+      }
+    } catch { toast.error('Failed to load session'); }
+  };
+
+  const handleExportPdf = () => {
+    toast.info('Generating PDF report...');
+    // Build a printable summary and trigger browser print
+    const printContent = `
+      <html><head><title>WealthBridge Report - ${clientName || 'Client'}</title>
+      <style>body{font-family:system-ui;padding:40px;color:#1e293b}h1{color:#92400e}table{width:100%;border-collapse:collapse;margin:16px 0}th,td{border:1px solid #e2e8f0;padding:8px;text-align:left}th{background:#f8fafc;font-size:12px}h2{margin-top:24px;color:#334155}.badge{display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600}</style>
+      </head><body>
+      <h1>WealthBridge — Unified Wealth Engine Report</h1>
+      <p><strong>Client:</strong> ${clientName || 'N/A'} | <strong>Age:</strong> ${age} | <strong>Income:</strong> $${totalIncome.toLocaleString()} | <strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+      <h2>Financial Health Score: ${scorecard.pctScore}% (${scorecard.overall}/${scorecard.maxScore})</h2>
+      <table><tr><th>Domain</th><th>Score</th><th>Status</th></tr>
+      ${scorecard.domains.map(d => `<tr><td>${d.name}</td><td>${d.score}/3</td><td>${d.score >= 3 ? 'Strong' : d.score >= 2 ? 'Moderate' : 'Needs Attention'}</td></tr>`).join('')}
+      </table>
+      <h2>Recommended Products</h2>
+      <table><tr><th>Product</th><th>Coverage</th><th>Annual</th><th>Carrier</th><th>Priority</th></tr>
+      ${recommendations.map(r => `<tr><td>${r.product}</td><td>${r.coverage}</td><td>${fmt(r.premium)}</td><td>${r.carrier}</td><td>${r.priority}</td></tr>`).join('')}
+      <tr style="font-weight:bold;background:#f8fafc"><td>TOTAL</td><td>${recommendations.length} products</td><td>${fmt(totalAnnualPremium)}</td><td colspan="2">${pct(totalIncome > 0 ? totalAnnualPremium / totalIncome : 0)} of income</td></tr>
+      </table>
+      <h2>Key Metrics</h2>
+      <table>
+      <tr><td>Monthly Cash Flow Surplus</td><td>${fmt(cfResult.surplus)}/mo</td></tr>
+      <tr><td>Protection Gap</td><td>${fmtSm(prResult.gap)}</td></tr>
+      <tr><td>Years to Retirement</td><td>${grResult.yrs}</td></tr>
+      <tr><td>Optimal SS Claiming Age</td><td>${rtResult.bestAge}</td></tr>
+      <tr><td>Effective Tax Rate</td><td>${pct(txResult.effectiveRate)}</td></tr>
+      <tr><td>Estate Tax Exposure</td><td>${fmtSm(esResult.estateTax)}</td></tr>
+      <tr><td>Education Funding Gap</td><td>${fmtSm(edResult.totalGap)}</td></tr>
+      </table>
+      <p style="margin-top:32px;font-size:11px;color:#94a3b8">Generated by WealthBridge Unified Wealth Engine v7 — ${new Date().toISOString()}</p>
+      </body></html>
+    `;
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(printContent); w.document.close(); w.print(); }
+  };
 
   /* ═══ COMPUTED RESULTS ═══ */
   const totalIncome = income + spouseIncome;
   const grossMonthly = Math.round(totalIncome / 12);
   const taxRate = useMemo(() => getBracketRate(totalIncome, filing === 'mfj' ? RATES.bracketsMFJ : RATES.bracketsSingle) + stateRate, [totalIncome, filing, stateRate]);
 
-  // Domain scores (faithful port of v7 cA scoring)
   const scores = useMemo(() => {
     const s: Record<string, number> = {};
     const sr = totalIncome > 0 ? (grossMonthly - housing - transport - food - insurancePmt - debtPmt - otherExp) / grossMonthly : 0;
@@ -722,7 +412,6 @@ export default function Calculators() {
     s.protect = existIns >= dimeNeed ? 3 : existIns >= dimeNeed * 0.5 ? 2 : existIns > 0 ? 1 : 0;
     s.growth = monthlySav >= grossMonthly * 0.15 ? 3 : monthlySav >= grossMonthly * 0.1 ? 2 : monthlySav > 0 ? 1 : 0;
     s.retire = retirement401k >= totalIncome * 3 ? 3 : retirement401k >= totalIncome ? 2 : retirement401k > 0 ? 1 : 0;
-    const maxContrib = 23500 + (hsaContrib > 0 ? 1 : 0) * 8300;
     s.tax = retirement401k >= 23500 && hsaContrib > 0 ? 3 : retirement401k >= 10000 ? 2 : 1;
     s.estate = willStatus === 'trust' ? 3 : willStatus === 'will' ? 2 : 1;
     s.edu = dep === 0 ? 3 : current529 >= targetCost * dep * 0.5 ? 3 : current529 > 0 ? 2 : 1;
@@ -734,7 +423,6 @@ export default function Calculators() {
   const recommendations = useMemo(() => buildRecommendations(age, totalIncome, dep, nw, existIns, mortgage, debt, isBiz, scores), [age, totalIncome, dep, nw, existIns, mortgage, debt, isBiz, scores]);
   const totalAnnualPremium = recommendations.reduce((a, r) => a + r.premium, 0);
 
-  // Panel results
   const cfResult = useMemo(() => calcCashFlow(grossMonthly, taxRate, housing, transport, food, insurancePmt, debtPmt, otherExp, emMonths, savings), [grossMonthly, taxRate, housing, transport, food, insurancePmt, debtPmt, otherExp, emMonths, savings]);
   const prResult = useMemo(() => calcProtection(totalIncome, dep, mortgage, debt, existIns, age, replaceYrs, payoffRate, eduPerChild, finalExp, ssBenefit, diPct), [totalIncome, dep, mortgage, debt, existIns, age, replaceYrs, payoffRate, eduPerChild, finalExp, ssBenefit, diPct]);
   const grResult = useMemo(() => calcGrowth(age, retireAge, monthlySav, savings, infRate, taxReturn, iulReturn, fiaReturn), [age, retireAge, monthlySav, savings, infRate, taxReturn, iulReturn, fiaReturn]);
@@ -776,7 +464,6 @@ export default function Calculators() {
             ))}
           </nav>
         </ScrollArea>
-        {/* Score footer */}
         <div className="p-3 border-t border-slate-100 bg-slate-50">
           <div className="flex items-center justify-between text-xs">
             <span className="text-slate-500">Health Score</span>
@@ -795,6 +482,31 @@ export default function Calculators() {
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto p-6">
 
+          {/* ─── TOOLBAR ─── */}
+          <div className="flex items-center justify-between mb-4 bg-white rounded-lg border border-slate-200 px-4 py-2">
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              {activeSessionId ? (
+                <span className="flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5 text-green-500" /> Session saved</span>
+              ) : (
+                <span className="text-slate-400">Unsaved session</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleSave} disabled={saveMut.isPending || updateMut.isPending}
+                className="text-xs gap-1.5">
+                <Save className="w-3.5 h-3.5" /> {activeSessionId ? 'Update' : 'Save'}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { if (!user) { toast.error('Please sign in to load sessions'); return; } setShowLoadDialog(true); }}
+                className="text-xs gap-1.5">
+                <FolderOpen className="w-3.5 h-3.5" /> Load
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportPdf}
+                className="text-xs gap-1.5">
+                <Download className="w-3.5 h-3.5" /> Export PDF
+              </Button>
+            </div>
+          </div>
+
           {/* ═══ PANEL 1: CLIENT PROFILE ═══ */}
           {activePanel === 'profile' && (
             <section>
@@ -803,7 +515,6 @@ export default function Calculators() {
               </h2>
               <p className="text-sm text-slate-500 mb-4">Enter client information. All fields auto-calculate across every panel.</p>
 
-              {/* Input Grid */}
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -852,11 +563,101 @@ export default function Calculators() {
                 </CardContent>
               </Card>
 
+              {/* Business-Specific Inputs (conditionally shown) */}
+              {isBiz && (
+                <Card className="mb-4 border-amber-200 bg-amber-50/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-amber-600" /> Business Profile
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium text-slate-600">Entity Type</Label>
+                        <Select value={bizEntityType} onValueChange={setBizEntityType}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sole">Sole Proprietorship</SelectItem>
+                            <SelectItem value="llc">LLC</SelectItem>
+                            <SelectItem value="scorp">S-Corp</SelectItem>
+                            <SelectItem value="ccorp">C-Corp</SelectItem>
+                            <SelectItem value="partnership">Partnership</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <FormInput id="bizRevenue" label="Annual Revenue" value={bizRevenue} onChange={v => setBizRevenue(+v)} prefix="$" />
+                      <FormInput id="bizExpenses" label="Annual Expenses" value={bizExpenses} onChange={v => setBizExpenses(+v)} prefix="$" />
+                      <FormInput id="bizEmployees" label="Employees" value={bizEmployees} onChange={v => setBizEmployees(+v)} min={0} />
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium text-slate-600">Seasonality</Label>
+                        <Select value={bizSeasonality} onValueChange={setBizSeasonality}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="even">Even Year-Round</SelectItem>
+                            <SelectItem value="q1heavy">Q1 Heavy</SelectItem>
+                            <SelectItem value="q4heavy">Q4 Heavy</SelectItem>
+                            <SelectItem value="summer">Summer Peak</SelectItem>
+                            <SelectItem value="cyclical">Cyclical</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <FormInput id="bizStreams" label="Revenue Streams" value={bizRevenueStreams} onChange={v => setBizRevenueStreams(+v)} min={1} max={20} />
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium text-slate-600">Product Mix</Label>
+                        <Select value={bizProductMix} onValueChange={setBizProductMix}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="services">Services Only</SelectItem>
+                            <SelectItem value="products">Products Only</SelectItem>
+                            <SelectItem value="mixed">Mixed</SelectItem>
+                            <SelectItem value="saas">SaaS / Recurring</SelectItem>
+                            <SelectItem value="retail">Retail</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <FormInput id="bizGrowth" label="Growth Rate" value={(bizGrowthRate * 100).toFixed(0)} onChange={v => setBizGrowthRate(+v / 100)} suffix="%" />
+                      <FormInput id="bizDebt" label="Business Debt Service" value={bizDebtService} onChange={v => setBizDebtService(+v)} prefix="$" suffix="/yr" />
+                      <div className="flex items-end">
+                        <label className="flex items-center gap-2 text-xs">
+                          <input type="checkbox" checked={bizKeyPerson} onChange={e => setBizKeyPerson(e.target.checked)} className="rounded" />
+                          Key Person Dependency
+                        </label>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs font-medium text-slate-600">Succession Plan</Label>
+                        <Select value={bizSuccessionPlan} onValueChange={setBizSuccessionPlan}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="family">Family Transfer</SelectItem>
+                            <SelectItem value="partner">Partner Buyout</SelectItem>
+                            <SelectItem value="esop">ESOP</SelectItem>
+                            <SelectItem value="sale">Third-Party Sale</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-end">
+                        <label className="flex items-center gap-2 text-xs">
+                          <input type="checkbox" checked={bizBuySell} onChange={e => setBizBuySell(e.target.checked)} className="rounded" />
+                          Buy-Sell Agreement
+                        </label>
+                      </div>
+                    </div>
+                    {/* Business Summary Metrics */}
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <KPI label="Net Profit" value={fmt(bizRevenue - bizExpenses)} variant={bizRevenue > bizExpenses ? 'grn' : 'red'} />
+                      <KPI label="Profit Margin" value={bizRevenue > 0 ? pct((bizRevenue - bizExpenses) / bizRevenue) : '0%'} variant={bizRevenue > 0 && (bizRevenue - bizExpenses) / bizRevenue >= 0.15 ? 'grn' : 'gld'} />
+                      <KPI label="Rev/Employee" value={bizEmployees > 0 ? fmtSm(bizRevenue / bizEmployees) : 'N/A'} variant="blu" />
+                      <KPI label="Biz Risk" value={bizKeyPerson && !bizBuySell ? 'High' : bizKeyPerson ? 'Medium' : 'Low'} variant={bizKeyPerson && !bizBuySell ? 'red' : bizKeyPerson ? 'gld' : 'grn'} />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Financial Health Scorecard */}
               <Card className="mb-4">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Financial Health Scorecard</CardTitle>
-                </CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base">Financial Health Scorecard</CardTitle></CardHeader>
                 <CardContent>
                   <div className="flex flex-col md:flex-row gap-6">
                     <ScoreGauge pct={scorecard.pctScore} total={scorecard.overall} max={scorecard.maxScore} />
@@ -900,7 +701,6 @@ export default function Calculators() {
                       </table>
                     </div>
                   </div>
-                  {/* Pillar Summary */}
                   <div className="mt-4 grid grid-cols-3 gap-3">
                     {scorecard.pillars.map(p => (
                       <div key={p.name} className="bg-slate-50 rounded-lg p-3 text-center">
@@ -918,9 +718,7 @@ export default function Calculators() {
 
               {/* Recommended Products */}
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Recommended Products</CardTitle>
-                </CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base">Recommended Products</CardTitle></CardHeader>
                 <CardContent>
                   {recommendations.length === 0 ? (
                     <p className="text-sm text-slate-500 italic">No recommendations — all domains scoring well.</p>
@@ -976,7 +774,6 @@ export default function Calculators() {
                 <DollarSign className="w-5 h-5 text-amber-600" /> Monthly Cash Flow
               </h2>
               <p className="text-sm text-slate-500 mb-4">Budget analysis with emergency fund tracking. Sources: BLS Consumer Expenditure Survey 2024.</p>
-
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -990,8 +787,6 @@ export default function Calculators() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Cash Flow Results Table */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Budget Breakdown</CardTitle></CardHeader>
                 <CardContent>
@@ -1035,8 +830,6 @@ export default function Calculators() {
                   </table>
                 </CardContent>
               </Card>
-
-              {/* Result Badges */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <ResultBadge label="Save Rate" value={pct(cfResult.saveRate)} variant={cfResult.saveRate >= 0.2 ? 'grn' : cfResult.saveRate >= 0.1 ? 'gld' : 'red'} />
                 <ResultBadge label="DTI Ratio" value={pct(cfResult.dti)} variant={cfResult.dti <= 0.36 ? 'grn' : cfResult.dti <= 0.43 ? 'gld' : 'red'} />
@@ -1052,22 +845,21 @@ export default function Calculators() {
               <h2 className="text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-amber-600" /> Protection Analysis
               </h2>
-              <p className="text-sm text-slate-500 mb-4">DIME method life insurance + disability income + long-term care. Sources: LIMRA 2024, SSA disability statistics.</p>
-
+              <p className="text-sm text-slate-500 mb-4">DIME method life insurance needs + DI + LTC. Sources: LIMRA 2024, SOA mortality tables.</p>
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <FormInput id="replaceYrs" label="Income Replace Years" value={replaceYrs} onChange={v => setReplaceYrs(+v)} min={5} max={30} />
+                    <FormInput id="payoffRate" label="Payoff Rate" value={(payoffRate * 100).toFixed(0)} onChange={v => setPayoffRate(+v / 100)} suffix="%" />
                     <FormInput id="eduPerChild" label="Education/Child" value={eduPerChild} onChange={v => setEduPerChild(+v)} prefix="$" />
                     <FormInput id="finalExp" label="Final Expenses" value={finalExp} onChange={v => setFinalExp(+v)} prefix="$" />
+                    <FormInput id="ssBenefit" label="SS Survivor Benefit" value={ssBenefit} onChange={v => setSsBenefit(+v)} prefix="$" suffix="/mo" />
                     <FormInput id="diPct" label="DI Benefit %" value={(diPct * 100).toFixed(0)} onChange={v => setDiPct(+v / 100)} suffix="%" />
                   </div>
                 </CardContent>
               </Card>
-
-              {/* DIME Analysis */}
               <Card className="mb-4">
-                <CardHeader className="pb-2"><CardTitle className="text-base">DIME Need Analysis</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base">DIME Analysis</CardTitle></CardHeader>
                 <CardContent>
                   <table className="w-full text-sm">
                     <thead>
@@ -1079,28 +871,26 @@ export default function Calculators() {
                     <tbody>
                       {prResult.components.map(c => (
                         <tr key={c.label} className="border-b border-slate-100">
-                          <td className="py-1.5 px-2 text-slate-700">{c.label}</td>
-                          <td className="text-right px-2 font-medium">{fmt(c.amount)}</td>
+                          <td className="py-1.5 px-2 text-slate-600">{c.label}</td>
+                          <td className="text-right px-2 font-medium">{fmtSm(c.amount)}</td>
                         </tr>
                       ))}
                       <tr className="border-t-2 border-slate-300 bg-amber-50 font-bold">
-                        <td className="py-2 px-2">Total DIME Need</td>
-                        <td className="text-right px-2">{fmt(prResult.dimeNeed)}</td>
+                        <td className="py-2 px-2 text-amber-800">Total DIME Need</td>
+                        <td className="text-right px-2 text-amber-800">{fmtSm(prResult.dimeNeed)}</td>
                       </tr>
                       <tr className="border-b border-slate-100">
-                        <td className="py-1.5 px-2 text-green-700">− Existing Coverage</td>
-                        <td className="text-right px-2 text-green-700">−{fmt(prResult.existingCoverage)}</td>
+                        <td className="py-1.5 px-2 text-green-600">− Existing Coverage</td>
+                        <td className="text-right px-2 text-green-600">−{fmtSm(prResult.existingCoverage)}</td>
                       </tr>
                       <tr className="bg-red-50 font-bold">
                         <td className="py-2 px-2 text-red-700">Coverage Gap</td>
-                        <td className="text-right px-2 text-red-700">{fmt(prResult.gap)}</td>
+                        <td className="text-right px-2 text-red-700">{fmtSm(prResult.gap)}</td>
                       </tr>
                     </tbody>
                   </table>
                 </CardContent>
               </Card>
-
-              {/* Recommended Coverage */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Recommended Coverage</CardTitle></CardHeader>
                 <CardContent>
@@ -1136,8 +926,6 @@ export default function Calculators() {
                   </table>
                 </CardContent>
               </Card>
-
-              {/* Result Badges */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <ResultBadge label="DIME Need" value={fmtSm(prResult.dimeNeed)} variant="gld" />
                 <ResultBadge label="Coverage Gap" value={fmtSm(prResult.gap)} variant={prResult.gap === 0 ? 'grn' : 'red'} />
@@ -1154,7 +942,6 @@ export default function Calculators() {
                 <TrendingUp className="w-5 h-5 text-amber-600" /> Growth & Accumulation
               </h2>
               <p className="text-sm text-slate-500 mb-4">Multi-vehicle comparison: Taxable vs 401(k) vs Roth vs IUL vs FIA. Sources: Morningstar, Vanguard 2024.</p>
-
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1167,8 +954,6 @@ export default function Calculators() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Vehicle Comparison Table */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Vehicle Comparison ({grResult.yrs} years to retirement)</CardTitle></CardHeader>
                 <CardContent>
@@ -1196,8 +981,6 @@ export default function Calculators() {
                   </table>
                 </CardContent>
               </Card>
-
-              {/* Tax-Free Edge */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Tax-Free Edge Analysis</CardTitle></CardHeader>
                 <CardContent>
@@ -1208,7 +991,6 @@ export default function Calculators() {
                   <p className="text-xs text-slate-500 mt-1">This represents the additional after-tax wealth from tax-free growth vehicles (IRC §7702, §408A).</p>
                 </CardContent>
               </Card>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <ResultBadge label="Years to Retire" value={String(grResult.yrs)} variant="blu" />
                 <ResultBadge label="Best Vehicle" value="Roth/IUL" variant="grn" />
@@ -1218,7 +1000,6 @@ export default function Calculators() {
             </section>
           )}
 
-
           {/* ═══ PANEL 5: RETIREMENT ═══ */}
           {activePanel === 'retire' && (
             <section>
@@ -1226,7 +1007,6 @@ export default function Calculators() {
                 <Clock className="w-5 h-5 text-amber-600" /> Retirement Readiness
               </h2>
               <p className="text-sm text-slate-500 mb-4">Social Security claiming comparison + portfolio withdrawal analysis. Sources: SSA 2024, Trinity Study, Bengen Rule.</p>
-
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1238,8 +1018,6 @@ export default function Calculators() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* SS Claiming Comparison */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Social Security Claiming Comparison</CardTitle></CardHeader>
                 <CardContent>
@@ -1270,13 +1048,11 @@ export default function Calculators() {
                     </tbody>
                   </table>
                   <p className="text-xs text-slate-500 mt-2">
-                    <strong>Optimal claiming age: {rtResult.bestAge}</strong> — maximizes cumulative benefits to age 85 (average life expectancy).
+                    <strong>Optimal claiming age: {rtResult.bestAge}</strong> — maximizes cumulative benefits to age 85.
                     Delaying from 62 to 70 increases monthly benefit by ~77%.
                   </p>
                 </CardContent>
               </Card>
-
-              {/* Portfolio Withdrawal */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Portfolio Withdrawal Analysis</CardTitle></CardHeader>
                 <CardContent>
@@ -1291,31 +1067,22 @@ export default function Calculators() {
                         <td className="text-right font-medium">{fmt(rtResult.withdrawal)}</td>
                       </tr>
                       <tr className="border-b border-slate-100">
-                        <td className="py-1.5 text-slate-600">+ SS (age {rtResult.bestAge})</td>
-                        <td className="text-right font-medium">{fmt((rtResult.ssComparison.find(s => s.age === rtResult.bestAge)?.annual ?? 0))}/yr</td>
+                        <td className="py-1.5 text-slate-600">Monthly Retirement Income</td>
+                        <td className="text-right font-bold text-green-700">{fmt(rtResult.monthlyIncome)}</td>
                       </tr>
                       <tr className="border-b border-slate-100">
-                        <td className="py-1.5 text-slate-600">+ Pension</td>
-                        <td className="text-right font-medium">{fmt(pension * 12)}/yr</td>
-                      </tr>
-                      <tr className="border-t-2 border-slate-300 bg-green-50 font-bold">
-                        <td className="py-2 text-green-700">Total Monthly Income</td>
-                        <td className="text-right text-green-700">{fmt(rtResult.monthlyIncome)}/mo</td>
-                      </tr>
-                      <tr className="border-b border-slate-100">
-                        <td className="py-1.5 text-slate-600">RMD at 72 (est.)</td>
-                        <td className="text-right">{fmt(rtResult.rmd72)}/yr</td>
+                        <td className="py-1.5 text-slate-600">RMD at 72 (estimated)</td>
+                        <td className="text-right">{fmt(rtResult.rmd72)}</td>
                       </tr>
                     </tbody>
                   </table>
                 </CardContent>
               </Card>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <ResultBadge label="Best SS Age" value={String(rtResult.bestAge)} variant="grn" />
                 <ResultBadge label="Portfolio" value={fmtSm(rtResult.portfolioAtRetire)} variant="blu" />
                 <ResultBadge label="Monthly Income" value={fmt(rtResult.monthlyIncome)} variant="grn" />
-                <ResultBadge label="RMD at 72" value={fmtSm(rtResult.rmd72)} variant="gld" />
+                <ResultBadge label="RMD at 72" value={fmt(rtResult.rmd72)} variant="gld" />
               </div>
             </section>
           )}
@@ -1324,10 +1091,9 @@ export default function Calculators() {
           {activePanel === 'tax' && (
             <section>
               <h2 className="text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-amber-600" /> Tax Planning
+                <Building2 className="w-5 h-5 text-amber-600" /> Tax Optimization
               </h2>
-              <p className="text-sm text-slate-500 mb-4">Tax optimization strategies + Roth conversion explorer. Sources: IRS 2024 brackets, IRC §199A, §408A.</p>
-
+              <p className="text-sm text-slate-500 mb-4">Marginal bracket analysis + deduction strategies. Sources: IRS 2024, IRC §199A/§408A.</p>
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1336,10 +1102,8 @@ export default function Calculators() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Tax Strategies Table */}
               <Card className="mb-4">
-                <CardHeader className="pb-2"><CardTitle className="text-base">Tax Savings Strategies</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base">Tax Reduction Strategies</CardTitle></CardHeader>
                 <CardContent>
                   <table className="w-full text-sm">
                     <thead>
@@ -1358,44 +1122,39 @@ export default function Calculators() {
                         </tr>
                       ))}
                       <tr className="border-t-2 border-slate-300 bg-green-50 font-bold">
-                        <td className="py-2 px-2 text-green-700">Total Potential Savings</td>
-                        <td className="text-right px-2 text-green-700">{fmt(txResult.totalSaving)}</td>
-                        <td className="px-2 text-xs text-green-600">per year</td>
+                        <td className="py-2 px-2 text-green-800">TOTAL POTENTIAL SAVINGS</td>
+                        <td className="text-right px-2 text-green-800">{fmt(txResult.totalSaving)}/yr</td>
+                        <td className="px-2 text-xs text-green-600">{fmt(Math.round(txResult.totalSaving / 12))}/mo</td>
                       </tr>
                     </tbody>
                   </table>
                 </CardContent>
               </Card>
-
-              {/* Roth Conversion Explorer */}
               <Card className="mb-4">
-                <CardHeader className="pb-2"><CardTitle className="text-base">Roth Conversion Explorer</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base">Roth Conversion Analysis</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-800 mb-2">
-                      <strong>Convert {fmt(txResult.rothConversion.amount)} from Traditional to Roth</strong>
-                    </p>
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <div className="text-xs text-blue-600 font-medium">Tax Now</div>
-                        <div className="text-lg font-bold text-red-600">{fmt(txResult.rothConversion.taxNow)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-blue-600 font-medium">Tax-Free at 20yr</div>
-                        <div className="text-lg font-bold text-green-600">{fmt(txResult.rothConversion.taxFreeFuture)}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-blue-600 font-medium">Net Benefit</div>
-                        <div className="text-lg font-bold text-green-700">{fmt(txResult.rothConversion.netBenefit)}</div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-blue-600 mt-2">
-                      Sweet spot: Convert in low-income years (sabbatical, early retirement) to stay in lower brackets.
-                    </p>
-                  </div>
+                  <table className="w-full text-sm">
+                    <tbody>
+                      <tr className="border-b border-slate-100">
+                        <td className="py-1.5 text-slate-600">Conversion Amount</td>
+                        <td className="text-right font-medium">{fmt(txResult.rothConversion.amount)}</td>
+                      </tr>
+                      <tr className="border-b border-slate-100">
+                        <td className="py-1.5 text-slate-600">Tax Cost Now</td>
+                        <td className="text-right text-red-600">{fmt(txResult.rothConversion.taxNow)}</td>
+                      </tr>
+                      <tr className="border-b border-slate-100">
+                        <td className="py-1.5 text-slate-600">Tax-Free Future Value (20yr)</td>
+                        <td className="text-right text-green-600">{fmtSm(txResult.rothConversion.taxFreeFuture)}</td>
+                      </tr>
+                      <tr className="bg-green-50 font-bold">
+                        <td className="py-2 text-green-800">Net Tax Benefit</td>
+                        <td className="text-right text-green-800">{fmtSm(txResult.rothConversion.netBenefit)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </CardContent>
               </Card>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <ResultBadge label="Effective Rate" value={pct(txResult.effectiveRate)} variant="gld" />
                 <ResultBadge label="Marginal Rate" value={pct(txResult.marginalRate)} variant="red" />
@@ -1412,7 +1171,6 @@ export default function Calculators() {
                 <Scale className="w-5 h-5 text-amber-600" /> Estate Planning
               </h2>
               <p className="text-sm text-slate-500 mb-4">Estate tax analysis + ILIT strategy + document checklist. Sources: IRS 2024 exemption, IRC §2010.</p>
-
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1434,8 +1192,6 @@ export default function Calculators() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Estate Analysis */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Estate Tax Analysis</CardTitle></CardHeader>
                 <CardContent>
@@ -1469,8 +1225,6 @@ export default function Calculators() {
                   </table>
                 </CardContent>
               </Card>
-
-              {/* Document Checklist */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Estate Document Checklist</CardTitle></CardHeader>
                 <CardContent>
@@ -1504,7 +1258,6 @@ export default function Calculators() {
                   </table>
                 </CardContent>
               </Card>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <ResultBadge label="Estate Tax" value={fmtSm(esResult.estateTax)} variant={esResult.estateTax === 0 ? 'grn' : 'red'} />
                 <ResultBadge label="ILIT Saving" value={fmtSm(esResult.ilitSaving)} variant="grn" />
@@ -1521,7 +1274,6 @@ export default function Calculators() {
                 <GraduationCap className="w-5 h-5 text-amber-600" /> Education Planning
               </h2>
               <p className="text-sm text-slate-500 mb-4">529 plan projections + funding gap analysis. Sources: College Board 2024, Vanguard 529.</p>
-
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1534,8 +1286,6 @@ export default function Calculators() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Education Projection */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">529 Projection ({edResult.yrsToCollege} years to college)</CardTitle></CardHeader>
                 <CardContent>
@@ -1572,7 +1322,6 @@ export default function Calculators() {
                   )}
                 </CardContent>
               </Card>
-
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <ResultBadge label="Future Cost" value={fmtSm(edResult.totalFutureCost)} variant="gld" />
                 <ResultBadge label="Projected 529" value={fmtSm(edResult.totalProjected)} variant="grn" />
@@ -1588,115 +1337,36 @@ export default function Calculators() {
               <h2 className="text-xl font-bold text-slate-900 mb-1 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-amber-600" /> Comprehensive Cost vs. Benefit Analysis
               </h2>
-              <p className="text-sm text-slate-500 mb-4">Complete financial picture — what your client invests and what they receive across all recommended products, all 5 benefit dimensions, and any planning horizon.</p>
-
-              {/* Horizon Selector */}
+              <p className="text-sm text-slate-500 mb-4">Complete financial picture — what your client invests and what they receive across all products.</p>
               <Card className="mb-4">
-                <CardContent className="pt-4">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="text-xs font-bold text-slate-700">📅 Planning Horizon:</span>
-                    {[5, 10, 15, 20, 25, 30, 40].map(yr => (
-                      <Button key={yr} size="sm" variant={cbHorizons.includes(yr) ? 'default' : 'outline'}
-                        className="h-7 px-2.5 text-xs"
-                        onClick={() => setCbHorizons(prev => prev.includes(yr) ? prev.filter(h => h !== yr) : [...prev, yr].sort((a,b) => a - b))}>
-                        {yr}yr
-                      </Button>
-                    ))}
-                    <Button size="sm" variant={cbHorizons.includes(Math.max(1, 65 - age)) ? 'default' : 'outline'}
-                      className="h-7 px-2.5 text-xs"
-                      onClick={() => {
-                        const retYr = Math.max(1, 65 - age);
-                        setCbHorizons(prev => prev.includes(retYr) ? prev.filter(h => h !== retYr) : [...prev, retYr].sort((a,b) => a - b));
-                      }}>
-                      🎯 Retire ({Math.max(1, 65 - age)}yr)
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      <Input className="h-7 w-16 text-xs text-center" type="number" min={1} max={60}
-                        placeholder="Custom" value={cbCustomYr} onChange={e => setCbCustomYr(e.target.value)} />
-                      <Button size="sm" variant="outline" className="h-7 px-2 text-xs"
-                        onClick={() => {
-                          const yr = parseInt(cbCustomYr);
-                          if (yr >= 1 && yr <= 60 && !cbHorizons.includes(yr)) {
-                            setCbHorizons(prev => [...prev, yr].sort((a,b) => a - b));
-                            setCbCustomYr('');
-                          }
-                        }}>+ Add</Button>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-slate-400">Click year buttons to add/remove columns. Type any year (1-60) and click + Add.</p>
-                </CardContent>
-              </Card>
-
-              {/* Summary Cards */}
-              {horizonData.length > 0 && (() => {
-                const headline = horizonData[horizonData.length - 1];
-                return (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                    <div className="bg-gradient-to-br from-red-50 to-white border border-red-200 rounded-xl p-3 text-center">
-                      <div className="text-[10px] font-bold uppercase text-red-500 tracking-wide">{headline.yr}-Year Total Cost</div>
-                      <div className="text-xl font-extrabold text-red-700">{fmtSm(headline.cost)}</div>
-                      <div className="text-[11px] text-slate-500">{fmtSm(totalAnnualPremium)}/yr · {pct(totalIncome > 0 ? totalAnnualPremium / totalIncome : 0)} of income</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-50 to-white border border-green-200 rounded-xl p-3 text-center">
-                      <div className="text-[10px] font-bold uppercase text-green-500 tracking-wide">{headline.yr}-Year Total Benefit</div>
-                      <div className="text-xl font-extrabold text-green-700">{fmtSm(headline.benefit)}</div>
-                      <div className="text-[11px] text-slate-500">across all {recommendations.length} products</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-xl p-3 text-center">
-                      <div className="text-[10px] font-bold uppercase text-blue-500 tracking-wide">{headline.yr}-Year Net Value</div>
-                      <div className={`text-xl font-extrabold ${headline.net >= 0 ? 'text-green-700' : 'text-red-700'}`}>{fmtSm(headline.net)}</div>
-                      <div className="text-[11px] text-slate-500">benefit minus cost</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-xl p-3 text-center">
-                      <div className="text-[10px] font-bold uppercase text-amber-500 tracking-wide">{headline.yr}-Year ROI</div>
-                      <div className="text-xl font-extrabold text-amber-700">{headline.roi}:1</div>
-                      <div className="text-[11px] text-slate-500">for every $1 invested</div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Horizon Projection Table */}
-              <Card className="mb-4">
-                <CardHeader className="pb-2"><CardTitle className="text-base">Total Value Over Planning Horizons</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base">Multi-Horizon Analysis</CardTitle></CardHeader>
                 <CardContent>
-                  <p className="text-xs text-slate-500 mb-3">Actual dollar values at each milestone. Costs reflect paid-up status. Benefits include all dimensions: death benefit, cash value, income protection, tax savings, and legacy value.</p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50">
-                          <th className="text-left py-2 px-2 text-xs font-semibold text-slate-500">Metric</th>
-                          {horizonData.map(h => (
-                            <th key={h.yr} className="text-right py-2 px-2 text-xs font-semibold text-slate-500">{h.yr}yr</th>
-                          ))}
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50">
+                        <th className="text-left py-2 px-2 text-xs font-semibold text-slate-500">Horizon</th>
+                        <th className="text-right py-2 px-2 text-xs font-semibold text-slate-500">Total Cost</th>
+                        <th className="text-right py-2 px-2 text-xs font-semibold text-slate-500">Total Benefit</th>
+                        <th className="text-right py-2 px-2 text-xs font-semibold text-slate-500">Net Value</th>
+                        <th className="text-right py-2 px-2 text-xs font-semibold text-slate-500">ROI</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {horizonData.map(h => (
+                        <tr key={h.yr} className="border-b border-slate-100">
+                          <td className="py-1.5 px-2 font-medium text-slate-700">{h.yr} Years</td>
+                          <td className="text-right px-2 text-red-600">{fmtSm(h.cost)}</td>
+                          <td className="text-right px-2 text-green-600">{fmtSm(h.benefit)}</td>
+                          <td className={`text-right px-2 font-bold ${h.net >= 0 ? 'text-green-700' : 'text-red-700'}`}>{fmtSm(h.net)}</td>
+                          <td className="text-right px-2 font-bold text-amber-700">{h.roi}:1</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-slate-100">
-                          <td className="py-1.5 px-2 text-red-600 font-medium">Total Cost</td>
-                          {horizonData.map(h => <td key={h.yr} className="text-right px-2 text-red-600">{fmtSm(h.cost)}</td>)}
-                        </tr>
-                        <tr className="border-b border-slate-100">
-                          <td className="py-1.5 px-2 text-green-600 font-medium">Total Benefit</td>
-                          {horizonData.map(h => <td key={h.yr} className="text-right px-2 text-green-600">{fmtSm(h.benefit)}</td>)}
-                        </tr>
-                        <tr className="border-b border-slate-100 bg-slate-50 font-bold">
-                          <td className="py-1.5 px-2">Net Value</td>
-                          {horizonData.map(h => <td key={h.yr} className={`text-right px-2 ${h.net >= 0 ? 'text-green-700' : 'text-red-700'}`}>{fmtSm(h.net)}</td>)}
-                        </tr>
-                        <tr className="border-b border-slate-100">
-                          <td className="py-1.5 px-2 text-amber-600 font-medium">ROI</td>
-                          {horizonData.map(h => <td key={h.yr} className="text-right px-2 text-amber-600 font-bold">{h.roi}:1</td>)}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </CardContent>
               </Card>
-
-              {/* Sparkline Bar Chart */}
               <Card className="mb-4">
-                <CardHeader className="pb-2"><CardTitle className="text-base">Cost vs. Benefit Over Time</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base">Visual Comparison</CardTitle></CardHeader>
                 <CardContent>
                   {horizonData.length > 0 && (() => {
                     const maxVal = Math.max(...horizonData.map(h => Math.max(h.cost, h.benefit)));
@@ -1723,13 +1393,11 @@ export default function Calculators() {
                   })()}
                 </CardContent>
               </Card>
-
-              {/* Bottom Line */}
               {horizonData.length > 0 && (() => {
                 const h = horizonData[horizonData.length - 1];
                 return (
                   <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-xl p-4 mb-4">
-                    <h3 className="text-sm font-bold mb-1">📊 Bottom Line</h3>
+                    <h3 className="text-sm font-bold mb-1">Bottom Line</h3>
                     <p className="text-sm leading-relaxed">
                       Over a {h.yr}-year planning horizon, {clientName || 'the client'} invests {fmtSm(h.cost)} in comprehensive financial protection
                       and receives {fmtSm(h.benefit)} in total value — a {h.roi}:1 return on every dollar invested.
@@ -1749,7 +1417,6 @@ export default function Calculators() {
                 <GitCompare className="w-5 h-5 text-amber-600" /> Strategy Comparison
               </h2>
               <p className="text-sm text-slate-500 mb-4">Compare preset strategies across all financial dimensions. Sources: Morningstar, Kitces Research 2024.</p>
-
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <div className="overflow-x-auto">
@@ -1767,7 +1434,7 @@ export default function Calculators() {
                           <tr key={dim} className="border-b border-slate-100">
                             <td className="py-1.5 px-2 font-medium text-slate-700">{dim}</td>
                             {STRATEGIES.map(s => {
-                              const val = s.scores[dim as keyof typeof s.scores] ?? 0;
+                              const val = s.scores[dim] ?? 0;
                               return (
                                 <td key={s.name} className="text-center px-2">
                                   <div className="flex items-center justify-center gap-0.5">
@@ -1804,19 +1471,13 @@ export default function Calculators() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Strategy Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {STRATEGIES.map(s => (
                   <Card key={s.name} className="border-l-4" style={{ borderLeftColor: s.color }}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">{s.name}</CardTitle>
-                    </CardHeader>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">{s.name}</CardTitle></CardHeader>
                     <CardContent>
                       <p className="text-xs text-slate-600 mb-2">{s.description}</p>
-                      <div className="text-xs text-slate-500">
-                        <strong>Products:</strong> {s.products.join(', ')}
-                      </div>
+                      <div className="text-xs text-slate-500"><strong>Products:</strong> {s.products.join(', ')}</div>
                     </CardContent>
                   </Card>
                 ))}
@@ -1831,16 +1492,12 @@ export default function Calculators() {
                 <FileText className="w-5 h-5 text-amber-600" /> Executive Summary
               </h2>
               <p className="text-sm text-slate-500 mb-4">Complete financial snapshot for {clientName || 'Client'}.</p>
-
-              {/* Key Metrics Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <ResultBadge label="Health Score" value={`${scorecard.pctScore}%`} variant={scorecard.pctScore >= 80 ? 'grn' : scorecard.pctScore >= 60 ? 'gld' : 'red'} />
                 <ResultBadge label="Save Rate" value={pct(cfResult.saveRate)} variant={cfResult.saveRate >= 0.2 ? 'grn' : 'gld'} />
                 <ResultBadge label="Protection Gap" value={fmtSm(prResult.gap)} variant={prResult.gap === 0 ? 'grn' : 'red'} />
                 <ResultBadge label="Retire Income" value={fmt(rtResult.monthlyIncome) + '/mo'} variant="grn" />
               </div>
-
-              {/* Summary Table */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Financial Summary</CardTitle></CardHeader>
                 <CardContent>
@@ -1882,7 +1539,7 @@ export default function Calculators() {
                         <td className="py-1.5 px-2 font-medium">Tax</td>
                         <td className="text-center px-2"><ScoreBadge score={scores.tax} /></td>
                         <td className="px-2 text-xs text-slate-600">Eff rate {pct(txResult.effectiveRate)}, saving {fmtSm(txResult.totalSaving)}/yr</td>
-                        <td className="px-2 text-xs text-slate-500">Maximize HSA + 401(k) + Roth</td>
+                        <td className="px-2 text-xs text-slate-500">{txResult.totalSaving > 5000 ? 'Implement tax strategies' : 'Optimized'}</td>
                       </tr>
                       <tr className="border-b border-slate-100">
                         <td className="py-1.5 px-2 font-medium">Estate</td>
@@ -1900,8 +1557,6 @@ export default function Calculators() {
                   </table>
                 </CardContent>
               </Card>
-
-              {/* Total Investment Summary */}
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-base">Total Investment Summary</CardTitle></CardHeader>
                 <CardContent>
@@ -1934,8 +1589,6 @@ export default function Calculators() {
                 <ListChecks className="w-5 h-5 text-amber-600" /> 12-Month Action Plan
               </h2>
               <p className="text-sm text-slate-500 mb-4">Prioritized implementation timeline with pace options.</p>
-
-              {/* Pace Selector */}
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <div className="flex items-center gap-3">
@@ -1950,8 +1603,6 @@ export default function Calculators() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Action Timeline */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Implementation Timeline — {pace.charAt(0).toUpperCase() + pace.slice(1)} Pace</CardTitle></CardHeader>
                 <CardContent>
@@ -1988,8 +1639,6 @@ export default function Calculators() {
                   </table>
                 </CardContent>
               </Card>
-
-              {/* Next Steps */}
               <div className="bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-xl p-4">
                 <h3 className="text-sm font-bold text-amber-800 mb-2">Immediate Next Steps</h3>
                 <ol className="space-y-1 text-xs text-amber-700">
@@ -2010,8 +1659,6 @@ export default function Calculators() {
                 <BookOpen className="w-5 h-5 text-amber-600" /> References & Due Diligence
               </h2>
               <p className="text-sm text-slate-500 mb-4">Calculation methodology, data sources, and compliance checklist.</p>
-
-              {/* Calculation Methods */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Calculation Methods</CardTitle></CardHeader>
                 <CardContent>
@@ -2035,8 +1682,6 @@ export default function Calculators() {
                   </table>
                 </CardContent>
               </Card>
-
-              {/* Due Diligence Checklist */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Due Diligence Checklist</CardTitle></CardHeader>
                 <CardContent>
@@ -2060,8 +1705,6 @@ export default function Calculators() {
                   </table>
                 </CardContent>
               </Card>
-
-              {/* Data Sources */}
               <Card className="mb-4">
                 <CardHeader className="pb-2"><CardTitle className="text-base">Data Sources</CardTitle></CardHeader>
                 <CardContent>
@@ -2079,8 +1722,6 @@ export default function Calculators() {
                   </ul>
                 </CardContent>
               </Card>
-
-              {/* Disclaimer */}
               <div className="bg-slate-100 border border-slate-200 rounded-lg p-4 text-xs text-slate-500">
                 <p className="font-bold text-slate-600 mb-1">Important Disclosures</p>
                 <p>
@@ -2096,6 +1737,59 @@ export default function Calculators() {
 
         </div>
       </main>
+
+      {/* ─── SAVE DIALOG ─── */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save Calculator Session</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label className="text-sm">Session Name</Label>
+              <Input value={sessionName} onChange={e => setSessionName(e.target.value)} placeholder="e.g. John Smith - Initial Review" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveConfirm} disabled={!sessionName.trim() || saveMut.isPending}>
+              {saveMut.isPending ? 'Saving...' : 'Save Session'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── LOAD DIALOG ─── */}
+      <Dialog open={showLoadDialog} onOpenChange={setShowLoadDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Load Saved Session</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-80 overflow-y-auto space-y-2 py-2">
+            {sessionsQuery.data && sessionsQuery.data.length > 0 ? (
+              sessionsQuery.data.map((s: any) => (
+                <div key={s.id} className="flex items-center justify-between border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition-colors">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{s.name}</p>
+                    <p className="text-xs text-slate-500">{new Date(s.updatedAt).toLocaleDateString()} &middot; {s.calculatorType}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" onClick={() => handleLoad(s.id)} className="text-xs">
+                      <FolderOpen className="w-3 h-3 mr-1" /> Load
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { if (confirm('Delete this session?')) deleteMut.mutate({ id: s.id }); }}
+                      className="text-xs text-red-500 hover:text-red-700">
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-slate-500 text-center py-8">No saved sessions yet. Save your first session to see it here.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
