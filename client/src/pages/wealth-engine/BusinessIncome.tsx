@@ -50,6 +50,8 @@ export default function BusinessIncome() {
   // Expandable sections
   const [showChannels, setShowChannels] = useState(false);
   const [showProducts, setShowProducts] = useState(false);
+  const [showBudget, setShowBudget] = useState(false);
+  const [channelBudgets, setChannelBudgets] = useState<Record<string, number>>({});
 
   // Mutations
   const simMutation = trpc.calculatorEngine.bieSimulate.useMutation({ onError: (e) => toast.error(e.message) });
@@ -427,6 +429,112 @@ export default function BusinessIncome() {
               </p>
             </CardContent>
           )}
+        </Card>
+
+        {/* Channel Budget Allocator */}
+        <Card className="bg-card/60 border-border/50">
+          <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowBudget(v => !v)}>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Calculator className="w-4 h-4 text-accent" /> Channel Budget Allocator
+              </CardTitle>
+              <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${showBudget ? "rotate-90" : ""}`} />
+            </div>
+            <CardDescription className="text-xs">Set monthly spend per channel → see projected leads, clients, revenue, and CAC</CardDescription>
+          </CardHeader>
+          {showBudget && channelsQ.data && (() => {
+            const channels = channelsQ.data as Array<{ key: string; name: string; cpl: number; cv: number; revPerClient: number; ltv: number }>;
+            const rows = channels.map(ch => {
+              const monthlySpend = channelBudgets[ch.key] ?? 0;
+              const annualSpend = monthlySpend * 12;
+              const leads = ch.cpl > 0 ? annualSpend / ch.cpl : 0;
+              const clients = leads * ch.cv;
+              const revenue = clients * ch.revPerClient;
+              return { ...ch, monthlySpend, annualSpend, leads, clients, revenue };
+            });
+            const totals = rows.reduce(
+              (acc, r) => ({
+                spend: acc.spend + r.annualSpend,
+                leads: acc.leads + r.leads,
+                clients: acc.clients + r.clients,
+                revenue: acc.revenue + r.revenue,
+              }),
+              { spend: 0, leads: 0, clients: 0, revenue: 0 },
+            );
+            const cac = totals.clients > 0 ? totals.spend / totals.clients : 0;
+            const avgLtv = rows.filter(r => r.monthlySpend > 0).reduce((s, r) => s + r.ltv, 0) /
+              (rows.filter(r => r.monthlySpend > 0).length || 1);
+
+            return (
+              <CardContent className="space-y-4">
+                {/* Summary metrics */}
+                {totals.spend > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {[
+                      { label: "Annual Spend", value: fmt(totals.spend) },
+                      { label: "Leads", value: Math.round(totals.leads).toLocaleString() },
+                      { label: "Clients", value: Math.round(totals.clients).toLocaleString() },
+                      { label: "CAC", value: fmt(cac) },
+                      { label: "LTV:CAC", value: cac > 0 ? `${(avgLtv / cac).toFixed(1)}x` : "—" },
+                    ].map(m => (
+                      <div key={m.label} className="p-2 rounded bg-card/60 border border-border/30 text-center">
+                        <p className="text-[9px] text-muted-foreground uppercase">{m.label}</p>
+                        <p className="text-sm font-mono font-semibold">{m.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[600px]">
+                    <TableHeader>
+                      <TableRow className="border-border">
+                        <TableHead className="text-[10px]">Channel</TableHead>
+                        <TableHead className="text-[10px] w-28">Monthly $</TableHead>
+                        <TableHead className="text-[10px] text-right">Leads/yr</TableHead>
+                        <TableHead className="text-[10px] text-right">Clients/yr</TableHead>
+                        <TableHead className="text-[10px] text-right">Revenue/yr</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rows.map(r => (
+                        <TableRow key={r.key} className="border-border/30">
+                          <TableCell className="text-xs py-1 font-medium">{r.name}</TableCell>
+                          <TableCell className="py-1">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={100}
+                              value={channelBudgets[r.key] ?? ""}
+                              placeholder="0"
+                              onChange={e => setChannelBudgets(prev => ({ ...prev, [r.key]: Number(e.target.value) || 0 }))}
+                              className="h-7 text-xs font-mono w-24"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs text-right py-1 font-mono">{r.monthlySpend > 0 ? Math.round(r.leads).toLocaleString() : "—"}</TableCell>
+                          <TableCell className="text-xs text-right py-1 font-mono">{r.monthlySpend > 0 ? Math.round(r.clients).toLocaleString() : "—"}</TableCell>
+                          <TableCell className="text-xs text-right py-1 font-mono text-accent">{r.monthlySpend > 0 ? fmt(r.revenue) : "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                      {totals.spend > 0 && (
+                        <TableRow className="border-border font-semibold">
+                          <TableCell className="text-xs py-1.5">Total</TableCell>
+                          <TableCell className="text-xs py-1.5 font-mono">{fmt(totals.spend / 12)}/mo</TableCell>
+                          <TableCell className="text-xs text-right py-1.5 font-mono">{Math.round(totals.leads).toLocaleString()}</TableCell>
+                          <TableCell className="text-xs text-right py-1.5 font-mono">{Math.round(totals.clients).toLocaleString()}</TableCell>
+                          <TableCell className="text-xs text-right py-1.5 font-mono text-accent">{fmt(totals.revenue)}</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Enter monthly marketing spend per channel. Projections use each channel&apos;s CPL, conversion rate, and avg revenue per client.
+                  {cac > 0 && avgLtv / cac > 3 && " Your LTV:CAC ratio exceeds 3:1 — healthy unit economics."}
+                  {cac > 0 && avgLtv / cac < 3 && avgLtv / cac > 1 && " Your LTV:CAC is under 3:1 — consider shifting spend to higher-ROI channels."}
+                </p>
+              </CardContent>
+            );
+          })()}
         </Card>
 
         {/* Product Library Reference */}
