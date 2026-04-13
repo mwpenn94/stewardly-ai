@@ -1111,3 +1111,32 @@ next pass. When two processes edit the same row concurrently, resolve
 by **evidence recency** (latest sourceNotes or commit SHA wins), and
 log the conflict in section 4.
 
+
+
+---
+
+# ═══ Continuous Build Loop Sections (Appendix D scaffold) ═══
+
+## Reachability Audit
+| Pass | Persona | Feature | Predicted Path | Actual Result | Screenshot |
+|---|---|---|---|---|---|
+
+## Angle Log
+
+## Angle Glossary
+| Angle ID | Description | Disjoint from |
+|---|---|---|
+
+## Persona Cursor
+1
+
+## Metrics
+<!-- See Appendix A of build loop prompt for full schema -->
+
+## Arc Signal
+
+## Open Rows
+<!-- Active recommendations from parallel processes and prior passes -->
+
+## Closed Rows
+<!-- Historical record; closure requires SHA + evidence + reproduce instruction -->
