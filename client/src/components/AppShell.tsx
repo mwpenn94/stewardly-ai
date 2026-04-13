@@ -255,13 +255,13 @@ export default function AppShell({ children, title }: AppShellProps) {
           when a long-running fetch starts/stops so SR users know
           loading is in flight.
 
-          Page content — scrollable. pb-16 lg:pb-0 reserves space for
-          the mobile bottom tab bar so the last row of content isn't
-          covered.
+          Page content — scrollable. pb-20 lg:pb-0 reserves space for
+          the mobile bottom tab bar (h-14 = 56px) plus safe-area-bottom
+          on notched devices so the last row of content isn't covered.
         */}
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto pb-16 lg:pb-0"
+          className="flex-1 overflow-y-auto pb-20 lg:pb-0"
           tabIndex={-1}
           aria-label="Main content"
           aria-busy={globalBusy ? true : undefined}

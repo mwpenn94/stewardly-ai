@@ -2100,7 +2100,7 @@ export default function Chat() {
       <main
         id="chat-main"
         tabIndex={-1}
-        className="flex-1 flex flex-col min-w-0 pb-16 lg:pb-0"
+        className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-0"
         aria-label="Chat"
         aria-busy={isStreaming ? true : undefined}
       >
@@ -2544,7 +2544,7 @@ export default function Chat() {
                 {showAddMenu && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} aria-hidden="true" />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-48 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-44 sm:w-48 animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <button
                         className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
                         onClick={() => { fileInputRef.current?.click(); setShowAddMenu(false); }}
@@ -2671,7 +2671,7 @@ export default function Chat() {
                 {showModeMenu && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowModeMenu(false)} aria-hidden="true" />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-52 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-48 sm:w-52 max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Focus</div>
                       {FOCUS_OPTIONS.map(opt => (
                         <button
@@ -2751,7 +2751,7 @@ export default function Chat() {
                 aria-label={`Current model: ${modelLabel}. Tap to change.`}
               >
                 <Brain className="w-3 h-3" />
-                <span className="max-w-[60px] truncate">{modelLabel}</span>
+                <span className="max-w-[80px] truncate" title={modelLabel}>{modelLabel}</span>
               </button>
 
               {/* Mobile model menu (shared with desktop — rendered here for mobile access) */}
@@ -2854,7 +2854,7 @@ export default function Chat() {
                 {showModelMenu && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowModelMenu(false)} aria-hidden="true" />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-56 max-h-72 overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-52 sm:w-56 max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <div className="px-2 py-1 text-[9px] text-muted-foreground/60 uppercase tracking-wider">Select models (multi = consensus)</div>
                       {(() => {
                         let lastFamily = "";
