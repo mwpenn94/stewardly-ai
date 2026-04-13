@@ -332,17 +332,47 @@ export default function Calculators() {
   const scores = useMemo(() => {
     const s: Record<string, number> = {};
     const sr = totalIncome > 0 ? (grossMonthly - housing - transport - food - insurancePmt - debtPmt - otherExp) / grossMonthly : 0;
-    s.cash = sr >= 0.2 ? 3 : sr >= 0.1 ? 2 : sr > 0 ? 1 : 0;
+    let cashBase = sr >= 0.2 ? 3 : sr >= 0.1 ? 2 : sr > 0 ? 1 : 0;
+    // Business: penalize if seasonal with thin margins, reward diversified streams
+    if (isBiz) {
+      const margin = bizRevenue > 0 ? (bizRevenue - bizExpenses) / bizRevenue : 0;
+      if (bizSeasonality !== 'even' && margin < 0.15) cashBase = Math.max(0, cashBase - 1);
+      if (bizRevenueStreams >= 3 && margin >= 0.2) cashBase = Math.min(3, cashBase + 1);
+      if (bizDebtService > bizRevenue * 0.3) cashBase = Math.max(0, cashBase - 1);
+    }
+    s.cash = cashBase;
     const dimeNeed = dep > 0 ? income * 10 + mortgage + debt + dep * 50000 + 25000 : income * 6 + debt;
-    s.protect = existIns >= dimeNeed ? 3 : existIns >= dimeNeed * 0.5 ? 2 : existIns > 0 ? 1 : 0;
+    let protectBase = existIns >= dimeNeed ? 3 : existIns >= dimeNeed * 0.5 ? 2 : existIns > 0 ? 1 : 0;
+    // Business: key person risk and buy-sell gap
+    if (isBiz) {
+      if (bizKeyPerson && !bizBuySell) protectBase = Math.max(0, protectBase - 1);
+      if (bizBuySell) protectBase = Math.min(3, protectBase + (protectBase < 3 ? 1 : 0));
+    }
+    s.protect = protectBase;
     s.growth = monthlySav >= grossMonthly * 0.15 ? 3 : monthlySav >= grossMonthly * 0.1 ? 2 : monthlySav > 0 ? 1 : 0;
+    // Business: high growth rate with reinvestment boosts growth score
+    if (isBiz && bizGrowthRate >= 0.15 && bizRevenue > 0) s.growth = Math.min(3, s.growth + 1);
     s.retire = retirement401k >= totalIncome * 3 ? 3 : retirement401k >= totalIncome ? 2 : retirement401k > 0 ? 1 : 0;
-    s.tax = retirement401k >= 23500 && hsaContrib > 0 ? 3 : retirement401k >= 10000 ? 2 : 1;
-    s.estate = willStatus === 'trust' ? 3 : willStatus === 'will' ? 2 : 1;
+    let taxBase = retirement401k >= 23500 && hsaContrib > 0 ? 3 : retirement401k >= 10000 ? 2 : 1;
+    // Business: entity structure optimization (S-Corp/C-Corp better than sole prop for tax)
+    if (isBiz) {
+      if (bizEntityType === 'scorp' || bizEntityType === 'ccorp') taxBase = Math.min(3, taxBase + 1);
+      if (bizEntityType === 'sole_prop' && bizRevenue > 100000) taxBase = Math.max(0, taxBase - 1);
+    }
+    s.tax = taxBase;
+    let estateBase = willStatus === 'trust' ? 3 : willStatus === 'will' ? 2 : 1;
+    // Business: succession plan impact on estate score
+    if (isBiz) {
+      if (bizSuccessionPlan === 'none') estateBase = Math.max(0, estateBase - 1);
+      if (bizSuccessionPlan === 'documented' && bizBuySell) estateBase = Math.min(3, estateBase + 1);
+    }
+    s.estate = estateBase;
     s.edu = dep === 0 ? 3 : current529 >= targetCost * dep * 0.5 ? 3 : current529 > 0 ? 2 : 1;
     return s;
   }, [totalIncome, grossMonthly, housing, transport, food, insurancePmt, debtPmt, otherExp,
-    dep, income, mortgage, debt, existIns, monthlySav, retirement401k, hsaContrib, willStatus, current529, targetCost]);
+    dep, income, mortgage, debt, existIns, monthlySav, retirement401k, hsaContrib, willStatus, current529, targetCost,
+    isBiz, bizRevenue, bizExpenses, bizSeasonality, bizRevenueStreams, bizDebtService,
+    bizKeyPerson, bizBuySell, bizGrowthRate, bizEntityType, bizSuccessionPlan]);
 
   const scorecard = useMemo(() => computeScorecard(scores), [scores]);
   const recommendations = useMemo(() => buildRecommendations(age, totalIncome, dep, nw, existIns, mortgage, debt, isBiz, scores), [age, totalIncome, dep, nw, existIns, mortgage, debt, isBiz, scores]);
@@ -472,7 +502,15 @@ export default function Calculators() {
           {activePanel === 'estate' && <EstatePanel {...pp} />}
           {activePanel === 'edu' && <EducationPanel {...pp} />}
           {activePanel === 'costben' && <CostBenefitPanel {...pp} horizonData={horizonData} />}
-          {activePanel === 'compare' && <StrategyComparePanel {...pp} />}
+          {activePanel === 'compare' && <StrategyComparePanel {...pp} savedScenarios={
+            (sessionsQuery.data || []).map((s: any) => ({
+              id: s.id,
+              name: s.name,
+              inputsJson: typeof s.inputsJson === 'string' ? JSON.parse(s.inputsJson) : (s.inputsJson || {}),
+              resultsJson: typeof s.resultsJson === 'string' ? JSON.parse(s.resultsJson) : s.resultsJson,
+              updatedAt: s.updatedAt,
+            }))
+          } />}
           {activePanel === 'summary' && <SummaryPanel {...pp} />}
           {activePanel === 'timeline' && <ActionPlanPanel {...pp} />}
           {activePanel === 'refs' && <ReferencesPanel />}

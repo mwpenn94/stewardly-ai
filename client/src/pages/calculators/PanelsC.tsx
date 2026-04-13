@@ -1,16 +1,28 @@
 /* Panels C: Cost-Benefit (9), Strategy Compare (10), Summary (11), Action Plan (12), References (13) */
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
-  BarChart3, GitCompare, FileText, ListChecks, BookOpen
+  BarChart3, GitCompare, FileText, ListChecks, BookOpen, Layers
 } from 'lucide-react';
 import {
   fmt, fmtSm, pct,
   STRATEGIES, CALC_METHODS, DUE_DILIGENCE, buildActionPlan,
+  computeScorecard, calcCashFlow, calcProtection, calcGrowth, calcRetirement, calcTax, calcEstate, calcEducation,
+  getBracketRate, RATES,
   type HorizonData
 } from './engine';
 import { ResultBadge, type PanelProps } from './shared';
+
+export interface SavedScenario {
+  id: number;
+  name: string;
+  inputsJson: Record<string, any>;
+  resultsJson?: Record<string, any>;
+  updatedAt: string;
+}
 
 export function CostBenefitPanel(p: PanelProps & { horizonData: HorizonData[] }) {
   return (
@@ -92,7 +104,35 @@ export function CostBenefitPanel(p: PanelProps & { horizonData: HorizonData[] })
   );
 }
 
-export function StrategyComparePanel(p: PanelProps) {
+export function StrategyComparePanel(p: PanelProps & { savedScenarios?: SavedScenario[] }) {
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const toggleScenario = (id: number) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : prev.length >= 3 ? prev : [...prev, id]);
+  };
+
+  /* Compute metrics for selected scenarios */
+  const scenarioMetrics = (p.savedScenarios || []).filter(s => selectedIds.includes(s.id)).map(s => {
+    const d = s.inputsJson || {};
+    const ti = (d.income || 0) + (d.spouseIncome || 0);
+    const gm = Math.round(ti / 12);
+    const sr = ti > 0 ? (gm - (d.housing||0) - (d.transport||0) - (d.food||0) - (d.insurancePmt||0) - (d.debtPmt||0) - (d.otherExp||0)) / gm : 0;
+    const scores: Record<string,number> = {};
+    scores.cash = sr >= 0.2 ? 3 : sr >= 0.1 ? 2 : sr > 0 ? 1 : 0;
+    const dimeNeed = (d.dep||0) > 0 ? (d.income||0)*10 + (d.mortgage||0) + (d.debt||0) + (d.dep||0)*50000 + 25000 : (d.income||0)*6 + (d.debt||0);
+    scores.protect = (d.existIns||0) >= dimeNeed ? 3 : (d.existIns||0) >= dimeNeed*0.5 ? 2 : (d.existIns||0) > 0 ? 1 : 0;
+    scores.growth = (d.monthlySav||0) >= gm*0.15 ? 3 : (d.monthlySav||0) >= gm*0.1 ? 2 : (d.monthlySav||0) > 0 ? 1 : 0;
+    scores.retire = (d.retirement401k||0) >= ti*3 ? 3 : (d.retirement401k||0) >= ti ? 2 : (d.retirement401k||0) > 0 ? 1 : 0;
+    scores.tax = (d.retirement401k||0) >= 23500 && (d.hsaContrib||0) > 0 ? 3 : (d.retirement401k||0) >= 10000 ? 2 : 1;
+    scores.estate = d.willStatus === 'trust' ? 3 : d.willStatus === 'will' ? 2 : 1;
+    scores.edu = (d.dep||0) === 0 ? 3 : (d.current529||0) >= (d.targetCost||120000)*(d.dep||0)*0.5 ? 3 : (d.current529||0) > 0 ? 2 : 1;
+    const sc = computeScorecard(scores);
+    const stRate = (d.stateRate || 0.05);
+    const txRate = getBracketRate(ti, (d.filing||'mfj') === 'mfj' ? RATES.bracketsMFJ : RATES.bracketsSingle) + stRate;
+    const cf = calcCashFlow(gm, txRate, d.housing||0, d.transport||0, d.food||0, d.insurancePmt||0, d.debtPmt||0, d.otherExp||0, d.emMonths||6, d.savings||0);
+    const pr = calcProtection(ti, d.dep||0, d.mortgage||0, d.debt||0, d.existIns||0, d.age||40, d.replaceYrs||10, d.payoffRate||0, d.eduPerChild||50000, d.finalExp||25000, d.ssBenefit||2500, d.diPct||0.6);
+    return { id: s.id, name: s.name, income: ti, healthScore: sc.pctScore, healthTotal: sc.overall, healthMax: sc.maxScore, surplus: cf.surplus, saveRate: cf.saveRate, protGap: pr.gap, scores };
+  });
+
   return (
     <section>
       <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
@@ -167,7 +207,7 @@ export function StrategyComparePanel(p: PanelProps) {
           </table>
         </CardContent>
       </Card>
-      <div className="bg-gradient-to-r from-primary/10 to-primary/15 border border-primary/30 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-primary/10 to-primary/15 border border-primary/30 rounded-xl p-4 mb-6">
         <h3 className="text-sm font-bold text-primary mb-2">Recommendation</h3>
         <p className="text-sm text-primary">
           Based on the client profile, the <strong>Hybrid IUL + FIA</strong> strategy provides the best balance of
@@ -175,6 +215,118 @@ export function StrategyComparePanel(p: PanelProps) {
           This aligns with the client's {p.riskTolerance} risk tolerance and {p.isBiz ? 'business owner' : 'employee'} status.
         </p>
       </div>
+
+      {/* ═══ SAVED SCENARIO COMPARISON ═══ */}
+      <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2 mt-8">
+        <Layers className="w-5 h-5 text-primary" /> Scenario Comparison
+      </h2>
+      <p className="text-sm text-muted-foreground mb-4">Select up to 3 saved sessions to compare side-by-side.</p>
+      {(!p.savedScenarios || p.savedScenarios.length === 0) ? (
+        <Card><CardContent className="py-8 text-center text-sm text-muted-foreground">
+          No saved scenarios yet. Save your current session first, then adjust inputs and save again to compare different plans.
+        </CardContent></Card>
+      ) : (
+        <>
+          <Card className="mb-4">
+            <CardHeader className="pb-2"><CardTitle className="text-base">Select Scenarios</CardTitle></CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {p.savedScenarios.map(s => (
+                  <label key={s.id} className="flex items-center gap-3 p-2 rounded-lg border border-border hover:bg-card transition-colors cursor-pointer">
+                    <Checkbox checked={selectedIds.includes(s.id)} onCheckedChange={() => toggleScenario(s.id)}
+                      disabled={!selectedIds.includes(s.id) && selectedIds.length >= 3} />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-foreground">{s.name}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{new Date(s.updatedAt).toLocaleDateString()}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          {scenarioMetrics.length >= 2 && (
+            <Card className="mb-4">
+              <CardHeader className="pb-2"><CardTitle className="text-base">Side-by-Side Comparison</CardTitle></CardHeader>
+              <CardContent>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-background">
+                      <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Metric</th>
+                      {scenarioMetrics.map(m => (
+                        <th key={m.id} className="text-center py-2 px-2 text-xs font-semibold text-primary">{m.name}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-border/50">
+                      <td className="py-1.5 px-2 text-muted-foreground">Health Score</td>
+                      {scenarioMetrics.map(m => (
+                        <td key={m.id} className="text-center px-2 font-bold">
+                          <span className={m.healthScore >= 80 ? 'text-green-400' : m.healthScore >= 60 ? 'text-primary' : 'text-red-400'}>
+                            {m.healthScore}%
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-1">({m.healthTotal}/{m.healthMax})</span>
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="border-b border-border/50">
+                      <td className="py-1.5 px-2 text-muted-foreground">Total Income</td>
+                      {scenarioMetrics.map(m => <td key={m.id} className="text-center px-2 text-foreground/80">{fmtSm(m.income)}</td>)}
+                    </tr>
+                    <tr className="border-b border-border/50">
+                      <td className="py-1.5 px-2 text-muted-foreground">Monthly Surplus</td>
+                      {scenarioMetrics.map(m => (
+                        <td key={m.id} className={`text-center px-2 font-medium ${m.surplus >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {fmt(m.surplus)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="border-b border-border/50">
+                      <td className="py-1.5 px-2 text-muted-foreground">Savings Rate</td>
+                      {scenarioMetrics.map(m => <td key={m.id} className="text-center px-2 text-foreground/80">{pct(m.saveRate)}</td>)}
+                    </tr>
+                    <tr className="border-b border-border/50">
+                      <td className="py-1.5 px-2 text-muted-foreground">Protection Gap</td>
+                      {scenarioMetrics.map(m => (
+                        <td key={m.id} className={`text-center px-2 font-medium ${m.protGap <= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {m.protGap <= 0 ? 'Covered' : fmtSm(m.protGap)}
+                        </td>
+                      ))}
+                    </tr>
+                    {['cash', 'protect', 'growth', 'retire', 'tax', 'estate', 'edu'].map(domain => (
+                      <tr key={domain} className="border-b border-border/50">
+                        <td className="py-1.5 px-2 text-muted-foreground capitalize">{domain === 'edu' ? 'Education' : domain === 'protect' ? 'Protection' : domain} Score</td>
+                        {scenarioMetrics.map(m => {
+                          const v = m.scores[domain] || 0;
+                          return (
+                            <td key={m.id} className="text-center px-2">
+                              <span className={v >= 3 ? 'text-green-400' : v >= 2 ? 'text-primary' : 'text-red-400'}>
+                                {v}/3
+                              </span>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+          {scenarioMetrics.length >= 2 && (() => {
+            const best = scenarioMetrics.reduce((a, b) => a.healthScore >= b.healthScore ? a : b);
+            return (
+              <div className="bg-gradient-to-r from-green-500/10 to-green-500/5 border border-green-500/30 rounded-xl p-4">
+                <h3 className="text-sm font-bold text-green-400 mb-1">Best Scenario: {best.name}</h3>
+                <p className="text-sm text-green-400/80">
+                  With a health score of {best.healthScore}% and monthly surplus of {fmt(best.surplus)},
+                  this scenario provides the strongest overall financial position.
+                </p>
+              </div>
+            );
+          })()}
+        </>
+      )}
     </section>
   );
 }

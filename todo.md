@@ -3933,7 +3933,7 @@
 - [x] FIX: Calculators page routing/display broken — split into modular architecture (engine.ts + shared.tsx + PanelsA/B/C.tsx + orchestrator)
 - [x] FIX: Convert all hardcoded light-mode colors to dark-theme semantic classes (bg-background, text-foreground, border-border)
 - [x] FIX: Add missing KPI component that was causing runtime error
-- [ ] Wire business inputs into the scoring engine (revenue, profit margin, key person risk, succession plan)
-- [ ] Add scenario comparison — save multiple sessions, compare side-by-side with diff table
-- [ ] Make calculator embeddable — /embed/calculator route without app shell for emails/portals
-- [ ] Test as virtual user (guest mode, no auth) to confirm everything works
+- [x] Wire business inputs into the scoring engine (revenue, profit margin, key person risk, succession plan)
+- [x] Add scenario comparison — save multiple sessions, compare side-by-side with diff table
+- [x] Make calculator embeddable — /embed/calculator route without app shell for emails/portals
+- [x] Test as virtual user (guest mode, no auth) — all modules load (200 OK), zero browser console errors, page renders at /calculators

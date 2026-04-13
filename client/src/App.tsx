@@ -37,6 +37,7 @@ import Welcome from "./pages/Welcome";
 
 // ── Lazy loaded (code-split — loaded on demand) ──────────────────────
 const Calculators = lazy(() => import("./pages/Calculators"));
+const EmbedCalculator = lazy(() => import("./pages/EmbedCalculator"));
 // Wealth-engine pages (Phase 4 — UWE/BIE/HE React UI)
 const WeStrategyComparison = lazy(() => import("./pages/wealth-engine/StrategyComparison"));
 const WeRetirement = lazy(() => import("./pages/wealth-engine/Retirement"));
@@ -233,6 +234,7 @@ function Router() {
         <Route path="/income-projection" component={IncomeProjection} />
         <Route path="/public-calculators" component={PublicCalculators} />
         <Route path="/embed" component={EmbedWidget} />
+        <Route path="/embed/calculator" component={EmbedCalculator} />
         <Route path="/advisor/:id" component={AdvisorProfile} />
         <Route path="/admin/team" component={TeamManagement} />
         <Route path="/admin/billing" component={BillingPage} />
