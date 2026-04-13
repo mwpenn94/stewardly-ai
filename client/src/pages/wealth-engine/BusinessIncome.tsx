@@ -25,6 +25,14 @@ function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 }
 
+/** Parse a number input safely — returns null for empty/NaN, clamps to [min, max]. */
+function safeNum(raw: string, min = 0, max = 1e12): number | null {
+  if (!raw.trim()) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(min, Math.min(max, n));
+}
+
 export default function BusinessIncome() {
   const [, navigate] = useLocation();
 
@@ -142,22 +150,22 @@ export default function BusinessIncome() {
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Personal GDC Override</Label>
                   <Input type="number" value={personalGDC ?? ""} placeholder="Auto from role"
-                    onChange={e => setPersonalGDC(e.target.value ? Number(e.target.value) : null)} className="h-8 text-sm" />
+                    onChange={e => setPersonalGDC(safeNum(e.target.value, 0, 10_000_000))} className="h-8 text-sm" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label className="text-xs text-muted-foreground">Team Size</Label>
-                    <Input type="number" value={teamSize} onChange={e => setTeamSize(Number(e.target.value))} min={0} max={50} className="h-8 text-sm" /></div>
+                    <Input type="number" value={teamSize} onChange={e => setTeamSize(safeNum(e.target.value, 0, 200) ?? 0)} min={0} max={200} className="h-8 text-sm" /></div>
                   <div><Label className="text-xs text-muted-foreground">Avg FYC/Agent</Label>
-                    <Input type="number" value={teamAvgFYC} onChange={e => setTeamAvgFYC(Number(e.target.value))} className="h-8 text-sm" /></div>
+                    <Input type="number" value={teamAvgFYC} onChange={e => setTeamAvgFYC(safeNum(e.target.value, 0, 1_000_000) ?? 65000)} className="h-8 text-sm" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div><Label className="text-xs text-muted-foreground">Existing AUM</Label>
-                    <Input type="number" value={existingAUM} onChange={e => setExistingAUM(Number(e.target.value))} className="h-8 text-sm" /></div>
+                    <Input type="number" value={existingAUM} onChange={e => setExistingAUM(safeNum(e.target.value, 0, 1e12) ?? 0)} className="h-8 text-sm" /></div>
                   <div><Label className="text-xs text-muted-foreground">New AUM/yr</Label>
-                    <Input type="number" value={newAUMAnnual} onChange={e => setNewAUMAnnual(Number(e.target.value))} className="h-8 text-sm" /></div>
+                    <Input type="number" value={newAUMAnnual} onChange={e => setNewAUMAnnual(safeNum(e.target.value, 0, 1e12) ?? 0)} className="h-8 text-sm" /></div>
                 </div>
                 <div><Label className="text-xs text-muted-foreground">Projection Years</Label>
-                  <Input type="number" value={years} onChange={e => setYears(Number(e.target.value))} min={1} max={30} className="h-8 text-sm" /></div>
+                  <Input type="number" value={years} onChange={e => setYears(safeNum(e.target.value, 1, 30) ?? 10)} min={1} max={30} className="h-8 text-sm" /></div>
                 <Button className="w-full h-9 text-sm" onClick={runSimulation} disabled={simMutation.isPending}>
                   {simMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <TrendingUp className="w-4 h-4 mr-1" />}
                   Run Projection
@@ -176,7 +184,7 @@ export default function BusinessIncome() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div><Label className="text-xs text-muted-foreground">Target Annual Income</Label>
-                  <Input type="number" value={targetIncome} onChange={e => setTargetIncome(Number(e.target.value))} className="h-8 text-sm" /></div>
+                  <Input type="number" value={targetIncome} onChange={e => setTargetIncome(safeNum(e.target.value, 1000, 10_000_000) ?? 200000)} className="h-8 text-sm" /></div>
                 <Button variant="outline" className="w-full h-9 text-sm" onClick={runBackPlan} disabled={backPlanMutation.isPending}>
                   {backPlanMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Calculator className="w-4 h-4 mr-1" />}
                   Calculate Required GDC
@@ -507,7 +515,7 @@ export default function BusinessIncome() {
                               step={100}
                               value={channelBudgets[r.key] ?? ""}
                               placeholder="0"
-                              onChange={e => setChannelBudgets(prev => ({ ...prev, [r.key]: Number(e.target.value) || 0 }))}
+                              onChange={e => setChannelBudgets(prev => ({ ...prev, [r.key]: safeNum(e.target.value, 0, 1_000_000) ?? 0 }))}
                               className="h-7 text-xs font-mono w-24"
                             />
                           </TableCell>
