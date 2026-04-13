@@ -161,6 +161,7 @@ function RateManagementTab() {
       toast.success("Recommendation dismissed");
       recommendations.refetch();
     },
+    onError: (e: any) => toast.error(`Dismiss failed: ${e.message}`),
   });
 
   return (

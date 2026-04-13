@@ -20,6 +20,7 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - **Mobile: Calculators grid-cols-3 overflow** — changed to `grid-cols-1 sm:grid-cols-3` for PremFin calculator stats section
 - **Mobile: Community search input** — changed `min-w-[200px]` to `min-w-0 sm:min-w-[200px]` so search input can shrink on mobile
 - **AdvisorProfile wired to real data (G74)** — replaced 100% hardcoded "Sarah Johnson" demo with real `professionals.getById` tRPC query. Dynamic initials, specializations, credentials, reviews, bio, contact links. HonestPlaceholder shown when no advisor data found.
+- **Error resilience: 8 mutations gained onError handlers** — AgentManager (4: create/launch/stop/delete), PassiveActions (2: bulkToggleSource/bulkToggleAll), CodeChat (3: addRoadmapItem/iterateRoadmap/updateRoadmapStatus), FairnessTestDashboard (1: seedPrompts), AdminIntelligenceDashboard (1: dismissRecommendation). Silent mutation failures now show toast errors.
 - **Error resilience: Calculators.tsx** — 5 unguarded `.data.xxx.map()` calls on tRPC data arrays guarded with `(data?.xxx ?? []).map()` preventing crashes when API returns empty
 - **Error resilience: ImprovementDashboard.tsx** — `convergence.status` access guarded with optional chaining
 - **Error resilience: Retirement.tsx** — nested `.data.data.requiredIncome` guarded with `?.` + fallbacks

@@ -29,6 +29,7 @@ export default function FairnessTestDashboard() {
         toast.info(data.message);
       }
     },
+    onError: (e) => toast.error(`Failed to seed prompts: ${e.message}`),
   });
   const startRunMut = trpc.fairness.startRun.useMutation({
     onSuccess: (data) => {

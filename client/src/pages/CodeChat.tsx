@@ -2770,12 +2770,15 @@ function RoadmapPanel() {
   const utils = trpc.useUtils();
   const addItem = trpc.codeChat.addRoadmapItem.useMutation({
     onSuccess: () => utils.codeChat.getRoadmap.invalidate(),
+    onError: (e) => toast.error(`Failed to add item: ${e.message}`),
   });
   const iterate = trpc.codeChat.iterateRoadmap.useMutation({
     onSuccess: () => utils.codeChat.getRoadmap.invalidate(),
+    onError: (e) => toast.error(`Iteration failed: ${e.message}`),
   });
   const updateStatus = trpc.codeChat.updateRoadmapStatus.useMutation({
     onSuccess: () => utils.codeChat.getRoadmap.invalidate(),
+    onError: (e) => toast.error(`Status update failed: ${e.message}`),
   });
 
   const [title, setTitle] = useState("");

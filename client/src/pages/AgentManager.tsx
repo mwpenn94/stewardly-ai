@@ -27,10 +27,10 @@ const AGENT_TYPES = [
 
 export default function AgentManager() {
   const agents = trpc.openClaw.list.useQuery(undefined, { retry: false });
-  const createMutation = trpc.openClaw.create.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent created"); } });
-  const launchMutation = trpc.openClaw.launch.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent launched"); } });
-  const stopMutation = trpc.openClaw.stop.useMutation({ onSuccess: () => { agents.refetch(); toast.info("Agent stopped"); } });
-  const deleteMutation = trpc.openClaw.delete.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent deleted"); } });
+  const createMutation = trpc.openClaw.create.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent created"); }, onError: (e) => toast.error(`Failed to create agent: ${e.message}`) });
+  const launchMutation = trpc.openClaw.launch.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent launched"); }, onError: (e) => toast.error(`Failed to launch agent: ${e.message}`) });
+  const stopMutation = trpc.openClaw.stop.useMutation({ onSuccess: () => { agents.refetch(); toast.info("Agent stopped"); }, onError: (e) => toast.error(`Failed to stop agent: ${e.message}`) });
+  const deleteMutation = trpc.openClaw.delete.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent deleted"); }, onError: (e) => toast.error(`Failed to delete agent: ${e.message}`) });
 
   const [showCreate, setShowCreate] = useState(false);
   const [expandedAgentId, setExpandedAgentId] = useState<number | null>(null);

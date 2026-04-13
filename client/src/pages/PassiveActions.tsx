@@ -71,6 +71,7 @@ export default function PassiveActions() {
       refetchPrefs(); refetchStats();
       toast.success(`${data.toggled} actions toggled for ${data.source}`);
     },
+    onError: (e) => toast.error(`Bulk toggle failed: ${e.message}`),
   });
 
   const bulkAllMutation = trpc.passiveActions.bulkToggleAll.useMutation({
@@ -78,6 +79,7 @@ export default function PassiveActions() {
       refetchPrefs(); refetchStats();
       toast.success(`${data.totalActions} actions across ${data.totalSources} sources`);
     },
+    onError: (e) => toast.error(`Bulk toggle all failed: ${e.message}`),
   });
 
   // Build a lookup map for preferences
