@@ -53,10 +53,10 @@ export default function OperationsHub() {
       <div className="container py-6">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <QuickStat icon={Activity} label="Active Tasks" value={String(pendingCount + runningAgents)} color="text-blue-500" />
-          <QuickStat icon={Bot} label="Running Agents" value={String(runningAgents)} color="text-green-500" />
-          <QuickStat icon={Shield} label="Pending Reviews" value={String(pendingCount)} color="text-amber-500" />
-          <QuickStat icon={AlertTriangle} label="Compliance Flags" value={String(complianceFlags)} color="text-red-500" />
+          <QuickStat icon={Activity} label="Active Tasks" value={String(pendingCount + runningAgents)} color="text-chart-3" />
+          <QuickStat icon={Bot} label="Running Agents" value={String(runningAgents)} color="text-chart-2" />
+          <QuickStat icon={Shield} label="Pending Reviews" value={String(pendingCount)} color="text-chart-1" />
+          <QuickStat icon={AlertTriangle} label="Compliance Flags" value={String(complianceFlags)} color="text-destructive" />
         </div>
 
         {/* Intelligence Status */}

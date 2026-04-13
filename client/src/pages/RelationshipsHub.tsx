@@ -48,10 +48,10 @@ export default function RelationshipsHub() {
       <div className="container py-6">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <QuickStat icon={Users} label="Leads" value={String(leadCount)} color="text-blue-500" />
-          <QuickStat icon={Calendar} label="Upcoming" value="0" color="text-purple-500" />
-          <QuickStat icon={Mail} label="Campaigns" value={String(campaignCount)} color="text-green-500" />
-          <QuickStat icon={Star} label="COI Partners" value="0" color="text-amber-500" />
+          <QuickStat icon={Users} label="Leads" value={String(leadCount)} color="text-chart-3" />
+          <QuickStat icon={Calendar} label="Upcoming" value="0" color="text-chart-4" />
+          <QuickStat icon={Mail} label="Campaigns" value={String(campaignCount)} color="text-chart-2" />
+          <QuickStat icon={Star} label="COI Partners" value="0" color="text-chart-1" />
         </div>
 
         {/* Search */}

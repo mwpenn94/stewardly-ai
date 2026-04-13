@@ -45,10 +45,10 @@ export default function IntelligenceHub() {
       <div className="container py-6">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <QuickStat icon={Brain} label="AI Models" value={String(modelCount)} color="text-blue-500" />
-          <QuickStat icon={Database} label="Data Sources" value={String((dataSources.data ?? []).length)} color="text-purple-500" />
-          <QuickStat icon={TrendingUp} label="Active Insights" value={String(insightStats.data?.total ?? 0)} color="text-green-500" />
-          <QuickStat icon={Lightbulb} label="New Insights" value={String(insightStats.data?.newCount ?? 0)} color="text-amber-500" />
+          <QuickStat icon={Brain} label="AI Models" value={String(modelCount)} color="text-chart-3" />
+          <QuickStat icon={Database} label="Data Sources" value={String((dataSources.data ?? []).length)} color="text-chart-4" />
+          <QuickStat icon={TrendingUp} label="Active Insights" value={String(insightStats.data?.total ?? 0)} color="text-chart-2" />
+          <QuickStat icon={Lightbulb} label="New Insights" value={String(insightStats.data?.newCount ?? 0)} color="text-chart-1" />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

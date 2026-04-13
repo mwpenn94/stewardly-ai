@@ -51,10 +51,10 @@ export default function AdvisoryHub() {
       <div className="container py-6">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <QuickStat icon={Package} label="Products" value={String(productCount)} color="text-blue-500" />
-          <QuickStat icon={Briefcase} label="Active Cases" value={String(activeWorkflows)} color="text-purple-500" />
-          <QuickStat icon={Lightbulb} label="Insights" value={String(insightStats.data?.total ?? 0)} color="text-amber-500" />
-          <QuickStat icon={CheckCircle2} label="Completed" value={String(completedWorkflows)} color="text-green-500" />
+          <QuickStat icon={Package} label="Products" value={String(productCount)} color="text-chart-3" />
+          <QuickStat icon={Briefcase} label="Active Cases" value={String(activeWorkflows)} color="text-chart-4" />
+          <QuickStat icon={Lightbulb} label="Insights" value={String(insightStats.data?.total ?? 0)} color="text-chart-1" />
+          <QuickStat icon={CheckCircle2} label="Completed" value={String(completedWorkflows)} color="text-chart-2" />
         </div>
 
         {/* Search */}
