@@ -21,6 +21,9 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - **Mobile: Community search input** — changed `min-w-[200px]` to `min-w-0 sm:min-w-[200px]` so search input can shrink on mobile
 - **AdvisorProfile wired to real data (G74)** — replaced 100% hardcoded "Sarah Johnson" demo with real `professionals.getById` tRPC query. Dynamic initials, specializations, credentials, reviews, bio, contact links. HonestPlaceholder shown when no advisor data found.
 - **Error resilience: 8 mutations gained onError handlers** — AgentManager (4: create/launch/stop/delete), PassiveActions (2: bulkToggleSource/bulkToggleAll), CodeChat (3: addRoadmapItem/iterateRoadmap/updateRoadmapStatus), FairnessTestDashboard (1: seedPrompts), AdminIntelligenceDashboard (1: dismissRecommendation). Silent mutation failures now show toast errors.
+- **Performance: staleTime on 10 static data queries** — EngineDashboard (3), AdvisoryHub (2), AdminIntelligenceDashboard (2), AdminIntegrations (2), Calculators (1), DynamicIntegrations (1). Prevents unnecessary refetch on mount for stable reference data.
+- **Accessibility: Products.tsx clear search button** — added aria-label="Clear search" to icon-only button (WCAG 2.1 Level A)
+- **Accessibility: SettingsHub mobile backdrop** — added aria-hidden="true" role="presentation" to clickable overlay
 - **Error resilience: Calculators.tsx** — 5 unguarded `.data.xxx.map()` calls on tRPC data arrays guarded with `(data?.xxx ?? []).map()` preventing crashes when API returns empty
 - **Error resilience: ImprovementDashboard.tsx** — `convergence.status` access guarded with optional chaining
 - **Error resilience: Retirement.tsx** — nested `.data.data.requiredIncome` guarded with `?.` + fallbacks

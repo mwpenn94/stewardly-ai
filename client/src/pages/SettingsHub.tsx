@@ -168,7 +168,7 @@ export default function SettingsHub() {
 
         {/* Mobile overlay */}
         {mobileNavOpen && (
-          <div className="fixed inset-0 top-14 z-10 bg-black/40 md:hidden" onClick={() => setMobileNavOpen(false)} />
+          <div className="fixed inset-0 top-14 z-10 bg-black/40 md:hidden" onClick={() => setMobileNavOpen(false)} aria-hidden="true" role="presentation" />
         )}
 
         {/* ─── MAIN CONTENT ─── */}

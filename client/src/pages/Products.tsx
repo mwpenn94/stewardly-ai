@@ -134,7 +134,7 @@ export default function Products() {
               className="pl-10 bg-card border-border h-10"
             />
             {search && (
-              <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
+              <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")} aria-label="Clear search" type="button">
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             )}
