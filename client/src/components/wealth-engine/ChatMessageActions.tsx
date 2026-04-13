@@ -74,7 +74,7 @@ export function ChatMessageActions({
   const [playingAudio, setPlayingAudio] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const speak = trpc.voice.speak.useMutation();
+  const speak = trpc.voice.speak.useMutation({ onError: (e) => toast.error(`TTS failed: ${e.message}`) });
 
   // Reset copied state after 2s
   useEffect(() => {

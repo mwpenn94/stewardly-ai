@@ -425,7 +425,7 @@ function CodeChatInterface() {
   const [editHistory, setEditHistory] = useState<EditHistoryState>(() => loadHistory());
   useEffect(() => { saveHistory(editHistory); }, [editHistory]);
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
-  const dispatchMutation = trpc.codeChat.dispatch.useMutation();
+  const dispatchMutation = trpc.codeChat.dispatch.useMutation({ onError: (e) => toast.error(`Dispatch failed: ${e.message}`) });
 
   // Pass 240: scratchpad drawer
   const [scratchpad, setScratchpad] = useState<ScratchpadState>(() => loadScratchpad());
@@ -780,7 +780,7 @@ function CodeChatInterface() {
   }, []);
 
   // Pass 219: gist export mutation
-  const gistExportMutation = trpc.codeChat.exportToGist.useMutation();
+  const gistExportMutation = trpc.codeChat.exportToGist.useMutation({ onError: (e) => toast.error(`Gist export failed: ${e.message}`) });
 
   // Pass 222: cost budget guardrail — persists across refreshes
   const BUDGET_KEY = "stewardly-codechat-budget";
@@ -2477,7 +2477,7 @@ function FileBrowser() {
   const isAdmin = user?.role === "admin";
   const [pathInput, setPathInput] = useState(".");
   const [viewMode, setViewMode] = useState<"list" | "tree">("list");
-  const dispatch = trpc.codeChat.dispatch.useMutation();
+  const dispatch = trpc.codeChat.dispatch.useMutation({ onError: (e) => toast.error(`File operation failed: ${e.message}`) });
   const [listing, setListing] = useState<{
     path: string;
     entries: Array<{ name: string; type: string; size?: number }>;

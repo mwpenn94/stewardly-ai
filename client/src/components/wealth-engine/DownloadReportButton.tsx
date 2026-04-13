@@ -50,7 +50,7 @@ export function DownloadReportButton({
   compact,
 }: DownloadReportButtonProps) {
   const [isPending, setIsPending] = useState(false);
-  const generateReport = trpc.wealthEngine.generateReport.useMutation();
+  const generateReport = trpc.wealthEngine.generateReport.useMutation({ onError: (e) => toast.error(`Report generation failed: ${e.message}`) });
 
   const onClick = async () => {
     if (isPending || disabled) return;

@@ -17,7 +17,7 @@ export default function SuitabilityTab() {
   const utils = trpc.useUtils();
 
   const existing = trpc.suitability.get.useQuery();
-  const chatMutation = trpc.suitability.chat.useMutation();
+  const chatMutation = trpc.suitability.chat.useMutation({ onError: (e) => toast.error(`Suitability chat failed: ${e.message}`) });
   const saveMutation = trpc.suitability.saveFromChat.useMutation({
     onSuccess: () => {
       utils.suitability.get.invalidate();

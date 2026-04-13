@@ -37,7 +37,7 @@ export function LeadCaptureGate({
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const captureMutation = trpc.leadCapture.captureFromCalculator.useMutation();
+  const captureMutation = trpc.leadCapture.captureFromCalculator.useMutation({ onError: (e) => toast.error(`Submission failed: ${e.message}`) });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

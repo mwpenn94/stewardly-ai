@@ -67,8 +67,8 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
   const convIdRef = useRef(conversationId);
 
   // ─── Mutations ────────────────────────────────────────────────
-  const sendMutation = trpc.chat.send.useMutation();
-  const createConversation = trpc.conversations.create.useMutation();
+  const sendMutation = trpc.chat.send.useMutation({ onError: (e) => toast.error(`Send failed: ${e.message}`) });
+  const createConversation = trpc.conversations.create.useMutation({ onError: (e) => toast.error(`Failed to create conversation: ${e.message}`) });
 
   // Keep convId ref in sync
   useEffect(() => { convIdRef.current = conversationId; }, [conversationId]);

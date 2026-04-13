@@ -462,7 +462,7 @@ export default function Help() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const notifyMutation = trpc.system.notifyOwner.useMutation();
+  const notifyMutation = trpc.system.notifyOwner.useMutation({ onError: (e) => toast.error(`Failed to send: ${e.message}`) });
 
   const filteredFAQ = useMemo(() => {
     let items = FAQ_DATA;
