@@ -22,15 +22,15 @@ npm test           # Run test suite
 
 ```
 client/src/
-  pages/          # 131+ pages (route components)
-  components/     # 145+ components (shared UI)
+  pages/          # 126 pages (route components, 145 routes)
+  components/     # 209 components (shared UI)
   lib/            # Utilities, navigation, hooks
   hooks/          # Custom React hooks
 
 server/
   _core/          # Server bootstrap, tRPC context
-  routers/        # 78 tRPC routers
-  services/       # 260 services (business logic)
+  routers/        # 85 tRPC router files
+  services/       # 353 service files (business logic)
   shared/         # Shared utilities, calculators
 
 drizzle/
