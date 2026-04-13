@@ -17,8 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calculator, DollarSign, PiggyBank, TrendingUp, Shield, Heart } from "lucide-react";
+import { Calculator, DollarSign, PiggyBank, TrendingUp, Shield, Heart, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
 import type { FinancialProfile } from "@/stores/financialProfile";
@@ -172,6 +173,7 @@ function TaxBracketCalculator() {
 
 export default function PublicCalculators() {
   const [gated, setGated] = useState(false);
+  const [, navigate] = useLocation();
 
   return (
     <div className="container max-w-4xl py-8 space-y-6">
@@ -211,18 +213,18 @@ export default function PublicCalculators() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { icon: Shield, title: "Insurance Needs", desc: "Calculate your coverage gaps" },
-          { icon: Heart, title: "Medicare Costs", desc: "Estimate IRMAA surcharges" },
-          { icon: TrendingUp, title: "Social Security", desc: "Optimize claiming strategy" },
+          { icon: Shield, title: "Insurance Needs", desc: "Calculate your coverage gaps", href: "/insurance-analysis" },
+          { icon: Heart, title: "Medicare Costs", desc: "Estimate IRMAA surcharges", href: "/medicare" },
+          { icon: TrendingUp, title: "Social Security", desc: "Optimize claiming strategy", href: "/social-security" },
         ].map(c => (
-          <Card key={c.title} className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => toast.info("Calculator coming soon")}>
+          <Card key={c.title} className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => navigate(c.href)}>
             <CardContent className="p-4 flex items-center gap-3">
               <c.icon className="h-8 w-8 text-primary/60" />
               <div>
                 <p className="text-sm font-medium">{c.title}</p>
                 <p className="text-xs text-muted-foreground">{c.desc}</p>
               </div>
-              <Badge variant="outline" className="ml-auto text-[10px]">Soon</Badge>
+              <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground" />
             </CardContent>
           </Card>
         ))}

@@ -85,8 +85,8 @@ export default function RetirementPage() {
   );
 
   const [showRiskContext, setShowRiskContext] = useState(false);
-  const [savingsRate] = useState(0.15);
-  const [investmentReturn] = useState(0.07);
+  const savingsRate = 0.15;
+  const investmentReturn = 0.07;
 
   const runPreset = trpc.wealthEngine.runPreset.useMutation({
     onSuccess: () => sendFeedback("calculator.result"),
