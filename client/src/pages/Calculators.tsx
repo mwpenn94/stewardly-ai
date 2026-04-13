@@ -12,6 +12,8 @@ import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import {
@@ -21,8 +23,9 @@ import {
   HandCoins, ShieldAlert, Dice5, Target, Shield,
   Printer, MessageSquare, ArrowUpRight, ArrowDownRight,
   Info, Zap, Activity, ChevronDown, ChevronUp, ExternalLink,
+  Plus, Trash2, Save, History, Download, FileText, Layers, Wallet,
 } from "lucide-react";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { computeHolisticScore, type HolisticResult, fmt } from "@/lib/holisticScoring";
@@ -33,6 +36,12 @@ import {
   type CrossCalcRecommendation, type PeerBenchmark,
 } from "@/lib/holisticScoringExtensions";
 import type { CostBenefitSummary, RecommendedProduct } from "@/lib/holisticScoring";
+import {
+  profileToStreams, rollUpStreams, getStreamContributions, projectStreams,
+  createStream, SOURCE_PRESETS, annualize,
+  type IncomeStream, type StreamRollup, type StreamContribution,
+} from "@/lib/incomeStreams";
+import { formatCalcForExport, formatScorecardForExport } from "@/lib/calculatorExport";
 
 // ─── LOCAL STORAGE PERSISTENCE ──────────────────────────────────────
 const CALC_STORAGE_KEY = "wealthbridge_calc_inputs";
@@ -126,6 +135,7 @@ function SliderInput({
         value={[value]}
         onValueChange={([v]) => onChange(v)}
         min={min} max={max} step={step}
+        aria-label={label}
         className="[&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
       />
     </div>
@@ -428,14 +438,28 @@ const DEEP_DIVE_TOOLS = [
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 export default function Calculators() {
-  useAuth();
+  const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   usePlatformIntelligence();
   const { profile, hasProfile } = useFinancialProfile();
   const [activeCalc, setActiveCalc] = useState<string>("ret");
   const [showScenarios, setShowScenarios] = useState(false);
+  const [showIncomeStreams, setShowIncomeStreams] = useState(false);
+  const [customStreams, setCustomStreams] = useState<IncomeStream[] | null>(null);
+  const [showSavedSessions, setShowSavedSessions] = useState(false);
+  const [saveName, setSaveName] = useState("");
 
-  // ─── Holistic Score (from profile) ──────────────────────────────
+  // ─── Holistic Score (from profile) ─────────────────────────────  // ─── Income Streams ─────────────────────────────────────────────
+  const incomeStreams = useMemo(() => {
+    if (customStreams) return customStreams;
+    if (!hasProfile) return [];
+    return profileToStreams(profile);
+  }, [customStreams, hasProfile, profile]);
+
+  const streamRollup = useMemo(() => rollUpStreams(incomeStreams), [incomeStreams]);
+  const streamContributions = useMemo(() => getStreamContributions(incomeStreams), [incomeStreams]);
+  const streamProjection = useMemo(() => projectStreams(incomeStreams, 10), [incomeStreams]);
+
   const holisticResult = useMemo<HolisticResult | null>(() => {
     if (!hasProfile) return null;
     try { return computeHolisticScore(profile); } catch { return null; }
@@ -529,6 +553,60 @@ export default function Calculators() {
   const stressCalc = trpc.wealthEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
   const scenariosQuery = trpc.wealthEngine.stressScenarios.useQuery();
   const mcCalc = trpc.calculatorEngine.uweMonteCarlo.useMutation({ onError: (e) => toast.error(e.message) });
+
+  // ─── Sub-component data ref (for save session across all calculators) ──
+  const calcDataRef = useRef<Record<string, any>>({});
+  const onCalcData = useCallback((calcId: string, data: any) => {
+    calcDataRef.current[calcId] = data;
+  }, []);
+
+  // ─── Saved Sessions (DB persistence) ─────────────────────────────
+  const savedSessionsQuery = trpc.addendum.calculatorPersistence.list.useQuery(
+    { calculatorType: activeCalc },
+    { enabled: isAuthenticated && showSavedSessions }
+  );
+  const saveSession = trpc.addendum.calculatorPersistence.save.useMutation({
+    onSuccess: () => {
+      toast.success("Session saved");
+      setSaveName("");
+      savedSessionsQuery.refetch();
+    },
+    onError: () => toast.error("Failed to save session"),
+  });
+  const deleteSession = trpc.addendum.calculatorPersistence.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Session deleted");
+      savedSessionsQuery.refetch();
+    },
+    onError: () => toast.error("Failed to delete session"),
+  });
+
+  // Get current calculator data for saving
+  const getCurrentCalcData = useCallback(() => {
+    const calcDataMap: Record<string, { inputs: any; results: any }> = {
+      iul: { inputs: {}, results: iulCalc.data },
+      pf: { inputs: {}, results: pfCalc.data },
+      ret: { inputs: {}, results: retCalc.data },
+      stress: { inputs: {}, results: stressCalc.data || backtestCalc.data },
+      montecarlo: { inputs: {}, results: mcCalc.data },
+    };
+    // Also check sub-component data reported via onCalcData callback
+    if (!calcDataMap[activeCalc] || !calcDataMap[activeCalc].results) {
+      const subData = calcDataRef.current[activeCalc];
+      if (subData) return { inputs: {}, results: subData };
+    }
+    return calcDataMap[activeCalc] ?? { inputs: {}, results: null };
+  }, [activeCalc, iulCalc.data, pfCalc.data, retCalc.data, stressCalc.data, backtestCalc.data, mcCalc.data]);
+
+  const handleSaveSession = useCallback(() => {
+    const { inputs, results } = getCurrentCalcData();
+    if (!results) {
+      toast.info("Run a calculation first before saving");
+      return;
+    }
+    const name = saveName.trim() || `${activeCalc.toUpperCase()} - ${new Date().toLocaleDateString()}`;
+    saveSession.mutate({ calculatorType: activeCalc, name, inputs, results });
+  }, [activeCalc, saveName, getCurrentCalcData, saveSession]);
 
   return (
     <AppShell title="Calculators">
@@ -696,8 +774,200 @@ export default function Calculators() {
           </Card>
         )}
 
-        <Separator className="opacity-50" />
+         <Separator className="opacity-50" />
 
+        {/* ═══ SECTION A2: INCOME STREAMS ═══════════════════════ */}
+        <section aria-label="Income Streams">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Layers className="w-4 h-4 text-accent" /> Income Streams
+            </h2>
+            <div className="flex items-center gap-2">
+              {incomeStreams.length > 0 && (
+                <Badge variant="outline" className="text-[9px]">
+                  {streamRollup.totalAnnualIncome > 0 ? fmt(streamRollup.totalAnnualIncome) + "/yr" : "No income"}
+                </Badge>
+              )}
+              <Button
+                variant="ghost" size="sm" className="text-xs h-7"
+                onClick={() => setShowIncomeStreams(!showIncomeStreams)}
+              >
+                {showIncomeStreams ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                {showIncomeStreams ? "Collapse" : "Expand"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Compact summary bar — always visible */}
+          {incomeStreams.length > 0 && !showIncomeStreams && (
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+              {streamContributions.slice(0, 6).map(c => (
+                <div key={c.streamId} className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/30 text-[10px]">
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    c.pillarAffinity === "plan" ? "bg-amber-400" :
+                    c.pillarAffinity === "protect" ? "bg-blue-400" :
+                    c.pillarAffinity === "grow" ? "bg-emerald-400" : "bg-muted-foreground"
+                  }`} />
+                  <span className="text-muted-foreground">{c.label}</span>
+                  <span className="font-mono font-medium">{fmt(c.annualAmount)}</span>
+                  <span className="text-muted-foreground/60">{c.pctOfTotal}%</span>
+                </div>
+              ))}
+              {streamContributions.length > 6 && (
+                <div className="flex-shrink-0 flex items-center px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/30 text-[10px] text-muted-foreground">
+                  +{streamContributions.length - 6} more
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Expanded income streams panel */}
+          {showIncomeStreams && (
+            <Card className="border-border/40 bg-card/60">
+              <CardContent className="p-4 space-y-4">
+                {/* Stream list */}
+                {incomeStreams.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Wallet className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">No income streams configured</p>
+                    <p className="text-xs mt-1">Add streams from your financial profile or manually below</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {incomeStreams.map(s => (
+                      <div key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-secondary/30 border border-border/20">
+                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          s.pillarAffinity === "plan" ? "bg-amber-400" :
+                          s.pillarAffinity === "protect" ? "bg-blue-400" :
+                          s.pillarAffinity === "grow" ? "bg-emerald-400" : "bg-muted-foreground"
+                        }`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{s.label}</p>
+                          <p className="text-[10px] text-muted-foreground">{s.source} &middot; {s.taxTreatment.replace("_", " ")} &middot; {(s.growthRate * 100).toFixed(1)}% growth</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs font-mono font-medium">{fmt(annualize(s))}/yr</p>
+                          <p className="text-[10px] text-muted-foreground">{s.frequency}</p>
+                        </div>
+                        {customStreams && (
+                          <Button
+                            variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-red-400"
+                            onClick={() => setCustomStreams(prev => (prev ?? []).filter(cs => cs.id !== s.id))}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add stream button */}
+                <div className="flex items-center gap-2">
+                  <Select onValueChange={(val) => {
+                    const preset = SOURCE_PRESETS.find(p => p.source === val);
+                    if (preset) {
+                      const newStream = createStream(preset, 50000, "annual", 0.03);
+                      setCustomStreams(prev => [...(prev ?? incomeStreams), newStream]);
+                      toast.success(`Added ${preset.label}`);
+                    }
+                  }}>
+                    <SelectTrigger className="flex-1 h-8 text-xs">
+                      <SelectValue placeholder="Add income stream..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SOURCE_PRESETS.map(p => (
+                        <SelectItem key={p.source} value={p.source} className="text-xs">
+                          {p.label} ({p.taxTreatment.replace("_", " ")})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {customStreams && (
+                    <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setCustomStreams(null); toast.info("Reset to profile defaults"); }}>
+                      Reset
+                    </Button>
+                  )}
+                </div>
+
+                {/* Roll-up summary */}
+                {incomeStreams.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="text-center p-2 rounded-lg bg-secondary/20">
+                      <p className="text-[10px] text-muted-foreground">Total Annual</p>
+                      <p className="text-sm font-mono font-bold">{fmt(streamRollup.totalAnnualIncome)}</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-secondary/20">
+                      <p className="text-[10px] text-muted-foreground">Eff. Tax Rate</p>
+                      <p className="text-sm font-mono font-bold">{(streamRollup.effectiveTaxRate * 100).toFixed(1)}%</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-secondary/20">
+                      <p className="text-[10px] text-muted-foreground">Diversification</p>
+                      <p className="text-sm font-mono font-bold">{streamRollup.diversificationScore}/3</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-secondary/20">
+                      <p className="text-[10px] text-muted-foreground">5yr Projected</p>
+                      <p className="text-sm font-mono font-bold text-emerald-400">{fmt(streamRollup.projectedGrowth5yr)}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pillar contribution bars */}
+                {incomeStreams.length > 0 && streamRollup.totalAnnualIncome > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Pillar Contribution</p>
+                    {(["plan", "protect", "grow"] as const).map(p => {
+                      const val = streamRollup.byPillar[p];
+                      const pct = Math.round(val / streamRollup.totalAnnualIncome * 100);
+                      const colors = { plan: "bg-amber-400", protect: "bg-blue-400", grow: "bg-emerald-400" };
+                      return (
+                        <div key={p} className="flex items-center gap-2">
+                          <span className="text-[10px] w-14 text-muted-foreground capitalize">{p}</span>
+                          <div className="flex-1 h-2 bg-secondary/40 rounded-full overflow-hidden">
+                            <div className={`h-full ${colors[p]} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-[10px] font-mono w-12 text-right">{fmt(val)}</span>
+                          <span className="text-[10px] text-muted-foreground w-8 text-right">{pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Income projection mini-chart */}
+                {streamProjection.length > 1 && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">10-Year Income Projection</p>
+                    <div className="flex items-end gap-[2px] h-12">
+                      {streamProjection.map((yr, i) => {
+                        const maxVal = Math.max(...streamProjection.map(y => y.total));
+                        const h = maxVal > 0 ? (yr.total / maxVal) * 100 : 0;
+                        return (
+                          <TooltipProvider key={yr.year}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex-1 rounded-t bg-accent/60 hover:bg-accent transition-colors cursor-help" style={{ height: `${h}%`, minHeight: 2 }} />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">
+                                <p>Year {yr.year}: {fmt(yr.total)}</p>
+                                <p className="text-muted-foreground">Plan {fmt(yr.byPillar.plan)} &middot; Protect {fmt(yr.byPillar.protect)} &middot; Grow {fmt(yr.byPillar.grow)}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-between text-[9px] text-muted-foreground/50 mt-0.5">
+                      <span>Now</span><span>+5yr</span><span>+10yr</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </section>
+
+        <Separator className="opacity-50" />
         {/* ═══ SECTION B: CALCULATOR SELECTOR ═════════════════════ */}
         <section aria-label="Financial Calculators">
           <div className="flex items-center justify-between mb-3">
@@ -747,8 +1017,98 @@ export default function Calculators() {
               </div>
             );
           })}
-
-          {/* ═══ CALCULATOR PANELS ═════════════════════════════════ */}
+          {/* ═══ SAVED SESSIONS BAR ═══════════════════════ */}
+          {isAuthenticated && (
+            <div className="flex items-center gap-2 py-2 border-b border-border/30 mb-4">
+              <Button
+                variant="ghost" size="sm" className="text-xs h-7 gap-1"
+                onClick={() => setShowSavedSessions(!showSavedSessions)}
+              >
+                <History className="w-3 h-3" />
+                {showSavedSessions ? "Hide Sessions" : "Saved Sessions"}
+                {savedSessionsQuery.data?.length ? (
+                  <Badge variant="outline" className="text-[8px] ml-1">{savedSessionsQuery.data.length}</Badge>
+                ) : null}
+              </Button>
+              <div className="flex-1" />
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  placeholder="Session name (optional)"
+                  value={saveName}
+                  onChange={e => setSaveName(e.target.value)}
+                  aria-label="Session name"
+                  className="h-7 px-2 text-xs rounded-md border border-border/40 bg-secondary/30 w-40 focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+                <Button
+                  variant="outline" size="sm" className="text-xs h-7 gap-1"
+                  onClick={handleSaveSession}
+                  disabled={saveSession.isPending}
+                >
+                  {saveSession.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                  Save
+                </Button>
+              </div>
+            </div>
+          )}
+          {showSavedSessions && savedSessionsQuery.data && savedSessionsQuery.data.length > 0 && (
+            <Card className="mb-4 border-border/40 bg-card/60">
+              <CardContent className="p-3">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Saved Sessions for {CALCULATORS.find(c => c.id === activeCalc)?.label ?? activeCalc}</p>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {savedSessionsQuery.data.map((session: any) => (
+                    <div key={session.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/30 border border-border/20 hover:bg-secondary/50 transition-colors">
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{session.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{new Date(session.createdAt).toLocaleDateString()} {new Date(session.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                      </div>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 text-[10px] text-muted-foreground hover:text-foreground">View</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle className="text-sm">{session.name}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-3">
+                            <div>
+                              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Inputs</p>
+                              <pre className="text-[10px] bg-secondary/30 p-2 rounded-md overflow-x-auto whitespace-pre-wrap">{JSON.stringify(session.inputsJson, null, 2)}</pre>
+                            </div>
+                            <Separator />
+                            <div>
+                              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Results</p>
+                              <pre className="text-[10px] bg-secondary/30 p-2 rounded-md overflow-x-auto whitespace-pre-wrap">{JSON.stringify(session.resultsJson, null, 2)}</pre>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">Saved {new Date(session.createdAt).toLocaleString()}</p>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-red-400"
+                        aria-label={`Delete session ${session.name}`}
+                        onClick={() => {
+                          if (window.confirm(`Delete session "${session.name}"?`)) {
+                            deleteSession.mutate({ id: session.id });
+                          }
+                        }}
+                        disabled={deleteSession.isPending}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {showSavedSessions && (!savedSessionsQuery.data || savedSessionsQuery.data.length === 0) && !savedSessionsQuery.isLoading && (
+            <div className="text-center py-4 text-muted-foreground text-xs mb-4">
+              No saved sessions for this calculator yet. Run a calculation and click Save.
+            </div>
+          )}
+          {/* ═══ CALCULATOR PANELS ═════════════════════════ */}
 
           {/* ─── IUL CALCULATOR ─────────────────────────────────── */}
           {activeCalc === "iul" && (<>
@@ -773,7 +1133,7 @@ export default function Calculators() {
                   >
                     {iulCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Projection</>}
                   </Button>
-                  <QuickActions title="IUL Projection" />
+                  <QuickActions title="IUL Projection" calcId="iul" data={iulCalc.data} />
                 </CardContent>
               </Card>
 
@@ -857,7 +1217,7 @@ export default function Calculators() {
                   >
                     {pfCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Analysis</>}
                   </Button>
-                  <QuickActions title="Premium Finance" />
+                  <QuickActions title="Premium Finance" calcId="pf" data={pfCalc.data} />
                 </CardContent>
               </Card>
               <div className="lg:col-span-3 space-y-4">
@@ -972,7 +1332,7 @@ export default function Calculators() {
                   >
                     {retCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Projection</>}
                   </Button>
-                  <QuickActions title="Retirement Projection" />
+                  <QuickActions title="Retirement Projection" calcId="ret" data={retCalc.data} />
                 </CardContent>
               </Card>
               <div className="lg:col-span-3 space-y-4">
@@ -1024,19 +1384,19 @@ export default function Calculators() {
             <CrossCalcStrip calcId="ret" onSelect={setActiveCalc} />
           </>)}
           {/* ─── TAX PROJECTOR ──────────────────────────────── */}
-          {activeCalc === "tax" && <><TaxProjectorPanel /><CrossCalcStrip calcId="tax" onSelect={setActiveCalc} /></>}
+          {activeCalc === "tax" && <><TaxProjectorPanel onCalcData={onCalcData} /><CrossCalcStrip calcId="tax" onSelect={setActiveCalc} /></>}
           {/* ─── SOCIAL SECURITY ─────────────────────────────── */}
-          {activeCalc === "ss" && <><SSOptimizerPanel /><CrossCalcStrip calcId="ss" onSelect={setActiveCalc} /></>}
+          {activeCalc === "ss" && <><SSOptimizerPanel onCalcData={onCalcData} /><CrossCalcStrip calcId="ss" onSelect={setActiveCalc} /></>}
           {/* ─── MEDICARE ───────────────────────────────────── */}
-          {activeCalc === "medicare" && <><MedicarePanel /><CrossCalcStrip calcId="medicare" onSelect={setActiveCalc} /></>}
+          {activeCalc === "medicare" && <><MedicarePanel onCalcData={onCalcData} /><CrossCalcStrip calcId="medicare" onSelect={setActiveCalc} /></>}
           {/* ─── HSA OPTIMIZER ──────────────────────────────── */}
-          {activeCalc === "hsa" && <><HSAOptimizerPanel /><CrossCalcStrip calcId="hsa" onSelect={setActiveCalc} /></>}
+          {activeCalc === "hsa" && <><HSAOptimizerPanel onCalcData={onCalcData} /><CrossCalcStrip calcId="hsa" onSelect={setActiveCalc} /></>}
           {/* ─── CHARITABLE GIVING ──────────────────────────── */}
-          {activeCalc === "charitable" && <><CharitablePanel /><CrossCalcStrip calcId="charitable" onSelect={setActiveCalc} /></>}
+          {activeCalc === "charitable" && <><CharitablePanel onCalcData={onCalcData} /><CrossCalcStrip calcId="charitable" onSelect={setActiveCalc} /></>}
           {/* ─── DIVORCE ANALYSIS ───────────────────────────── */}
-          {activeCalc === "divorce" && <><DivorcePanel /><CrossCalcStrip calcId="divorce" onSelect={setActiveCalc} /></>}
+          {activeCalc === "divorce" && <><DivorcePanel onCalcData={onCalcData} /><CrossCalcStrip calcId="divorce" onSelect={setActiveCalc} /></>}
           {/* ─── EDUCATION PLANNER ──────────────────────────── */}
-          {activeCalc === "education" && <><EducationPanel /><CrossCalcStrip calcId="education" onSelect={setActiveCalc} /></>}
+          {activeCalc === "education" && <><EducationPanel onCalcData={onCalcData} /><CrossCalcStrip calcId="education" onSelect={setActiveCalc} /></>}
 
           {/* ─── STRESS TEST ──────────────────────────────────── */}
           {activeCalc === "stress" && (<>
@@ -1088,6 +1448,7 @@ export default function Calculators() {
                       {stressCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ShieldAlert className="w-4 h-4" /> Stress</>}
                     </Button>
                   </div>
+                  <QuickActions title="Stress Test" calcId="stress" data={stressCalc.data} />
                 </CardContent>
               </Card>
               <div className="lg:col-span-3 space-y-4">
@@ -1163,6 +1524,7 @@ export default function Calculators() {
                   >
                     {mcCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Dice5 className="w-4 h-4" /> Run Simulation</>}
                   </Button>
+                  <QuickActions title="Monte Carlo" calcId="montecarlo" data={mcCalc.data} />
                 </CardContent>
               </Card>
               <div className="lg:col-span-3 space-y-4">
@@ -1258,12 +1620,34 @@ export default function Calculators() {
 
 // ─── SHARED COMPONENTS ──────────────────────────────────────────────
 
-function QuickActions({ title }: { title: string }) {
+function QuickActions({ title, calcId, data }: { title: string; calcId?: string; data?: any }) {
   const [, navigate] = useLocation();
+  const exportPDF = trpc.exports.exportPDF.useMutation({
+    onSuccess: (result: any) => {
+      if (result?.url) {
+        window.open(result.url, "_blank");
+        toast.success("PDF exported successfully");
+      }
+    },
+    onError: () => toast.error("PDF export failed"),
+  });
+  const handleExport = () => {
+    if (!calcId || !data) {
+      toast.info("Run a calculation first to export results");
+      return;
+    }
+    const payload = formatCalcForExport(calcId, data);
+    if (!payload) {
+      toast.info("No data to export");
+      return;
+    }
+    exportPDF.mutate(payload);
+  };
   return (
     <div className="flex gap-2 mt-2">
-      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => { window.print(); toast.success("Print dialog opened"); }}>
-        <Printer className="w-3 h-3 mr-1" /> Print / Share
+      <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={handleExport} disabled={exportPDF.isPending || !data}>
+        {exportPDF.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Download className="w-3 h-3 mr-1" />}
+        {exportPDF.isPending ? "Exporting..." : "Export PDF"}
       </Button>
       <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => navigate(`/chat?prefill=${encodeURIComponent(`I just ran a ${title} calculation. Can you help me interpret the results and suggest next steps?`)}`)}>
         <MessageSquare className="w-3 h-3 mr-1" /> Discuss in Chat
@@ -1285,9 +1669,10 @@ function EmptyCalcState({ icon, text, sub }: { icon: React.ReactNode; text: stri
 }
 
 // ─── CALCULATOR PANEL WRAPPER ───────────────────────────────────────
-function CalcPanel({ title, icon, color, children, onCalculate, isLoading, result }: {
+function CalcPanel({ title, icon, color, children, onCalculate, isLoading, result, calcId, data, onDataChange }: {
   title: string; icon: React.ReactNode; color: string; children: React.ReactNode;
   onCalculate: () => void; isLoading: boolean; result: React.ReactNode;
+  calcId?: string; data?: any; onDataChange?: (calcId: string, data: any) => void;
 }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -1299,11 +1684,11 @@ function CalcPanel({ title, icon, color, children, onCalculate, isLoading, resul
         </CardHeader>
         <CardContent className="space-y-4">
           {children}
-          <Button size="sm" className="w-full" onClick={onCalculate} disabled={isLoading}>
+          <Button size="sm" className="w-full" onClick={() => { onCalculate(); }} disabled={isLoading}>
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
             Calculate
           </Button>
-          <QuickActions title={title} />
+          <QuickActions title={title} calcId={calcId} data={data} />
         </CardContent>
       </Card>
       <div className="lg:col-span-3">
@@ -1314,14 +1699,15 @@ function CalcPanel({ title, icon, color, children, onCalculate, isLoading, resul
 }
 
 // ─── Part F Calculator Panels ──────────────────────────────────────────
-function TaxProjectorPanel() {
+function TaxProjectorPanel({ onCalcData }: { onCalcData?: (id: string, data: any) => void }) {
   const { profile } = useFinancialProfile();
   const [wages, setWages] = usePersistedSlider("tax", "wages", profileValue(profile, "annualIncome", 150000));
   const [deductions, setDeductions] = usePersistedSlider("tax", "deductions", profileValue(profile, "itemizedDeductions", 0));
   const [stateCode, setStateCode] = useState(profileValue(profile, "stateCode", "TX"));
-  const taxCalc = trpc.taxProjector.project.useMutation({ onError: (e: any) => toast.error(e.message) });
+  const taxCalc = trpc.taxProjector.project.useMutation({ onSuccess: (d: any) => onCalcData?.("tax", d), onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Tax Projector" icon={<DollarSign className="w-4 h-4" />} color="text-violet-400"
+      calcId="tax" data={taxCalc.data}
       onCalculate={() => taxCalc.mutate({ filingStatus: "mfj", wages, itemizedDeductions: deductions, stateCode })}
       isLoading={taxCalc.isPending}
       result={taxCalc.data ? (
@@ -1368,16 +1754,17 @@ function TaxProjectorPanel() {
   );
 }
 
-function SSOptimizerPanel() {
+function SSOptimizerPanel({ onCalcData }: { onCalcData?: (id: string, data: any) => void }) {
   const { profile } = useFinancialProfile();
   const currentYear = new Date().getFullYear();
   const pAge = profileValue(profile, "currentAge", 62);
   const [birthYear, setBirthYear] = usePersistedSlider("ss", "birthYear", currentYear - pAge);
   const [pia, setPia] = usePersistedSlider("ss", "pia", profileValue(profile, "estimatedSSBenefit", 2500));
   const [lifeExpectancy, setLifeExpectancy] = usePersistedSlider("ss", "lifeExpectancy", profileValue(profile, "lifeExpectancy", 85));
-  const ssCalc = trpc.ssOptimizer.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
+  const ssCalc = trpc.ssOptimizer.optimize.useMutation({ onSuccess: (d: any) => onCalcData?.("ss", d), onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Social Security Optimizer" icon={<Calculator className="w-4 h-4" />} color="text-cyan-400"
+      calcId="ss" data={ssCalc.data}
       onCalculate={() => ssCalc.mutate({ birthYear, birthMonth: 6, earningsHistory: [], estimatedPIA: pia, filingStatus: "single", lifeExpectancy, discountRate: 0.03 })}
       isLoading={ssCalc.isPending}
       result={ssCalc.data ? (
@@ -1421,14 +1808,14 @@ function SSOptimizerPanel() {
     </CalcPanel>
   );
 }
-
-function MedicarePanel() {
+function MedicarePanel({ onCalcData }: { onCalcData?: (id: string, data: any) => void }) {
   const { profile } = useFinancialProfile();
   const [age, setAge] = usePersistedSlider("medicare", "age", profileValue(profile, "currentAge", 64));
   const [magi, setMagi] = usePersistedSlider("medicare", "magi", profileValue(profile, "annualIncome", 100000));
-  const medCalc = trpc.medicareNav.navigate.useMutation({ onError: (e: any) => toast.error(e.message) });
+  const medCalc = trpc.medicareNav.navigate.useMutation({ onSuccess: (d: any) => onCalcData?.("medicare", d), onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Medicare Navigator" icon={<Stethoscope className="w-4 h-4" />} color="text-rose-400"
+      calcId="medicare" data={medCalc.data}
       onCalculate={() => medCalc.mutate({ age, retirementAge: 65, magi, filingStatus: "mfj" })}
       isLoading={medCalc.isPending}
       result={medCalc.data ? (
@@ -1459,16 +1846,17 @@ function MedicarePanel() {
   );
 }
 
-function HSAOptimizerPanel() {
+function HSAOptimizerPanel({ onCalcData }: { onCalcData?: (id: string, data: any) => void }) {
   const { profile } = useFinancialProfile();
   const [age, setAge] = usePersistedSlider("hsa", "age", profileValue(profile, "currentAge", 40));
   const [annualContrib, setAnnualContrib] = usePersistedSlider("hsa", "annualContrib", profileValue(profile, "hsaContributions", 4000));
   const [hsaBalance, setHsaBalance] = usePersistedSlider("hsa", "hsaBalance", 5000);
   const [medExpenses, setMedExpenses] = usePersistedSlider("hsa", "medExpenses", 3000);
-  const hsaCalc = trpc.hsaOptimizer.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
+  const hsaCalc = trpc.hsaOptimizer.optimize.useMutation({ onSuccess: (d: any) => onCalcData?.("hsa", d), onError: (e: any) => toast.error(e.message) });
   const retYears = Math.max(1, 65 - age);
   return (
     <CalcPanel title="HSA Optimizer" icon={<Heart className="w-4 h-4" />} color="text-pink-400"
+      calcId="hsa" data={hsaCalc.data}
       onCalculate={() => hsaCalc.mutate({ age, coverageType: "family", currentBalance: hsaBalance, annualContribution: annualContrib, annualMedicalExpenses: medExpenses, marginalTaxRate: 0.24, stateTaxRate: 0.05, yearsToRetirement: retYears })}
       isLoading={hsaCalc.isPending}
       result={hsaCalc.data ? (
@@ -1520,13 +1908,14 @@ function HSAOptimizerPanel() {
   );
 }
 
-function CharitablePanel() {
+function CharitablePanel({ onCalcData }: { onCalcData?: (id: string, data: any) => void }) {
   const { profile } = useFinancialProfile();
   const [income, setIncome] = usePersistedSlider("charitable", "income", profileValue(profile, "annualIncome", 200000));
   const [givingAmount, setGivingAmount] = usePersistedSlider("charitable", "givingAmount", 20000);
-  const charCalc = trpc.charitableGiving.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
+  const charCalc = trpc.charitableGiving.optimize.useMutation({ onSuccess: (d: any) => onCalcData?.("charitable", d), onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Charitable Giving" icon={<HandCoins className="w-4 h-4" />} color="text-orange-400"
+      calcId="charitable" data={charCalc.data}
       onCalculate={() => charCalc.mutate({ annualDonationGoal: givingAmount, marginalTaxRate: 0.32, stateTaxRate: 0.05, age: profileValue(profile, "currentAge", 50), filingStatus: "mfj", agi: income, itemizesDeductions: true })}
       isLoading={charCalc.isPending}
       result={charCalc.data ? (
@@ -1584,16 +1973,17 @@ function CharitablePanel() {
   );
 }
 
-function DivorcePanel() {
+function DivorcePanel({ onCalcData }: { onCalcData?: (id: string, data: any) => void }) {
   const { profile } = useFinancialProfile();
   const [totalAssets, setTotalAssets] = usePersistedSlider("divorce", "totalAssets", profileValue(profile, "netWorth", 1000000));
   const [income1, setIncome1] = usePersistedSlider("divorce", "income1", profileValue(profile, "annualIncome", 150000));
   const [income2, setIncome2] = usePersistedSlider("divorce", "income2", profileValue(profile, "spouseIncome", 75000));
   const [yearsMarried, setYearsMarried] = usePersistedSlider("divorce", "yearsMarried", 15);
   const pAge = profileValue(profile, "currentAge", 45);
-  const divCalc = trpc.divorce.analyze.useMutation({ onError: (e: any) => toast.error(e.message) });
+  const divCalc = trpc.divorce.analyze.useMutation({ onSuccess: (d: any) => onCalcData?.("divorce", d), onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Divorce Analysis" icon={<Scale className="w-4 h-4" />} color="text-red-400"
+      calcId="divorce" data={divCalc.data}
       onCalculate={() => divCalc.mutate({
         assets: [
           { name: "Marital Assets", type: "other" as const, fairMarketValue: totalAssets, classification: "marital" as const, owner: "joint" as const },
@@ -1655,14 +2045,15 @@ function DivorcePanel() {
   );
 }
 
-function EducationPanel() {
+function EducationPanel({ onCalcData }: { onCalcData?: (id: string, data: any) => void }) {
   const { profile } = useFinancialProfile();
   const [childAge, setChildAge] = usePersistedSlider("education", "childAge", 5);
   const [annualCost, setAnnualCost] = usePersistedSlider("education", "annualCost", profileValue(profile, "educationCostPerChild", 40000));
   const [monthlyContribution, setMonthlyContribution] = usePersistedSlider("education", "monthlyContribution", 500);
-  const eduCalc = trpc.educationPlanner.plan.useMutation({ onError: (e: any) => toast.error(e.message) });
+  const eduCalc = trpc.educationPlanner.plan.useMutation({ onSuccess: (d: any) => onCalcData?.("education", d), onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Education Planner" icon={<GraduationCap className="w-4 h-4" />} color="text-indigo-400"
+      calcId="education" data={eduCalc.data}
       onCalculate={() => eduCalc.mutate({ childAge, annualCostToday: annualCost, monthlyContribution, marginalTaxRate: 0.24, stateTaxRate: 0.05 })}
       isLoading={eduCalc.isPending}
       result={eduCalc.data ? (

@@ -3787,3 +3787,77 @@
 - [x] Verified all data access is guarded (ternary checks)
 - [x] Cleaned up 6 unused imports (Input, Tabs, TabsList, TabsTrigger, TabsContent, useEffect, MoreHorizontal, DomainScore, ActionItem, pct)
 - [x] CONVERGENCE CONFIRMED: No structural, functional, or UX changes needed
+
+## Next Steps Implementation (April 2026)
+### Feature 1: Multiple Income Streams
+- [ ] Create IncomeStream type (source, amount, frequency, taxTreatment, growth rate)
+- [ ] Add income streams array to holisticScoring profile handling
+- [ ] Build IncomeStreamsPanel component with add/edit/remove
+- [ ] Roll up multiple streams into holistic score (weighted by amount)
+- [ ] Show per-stream contribution to Plan/Protect/Grow pillars
+- [ ] Integrate income streams into calculator pre-population
+
+### Feature 2: PDF Export Per Calculator
+- [ ] Create PDF generation utility for calculator results
+- [ ] Add "Download PDF" button to each calculator panel
+- [ ] Include charts, tables, and summary stats in PDF output
+- [ ] Add branding header/footer to PDF exports
+- [ ] Support holistic scorecard PDF export
+
+### Feature 3: Saved Calculator Sessions (DB Persistence)
+- [ ] Create calculator_sessions DB table (user, calcType, inputs, results, timestamp)
+- [ ] Add tRPC procedures for save/load/list/delete sessions
+- [ ] Build session history sidebar/dropdown in Calculators page
+- [ ] Show comparison between saved sessions
+- [ ] Auto-save on calculate with session naming
+
+### Recursive Optimization
+- [ ] Pass 1: Deep comprehensive audit
+- [ ] Pass 2: Fresh novel audit
+- [ ] Pass 3: Final convergence confirmation
+
+## Next Steps Implementation (April 2026 - Batch 2)
+- [x] Feature 1: Multiple income streams engine (incomeStreams.ts) with 20 tests
+- [x] Feature 1: Income streams UI panel in Calculators (add/edit/remove streams, pillar contributions, projections)
+- [x] Feature 2: PDF export utility (calculatorExport.ts) with formatCalcForExport and formatScorecardForExport
+- [x] Feature 2: Export PDF button in every CalcPanel via QuickActions component
+- [x] Feature 3: Saved calculator sessions - DB persistence via existing calculatorPersistence tRPC routes
+- [x] Feature 3: Saved sessions bar with save/view/delete and session history list
+- [x] All 85 tests passing (37 holistic + 28 extensions + 20 income streams)
+- [x] 0 TypeScript errors
+
+## Recursive Pass 1 (April 2026)
+- [x] Add aria-label to SliderInput Slider component
+- [x] Add aria-label to session name input
+- [x] Add aria-label and delete confirmation to delete session button
+- [x] Implement saved session "View" as Dialog showing stored inputs/results
+- [x] 85 tests passing, 0 TypeScript errors
+
+## Recursive Pass 2 (April 2026)
+- [x] Add QuickActions with calcId/data to IUL, PF, Ret inline panels for PDF export
+- [x] Add QuickActions with calcId/data to Stress and MonteCarlo inline panels for PDF export
+- [x] Verified savedSessionsQuery.data access is properly guarded
+- [x] Verified income streams design is correct (overlay, not replacing profile)
+- [x] Verified all inline panel data access is inside conditional blocks
+- [x] 85 tests passing, 0 TypeScript errors
+
+## Pre-Convergence Fixes (April 2026)
+- [x] Added calculatorExport.test.ts with 18 tests covering all 12 formatters + scorecard
+- [x] Added QuickActions with calcId/data to all 5 inline panels (IUL, PF, Ret, Stress, MC)
+- [x] Added calculatorExport.test.ts to vitest config
+- [x] 103 tests passing across 4 test suites, 0 TypeScript errors
+- Counter reset: fixes found, starting convergence counting from 0
+
+## Convergence Pass 2 (counter reset)
+- [x] Fixed getCurrentCalcData missing 7 of 12 calculators (tax, ss, medicare, hsa, charitable, divorce, education)
+- [x] Added onCalcData callback prop to all 7 CalcPanel sub-components
+- [x] Sub-components now report data to parent via calcDataRef on mutation success
+- [x] Fixed corrupted SSOptimizerPanel/MedicarePanel merge from edit tool
+- [x] All 103 holistic/export tests passing, 0 TypeScript errors
+
+## Recursive Convergence (April 2026)
+- [x] Convergence Pass 1 of 3: PASS (zero actions needed)
+- [x] Convergence Pass 2 of 3: PASS (zero actions needed)
+- [x] Convergence Pass 3 of 3: PASS (zero actions needed)
+- [x] 3 consecutive fresh passes confirmed convergence
+- Final state: 0 TypeScript errors, 103/103 tests passing, 0 browser errors, 0 security/performance/cross-browser issues

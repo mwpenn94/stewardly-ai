@@ -26,6 +26,8 @@ export default defineConfig({
       "client/src/lib/earcons.test.ts",
       "client/src/lib/holisticScoring.test.ts",
       "client/src/lib/holisticScoringExtensions.test.ts",
+      "client/src/lib/incomeStreams.test.ts",
+      "client/src/lib/calculatorExport.test.ts",
       "client/src/hooks/useFocusOnRouteChange.test.ts",
       "client/src/hooks/usePushToTalk.test.ts",
       "client/src/components/CommandPalette.test.ts",
