@@ -1622,10 +1622,10 @@ function CodeChatInterface() {
         </button>
         <button
           onClick={() => setShowFiles(!showFiles)}
-          className={`hidden md:flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${showFiles ? "bg-accent/12 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
+          className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] border transition-colors ${showFiles ? "bg-accent/12 border-accent/30 text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
           aria-label="Toggle file panel"
         >
-          <FolderOpen className="w-3 h-3" /> Files
+          <FolderOpen className="w-3 h-3" /> <span className="hidden sm:inline">Files</span>
         </button>
       </div>
 
@@ -1639,7 +1639,7 @@ function CodeChatInterface() {
       <div className="flex flex-1 min-h-0">
       {/* Pass 234: outline rail (user prompts only, click to scroll) */}
       {outlineOpen && (
-        <div className="hidden md:flex flex-col w-60 border-r border-border/40 overflow-y-auto bg-card/20">
+        <div className="fixed inset-0 z-40 flex flex-col bg-card md:static md:inset-auto md:z-auto md:w-60 md:border-r md:border-border/40 overflow-y-auto md:bg-card/20">
           <div className="p-3 border-b border-border/40 flex items-center justify-between text-xs font-medium">
             <span className="flex items-center gap-1.5">
               <List className="w-3.5 h-3.5" /> Outline
@@ -2085,7 +2085,7 @@ function CodeChatInterface() {
 
       {/* File panel (desktop only, toggled) */}
       {showFiles && (
-        <div className="hidden md:flex flex-col w-80 border-l border-border/40 overflow-y-auto">
+        <div className="fixed inset-0 z-40 flex flex-col bg-card md:static md:inset-auto md:z-auto md:w-80 md:border-l md:border-border/40 overflow-y-auto">
           <div className="p-3 border-b border-border/40 flex items-center justify-between">
             <span className="text-xs font-medium flex items-center gap-1.5">
               <FolderOpen className="w-3.5 h-3.5" /> File Explorer

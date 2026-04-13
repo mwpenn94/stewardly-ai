@@ -15,6 +15,7 @@ import { useLocation } from "wouter";
 import { useAudioCompanion } from "./AudioCompanion";
 import { dispatchFeedback } from "@/lib/FeedbackDispatcher";
 import { useCelebration } from "@/lib/CelebrationEngine";
+import { detectStt } from "@/lib/sttSupport";
 
 /* ── Types ──────────────────────────────────────────────────────── */
 
@@ -338,11 +339,17 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
 
   const startListening = useCallback(() => {
     if (recognitionRef.current) return;
+    // G59 fix: use centralized STT capability probe instead of raw constructor access
+    const caps = detectStt();
+    if (caps.mode === "unsupported") {
+      giveFeedback("voice.not_understood");
+      return;
+    }
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = true;
+    recognition.continuous = caps.supportsContinuous; // G59: respect browser capability
     recognition.interimResults = false;
     recognition.lang = "en-US";
 
