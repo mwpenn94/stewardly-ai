@@ -15,6 +15,7 @@ import {
   BarChart3, Database, Globe, RefreshCw, Shield, Target,
 } from "lucide-react";
 import { Link } from "wouter";
+import AppShell from "@/components/AppShell";
 
 export default function AdminIntelligenceDashboard() {
   const { user } = useAuth();
@@ -31,9 +32,10 @@ export default function AdminIntelligenceDashboard() {
   }
 
   return (
+    <AppShell title="Intelligence Dashboard">
     <div className="container py-6 space-y-6 max-w-7xl">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="hidden lg:flex items-center gap-4">
         <Link href="/admin">
           <Button variant="ghost" size="icon" aria-label="Back to admin"><ArrowLeft className="h-4 w-4" /></Button>
         </Link>
@@ -75,6 +77,7 @@ export default function AdminIntelligenceDashboard() {
         <TabsContent value="sofr"><SOFRTab /></TabsContent>
       </Tabs>
     </div>
+    </AppShell>
   );
 }
 

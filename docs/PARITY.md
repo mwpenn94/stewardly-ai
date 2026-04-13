@@ -1128,6 +1128,18 @@ log the conflict in section 4.
 | 1 | — | infra-only | all | scaffolded | f9dcfaaf |
 | 2 | 1 (cold new advisor) | first-visit placeholder friction | Stream 4 (chat UX) | shipped: placeholder text updated for all 3 roles | pending |
 
+## Continuous Build Loop Pass Log
+
+Pass 1 · angle: correctness + mobile UX + functional gaps · queue: mobile safe-area fix, viewport-fit, nav orphans, AppShell wrapping · commit SHA: d0f4cb5 · shipped: (1) viewport-fit=cover + maximum-scale=5 for WCAG pinch-zoom + notched phones; (2) safe-area-bottom CSS class now defined (was used but never created — dead class on AppShell bottom nav); (3) Chat.tsx mobile bottom nav: h-16→h-14 for consistency with AppShell + added safe-area-bottom class; (4) /consensus added to ADMIN_NAV + PersonaSidebar5 STEWARD layer (was orphaned route); (5) AdminIntelligenceDashboard wrapped in AppShell (was missing sidebar + mobile bottom nav); (6) PartGPages: InsuranceApplications, AdvisoryExecution, CarrierConnector wrapped in AppShell with hidden-on-mobile headers (were missing entire shell chrome on mobile) · deferred: remaining mobile audit items (dropdown overflow on small viewports, <320px edge cases)
+
+Pass 2 · angle: mobile responsive depth + dead code cleanup · queue: mobile layout fixes on 5 high-traffic pages, dead import removal · commit SHA: be7a68f · shipped: (1) LearningHome.tsx header stacks on mobile (flex-col sm:flex-row); (2) LeadPipeline.tsx kanban columns 200px→280px responsive + snap-x scroll; (3) IntelligenceHub.tsx quick actions 1-col on mobile; (4) EngineDashboard.tsx client profile grid 1-col on mobile; (5) dead Compliance import removed from App.tsx · deferred: WealthEngineHub button group (already responsive), table overflow (already handled)
+
+Pass 3 · angle: dead code + bundle hygiene · queue: PartGPages dead functions, dead page file, unused imports · commit SHA: 42b4bae · shipped: (1) PartGPages.tsx: removed 5 dead exported functions (LicensedReview, AgentOperations, InsuranceQuotes, EstatePlanning, PremiumFinance — ~350 lines, all redirect routes); (2) deleted Compliance.tsx (439 lines, orphaned after App.tsx redirect); (3) cleaned PartGPages imports (removed 13 unused icon imports). Net: −789 lines of dead code · deferred: MobileChatLayout.tsx (deliberate P3 backlog, not removing)
+
+Pass 4 · angle: SEO + page titles + accessibility · queue: missing page titles on public and internal pages · commit SHA: 1d815ec · shipped: (1) SignIn.tsx: SEOHead with title + description; (2) Terms.tsx: SEOHead with title; (3) Privacy.tsx: SEOHead with title; (4) PlatformGuide.tsx: document.title via useEffect; (5) DynamicIntegrations.tsx: added title prop to AppShell · deferred: Welcome.tsx, Landing.tsx, NewLanding.tsx, NotFound.tsx titles (low priority — redirect/ephemeral pages)
+
+Pass 5 · angle: error states + graceful degradation · queue: missing tRPC error handling on high-traffic pages · commit SHA: (pending) · shipped: (1) LearningHome.tsx: error banner with retry for 6 queries; (2) Workflows.tsx: error guard in reconciliation useEffect + error banner; (3) AgentManager.tsx: error state with retry in agent listing · deferred: IntelligenceHub analytics error states, MyWork error handling
+
 ## Angle Glossary
 | Angle ID | Description | Disjoint from |
 |---|---|---|

@@ -92,7 +92,6 @@ const IntelligenceHub = lazy(() => import("./pages/IntelligenceHub"));
 const AdvisoryHub = lazy(() => import("./pages/AdvisoryHub"));
 const RelationshipsHub = lazy(() => import("./pages/RelationshipsHub"));
 const Help = lazy(() => import("./pages/Help"));
-const Compliance = lazy(() => import("./pages/Compliance"));
 const Workflows = lazy(() => import("./pages/Workflows"));
 const AgentManager = lazy(() => import("./pages/AgentManager"));
 const Changelog = lazy(() => import("./pages/Changelog"));

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Shield, Database, Eye, Lock, Trash2, Download, Server, Clock } from "lucide-react";
 import { useLocation } from "wouter";
+import { SEOHead } from "@/components/SEOHead";
 
 const SECTIONS = [
   {
@@ -69,6 +70,7 @@ export default function Privacy() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEOHead title="Privacy Policy" description="How Stewardly AI protects your data and privacy" />
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />

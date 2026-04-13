@@ -3200,7 +3200,7 @@ export default function Chat() {
            so users switching between Chat and other pages always see
            the same bottom nav. Hidden on lg+ where sidebar is visible. */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-30 h-16 border-t border-border/50 bg-background/95 backdrop-blur-sm flex items-center justify-around lg:hidden"
+        className="fixed bottom-0 left-0 right-0 z-30 h-14 border-t border-border/50 bg-background/95 backdrop-blur-sm flex items-center justify-around lg:hidden safe-area-bottom"
         aria-label="Mobile navigation"
       >
         {[

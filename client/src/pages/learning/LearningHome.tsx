@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame, Search, ChevronDown } from "lucide-react";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame, Search, ChevronDown, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import {
   loadStreakFromStorage,
@@ -73,6 +73,8 @@ export default function LearningHome() {
   const recs = recsQ.data ?? [];
   const tracks = tracksQ.data ?? [];
 
+  const hasError = summaryQ.isError || licensesQ.isError || tracksQ.isError;
+
   const activeLicenses = licenses.filter((l: any) => l.status === "active").length;
   const expiringSoon = alerts.filter((a: any) => a.alertType === "expiration_warning").length;
 
@@ -80,7 +82,7 @@ export default function LearningHome() {
     <AppShell title="Learning">
       <SEOHead title="Learning & Licensing" description="Track exam mastery, manage licenses, and access study tools" />
       <div className="mx-auto max-w-6xl p-6 space-y-6">
-        <header className="flex items-center justify-between">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
               <GraduationCap className="h-8 w-8 text-accent" />
@@ -113,6 +115,19 @@ export default function LearningHome() {
             )}
           </div>
         </header>
+
+        {/* Error banner for failed queries */}
+        {hasError && (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="py-3 flex items-center gap-2 text-sm">
+              <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+              <span className="text-foreground/90">Some data failed to load.</span>
+              <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => { summaryQ.refetch(); licensesQ.refetch(); tracksQ.refetch(); }}>
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Snapshot row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

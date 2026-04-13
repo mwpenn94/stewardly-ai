@@ -151,7 +151,7 @@ function OverviewSection() {
         <CardHeader>
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-2">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Button variant="outline" className="h-auto py-3 flex-col gap-1" onClick={() => navigateToChat("Run a full portfolio risk analysis and provide a comprehensive report on my current positions, risk exposure, and recommendations", "financial")}>
             <Zap className="h-4 w-4" />
             <span className="text-xs">Run Full Analysis</span>

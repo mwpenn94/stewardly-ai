@@ -156,7 +156,7 @@ export default function Workflows() {
 
   // Reconcile the server snapshot into local state on first load.
   useEffect(() => {
-    if (!instancesQ.data) return;
+    if (instancesQ.isError || !instancesQ.data) return;
     if (instancesQ.data.length === 0) return;
     const reconciled: WorkflowInstance[] = instancesQ.data.map((row) => {
       const state = (row.state ?? {}) as Partial<WorkflowInstance>;
@@ -330,6 +330,13 @@ export default function Workflows() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
+        {instancesQ.isError && (
+          <div className="mb-4 flex items-center gap-2 text-sm p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+            <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+            <span>Failed to load saved workflows.</span>
+            <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => instancesQ.refetch()}>Retry</Button>
+          </div>
+        )}
         {activeWorkflow && activeTemplate ? (
           /* ─── ACTIVE WORKFLOW VIEW ─── */
           <div className="space-y-6">

@@ -6,6 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Chrome, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function SignIn() {
   const [, navigate] = useLocation();
@@ -77,6 +78,7 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <SEOHead title="Sign In" description="Sign in to your Stewardly AI financial advisory platform" />
       {/* Pass 100: Stewardship Gold — background glows use the accent (gold)
           + chart-2 (emerald) tokens so the gradient harmonizes with the
           new design system instead of the old sky-blue hardcoded palette. */}
