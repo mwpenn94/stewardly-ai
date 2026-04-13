@@ -31,8 +31,10 @@ export default function OperationsHub() {
   // Live data for QuickStats
   const gateList = trpc.agentic.gate.list.useQuery({ status: "pending" as any, limit: 100 }, { retry: false });
   const agentList = (trpc as any).agentic?.agent?.list?.useQuery?.({} as any, { retry: false }) ?? { data: undefined };
+  const complianceStats = trpc.compliance.getDashboardStats.useQuery(undefined, { retry: false });
   const pendingCount = (gateList.data ?? []).length;
   const runningAgents = ((agentList.data as any)?.agents ?? []).filter((a: any) => a.status === "running").length;
+  const complianceFlags = (complianceStats.data as any)?.flaggedCount ?? 0;
 
   return (
     <AppShell title="Operations">
@@ -54,7 +56,7 @@ export default function OperationsHub() {
           <QuickStat icon={Activity} label="Active Tasks" value={String(pendingCount + runningAgents)} color="text-blue-500" />
           <QuickStat icon={Bot} label="Running Agents" value={String(runningAgents)} color="text-green-500" />
           <QuickStat icon={Shield} label="Pending Reviews" value={String(pendingCount)} color="text-amber-500" />
-          <QuickStat icon={AlertTriangle} label="Compliance Flags" value="0" color="text-red-500" />
+          <QuickStat icon={AlertTriangle} label="Compliance Flags" value={String(complianceFlags)} color="text-red-500" />
         </div>
 
         {/* Intelligence Status */}
@@ -298,6 +300,12 @@ function AgentsSection() {
 }
 
 function ComplianceSection() {
+  const statsQ = trpc.compliance.getDashboardStats.useQuery(undefined, { retry: false, staleTime: 30_000 });
+  const stats = statsQ.data as any;
+  const total = stats?.totalCount ?? 0;
+  const flagged = stats?.flaggedCount ?? 0;
+  const passRate = total > 0 ? Math.round(((total - flagged) / total) * 100) : 100;
+
   return (
     <div className="space-y-4">
       <div className="grid gap-3 md:grid-cols-2">
@@ -306,49 +314,46 @@ function ComplianceSection() {
             <CardTitle className="text-base">Compliance Score</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-green-500">98%</div>
-            <p className="text-xs text-muted-foreground mt-1">Based on last 30 days of conversations</p>
+            <div className={`text-4xl font-bold ${passRate >= 90 ? "text-green-500" : passRate >= 70 ? "text-amber-500" : "text-red-500"}`}>
+              {statsQ.isLoading ? "—" : `${passRate}%`}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{total} reviews total, {flagged} flagged</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Pre-Screening</CardTitle>
+            <CardTitle className="text-base">Flagged Items</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-blue-500">100%</div>
-            <p className="text-xs text-muted-foreground mt-1">Responses passing compliance checks</p>
+            <div className={`text-4xl font-bold ${flagged === 0 ? "text-green-500" : "text-red-500"}`}>
+              {statsQ.isLoading ? "—" : flagged}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Requiring review or resolution</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Recent Compliance Events</CardTitle>
-          <CardDescription>Flagged items and resolution status</CardDescription>
+          <CardTitle className="text-base">Compliance Details</CardTitle>
+          <CardDescription>View the full compliance audit for detailed review history</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            No compliance flags in the last 7 days. All systems nominal.
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Regulatory Updates</CardTitle>
-          <CardDescription>Recent changes from SEC, FINRA, NAIC</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
-              <FileText className="h-4 w-4 text-blue-500 shrink-0" />
-              <div>
-                <div className="text-sm font-medium">Monitoring Active</div>
-                <div className="text-xs text-muted-foreground">SEC, FINRA, NAIC feeds checked daily</div>
-              </div>
-              <Badge variant="outline" className="ml-auto text-xs">Active</Badge>
+          {flagged === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              No compliance flags. All systems nominal.
             </div>
+          ) : (
+            <div className="text-center py-4 text-sm">
+              <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-amber-500" />
+              <p className="text-foreground">{flagged} item{flagged !== 1 ? "s" : ""} need attention</p>
+            </div>
+          )}
+          <div className="mt-3 text-center">
+            <Link href="/compliance-audit">
+              <Button variant="outline" size="sm">View Full Compliance Audit</Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

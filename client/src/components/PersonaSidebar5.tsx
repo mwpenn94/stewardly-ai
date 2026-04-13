@@ -70,7 +70,9 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "Workflows", icon: GitBranch, path: "/workflows", match: ["/workflows"] },
       { label: "Client Onboarding", icon: UserPlus, path: "/client-onboarding", match: ["/client-onboarding"] },
       { label: "Wealth Engine", icon: Sparkles, path: "/wealth-engine", match: ["/wealth-engine"] },
+      { label: "Engine Dashboard", icon: LayoutDashboard, path: "/engine-dashboard", match: ["/engine-dashboard"] },
       { label: "Calculators", icon: Calculator, path: "/calculators", match: ["/calculators"] },
+      { label: "Passive Actions", icon: RefreshCw, path: "/passive-actions", match: ["/passive-actions"] },
       { label: "Protection Score", icon: Shield, path: "/protection-score", match: ["/protection-score", "/financial-protection-score"] },
       { label: "Tax Planning", icon: DollarSign, path: "/tax-planning", match: ["/tax-planning"] },
       { label: "Estate Planning", icon: Scale, path: "/estate", match: ["/estate"] },
@@ -91,6 +93,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "advisor",
     items: [
       { label: "My Work", icon: Briefcase, path: "/my-work", match: ["/my-work"] },
+      { label: "Advisory", icon: Package, path: "/advisory", match: ["/advisory", "/advisory-execution"] },
       { label: "Clients", icon: Users, path: "/relationships", match: ["/relationships", "/portal", "/client-dashboard"] },
       { label: "Insurance & Apps", icon: FileCheck, path: "/insurance-applications", match: ["/insurance-applications", "/carrier-connector", "/suitability-panel"] },
       { label: "Lead Pipeline", icon: Target, path: "/leads", match: ["/leads"] },
@@ -136,6 +139,8 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "Comparables", icon: Compass, path: "/comparables", match: ["/comparables"] },
       { label: "Platform Reports", icon: FileText, path: "/admin/platform-reports", match: ["/admin/platform-reports"] },
       { label: "Knowledge Base", icon: BookOpen, path: "/admin/knowledge", match: ["/admin/knowledge"] },
+      { label: "Platform Guide", icon: BookOpen, path: "/admin/guide", match: ["/admin/guide"] },
+      { label: "Lead Sources", icon: Target, path: "/admin/lead-sources", match: ["/admin/lead-sources"] },
     ],
   },
 ];

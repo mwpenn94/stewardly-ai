@@ -25,6 +25,10 @@ export default function RelationshipsHub() {
   const [activeTab, setActiveTab] = useState("network");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Wire to real data where available
+  const leadsQ = trpc.leadPipeline.getPipeline.useQuery(undefined, { retry: false });
+  const leadCount = ((leadsQ.data as any)?.leads ?? []).length;
+
   return (
     <AppShell title="Relationships">
       <SEOHead title="Relationships" description="Professional network, meetings, and outreach campaigns" />
@@ -42,7 +46,7 @@ export default function RelationshipsHub() {
       <div className="container py-6">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <QuickStat icon={Users} label="Connections" value="0" color="text-blue-500" />
+          <QuickStat icon={Users} label="Leads" value={String(leadCount)} color="text-blue-500" />
           <QuickStat icon={Calendar} label="Upcoming" value="0" color="text-purple-500" />
           <QuickStat icon={Mail} label="Campaigns" value="0" color="text-green-500" />
           <QuickStat icon={Star} label="COI Partners" value="0" color="text-amber-500" />
