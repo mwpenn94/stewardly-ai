@@ -64,7 +64,7 @@ export const professionalsRouter = router({
     }),
 
   // ─── CRUD: Read / List Professionals ────────────────────────────────
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({
       search: z.string().optional(),
       specialization: z.string().optional(),
@@ -197,7 +197,7 @@ export const professionalsRouter = router({
     }),
 
   // ─── 5-TIER MATCHING ALGORITHM ─────────────────────────────────────
-  match: publicProcedure
+  match: protectedProcedure
     .input(z.object({
       needs: z.array(z.string()).optional(), // specializations needed
       location: z.string().optional(),
