@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { PremiumEstimator } from "@/components/wealth-engine/PremiumEstimator";
+import { SEOHead } from "@/components/SEOHead";
 
 interface QuickQuoteInputs {
   age: number;
@@ -140,6 +141,7 @@ export default function QuickQuoteFlowPage() {
 
   return (
     <AppShell title="Quick Quote">
+      <SEOHead title="Quick Quote" description="Insurance and financial product quick quote" />
       <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
         <header className="space-y-1">
           <h1 className="text-2xl font-bold">Quick Quote</h1>

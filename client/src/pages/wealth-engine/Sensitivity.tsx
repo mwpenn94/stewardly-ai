@@ -22,6 +22,7 @@ import { Loader2, Grid3X3, Info, ArrowLeft, AlertTriangle } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { SEOHead } from "@/components/SEOHead";
 
 // ─── PARAMETER DEFINITIONS ───────────────────────────────────────────
 
@@ -112,6 +113,7 @@ export default function Sensitivity() {
 
   return (
     <AppShell title="What-If Sensitivity">
+      <SEOHead title="What-If Sensitivity" description="Two-variable sensitivity analysis for financial projections" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Header */}
         <div className="hidden lg:flex items-center gap-3">

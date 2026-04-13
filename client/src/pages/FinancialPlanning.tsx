@@ -17,6 +17,7 @@ import {
 import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
 import type { FinancialProfile } from "@/stores/financialProfile";
+import { SEOHead } from "@/components/SEOHead";
 
 // ─── Monte Carlo Simulation ────────────────────────────────────────────
 function runMonteCarlo(params: {
@@ -104,6 +105,7 @@ export default function FinancialPlanning() {
 
   return (
     <AppShell title="Financial Planning">
+      <SEOHead title="Financial Planning" description="Monte Carlo projections, Social Security optimization, and goal tracking" />
     <div className="min-h-screen bg-background">
       {/* Header — hidden on mobile where AppShell provides navigation */}
       <div className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">

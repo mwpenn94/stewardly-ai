@@ -23,6 +23,7 @@ import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
+import { SEOHead } from "@/components/SEOHead";
 import {
   Loader2, Briefcase, PiggyBank, ChevronDown, ChevronUp,
   BarChart3, Users, TrendingUp,
@@ -132,6 +133,7 @@ export default function PracticeToWealthPage() {
 
   return (
     <AppShell title="Practice → Wealth">
+      <SEOHead title="Practice to Wealth" description="Business income projections for advisory practices" />
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold">The Wealth Bridge</h1>

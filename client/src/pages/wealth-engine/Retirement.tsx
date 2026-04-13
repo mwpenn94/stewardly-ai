@@ -38,6 +38,7 @@ import MonteCarloFan from "@/components/MonteCarloFan";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { useLocation } from "wouter";
+import { SEOHead } from "@/components/SEOHead";
 import {
   Loader2, Target, Sliders, ShieldCheck, TrendingDown, Shield,
   ChevronDown, ChevronUp, Info, AlertTriangle, ArrowLeft, ArrowRight, BarChart3, Grid3X3, BookOpen,
@@ -206,6 +207,7 @@ export default function RetirementPage() {
 
   return (
     <AppShell title="Retirement">
+      <SEOHead title="Retirement" description="Retirement planning projections and Monte Carlo analysis" />
       <SectionErrorBoundary sectionName="Retirement Calculator">
       <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
         <div className="flex items-start gap-3">

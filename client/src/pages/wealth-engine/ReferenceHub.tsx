@@ -21,6 +21,7 @@ import {
 import ProductReferencePanel from "@/components/ProductReferencePanel";
 import StressTestPanel from "@/components/StressTestPanel";
 import { sendFeedback } from "@/lib/feedbackSpecs";
+import { SEOHead } from "@/components/SEOHead";
 
 /* ── helpers ──────────────────────────────────────────────────── */
 
@@ -136,6 +137,7 @@ export default function ReferenceHub() {
 
   return (
     <AppShell title="Reference Hub">
+      <SEOHead title="Reference Hub" description="Wealth engine benchmarks, product data, and methodology" />
       <div className="max-w-5xl mx-auto space-y-6 p-4">
         {/* Header */}
         <div>

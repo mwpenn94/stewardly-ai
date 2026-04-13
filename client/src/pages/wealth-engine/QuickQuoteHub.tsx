@@ -50,6 +50,7 @@ import { RunTimelinePanel } from "@/components/financial-profile/RunTimelinePane
 import { LifeEventsBanner } from "@/components/financial-profile/LifeEventsBanner";
 import { LocalePicker } from "@/components/financial-profile/LocalePicker";
 import { useRunTimeline } from "@/hooks/useRunTimeline";
+import { SEOHead } from "@/components/SEOHead";
 import {
   QUICK_QUOTE_REGISTRY,
   groupQuotesByCategory,
@@ -102,6 +103,7 @@ export default function QuickQuoteHubPage() {
 
   return (
     <AppShell title="Quick Quote Hub">
+      <SEOHead title="Quick Quote Hub" description="Multi-line quick quote comparison tool" />
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
         <header className="space-y-1">
           <div className="flex items-center justify-between flex-wrap gap-3">

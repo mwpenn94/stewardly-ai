@@ -45,6 +45,7 @@ import { FinancialProfileBanner } from "@/components/financial-profile/Financial
 import { useRunTimeline } from "@/hooks/useRunTimeline";
 import { announcePolite } from "@/lib/a11y";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
+import { SEOHead } from "@/components/SEOHead";
 import {
   HE_PRESET_REGISTRY,
   comparisonConfidence,
@@ -175,6 +176,7 @@ export default function HolisticComparisonPage() {
 
   return (
     <AppShell title="Holistic Comparison">
+      <SEOHead title="Holistic Comparison" description="Compare holistic wealth strategies" />
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
         <header className="space-y-1">
           <div className="flex items-center gap-2">

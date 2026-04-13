@@ -51,6 +51,7 @@ import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
 import { useRunTimeline } from "@/hooks/useRunTimeline";
 import type { FinancialProfile } from "@/stores/financialProfile";
+import { SEOHead } from "@/components/SEOHead";
 import {
   ROLE_OPTIONS,
   profileToBizQuickQuote,
@@ -186,6 +187,7 @@ export default function BusinessIncomeQuickQuotePage() {
 
   return (
     <AppShell title="Business Income Quick Quote">
+      <SEOHead title="Business Income Quick Quote" description="Quick business income estimate tool" />
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         <header className="space-y-1">
           <div className="flex items-center gap-2">

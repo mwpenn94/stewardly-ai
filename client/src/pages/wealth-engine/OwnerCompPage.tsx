@@ -25,6 +25,7 @@ import {
   PiggyBank, ArrowLeft, BarChart3, Info,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { SEOHead } from "@/components/SEOHead";
 
 type Entity = "sole_prop" | "llc" | "s_corp" | "c_corp";
 
@@ -76,6 +77,7 @@ export default function OwnerCompPage() {
 
   return (
     <AppShell title="Owner Compensation">
+      <SEOHead title="Owner Compensation" description="Compare owner compensation across entity types" />
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
         {/* Header */}
         <div className="flex items-center gap-2">

@@ -42,6 +42,7 @@ import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { loadCalculatorContext, recordCalculation, saveCalculatorContext, type CalculationResult } from "@/lib/calculatorContext";
 import { useLocation } from "wouter";
+import { SEOHead } from "@/components/SEOHead";
 import {
   Loader2, PlayCircle, Award, ChevronDown, ChevronUp,
   AlertTriangle, TrendingDown, History, BarChart3,
@@ -274,6 +275,7 @@ export default function StrategyComparisonPage() {
 
   return (
     <AppShell title="Strategy Comparison">
+      <SEOHead title="Strategy Comparison" description="Compare wealth-building strategies side by side" />
       <SectionErrorBoundary sectionName="Strategy Comparison">
       <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

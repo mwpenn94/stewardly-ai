@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { Grid3x3, Play, Loader2, TrendingUp, Info, AlertTriangle } from "lucide-react";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import { checkGuardrail } from "@/components/wealth-engine/GuardrailWarning";
+import { SEOHead } from "@/components/SEOHead";
 
 /* ── parameter definitions ──────────────────────────────────── */
 
@@ -232,6 +233,7 @@ export default function WhatIfSensitivity() {
 
   return (
     <AppShell title="What-If Sensitivity">
+      <SEOHead title="What-If Sensitivity" description="Scenario modeling and sensitivity analysis" />
       <div className="max-w-5xl mx-auto space-y-6 p-4">
         {/* Header */}
         <div>

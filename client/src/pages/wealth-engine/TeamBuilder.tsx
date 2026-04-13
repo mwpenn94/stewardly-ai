@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import BackPlanFunnel from "@/components/BackPlanFunnel";
+import { SEOHead } from "@/components/SEOHead";
 
 /* ── helpers ───────────────────────────────────────────────────── */
 
@@ -227,6 +228,7 @@ export default function TeamBuilder() {
 
   return (
     <AppShell title="BIE Team Builder">
+      <SEOHead title="Team Builder" description="Build and analyze advisory team economics" />
       <div className="max-w-6xl mx-auto space-y-6 p-4">
         {/* Header */}
         <div className="flex items-center justify-between">

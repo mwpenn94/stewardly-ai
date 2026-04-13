@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SEOHead } from "@/components/SEOHead";
 import {
   ArrowLeft,
   Sparkles,
@@ -168,6 +169,7 @@ export default function DynamicIntegrations() {
   // ── Render ─────────────────────────────────────────────────────────
   return (
     <AppShell title="Dynamic Integrations">
+      <SEOHead title="Dynamic Integrations" description="Create and manage data integration blueprints" />
       <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild aria-label="Back to integrations">

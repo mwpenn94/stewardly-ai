@@ -20,6 +20,7 @@ import {
   Rocket, ArrowLeft, Loader2, TrendingUp, DollarSign, Sparkles, Calendar,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { SEOHead } from "@/components/SEOHead";
 
 const fmt = (n: number) => {
   if (!Number.isFinite(n)) return "—";
@@ -57,6 +58,7 @@ export default function BusinessValuationPage() {
 
   return (
     <AppShell title="Business Valuation">
+      <SEOHead title="Business Valuation" description="Estimate and compare business valuations" />
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon-sm" onClick={() => navigate("/wealth-engine")} aria-label="Back to wealth engine">

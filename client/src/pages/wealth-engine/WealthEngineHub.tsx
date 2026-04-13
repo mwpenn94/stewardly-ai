@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { SEOHead } from "@/components/SEOHead";
 import {
   Sparkles, Calculator, PiggyBank, Shield, TrendingUp, Building2,
   Scale, Heart, GraduationCap, HandCoins, DollarSign, Stethoscope,
@@ -455,6 +456,7 @@ export default function WealthEngineHub() {
 
   return (
     <AppShell title="Wealth Engine">
+      <SEOHead title="Wealth Engine" description="Unified wealth planning, protection, and growth engine" />
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
         <HubHero role={user?.role} />
 

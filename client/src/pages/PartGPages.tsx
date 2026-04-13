@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 import {
   DollarSign, Building2, Briefcase,
   FileCheck, TrendingUp,
@@ -33,6 +34,7 @@ export function InsuranceApplications() {
 
   return (
     <AppShell title="Insurance Applications">
+    <SEOHead title="Insurance Applications" description="Track and manage regulated insurance application submissions" />
     <div className="bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
@@ -98,6 +100,7 @@ export function AdvisoryExecution() {
 
   return (
     <AppShell title="Advisory Execution">
+    <SEOHead title="Advisory Execution" description="Execute and track advisory workflow steps" />
     <div className="bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
@@ -173,6 +176,7 @@ export function CarrierConnector() {
 
   return (
     <AppShell title="Carrier Connector">
+    <SEOHead title="Carrier Connector" description="Connect with insurance carriers and manage submissions" />
     <div className="bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
