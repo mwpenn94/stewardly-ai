@@ -3,14 +3,12 @@ import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
@@ -22,16 +20,53 @@ import {
   ChevronRight, Heart, Scale, GraduationCap, Stethoscope,
   HandCoins, ShieldAlert, Dice5, Target, Shield,
   Printer, MessageSquare, ArrowUpRight, ArrowDownRight,
-  Info, Zap, Activity, ChevronDown, ExternalLink,
+  Info, Zap, Activity, ChevronDown, ChevronUp, ExternalLink,
 } from "lucide-react";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
-import { computeHolisticScore, type HolisticResult, type DomainScore, fmt, pct } from "@/lib/holisticScoring";
+import { computeHolisticScore, type HolisticResult, fmt } from "@/lib/holisticScoring";
 import {
   groupByPillar, SCENARIO_PRESETS, runScenarioComparison, projectTrajectory,
-  type PillarSummary, type ScenarioResult, type YearProjection,
+  projectScenarioTrajectories, getCrossCalcRecommendations, getPeerBenchmark,
+  type PillarSummary, type ScenarioResult, type YearProjection, type ScenarioTrajectory,
+  type CrossCalcRecommendation, type PeerBenchmark,
 } from "@/lib/holisticScoringExtensions";
+import type { CostBenefitSummary, RecommendedProduct } from "@/lib/holisticScoring";
+
+// ─── LOCAL STORAGE PERSISTENCE ──────────────────────────────────────
+const CALC_STORAGE_KEY = "wealthbridge_calc_inputs";
+
+function loadCalcInputs(): Record<string, Record<string, number>> {
+  try {
+    const raw = localStorage.getItem(CALC_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveCalcInput(calcId: string, key: string, value: number) {
+  try {
+    const all = loadCalcInputs();
+    if (!all[calcId]) all[calcId] = {};
+    all[calcId][key] = value;
+    localStorage.setItem(CALC_STORAGE_KEY, JSON.stringify(all));
+  } catch { /* ignore */ }
+}
+
+function getCalcInput(calcId: string, key: string, fallback: number): number {
+  const all = loadCalcInputs();
+  return all[calcId]?.[key] ?? fallback;
+}
+
+/** Hook for persisted slider state */
+function usePersistedSlider(calcId: string, key: string, initial: number): [number, (v: number) => void] {
+  const [val, setVal] = useState(() => getCalcInput(calcId, key, initial));
+  const update = useCallback((v: number) => {
+    setVal(v);
+    saveCalcInput(calcId, key, v);
+  }, [calcId, key]);
+  return [val, update];
+}
 
 // ─── MINI BAR CHART ─────────────────────────────────────────────────
 function MiniBarChart({ data, valueKey, maxBars = 15 }: { data: any[]; valueKey: string; maxBars?: number }) {
@@ -103,7 +138,7 @@ function ScoreRing({ score, size = 64, stroke = 5, color = "var(--accent)" }: { 
   const c = 2 * Math.PI * r;
   const offset = c * (1 - score / 100);
   return (
-    <svg width={size} height={size} className="rotate-[-90deg]">
+    <svg width={size} height={size} className="rotate-[-90deg]" role="img" aria-label={`Score: ${score} out of 100`}>
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={stroke} className="text-secondary" />
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
         strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-700" />
@@ -160,20 +195,37 @@ function PillarCard({ pillar, onClick }: { pillar: PillarSummary; onClick?: () =
   );
 }
 
-// ─── TRAJECTORY MINI CHART ──────────────────────────────────────────
-function TrajectoryChart({ data, height = 80 }: { data: YearProjection[]; height?: number }) {
+// ─── TRAJECTORY MINI CHART (with scenario overlays) ──────────────────
+const SCENARIO_COLORS: Record<string, string> = {
+  baseline: "oklch(0.72 0.17 155)",
+  market_crash: "oklch(0.65 0.2 25)",
+  inflation_spike: "oklch(0.7 0.16 55)",
+  job_loss: "oklch(0.75 0.15 85)",
+  practice_disruption: "oklch(0.65 0.2 10)",
+  optimistic: "oklch(0.7 0.15 230)",
+};
+
+function TrajectoryChart({ data, overlays, height = 80 }: {
+  data: YearProjection[]; overlays?: ScenarioTrajectory[]; height?: number;
+}) {
   if (!data.length) return null;
-  const maxNW = Math.max(...data.map(d => d.netWorth), 1);
-  const minNW = Math.min(...data.map(d => d.netWorth), 0);
+  // Compute global min/max across all trajectories
+  const allNW = [data.map(d => d.netWorth), ...(overlays ?? []).map(o => o.trajectory.map(d => d.netWorth))].flat();
+  const maxNW = Math.max(...allNW, 1);
+  const minNW = Math.min(...allNW, 0);
   const range = maxNW - minNW || 1;
   const w = 100;
-  const points = data.map((d, i) => {
-    const x = (i / Math.max(data.length - 1, 1)) * w;
-    const y = height - ((d.netWorth - minNW) / range) * (height - 8) - 4;
-    return `${x},${y}`;
-  }).join(" ");
-  // Find retirement age index
+
+  const toPoints = (traj: YearProjection[]) =>
+    traj.map((d, i) => {
+      const x = (i / Math.max(traj.length - 1, 1)) * w;
+      const y = height - ((d.netWorth - minNW) / range) * (height - 8) - 4;
+      return `${x},${y}`;
+    }).join(" ");
+
+  const basePoints = toPoints(data);
   const retIdx = data.findIndex(d => d.retirementIncome > 0);
+
   return (
     <svg viewBox={`0 0 ${w} ${height}`} className="w-full" preserveAspectRatio="none" aria-label="Wealth trajectory chart">
       <defs>
@@ -182,27 +234,128 @@ function TrajectoryChart({ data, height = 80 }: { data: YearProjection[]; height
           <stop offset="100%" stopColor="oklch(0.76 0.14 80)" stopOpacity="0.02" />
         </linearGradient>
       </defs>
-      {/* Fill area */}
-      <polygon
-        points={`0,${height} ${points} ${w},${height}`}
-        fill="url(#traj-fill)"
-      />
-      {/* Line */}
-      <polyline points={points} fill="none" stroke="oklch(0.76 0.14 80)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      {/* Scenario overlay lines (behind baseline) */}
+      {(overlays ?? []).filter(o => o.preset.id !== "baseline").map(o => (
+        <polyline
+          key={o.preset.id}
+          points={toPoints(o.trajectory)}
+          fill="none"
+          stroke={SCENARIO_COLORS[o.preset.id] ?? "oklch(0.6 0.1 200)"}
+          strokeWidth="0.8"
+          strokeDasharray="3,2"
+          vectorEffect="non-scaling-stroke"
+          opacity="0.6"
+        />
+      ))}
+      {/* Baseline fill area */}
+      <polygon points={`0,${height} ${basePoints} ${w},${height}`} fill="url(#traj-fill)" />
+      {/* Baseline line */}
+      <polyline points={basePoints} fill="none" stroke="oklch(0.76 0.14 80)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
       {/* Retirement marker */}
       {retIdx > 0 && (
         <line
-          x1={(retIdx / Math.max(data.length - 1, 1)) * w}
-          y1="0"
-          x2={(retIdx / Math.max(data.length - 1, 1)) * w}
-          y2={height}
-          stroke="oklch(0.65 0.15 250)"
-          strokeWidth="0.5"
-          strokeDasharray="2,2"
-          vectorEffect="non-scaling-stroke"
+          x1={(retIdx / Math.max(data.length - 1, 1)) * w} y1="0"
+          x2={(retIdx / Math.max(data.length - 1, 1)) * w} y2={height}
+          stroke="oklch(0.65 0.15 250)" strokeWidth="0.5" strokeDasharray="2,2" vectorEffect="non-scaling-stroke"
         />
       )}
     </svg>
+  );
+}
+
+// ─── COST-BENEFIT CARD ───────────────────────────────────────────
+function CostBenefitCard({ cb }: { cb: CostBenefitSummary }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="bg-secondary/50 rounded-lg p-2.5">
+        <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Annual Cost</p>
+        <p className="text-sm font-semibold tabular-nums">{fmt(cb.annualPlanningCost)}</p>
+      </div>
+      <div className="bg-secondary/50 rounded-lg p-2.5">
+        <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Benefit Value</p>
+        <p className="text-sm font-semibold tabular-nums text-emerald-400">{fmt(cb.totalBenefitValue)}</p>
+      </div>
+      <div className="bg-secondary/50 rounded-lg p-2.5">
+        <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">ROI</p>
+        <p className={`text-sm font-semibold tabular-nums ${cb.roiRatio >= 1 ? "text-emerald-400" : "text-red-400"}`}>{cb.roiRatio.toFixed(1)}x</p>
+      </div>
+      <div className="bg-secondary/50 rounded-lg p-2.5">
+        <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">% of Income</p>
+        <p className="text-sm font-semibold tabular-nums">{(cb.pctOfIncome * 100).toFixed(1)}%</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── RECOMMENDED PRODUCTS STRIP ─────────────────────────────────
+function ProductStrip({ products }: { products: RecommendedProduct[] }) {
+  if (!products.length) return null;
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+      {products.slice(0, 5).map((p, i) => (
+        <div key={i} className="flex-shrink-0 px-3 py-2 rounded-lg bg-secondary/40 border border-border/40 min-w-[180px] max-w-[220px]">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className={`w-1.5 h-1.5 rounded-full ${p.priority === "high" ? "bg-red-400" : p.priority === "medium" ? "bg-amber-400" : "bg-emerald-400"}`} />
+            <span className="text-[10px] font-medium truncate">{p.product}</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground truncate">{p.coverage}</p>
+          <p className="text-[10px] font-mono text-accent">{p.estPremium}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── CROSS-CALC RECOMMENDATIONS ────────────────────────────────
+function CrossCalcStrip({ calcId, onSelect }: { calcId: string; onSelect: (id: string) => void }) {
+  const recs = getCrossCalcRecommendations(calcId);
+  if (!recs.length) return null;
+  return (
+    <div className="mt-4 p-3 rounded-lg bg-accent/5 border border-accent/10">
+      <p className="text-[10px] text-accent uppercase tracking-wider font-medium mb-2">Recommended Next Steps</p>
+      <div className="flex gap-2 flex-wrap">
+        {recs.map(r => (
+          <button
+            key={r.calcId}
+            onClick={() => onSelect(r.calcId)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-secondary/50 border border-border/50 hover:border-accent/30 transition-colors text-left group"
+          >
+            <ChevronRight className="w-3 h-3 text-accent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div>
+              <span className="text-[11px] font-medium">{r.label}</span>
+              <p className="text-[9px] text-muted-foreground/70">{r.reason}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── PEER BENCHMARK INDICATOR ──────────────────────────────────
+function PeerBenchmarkBar({ score, benchmark }: { score: number; benchmark: PeerBenchmark }) {
+  return (
+    <div className="flex items-center gap-2 text-[10px]" role="img" aria-label={`Your score ${score} compared to peers aged ${benchmark.ageRange}: median ${benchmark.median}, range ${benchmark.low}-${benchmark.high}`}>
+      <span className="text-muted-foreground/60 w-20">Peers ({benchmark.ageRange})</span>
+      <div className="flex-1 h-2 bg-secondary/60 rounded-full relative">
+        {/* Peer range */}
+        <div
+          className="absolute h-full bg-muted-foreground/15 rounded-full"
+          style={{ left: `${benchmark.low}%`, width: `${benchmark.high - benchmark.low}%` }}
+        />
+        {/* Peer median marker */}
+        <div
+          className="absolute top-0 h-full w-0.5 bg-muted-foreground/40"
+          style={{ left: `${benchmark.median}%` }}
+        />
+        {/* User score marker */}
+        <div
+          className="absolute top-[-2px] w-2.5 h-2.5 rounded-full bg-accent border-2 border-background"
+          style={{ left: `${Math.min(score, 98)}%`, transform: "translateX(-50%)" }}
+        />
+      </div>
+      <span className="text-muted-foreground/60 w-6 text-right">{score}</span>
+    </div>
   );
 }
 
@@ -277,9 +430,9 @@ const DEEP_DIVE_TOOLS = [
 export default function Calculators() {
   useAuth();
   const [, navigate] = useLocation();
-  const pil = usePlatformIntelligence();
+  usePlatformIntelligence();
   const { profile, hasProfile } = useFinancialProfile();
-  const [activeCalc, setActiveCalc] = useState<string>("iul");
+  const [activeCalc, setActiveCalc] = useState<string>("ret");
   const [showScenarios, setShowScenarios] = useState(false);
 
   // ─── Holistic Score (from profile) ──────────────────────────────
@@ -304,6 +457,23 @@ export default function Calculators() {
     if (!hasProfile) return [];
     try { return projectTrajectory(profile, 30); } catch { return []; }
   }, [profile, hasProfile]);
+
+  // ─── Scenario Trajectory Overlays ──────────────────────────────
+  const scenarioTrajectories = useMemo<ScenarioTrajectory[]>(() => {
+    if (!hasProfile || !showScenarios) return [];
+    try { return projectScenarioTrajectories(profile, 30); } catch { return []; }
+  }, [profile, hasProfile, showScenarios]);
+
+  // ─── Peer Benchmark ────────────────────────────────────────────
+  const peerBenchmark = useMemo<PeerBenchmark | null>(() => {
+    if (!hasProfile) return null;
+    const age = profileValue(profile, "currentAge", 35);
+    const income = profileValue(profile, "annualIncome", 100000);
+    return getPeerBenchmark(age, income);
+  }, [profile, hasProfile]);
+
+  // ─── Expanded actions toggle ───────────────────────────────────
+  const [showAllActions, setShowAllActions] = useState(false);
 
   // ─── Profile-driven defaults ────────────────────────────────────
   const pAge = profileValue(profile, "currentAge", 35);
@@ -411,10 +581,16 @@ export default function Calculators() {
                         <span className="text-accent font-medium">Year 30: {fmt(trajectory[trajectory.length - 1]?.netWorth ?? 0)}</span>
                       </div>
                     </div>
-                    <TrajectoryChart data={trajectory} height={64} />
-                    <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground/60">
+                    <TrajectoryChart data={trajectory} overlays={scenarioTrajectories} height={64} />
+                    <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground/60 flex-wrap">
                       <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-accent rounded" /> Net Worth</span>
                       <span className="flex items-center gap-1"><span className="w-2 h-0.5 bg-blue-400 rounded" style={{ borderStyle: "dashed" }} /> Retirement</span>
+                      {showScenarios && scenarioTrajectories.length > 0 && scenarioTrajectories.filter(s => s.preset.id !== "baseline").map(s => (
+                        <span key={s.preset.id} className="flex items-center gap-1">
+                          <span className="w-2 h-0.5 rounded" style={{ backgroundColor: SCENARIO_COLORS[s.preset.id], borderStyle: "dashed" }} />
+                          <span className="capitalize">{s.preset.label}</span>
+                        </span>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
@@ -447,16 +623,50 @@ export default function Calculators() {
               </Card>
             </div>
 
-            {/* Top actions strip */}
+            {/* Peer Benchmark */}
+            {peerBenchmark && (
+              <div className="mt-3">
+                <PeerBenchmarkBar score={holisticResult.compositeScore} benchmark={peerBenchmark} />
+              </div>
+            )}
+
+            {/* Cost-Benefit Summary */}
+            {holisticResult.costBenefit.annualPlanningCost > 0 && (
+              <div className="mt-3">
+                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-2">Cost-Benefit Analysis</p>
+                <CostBenefitCard cb={holisticResult.costBenefit} />
+              </div>
+            )}
+
+            {/* Recommended Products */}
+            {holisticResult.products.length > 0 && (
+              <div className="mt-3">
+                <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-2">Recommended Products ({holisticResult.products.length})</p>
+                <ProductStrip products={holisticResult.products} />
+              </div>
+            )}
+
+            {/* Expanded actions strip */}
             {holisticResult.actions.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-1 mt-3 scrollbar-thin">
-                {holisticResult.actions.slice(0, 4).map((a, i) => (
-                  <div key={i} className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50 text-[10px]">
-                    <span className={`w-1.5 h-1.5 rounded-full ${a.priority === 1 ? "bg-red-400" : a.priority === 2 ? "bg-amber-400" : "bg-emerald-400"}`} />
-                    <span className="text-muted-foreground">{a.area}:</span>
-                    <span className="font-medium truncate max-w-[200px]">{a.action}</span>
-                  </div>
-                ))}
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Action Items ({holisticResult.actions.length})</p>
+                  {holisticResult.actions.length > 4 && (
+                    <Button variant="ghost" size="sm" className="text-[10px] h-5 px-1.5" onClick={() => setShowAllActions(!showAllActions)}>
+                      {showAllActions ? <>Less <ChevronUp className="w-3 h-3 ml-0.5" /></> : <>All <ChevronDown className="w-3 h-3 ml-0.5" /></>}
+                    </Button>
+                  )}
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin flex-wrap">
+                  {(showAllActions ? holisticResult.actions : holisticResult.actions.slice(0, 4)).map((a, i) => (
+                    <div key={i} className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50 text-[10px]">
+                      <span className={`w-1.5 h-1.5 rounded-full ${a.priority === 1 ? "bg-red-400" : a.priority === 2 ? "bg-amber-400" : "bg-emerald-400"}`} />
+                      <span className="text-muted-foreground">{a.area}:</span>
+                      <span className="font-medium truncate max-w-[200px]">{a.action}</span>
+                      <TooltipProvider><Tooltip><TooltipTrigger asChild><span className="text-muted-foreground/40 cursor-help"><Info className="w-3 h-3" /></span></TooltipTrigger><TooltipContent side="top" className="max-w-[250px] text-xs"><p>{a.timeline} &middot; Est. {a.estCost}</p></TooltipContent></Tooltip></TooltipProvider>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </section>
@@ -497,35 +707,51 @@ export default function Calculators() {
             <Badge variant="outline" className="text-[9px]">{CALCULATORS.length} tools</Badge>
           </div>
 
-          {/* Calculator grid selector */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-6">
-            {CALCULATORS.map(calc => (
-              <button
-                key={calc.id}
-                onClick={() => setActiveCalc(calc.id)}
-                className={`flex items-start gap-2.5 p-3 rounded-xl border text-left transition-all ${
-                  activeCalc === calc.id
-                    ? "bg-accent/8 border-accent/30 ring-1 ring-accent/10"
-                    : "bg-card/40 border-border/50 hover:border-border"
-                }`}
-              >
-                <div className={`mt-0.5 ${activeCalc === calc.id ? calc.color : "text-muted-foreground"}`}>
-                  {calc.icon}
+          {/* Calculator grid selector — grouped by pillar */}
+          {(["plan", "protect", "grow"] as const).map(pillarId => {
+            const pillarCalcs = CALCULATORS.filter(c => c.pillar === pillarId);
+            const pillarMeta = { plan: { label: "Plan", icon: <Target className="w-3 h-3" />, accent: "text-amber-400", tip: "Cash flow, retirement, tax, education, healthcare" }, protect: { label: "Protect", icon: <Shield className="w-3 h-3" />, accent: "text-blue-400", tip: "Insurance, estate planning, asset protection" }, grow: { label: "Grow", icon: <TrendingUp className="w-3 h-3" />, accent: "text-emerald-400", tip: "Investment analysis, stress testing, simulations" } };
+            const meta = pillarMeta[pillarId];
+            return (
+              <div key={pillarId} className="mb-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className={meta.accent}>{meta.icon}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{meta.label}</span>
+                  <TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground/40 cursor-help" /></TooltipTrigger><TooltipContent side="right" className="text-xs max-w-[200px]">{meta.tip}</TooltipContent></Tooltip></TooltipProvider>
+                  <Badge variant="outline" className="text-[8px] ml-auto">{pillarCalcs.length}</Badge>
                 </div>
-                <div className="min-w-0">
-                  <p className={`text-xs font-medium ${activeCalc === calc.id ? "text-foreground" : "text-muted-foreground"}`}>
-                    {calc.label}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/70 mt-0.5 line-clamp-1">{calc.desc}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {pillarCalcs.map(calc => (
+                    <button
+                      key={calc.id}
+                      onClick={() => setActiveCalc(calc.id)}
+                      aria-pressed={activeCalc === calc.id}
+                      className={`flex items-start gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                        activeCalc === calc.id
+                          ? "bg-accent/8 border-accent/30 ring-1 ring-accent/10"
+                          : "bg-card/40 border-border/50 hover:border-border"
+                      }`}
+                    >
+                      <div className={`mt-0.5 ${activeCalc === calc.id ? calc.color : "text-muted-foreground"}`}>
+                        {calc.icon}
+                      </div>
+                      <div className="min-w-0">
+                        <p className={`text-xs font-medium ${activeCalc === calc.id ? "text-foreground" : "text-muted-foreground"}`}>
+                          {calc.label}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/70 mt-0.5 line-clamp-1">{calc.desc}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              </button>
-            ))}
-          </div>
+              </div>
+            );
+          })}
 
           {/* ═══ CALCULATOR PANELS ═════════════════════════════════ */}
 
           {/* ─── IUL CALCULATOR ─────────────────────────────────── */}
-          {activeCalc === "iul" && (
+          {activeCalc === "iul" && (<>
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               <Card className="lg:col-span-2 bg-card/60 border-border/50">
                 <CardHeader className="pb-3">
@@ -542,7 +768,7 @@ export default function Calculators() {
                   <SliderInput label="Death Benefit" value={iulDB} onChange={setIulDB} min={50000} max={10000000} step={25000} format={(v) => fmt(v)} />
                   <Button
                     className="w-full bg-accent text-accent-foreground hover:bg-accent/90 text-sm h-10 gap-2"
-                    onClick={() => { iulCalc.mutate({ age: iulAge, annualPremium: iulPremium, years: iulYears, illustratedRate: iulRate, deathBenefit: iulDB }); pil.giveFeedback("engine.calculation_complete"); }}
+                    onClick={() => iulCalc.mutate({ age: iulAge, annualPremium: iulPremium, years: iulYears, illustratedRate: iulRate, deathBenefit: iulDB })}
                     disabled={iulCalc.isPending}
                   >
                     {iulCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Projection</>}
@@ -597,11 +823,11 @@ export default function Calculators() {
                   <EmptyCalcState icon={<BarChart3 className="w-6 h-6" />} text="Adjust the sliders and click Calculate" sub="Results will appear here with charts and projections" />
                 )}
               </div>
-            </div>
-          )}
-
-          {/* ─── PREMIUM FINANCE CALCULATOR ─────────────────────── */}
-          {activeCalc === "pf" && (
+              </div>
+            <CrossCalcStrip calcId="iul" onSelect={setActiveCalc} />
+          </>)}
+          {/* ─── PREMIUM FINANCE CALCULATOR ───────────────────── */}
+          {activeCalc === "pf" && (<>
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               <Card className="lg:col-span-2 bg-card/60 border-border/50">
                 <CardHeader className="pb-3">
@@ -720,10 +946,10 @@ export default function Calculators() {
                 )}
               </div>
             </div>
-          )}
-
-          {/* ─── RETIREMENT CALCULATOR ──────────────────────────── */}
-          {activeCalc === "ret" && (
+            <CrossCalcStrip calcId="pf" onSelect={setActiveCalc} />
+          </>)}
+          {/* ─── RETIREMENT CALCULATOR ──────────────────────── */}
+          {activeCalc === "ret" && (<>
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               <Card className="lg:col-span-2 bg-card/60 border-border/50">
                 <CardHeader className="pb-3">
@@ -795,25 +1021,25 @@ export default function Calculators() {
                 )}
               </div>
             </div>
-          )}
-
+            <CrossCalcStrip calcId="ret" onSelect={setActiveCalc} />
+          </>)}
           {/* ─── TAX PROJECTOR ──────────────────────────────── */}
-          {activeCalc === "tax" && <TaxProjectorPanel />}
+          {activeCalc === "tax" && <><TaxProjectorPanel /><CrossCalcStrip calcId="tax" onSelect={setActiveCalc} /></>}
           {/* ─── SOCIAL SECURITY ─────────────────────────────── */}
-          {activeCalc === "ss" && <SSOptimizerPanel />}
+          {activeCalc === "ss" && <><SSOptimizerPanel /><CrossCalcStrip calcId="ss" onSelect={setActiveCalc} /></>}
           {/* ─── MEDICARE ───────────────────────────────────── */}
-          {activeCalc === "medicare" && <MedicarePanel />}
+          {activeCalc === "medicare" && <><MedicarePanel /><CrossCalcStrip calcId="medicare" onSelect={setActiveCalc} /></>}
           {/* ─── HSA OPTIMIZER ──────────────────────────────── */}
-          {activeCalc === "hsa" && <HSAOptimizerPanel />}
+          {activeCalc === "hsa" && <><HSAOptimizerPanel /><CrossCalcStrip calcId="hsa" onSelect={setActiveCalc} /></>}
           {/* ─── CHARITABLE GIVING ──────────────────────────── */}
-          {activeCalc === "charitable" && <CharitablePanel />}
+          {activeCalc === "charitable" && <><CharitablePanel /><CrossCalcStrip calcId="charitable" onSelect={setActiveCalc} /></>}
           {/* ─── DIVORCE ANALYSIS ───────────────────────────── */}
-          {activeCalc === "divorce" && <DivorcePanel />}
+          {activeCalc === "divorce" && <><DivorcePanel /><CrossCalcStrip calcId="divorce" onSelect={setActiveCalc} /></>}
           {/* ─── EDUCATION PLANNER ──────────────────────────── */}
-          {activeCalc === "education" && <EducationPanel />}
+          {activeCalc === "education" && <><EducationPanel /><CrossCalcStrip calcId="education" onSelect={setActiveCalc} /></>}
 
           {/* ─── STRESS TEST ──────────────────────────────────── */}
-          {activeCalc === "stress" && (
+          {activeCalc === "stress" && (<>
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               <Card className="lg:col-span-2 bg-card/60 border-border/50">
                 <CardHeader className="pb-3">
@@ -901,10 +1127,10 @@ export default function Calculators() {
                 )}
               </div>
             </div>
-          )}
-
-          {/* ─── MONTE CARLO SIMULATION ────────────────────────── */}
-          {activeCalc === "montecarlo" && (
+            <CrossCalcStrip calcId="stress" onSelect={setActiveCalc} />
+          </>)}
+          {/* ─── MONTE CARLO SIMULATION ──────────────────────── */}
+          {activeCalc === "montecarlo" && (<>
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
               <Card className="lg:col-span-2 bg-card/60 border-border/50">
                 <CardHeader className="pb-3">
@@ -989,7 +1215,8 @@ export default function Calculators() {
                 )}
               </div>
             </div>
-          )}
+            <CrossCalcStrip calcId="montecarlo" onSelect={setActiveCalc} />
+          </>)}
         </section>
 
         <Separator className="opacity-50" />
@@ -1089,8 +1316,8 @@ function CalcPanel({ title, icon, color, children, onCalculate, isLoading, resul
 // ─── Part F Calculator Panels ──────────────────────────────────────────
 function TaxProjectorPanel() {
   const { profile } = useFinancialProfile();
-  const [wages, setWages] = useState(profileValue(profile, "annualIncome", 150000));
-  const [deductions, setDeductions] = useState(profileValue(profile, "itemizedDeductions", 0));
+  const [wages, setWages] = usePersistedSlider("tax", "wages", profileValue(profile, "annualIncome", 150000));
+  const [deductions, setDeductions] = usePersistedSlider("tax", "deductions", profileValue(profile, "itemizedDeductions", 0));
   const [stateCode, setStateCode] = useState(profileValue(profile, "stateCode", "TX"));
   const taxCalc = trpc.taxProjector.project.useMutation({ onError: (e: any) => toast.error(e.message) });
   return (
@@ -1145,9 +1372,9 @@ function SSOptimizerPanel() {
   const { profile } = useFinancialProfile();
   const currentYear = new Date().getFullYear();
   const pAge = profileValue(profile, "currentAge", 62);
-  const [birthYear, setBirthYear] = useState(currentYear - pAge);
-  const [pia, setPia] = useState(profileValue(profile, "estimatedSSBenefit", 2500));
-  const [lifeExpectancy, setLifeExpectancy] = useState(profileValue(profile, "lifeExpectancy", 85));
+  const [birthYear, setBirthYear] = usePersistedSlider("ss", "birthYear", currentYear - pAge);
+  const [pia, setPia] = usePersistedSlider("ss", "pia", profileValue(profile, "estimatedSSBenefit", 2500));
+  const [lifeExpectancy, setLifeExpectancy] = usePersistedSlider("ss", "lifeExpectancy", profileValue(profile, "lifeExpectancy", 85));
   const ssCalc = trpc.ssOptimizer.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Social Security Optimizer" icon={<Calculator className="w-4 h-4" />} color="text-cyan-400"
@@ -1197,8 +1424,8 @@ function SSOptimizerPanel() {
 
 function MedicarePanel() {
   const { profile } = useFinancialProfile();
-  const [age, setAge] = useState(profileValue(profile, "currentAge", 64));
-  const [magi, setMagi] = useState(profileValue(profile, "annualIncome", 100000));
+  const [age, setAge] = usePersistedSlider("medicare", "age", profileValue(profile, "currentAge", 64));
+  const [magi, setMagi] = usePersistedSlider("medicare", "magi", profileValue(profile, "annualIncome", 100000));
   const medCalc = trpc.medicareNav.navigate.useMutation({ onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Medicare Navigator" icon={<Stethoscope className="w-4 h-4" />} color="text-rose-400"
@@ -1234,10 +1461,10 @@ function MedicarePanel() {
 
 function HSAOptimizerPanel() {
   const { profile } = useFinancialProfile();
-  const [age, setAge] = useState(profileValue(profile, "currentAge", 40));
-  const [annualContrib, setAnnualContrib] = useState(profileValue(profile, "hsaContributions", 4000));
-  const [hsaBalance, setHsaBalance] = useState(5000);
-  const [medExpenses, setMedExpenses] = useState(3000);
+  const [age, setAge] = usePersistedSlider("hsa", "age", profileValue(profile, "currentAge", 40));
+  const [annualContrib, setAnnualContrib] = usePersistedSlider("hsa", "annualContrib", profileValue(profile, "hsaContributions", 4000));
+  const [hsaBalance, setHsaBalance] = usePersistedSlider("hsa", "hsaBalance", 5000);
+  const [medExpenses, setMedExpenses] = usePersistedSlider("hsa", "medExpenses", 3000);
   const hsaCalc = trpc.hsaOptimizer.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
   const retYears = Math.max(1, 65 - age);
   return (
@@ -1295,8 +1522,8 @@ function HSAOptimizerPanel() {
 
 function CharitablePanel() {
   const { profile } = useFinancialProfile();
-  const [income, setIncome] = useState(profileValue(profile, "annualIncome", 200000));
-  const [givingAmount, setGivingAmount] = useState(20000);
+  const [income, setIncome] = usePersistedSlider("charitable", "income", profileValue(profile, "annualIncome", 200000));
+  const [givingAmount, setGivingAmount] = usePersistedSlider("charitable", "givingAmount", 20000);
   const charCalc = trpc.charitableGiving.optimize.useMutation({ onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Charitable Giving" icon={<HandCoins className="w-4 h-4" />} color="text-orange-400"
@@ -1359,10 +1586,10 @@ function CharitablePanel() {
 
 function DivorcePanel() {
   const { profile } = useFinancialProfile();
-  const [totalAssets, setTotalAssets] = useState(profileValue(profile, "netWorth", 1000000));
-  const [income1, setIncome1] = useState(profileValue(profile, "annualIncome", 150000));
-  const [income2, setIncome2] = useState(profileValue(profile, "spouseIncome", 75000));
-  const [yearsMarried, setYearsMarried] = useState(15);
+  const [totalAssets, setTotalAssets] = usePersistedSlider("divorce", "totalAssets", profileValue(profile, "netWorth", 1000000));
+  const [income1, setIncome1] = usePersistedSlider("divorce", "income1", profileValue(profile, "annualIncome", 150000));
+  const [income2, setIncome2] = usePersistedSlider("divorce", "income2", profileValue(profile, "spouseIncome", 75000));
+  const [yearsMarried, setYearsMarried] = usePersistedSlider("divorce", "yearsMarried", 15);
   const pAge = profileValue(profile, "currentAge", 45);
   const divCalc = trpc.divorce.analyze.useMutation({ onError: (e: any) => toast.error(e.message) });
   return (
@@ -1430,9 +1657,9 @@ function DivorcePanel() {
 
 function EducationPanel() {
   const { profile } = useFinancialProfile();
-  const [childAge, setChildAge] = useState(5);
-  const [annualCost, setAnnualCost] = useState(profileValue(profile, "educationCostPerChild", 40000));
-  const [monthlyContribution, setMonthlyContribution] = useState(500);
+  const [childAge, setChildAge] = usePersistedSlider("education", "childAge", 5);
+  const [annualCost, setAnnualCost] = usePersistedSlider("education", "annualCost", profileValue(profile, "educationCostPerChild", 40000));
+  const [monthlyContribution, setMonthlyContribution] = usePersistedSlider("education", "monthlyContribution", 500);
   const eduCalc = trpc.educationPlanner.plan.useMutation({ onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Education Planner" icon={<GraduationCap className="w-4 h-4" />} color="text-indigo-400"

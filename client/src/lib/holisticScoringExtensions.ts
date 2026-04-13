@@ -142,10 +142,26 @@ export function applyScenario(
   overrides: ScenarioOverride,
 ): FinancialProfile {
   const p = { ...profile };
-  if (overrides.returnRate !== undefined) p.equitiesReturn = overrides.returnRate;
+  if (overrides.returnRate !== undefined) {
+    p.equitiesReturn = overrides.returnRate;
+    // Also adjust portfolio growth expectations
+    if (p.expectedReturn !== undefined) p.expectedReturn = overrides.returnRate;
+  }
+  if (overrides.inflationRate !== undefined) {
+    p.inflationRate = overrides.inflationRate;
+    // Adjust real return expectations
+    if (p.expectedInflation !== undefined) p.expectedInflation = overrides.inflationRate;
+  }
   if (overrides.monthlySavings !== undefined) {
     p.monthlyContribution = overrides.monthlySavings;
     p.monthlySavings = overrides.monthlySavings;
+  }
+  if (overrides.incomeGrowth !== undefined) {
+    p.incomeGrowthRate = overrides.incomeGrowth;
+    // If income growth is zero, reduce projected income for scoring
+    if (overrides.incomeGrowth === 0 && p.annualIncome) {
+      p.projectedIncome = p.annualIncome; // no growth
+    }
   }
   return p;
 }
@@ -191,6 +207,129 @@ export interface YearProjection {
 function n(v: unknown, fallback = 0): number {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   return fallback;
+}
+
+/**
+ * Project multiple scenario trajectories for overlay comparison.
+ * Returns an array of { preset, trajectory } for each scenario.
+ */
+export interface ScenarioTrajectory {
+  preset: ScenarioPreset;
+  trajectory: YearProjection[];
+}
+
+export function projectScenarioTrajectories(
+  profile: FinancialProfile,
+  years: number = 30,
+  presets?: ScenarioPreset[],
+): ScenarioTrajectory[] {
+  const scenarios = presets ?? SCENARIO_PRESETS;
+  return scenarios.map(preset => ({
+    preset,
+    trajectory: projectTrajectory(profile, years, preset.overrides),
+  }));
+}
+
+/**
+ * Cross-calculator recommendations based on which calculator was just run.
+ * Returns suggested next calculators with reasoning.
+ */
+export interface CrossCalcRecommendation {
+  calcId: string;
+  label: string;
+  reason: string;
+  priority: number; // 1=high, 2=medium, 3=low
+}
+
+export const CROSS_CALC_MAP: Record<string, CrossCalcRecommendation[]> = {
+  tax: [
+    { calcId: "charitable", label: "Charitable Giving", reason: "Optimize deductions to reduce your tax burden", priority: 1 },
+    { calcId: "hsa", label: "HSA Optimizer", reason: "Triple tax advantage reduces taxable income", priority: 1 },
+    { calcId: "ret", label: "Retirement", reason: "Pre-tax contributions lower current tax liability", priority: 2 },
+  ],
+  ret: [
+    { calcId: "ss", label: "Social Security", reason: "Claiming strategy affects retirement income", priority: 1 },
+    { calcId: "medicare", label: "Medicare", reason: "Healthcare costs are a major retirement expense", priority: 1 },
+    { calcId: "montecarlo", label: "Monte Carlo", reason: "Test your retirement plan against 1,000 market scenarios", priority: 2 },
+  ],
+  iul: [
+    { calcId: "pf", label: "Premium Finance", reason: "Leverage analysis for larger IUL policies", priority: 1 },
+    { calcId: "tax", label: "Tax Projector", reason: "See the tax-free growth impact on your overall plan", priority: 2 },
+    { calcId: "stress", label: "Stress Test", reason: "Test IUL cash value against market downturns", priority: 2 },
+  ],
+  pf: [
+    { calcId: "iul", label: "IUL Projection", reason: "Compare financed vs self-funded IUL scenarios", priority: 1 },
+    { calcId: "stress", label: "Stress Test", reason: "Validate leverage strategy under market stress", priority: 1 },
+  ],
+  ss: [
+    { calcId: "ret", label: "Retirement", reason: "Integrate SS income into your retirement projection", priority: 1 },
+    { calcId: "medicare", label: "Medicare", reason: "Coordinate Medicare enrollment with SS claiming", priority: 1 },
+    { calcId: "tax", label: "Tax Projector", reason: "SS benefits may be taxable — see the impact", priority: 2 },
+  ],
+  medicare: [
+    { calcId: "hsa", label: "HSA Optimizer", reason: "HSA funds can cover Medicare premiums tax-free", priority: 1 },
+    { calcId: "ss", label: "Social Security", reason: "MAGI affects Medicare IRMAA surcharges", priority: 2 },
+  ],
+  hsa: [
+    { calcId: "tax", label: "Tax Projector", reason: "See how HSA contributions reduce your tax bill", priority: 1 },
+    { calcId: "medicare", label: "Medicare", reason: "Plan HSA usage for Medicare premiums in retirement", priority: 2 },
+  ],
+  charitable: [
+    { calcId: "tax", label: "Tax Projector", reason: "See the net tax impact of your giving strategy", priority: 1 },
+    { calcId: "iul", label: "IUL Projection", reason: "Consider charitable IUL strategies", priority: 3 },
+  ],
+  divorce: [
+    { calcId: "tax", label: "Tax Projector", reason: "Filing status change affects your tax bracket", priority: 1 },
+    { calcId: "ret", label: "Retirement", reason: "Recalculate retirement with divided assets", priority: 1 },
+    { calcId: "ss", label: "Social Security", reason: "Divorced spouse benefits may apply", priority: 2 },
+  ],
+  education: [
+    { calcId: "tax", label: "Tax Projector", reason: "Education credits and 529 deductions", priority: 2 },
+    { calcId: "ret", label: "Retirement", reason: "Balance education funding with retirement savings", priority: 2 },
+  ],
+  stress: [
+    { calcId: "montecarlo", label: "Monte Carlo", reason: "Probabilistic analysis complements historical backtesting", priority: 1 },
+    { calcId: "ret", label: "Retirement", reason: "Adjust your plan based on stress test results", priority: 2 },
+  ],
+  montecarlo: [
+    { calcId: "stress", label: "Stress Test", reason: "See how specific historical crises would have affected you", priority: 1 },
+    { calcId: "ret", label: "Retirement", reason: "Use probability insights to refine your plan", priority: 2 },
+  ],
+};
+
+export function getCrossCalcRecommendations(calcId: string): CrossCalcRecommendation[] {
+  return CROSS_CALC_MAP[calcId] ?? [];
+}
+
+/**
+ * Peer benchmark ranges by age bracket and income tier.
+ * Returns { low, median, high } composite scores for context.
+ */
+export interface PeerBenchmark {
+  ageRange: string;
+  incomeRange: string;
+  low: number;
+  median: number;
+  high: number;
+}
+
+export function getPeerBenchmark(age: number, income: number): PeerBenchmark {
+  // Simplified benchmark model based on typical financial health distributions
+  const ageRange = age < 30 ? "25-29" : age < 40 ? "30-39" : age < 50 ? "40-49" : age < 60 ? "50-59" : "60+";
+  const incomeRange = income < 75000 ? "<$75K" : income < 150000 ? "$75K-$150K" : income < 300000 ? "$150K-$300K" : income < 500000 ? "$300K-$500K" : "$500K+";
+
+  // Base scores shift with age (older = more time to build) and income (higher = more resources)
+  const ageBonus = age < 30 ? 0 : age < 40 ? 5 : age < 50 ? 10 : age < 60 ? 12 : 8;
+  const incomeBonus = income < 75000 ? 0 : income < 150000 ? 5 : income < 300000 ? 10 : income < 500000 ? 15 : 18;
+  const base = 30 + ageBonus + incomeBonus;
+
+  return {
+    ageRange,
+    incomeRange,
+    low: Math.min(base - 10, 20),
+    median: Math.min(base, 85),
+    high: Math.min(base + 15, 95),
+  };
 }
 
 export function projectTrajectory(
