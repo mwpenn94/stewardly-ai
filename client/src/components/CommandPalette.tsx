@@ -81,6 +81,9 @@ import {
   Bot,
   Terminal,
   Scale,
+  Mail,
+  Plug,
+  Link,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -131,6 +134,9 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Fingerprint: <Fingerprint className="w-4 h-4" />,
   Award: <Award className="w-4 h-4" />,
   GitBranch: <GitBranch className="w-4 h-4" />,
+  Mail: <Mail className="w-4 h-4" />,
+  Plug: <Plug className="w-4 h-4" />,
+  Link: <Link className="w-4 h-4" />,
 };
 
 function iconFor(name?: string): React.ReactNode {

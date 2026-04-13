@@ -98,6 +98,7 @@ const Changelog = lazy(() => import("./pages/Changelog"));
 const ImportData = lazy(() => import("./pages/ImportData"));
 const LeadPipeline = lazy(() => import("./pages/LeadPipeline"));
 const LeadDetail = lazy(() => import("./pages/LeadDetail"));
+const EmailCampaigns = lazy(() => import("./pages/EmailCampaigns"));
 const CRMSync = lazy(() => import("./pages/CRMSync"));
 const ComplianceAudit = lazy(() => import("./pages/ComplianceAudit"));
 const TaxPlanning = lazy(() => import("./pages/TaxPlanning"));
@@ -330,7 +331,7 @@ function Router() {
         <Route path={"/premium-finance"}><Redirect to="/advisory" /></Route>
         <Route path={"/marketplace"}><Redirect to="/advisory" /></Route>
         <Route path={"/coi-network"}><Redirect to="/relationships" /></Route>
-        <Route path={"/email-campaigns"}><Redirect to="/relationships" /></Route>
+        <Route path={"/email-campaigns"} component={EmailCampaigns} />
         <Route path={"/professionals"}><Redirect to="/relationships" /></Route>
 
         <Route path={"/404"} component={NotFound} />
