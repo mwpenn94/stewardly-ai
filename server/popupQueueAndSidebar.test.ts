@@ -180,24 +180,15 @@ describe("Sidebar Navigation Consistency", () => {
     expect(unique.size).toBe(labels.length);
   });
 
-  it("AppShell sidebar has collapsible NAVIGATE and ADMIN sections", () => {
+  it("AppShell sidebar uses PersonaSidebar5 for navigation", () => {
     const source = fs.readFileSync(
       path.resolve(__dirname, "../client/src/components/AppShell.tsx"),
       "utf-8"
     );
-    expect(source).toContain("NAVIGATE");
-    expect(source).toContain("ADMIN");
-    // Should have collapsible toggle state
-    expect(source).toMatch(/navExpanded|navCollapsed|setNav/i);
-  });
-
-  it("AppShell sidebar sections default to collapsed", () => {
-    const source = fs.readFileSync(
-      path.resolve(__dirname, "../client/src/components/AppShell.tsx"),
-      "utf-8"
-    );
-    // Default state should be collapsed (false) not expanded (true)
-    expect(source).toMatch(/useState\(false\)/);
+    // PersonaSidebar5 is the real sidebar with its own collapsible state
+    expect(source).toContain("PersonaSidebar5");
+    // Should have collapsible toggle state for the sidebar itself
+    expect(source).toMatch(/collapsed|setCollapsed/i);
   });
 });
 

@@ -11,12 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
-import { ArrowLeft, DollarSign, TrendingUp, PiggyBank, BarChart3, Clock, Plus, Trash2, Loader2, Play } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -93,7 +92,7 @@ function runMonteCarloSim(totalMonthly: number, targetMonthly: number, portfolio
 
 export default function IncomeProjection() {
   const [, navigate] = useLocation();
-  const { profile, updateProfile } = useFinancialProfile("income-projection");
+  const { profile, updateProfile: _updateProfile } = useFinancialProfile("income-projection");
 
   // ─── Global Inputs (initialized from shared profile) ────
   const [currentAge, setCurrentAge] = useState(profileValue(profile, "currentAge", 55));
@@ -102,7 +101,7 @@ export default function IncomeProjection() {
   const [targetMonthly, setTargetMonthly] = useState(10000);
   const [portfolioBalance, setPortfolioBalance] = useState(profileValue(profile, "portfolioBalance", 1_200_000));
   const [expectedReturn, setExpectedReturn] = useState(7);
-  const [inflationRate, setInflationRate] = useState(3);
+  const [inflationRate, _setInflationRate] = useState(3);
 
   // ─── Income Sources ─────────────────────────────────────
   const [sources, setSources] = useState<IncomeSource[]>(DEFAULT_SOURCES);
@@ -175,7 +174,7 @@ export default function IncomeProjection() {
     [sources]
   );
 
-  const totalMonthlyAtRetirement = useMemo(() =>
+  const _totalMonthlyAtRetirement = useMemo(() =>
     activeSources
       .filter(s => s.startAge <= retirementAge)
       .reduce((sum, s) => sum + s.monthlyAmount, 0),

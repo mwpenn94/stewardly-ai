@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import {
-  Camera, CameraOff, Mic, MicOff, Monitor, MonitorOff,
-  PhoneOff, Volume2, VolumeX, Loader2, Maximize2, Minimize2,
+  Camera, Mic, MicOff, Monitor,
+  PhoneOff, Volume2, VolumeX, Maximize2, Minimize2,
   Eye, EyeOff
 } from "lucide-react";
 import { Streamdown } from "streamdown";

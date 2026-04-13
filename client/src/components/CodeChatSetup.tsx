@@ -20,7 +20,6 @@ import {
   Pencil,
   Terminal,
   AlertTriangle,
-  Loader2,
   X,
 } from "lucide-react";
 

@@ -50,7 +50,7 @@ export default function InlineChart({ data, className = "" }: InlineChartProps) 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<any>(null);
   const [expanded, setExpanded] = useState(false);
-  const [chartLoaded, setChartLoaded] = useState(false);
+  const [_chartLoaded, setChartLoaded] = useState(false);
 
   useEffect(() => {
     let mounted = true;

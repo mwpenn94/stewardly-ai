@@ -20,15 +20,12 @@ import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
-  ArrowRight,
   Check,
   X,
   Clock,
   Flag,
   Volume2,
   Pause,
-  Play,
-  RotateCw,
   Trophy,
   AlertTriangle,
   ChevronLeft,
@@ -40,7 +37,6 @@ import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import AppShell from "@/components/AppShell";
-import { SEOHead } from "@/components/SEOHead";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -132,7 +128,7 @@ function formatTime(seconds: number): string {
 
 /* ── component ─────────────────────────────────────────────────── */
 
-const DEFAULT_CONFIG: ExamConfig = {
+const _DEFAULT_CONFIG: ExamConfig = {
   mode: "practice",
   moduleSlug: "general",
   moduleTitle: "Practice Exam",
@@ -496,7 +492,7 @@ const params = useParams<{ moduleSlug?: string }>();
     setFinished(true);
     setTimerRunning(false);
 
-    const correctCount = answers.filter((a) => a.correct).length;
+    const _correctCount = answers.filter((a) => a.correct).length;
 
     // Calculate weak topics: topics where accuracy < 60%
     const topicStats: Record<string, { correct: number; total: number }> = {};

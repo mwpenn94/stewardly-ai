@@ -4,16 +4,13 @@ import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Activity, Users, Building2, Briefcase, Shield, User,
-  Layers, TrendingUp, Wrench, Eye, CheckCircle, XCircle,
+  Layers, TrendingUp, CheckCircle, XCircle,
   AlertTriangle, Clock, Loader2, ChevronDown, ChevronRight,
-  Zap, BarChart3, Settings, RefreshCw, ThumbsUp, ThumbsDown,
-  ArrowRight, Play, Gauge,
+  Zap, BarChart3, Settings,
+  ArrowRight, Play,
 } from "lucide-react";
 
 

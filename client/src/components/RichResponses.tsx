@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Calculator, TrendingUp, BarChart3, BookOpen, CheckCircle2, XCircle,
-  ChevronDown, ChevronUp, ExternalLink, Lightbulb, AlertTriangle,
-  ArrowRight, Clock, Target, Award, Brain, Scale, Download,
+  ChevronDown, ChevronUp, Lightbulb, AlertTriangle,
+  ArrowRight, Clock, Target, Award, Brain, Scale,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────

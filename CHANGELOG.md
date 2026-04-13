@@ -11,6 +11,16 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **Dead code removal (~120 unused imports across 50 files)**:
+  - Chat.tsx: removed 14 dead imports (ScrollArea, Briefcase, Users, Fingerprint, Shield, Scale, OnboardingChecklist, Link, parseFocusModes, chatContainerRef, proficiencyQuery, toolsExpanded/adminExpanded state, focusLabel)
+  - Removed unused proficiencyQuery that was hitting exponentialEngine.getProficiency on every empty chat render (wasted network call)
+  - AppShell.tsx: removed dead navExpanded/adminExpanded sidebar state (vestigial from pre-PersonaSidebar5 era)
+  - 15 page files: Help (13), Portal (10), Integrations (10), IncomeProjection (10), PlatformGuide (8), Community (8), Calculators (8), Workflows (7), ProductIntelligence (7), Organizations (7), ImprovementEngine (7), ImportData (7), ExamSimulator (6), TaxPlanning (6), RiskAssessment (6)
+  - EmailCampaigns.tsx: removed 4 dead lucide imports
+  - 28 component files cleaned (WealthProjectionChart, MessageList, StressTestPanel, ContextualHelp, ReasoningChain, LiveSession, CommandPalette, etc.)
+- **Mobile responsive (ProfileTab.tsx)**: fixed min-w-[200px] → min-w-0 on memory input to prevent 375px overflow
+- **PARITY.md accuracy**: marked 4 gap items as done that were implemented but never tracked (G16 voice palette command, G21 haptic feedback, G23 audio earcons, G48 selection styling)
+- **Test accuracy**: updated popupQueueAndSidebar test to match PersonaSidebar5 reality (navExpanded state was correctly removed as dead code)
 - **Accessibility (WCAG 2.1 Level A — icon-only button labels)**:
   - ChatInputBar.tsx: hands-free voice toggle gained aria-label
   - LiveSession.tsx: 3 icon buttons (mic/TTS/camera) replaced `title` with proper `aria-label`

@@ -5,9 +5,7 @@
  */
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 interface DataPoint {
   year: number;
@@ -64,7 +62,7 @@ export default function WealthProjectionChart({
 }: Props) {
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
 
-  const { points, yTicks, xTicks, maxY, minY, chartW, chartH, padL, padB, padT, padR } = useMemo(() => {
+  const { points, yTicks, xTicks, maxY, minY, chartW, chartH, padL, padB: _padB, padT, padR: _padR } = useMemo(() => {
     const padL = 72, padR = 20, padT = 20, padB = 40;
     const chartW = 800 - padL - padR;
     const chartH = height - padT - padB;

@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -21,10 +20,10 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 import {
   ArrowLeft, Briefcase, Users, UserPlus, Eye, EyeOff,
-  Search, Loader2, Building2, BarChart3, Clock,
-  Shield, ChevronRight, User, Mail, Phone,
-  AlertTriangle, CheckCircle, XCircle, TrendingUp,
-  MessageSquare, FileText, Activity,
+  Search, Loader2, Building2,
+  Shield, ChevronRight, User,
+  CheckCircle, XCircle,
+  MessageSquare,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 
@@ -119,7 +118,7 @@ export default function Portal() {
   // ─── DERIVED ────────────────────────────────────────────────────
   const role = user?.role || "user";
   const isManager = role === "manager" || role === "admin";
-  const isAdmin = role === "admin";
+  const _isAdmin = role === "admin";
 
   const filteredClients = useMemo(() => {
     if (!clientBook.data) return [];

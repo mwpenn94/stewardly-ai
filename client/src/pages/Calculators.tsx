@@ -3,7 +3,6 @@ import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,19 +13,19 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 import {
   ArrowLeft, Calculator, TrendingUp, Building2, PiggyBank, Loader2,
-  Sparkles, DollarSign, BarChart3, ArrowUpRight, ArrowDownRight,
-  ChevronRight, Info, Heart, Scale, GraduationCap, Stethoscope,
+  Sparkles, DollarSign, BarChart3,
+  ChevronRight, Heart, Scale, GraduationCap, Stethoscope,
   HandCoins, Briefcase, ListChecks, ShieldAlert, Dice5, Users, Grid3X3, BookOpen, Rocket,
   Printer, MessageSquare,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 }
 
-function pct(n: number) {
+function _pct(n: number) {
   return `${n.toFixed(1)}%`;
 }
 
@@ -916,7 +915,7 @@ function CalcPanel({ title, icon, color, children, onCalculate, isLoading, resul
   onCalculate: () => void; isLoading: boolean; result: React.ReactNode;
 }) {
   const [, navigate] = useLocation();
-  const hasResult = !!result && (result as any)?.props?.children !== undefined;
+  const _hasResult = !!result && (result as any)?.props?.children !== undefined;
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       <Card className="lg:col-span-2 bg-card/60 border-border/50">
@@ -968,7 +967,7 @@ function CalcPanel({ title, icon, color, children, onCalculate, isLoading, resul
 function TaxProjectorPanel() {
   const [wages, setWages] = useState(150000);
   const [deductions, setDeductions] = useState(0);
-  const [stateCode, setStateCode] = useState("TX");
+  const [stateCode, _setStateCode] = useState("TX");
   const taxCalc = trpc.taxProjector.project.useMutation({ onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Tax Projector" icon={<DollarSign className="w-4 h-4" />} color="text-violet-400"

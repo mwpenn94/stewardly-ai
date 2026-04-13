@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type RefObject } from "react";
+import { useState, useEffect, type RefObject } from "react";
 import {
   ArrowUp, AudioLines, Check, ChevronDown, Image, Loader2, Monitor,
   Palette, Paperclip, PhoneOff, Plus, Sparkles, Video, Volume2, VolumeX

@@ -18,8 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import {
   Mail, Plus, Send, Sparkles, Loader2, Trash2,
-  BarChart3, Users, Eye, MousePointerClick, AlertTriangle,
-  ChevronDown, ChevronRight, X, FileText,
+  Users, Eye, MousePointerClick, AlertTriangle,
+  ChevronRight,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";

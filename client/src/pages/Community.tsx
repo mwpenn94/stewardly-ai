@@ -9,15 +9,14 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import {
-  MessageSquare, Plus, ArrowLeft, ThumbsUp, Clock,
+  MessageSquare, Plus, Clock,
   Loader2, Users, Search, Tag,
 } from "lucide-react";
 
@@ -25,14 +24,14 @@ const CATEGORIES = ["General", "Tax Planning", "Insurance", "Estate", "Complianc
 
 export default function Community() {
   const { user, loading: authLoading } = useAuth();
-  const [selectedPost, setSelectedPost] = useState<number | null>(null);
+  const [_selectedPost, setSelectedPost] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [newPostOpen, setNewPostOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newBody, setNewBody] = useState("");
   const [newCategory, setNewCategory] = useState("General");
-  const [replyText, setReplyText] = useState("");
+  const [_replyText, _setReplyText] = useState("");
 
   const utils = trpc.useUtils();
 

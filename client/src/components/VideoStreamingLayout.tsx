@@ -47,7 +47,7 @@ export default function VideoStreamingLayout({ streamType, onEnd, children, clas
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [streamActive, setStreamActive] = useState(false);
+  const [_streamActive, setStreamActive] = useState(false);
 
   useEffect(() => {
     // Request media stream based on type

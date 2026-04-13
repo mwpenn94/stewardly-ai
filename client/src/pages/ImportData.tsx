@@ -7,13 +7,11 @@ import { SEOHead } from "@/components/SEOHead";
 import { FileUploader } from "@/components/FileUploader";
 import { ColumnMapper } from "@/components/ColumnMapper";
 import { ImportProgress } from "@/components/ImportProgress";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Table2, CheckCircle2, ArrowLeft, FileSpreadsheet, Download, History } from "lucide-react";
+import { CheckCircle2, ArrowLeft, FileSpreadsheet, Download } from "lucide-react";
 import { useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 
@@ -41,7 +39,7 @@ export default function ImportData() {
   const [, navigate] = useLocation();
   const [step, setStep] = useState<Step>("upload");
   const [sourceColumns, setSourceColumns] = useState<string[]>([]);
-  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [_mapping, setMapping] = useState<Record<string, string>>({});
   const [importStatus, setImportStatus] = useState<any>(null);
 
   const handleUpload = async (files: File[]) => {

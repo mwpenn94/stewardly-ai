@@ -1,17 +1,17 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Redirect } from "wouter";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   Search, BookOpen, Palette, Layout, Database, Code2, Shield, Cpu,
-  Globe, Layers, FileText, Users, MessageSquare, BarChart3, Settings,
-  Zap, Network, Lock, TestTube, Workflow, ChevronRight, Copy, Check,
+  Globe, Layers, FileText, Users,
+  Zap, Network, Lock, TestTube, Workflow, Copy, Check,
   Monitor, Smartphone, Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

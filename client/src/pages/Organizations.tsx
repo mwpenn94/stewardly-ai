@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -22,9 +20,9 @@ import {
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import {
-  ArrowLeft, Building2, Plus, Users, Settings, Trash2,
-  Loader2, UserPlus, ChevronRight, Globe, Mail,
-  Edit, Search, Shield, ExternalLink,
+  ArrowLeft, Building2, Plus, Users, Trash2,
+  Loader2, UserPlus, ChevronRight,
+  Edit, ExternalLink,
 } from "lucide-react";
 import { useState } from "react";
 

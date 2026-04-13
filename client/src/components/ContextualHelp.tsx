@@ -11,9 +11,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   HelpCircle, X, Lightbulb, Keyboard, MessageSquare,
-  ChevronRight, ExternalLink, BookOpen, Sparkles, Search,
+  ChevronRight, Sparkles,
 } from "lucide-react";
-import { useLocation, useRouter } from "wouter";
+import { useLocation } from "wouter";
 
 interface HelpTip {
   title: string;

@@ -11,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -19,9 +18,9 @@ import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import {
   ArrowLeft, TrendingUp, Shield, FileSignature, BarChart3, Loader2,
-  RefreshCw, Target, Activity, ChevronRight, DollarSign, Percent,
-  LineChart, PieChart, Clock, CheckCircle2, AlertCircle, Send,
-  Eye, FileText, Download, Plus, Gauge,
+  RefreshCw, Target, Activity,
+  LineChart, Clock, CheckCircle2, AlertCircle, Send,
+  Eye, FileText, Plus, Gauge,
 } from "lucide-react";
 
 export default function ProductIntelligence() {
@@ -245,7 +244,7 @@ function IulCreditingSection() {
     { enabled: true }
   );
 
-  const strategies = strategiesQuery.data ?? [];
+  const _strategies = strategiesQuery.data ?? [];
   const avgData = avgQuery.data ?? [];
 
   return (

@@ -68,7 +68,7 @@ export function LiveChatMode({
   const [mode, setMode] = useState<CaptureMode>("video");
   const [processingState, setProcessingState] = useState<ProcessingState>("idle");
   const [isListening, setIsListening] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, _setIsMuted] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [frameCount, setFrameCount] = useState(0);

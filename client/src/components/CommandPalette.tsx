@@ -60,7 +60,6 @@ import {
   Plus,
   Search,
   Keyboard,
-  History,
   Mic,
   MicOff,
   Sparkles,
@@ -80,7 +79,6 @@ import {
   BookOpen,
   Bot,
   Terminal,
-  Scale,
   Mail,
   Plug,
   Link,
@@ -434,7 +432,7 @@ export function CommandPalette() {
               {recentPagesFiltered.map((rp) => {
                 // Reuse page icons from PAGES list for recent items
                 const pageEntry = PAGES.find((p) => p.href === rp.route) ?? pages.find((p) => p.href === rp.route);
-                const icon = pageEntry?.iconName;
+                const _icon = pageEntry?.iconName;
                 return (
                   <CommandItem
                     key={`recent:${rp.route}`}

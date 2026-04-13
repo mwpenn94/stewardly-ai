@@ -19,7 +19,7 @@ import {
   ChevronDown, Pin, Compass, Scale,
   Zap, Package, GitBranch, RefreshCw, Link2, Plug,
   Heart, DollarSign, Target, Shield, BookOpen,
-  Key, Webhook, Bot, Globe, Building2, GitMerge,
+  Key, Webhook, Bot, Building2, GitMerge,
   LayoutDashboard, UserPlus, HeartPulse, Sparkles, Mail,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";

@@ -11,7 +11,6 @@ import { playEarconById } from "@/lib/earcons";
 import { prefetchRoute } from "@/lib/routePrefetch";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,12 +22,12 @@ import {
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
-  ArrowRight, ArrowUp, AudioLines, BarChart3, Bot, Briefcase, Calculator, Check,
+  ArrowRight, ArrowUp, AudioLines, BarChart3, Bot, Calculator, Check,
   ChevronDown, ChevronUp, FileText, GraduationCap, Image, Loader2, LogOut, Menu, MessageSquare,
   Monitor, PanelLeftClose, Paperclip, PhoneOff, Plus,
-  Settings, Sparkles, ThumbsDown, ThumbsUp, User, Users,
-  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Calendar, Brain, Shield,
-  Copy, RefreshCw, Zap, Scale, Search, HelpCircle,
+  Settings, Sparkles, ThumbsDown, ThumbsUp, User,
+  Video, Volume2, VolumeX, X, TrendingUp, Palette, Calendar, Brain,
+  Copy, RefreshCw, Zap, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, ChevronRight, Phone,
   LogIn, GitBranch,
 } from "lucide-react";
@@ -56,7 +55,6 @@ import {
 import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
-import OnboardingChecklist from "@/components/OnboardingChecklist";
 import { hasMinRole } from "@/lib/navigation";
 import { useOnboardingNotifications } from "@/components/OnboardingNotifications";
 import ChangelogBell from "@/components/ChangelogBell";
@@ -69,14 +67,14 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { useLocation, useRoute, Link } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { consumePendingPrompt } from "@/lib/navigateToChat";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
 import { ConvItem, SortableConvItem } from "@/components/chat/ConvItem";
 import ChatGreetingV2 from "@/components/ChatGreeting";
 // MobileChatLayout available at @/components/MobileChatLayout for future mobile-first refactor (P3 backlog)
-import { parseFocusModes, serializeFocusModes } from "@shared/types";
+import { serializeFocusModes } from "@shared/types";
 // Pass 1 (multisensory): slash-command interceptor — lets users type
 // "/go learning", "/read", "/hands-free", etc. inside the chat input to
 // drive navigation/audio without ever leaving the keyboard.
@@ -293,7 +291,6 @@ export default function Chat() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isNearBottomRef = useRef(true);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const handleSendRef = useRef<(text: string) => void>(() => {});
   // Mutex guard: prevents concurrent conversation creation (race condition)
@@ -446,12 +443,6 @@ export default function Chat() {
       null
     );
   })();
-
-  // Transformation 2: proficiency data for the welcome gateway
-  const proficiencyQuery = trpc.exponentialEngine.getProficiency.useQuery(
-    undefined,
-    { enabled: !conversationId && allowQueries, retry: false, staleTime: 60_000 },
-  );
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -1575,20 +1566,6 @@ export default function Chat() {
   }, [userRole]);
   const showModes = availableModes.length > 0;
 
-  // ─── SIDEBAR NAV STATE (must be before auth gate to maintain hook order) ─
-  // Pass 90: Navigate defaults to OPEN so first-time visitors actually see
-  // the 5 nav sections. Previously both defaulted to `false`, which meant
-  // a brand-new chat user saw "Navigate ▶ / Admin ▶" with zero links
-  // visible. Power users can still collapse; choice persists in localStorage.
-  const [toolsExpanded, setToolsExpanded] = useState(() => {
-    try { const v = localStorage.getItem("chat-tools-expanded"); return v === null ? true : v === "true"; } catch { return true; }
-  });
-  const [adminExpanded, setAdminExpanded] = useState(() => {
-    try { const v = localStorage.getItem("chat-admin-expanded"); return v === null ? true : v === "true"; } catch { return true; }
-  });
-  useEffect(() => { try { localStorage.setItem("chat-tools-expanded", String(toolsExpanded)); } catch {} }, [toolsExpanded]);
-  useEffect(() => { try { localStorage.setItem("chat-admin-expanded", String(adminExpanded)); } catch {} }, [adminExpanded]);
-
   // Pass 90: chat input "advanced controls" toggle. Default = collapsed.
   // The model picker, chat mode segment, and per-mode config (loop pills,
   // codechat config, etc.) used to be ALL visible at once, turning the
@@ -1651,9 +1628,6 @@ export default function Chat() {
   // Allow anonymous/guest users to use the chat
 
   const isWelcome = messages.length === 0 && !conversationId;
-  const focusLabel = selectedFocus.length === FOCUS_OPTIONS.length
-    ? "All Modes"
-    : selectedFocus.map(f => FOCUS_OPTIONS.find(o => o.value === f)?.label).filter(Boolean).join(" + ");
 
   // ─── SIDEBAR NAV — shared persona layers from PersonaSidebar5 ────
   // Single source of truth: imports PERSONA_LAYERS + ROLE_LEVEL from

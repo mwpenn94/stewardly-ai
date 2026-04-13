@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { trpc } from "@/lib/trpc";
 import { Shield, FileText, Eye, Lock } from "lucide-react";
 import { useState } from "react";
@@ -12,7 +12,7 @@ interface ConsentGateProps {
 }
 
 export default function ConsentGate({ children }: ConsentGateProps) {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user: _user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
   const [agreed, setAgreed] = useState(false);
 
