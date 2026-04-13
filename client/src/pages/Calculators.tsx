@@ -17,6 +17,7 @@ import {
   Sparkles, DollarSign, BarChart3, ArrowUpRight, ArrowDownRight,
   ChevronRight, Info, Heart, Scale, GraduationCap, Stethoscope,
   HandCoins, Briefcase, ListChecks, ShieldAlert, Dice5, Users, Grid3X3, BookOpen, Rocket,
+  Printer, MessageSquare,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
@@ -316,6 +317,14 @@ export default function Calculators() {
                 >
                   {iulCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Projection</>}
                 </Button>
+                <div className="flex gap-2 mt-2">
+                  <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => { window.print(); toast.success("Print dialog opened"); }}>
+                    <Printer className="w-3 h-3 mr-1" /> Print / Share
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => navigate(`/chat?prefill=${encodeURIComponent("I just ran an IUL projection. Can you help me interpret the results and suggest next steps?")}`)}>
+                    <MessageSquare className="w-3 h-3 mr-1" /> Discuss in Chat
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
@@ -433,9 +442,16 @@ export default function Calculators() {
                 >
                   {pfCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Analysis</>}
                 </Button>
+                <div className="flex gap-2 mt-2">
+                  <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => { window.print(); toast.success("Print dialog opened"); }}>
+                    <Printer className="w-3 h-3 mr-1" /> Print / Share
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => navigate(`/chat?prefill=${encodeURIComponent("I just ran a Premium Finance analysis. Can you help me interpret the results and suggest next steps?")}`)}>
+                    <MessageSquare className="w-3 h-3 mr-1" /> Discuss in Chat
+                  </Button>
+                </div>
               </CardContent>
             </Card>
-
             <div className="lg:col-span-3 space-y-4">
               {pfCalc.data ? (
                 <>
@@ -611,11 +627,18 @@ export default function Calculators() {
                   onClick={() => retCalc.mutate({ currentAge: retAge, retirementAge: retTarget, currentSavings: retSavings, monthlyContribution: retMonthly, expectedReturn: retReturn, inflationRate: retInflation })}
                   disabled={retCalc.isPending}
                 >
-                  {retCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Projection</>}
+                   {retCalc.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Calculator className="w-4 h-4" /> Calculate Projection</>}
                 </Button>
+                <div className="flex gap-2 mt-2">
+                  <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => { window.print(); toast.success("Print dialog opened"); }}>
+                    <Printer className="w-3 h-3 mr-1" /> Print / Share
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => navigate(`/chat?prefill=${encodeURIComponent("I just ran a Retirement projection. Can you help me interpret the results and suggest next steps?")}`)}>
+                    <MessageSquare className="w-3 h-3 mr-1" /> Discuss in Chat
+                  </Button>
+                </div>
               </CardContent>
             </Card>
-
             <div className="lg:col-span-3 space-y-4">
               {retCalc.data ? (
                 <>
@@ -892,6 +915,8 @@ function CalcPanel({ title, icon, color, children, onCalculate, isLoading, resul
   title: string; icon: React.ReactNode; color: string; children: React.ReactNode;
   onCalculate: () => void; isLoading: boolean; result: React.ReactNode;
 }) {
+  const [, navigate] = useLocation();
+  const hasResult = !!result && (result as any)?.props?.children !== undefined;
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       <Card className="lg:col-span-2 bg-card/60 border-border/50">
@@ -906,6 +931,31 @@ function CalcPanel({ title, icon, color, children, onCalculate, isLoading, resul
             {isLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Sparkles className="w-3 h-3 mr-1" />}
             Calculate
           </Button>
+          {/* Pass 4: Quick actions for mid-meeting persona */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={() => {
+                window.print();
+                toast.success("Print dialog opened");
+              }}
+            >
+              <Printer className="w-3 h-3 mr-1" /> Print / Share
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={() => {
+                const ctx = `I just ran a ${title} calculation. Can you help me interpret the results and suggest next steps?`;
+                navigate(`/chat?prefill=${encodeURIComponent(ctx)}`);
+              }}
+            >
+              <MessageSquare className="w-3 h-3 mr-1" /> Discuss in Chat
+            </Button>
+          </div>
         </CardContent>
       </Card>
       <div className="lg:col-span-3">

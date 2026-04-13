@@ -45,37 +45,97 @@ type PILContext = PILState & PILActions;
 /* ── Route map for intent → navigation ─────────────────────────── */
 
 const ROUTE_MAP: Record<string, string> = {
+  // Core
   "chat": "/chat",
+  "home": "/chat",
+  // Clients & Relationships
   "clients": "/relationships",
   "my clients": "/relationships",
+  "relationships": "/relationships",
+  // Work & Cases
   "cases": "/my-work",
   "my work": "/my-work",
   "work": "/my-work",
-  "compliance": "/compliance-audit",
+  // Compliance
+  "compliance": "/compliance",
+  "compliance audit": "/compliance",
+  // Market Data
   "market data": "/market-data",
   "market": "/market-data",
-  "calculators": "/wealth-engine",
-  "calculator": "/wealth-engine",
+  "markets": "/market-data",
+  // Wealth Engine & Calculators
+  "calculators": "/calculators",
+  "calculator": "/calculators",
   "wealth engine": "/wealth-engine",
+  "engine": "/wealth-engine",
+  "strategy comparison": "/wealth-engine/strategy-comparison",
+  "compare strategies": "/wealth-engine/strategy-comparison",
+  "retirement": "/wealth-engine/retirement",
+  "retirement calculator": "/wealth-engine/retirement",
+  "quick quote": "/wealth-engine/quick-quote",
+  "team builder": "/wealth-engine/team-builder",
+  "sensitivity": "/wealth-engine/sensitivity",
+  "what if": "/wealth-engine/what-if",
+  "business income": "/wealth-engine/business-income",
+  "business valuation": "/wealth-engine/business-valuation",
+  "owner comp": "/wealth-engine/owner-comp",
+  "configurator": "/wealth-engine/configurator",
+  "references": "/wealth-engine/references",
+  "practice to wealth": "/wealth-engine/practice-to-wealth",
+  // Learning
   "learn": "/learning",
   "learning": "/learning",
-  "study": "/learning",
+  "study": "/study",
+  "education": "/education",
+  // Settings & Admin
   "settings": "/settings",
   "help": "/help",
-  "documents": "/documents",
-  "my documents": "/documents",
-  "progress": "/progress",
-  "my progress": "/progress",
-  "team": "/manager",
-  "team dashboard": "/manager",
   "admin": "/admin",
   "platform admin": "/admin",
-  "financial twin": "/financial-twin",
-  "my financial twin": "/financial-twin",
-  "suitability": "/suitability",
+  "knowledge": "/admin/knowledge",
+  "knowledge base": "/admin/knowledge",
+  // Documents & Data
+  "documents": "/documents",
+  "my documents": "/documents",
+  "progress": "/proficiency",
+  "my progress": "/proficiency",
+  "proficiency": "/proficiency",
+  // Team & Manager
+  "team": "/manager",
+  "team dashboard": "/manager",
+  "manager": "/manager",
+  // Financial Twin
+  "financial twin": "/portal",
+  "my financial twin": "/portal",
+  "portal": "/portal",
+  "client portal": "/portal",
+  // Suitability & Recommendations
+  "suitability": "/suitability-panel",
   "recommendations": "/recommendations",
+  // Products & Insurance
+  "products": "/products",
+  "insurance": "/insurance-applications",
+  "insurance applications": "/insurance-applications",
+  "carrier connector": "/carrier-connector",
+  // Integrations
+  "integrations": "/integrations",
+  "my integrations": "/my-integrations",
+  // Audio & Voice
   "audio": "/settings/audio",
   "audio settings": "/settings/audio",
+  // Engine Dashboard
+  "engine dashboard": "/engine-dashboard",
+  "dashboard": "/engine-dashboard",
+  // Meetings & Collaboration
+  "meetings": "/meetings",
+  "organizations": "/organizations",
+  "org branding": "/org-branding",
+  // Analytics & Intelligence
+  "analytics": "/analytics-hub",
+  "intelligence": "/intelligence-hub",
+  "insights": "/insights",
+  "code chat": "/code-chat",
+  "consensus": "/consensus",
 };
 
 /* ── Sound effects (Web Audio API) ─────────────────────────────── */
@@ -135,21 +195,52 @@ function friendlyName(path: string): string {
     "/chat": "Chat",
     "/relationships": "Clients",
     "/my-work": "My Work",
-    "/compliance-audit": "Compliance",
+    "/compliance": "Compliance",
     "/market-data": "Market Data",
-    "/wealth-engine": "Calculators",
+    "/calculators": "Calculators",
+    "/wealth-engine": "Wealth Engine",
+    "/wealth-engine/strategy-comparison": "Strategy Comparison",
+    "/wealth-engine/retirement": "Retirement Calculator",
+    "/wealth-engine/quick-quote": "Quick Quote",
+    "/wealth-engine/team-builder": "Team Builder",
+    "/wealth-engine/sensitivity": "Sensitivity Analysis",
+    "/wealth-engine/what-if": "What-If Analysis",
+    "/wealth-engine/business-income": "Business Income",
+    "/wealth-engine/business-valuation": "Business Valuation",
+    "/wealth-engine/owner-comp": "Owner Compensation",
+    "/wealth-engine/configurator": "Wealth Configurator",
+    "/wealth-engine/references": "Reference Hub",
+    "/wealth-engine/practice-to-wealth": "Practice to Wealth",
     "/learning": "Learning Center",
+    "/study": "Study",
+    "/education": "Education",
     "/settings": "Settings",
+    "/settings/audio": "Audio Settings",
     "/help": "Help",
     "/documents": "Documents",
-    "/progress": "My Progress",
+    "/proficiency": "Proficiency Dashboard",
     "/manager": "Team Dashboard",
     "/admin": "Platform Admin",
-    "/financial-twin": "Financial Twin",
-    "/suitability": "Suitability",
+    "/admin/knowledge": "Knowledge Base",
+    "/portal": "Financial Twin",
+    "/suitability-panel": "Suitability Panel",
     "/recommendations": "Recommendations",
+    "/products": "Products",
+    "/insurance-applications": "Insurance Applications",
+    "/carrier-connector": "Carrier Connector",
+    "/integrations": "Integrations",
+    "/my-integrations": "My Integrations",
+    "/engine-dashboard": "Engine Dashboard",
+    "/meetings": "Meetings",
+    "/organizations": "Organizations",
+    "/org-branding": "Org Branding",
+    "/analytics-hub": "Analytics",
+    "/intelligence-hub": "Intelligence Hub",
+    "/insights": "Insights",
+    "/code-chat": "Code Chat",
+    "/consensus": "Consensus",
   };
-  return names[path] || path.split("/").pop() || "page";
+  return names[path] || path.split("/").pop()?.replace(/-/g, " ") || "page";
 }
 
 /* ── Provider ──────────────────────────────────────────────────── */
@@ -256,6 +347,11 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
     // "open palette" / "search" / "command palette"
     if (/^(open palette|command palette|open command|search|find)$/i.test(normalized)) {
       window.dispatchEvent(new CustomEvent("toggle-command-palette"));
+      return;
+    }
+    // Pass 5 (G5): "bookmark" / "pin this" — pin the current conversation
+    if (/^(bookmark|pin this|pin it|save this|pin conversation)$/i.test(normalized)) {
+      window.dispatchEvent(new CustomEvent("pil:bookmark"));
       return;
     }
     // "undo" — maps to the edit history ring buffer on pages that have one

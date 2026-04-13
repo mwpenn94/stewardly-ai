@@ -44,7 +44,7 @@ function makeFakeCtx() {
 
 describe("EARCONS inventory", () => {
   it("has all the designed earcon ids", () => {
-    const required = ["palette_open", "palette_close", "chord_primed", "chord_matched", "send"];
+    const required = ["palette_open", "palette_close", "chord_primed", "chord_matched", "send", "receive", "error", "navigate"];
     for (const id of required) {
       expect(EARCONS[id], `missing earcon: ${id}`).toBeDefined();
     }
@@ -59,10 +59,24 @@ describe("EARCONS inventory", () => {
     }
   });
 
-  it("multi-note earcons (palette_open/close, chord_matched) have follow-ups", () => {
+  it("multi-note earcons (palette_open/close, chord_matched, receive) have follow-ups", () => {
     expect(EARCONS.palette_open.then).toBeDefined();
     expect(EARCONS.palette_close.then).toBeDefined();
     expect(EARCONS.chord_matched.then).toBeDefined();
+    expect(EARCONS.receive.then).toBeDefined();
+  });
+
+  it("Pass 5 earcons: receive is descending, error is low-freq triangle, navigate is short", () => {
+    // receive: descending G5 → C5
+    expect(EARCONS.receive.freq).toBe(784);
+    expect(EARCONS.receive.then!.freq).toBe(523);
+    // error: low A3 triangle wave
+    expect(EARCONS.error.freq).toBe(220);
+    expect(EARCONS.error.type).toBe("triangle");
+    expect(EARCONS.error.dur).toBeGreaterThan(0.1);
+    // navigate: quick tick
+    expect(EARCONS.navigate.freq).toBe(660);
+    expect(EARCONS.navigate.dur).toBeLessThanOrEqual(0.05);
   });
 });
 

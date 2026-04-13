@@ -3679,3 +3679,44 @@
 - [x] Update PARITY.md Angle Log with Pass 2 entry
 - [x] Update LOOP_DASHBOARD.md with Pass 2 completion state
 - [x] Verify 0 TS errors, all tests passing
+## Continuous Build Loop — Pass 3 (Apr 13)
+- [x] ChatGreeting: "Resume where you left off" card showing top 3 recent conversations with relative timestamps
+- [x] ChatGreeting: Proactive Insight card surfacing top actionable insight from insights engine
+- [x] ChatGreeting: Active Context Sources indicator (documents, memories, financial profile, integrations)
+- [x] Chat.tsx: Wire context source queries (documents.list, memories.list, integrations.listConnections)
+- [x] Chat.tsx: Wire activeContextSources memo with useMemo for performance
+- [x] Chat.tsx: Wire onResumeConversation prop to navigate to conversation
+- [x] Chat.tsx: Enhanced follow-up suggestion pills with label header and hover arrow animation
+- [x] Chat.tsx: Added ArrowRight to lucide-react imports
+- [x] ChatGreeting.test.ts: 27 unit tests covering all Pass 3 data logic (resume filtering, context counting, daily seed, seeded shuffle, pool selection, relative time)
+- [x] vitest.config.ts: Added ChatGreeting.test.ts to include list
+- [x] Verify 0 TS errors, all 27 new tests passing
+## Continuous Build Loop — Pass 4 (Apr 13)
+- [x] Chat.tsx: Add "Run calculator" button to chat add menu (+ icon) for quick mid-meeting access
+- [x] Chat.tsx: Support ?prefill= query param to pre-populate input from calculator navigation
+- [x] Calculators.tsx: Add "Print / Share" + "Discuss in Chat" buttons to CalcPanel component (all 7 Part F calculators)
+- [x] Calculators.tsx: Add "Print / Share" + "Discuss in Chat" buttons to IUL inline calculator
+- [x] Calculators.tsx: Add "Print / Share" + "Discuss in Chat" buttons to Premium Finance inline calculator
+- [x] Calculators.tsx: Add "Print / Share" + "Discuss in Chat" buttons to Retirement inline calculator
+- [x] chatPrefill.test.ts: 13 unit tests covering prefill parsing, URL generation, encoding round-trips
+- [x] vitest.config.ts: Added chatPrefill.test.ts to include list
+- [x] Fix TS error: double parenthesis in PF calc ternary
+- [x] Verify 0 TS errors, all 13 new tests passing
+- [x] Merged GitHub PR changes (3 commits: SEO metadata, accessibility aria-labels, mobile touch targets)
+
+## Continuous Build Loop — Pass 5 (G23+G21+G24+G16 Earcons, Haptic, Voice)
+- [x] G23: Add receive, error, navigate earcon specs to earcons.ts
+- [x] G23: Wire playEarconById("send") on message send in Chat.tsx
+- [x] G23: Wire playEarconById("receive") on streaming end in Chat.tsx
+- [x] G23: Wire playEarconById("error") on chat error in Chat.tsx
+- [x] G21: Wire navigator.vibrate(10) on send, vibrate([30,20,30]) on error
+- [x] G24: Add always-visible mic button in Chat input toolbar (voice.isListening toggle)
+- [x] G16: Confirmed "open palette" voice command already wired in PlatformIntelligence
+- [x] Tests: Updated earcons.test.ts with 3 new assertions (8 total tests passing)
+
+## Continuous Build Loop — Pass 6 (G5+G14 Voice Bookmark + Route Map)
+- [x] G5: Add bookmark/pin voice command to PlatformIntelligence ("bookmark", "pin this", "pin it", "save this")
+- [x] G5: Wire pil:bookmark event listener in Chat.tsx to pin current conversation
+- [x] G14: Expand ROUTE_MAP from 28 to 68 entries covering all major destinations
+- [x] G14: Expand friendlyName map to match all new routes
+- [x] Tests: Full suite 309 files, 7503 tests all passing

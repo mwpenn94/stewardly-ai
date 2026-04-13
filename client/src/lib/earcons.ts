@@ -66,6 +66,25 @@ export const EARCONS: Record<string, EarconSpec> = {
     dur: 0.08,
     type: "sine",
   },
+  // Pass 5 (G23): Receive earcon — descending tone on AI response complete
+  receive: {
+    freq: 784, // G5
+    dur: 0.06,
+    type: "sine",
+    then: { freq: 523, dur: 0.08, type: "sine" }, // C5
+  },
+  // Pass 5 (G23): Error earcon — low buzz on error
+  error: {
+    freq: 220, // A3
+    dur: 0.12,
+    type: "triangle",
+  },
+  // Pass 5 (G23): Navigation earcon — quick tick on page transition
+  navigate: {
+    freq: 660, // E5
+    dur: 0.04,
+    type: "sine",
+  },
 };
 
 /**

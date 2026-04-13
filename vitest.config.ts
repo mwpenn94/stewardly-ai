@@ -27,6 +27,8 @@ export default defineConfig({
       "client/src/hooks/useFocusOnRouteChange.test.ts",
       "client/src/hooks/usePushToTalk.test.ts",
       "client/src/components/CommandPalette.test.ts",
+      "client/src/components/ChatGreeting.test.ts",
+      "client/src/lib/chatPrefill.test.ts",
       "client/src/components/codeChat/**/*.test.ts",
       "client/src/components/wealth-engine/**/*.test.ts",
       "client/src/pages/learning/lib/**/*.test.ts",

@@ -7,6 +7,7 @@ import TypingIndicator from "@/components/TypingIndicator";
 import { EmptyConversations } from "@/components/EmptyStates";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { useSoundCues } from "@/hooks/useSoundCues";
+import { playEarconById } from "@/lib/earcons";
 import { prefetchRoute } from "@/lib/routePrefetch";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ import {
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
-  ArrowUp, AudioLines, BarChart3, Bot, Briefcase, Calculator, Check,
+  ArrowRight, ArrowUp, AudioLines, BarChart3, Bot, Briefcase, Calculator, Check,
   ChevronDown, ChevronUp, FileText, GraduationCap, Image, Loader2, LogOut, Menu, MessageSquare,
   Monitor, PanelLeftClose, Paperclip, PhoneOff, Plus,
   Settings, Sparkles, ThumbsDown, ThumbsUp, User, Users,
@@ -154,7 +155,21 @@ export default function Chat() {
     matchChat && paramsChat?.id ? parseInt(paramsChat.id) : null
   );
   const [messages, setMessages] = useState<any[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => {
+    // Pass 4: Support ?prefill= query param from calculator "Discuss in Chat" button
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const prefill = params.get("prefill");
+      if (prefill) {
+        // Clean up URL without triggering navigation
+        const url = new URL(window.location.href);
+        url.searchParams.delete("prefill");
+        window.history.replaceState({}, "", url.pathname + url.search);
+        return prefill;
+      }
+    } catch {}
+    return "";
+  });
   const [selectedFocus, setSelectedFocus] = useState<FocusMode[]>(["general", "financial"]);
   const [selectedModels, setSelectedModels] = useState<string[]>(["auto"]);
   const [showModelMenu, setShowModelMenu] = useState(false);
@@ -402,8 +417,23 @@ export default function Chat() {
   );
   const settingsQuery = trpc.settings.get.useQuery(undefined, { enabled: isAuthenticated, staleTime: 60_000 });
   const avatarUrl = settingsQuery.data?.avatarUrl;
-
-  // Pass 93: single proactive insight for the welcome banner. Only fires
+  // Pass 3: Context source counts for the welcome greeting indicator
+  const docsCountQuery = trpc.documents.list.useQuery(undefined, {
+    enabled: isAuthenticated && !conversationId, staleTime: 120_000, retry: false,
+  });
+  const memoriesCountQuery = trpc.memories.list.useQuery(undefined, {
+    enabled: isAuthenticated && !conversationId, staleTime: 120_000, retry: false,
+  });
+  const connectionsCountQuery = trpc.integrations.listConnections.useQuery(undefined, {
+    enabled: isAuthenticated && !conversationId, staleTime: 120_000, retry: false,
+  });
+  const activeContextSources = useMemo(() => ({
+    documents: Array.isArray(docsCountQuery.data) ? docsCountQuery.data.length : 0,
+    memories: Array.isArray(memoriesCountQuery.data) ? memoriesCountQuery.data.length : 0,
+    financialProfile: !!settingsQuery.data?.suitabilityCompleted,
+    integrations: Array.isArray(connectionsCountQuery.data) ? connectionsCountQuery.data.filter((c: any) => c.status === "connected").length : 0,
+  }), [docsCountQuery.data, memoriesCountQuery.data, connectionsCountQuery.data, settingsQuery.data?.suitabilityCompleted]);
+  // Pass 93: single proactive insightt for the welcome banner. Only fires
   // on the empty state (no conversationId), and only for authenticated
   // non-guest users. retry:false so a transient failure shows nothing
   // instead of blocking the welcome render. The query is cheap (3 rows,
@@ -771,6 +801,9 @@ export default function Chat() {
     setMessages(prev => [...prev, userMsg]);
     setInput("");
     soundCues.play("sent");
+    // Pass 5 (G23+G21): earcon on send + haptic feedback
+    playEarconById("send");
+    try { navigator?.vibrate?.(10); } catch {}
     // PIL: designed "chat.sent" feedback — haptic light + send earcon + send animation
     pil.giveFeedback("chat.sent");
     setFollowUpSuggestions([]);
@@ -1322,12 +1355,17 @@ export default function Chat() {
         ? "AUTH_EXPIRED"
         : "GENERIC";
       pil.giveFeedback("chat.error", { code });
+      // Pass 5 (G23+G21): error earcon + haptic on error
+      playEarconById("error");
+      try { navigator?.vibrate?.([30, 20, 30]); } catch {}
       // Keep the legacy toast for users who disabled visual feedback: the
       // dispatcher already runs it, but sonner dedupes identical titles.
     } finally {
       setIsStreaming(false);
       setAttachments([]);
       soundCues.play("received");
+      // Pass 5 (G23): earcon on receive
+      playEarconById("receive");
       // PIL: end of the streaming lifecycle — fires typing-end animation
       pil.giveFeedback("chat.streaming_end");
       // If hands-free is active and TTS is NOT about to speak (no ttsEnabled or error path),
@@ -1381,15 +1419,26 @@ export default function Chat() {
     // is different from PIL's voice → navigate flow, so each owns
     // its own handler.
     const onToggleHandsFree = () => toggleHandsFree();
+    // Pass 5 (G5): voice "bookmark" command pins the current conversation
+    const onBookmark = () => {
+      if (conversationId) {
+        togglePinMutation.mutate({ id: conversationId, pinned: true });
+        toast.success("Conversation pinned");
+      } else {
+        toast.info("No active conversation to pin");
+      }
+    };
     window.addEventListener("pil:stop-stream", onStop as EventListener);
     window.addEventListener("pil:send", onVoiceSend as EventListener);
     window.addEventListener("pil:new-chat", onVoiceNewChat as EventListener);
     window.addEventListener("chat:toggle-handsfree", onToggleHandsFree as EventListener);
+    window.addEventListener("pil:bookmark", onBookmark as EventListener);
     return () => {
       window.removeEventListener("pil:stop-stream", onStop as EventListener);
       window.removeEventListener("pil:send", onVoiceSend as EventListener);
       window.removeEventListener("pil:new-chat", onVoiceNewChat as EventListener);
       window.removeEventListener("chat:toggle-handsfree", onToggleHandsFree as EventListener);
+      window.removeEventListener("pil:bookmark", onBookmark as EventListener);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input, navigate, toggleHandsFree]);
@@ -2183,8 +2232,12 @@ export default function Chat() {
               userName={user?.name ?? undefined}
               isAuthenticated={isAuthenticated}
               onSuggestionClick={(text) => { setInput(text); textareaRef.current?.focus(); }}
+              onResumeConversation={(id) => { setConversationId(id); navigate(`/chat/${id}`); }}
               userRole={userRole as any}
               aiHealthy={true}
+              recentConversations={conversationsQuery.data as any}
+              topInsight={topInsight as any}
+              activeContextSources={activeContextSources}
             />
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
@@ -2399,20 +2452,26 @@ export default function Chat() {
               )}
               {/* Follow-up suggestion pills */}
               {followUpSuggestions.length > 0 && !isStreaming && (
-                <div className="flex flex-wrap gap-2 px-2 py-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  {followUpSuggestions.map((suggestion, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setFollowUpSuggestions([]);
-                        setInput(suggestion);
-                        setTimeout(() => handleSendWithText(suggestion), 100);
-                      }}
-                      className="px-3 py-1.5 text-xs rounded-full border border-accent/30 bg-accent/5 text-accent hover:bg-accent/15 hover:border-accent/50 transition-all cursor-pointer"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
+                <div className="space-y-2 px-2 py-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    <Sparkles className="w-3 h-3 text-accent/60" />Follow-up suggestions
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {followUpSuggestions.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setFollowUpSuggestions([]);
+                          setInput(suggestion);
+                          setTimeout(() => handleSendWithText(suggestion), 100);
+                        }}
+                        className="group/chip inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border border-accent/30 bg-accent/5 text-accent hover:bg-accent/15 hover:border-accent/50 transition-all cursor-pointer"
+                      >
+                        <ArrowRight className="w-3 h-3 opacity-0 -ml-1 group-hover/chip:opacity-100 group-hover/chip:ml-0 transition-all" />
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               {/* Self-Discovery Loop Bubble */}
@@ -2578,6 +2637,13 @@ export default function Chat() {
                       >
                         <Palette className="w-3.5 h-3.5 text-muted-foreground" />
                         <span>{visualMutation.isPending ? "Generating..." : "Generate visual"}</span>
+                      </button>
+                      <button
+                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
+                        onClick={() => { setShowAddMenu(false); navigate("/calculators"); }}
+                      >
+                        <Calculator className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Run calculator</span>
                       </button>
                       <div className="h-px bg-border my-0.5" />
                       <button
@@ -3078,6 +3144,30 @@ export default function Chat() {
                 </Tooltip>
               )}
 
+              {/* Pass 5 (G24): Always-visible mic button for voice input */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={`p-2.5 rounded-full transition-all ${
+                      voice.isListening
+                        ? "bg-emerald-500/15 text-emerald-400 animate-pulse"
+                        : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => {
+                      if (voice.isListening) {
+                        voice.stop();
+                      } else {
+                        voice.start();
+                        toast.info("Listening... speak now", { duration: 2000 });
+                      }
+                    }}
+                    aria-label={voice.isListening ? "Stop listening" : "Voice input"}
+                  >
+                    <AudioLines className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{voice.isListening ? "Stop listening" : "Voice input (tap to speak)"}</TooltipContent>
+              </Tooltip>
               {/* Audio toggle */}
               <Tooltip>
                 <TooltipTrigger asChild>
