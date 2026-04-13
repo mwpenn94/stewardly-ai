@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -102,7 +103,7 @@ export default function BusinessIncomeQuickQuotePage() {
     [role],
   );
 
-  const projectBiz = trpc.wealthEngine.projectBizIncome.useMutation();
+  const projectBiz = trpc.wealthEngine.projectBizIncome.useMutation({ onError: (e) => toast.error(e.message) });
 
   const runProjection = () => {
     // Persist answers to the shared profile so downstream calculators see

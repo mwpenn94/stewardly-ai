@@ -12,6 +12,7 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
+import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { persistCalculation } from "@/lib/calculatorContext";
 import { trpc } from "@/lib/trpc";
@@ -95,7 +96,7 @@ export default function QuickQuoteFlowPage() {
   );
   const max = DOMAINS.length * 3;
 
-  const runPreset = trpc.wealthEngine.runPreset.useMutation();
+  const runPreset = trpc.wealthEngine.runPreset.useMutation({ onError: (e) => toast.error(e.message) });
 
   // ── Persist to calculator context bridge when user reaches results ──
   useEffect(() => {

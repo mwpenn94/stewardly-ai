@@ -151,8 +151,8 @@ export default function Workflows() {
     refetchOnWindowFocus: true,
     retry: false,
   });
-  const saveInstanceMut = trpc.workflow.saveInstance.useMutation();
-  const deleteInstanceMut = trpc.workflow.deleteInstance.useMutation();
+  const saveInstanceMut = trpc.workflow.saveInstance.useMutation({ onError: (e) => toast.error(e.message) });
+  const deleteInstanceMut = trpc.workflow.deleteInstance.useMutation({ onError: (e) => toast.error(e.message) });
 
   // Reconcile the server snapshot into local state on first load.
   useEffect(() => {

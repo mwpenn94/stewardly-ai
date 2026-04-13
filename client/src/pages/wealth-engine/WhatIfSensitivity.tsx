@@ -117,7 +117,7 @@ export default function WhatIfSensitivity() {
     mortgage: sharedProfile.mortgageBalance ?? DEFAULT_PROFILE.mortgage,
   }), [sharedProfile]);
 
-  const heSimulate = trpc.calculatorEngine.heSimulate.useMutation();
+  const heSimulate = trpc.calculatorEngine.heSimulate.useMutation({ onError: (e) => toast.error(e.message) });
 
   const rowDef = PARAMS.find((p) => p.key === rowParam)!;
   const colDef = PARAMS.find((p) => p.key === colParam)!;

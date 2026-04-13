@@ -176,12 +176,12 @@ export default function EngineDashboard() {
   const [showPresets, setShowPresets] = useState(true);
 
   // tRPC mutations
-  const heSimulate = trpc.calculatorEngine.heSimulate.useMutation();
-  const uweMonteCarlo = trpc.calculatorEngine.uweMonteCarlo.useMutation();
-  const scuiStress = trpc.calculatorEngine.stressTest.useMutation();
-  const scuiBacktest = trpc.calculatorEngine.historicalBacktest.useMutation();
-  const bieBackPlan = trpc.calculatorEngine.bieBackPlan.useMutation();
-  const bieSimulate = trpc.calculatorEngine.bieSimulate.useMutation();
+  const heSimulate = trpc.calculatorEngine.heSimulate.useMutation({ onError: (e) => toast.error(e.message) });
+  const uweMonteCarlo = trpc.calculatorEngine.uweMonteCarlo.useMutation({ onError: (e) => toast.error(e.message) });
+  const scuiStress = trpc.calculatorEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
+  const scuiBacktest = trpc.calculatorEngine.historicalBacktest.useMutation({ onError: (e) => toast.error(e.message) });
+  const bieBackPlan = trpc.calculatorEngine.bieBackPlan.useMutation({ onError: (e) => toast.error(e.message) });
+  const bieSimulate = trpc.calculatorEngine.bieSimulate.useMutation({ onError: (e) => toast.error(e.message) });
 
   // tRPC queries for references
   const { data: references } = trpc.calculatorEngine.productReferences.useQuery();

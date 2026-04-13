@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
@@ -78,7 +79,7 @@ export default function ConsensusPage() {
   );
   const [selectedPresetId, setSelectedPresetId] = useState<number | "none">("none");
 
-  const consensusStream = trpc.wealthEngine.consensusStream.useMutation();
+  const consensusStream = trpc.wealthEngine.consensusStream.useMutation({ onError: (e) => toast.error(e.message) });
   const presets = trpc.wealthEngine.listWeightPresets.useQuery();
 
   // Round D2 — pre-flight cost estimate

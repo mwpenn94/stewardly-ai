@@ -78,8 +78,8 @@ export default function IntegrationHealth() {
   const healthContext = trpc.integrations.getIntegrationHealthContext.useQuery();
   const schedulerStatus = trpc.integrations.getSchedulerStatus.useQuery();
   const economicSummary = trpc.integrations.getEconomicDataSummary.useQuery();
-  const runChecks = trpc.integrations.runHealthChecks.useMutation();
-  const runPipelines = trpc.integrations.runAllPipelines.useMutation();
+  const runChecks = trpc.integrations.runHealthChecks.useMutation({ onError: (e) => toast.error(e.message) });
+  const runPipelines = trpc.integrations.runAllPipelines.useMutation({ onError: (e) => toast.error(e.message) });
   const utils = trpc.useUtils();
 
   const handleRunAllChecks = async () => {
@@ -572,7 +572,7 @@ export default function IntegrationHealth() {
 
 // ─── Connection Card ──────────────────────────────────────────────────
 function ConnectionCard({ connection }: { connection: any }) {
-  const runCheck = trpc.integrations.runSingleHealthCheck.useMutation();
+  const runCheck = trpc.integrations.runSingleHealthCheck.useMutation({ onError: (e) => toast.error(e.message) });
   const utils = trpc.useUtils();
   const [checking, setChecking] = useState(false);
 

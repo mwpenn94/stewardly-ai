@@ -17,6 +17,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -107,8 +108,8 @@ export default function HolisticComparisonPage() {
   const [presetB, setPresetB] = useState<HePresetKey>("wealthbridgeClient");
   const [years, setYears] = useState<number>(30);
 
-  const runA = trpc.wealthEngine.runPreset.useMutation();
-  const runB = trpc.wealthEngine.runPreset.useMutation();
+  const runA = trpc.wealthEngine.runPreset.useMutation({ onError: (e) => toast.error(e.message) });
+  const runB = trpc.wealthEngine.runPreset.useMutation({ onError: (e) => toast.error(e.message) });
 
   const engineProfile = useMemo(() => profileToHolisticInput(profile), [profile]);
 
