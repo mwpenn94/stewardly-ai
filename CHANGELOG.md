@@ -11,6 +11,9 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **Accessibility (WCAG 2.1 Level A — icon-only button labels)**:
+  - ChatInputBar.tsx: hands-free voice toggle gained aria-label
+  - LiveSession.tsx: 3 icon buttons (mic/TTS/camera) replaced `title` with proper `aria-label`
 - **Performance (staleTime on 10 queries across 6 pages)**:
   - Consensus weight presets (5min), PassiveActions 4 queries (30s-5min), AdvisorIntegrations providers (5min) + connections (1min), SuitabilityPanel (1-5min), ProductIntelligence strategies/avg (5min), Community posts (30s)
   - Prevents unnecessary refetch-on-mount for stable reference data

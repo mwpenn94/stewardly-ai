@@ -494,7 +494,7 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
             variant="ghost"
             size="icon"
             onClick={toggleMute}
-            title={isMuted ? "Unmute" : "Mute"}
+            aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
           >
             {isMuted ? <MicOff className="w-4 h-4 text-red-400" /> : <Mic className="w-4 h-4" />}
           </Button>
@@ -503,7 +503,7 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
             variant="ghost"
             size="icon"
             onClick={() => setTtsEnabled(!ttsEnabled)}
-            title={ttsEnabled ? "Mute AI voice" : "Enable AI voice"}
+            aria-label={ttsEnabled ? "Mute AI voice" : "Enable AI voice"}
           >
             {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-red-400" />}
           </Button>
@@ -520,7 +520,7 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
                 startStream("camera");
               }
             }}
-            title={liveMode === "camera" ? "Switch to screen" : "Switch to camera"}
+            aria-label={liveMode === "camera" ? "Switch to screen share" : "Switch to camera"}
           >
             {liveMode === "camera" ? <Monitor className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
           </Button>
