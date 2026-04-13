@@ -63,9 +63,9 @@ export function estPrem(type: string, age: number, amount: number): number {
   }
 }
 export function sc(val: number): { label: string; color: string; icon: string } {
-  if (val >= 3) return { label: 'Strong', color: 'text-green-600', icon: '✓' };
-  if (val >= 2) return { label: 'Moderate', color: 'text-yellow-600', icon: '⚠' };
-  return { label: 'Needs Attention', color: 'text-red-600', icon: '✗' };
+  if (val >= 3) return { label: 'Strong', color: 'text-green-400', icon: '✓' };
+  if (val >= 2) return { label: 'Moderate', color: 'text-yellow-400', icon: '⚠' };
+  return { label: 'Needs Attention', color: 'text-red-400', icon: '✗' };
 }
 export function getBracketRate(income: number, brackets: [number, number][]): number {
   let tax = 0, prev = 0;
