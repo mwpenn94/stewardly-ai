@@ -249,6 +249,7 @@ export default function BusinessIncome() {
                           <p className="text-xs"><strong>{bp.teamNeeded}</strong> team members needed at {fmt(bp.overrideTarget ?? 0)} override target</p>
                         </div>
                       )}
+                      <DiscussInChatButton prompt={`My back-plan for ${fmt(targetIncome)}/yr as a ${role}: I need ${fmt(bp.neededGDC ?? 0)} GDC at ${((bp.bracketRate ?? 0) * 100).toFixed(0)}% payout (${bp.bracketLabel ?? ""}). The funnel requires ${funnel?.daily?.approaches ?? 0} daily approaches. How can I optimize my activity to hit these targets faster?`} />
                     </div>
                   );
                 })()}
@@ -532,6 +533,9 @@ export default function BusinessIncome() {
                   {cac > 0 && avgLtv / cac > 3 && " Your LTV:CAC ratio exceeds 3:1 — healthy unit economics."}
                   {cac > 0 && avgLtv / cac < 3 && avgLtv / cac > 1 && " Your LTV:CAC is under 3:1 — consider shifting spend to higher-ROI channels."}
                 </p>
+                {totals.spend > 0 && (
+                  <DiscussInChatButton prompt={`My marketing budget allocates ${fmt(totals.spend)}/yr across ${rows.filter(r => r.monthlySpend > 0).length} channels, projecting ${Math.round(totals.leads)} leads and ${Math.round(totals.clients)} clients. CAC is ${fmt(cac)} with LTV:CAC of ${cac > 0 ? (avgLtv / cac).toFixed(1) : "N/A"}x. How should I optimize this mix for better ROI?`} />
+                )}
               </CardContent>
             );
           })()}
