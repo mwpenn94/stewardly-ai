@@ -1144,7 +1144,9 @@ Pass 6 · angle: cross-app cohesion + marketing SEO + page titles · commit SHA:
 
 Pass 7 · angle: mobile bottom nav consistency + touch UX · commit SHA: 488be3f · shipped: Chat.tsx mobile bottom nav pixel-identical to AppShell · deferred: per-page inline header audit
 
-Pass 8 · angle: WCAG accessibility — aria-labels on icon buttons · commit SHA: (pending) · shipped: 7 icon-only buttons in Chat.tsx message action bar given aria-labels (thumbs-up, thumbs-down, copy, read-aloud, regenerate, infographic already had title, attachment remove). WCAG 4.1.2 Name+Role compliance for assistive tech · deferred: LearningHome Card toggle a11y (low priority)
+Pass 8 · angle: WCAG accessibility — aria-labels on icon buttons · commit SHA: dd68e83 · shipped: 7 Chat.tsx message action button aria-labels · deferred: LearningHome Card toggle a11y
+
+Pass 9 · angle: integration UX + data pipeline discoverability · commit SHA: (pending) · shipped: DynamicIntegrations back link fixed from /intelligence-hub to /integrations (correct section context) + hidden on mobile where AppShell nav covers it · deferred: none
 
 ## Angle Glossary
 | Angle ID | Description | Disjoint from |
