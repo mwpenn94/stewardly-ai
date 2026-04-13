@@ -114,6 +114,7 @@ const EXEMPT_ROUTES = new Set<string>([
   // Public / embed / calculator widgets
   "/public-calculators",
   "/embed",
+  "/embed/calculator",
   // Lead / import flow (accessed from /relationships hub)
   "/import",
   "/leads",

@@ -3937,3 +3937,32 @@
 - [x] Add scenario comparison — save multiple sessions, compare side-by-side with diff table
 - [x] Make calculator embeddable — /embed/calculator route without app shell for emails/portals
 - [x] Test as virtual user (guest mode, no auth) — all modules load (200 OK), zero browser console errors, page renders at /calculators
+
+## Calculators Page — Footer Overlap & Business/Practice Aspects
+- [x] FIX: Footer/disclaimer bar overlaps and cuts off bottom of calculator content (added pb-24 to main content)
+- [x] Add all business/practice aspects from v7 HTML calculator — 8 Practice Planning panels
+- [x] Ensure business-specific sections match the v7 HTML reference faithfully
+- [ ] Test as virtual user to confirm no content is hidden behind footer
+
+## Practice Planning Engine (BIE) — Full Implementation
+- [x] Create practiceEngine.ts with all BIE calculation logic ported from v7 HTML
+- [x] Products: 16 products (Term, IUL, RapidProtect, WL, WL-MM, FIA, VA, PF, Exec, Group, Advisory, P&C, Medicare, GFI/Ethos, DI, Hybrid LTC)
+- [x] GDC Brackets: 8 tiers from <$65K (55%) to $300K+ (85%)
+- [x] Channels: 12 marketing channels with CPL, conversion, rev, LTV data
+- [x] Role hierarchy: New → Exp → SA → Dir → MD → RVP with up/down chains
+- [x] Recruiting: 4 tracks (New Associate, Experienced Pro, Affiliate, MD) with full funnel
+- [x] Create PanelsD.tsx with 8 Practice Planning panels:
+  - [x] My Plan — Multi-stream roll-up with stream toggles
+  - [x] GDC Brackets — Interactive bracket table with auto/manual override
+  - [x] Products — Full product table with WB rate, best-in-industry, renewal, source
+  - [x] Sales Funnel — Back-planned funnel from target GDC to daily approaches
+  - [x] Recruiting — Multi-track recruiting with funnel, retention, CAC, ROI, LTV
+  - [x] Channels — 12-channel marketing spend with leads, clients, ROI, LTV:CAC
+  - [x] Dashboard — Unified KPIs across all streams
+  - [x] P&L — Individual/team P&L with back-planning from EBITDA/net income goals
+- [x] Integrate all 8 panels into Calculators.tsx orchestrator
+- [x] Add Practice Planning navigation section in sidebar
+- [x] Add 26 state variables for practice planning inputs
+- [x] Write vitest tests for practiceEngine calculations (GDC brackets, weighted GDC, funnel, P&L, channels, team override)
+- [x] Fix navReachability test for /embed/calculator exempt route
+- [x] All tests passing (7642 tests, 315 files)

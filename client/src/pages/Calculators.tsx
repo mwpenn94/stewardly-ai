@@ -10,7 +10,8 @@ import { trpc } from '@/lib/trpc';
 import {
   User, DollarSign, Shield, TrendingUp, Clock, Building2, GraduationCap,
   Scale, BarChart3, GitCompare, FileText, ListChecks, BookOpen,
-  Calculator, CheckCircle2, Save, FolderOpen, Download, Trash2
+  Calculator, CheckCircle2, Save, FolderOpen, Download, Trash2,
+  Target, Layers, Package, Funnel, Users, Megaphone, LayoutDashboard, Receipt
 } from 'lucide-react';
 
 import {
@@ -23,10 +24,13 @@ import {
 import { ProfilePanel, CashFlowPanel, ProtectionPanel, GrowthPanel } from './calculators/PanelsA';
 import { RetirementPanel, TaxPanel, EstatePanel, EducationPanel } from './calculators/PanelsB';
 import { CostBenefitPanel, StrategyComparePanel, SummaryPanel, ActionPlanPanel, ReferencesPanel } from './calculators/PanelsC';
+import { MyPlanPanel, GDCBracketsPanel, ProductsPanel, SalesFunnelPanel, RecruitingPanel, ChannelsPanel, DashboardPanel, PnLPanel, type PracticeProps } from './calculators/PanelsD';
+import { ROLE_DEFAULTS, type RoleId, type TeamMember, type RecruitTrack } from './calculators/practiceEngine';
 
 /* ═══ PANEL TYPE DEFINITIONS ═══ */
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
-  'costben' | 'compare' | 'summary' | 'timeline' | 'refs';
+  'costben' | 'compare' | 'summary' | 'timeline' | 'refs' |
+  'myplan' | 'gdcbrackets' | 'products' | 'salesfunnel' | 'recruiting' | 'channels' | 'dashboard' | 'pnl';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Your Profile', items: [
@@ -40,6 +44,16 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'tax', label: 'Tax Planning', icon: <Building2 className="w-4 h-4" /> },
     { id: 'estate', label: 'Estate', icon: <Scale className="w-4 h-4" /> },
     { id: 'edu', label: 'Education', icon: <GraduationCap className="w-4 h-4" /> },
+  ]},
+  { group: 'Practice Planning', items: [
+    { id: 'myplan' as PanelId, label: 'My Plan', icon: <Target className="w-4 h-4" /> },
+    { id: 'gdcbrackets' as PanelId, label: 'GDC Brackets', icon: <Layers className="w-4 h-4" /> },
+    { id: 'products' as PanelId, label: 'Products', icon: <Package className="w-4 h-4" /> },
+    { id: 'salesfunnel' as PanelId, label: 'Sales Funnel', icon: <Funnel className="w-4 h-4" /> },
+    { id: 'recruiting' as PanelId, label: 'Recruiting', icon: <Users className="w-4 h-4" /> },
+    { id: 'channels' as PanelId, label: 'Channels', icon: <Megaphone className="w-4 h-4" /> },
+    { id: 'dashboard' as PanelId, label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: 'pnl' as PanelId, label: 'P&L', icon: <Receipt className="w-4 h-4" /> },
   ]},
   { group: 'Analysis', items: [
     { id: 'costben', label: 'Cost-Benefit', icon: <BarChart3 className="w-4 h-4" /> },
@@ -168,6 +182,33 @@ export default function Calculators() {
   /* ─── COST-BENEFIT & ACTION PLAN ─── */
   const [cbHorizons] = useState<number[]>([5, 10, 15, 20, 30]);
   const [pace, setPace] = useState<'standard'|'aggressive'|'gradual'>('standard');
+
+  /* ─── PRACTICE PLANNING STATE ─── */
+  const [ppRole, setPpRole] = useState<RoleId>('new');
+  const [ppTargetGDC, setPpTargetGDC] = useState(150000);
+  const [ppWbPct, setPpWbPct] = useState(70);
+  const [ppMonths, setPpMonths] = useState(10);
+  const [ppBracketOverride, setPpBracketOverride] = useState('auto');
+  const [ppProductMix, setPpProductMix] = useState<Record<string, number>>(() => ({ ...ROLE_DEFAULTS.new.mix }));
+  const [ppFunnelRates, setPpFunnelRates] = useState({ ap: .15, sh: .75, cl: .30, pl: .80 });
+  const [ppOverrideRate, setPpOverrideRate] = useState(10);
+  const [ppBonusRate, setPpBonusRate] = useState(2);
+  const [ppGen2Rate, setPpGen2Rate] = useState(3);
+  const [ppTeamMembers, setPpTeamMembers] = useState<TeamMember[]>([]);
+  const [ppRecruitTracks, setPpRecruitTracks] = useState<RecruitTrack[]>([]);
+  const [ppChannelSpend, setPpChannelSpend] = useState<Record<string, number>>({});
+  const [ppAumExisting, setPpAumExisting] = useState(0);
+  const [ppAumNew, setPpAumNew] = useState(0);
+  const [ppAumTrailPct, setPpAumTrailPct] = useState(1);
+  const [ppPnlLevel, setPpPnlLevel] = useState<'ind' | 'team'>('ind');
+  const [ppPnlProducers, setPpPnlProducers] = useState(5);
+  const [ppPnlAvgGDC, setPpPnlAvgGDC] = useState(100000);
+  const [ppPnlPayoutRate, setPpPnlPayoutRate] = useState(65);
+  const [ppPnlOpEx, setPpPnlOpEx] = useState(15600);
+  const [ppPnlTaxRate, setPpPnlTaxRate] = useState(30);
+  const [ppPnlEbitGoal, setPpPnlEbitGoal] = useState(0);
+  const [ppPnlNetGoal, setPpPnlNetGoal] = useState(0);
+  const [ppStreams, setPpStreams] = useState<Record<string, boolean>>({ personal: true, expanded: false, override: false, aum: false, channels: false });
 
   /* ─── SESSION HELPERS ─── */
   const gatherInputs = () => ({
@@ -417,9 +458,38 @@ export default function Calculators() {
     cfResult, prResult, grResult, rtResult, txResult, esResult, edResult, horizonData,
   };
 
+  /* ─── PRACTICE PLANNING PROPS ─── */
+  const practiceProps: PracticeProps = {
+    role: ppRole, setRole: setPpRole,
+    targetGDC: ppTargetGDC, setTargetGDC: setPpTargetGDC,
+    wbPct: ppWbPct, setWbPct: setPpWbPct,
+    months: ppMonths, setMonths: setPpMonths,
+    bracketOverride: ppBracketOverride, setBracketOverride: setPpBracketOverride,
+    productMix: ppProductMix, setProductMix: setPpProductMix,
+    funnelRates: ppFunnelRates, setFunnelRates: setPpFunnelRates,
+    overrideRate: ppOverrideRate, setOverrideRate: setPpOverrideRate,
+    bonusRate: ppBonusRate, setBonusRate: setPpBonusRate,
+    gen2Rate: ppGen2Rate, setGen2Rate: setPpGen2Rate,
+    teamMembers: ppTeamMembers, setTeamMembers: setPpTeamMembers,
+    recruitTracks: ppRecruitTracks, setRecruitTracks: setPpRecruitTracks,
+    channelSpend: ppChannelSpend, setChannelSpend: setPpChannelSpend,
+    aumExisting: ppAumExisting, setAumExisting: setPpAumExisting,
+    aumNew: ppAumNew, setAumNew: setPpAumNew,
+    aumTrailPct: ppAumTrailPct, setAumTrailPct: setPpAumTrailPct,
+    pnlLevel: ppPnlLevel, setPnlLevel: setPpPnlLevel,
+    pnlProducers: ppPnlProducers, setPnlProducers: setPpPnlProducers,
+    pnlAvgGDC: ppPnlAvgGDC, setPnlAvgGDC: setPpPnlAvgGDC,
+    pnlPayoutRate: ppPnlPayoutRate, setPnlPayoutRate: setPpPnlPayoutRate,
+    pnlOpEx: ppPnlOpEx, setPnlOpEx: setPpPnlOpEx,
+    pnlTaxRate: ppPnlTaxRate, setPnlTaxRate: setPpPnlTaxRate,
+    pnlEbitGoal: ppPnlEbitGoal, setPnlEbitGoal: setPpPnlEbitGoal,
+    pnlNetGoal: ppPnlNetGoal, setPnlNetGoal: setPpPnlNetGoal,
+    streams: ppStreams, setStreams: setPpStreams,
+  };
+
   /* ═══ RENDER ═══ */
   return (
-    <div className="flex h-[calc(100vh-56px)] bg-background">
+    <div className="flex h-[calc(100vh-56px)] bg-background pb-20 lg:pb-0">
       {/* ─── SIDEBAR ─── */}
       <aside className="w-56 shrink-0 border-r border-border bg-card flex flex-col">
         <div className="p-3 border-b border-border/50">
@@ -464,7 +534,7 @@ export default function Calculators() {
       </aside>
 
       {/* ─── MAIN CONTENT ─── */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-24">
         <div className="max-w-5xl mx-auto p-6">
 
           {/* ─── TOOLBAR ─── */}
@@ -514,6 +584,16 @@ export default function Calculators() {
           {activePanel === 'summary' && <SummaryPanel {...pp} />}
           {activePanel === 'timeline' && <ActionPlanPanel {...pp} />}
           {activePanel === 'refs' && <ReferencesPanel />}
+
+          {/* ═══ PRACTICE PLANNING PANELS ═══ */}
+          {activePanel === 'myplan' && <MyPlanPanel {...practiceProps} />}
+          {activePanel === 'gdcbrackets' && <GDCBracketsPanel {...practiceProps} />}
+          {activePanel === 'products' && <ProductsPanel {...practiceProps} />}
+          {activePanel === 'salesfunnel' && <SalesFunnelPanel {...practiceProps} />}
+          {activePanel === 'recruiting' && <RecruitingPanel {...practiceProps} />}
+          {activePanel === 'channels' && <ChannelsPanel {...practiceProps} />}
+          {activePanel === 'dashboard' && <DashboardPanel {...practiceProps} />}
+          {activePanel === 'pnl' && <PnLPanel {...practiceProps} />}
 
         </div>
       </main>
