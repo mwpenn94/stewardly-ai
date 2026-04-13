@@ -108,7 +108,7 @@ export default function ExamSimulatorRoute() {
     { trackId: trackQ.data?.id ?? 0 },
     { enabled: !!trackQ.data?.id },
   );
-  const recordReview = trpc.learning.mastery.recordReview.useMutation();
+  const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
 
   const [mode, setMode] = useState<ExamMode | null>(null);
   const [questionCount, setQuestionCount] = useState(10);

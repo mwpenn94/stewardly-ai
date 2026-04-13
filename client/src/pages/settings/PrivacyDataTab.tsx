@@ -52,7 +52,7 @@ export default function PrivacyDataTab() {
     onSuccess: () => { consentsQuery.refetch(); toast.success("All consents revoked"); },
   });
 
-  const fullExportMut = trpc.exports.fullDataExport.useMutation();
+  const fullExportMut = trpc.exports.fullDataExport.useMutation({ onError: (e) => toast.error(e.message) });
 
   const consents = Array.isArray(consentsQuery.data) ? consentsQuery.data : [];
   const isConsentGranted = (type: string) => {

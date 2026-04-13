@@ -383,7 +383,7 @@ export default function Settings() {
 // ─── VOICE SETTINGS COMPONENT ─────────────────────────────────────
 function VoiceSettings() {
   const voicesQuery = trpc.voice.voices.useQuery(undefined, { staleTime: 60_000 });
-  const speakMutation = trpc.voice.speak.useMutation();
+  const speakMutation = trpc.voice.speak.useMutation({ onError: (e) => toast.error(e.message) });
   const [selectedVoice, setSelectedVoice] = useState<string>(() => {
     return localStorage.getItem("tts-voice") || "aria";
   });

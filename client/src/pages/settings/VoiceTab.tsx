@@ -37,7 +37,7 @@ const LOCALE_LABELS: Record<string, string> = {
 export default function VoiceTab() {
   const { user } = useAuth();
   const voicesQuery = trpc.voice.voices.useQuery(undefined, { staleTime: 60_000 });
-  const speakMutation = trpc.voice.speak.useMutation();
+  const speakMutation = trpc.voice.speak.useMutation({ onError: (e) => toast.error(e.message) });
 
   // ─── Voice selection state ─────────────────────────────────────
   const [selectedVoice, setSelectedVoice] = useState<string>(() =>
@@ -70,7 +70,7 @@ export default function VoiceTab() {
   useEffect(() => { localStorage.setItem(LS_SPEECH_RATE, String(speechRate)); }, [speechRate]);
 
   // ─── Sync to server for authenticated users ────────────────────
-  const updatePrefs = trpc.aiLayers.updateUserPreferences.useMutation();
+  const updatePrefs = trpc.aiLayers.updateUserPreferences.useMutation({ onError: (e) => toast.error(e.message) });
   useEffect(() => {
     if (user) {
       // Debounced sync to server

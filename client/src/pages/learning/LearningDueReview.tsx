@@ -70,7 +70,7 @@ export default function LearningDueReview() {
     },
     { refetchOnWindowFocus: false },
   );
-  const recordReview = trpc.learning.mastery.recordReview.useMutation();
+  const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
 
   const items = deckQ.data?.items ?? [];
   const totalDue = deckQ.data?.dueTotal ?? 0;

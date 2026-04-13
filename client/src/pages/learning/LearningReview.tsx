@@ -99,7 +99,7 @@ export default function LearningReview() {
     newQuota: 10,
     studyAhead,
   });
-  const recordReview = trpc.learning.mastery.recordReview.useMutation();
+  const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
   const celebrate = useCelebration();
 
   // Session state

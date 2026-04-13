@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -45,7 +46,7 @@ export default function Compliance() {
     },
   });
 
-  const regBIMutation = trpc.compliance.generateRegBIDoc.useMutation();
+  const regBIMutation = trpc.compliance.generateRegBIDoc.useMutation({ onError: (e) => toast.error(e.message) });
 
   const [regBIProfile, setRegBIProfile] = useState("");
   const [regBIRec, setRegBIRec] = useState("");

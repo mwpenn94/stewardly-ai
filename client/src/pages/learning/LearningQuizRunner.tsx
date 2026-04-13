@@ -61,7 +61,7 @@ export default function LearningQuizRunner() {
   const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, {
     refetchOnWindowFocus: false,
   });
-  const recordReview = trpc.learning.mastery.recordReview.useMutation();
+  const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
   const pil = usePlatformIntelligence();
 
   const track = trackQ.data;
