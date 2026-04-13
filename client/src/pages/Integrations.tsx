@@ -11,8 +11,8 @@ import { toast } from "sonner";
 import {
   Link2, Unlink, RefreshCw, Search, Database, Building2, Briefcase, User,
   Globe, CheckCircle2, XCircle, Clock, AlertTriangle, ChevronRight,
-  Shield, Activity, Settings2, Loader2, Plus, ArrowUpDown, FileUp, ArrowLeft,
-  TrendingUp, TrendingDown, Minus, ArrowLeftRight,
+  Shield, Activity, Settings2, Loader2, Plus, ArrowLeft,
+  TrendingUp, TrendingDown, ArrowLeftRight,
 } from "lucide-react";
 import { Link } from "wouter";
 import { getLoginUrl } from "@/const";

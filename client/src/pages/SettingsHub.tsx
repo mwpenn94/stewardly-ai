@@ -4,7 +4,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Camera, Brain, Shield, FileText, Sparkles, User,
+  Shield, FileText, Sparkles, User,
   Loader2, Settings2, ChevronRight, Bell, Palette, Mic, Link2, Keyboard,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";

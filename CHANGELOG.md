@@ -11,6 +11,11 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **Dead code removal (6 unused imports across 4 files)**:
+  - Chat.tsx: removed entire unused dropdown-menu import (8 components)
+  - SettingsHub.tsx: removed unused Camera + Brain icons
+  - Integrations.tsx: removed unused FileUp + ArrowUpDown + Minus icons
+  - LearningHome.tsx: removed unused Briefcase icon
 - **Error handling (9 mutations gained onError toast handlers)**:
   - DynamicIntegrations archive mutation
   - ImprovementEngine updateAction mutation

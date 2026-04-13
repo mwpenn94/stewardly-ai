@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Briefcase, Scale, Flame, Search, ChevronDown, AlertTriangle } from "lucide-react";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Scale, Flame, Search, ChevronDown, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import {
   loadStreakFromStorage,
