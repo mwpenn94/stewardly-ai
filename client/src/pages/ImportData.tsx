@@ -119,7 +119,7 @@ export default function ImportData() {
               <p className="text-xs text-muted-foreground mb-2">
                 Use our template to ensure your data maps correctly.
               </p>
-              <Button variant="outline" size="sm" onClick={() => toast.info("Template download coming soon")}>
+              <Button variant="outline" size="sm" disabled title="Template download available when import pipeline is live">
                 <FileSpreadsheet className="h-3.5 w-3.5 mr-1" /> Download CSV Template
               </Button>
             </CardContent>

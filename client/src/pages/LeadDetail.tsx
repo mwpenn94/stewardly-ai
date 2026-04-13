@@ -151,7 +151,7 @@ export default function LeadDetail() {
                 <CardContent className="p-8 text-center text-muted-foreground">
                   <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No documents attached yet</p>
-                  <Button variant="outline" size="sm" className="mt-3" onClick={() => toast.info("Document upload coming soon")}>
+                  <Button variant="outline" size="sm" className="mt-3" disabled title="Document upload available when lead data is live">
                     Upload Document
                   </Button>
                 </CardContent>
@@ -172,13 +172,13 @@ export default function LeadDetail() {
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Quick Actions</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start text-sm" onClick={() => toast.info("Coming soon")}>
+              <Button variant="outline" className="w-full justify-start text-sm" disabled title="Available when lead data is live">
                 <MessageSquare className="h-4 w-4 mr-2" /> Send Follow-up
               </Button>
-              <Button variant="outline" className="w-full justify-start text-sm" onClick={() => toast.info("Coming soon")}>
+              <Button variant="outline" className="w-full justify-start text-sm" disabled title="Available when lead data is live">
                 <DollarSign className="h-4 w-4 mr-2" /> Create Proposal
               </Button>
-              <Button variant="outline" className="w-full justify-start text-sm" onClick={() => toast.info("Coming soon")}>
+              <Button variant="outline" className="w-full justify-start text-sm" disabled title="Available when lead data is live">
                 <FileText className="h-4 w-4 mr-2" /> Generate Report
               </Button>
             </CardContent>

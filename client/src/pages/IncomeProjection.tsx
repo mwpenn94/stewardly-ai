@@ -174,12 +174,6 @@ export default function IncomeProjection() {
     [sources]
   );
 
-  const _totalMonthlyAtRetirement = useMemo(() =>
-    activeSources
-      .filter(s => s.startAge <= retirementAge)
-      .reduce((sum, s) => sum + s.monthlyAmount, 0),
-    [activeSources, retirementAge]
-  );
 
   const totalMonthlyAtFull = useMemo(() =>
     activeSources.reduce((sum, s) => sum + s.monthlyAmount, 0),

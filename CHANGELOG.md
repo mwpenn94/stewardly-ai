@@ -11,6 +11,12 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **UI honesty — 10 "coming soon" toast lies replaced with disabled buttons**:
+  - WebhookManager: added HonestPlaceholder banner, disabled Add Endpoint + Retry buttons
+  - AdvisorProfile: replaced 4 "coming soon" toast buttons/links with disabled + title attributes
+  - LeadDetail: replaced 4 "coming soon" toast buttons with disabled + explanatory title
+  - ImportData: replaced template download toast with disabled button
+  - IncomeProjection: removed dead _totalMonthlyAtRetirement useMemo (wasted computation)
 - **Server dead code removal (102 unused imports across 7 server files)**:
   - server/services/scheduler.ts: 10 dead imports cleaned (cron job stubs prefixed, result/duration vars removed)
   - server/services/cronManager.ts: 9 dead imports (integrationConnections/Providers, eq/and/sql/isNull/or, 2 duration vars)

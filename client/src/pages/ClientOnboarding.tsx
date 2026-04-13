@@ -116,7 +116,7 @@ export default function ClientOnboarding() {
               {["Government ID", "Recent Tax Return", "Investment Statements", "Insurance Policies", "Estate Documents"].map(doc => (
                 <div key={doc} className="flex items-center justify-between py-2 border-b border-border/50">
                   <span className="text-sm">{doc}</span>
-                  <Button variant="outline" size="sm" onClick={() => toast.info("File upload coming soon")}>Upload</Button>
+                  <Button variant="outline" size="sm" onClick={() => toast.info("File upload will be available once document processing is configured")}>Upload</Button>
                 </div>
               ))}
             </div>

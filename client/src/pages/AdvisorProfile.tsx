@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Phone, MapPin, Calendar, Award, BookOpen, Star, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 
 export default function AdvisorProfile() {
@@ -42,8 +41,8 @@ export default function AdvisorProfile() {
                 <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> sarah@stewardly.com</span>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => toast.info("Booking coming soon")}><Calendar className="h-3.5 w-3.5 mr-1" /> Book Consultation</Button>
-                <Button size="sm" variant="outline" onClick={() => toast.info("Contact form coming soon")}><Mail className="h-3.5 w-3.5 mr-1" /> Message</Button>
+                <Button size="sm" disabled title="Booking integration pending"><Calendar className="h-3.5 w-3.5 mr-1" /> Book Consultation</Button>
+                <Button size="sm" variant="outline" disabled title="Contact form pending"><Mail className="h-3.5 w-3.5 mr-1" /> Message</Button>
               </div>
             </div>
           </div>
@@ -88,12 +87,12 @@ export default function AdvisorProfile() {
           </div>
           <h3 className="text-sm font-semibold pt-2">Regulatory</h3>
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            <a href="#" className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={e => { e.preventDefault(); toast.info("BrokerCheck link coming soon"); }}>
+            <span className="flex items-center gap-1 text-muted-foreground/50 cursor-not-allowed" title="BrokerCheck link available when CRD number is configured">
               <ExternalLink className="h-3 w-3" /> FINRA BrokerCheck
-            </a>
-            <a href="#" className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={e => { e.preventDefault(); toast.info("SEC link coming soon"); }}>
+            </span>
+            <span className="flex items-center gap-1 text-muted-foreground/50 cursor-not-allowed" title="SEC link available when CRD number is configured">
               <ExternalLink className="h-3 w-3" /> SEC IAPD
-            </a>
+            </span>
           </div>
         </CardContent>
       </Card>
