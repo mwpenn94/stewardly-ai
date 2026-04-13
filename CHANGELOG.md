@@ -11,6 +11,9 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **Performance (staleTime on 10 queries across 6 pages)**:
+  - Consensus weight presets (5min), PassiveActions 4 queries (30s-5min), AdvisorIntegrations providers (5min) + connections (1min), SuitabilityPanel (1-5min), ProductIntelligence strategies/avg (5min), Community posts (30s)
+  - Prevents unnecessary refetch-on-mount for stable reference data
 - **SEO metadata (7 pages gained SEOHead)**:
   - Welcome, OrgLanding (dynamic org name), NotFound, Unsubscribe, PlatformGuide
   - Learning: CaseStudySimulator, ConnectionMap

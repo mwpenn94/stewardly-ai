@@ -39,7 +39,7 @@ export default function Community() {
   // Try to use communityForum.list if it exists, otherwise show placeholder
   const postsQuery = trpc.communityForum.listPosts.useQuery(
     { limit: 20 },
-    { enabled: !!user, retry: false }
+    { enabled: !!user, retry: false, staleTime: 30_000 }
   );
 
   const createPostMut = trpc.communityForum.createPost.useMutation({

@@ -238,8 +238,8 @@ function IulCreditingSection() {
     },
   });
 
-  const strategiesQuery = trpc.productIntelligence.availableStrategies.useQuery({ productId });
-  const avgQuery = trpc.productIntelligence.avgCreditingByStrategy.useQuery({ productId });
+  const strategiesQuery = trpc.productIntelligence.availableStrategies.useQuery({ productId }, { staleTime: 5 * 60_000 });
+  const avgQuery = trpc.productIntelligence.avgCreditingByStrategy.useQuery({ productId }, { staleTime: 5 * 60_000 });
   const historyQuery = trpc.productIntelligence.creditingHistory.useQuery(
     { productId, strategy: selectedStrategy },
     { enabled: true }

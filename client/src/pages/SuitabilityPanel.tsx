@@ -16,8 +16,8 @@ import { Shield, Target, AlertTriangle, CheckCircle, TrendingUp, BarChart3, File
 export default function SuitabilityPanel() {
   const [tab, setTab] = useState("overview");
 
-  const suitability = trpc.suitability.get.useQuery();
-  const products = trpc.products.list.useQuery({});
+  const suitability = trpc.suitability.get.useQuery(undefined, { staleTime: 60_000 });
+  const products = trpc.products.list.useQuery({}, { staleTime: 5 * 60_000 });
 
   const profile = suitability.data;
   const productList = products.data || [];
