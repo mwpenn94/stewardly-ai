@@ -11,7 +11,7 @@ import {
   User, DollarSign, Shield, TrendingUp, Clock, Building2, GraduationCap,
   Scale, BarChart3, GitCompare, FileText, ListChecks, BookOpen,
   Calculator, CheckCircle2, Save, FolderOpen, Download, Trash2,
-  Target, Layers, Package, Funnel, Users, Megaphone, LayoutDashboard, Receipt
+  Target, Layers, Package, Filter, Users, Megaphone, LayoutDashboard, Receipt
 } from 'lucide-react';
 
 import {
@@ -49,7 +49,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'myplan' as PanelId, label: 'My Plan', icon: <Target className="w-4 h-4" /> },
     { id: 'gdcbrackets' as PanelId, label: 'GDC Brackets', icon: <Layers className="w-4 h-4" /> },
     { id: 'products' as PanelId, label: 'Products', icon: <Package className="w-4 h-4" /> },
-    { id: 'salesfunnel' as PanelId, label: 'Sales Funnel', icon: <Funnel className="w-4 h-4" /> },
+    { id: 'salesfunnel' as PanelId, label: 'Sales Funnel', icon: <Filter className="w-4 h-4" /> },
     { id: 'recruiting' as PanelId, label: 'Recruiting', icon: <Users className="w-4 h-4" /> },
     { id: 'channels' as PanelId, label: 'Channels', icon: <Megaphone className="w-4 h-4" /> },
     { id: 'dashboard' as PanelId, label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -209,6 +209,10 @@ export default function Calculators() {
   const [ppPnlEbitGoal, setPpPnlEbitGoal] = useState(0);
   const [ppPnlNetGoal, setPpPnlNetGoal] = useState(0);
   const [ppStreams, setPpStreams] = useState<Record<string, boolean>>({ personal: true, expanded: false, override: false, aum: false, channels: false });
+  const [ppAffAIncome, setPpAffAIncome] = useState(0);
+  const [ppAffBIncome, setPpAffBIncome] = useState(0);
+  const [ppAffCIncome, setPpAffCIncome] = useState(0);
+  const [ppAffDIncome, setPpAffDIncome] = useState(0);
 
   /* ─── SESSION HELPERS ─── */
   const gatherInputs = () => ({
@@ -224,6 +228,12 @@ export default function Calculators() {
     grossEstate, exemption, estateGrowth, giftingAnnual, willStatus,
     numChildren, avgChildAge, targetCost, eduReturn, current529, monthly529,
     pace,
+    /* Practice Planning */
+    ppRole, ppTargetGDC, ppWbPct, ppMonths, ppBracketOverride, ppProductMix, ppFunnelRates,
+    ppOverrideRate, ppBonusRate, ppGen2Rate, ppTeamMembers, ppRecruitTracks, ppChannelSpend,
+    ppAumExisting, ppAumNew, ppAumTrailPct, ppPnlLevel, ppPnlProducers, ppPnlAvgGDC,
+    ppPnlPayoutRate, ppPnlOpEx, ppPnlTaxRate, ppPnlEbitGoal, ppPnlNetGoal, ppStreams,
+    ppAffAIncome, ppAffBIncome, ppAffCIncome, ppAffDIncome,
   });
 
   const restoreInputs = (d: Record<string, any>) => {
@@ -293,6 +303,36 @@ export default function Calculators() {
     if (d.current529 !== undefined) setCurrent529(d.current529);
     if (d.monthly529 !== undefined) setMonthly529(d.monthly529);
     if (d.pace !== undefined) setPace(d.pace);
+    /* Practice Planning */
+    if (d.ppRole !== undefined) setPpRole(d.ppRole);
+    if (d.ppTargetGDC !== undefined) setPpTargetGDC(d.ppTargetGDC);
+    if (d.ppWbPct !== undefined) setPpWbPct(d.ppWbPct);
+    if (d.ppMonths !== undefined) setPpMonths(d.ppMonths);
+    if (d.ppBracketOverride !== undefined) setPpBracketOverride(d.ppBracketOverride);
+    if (d.ppProductMix !== undefined) setPpProductMix(d.ppProductMix);
+    if (d.ppFunnelRates !== undefined) setPpFunnelRates(d.ppFunnelRates);
+    if (d.ppOverrideRate !== undefined) setPpOverrideRate(d.ppOverrideRate);
+    if (d.ppBonusRate !== undefined) setPpBonusRate(d.ppBonusRate);
+    if (d.ppGen2Rate !== undefined) setPpGen2Rate(d.ppGen2Rate);
+    if (d.ppTeamMembers !== undefined) setPpTeamMembers(d.ppTeamMembers);
+    if (d.ppRecruitTracks !== undefined) setPpRecruitTracks(d.ppRecruitTracks);
+    if (d.ppChannelSpend !== undefined) setPpChannelSpend(d.ppChannelSpend);
+    if (d.ppAumExisting !== undefined) setPpAumExisting(d.ppAumExisting);
+    if (d.ppAumNew !== undefined) setPpAumNew(d.ppAumNew);
+    if (d.ppAumTrailPct !== undefined) setPpAumTrailPct(d.ppAumTrailPct);
+    if (d.ppPnlLevel !== undefined) setPpPnlLevel(d.ppPnlLevel);
+    if (d.ppPnlProducers !== undefined) setPpPnlProducers(d.ppPnlProducers);
+    if (d.ppPnlAvgGDC !== undefined) setPpPnlAvgGDC(d.ppPnlAvgGDC);
+    if (d.ppPnlPayoutRate !== undefined) setPpPnlPayoutRate(d.ppPnlPayoutRate);
+    if (d.ppPnlOpEx !== undefined) setPpPnlOpEx(d.ppPnlOpEx);
+    if (d.ppPnlTaxRate !== undefined) setPpPnlTaxRate(d.ppPnlTaxRate);
+    if (d.ppPnlEbitGoal !== undefined) setPpPnlEbitGoal(d.ppPnlEbitGoal);
+    if (d.ppPnlNetGoal !== undefined) setPpPnlNetGoal(d.ppPnlNetGoal);
+    if (d.ppStreams !== undefined) setPpStreams(d.ppStreams);
+    if (d.ppAffAIncome !== undefined) setPpAffAIncome(d.ppAffAIncome);
+    if (d.ppAffBIncome !== undefined) setPpAffBIncome(d.ppAffBIncome);
+    if (d.ppAffCIncome !== undefined) setPpAffCIncome(d.ppAffCIncome);
+    if (d.ppAffDIncome !== undefined) setPpAffDIncome(d.ppAffDIncome);
   };
 
   const handleSave = () => {
@@ -485,6 +525,10 @@ export default function Calculators() {
     pnlEbitGoal: ppPnlEbitGoal, setPnlEbitGoal: setPpPnlEbitGoal,
     pnlNetGoal: ppPnlNetGoal, setPnlNetGoal: setPpPnlNetGoal,
     streams: ppStreams, setStreams: setPpStreams,
+    affAIncome: ppAffAIncome, setAffAIncome: setPpAffAIncome,
+    affBIncome: ppAffBIncome, setAffBIncome: setPpAffBIncome,
+    affCIncome: ppAffCIncome, setAffCIncome: setPpAffCIncome,
+    affDIncome: ppAffDIncome, setAffDIncome: setPpAffDIncome,
   };
 
   /* ═══ RENDER ═══ */

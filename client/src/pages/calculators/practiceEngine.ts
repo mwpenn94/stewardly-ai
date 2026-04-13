@@ -68,6 +68,7 @@ export const CHANNELS: Channel[] = [
   {id:'eml',n:'Email Drip Campaigns',cpl:8,cv:.15,rev:12000,ltv:95000,attr:.90,segs:'All — nurture',def:50},
   {id:'sms',n:'SMS/Text Campaigns',cpl:12,cv:.18,rev:10000,ltv:78000,attr:.92,segs:'All — re-engage',def:30},
   {id:'ems',n:'Email+SMS Combined',cpl:15,cv:.22,rev:14000,ltv:115000,attr:.90,segs:'All — compound',def:0},
+  {id:'dm',n:'Direct Mail / Print',cpl:250,cv:.06,rev:25000,ltv:180000,attr:.30,segs:'HNW, Retirees',def:0},
 ];
 
 /* ═══ HIERARCHY ═══ */
@@ -267,8 +268,9 @@ export function calcAllTracksSummary(tracks: RecruitTrack[], overrideRate: numbe
   let yr2FYC = 0;
   details.forEach(d => { yr2FYC += d.n * d.f; });
   const yr2Ovr = Math.round(yr2FYC * overrideRate);
-  const recOpEx = Math.round(tHires * 2000);
+  const recOpEx = Math.round(tHires * 2000); // ~$2K direct recruiting cost per hire
   const recEBITDA = tOvr - recOpEx;
+  // ARR: ~15% of team FYC as renewal income + ~1% trail on transferred books
   const recARR = Math.round(tFYC * 0.15 + tBooks * 0.01);
 
   return { tHires, tContact, tFYC, tOvr, tBooks, yr2FYC, yr2Ovr, recOpEx, recEBITDA, recARR, details };
@@ -315,10 +317,12 @@ export function calcPnL(
 ) {
   let g = avgGDC;
   if (netGoal && netGoal > 0) {
-    const revNeeded = Math.round(netGoal / (1 - taxRate)) + opEx + Math.round(netGoal / (1 - taxRate) * payoutRate / (1 - payoutRate));
+    const effPayout = Math.min(payoutRate, 0.99); // guard: prevent division by zero
+    const revNeeded = Math.round(netGoal / (1 - taxRate)) + opEx + Math.round(netGoal / (1 - taxRate) * effPayout / (1 - effPayout));
     g = level === 'ind' ? revNeeded : Math.round(revNeeded / numProducers);
   } else if (ebitGoal && ebitGoal > 0) {
-    const revNeeded = Math.round((ebitGoal + opEx) / (1 - payoutRate));
+    const effPayout2 = Math.min(payoutRate, 0.99);
+    const revNeeded = Math.round((ebitGoal + opEx) / (1 - effPayout2));
     g = level === 'ind' ? revNeeded : Math.round(revNeeded / numProducers);
   }
 
@@ -407,7 +411,7 @@ export function calcDashboard(params: {
   monthlyGDC: number; aumIncome: number; expIncome: number; overrideIncome: number;
   opEx: number; taxRate: number; recOvr: number; recYr2Ovr: number; recARR: number;
   recBooks: number; recHires: number; aumTotal: number;
-  mktgSpend: number; mktgRev: number; mktgLeads: number; mktgClients: number;
+  mktgSpend: number; mktgRev: number;
 }) {
   const { monthlyGDC, aumIncome, expIncome, overrideIncome, opEx, taxRate,
     recOvr, recYr2Ovr, recARR, recBooks, recHires, aumTotal, mktgSpend, mktgRev } = params;

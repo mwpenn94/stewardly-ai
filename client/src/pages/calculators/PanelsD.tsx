@@ -3,7 +3,7 @@
    8 panels: My Plan, GDC Brackets, Products, Sales Funnel,
              Recruiting, Channels, Dashboard, P&L
    ═══════════════════════════════════════════════════════════════ */
-import { useState, useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,9 +17,9 @@ import {
   ROLE_DEFAULTS, RECRUIT_DEFAULTS, RECRUIT_LABELS, RECRUIT_SOURCES,
   getBracket, calcWeightedGDC, calcProductionFunnel, calcTeamOverride,
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
-  calcTrackFunnel, blendSources, calcCumOvrPerHire, calcYr2OvrPerHire, calcFunnelYield,
+  calcTrackFunnel, blendSources,
   fmt, fmtSm, pct,
-  type RoleId, type TeamMember, type RecruitTrack, type Product,
+  type RoleId, type TeamMember, type RecruitTrack,
 } from './practiceEngine';
 import { KPI } from './shared';
 
@@ -51,6 +51,11 @@ export interface PracticeProps {
   pnlEbitGoal: number; setPnlEbitGoal: (v: number) => void;
   pnlNetGoal: number; setPnlNetGoal: (v: number) => void;
   streams: Record<string, boolean>; setStreams: (v: Record<string, boolean>) => void;
+  /* Affiliate income inputs */
+  affAIncome: number; setAffAIncome: (v: number) => void;
+  affBIncome: number; setAffBIncome: (v: number) => void;
+  affCIncome: number; setAffCIncome: (v: number) => void;
+  affDIncome: number; setAffDIncome: (v: number) => void;
 }
 
 /* ═══ SMALL HELPERS ═══ */
@@ -79,12 +84,12 @@ function DataTable({ headers, rows, className = '' }: {
   headers: string[]; rows: (string | number | React.ReactNode)[][]; className?: string;
 }) {
   return (
-    <div className={`overflow-x-auto ${className}`}>
-      <table className="w-full text-xs border-collapse">
+    <div className={`overflow-x-auto -mx-2 px-2 ${className}`}>
+      <table className="w-full text-xs border-collapse min-w-[400px]">
         <thead>
-          <tr className="bg-[oklch(0.18_0.02_255)] text-foreground/90">
+          <tr className="bg-muted/40 text-foreground/90">
             {headers.map((h, i) => (
-              <th key={i} className={`px-2 py-1.5 font-semibold ${i > 0 ? 'text-right' : 'text-left'}`}>{h}</th>
+              <th key={i} className={`px-2 py-1.5 font-semibold whitespace-nowrap ${i > 0 ? 'text-right' : 'text-left'}`}>{h}</th>
             ))}
           </tr>
         </thead>
@@ -120,7 +125,9 @@ export function MyPlanPanel(p: PracticeProps) {
     role: p.role, hasPersonal: rd.p === 1,
     wbTarget: funnel.wbTarget, expTarget: funnel.expTarget,
     overrideIncome: overrideInc, overrideRate: p.overrideRate / 100,
-    aumIncome, affAIncome: 0, affBIncome: 0, affCIncome: 0, affDIncome: 0,
+    aumIncome,
+    affAIncome: p.affAIncome, affBIncome: p.affBIncome,
+    affCIncome: p.affCIncome, affDIncome: p.affDIncome,
     channelRevAnnual: Math.round(chMetrics.tRevMo * 12),
     streams: p.streams,
   });
@@ -158,6 +165,13 @@ export function MyPlanPanel(p: PracticeProps) {
           <PInput label="Active Months" value={p.months} onChange={v => p.setMonths(+v || 10)} />
         </div>
 
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <PInput label="WB Platform %" value={p.wbPct} onChange={v => p.setWbPct(+v || 0)} suffix="%" />
+          <PInput label="AUM Existing ($)" value={p.aumExisting} onChange={v => p.setAumExisting(+v || 0)} prefix="$" />
+          <PInput label="AUM New ($)" value={p.aumNew} onChange={v => p.setAumNew(+v || 0)} prefix="$" />
+          <PInput label="AUM Trail %" value={p.aumTrailPct} onChange={v => p.setAumTrailPct(+v || 0)} suffix="%" />
+        </div>
+
         {/* Hierarchy Chain */}
         <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
           <span className="bg-primary text-primary-foreground px-2 py-0.5 rounded font-bold">YOU: {HIER_SHORT[p.role]}</span>
@@ -186,6 +200,10 @@ export function MyPlanPanel(p: PracticeProps) {
             { key: 'override', label: 'Team Override' },
             { key: 'aum', label: 'AUM/Advisory' },
             { key: 'channels', label: 'Marketing Channels' },
+            { key: 'affA', label: 'Affiliate A (Fee-Based)' },
+            { key: 'affB', label: 'Affiliate B (Referral)' },
+            { key: 'affC', label: 'Affiliate C (Co-Broker)' },
+            { key: 'affD', label: 'Affiliate D (Wholesale)' },
           ].map(s => (
             <label key={s.key} className="flex items-center gap-1.5 text-[11px] cursor-pointer">
               <Checkbox checked={!!p.streams[s.key]}
@@ -194,6 +212,16 @@ export function MyPlanPanel(p: PracticeProps) {
             </label>
           ))}
         </div>
+
+        {/* Affiliate Income Inputs (show when toggled) */}
+        {(p.streams.affA || p.streams.affB || p.streams.affC || p.streams.affD) && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {p.streams.affA && <PInput label="Affiliate A Income" value={p.affAIncome} onChange={v => p.setAffAIncome(+v || 0)} prefix="$" />}
+            {p.streams.affB && <PInput label="Affiliate B Income" value={p.affBIncome} onChange={v => p.setAffBIncome(+v || 0)} prefix="$" />}
+            {p.streams.affC && <PInput label="Affiliate C Income" value={p.affCIncome} onChange={v => p.setAffCIncome(+v || 0)} prefix="$" />}
+            {p.streams.affD && <PInput label="Affiliate D Income" value={p.affDIncome} onChange={v => p.setAffDIncome(+v || 0)} prefix="$" />}
+          </div>
+        )}
 
         <Separator />
 
@@ -243,6 +271,45 @@ export function MyPlanPanel(p: PracticeProps) {
             />
           </>
         )}
+
+        {/* Team Members (quick add/view) */}
+        {p.streams.override && (
+          <>
+            <SectionHeader>Team Members ({p.teamMembers.length})</SectionHeader>
+            <div className="space-y-2">
+              {p.teamMembers.map((m, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <Input value={m.n} onChange={e => {
+                    const next = [...p.teamMembers]; next[i] = { ...next[i], n: e.target.value }; p.setTeamMembers(next);
+                  }} className="h-6 w-28 text-xs" placeholder="Name" />
+                  <Select value={m.role} onValueChange={v => {
+                    const next = [...p.teamMembers]; next[i] = { ...next[i], role: v as RoleId }; p.setTeamMembers(next);
+                  }}>
+                    <SelectTrigger className="h-6 w-24 text-[11px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>{HIER_ORDER.map(r => <SelectItem key={r} value={r}>{HIER_SHORT[r]}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <PInput label="" value={m.f} onChange={v => {
+                    const next = [...p.teamMembers]; next[i] = { ...next[i], f: +v || 0 }; p.setTeamMembers(next);
+                  }} prefix="$" className="w-24" />
+                  <Button variant="ghost" size="sm" className="h-6 text-red-400 text-[10px] px-1"
+                    onClick={() => p.setTeamMembers(p.teamMembers.filter((_, j) => j !== i))}>✕</Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" className="text-[11px] h-7"
+                onClick={() => p.setTeamMembers([...p.teamMembers, { n: `Agent ${p.teamMembers.length + 1}`, f: 65000, role: 'new' }])}>
+                + Add Team Member
+              </Button>
+              {p.teamMembers.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <KPI label="Team FYC" value={fmtSm(teamOvr.totalFYC)} variant="" />
+                  <KPI label="Gen1 Ovr" value={fmtSm(teamOvr.gen1)} variant="grn" />
+                  <KPI label="Gen2 Ovr" value={fmtSm(teamOvr.gen2)} variant="gld" />
+                  <KPI label="Total Ovr" value={fmtSm(teamOvr.total)} variant="grn" />
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
@@ -252,7 +319,7 @@ export function MyPlanPanel(p: PracticeProps) {
    PANEL 2: GDC BRACKETS
    ═══════════════════════════════════════════════════════════════ */
 export function GDCBracketsPanel(p: PracticeProps) {
-  const [gdcInput, setGdcInput] = useState(150000);
+  const [gdcInput, setGdcInput] = useState(() => p.targetGDC || 150000);
   const [teamSize, setTeamSize] = useState(5);
   const [teamAvgGDC, setTeamAvgGDC] = useState(100000);
   const bracket = getBracket(gdcInput);
@@ -294,6 +361,15 @@ export function GDCBracketsPanel(p: PracticeProps) {
             ];
           })}
         />
+
+        {/* Override Rate Inputs */}
+        <Separator />
+        <SectionHeader>Override Settings</SectionHeader>
+        <div className="grid grid-cols-3 gap-2">
+          <PInput label="Override Rate %" value={p.overrideRate} onChange={v => p.setOverrideRate(+v || 0)} suffix="%" />
+          <PInput label="Bonus Rate %" value={p.bonusRate} onChange={v => p.setBonusRate(+v || 0)} suffix="%" />
+          <PInput label="Gen2 Rate %" value={p.gen2Rate} onChange={v => p.setGen2Rate(+v || 0)} suffix="%" />
+        </div>
       </CardContent>
     </Card>
   );
@@ -303,29 +379,27 @@ export function GDCBracketsPanel(p: PracticeProps) {
    PANEL 3: PRODUCTS & MIX
    ═══════════════════════════════════════════════════════════════ */
 export function ProductsPanel(p: PracticeProps) {
-  const [localProducts, setLocalProducts] = useState<Product[]>(() => PRODUCTS.map(pr => ({ ...pr })));
-
-  const updateProductGDC = useCallback((idx: number, gdc: number) => {
-    setLocalProducts(prev => {
-      const next = [...prev];
-      next[idx] = { ...next[idx], gdc };
-      return next;
-    });
-  }, []);
+  const [showExpanded, setShowExpanded] = useState(true);
 
   const totalMixPct = Object.values(p.productMix).reduce((a, b) => a + b, 0);
-  const avgGDC = calcWeightedGDC(p.productMix, localProducts);
+  const avgGDC = calcWeightedGDC(p.productMix, PRODUCTS);
 
   return (
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base text-primary">Products & Mix</CardTitle>
+        <CardTitle className="text-base flex items-center gap-2">
+          <span className="text-primary">Products & Mix</span>
+          <label className="flex items-center gap-1.5 text-[11px] cursor-pointer ml-auto font-normal">
+            <Checkbox checked={showExpanded} onCheckedChange={c => setShowExpanded(!!c)} />
+            Show Expanded/Specialty
+          </label>
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Product Mix Sliders */}
         <SectionHeader>Your Product Mix</SectionHeader>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {localProducts.filter(pr => p.productMix[pr.id] !== undefined || pr.s === 'core').map(pr => (
+          {PRODUCTS.filter(pr => showExpanded || pr.s === 'core').map(pr => (
             <PInput key={pr.id} label={pr.n} value={p.productMix[pr.id] || 0}
               onChange={v => p.setProductMix({ ...p.productMix, [pr.id]: Math.max(0, +v || 0) })} suffix="%" />
           ))}
@@ -334,6 +408,7 @@ export function ProductsPanel(p: PracticeProps) {
           <span className={totalMixPct === 100 ? 'text-green-400' : 'text-red-400'}>
             Mix Total: {totalMixPct}%
           </span>
+          {totalMixPct !== 100 && <span className="text-red-400/70 text-[10px]">(should be 100%)</span>}
           <span className="text-muted-foreground">Weighted Avg GDC/Case: <b className="text-foreground">{fmt(avgGDC)}</b></span>
         </div>
 
@@ -341,10 +416,10 @@ export function ProductsPanel(p: PracticeProps) {
 
         {/* Product Comparison Table */}
         <SectionHeader>Product Comparison — Commission Rates</SectionHeader>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[11px] border-collapse">
+        <div className="overflow-x-auto -mx-2 px-2">
+          <table className="w-full text-[11px] border-collapse min-w-[700px]">
             <thead>
-              <tr className="bg-[oklch(0.15_0.03_250)] text-foreground/90">
+              <tr className="bg-muted/40 text-foreground/90">
                 <th className="px-2 py-1.5 text-left font-semibold">Product</th>
                 <th className="px-2 py-1.5 text-right font-semibold">GDC/Case</th>
                 <th className="px-2 py-1.5 text-left font-semibold">WB Carrier</th>
@@ -356,32 +431,33 @@ export function ProductsPanel(p: PracticeProps) {
               </tr>
             </thead>
             <tbody>
-              {localProducts.map((pr, idx) => {
+              {PRODUCTS.filter(pr => showExpanded || pr.s === 'core').flatMap((pr, idx, arr) => {
                 const isWbBest = pr.wbRate >= pr.bestRate;
                 const wbColor = isWbBest ? 'text-green-400' : pr.wbRate >= pr.bestRate * 0.85 ? 'text-yellow-400' : 'text-red-400';
-                const prevSuite = idx > 0 ? localProducts[idx - 1].s : null;
-                return [
-                  prevSuite !== pr.s && (
+                const prevSuite = idx > 0 ? arr[idx - 1].s : null;
+                const nodes: JSX.Element[] = [];
+                if (prevSuite !== pr.s) {
+                  nodes.push(
                     <tr key={`sep-${pr.s}`}>
                       <td colSpan={8} className="bg-blue-500/5 font-bold text-[10px] uppercase tracking-wider px-2 py-1 border-t-2 border-blue-500/30">
                         {pr.s === 'core' ? 'Core Product Suite' : 'Expanded / Specialty'}
                       </td>
                     </tr>
-                  ),
+                  );
+                }
+                nodes.push(
                   <tr key={pr.id} className="border-b border-border/20 hover:bg-card/50">
-                    <td className="px-2 py-1 font-semibold" title={pr.src}>{pr.n}</td>
-                    <td className="px-2 py-1 text-right">
-                      <Input type="number" value={pr.gdc} onChange={e => updateProductGDC(idx, +e.target.value || 0)}
-                        className="h-6 w-16 text-[11px] text-right bg-primary/5 border-primary/20" />
-                    </td>
-                    <td className="px-2 py-1 text-muted-foreground">{pr.wb}</td>
+                    <td className="px-2 py-1 font-semibold whitespace-nowrap" title={pr.src}>{pr.n}</td>
+                    <td className="px-2 py-1 text-right">{fmt(pr.gdc)}</td>
+                    <td className="px-2 py-1 text-muted-foreground text-[10px]">{pr.wb}</td>
                     <td className={`px-2 py-1 text-center font-bold ${wbColor}`}>{pr.wbRate}%{isWbBest ? ' ★' : ''}</td>
                     <td className="px-2 py-1 text-center text-muted-foreground">{pr.ind}%</td>
-                    <td className="px-2 py-1 text-muted-foreground">{pr.best}</td>
+                    <td className="px-2 py-1 text-muted-foreground text-[10px]">{pr.best}</td>
                     <td className="px-2 py-1 text-center font-semibold">{pr.bestRate}%</td>
                     <td className="px-2 py-1 text-center text-muted-foreground">{pr.renew}</td>
-                  </tr>,
-                ];
+                  </tr>
+                );
+                return nodes;
               })}
             </tbody>
           </table>
@@ -449,7 +525,7 @@ export function SalesFunnelPanel(p: PracticeProps) {
             { label: 'Held', count: held, color: 'bg-primary/40' },
             { label: 'Apps', count: apps, color: 'bg-primary/60' },
             { label: 'Placed', count: sfPolicies, color: 'bg-green-500/50' },
-          ].map((step, i) => {
+          ].map((step) => {
             const maxW = approaches || 1;
             const widthPct = Math.max(5, Math.round(step.count / maxW * 100));
             return (
@@ -463,6 +539,20 @@ export function SalesFunnelPanel(p: PracticeProps) {
             );
           })}
         </div>
+
+        {/* Activity Breakdown */}
+        <Separator />
+        <SectionHeader>Activity Breakdown</SectionHeader>
+        <DataTable
+          headers={['Metric', 'Annual', 'Monthly', 'Weekly', 'Daily']}
+          rows={[
+            ['Approaches', approaches, sfMo > 0 ? Math.round(approaches / sfMo) : 0, sfMo > 0 ? Math.round(approaches / sfMo / 4.3) : 0, daily],
+            ['Appointments Set', set, sfMo > 0 ? Math.round(set / sfMo) : 0, sfMo > 0 ? Math.round(set / sfMo / 4.3) : 0, '—'],
+            ['Appointments Held', held, sfMo > 0 ? Math.round(held / sfMo) : 0, sfMo > 0 ? Math.round(held / sfMo / 4.3) : 0, '—'],
+            ['Applications', apps, sfMo > 0 ? Math.round(apps / sfMo) : 0, sfMo > 0 ? Math.round(apps / sfMo / 4.3) : 0, '—'],
+            [<b key="pl">Policies Placed</b>, <span key="pv" className="text-green-400 font-bold">{sfPolicies}</span>, sfMo > 0 ? Math.round(sfPolicies / sfMo) : 0, sfMo > 0 ? Math.round(sfPolicies / sfMo / 4.3) : 0, '—'],
+          ]}
+        />
       </CardContent>
     </Card>
   );
@@ -507,11 +597,17 @@ export function RecruitingPanel(p: PracticeProps) {
           ))}
         </div>
 
+        {p.recruitTracks.length === 0 && (
+          <div className="text-center py-6 text-muted-foreground text-sm border border-dashed border-border rounded-lg">
+            No recruiting tracks yet. Click a button above to add one.
+          </div>
+        )}
+
         {/* Track Cards */}
         {p.recruitTracks.map((track, idx) => {
           const funnel = calcTrackFunnel(track);
           const srcBlend = blendSources(track.src);
-          const colors: Record<string, string> = { newAssoc: 'border-l-[oklch(0.25_0.04_255)]', expPro: 'border-l-purple-500', affiliate: 'border-l-blue-500', md: 'border-l-primary' };
+          const colors: Record<string, string> = { newAssoc: 'border-l-blue-500/50', expPro: 'border-l-purple-500', affiliate: 'border-l-cyan-500', md: 'border-l-primary' };
 
           return (
             <div key={idx} className={`border border-border rounded-lg p-3 space-y-3 border-l-4 ${colors[track.type] || 'border-l-primary'}`}>
@@ -613,10 +709,10 @@ export function ChannelsPanel(p: PracticeProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Channel Input Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-[11px] border-collapse">
+        <div className="overflow-x-auto -mx-2 px-2">
+          <table className="w-full text-[11px] border-collapse min-w-[700px]">
             <thead>
-              <tr className="bg-[oklch(0.18_0.02_255)] text-foreground/90">
+              <tr className="bg-muted/40 text-foreground/90">
                 <th className="px-2 py-1.5 text-left">Channel</th>
                 <th className="px-2 py-1.5 text-right">$/Mo</th>
                 <th className="px-2 py-1.5 text-right">CPL</th>
@@ -639,7 +735,7 @@ export function ChannelsPanel(p: PracticeProps) {
                 const roi = annSp > 0 ? Math.round((annRv - annSp) / annSp * 100) : 0;
                 return (
                   <tr key={c.id} className="border-b border-border/20 hover:bg-card/50">
-                    <td className="px-2 py-1 font-semibold">{c.n}</td>
+                    <td className="px-2 py-1 font-semibold whitespace-nowrap">{c.n}</td>
                     <td className="px-2 py-1 text-right">
                       <Input type="number" value={sp || ''} placeholder={String(c.def)}
                         onChange={e => p.setChannelSpend({ ...p.channelSpend, [c.id]: +e.target.value || 0 })}
@@ -656,15 +752,17 @@ export function ChannelsPanel(p: PracticeProps) {
                   </tr>
                 );
               })}
-              <tr className="bg-primary/5 font-semibold">
-                <td className="px-2 py-1">TOTAL</td>
-                <td className="px-2 py-1 text-right">{fmt(metrics.tSpend)}</td>
-                <td colSpan={3}></td>
-                <td></td>
-                <td className="px-2 py-1 text-right">{metrics.tLeads}</td>
-                <td className="px-2 py-1 text-right text-green-400">{metrics.tClients}</td>
-                <td className="px-2 py-1 text-right text-green-400">{fmt(Math.round(metrics.tRevMo))}</td>
-                <td className="px-2 py-1 text-right">{metrics.roiPct}%</td>
+              <tr className="bg-primary/5 font-semibold border-t border-primary/20">
+                <td className="px-2 py-1.5">TOTAL</td>
+                <td className="px-2 py-1.5 text-right">{fmt(metrics.tSpend)}</td>
+                <td className="px-2 py-1.5 text-right text-muted-foreground">—</td>
+                <td className="px-2 py-1.5 text-right text-muted-foreground">—</td>
+                <td className="px-2 py-1.5 text-right text-muted-foreground">—</td>
+                <td className="px-2 py-1.5 text-right text-muted-foreground">—</td>
+                <td className="px-2 py-1.5 text-right">{metrics.tLeads}</td>
+                <td className="px-2 py-1.5 text-right text-green-400">{metrics.tClients}</td>
+                <td className="px-2 py-1.5 text-right text-green-400">{fmt(Math.round(metrics.tRevMo))}</td>
+                <td className="px-2 py-1.5 text-right">{metrics.roiPct}%</td>
               </tr>
             </tbody>
           </table>
@@ -692,7 +790,7 @@ export function ChannelsPanel(p: PracticeProps) {
               [<b key="ltv">LTV</b>, <span key="lv" className="text-green-400">{fmt(metrics.ltv)}</span>, 'Avg rev × 5yr × 85% retention', ''],
               [<b key="ltvcac">LTV:CAC</b>, <span key="lc" className={metrics.ltvCac >= 3 ? 'text-green-400' : 'text-red-400'}>{metrics.ltvCac}:1</span>, '3:1+ healthy, 5:1+ excellent', metrics.ltvCac >= 5 ? '✓ Excellent' : metrics.ltvCac >= 3 ? '✓ Healthy' : '✗ Below target'],
               [<b key="roi">Annual ROI</b>, <span key="rv" className={metrics.roiPct > 0 ? 'text-green-400' : 'text-red-400'}>{metrics.roiPct}%</span>, '500%+ target', metrics.roiPct >= 500 ? '✓ Strong' : metrics.roiPct >= 200 ? '⚠ Moderate' : '✗ Low'],
-              [<b key="arr">ARR</b>, <span key="ar" className="text-green-400">{fmt(metrics.arr)}</span>, `Annual rev × 85% retention`, ''],
+              [<b key="arr">ARR</b>, <span key="ar" className="text-green-400">{fmt(metrics.arr)}</span>, 'Annual rev × 85% retention', ''],
               [<b key="margin">Margin</b>, <span key="mg" className={metrics.margin >= 50 ? 'text-green-400' : 'text-red-400'}>{metrics.margin}%</span>, '60%+ target', metrics.margin >= 60 ? '✓ Strong' : metrics.margin >= 40 ? '⚠ Moderate' : '✗ Low'],
             ]}
           />
@@ -723,7 +821,7 @@ export function DashboardPanel(p: PracticeProps) {
     recBooks: recSummary.tBooks, recHires: recSummary.tHires,
     aumTotal: p.aumExisting + p.aumNew,
     mktgSpend: chMetrics.tSpend, mktgRev: chMetrics.tRevMo,
-    mktgLeads: chMetrics.tLeads, mktgClients: chMetrics.tClients,
+
   });
 
   return (
@@ -773,23 +871,54 @@ export function DashboardPanel(p: PracticeProps) {
             [<b key="ebit">EBITDA</b>, <span key="ev" className={dashboard.ebitda >= 0 ? 'text-green-400' : 'text-red-400'}>{fmt(dashboard.ebitda)}</span>, `Revenue − OpEx (${fmt(p.pnlOpEx)})`],
             ['Margin %', `${dashboard.marginPct}%`, 'EBITDA ÷ Revenue'],
             [<b key="ni">Net Income</b>, <span key="nv" className={dashboard.netInc >= 0 ? 'text-green-400' : 'text-red-400'}>{fmt(dashboard.netInc)}</span>, `After ${p.pnlTaxRate}% tax`],
-            ['', '', ''],
-            [<b key="aum">Total AUM</b>, fmt(dashboard.aumTotal), 'Existing + new gathered'],
-            ['AUM Trail Income', <span key="at" className="text-green-400">{fmt(aumIncome)}</span>, 'Compounds YoY at ~1% trail'],
-            ['', '', ''],
-            ['Team Size', String(dashboard.recHires), 'Across all recruiting tracks'],
-            ['Yr1 Override', <span key="o1" className="text-green-400">{fmt(dashboard.recOvr)}</span>, 'Accounts for onboarding ramp'],
-            ['Yr2 Override', <span key="o2" className="text-green-400">{fmt(dashboard.recYr2Ovr)}</span>, 'Full production, no ramp'],
-            ['Transferred Books', fmt(dashboard.recBooks), 'AUM + policies from experienced hires'],
-            ['Recruiting ARR', fmt(dashboard.recARR), 'Renewal on team FYC + trail on books'],
-            ...(chMetrics.tSpend > 0 ? [
-              ['', '', ''],
-              ['Monthly Spend', fmt(chMetrics.tSpend), `${fmt(chMetrics.tSpend * 12)}/yr across channels`],
-              ['Leads / Clients', `${chMetrics.tLeads} / ${chMetrics.tClients}`, 'From channel inputs'],
-              ['Channel Rev/Mo', <span key="cr" className="text-green-400">{fmt(Math.round(chMetrics.tRevMo))}</span>, `ROI: ${chMetrics.roiPct}%`],
-            ] as any[] : []),
           ]}
         />
+
+        {/* AUM Section */}
+        {(p.aumExisting > 0 || p.aumNew > 0) && (
+          <>
+            <SectionHeader>AUM & Advisory</SectionHeader>
+            <DataTable
+              headers={['Metric', 'Value', 'Context']}
+              rows={[
+                [<b key="aum">Total AUM</b>, fmt(dashboard.aumTotal), 'Existing + new gathered'],
+                ['AUM Trail Income', <span key="at" className="text-green-400">{fmt(aumIncome)}</span>, `Compounds YoY at ${p.aumTrailPct}% trail`],
+              ]}
+            />
+          </>
+        )}
+
+        {/* Recruiting Section */}
+        {dashboard.recHires > 0 && (
+          <>
+            <SectionHeader>Recruiting & Team</SectionHeader>
+            <DataTable
+              headers={['Metric', 'Value', 'Context']}
+              rows={[
+                ['Team Size', String(dashboard.recHires), 'Across all recruiting tracks'],
+                ['Yr1 Override', <span key="o1" className="text-green-400">{fmt(dashboard.recOvr)}</span>, 'Accounts for onboarding ramp'],
+                ['Yr2 Override', <span key="o2" className="text-green-400">{fmt(dashboard.recYr2Ovr)}</span>, 'Full production, no ramp'],
+                ['Transferred Books', fmt(dashboard.recBooks), 'AUM + policies from experienced hires'],
+                ['Recruiting ARR', fmt(dashboard.recARR), 'Renewal on team FYC + trail on books'],
+              ]}
+            />
+          </>
+        )}
+
+        {/* Marketing Section */}
+        {chMetrics.tSpend > 0 && (
+          <>
+            <SectionHeader>Marketing Channels</SectionHeader>
+            <DataTable
+              headers={['Metric', 'Value', 'Context']}
+              rows={[
+                ['Monthly Spend', fmt(chMetrics.tSpend), `${fmt(chMetrics.tSpend * 12)}/yr across channels`],
+                ['Leads / Clients', `${chMetrics.tLeads} / ${chMetrics.tClients}`, 'From channel inputs'],
+                ['Channel Rev/Mo', <span key="cr" className="text-green-400">{fmt(Math.round(chMetrics.tRevMo))}</span>, `ROI: ${chMetrics.roiPct}%`],
+              ]}
+            />
+          </>
+        )}
       </CardContent>
     </Card>
   );
@@ -804,7 +933,11 @@ export function PnLPanel(p: PracticeProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base text-primary">P&L (Profit & Loss)</CardTitle>
+        <CardTitle className="text-base flex items-center gap-2">
+          <span className="text-primary">P&L (Profit & Loss)</span>
+          <Badge variant="outline" className="text-[10px]">{p.pnlLevel === 'ind' ? 'Individual' : 'Team/Agency'}</Badge>
+          {pnl.backPlanned && <Badge variant="outline" className="text-[10px] text-primary">Back-Planned</Badge>}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">

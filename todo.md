@@ -3966,3 +3966,18 @@
 - [x] Write vitest tests for practiceEngine calculations (GDC brackets, weighted GDC, funnel, P&L, channels, team override)
 - [x] Fix navReachability test for /embed/calculator exempt route
 - [x] All tests passing (7642 tests, 315 files)
+
+## Practice Planning — Bug Fixes & Optimization
+- [x] FIX: Replace Funnel icon import with Filter icon
+- [x] Comprehensive review and optimization of all 8 Practice Planning panels
+- [x] Verify production build succeeds after fix
+- [x] Test all panels render correctly in browser
+
+## Recursive Optimization — Practice Planning Panels (3-pass convergence)
+- [x] Pass 1: Fixed Funnel icon, removed unused imports, added division guards, fixed product table flatMap, added affiliate income inputs
+- [x] Pass 2: Fixed unused imports, added sfMo guard in SalesFunnel, verified product table rendering
+- [x] Pass 3: Removed unused mktgLeads/mktgClients params from calcDashboard, fixed JSX.Element[] type
+- [x] Pass 4: CLEAN — no changes needed (convergence counter: 1/3)
+- [x] Pass 5: CLEAN — no changes needed (convergence counter: 2/3)
+- [x] Pass 6: CLEAN — no changes needed (convergence counter: 3/3) ✓ CONVERGED
+- [x] Final: Production build verified, 7642 tests passing, checkpoint saved
