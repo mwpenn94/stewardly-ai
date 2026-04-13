@@ -4,13 +4,16 @@ import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Activity, Users, Building2, Briefcase, Shield, User,
-  Layers, TrendingUp, CheckCircle, XCircle,
+  Layers, TrendingUp, Wrench, Eye, CheckCircle, XCircle,
   AlertTriangle, Clock, Loader2, ChevronDown, ChevronRight,
-  Zap, BarChart3, Settings,
-  ArrowRight, Play,
+  Zap, BarChart3, Settings, RefreshCw, ThumbsUp, ThumbsDown,
+  ArrowRight, Play, Gauge,
 } from "lucide-react";
 
 
@@ -94,7 +97,6 @@ export default function ImprovementEngine() {
       pendingQuery.refetch();
       toast.success("Action updated");
     },
-    onError: (err) => toast.error(`Update failed: ${err.message}`),
   });
 
   const currentLayerData = (overviewQuery.data || []).find((l: any) => l.layer === selectedLayer);

@@ -20,7 +20,6 @@ import {
 import { useScreenCapture } from "@/hooks/useScreenCapture";
 import { useVideoCapture } from "@/hooks/useVideoCapture";
 import { toast } from "sonner";
-import { detectStt } from "@/lib/sttSupport";
 
 type CaptureMode = "video" | "screen";
 type ProcessingState = "idle" | "listening" | "thinking" | "speaking";
@@ -68,7 +67,7 @@ export function LiveChatMode({
   const [mode, setMode] = useState<CaptureMode>("video");
   const [processingState, setProcessingState] = useState<ProcessingState>("idle");
   const [isListening, setIsListening] = useState(false);
-  const [isMuted, _setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [frameCount, setFrameCount] = useState(0);
@@ -94,18 +93,15 @@ export function LiveChatMode({
 
   // ─── Speech Recognition ──────────────────────────────────────────
   const startListening = useCallback(() => {
-    // G59 fix: use centralized STT capability probe for cross-browser safety
-    const caps = detectStt();
-    if (caps.mode === "unsupported") {
-      setError(caps.userMessage);
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+      setError("Speech recognition not supported in this browser");
       return;
     }
 
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    if (!SpeechRecognition) { setError("Speech recognition not available"); return; }
     const recognition = new SpeechRecognition();
-    recognition.continuous = caps.supportsContinuous; // G59: respect browser capability
-    recognition.interimResults = caps.supportsInterim; // G59: respect browser capability
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.lang = "en-US";
 
     recognition.onresult = (event: any) => {

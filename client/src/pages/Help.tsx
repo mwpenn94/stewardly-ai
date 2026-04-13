@@ -10,13 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
-  Search, MessageSquare, Shield, Sparkles, BookOpen, Brain, Users,
+  Search, MessageSquare, Shield, Sparkles, BookOpen,
   HelpCircle, ChevronDown, ChevronUp, Send, Loader2, Keyboard,
-  FileText, Settings, Globe,
-  Calculator, ExternalLink, CheckCircle,
-  Zap, Link2, TrendingUp, Package, Activity,
-  Briefcase,
-  Layers, Server, Cpu,
+  Brain, FileText, Users, Settings, Monitor, Mic, Globe,
+  Calculator, BarChart3, Mail, ExternalLink, CheckCircle,
+  Zap, Database, Link2, TrendingUp, Package, Activity,
+  RefreshCw, Building2, Briefcase, HeartPulse, Eye,
+  Lock, Layers, Server, Cpu, Bell, Palette, Camera,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";

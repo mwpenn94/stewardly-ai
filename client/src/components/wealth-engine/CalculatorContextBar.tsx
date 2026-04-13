@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  AlertTriangle, CheckCircle2, Info, TrendingUp, Shield,
+  AlertTriangle, CheckCircle2, Info, Scale, TrendingUp, Shield,
 } from "lucide-react";
 
 interface Props {

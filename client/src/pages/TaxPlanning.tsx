@@ -8,6 +8,7 @@ import { LeadCaptureGate } from "@/components/LeadCaptureGate";
 import { CalculatorInsight } from "@/components/CalculatorInsight";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -17,7 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
 import { projectTaxClientSide, type ClientTaxResult } from "@/lib/planningCalculations";
-import { ArrowLeft, Calculator, Loader2, Play, AlertTriangle } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingDown, Calculator, FileText, PiggyBank, BarChart3, Loader2, Play, AlertTriangle } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useState, useCallback, useEffect } from "react";
@@ -368,8 +369,7 @@ export default function TaxPlanning() {
                   <CardContent>
                     {Array.isArray(multiYearResult.years ?? multiYearResult) ? (
                       <div className="space-y-2">
-                        <div className="overflow-x-auto -mx-2 px-2">
-                        <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2 min-w-[360px]">
+                        <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
                           <span>Year</span>
                           <span className="text-right">Income</span>
                           <span className="text-right">Federal</span>
@@ -377,7 +377,7 @@ export default function TaxPlanning() {
                           <span className="text-right">Total</span>
                         </div>
                         {((multiYearResult.years ?? multiYearResult) as any[]).map((yr: any, i: number) => (
-                          <div key={i} className="grid grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0 min-w-[360px]">
+                          <div key={i} className="grid grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0">
                             <span className="font-mono">{yr.year ?? new Date().getFullYear() + i}</span>
                             <span className="text-right font-mono">{fmt(yr.grossIncome ?? yr.totalIncome ?? 0)}</span>
                             <span className="text-right font-mono">{fmt(yr.federalTax ?? 0)}</span>
@@ -386,7 +386,6 @@ export default function TaxPlanning() {
                           </div>
                         ))}
                       </div>
-                    </div>
                     ) : (
                       <p className="text-sm text-muted-foreground">Multi-year projection data format not recognized.</p>
                     )}

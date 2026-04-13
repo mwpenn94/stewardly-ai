@@ -161,7 +161,6 @@ function RateManagementTab() {
       toast.success("Recommendation dismissed");
       recommendations.refetch();
     },
-    onError: (e: any) => toast.error(`Dismiss failed: ${e.message}`),
   });
 
   return (
@@ -542,8 +541,8 @@ function OnboardingTab() {
 // ─── Tab 5: SOFR / Premium Finance ──────────────────────────────────────
 
 function SOFRTab() {
-  const sofrData = trpc.adminIntelligence.getSOFRRates.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
-  const pfRates = trpc.adminIntelligence.getPremiumFinanceRates.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
+  const sofrData = trpc.adminIntelligence.getSOFRRates.useQuery(undefined, { retry: false });
+  const pfRates = trpc.adminIntelligence.getPremiumFinanceRates.useQuery(undefined, { retry: false });
 
   return (
     <div className="space-y-6">

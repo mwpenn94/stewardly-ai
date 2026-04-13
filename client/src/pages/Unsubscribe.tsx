@@ -7,7 +7,6 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CheckCircle2, XCircle, Loader2, Mail, MailX } from "lucide-react";
-import { SEOHead } from "@/components/SEOHead";
 
 function useSearchParams() {
   const [params] = useState(() => new URLSearchParams(window.location.search));
@@ -41,12 +40,9 @@ export default function Unsubscribe() {
     }
   }, []);
 
-  const seoHead = <SEOHead title="Unsubscribe — Stewardly" description="Manage your email subscription preferences" />;
-
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        {seoHead}
         <Card className="max-w-md w-full mx-4">
           <CardContent className="py-12 text-center space-y-4">
             <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
@@ -60,7 +56,6 @@ export default function Unsubscribe() {
   if (status === "success") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        {seoHead}
         <Card className="max-w-md w-full mx-4">
           <CardContent className="py-12 text-center space-y-4">
             <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto" />
@@ -85,7 +80,6 @@ export default function Unsubscribe() {
   if (status === "error") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        {seoHead}
         <Card className="max-w-md w-full mx-4">
           <CardContent className="py-12 text-center space-y-4">
             <XCircle className="w-16 h-16 text-red-500 mx-auto" />
@@ -105,7 +99,6 @@ export default function Unsubscribe() {
   // Idle — shouldn't normally reach here if token is present (auto-unsub fires)
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      {seoHead}
       <Card className="max-w-md w-full mx-4">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">

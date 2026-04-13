@@ -7,11 +7,13 @@ import { SEOHead } from "@/components/SEOHead";
 import { FileUploader } from "@/components/FileUploader";
 import { ColumnMapper } from "@/components/ColumnMapper";
 import { ImportProgress } from "@/components/ImportProgress";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, ArrowLeft, FileSpreadsheet, Download } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Upload, Table2, CheckCircle2, ArrowLeft, FileSpreadsheet, Download, History } from "lucide-react";
 import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 
@@ -39,7 +41,7 @@ export default function ImportData() {
   const [, navigate] = useLocation();
   const [step, setStep] = useState<Step>("upload");
   const [sourceColumns, setSourceColumns] = useState<string[]>([]);
-  const [_mapping, setMapping] = useState<Record<string, string>>({});
+  const [mapping, setMapping] = useState<Record<string, string>>({});
   const [importStatus, setImportStatus] = useState<any>(null);
 
   const handleUpload = async (files: File[]) => {
@@ -119,7 +121,7 @@ export default function ImportData() {
               <p className="text-xs text-muted-foreground mb-2">
                 Use our template to ensure your data maps correctly.
               </p>
-              <Button variant="outline" size="sm" disabled title="Template download available when import pipeline is live">
+              <Button variant="outline" size="sm" onClick={() => toast.info("Template download coming soon")}>
                 <FileSpreadsheet className="h-3.5 w-3.5 mr-1" /> Download CSV Template
               </Button>
             </CardContent>

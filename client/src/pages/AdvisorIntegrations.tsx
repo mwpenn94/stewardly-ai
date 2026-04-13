@@ -17,8 +17,8 @@ import { SEOHead } from "@/components/SEOHead";
 export default function AdvisorIntegrations() {
   const [tab, setTab] = useState("my-connections");
 
-  const providers = trpc.integrations.listProviders.useQuery(undefined, { staleTime: 5 * 60_000 });
-  const connections = trpc.integrations.listConnections.useQuery(undefined, { staleTime: 60_000 });
+  const providers = trpc.integrations.listProviders.useQuery();
+  const connections = trpc.integrations.listConnections.useQuery();
 
   const providerList = (providers.data as any)?.providers || providers.data || [];
   const availableProviders = (Array.isArray(providerList) ? providerList : []).filter((p: any) => p.status === "active");

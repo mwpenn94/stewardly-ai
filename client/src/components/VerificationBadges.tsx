@@ -18,6 +18,8 @@ import {
   RefreshCw,
   ExternalLink,
   CheckCircle2,
+  AlertTriangle,
+  XCircle,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";

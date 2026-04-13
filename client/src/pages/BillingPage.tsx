@@ -20,6 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, CreditCard, Receipt, TrendingUp, Zap, Check } from "lucide-react";
 import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
+import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 
 const PLANS = [
@@ -104,8 +105,7 @@ export default function BillingPage() {
                 variant={plan.current ? "outline" : "default"}
                 size="sm"
                 className="w-full"
-                disabled={!plan.current}
-                title={plan.current ? "You're on this plan" : "Plan management requires billing integration"}
+                onClick={() => toast.info(plan.current ? "You're on this plan" : "Plan upgrade coming soon")}
               >
                 {plan.current ? "Current Plan" : plan.price === "Custom" ? "Contact Sales" : "Upgrade"}
               </Button>

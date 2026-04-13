@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PropensityGauge } from "./PropensityGauge";
 import { VerificationBadge } from "./VerificationBadge";
 import { PiiMaskedField } from "./PiiMaskedField";
-import { Mail, Phone, Calendar, ArrowRight } from "lucide-react";
+import { User, Mail, Phone, Calendar, MoreHorizontal, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LeadCardProps {

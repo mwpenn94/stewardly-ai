@@ -6,7 +6,7 @@
 import { useState } from "react";
 import {
   ChevronDown, ChevronUp, Brain, Database, Shield, BookOpen,
-  Info, Sparkles, TrendingUp,
+  CheckCircle, AlertTriangle, Info, Sparkles, FileText, TrendingUp,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 

@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -20,9 +22,9 @@ import {
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import {
-  ArrowLeft, Building2, Plus, Users, Trash2,
-  Loader2, UserPlus, ChevronRight,
-  Edit, ExternalLink,
+  ArrowLeft, Building2, Plus, Users, Settings, Trash2,
+  Loader2, UserPlus, ChevronRight, Globe, Mail,
+  Edit, Search, Shield, ExternalLink,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -41,7 +43,7 @@ export default function Organizations() {
   const [form, setForm] = useState({
     name: "", slug: "", description: "", website: "", ein: "", industry: "", size: "small" as const,
   });
-  const [inviteForm, setInviteForm] = useState({ userId: "", role: "user" as string });
+  const [inviteForm, setInviteForm] = useState({ email: "", role: "user" as string });
 
   // Queries
   const orgList = trpc.organizations.list.useQuery(undefined, { enabled: !!user });
@@ -88,7 +90,7 @@ export default function Organizations() {
     onSuccess: () => {
       utils.organizations.listMembers.invalidate();
       setShowInvite(false);
-      setInviteForm({ userId: "", role: "user" });
+      setInviteForm({ email: "", role: "user" });
       toast.success("Member invited");
     },
     onError: (e) => toast.error(e.message),
@@ -293,7 +295,7 @@ export default function Organizations() {
                 <Input
                   type="number"
                   placeholder="Enter user ID to invite"
-                  value={inviteForm.userId}
+                  value={inviteForm.email}
                   onChange={(e) => setInviteForm(f => ({ ...f, email: e.target.value }))}
                   className="mt-1"
                 />
@@ -319,10 +321,10 @@ export default function Organizations() {
               <Button
                 onClick={() => inviteMember.mutate({
                   organizationId: showDetail!,
-                  userId: parseInt(inviteForm.userId, 10) || 0,
+                  userId: parseInt(inviteForm.email, 10),
                   role: inviteForm.role as any,
                 })}
-                disabled={!inviteForm.userId || inviteMember.isPending}
+                disabled={!inviteForm.email || inviteMember.isPending}
               >
                 {inviteMember.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <UserPlus className="w-4 h-4 mr-1" />}
                 Invite

@@ -1,4 +1,4 @@
-import { useState, useEffect, type RefObject } from "react";
+import { useState, useRef, useEffect, type RefObject } from "react";
 import {
   ArrowUp, AudioLines, Check, ChevronDown, Image, Loader2, Monitor,
   Palette, Paperclip, PhoneOff, Plus, Sparkles, Video, Volume2, VolumeX
@@ -342,7 +342,6 @@ export function ChatInputBar({
                   variant="ghost"
                   className="h-10 w-10 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all"
                   onClick={toggleHandsFree}
-                  aria-label="Start hands-free voice mode"
                 >
                   <AudioLines className="w-5 h-5" />
                 </Button>

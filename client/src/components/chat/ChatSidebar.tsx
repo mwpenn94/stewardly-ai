@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
   ChevronDown, ChevronRight, Download, Edit2, FileText, FolderOpen, FolderPlus,
@@ -15,7 +15,7 @@ import {
   DndContext, closestCenter, type DragEndEvent
 } from "@dnd-kit/core";
 import {
-  SortableContext, verticalListSortingStrategy, useSortable
+  SortableContext, verticalListSortingStrategy, useSortable, arrayMove
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 

@@ -16,6 +16,7 @@ import {
   Brain,
   Calculator,
   Shield,
+  BookOpen,
   BarChart3,
   Users,
   AlertTriangle,

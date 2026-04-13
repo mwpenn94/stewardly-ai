@@ -69,7 +69,7 @@ export default function DynamicIntegrations() {
   const [probeUrl, setProbeUrl] = useState("");
   const [probeResult, setProbeResult] = useState<any | null>(null);
 
-  const list = trpc.dynamicIntegrations.list.useQuery(undefined, { staleTime: 60_000 });
+  const list = trpc.dynamicIntegrations.list.useQuery();
   const blueprints = useMemo(() => list.data ?? [], [list.data]);
 
   const [selectedBlueprintId, setSelectedBlueprintId] = useState<string | null>(null);
@@ -132,7 +132,6 @@ export default function DynamicIntegrations() {
       toast.success("Blueprint archived");
       list.refetch();
     },
-    onError: (err) => toast.error(`Archive failed: ${err.message}`),
   });
 
   // ── Handlers ───────────────────────────────────────────────────────

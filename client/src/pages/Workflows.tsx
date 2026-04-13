@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
@@ -9,9 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ArrowLeft, ArrowRight, CheckCircle2, Circle, Clock, Play,
-  FileText, ExternalLink, Shield, BookOpen, Briefcase,
+  ArrowLeft, ArrowRight, CheckCircle2, Circle, Clock, Play, Pause,
+  RotateCcw, FileText, ExternalLink, Shield, BookOpen, Briefcase,
   ChevronDown, ChevronUp, AlertTriangle, Loader2,
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
@@ -120,7 +121,7 @@ type WorkflowInstance = {
 };
 
 export default function Workflows() {
-  const { user: _user, loading } = useAuth();
+  const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [activeWorkflow, setActiveWorkflow] = useState<WorkflowInstance | null>(null);
   const [expandedStep, setExpandedStep] = useState<number | null>(null);
@@ -151,7 +152,7 @@ export default function Workflows() {
     retry: false,
   });
   const saveInstanceMut = trpc.workflow.saveInstance.useMutation({ onError: (e) => toast.error(e.message) });
-  const _deleteInstanceMut = trpc.workflow.deleteInstance.useMutation({ onError: (e) => toast.error(e.message) });
+  const deleteInstanceMut = trpc.workflow.deleteInstance.useMutation({ onError: (e) => toast.error(e.message) });
 
   // Reconcile the server snapshot into local state on first load.
   useEffect(() => {

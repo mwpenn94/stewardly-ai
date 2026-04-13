@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
-  CheckCircle2, Circle, ChevronDown, ChevronUp,
+  CheckCircle2, Circle, ChevronDown, ChevronUp, Sparkles,
   X, Loader2, RotateCcw, Rocket,
 } from "lucide-react";
 

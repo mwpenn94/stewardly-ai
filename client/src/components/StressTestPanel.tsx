@@ -5,7 +5,8 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, TrendingDown, Shield, Clock, BarChart3 } from "lucide-react";
 
 interface StressResult {
   scenario: { name: string; description: string; years: number[]; returns: number[] };

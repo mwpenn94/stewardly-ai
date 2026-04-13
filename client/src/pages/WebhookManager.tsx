@@ -2,7 +2,6 @@
  * WebhookManager — Webhook endpoint management and delivery logs.
  */
 import { SEOHead } from "@/components/SEOHead";
-import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,16 +42,10 @@ export default function WebhookManager() {
             <p className="text-sm text-muted-foreground">Manage webhook endpoints and monitor deliveries</p>
           </div>
         </div>
-        <Button size="sm" disabled title="Webhook management is a design preview">
+        <Button size="sm" onClick={() => toast.info("Webhook creation coming soon")}>
           <Plus className="h-3.5 w-3.5 mr-1" /> Add Endpoint
         </Button>
       </div>
-
-      <HonestPlaceholder
-        willDo="Manage webhook endpoints, view delivery logs, and configure event subscriptions for CRM/Slack/custom integrations."
-        needed="Webhook CRUD router + webhook_endpoints table + delivery log persistence"
-        workingAlternative={{ href: "/admin/integrations", label: "Manage integrations" }}
-      />
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Endpoints</CardTitle></CardHeader>
@@ -106,7 +99,7 @@ export default function WebhookManager() {
                   </Badge>
                   <span className="text-xs text-muted-foreground">{d.duration}</span>
                   {d.status === "failed" && (
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled title="Retry available when webhooks go live">
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => toast.info("Retry coming soon")}>
                       <RotateCcw className="h-3 w-3" />
                     </Button>
                   )}

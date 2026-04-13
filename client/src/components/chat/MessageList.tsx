@@ -2,8 +2,10 @@ import { Bot, Copy, Palette, RefreshCw, Sparkles, ThumbsDown, ThumbsUp, User, Vo
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProgressiveMessage } from "@/components/ProgressiveMessage";
 import { ReasoningChain } from "@/components/ReasoningChain";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
-import { type RefObject } from "react";
+import { toast } from "sonner";
+import { useRef, useEffect, type RefObject } from "react";
 
 export interface ChatMessage {
   id?: number;

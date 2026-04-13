@@ -78,7 +78,6 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <a href="#signin-form" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40">Skip to sign in form</a>
       <SEOHead title="Sign In" description="Sign in to your Stewardly AI financial advisory platform" />
       {/* Pass 100: Stewardship Gold — background glows use the accent (gold)
           + chart-2 (emerald) tokens so the gradient harmonizes with the
@@ -89,7 +88,7 @@ export default function SignIn() {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-chart-2/10 rounded-full blur-3xl opacity-30 animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
-      <div id="signin-form" tabIndex={-1} className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md space-y-8">
         {/* Logo and title */}
         <div className="text-center space-y-3">
           <div className="flex justify-center">

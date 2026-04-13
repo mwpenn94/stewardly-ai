@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -18,9 +19,9 @@ import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import {
   ArrowLeft, TrendingUp, Shield, FileSignature, BarChart3, Loader2,
-  RefreshCw, Target, Activity,
-  LineChart, Clock, CheckCircle2, AlertCircle, Send,
-  Eye, FileText, Plus, Gauge,
+  RefreshCw, Target, Activity, ChevronRight, DollarSign, Percent,
+  LineChart, PieChart, Clock, CheckCircle2, AlertCircle, Send,
+  Eye, FileText, Download, Plus, Gauge,
 } from "lucide-react";
 
 export default function ProductIntelligence() {
@@ -237,14 +238,14 @@ function IulCreditingSection() {
     },
   });
 
-  const strategiesQuery = trpc.productIntelligence.availableStrategies.useQuery({ productId }, { staleTime: 5 * 60_000 });
-  const avgQuery = trpc.productIntelligence.avgCreditingByStrategy.useQuery({ productId }, { staleTime: 5 * 60_000 });
+  const strategiesQuery = trpc.productIntelligence.availableStrategies.useQuery({ productId });
+  const avgQuery = trpc.productIntelligence.avgCreditingByStrategy.useQuery({ productId });
   const historyQuery = trpc.productIntelligence.creditingHistory.useQuery(
     { productId, strategy: selectedStrategy },
     { enabled: true }
   );
 
-  const _strategies = strategiesQuery.data ?? [];
+  const strategies = strategiesQuery.data ?? [];
   const avgData = avgQuery.data ?? [];
 
   return (

@@ -60,6 +60,7 @@ import {
   Plus,
   Search,
   Keyboard,
+  History,
   Mic,
   MicOff,
   Sparkles,
@@ -79,9 +80,7 @@ import {
   BookOpen,
   Bot,
   Terminal,
-  Mail,
-  Plug,
-  Link,
+  Scale,
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -132,9 +131,6 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Fingerprint: <Fingerprint className="w-4 h-4" />,
   Award: <Award className="w-4 h-4" />,
   GitBranch: <GitBranch className="w-4 h-4" />,
-  Mail: <Mail className="w-4 h-4" />,
-  Plug: <Plug className="w-4 h-4" />,
-  Link: <Link className="w-4 h-4" />,
 };
 
 function iconFor(name?: string): React.ReactNode {
@@ -432,7 +428,7 @@ export function CommandPalette() {
               {recentPagesFiltered.map((rp) => {
                 // Reuse page icons from PAGES list for recent items
                 const pageEntry = PAGES.find((p) => p.href === rp.route) ?? pages.find((p) => p.href === rp.route);
-                const _icon = pageEntry?.iconName;
+                const icon = pageEntry?.iconName;
                 return (
                   <CommandItem
                     key={`recent:${rp.route}`}

@@ -127,7 +127,7 @@ async function revokeExpiredRoleElevations(): Promise<void> {
     }
 
     const now = new Date();
-    await db
+    const result = await db
       .update(roleElevations)
       .set({ revokedAt: now })
       .where(
@@ -147,7 +147,7 @@ async function runStaleDataCleanup(): Promise<void> {
   try {
     const { getDb } = await import("../db");
     const { enrichmentCache, conversations, messages } = await import("../../drizzle/schema");
-    const { lt, sql } = await import("drizzle-orm");
+    const { lt, eq, and, sql } = await import("drizzle-orm");
     
     const db = await getDb();
     if (!db) {
@@ -374,7 +374,7 @@ export function initScheduler(): void {
   registerJob("refresh_sofr_rates", DAYS(1), async () => {
     const { runMonitoredCron } = await import("./monitoring/healthMonitor");
     await runMonitoredCron("refresh_sofr_rates", async () => {
-      const { analyzeTrend: _analyzeTrend } = await import("./planning/trendIngester");
+      const { analyzeTrend } = await import("./planning/trendIngester");
       logger.info({ operation: "scheduler" }, "SOFR rate refresh — trend analysis available");
     });
   });
@@ -398,7 +398,7 @@ export function initScheduler(): void {
   registerJob("data_freshness_check", DAYS(1), async () => {
     const { runMonitoredCron } = await import("./monitoring/healthMonitor");
     await runMonitoredCron("data_freshness_check", async () => {
-      const { scoreAll: _scoreAll } = await import("./scraping/dataValueScorer");
+      const { scoreAll } = await import("./scraping/dataValueScorer");
       // scoreAll requires DataSource[] — run with empty to check availability
       logger.info({ operation: "scheduler" }, "Data freshness check — scorer available");
     });
@@ -496,7 +496,7 @@ export function initScheduler(): void {
   registerJob("score_data_value", WEEKS(1), async () => {
     const { runMonitoredCron } = await import("./monitoring/healthMonitor");
     await runMonitoredCron("score_data_value", async () => {
-      const { scoreAll: _scoreAll } = await import("./scraping/dataValueScorer");
+      const { scoreAll } = await import("./scraping/dataValueScorer");
       logger.info({ operation: "scheduler" }, "Data value scoring — scorer available");
     });
   });
@@ -504,7 +504,7 @@ export function initScheduler(): void {
   registerJob("rate_optimization", WEEKS(1), async () => {
     const { runMonitoredCron } = await import("./monitoring/healthMonitor");
     await runMonitoredCron("rate_optimization", async () => {
-      const { generateRecommendations: _generateRecommendations } = await import("./scraping/rateRecommender");
+      const { generateRecommendations } = await import("./scraping/rateRecommender");
       // generateRecommendations requires currentRates and signals args
       logger.info({ operation: "scheduler" }, "Rate optimization — recommender available");
     });
@@ -529,7 +529,7 @@ export function initScheduler(): void {
   registerJob("regulatory_scan", DAYS(30), async () => {
     const { runMonitoredCron } = await import("./monitoring/healthMonitor");
     await runMonitoredCron("regulatory_scan", async () => {
-      const { analyzeHealth: _analyzeHealth } = await import("./scraping/integrationAnalyzer");
+      const { analyzeHealth } = await import("./scraping/integrationAnalyzer");
       logger.info({ operation: "scheduler" }, "Regulatory scan — integration analyzer available");
     });
   });
@@ -537,7 +537,7 @@ export function initScheduler(): void {
   registerJob("bulk_refresh", DAYS(30), async () => {
     const { runMonitoredCron } = await import("./monitoring/healthMonitor");
     await runMonitoredCron("bulk_refresh", async () => {
-      const { batchEnrich: _batchEnrich } = await import("./enrichment/aiEnrichment");
+      const { batchEnrich } = await import("./enrichment/aiEnrichment");
       logger.info({ operation: "scheduler" }, "Bulk enrichment refresh — stub (requires leads)");
     });
   });
@@ -771,7 +771,7 @@ export function initScheduler(): void {
 }
 
 export function stopScheduler(): void {
-  for (const [, job] of Object.entries(jobs)) {
+  for (const [name, job] of Object.entries(jobs)) {
     if (job.timerId) {
       clearInterval(job.timerId);
       job.timerId = null;

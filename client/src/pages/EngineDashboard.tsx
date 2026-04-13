@@ -183,10 +183,10 @@ export default function EngineDashboard() {
   const bieBackPlan = trpc.calculatorEngine.bieBackPlan.useMutation({ onError: (e) => toast.error(e.message) });
   const bieSimulate = trpc.calculatorEngine.bieSimulate.useMutation({ onError: (e) => toast.error(e.message) });
 
-  // tRPC queries for references (static data — cache 5 min)
-  const { data: references } = trpc.calculatorEngine.productReferences.useQuery(undefined, { staleTime: 5 * 60_000 });
-  const { data: benchmarks } = trpc.calculatorEngine.industryBenchmarks.useQuery(undefined, { staleTime: 5 * 60_000 });
-  const { data: methodology } = trpc.calculatorEngine.methodology.useQuery(undefined, { staleTime: 5 * 60_000 });
+  // tRPC queries for references
+  const { data: references } = trpc.calculatorEngine.productReferences.useQuery();
+  const { data: benchmarks } = trpc.calculatorEngine.industryBenchmarks.useQuery();
+  const { data: methodology } = trpc.calculatorEngine.methodology.useQuery();
 
   // Build profile object
   const profile = useMemo(() => ({

@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Link2, Unlink, RefreshCw, Search, Database, Building2, Briefcase, User,
-  Globe, CheckCircle2, XCircle, Clock, AlertTriangle,
-  Shield, Activity, Loader2, ArrowLeft,
-  TrendingUp, TrendingDown, ArrowLeftRight,
+  Globe, CheckCircle2, XCircle, Clock, AlertTriangle, ChevronRight,
+  Shield, Activity, Settings2, Loader2, Plus, ArrowUpDown, FileUp, ArrowLeft,
+  TrendingUp, TrendingDown, Minus, ArrowLeftRight,
 } from "lucide-react";
 import { Link } from "wouter";
 import { getLoginUrl } from "@/const";
@@ -441,7 +441,7 @@ function ConnectDialog({
 }
 
 // ─── Sync History ──────────────────────────────────────────────────────
-function _SyncHistory({ connectionId }: { connectionId: string }) {
+function SyncHistory({ connectionId }: { connectionId: string }) {
   const { data: logs, isLoading } = trpc.integrations.getSyncLogs.useQuery(
     { connectionId, limit: 10 },
     { enabled: !!connectionId }
@@ -469,7 +469,7 @@ function _SyncHistory({ connectionId }: { connectionId: string }) {
 }
 
 // ─── SnapTrade Connect Dialog ─────────────────────────────────────────
-function _SnapTradeConnectDialog({
+function SnapTradeConnectDialog({
   provider,
   open,
   onOpenChange,
@@ -1156,14 +1156,14 @@ export default function Integrations() {
   const [tierFilter, setTierFilter] = useState<string>("all");
   const [connectProvider, setConnectProvider] = useState<Provider | null>(null);
   const [connectOpen, setConnectOpen] = useState(false);
-  const [_selectedConnection, _setSelectedConnection] = useState<string | null>(null);
+  const [selectedConnection, setSelectedConnection] = useState<string | null>(null);
 
   // Queries
   const { data: providersData, isLoading: loadingProviders } = trpc.integrations.listProviders.useQuery(
     tierFilter === "all" ? {} : { ownershipTier: tierFilter }
   );
   const providers = providersData?.providers;
-  const { data: connections, isLoading: _loadingConnections, refetch: refetchConnections } = trpc.integrations.listConnections.useQuery(
+  const { data: connections, isLoading: loadingConnections, refetch: refetchConnections } = trpc.integrations.listConnections.useQuery(
     undefined,
     { enabled: !!user }
   );

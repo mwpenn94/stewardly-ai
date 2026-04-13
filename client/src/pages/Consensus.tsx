@@ -80,7 +80,7 @@ export default function ConsensusPage() {
   const [selectedPresetId, setSelectedPresetId] = useState<number | "none">("none");
 
   const consensusStream = trpc.wealthEngine.consensusStream.useMutation({ onError: (e) => toast.error(e.message) });
-  const presets = trpc.wealthEngine.listWeightPresets.useQuery(undefined, { staleTime: 5 * 60_000 });
+  const presets = trpc.wealthEngine.listWeightPresets.useQuery();
 
   // Round D2 — pre-flight cost estimate
   const costEstimate = trpc.wealthEngine.estimateConsensusCost.useQuery(

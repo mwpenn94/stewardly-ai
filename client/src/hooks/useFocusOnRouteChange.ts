@@ -19,9 +19,8 @@
  * unit testing. The hook wires them to wouter's location.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useLocation } from "wouter";
-import { playEarconById } from "@/lib/earcons";
 
 /** Default mapping from path prefix → human-readable name for SR announcements. */
 const DEFAULT_PATH_NAMES: Array<{ prefix: string; name: string }> = [
@@ -154,14 +153,7 @@ export function useFocusOnRouteChange(options?: {
   announce?: boolean;
 }): void {
   const [location] = useLocation();
-  const isFirstRender = useRef(true);
   useEffect(() => {
-    // Skip earcon on initial mount — only play on actual navigation.
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-    } else {
-      playEarconById("navigate");
-    }
     const id = options?.mainId || "main-content";
     // Defer until the next frame so the new page has a chance to mount.
     const handle = window.requestAnimationFrame(() => {

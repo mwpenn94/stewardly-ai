@@ -1,14 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import {
-  Camera, Mic, MicOff, Monitor,
-  PhoneOff, Volume2, VolumeX, Maximize2, Minimize2,
+  Camera, CameraOff, Mic, MicOff, Monitor, MonitorOff,
+  PhoneOff, Volume2, VolumeX, Loader2, Maximize2, Minimize2,
   Eye, EyeOff
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { detectStt } from "@/lib/sttSupport";
 
 type LiveMode = "camera" | "screen" | null;
 
@@ -172,14 +171,8 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
   const startListening = useCallback(() => {
     if (ttsGuardRef.current || isSpeaking) return;
 
-    // G59 fix: use centralized STT capability probe for cross-browser safety
-    const caps = detectStt();
-    if (caps.mode === "unsupported") {
-      toast.error(caps.userMessage);
-      return;
-    }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { toast.error("Speech recognition not available"); return; }
+    if (!SR) { toast.error("Speech recognition not supported"); return; }
 
     const recognition = new SR();
     recognition.continuous = false;
@@ -494,7 +487,7 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
             variant="ghost"
             size="icon"
             onClick={toggleMute}
-            aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+            title={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? <MicOff className="w-4 h-4 text-red-400" /> : <Mic className="w-4 h-4" />}
           </Button>
@@ -503,7 +496,7 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
             variant="ghost"
             size="icon"
             onClick={() => setTtsEnabled(!ttsEnabled)}
-            aria-label={ttsEnabled ? "Mute AI voice" : "Enable AI voice"}
+            title={ttsEnabled ? "Mute AI voice" : "Enable AI voice"}
           >
             {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-red-400" />}
           </Button>
@@ -520,7 +513,7 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
                 startStream("camera");
               }
             }}
-            aria-label={liveMode === "camera" ? "Switch to screen share" : "Switch to camera"}
+            title={liveMode === "camera" ? "Switch to screen" : "Switch to camera"}
           >
             {liveMode === "camera" ? <Monitor className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
           </Button>

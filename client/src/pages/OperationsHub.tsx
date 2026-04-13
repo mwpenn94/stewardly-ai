@@ -53,10 +53,10 @@ export default function OperationsHub() {
       <div className="container py-6">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <QuickStat icon={Activity} label="Active Tasks" value={String(pendingCount + runningAgents)} color="text-chart-3" />
-          <QuickStat icon={Bot} label="Running Agents" value={String(runningAgents)} color="text-chart-2" />
-          <QuickStat icon={Shield} label="Pending Reviews" value={String(pendingCount)} color="text-chart-1" />
-          <QuickStat icon={AlertTriangle} label="Compliance Flags" value={String(complianceFlags)} color="text-destructive" />
+          <QuickStat icon={Activity} label="Active Tasks" value={String(pendingCount + runningAgents)} color="text-blue-500" />
+          <QuickStat icon={Bot} label="Running Agents" value={String(runningAgents)} color="text-green-500" />
+          <QuickStat icon={Shield} label="Pending Reviews" value={String(pendingCount)} color="text-amber-500" />
+          <QuickStat icon={AlertTriangle} label="Compliance Flags" value={String(complianceFlags)} color="text-red-500" />
         </div>
 
         {/* Intelligence Status */}
@@ -140,7 +140,7 @@ function QuickStat({ icon: Icon, label, value, color }: { icon: any; label: stri
 }
 
 function ActiveWorkSection() {
-  const workflows = trpc.workflow.listInstances.useQuery(undefined, { retry: false });
+  const workflows = { data: undefined, isLoading: false }; // Workflows are managed via chat AI
   const gateReviews = trpc.agentic.gate.list.useQuery({ status: "pending" as const, limit: 10 });
 
   return (
@@ -159,18 +159,18 @@ function ActiveWorkSection() {
             </div>
           ) : (
             <div className="space-y-2">
-              {(workflows.data ?? []).length > 0 ? (workflows.data ?? []).slice(0, 5).map((wf) => (
+              {(workflows.data as any)?.workflows?.slice(0, 5)?.map((wf: any) => (
                 <div key={wf.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <Zap className="h-4 w-4 text-blue-500" />
                     <div>
-                      <div className="text-sm font-medium">{wf.templateName || wf.templateId}</div>
-                      <div className="text-xs text-muted-foreground">Step {(wf.currentStep || 0) + 1} · {wf.status}</div>
+                      <div className="text-sm font-medium">{wf.name}</div>
+                      <div className="text-xs text-muted-foreground">Step {wf.currentStep || 1} of {wf.totalSteps || "?"}</div>
                     </div>
                   </div>
-                  <Badge variant={wf.status === "in_progress" ? "default" : wf.status === "completed" ? "secondary" : "outline"}>{wf.status || "pending"}</Badge>
+                  <Badge variant={wf.status === "running" ? "default" : "secondary"}>{wf.status || "pending"}</Badge>
                 </div>
-              )) : (
+              )) ?? (
                 <div className="text-center py-6 text-muted-foreground text-sm">
                   No active workflows.
                   <br />
@@ -234,11 +234,9 @@ function AgentsSection() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Agent Fleet</h3>
-        <Link href="/agents">
-          <Button size="sm">
-            <Bot className="h-3 w-3 mr-1" /> Manage Agents
-          </Button>
-        </Link>
+        <Button size="sm" onClick={() => window.location.href = "/agents"}>
+          <Bot className="h-3 w-3 mr-1" /> Manage Agents
+        </Button>
       </div>
 
       {agents.isLoading ? (

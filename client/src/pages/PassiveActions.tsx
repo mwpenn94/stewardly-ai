@@ -56,10 +56,10 @@ export default function PassiveActions() {
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("sources");
 
-  const { data: sourceData } = trpc.passiveActions.dataSources.useQuery(undefined, { staleTime: 5 * 60_000 });
-  const { data: preferences, refetch: refetchPrefs } = trpc.passiveActions.preferences.useQuery(undefined, { staleTime: 30_000 });
-  const { data: stats, refetch: refetchStats } = trpc.passiveActions.stats.useQuery(undefined, { staleTime: 30_000 });
-  const { data: history } = trpc.passiveActions.history.useQuery({ limit: 50 }, { staleTime: 30_000 });
+  const { data: sourceData } = trpc.passiveActions.dataSources.useQuery();
+  const { data: preferences, refetch: refetchPrefs } = trpc.passiveActions.preferences.useQuery();
+  const { data: stats, refetch: refetchStats } = trpc.passiveActions.stats.useQuery();
+  const { data: history } = trpc.passiveActions.history.useQuery({ limit: 50 });
 
   const toggleMutation = trpc.passiveActions.toggle.useMutation({
     onSuccess: () => { refetchPrefs(); refetchStats(); },
@@ -71,7 +71,6 @@ export default function PassiveActions() {
       refetchPrefs(); refetchStats();
       toast.success(`${data.toggled} actions toggled for ${data.source}`);
     },
-    onError: (e) => toast.error(`Bulk toggle failed: ${e.message}`),
   });
 
   const bulkAllMutation = trpc.passiveActions.bulkToggleAll.useMutation({
@@ -79,7 +78,6 @@ export default function PassiveActions() {
       refetchPrefs(); refetchStats();
       toast.success(`${data.totalActions} actions across ${data.totalSources} sources`);
     },
-    onError: (e) => toast.error(`Bulk toggle all failed: ${e.message}`),
   });
 
   // Build a lookup map for preferences

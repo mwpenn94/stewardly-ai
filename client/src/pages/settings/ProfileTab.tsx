@@ -185,7 +185,7 @@ export default function ProfileTab() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="flex gap-1.5 flex-1 min-w-0">
+            <div className="flex gap-1.5 flex-1 min-w-[200px]">
               <Input
                 value={newMemory}
                 onChange={(e) => setNewMemory(e.target.value)}

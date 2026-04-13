@@ -146,7 +146,6 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Users", label: "Relationships", href: "/relationships", minRole: "user", section: "relationships" },
   { iconName: "LayoutDashboard", label: "Client Dashboard", href: "/client-dashboard", minRole: "user", section: "relationships" },
   { iconName: "Target", label: "Lead Pipeline", href: "/leads", minRole: "advisor", section: "relationships" },
-  { iconName: "Mail", label: "Email Campaigns", href: "/email-campaigns", minRole: "advisor", section: "relationships" },
   { iconName: "RefreshCw", label: "CRM Sync", href: "/crm-sync", minRole: "advisor", section: "relationships" },
   { iconName: "ShieldCheck", label: "Compliance Audit", href: "/compliance-audit", minRole: "advisor", section: "relationships" },
   { iconName: "FileText", label: "Documents", href: "/settings/knowledge", minRole: "user", section: "relationships" },
@@ -194,7 +193,6 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "Scale", label: "Fairness Audit", href: "/admin/fairness", minRole: "admin" },
   { iconName: "Link2", label: "Admin Integrations", href: "/admin/integrations", minRole: "admin" },
   { iconName: "BookOpen", label: "Knowledge Base", href: "/admin/knowledge", minRole: "admin" },
-  { iconName: "Palette", label: "Org Branding", href: "/org-branding", minRole: "admin" },
 ];
 
 // ─── UTILITY section (always visible at bottom) ──────────────────────────────

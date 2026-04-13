@@ -8,6 +8,7 @@
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import {
   formatCurrency,
+  formatPercent,
   useCountUp,
   useReducedMotion,
 } from "@/lib/wealth-engine/animations";

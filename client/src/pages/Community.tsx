@@ -9,14 +9,15 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import {
-  MessageSquare, Plus, Clock,
+  MessageSquare, Plus, ArrowLeft, ThumbsUp, Clock,
   Loader2, Users, Search, Tag,
 } from "lucide-react";
 
@@ -24,21 +25,21 @@ const CATEGORIES = ["General", "Tax Planning", "Insurance", "Estate", "Complianc
 
 export default function Community() {
   const { user, loading: authLoading } = useAuth();
-  const [_selectedPost, setSelectedPost] = useState<number | null>(null);
+  const [selectedPost, setSelectedPost] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [newPostOpen, setNewPostOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newBody, setNewBody] = useState("");
   const [newCategory, setNewCategory] = useState("General");
-  const [_replyText, _setReplyText] = useState("");
+  const [replyText, setReplyText] = useState("");
 
   const utils = trpc.useUtils();
 
   // Try to use communityForum.list if it exists, otherwise show placeholder
   const postsQuery = trpc.communityForum.listPosts.useQuery(
     { limit: 20 },
-    { enabled: !!user, retry: false, staleTime: 30_000 }
+    { enabled: !!user, retry: false }
   );
 
   const createPostMut = trpc.communityForum.createPost.useMutation({
@@ -117,7 +118,7 @@ export default function Community() {
         </div>
 
         <div className="flex gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search posts..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
           </div>

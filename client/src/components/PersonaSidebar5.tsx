@@ -19,8 +19,8 @@ import {
   ChevronDown, Pin, Compass, Scale,
   Zap, Package, GitBranch, RefreshCw, Link2, Plug,
   Heart, DollarSign, Target, Shield, BookOpen,
-  Key, Webhook, Bot, Building2, GitMerge,
-  LayoutDashboard, UserPlus, HeartPulse, Sparkles, Mail,
+  Key, Webhook, Bot, Globe, Building2, GitMerge,
+  LayoutDashboard, UserPlus, HeartPulse, Sparkles,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -97,7 +97,6 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "Clients", icon: Users, path: "/relationships", match: ["/relationships", "/portal", "/client-dashboard"] },
       { label: "Insurance & Apps", icon: FileCheck, path: "/insurance-applications", match: ["/insurance-applications", "/carrier-connector", "/suitability-panel"] },
       { label: "Lead Pipeline", icon: Target, path: "/leads", match: ["/leads"] },
-      { label: "Email Campaigns", icon: Mail, path: "/email-campaigns", match: ["/email-campaigns"] },
       { label: "Import Data", icon: Upload, path: "/import", match: ["/import"] },
       { label: "Compliance", icon: ShieldCheck, path: "/compliance-audit", match: ["/compliance-audit"] },
       { label: "CRM Sync", icon: RefreshCw, path: "/crm-sync", match: ["/crm-sync"] },

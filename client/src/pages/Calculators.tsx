@@ -3,6 +3,7 @@ import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,19 +14,19 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 import {
   ArrowLeft, Calculator, TrendingUp, Building2, PiggyBank, Loader2,
-  Sparkles, DollarSign, BarChart3,
-  ChevronRight, Heart, Scale, GraduationCap, Stethoscope,
+  Sparkles, DollarSign, BarChart3, ArrowUpRight, ArrowDownRight,
+  ChevronRight, Info, Heart, Scale, GraduationCap, Stethoscope,
   HandCoins, Briefcase, ListChecks, ShieldAlert, Dice5, Users, Grid3X3, BookOpen, Rocket,
   Printer, MessageSquare,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 }
 
-function _pct(n: number) {
+function pct(n: number) {
   return `${n.toFixed(1)}%`;
 }
 
@@ -153,7 +154,7 @@ export default function Calculators() {
   const [stressScenario, setStressScenario] = useState("gfc2008");
   const backtestCalc = trpc.wealthEngine.historicalBacktest.useMutation({ onError: (e) => toast.error(e.message) });
   const stressCalc = trpc.wealthEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
-  const scenariosQuery = trpc.wealthEngine.stressScenarios.useQuery(undefined, { staleTime: 5 * 60_000 });
+  const scenariosQuery = trpc.wealthEngine.stressScenarios.useQuery();
 
   // Monte Carlo state
   const [mcBalance, setMcBalance] = useState(500000);
@@ -370,7 +371,7 @@ export default function Calculators() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {(iulCalc.data?.projections ?? []).map((p) => (
+                          {iulCalc.data.projections.map((p) => (
                             <TableRow key={p.year} className="border-border/30">
                               <TableCell className="text-xs py-1.5">{p.year}</TableCell>
                               <TableCell className="text-xs py-1.5">{p.age}</TableCell>
@@ -493,7 +494,7 @@ export default function Calculators() {
                         {pfCalc.data.spreadPct > 0 ? "+" : ""}{pfCalc.data.spreadPct}% spread
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                    <div className="grid grid-cols-3 gap-3 text-center">
                       <div>
                         <p className="text-lg font-mono font-bold text-red-400">{pfCalc.data.loanRate}%</p>
                         <p className="text-[10px] text-muted-foreground">Loan Rate</p>
@@ -534,7 +535,7 @@ export default function Calculators() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {(pfCalc.data?.projections ?? []).map((p) => (
+                          {pfCalc.data.projections.map((p) => (
                             <TableRow key={p.year} className={`border-border/30 ${p.year === pfCalc.data!.breakevenYear ? "bg-emerald-500/10" : ""}`}>
                               <TableCell className="text-xs py-1.5">
                                 {p.year}
@@ -674,7 +675,7 @@ export default function Calculators() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {(retCalc.data?.projections ?? []).map((p) => (
+                          {retCalc.data.projections.map((p) => (
                             <TableRow key={p.year} className="border-border/30">
                               <TableCell className="text-xs py-1.5">{p.year}</TableCell>
                               <TableCell className="text-xs py-1.5">{p.age}</TableCell>
@@ -915,7 +916,7 @@ function CalcPanel({ title, icon, color, children, onCalculate, isLoading, resul
   onCalculate: () => void; isLoading: boolean; result: React.ReactNode;
 }) {
   const [, navigate] = useLocation();
-  const _hasResult = !!result && (result as any)?.props?.children !== undefined;
+  const hasResult = !!result && (result as any)?.props?.children !== undefined;
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       <Card className="lg:col-span-2 bg-card/60 border-border/50">
@@ -967,7 +968,7 @@ function CalcPanel({ title, icon, color, children, onCalculate, isLoading, resul
 function TaxProjectorPanel() {
   const [wages, setWages] = useState(150000);
   const [deductions, setDeductions] = useState(0);
-  const [stateCode, _setStateCode] = useState("TX");
+  const [stateCode, setStateCode] = useState("TX");
   const taxCalc = trpc.taxProjector.project.useMutation({ onError: (e: any) => toast.error(e.message) });
   return (
     <CalcPanel title="Tax Projector" icon={<DollarSign className="w-4 h-4" />} color="text-violet-400"
@@ -997,7 +998,7 @@ function TaxProjectorPanel() {
             {taxCalc.data.bracketBreakdown?.length > 0 && (
               <div className="space-y-1">
                 <p className="text-xs font-medium">Bracket Breakdown</p>
-                {(taxCalc.data?.bracketBreakdown ?? []).map((b: any, i: number) => (
+                {taxCalc.data.bracketBreakdown.map((b: any, i: number) => (
                   <div key={i} className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{b.bracket}</span>
                     <span className="font-mono">{fmt(b.taxOnBracket)}</span>
@@ -1101,7 +1102,7 @@ function MedicarePanel() {
             {medCalc.data.enrollmentTimeline?.length > 0 && (
               <div className="space-y-1">
                 <p className="text-xs font-medium">Enrollment Timeline</p>
-                {(medCalc.data?.enrollmentTimeline ?? []).map((t: any, i: number) => (
+                {medCalc.data.enrollmentTimeline.map((t: any, i: number) => (
                   <div key={i} className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{t.event}</span>
                     <span>{t.deadline}</span>

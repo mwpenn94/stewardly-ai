@@ -21,37 +21,38 @@ import {
   addMessage, getConversationMessages,
   addDocument, getUserDocuments, getAccessibleDocuments, updateDocumentVisibility,
   updateDocumentStatus, addDocumentChunks,
-  deleteDocument, bulkDeleteDocuments, bulkUpdateDocumentVisibility,
+  searchDocumentChunks, deleteDocument, bulkDeleteDocuments, bulkUpdateDocumentVisibility,
   bulkUpdateDocumentCategory, renameDocument, reorderDocuments,
   addDocumentVersion, getDocumentVersions, getLatestVersionNumber, getDocumentProcessingStats,
   getAllProducts, getProductsByCategory,
   getVisibleProducts, getOrgProducts, createProduct, updateProduct, deleteProduct,
   addAuditEntry, getAuditTrail, addToReviewQueue, getPendingReviews, updateUserAvatar,
   updateReviewStatus, addMemory, getUserMemories, deleteMemory,
-  addFeedback, getFeedbackStats,
+  addFeedback, getFeedbackStats, addQualityRating,
   saveSuitabilityAssessment, getUserSuitability,
   updateUserStyleProfile, updateUserSettings,
   toggleConversationPin, moveConversationToFolder,
   getUserFolders, createFolder, updateFolder, deleteFolder,
   reorderConversations, exportConversation,
   getUserTags, createTag, deleteTag, updateTag,
-  addTagToDocument, removeTagFromDocument, getDocumentTags, getDocumentsForTag,
-  addGapFeedback, getUserGapFeedback,
+  addTagToDocument, removeTagFromDocument, getDocumentTags, getDocumentsForTag, bulkAddTagsToDocument,
+  addGapFeedback, getUserGapFeedback, getGapFeedbackByGapId,
   getDocumentAnnotations, createAnnotation, resolveAnnotation, deleteAnnotation,
-  logAiResponseQuality,
+  logAiToolExecution, logAiResponseQuality,
 } from "./db";
 import { buildInsightContext, invalidateInsightCache } from "./insightCollectors";
 import {
-  buildSystemPrompt, needsFinancialDisclaimer,
-  detectPII, stripPII, calculateConfidence,
+  buildSystemPrompt, FINANCIAL_DISCLAIMER, needsFinancialDisclaimer,
+  detectPII, stripPII, calculateConfidence, getTopicDisclaimer, maskPIIForLLM,
   selectBestDisclaimer, deduplicateDisclaimers,
 } from "./prompts";
-import { extractMemoriesFromMessage, saveExtractedMemories, generateEpisodeSummary, saveEpisodeSummary } from "./memoryEngine";
+import { extractMemoriesFromMessage, saveExtractedMemories, generateEpisodeSummary, saveEpisodeSummary, assembleMemoryContext } from "./memoryEngine";
+import { assembleGraphContext } from "./knowledgeGraph";
 import { assembleDeepContext, getStructuredIntegrationData, getPipelineRates } from "./services/deepContextAssembler";
-import { classifyContent, logComplianceAudit, logPrivacyAudit } from "./complianceCopilot";
-import { trackEvent, assembleExponentialContext } from "./services/exponentialEngine";
+import { classifyContent, applyModifications, logComplianceAudit, logPrivacyAudit } from "./complianceCopilot";
+import { trackEvent, recalculateProficiency, assembleExponentialContext } from "./services/exponentialEngine";
 import type { FocusMode, AdvisoryMode } from "@shared/types";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { integrationConnections, integrationProviders } from "../drizzle/schema";
 import { getDb } from "./db";
 import { aiLayersRouter } from "./routers/aiLayers";
@@ -246,7 +247,7 @@ const chatRouter = router({
       if (!conversation) throw new TRPCError({ code: "NOT_FOUND", message: "Conversation not found" });
 
       // Save user message
-      await addMessage({
+      const userMsg = await addMessage({
         conversationId: input.conversationId,
         userId: ctx.user.id,
         role: "user",
@@ -296,6 +297,8 @@ const chatRouter = router({
       // Parse multi-select focus modes
       const focusModes = input.focus.split(",").filter(Boolean);
       const hasFinancial = focusModes.includes("financial");
+      const hasGeneral = focusModes.includes("general");
+      const hasStudy = focusModes.includes("study");
       // Primary focus for single-mode functions: first selected mode
       const primaryFocus = (focusModes[0] || "general") as FocusMode;
 
@@ -372,6 +375,11 @@ const chatRouter = router({
       if (deepContext?.fullContextPrompt) {
         fullSystemPrompt += `\n\n${deepContext.fullContextPrompt}`;
       }
+
+      // Use resolved temperature/maxTokens if available
+      // Creativity slider overrides temperature when set
+      const llmTemperature = resolvedConfig?.creativity ?? resolvedConfig?.temperature ?? 0.7;
+      const llmMaxTokens = resolvedConfig?.maxTokens ?? 4096;
 
       // Context depth controls how much history to include
       const contextDepth = resolvedConfig?.contextDepth ?? "moderate";
@@ -1566,6 +1574,7 @@ The user's name is ${ctx.user.name || "there"}.`;
     const db = await (await import("./db")).getDb();
     if (!db) return [];
     const { suitabilityAssessments: sa } = await import("../drizzle/schema");
+    const { eq } = await import("drizzle-orm");
     const all = await db!.select().from(sa).orderBy(sa.createdAt);
     return all;
   }),
@@ -1716,6 +1725,7 @@ const settingsRouter = router({
     const db = await (await import("./db")).getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
     const { users } = await import("../drizzle/schema");
+    const { eq } = await import("drizzle-orm");
     await db.update(users).set({ tosAcceptedAt: new Date() }).where(eq(users.id, ctx.user.id));
     return { accepted: true, acceptedAt: new Date() };
   }),

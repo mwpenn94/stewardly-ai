@@ -10,7 +10,6 @@ export default function Terms() {
 
   return (
     <div className="min-h-screen bg-background">
-      <a href="#terms-main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40">Skip to main content</a>
       <SEOHead title="Terms of Service" description="Stewardly AI terms of service and usage agreement" />
       <header className="h-12 border-b border-border flex items-center px-4">
         <Button variant="ghost" size="sm" className="gap-2 text-xs" onClick={() => navigate("/")}>
@@ -20,7 +19,7 @@ export default function Terms() {
       </header>
 
       <ScrollArea className="h-[calc(100vh-3rem)]">
-        <div id="terms-main" tabIndex={-1} className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
           {/* Terms of Service */}
           <section>
             <h1 className="text-2xl font-semibold mb-1">Terms of Service</h1>

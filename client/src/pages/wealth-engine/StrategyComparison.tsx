@@ -484,7 +484,7 @@ export default function StrategyComparisonPage() {
             <CardHeader>
               <CardTitle className="text-base">Trajectory by Strategy</CardTitle>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
+            <CardContent>
               <TrajectoryChart milestones={result.data.milestones} />
             </CardContent>
           </Card>

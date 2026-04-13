@@ -11,11 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
-import { ArrowLeft, Plus, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, PiggyBank, BarChart3, Clock, Plus, Trash2, Loader2, Play } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -92,7 +93,7 @@ function runMonteCarloSim(totalMonthly: number, targetMonthly: number, portfolio
 
 export default function IncomeProjection() {
   const [, navigate] = useLocation();
-  const { profile, updateProfile: _updateProfile } = useFinancialProfile("income-projection");
+  const { profile, updateProfile } = useFinancialProfile("income-projection");
 
   // ─── Global Inputs (initialized from shared profile) ────
   const [currentAge, setCurrentAge] = useState(profileValue(profile, "currentAge", 55));
@@ -101,7 +102,7 @@ export default function IncomeProjection() {
   const [targetMonthly, setTargetMonthly] = useState(10000);
   const [portfolioBalance, setPortfolioBalance] = useState(profileValue(profile, "portfolioBalance", 1_200_000));
   const [expectedReturn, setExpectedReturn] = useState(7);
-  const [inflationRate, _setInflationRate] = useState(3);
+  const [inflationRate, setInflationRate] = useState(3);
 
   // ─── Income Sources ─────────────────────────────────────
   const [sources, setSources] = useState<IncomeSource[]>(DEFAULT_SOURCES);
@@ -174,6 +175,12 @@ export default function IncomeProjection() {
     [sources]
   );
 
+  const totalMonthlyAtRetirement = useMemo(() =>
+    activeSources
+      .filter(s => s.startAge <= retirementAge)
+      .reduce((sum, s) => sum + s.monthlyAmount, 0),
+    [activeSources, retirementAge]
+  );
 
   const totalMonthlyAtFull = useMemo(() =>
     activeSources.reduce((sum, s) => sum + s.monthlyAmount, 0),
@@ -406,8 +413,8 @@ export default function IncomeProjection() {
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Year-by-Year Projection</CardTitle></CardHeader>
         <CardContent>
-          <div className="space-y-1 overflow-x-auto">
-            <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2 min-w-[360px]">
+          <div className="space-y-1">
+            <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
               <span>Age</span>
               <span className="text-right">Income</span>
               <span className="text-right">Withdrawal</span>
@@ -415,7 +422,7 @@ export default function IncomeProjection() {
               <span className="text-right">Target</span>
             </div>
             {projection.map(row => (
-              <div key={row.age} className={`grid grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0 min-w-[360px] ${row.balance <= 0 ? "text-red-400" : ""}`}>
+              <div key={row.age} className={`grid grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0 ${row.balance <= 0 ? "text-red-400" : ""}`}>
                 <span className="font-mono">{row.age}</span>
                 <span className="text-right font-mono">{fmt(row.income)}</span>
                 <span className="text-right font-mono">{fmt(row.withdrawal)}</span>

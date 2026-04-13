@@ -16,8 +16,6 @@ import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import { trpc } from "@/lib/trpc";
-import AppShell from "@/components/AppShell";
-import { SEOHead } from "@/components/SEOHead";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -150,7 +148,7 @@ function parseCaseFromDb(row: { id: number; title: string; content: string; tags
   }
 }
 
-function CaseStudySimulatorInner({ caseStudy, onBack, onComplete }: Props) {
+export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Props) {
   const [, navigate] = useLocation();
   const [, params] = useRoute("/learning/case-study/:id");
   const audio = useAudioCompanion();
@@ -374,14 +372,5 @@ function CaseStudySimulatorInner({ caseStudy, onBack, onComplete }: Props) {
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-export default function CaseStudySimulator(props: Props) {
-  return (
-    <AppShell title="Case Study">
-      <SEOHead title="Case Study Simulator — Stewardly Learning" description="Practice financial advisory scenarios with branching decision trees" />
-      <CaseStudySimulatorInner {...props} />
-    </AppShell>
   );
 }

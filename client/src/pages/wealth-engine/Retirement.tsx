@@ -312,7 +312,7 @@ export default function RetirementPage() {
                     </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="overflow-x-auto">
+                <CardContent>
                   <ProjectionChart
                     width={780}
                     height={320}
@@ -391,10 +391,10 @@ export default function RetirementPage() {
                       className="text-2xl font-extrabold"
                       style={{ color: chartTokens.colors.wealthbridge, fontVariantNumeric: "tabular-nums" }}
                     >
-                      {formatCurrency(backPlan.data?.data?.requiredIncome ?? 0)}
+                      {formatCurrency(backPlan.data.data.requiredIncome)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      Solved in {backPlan.data?.data?.iterations ?? "?"} iterations
+                      Solved in {backPlan.data.data.iterations} iterations
                     </div>
                   </div>
                 )}

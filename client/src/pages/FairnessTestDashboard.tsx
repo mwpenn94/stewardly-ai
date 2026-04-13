@@ -29,7 +29,6 @@ export default function FairnessTestDashboard() {
         toast.info(data.message);
       }
     },
-    onError: (e) => toast.error(`Failed to seed prompts: ${e.message}`),
   });
   const startRunMut = trpc.fairness.startRun.useMutation({
     onSuccess: (data) => {
@@ -227,8 +226,7 @@ export default function FairnessTestDashboard() {
                 <div className="space-y-4 pr-2">
                   {/* Summary */}
                   {details.run.summary ? ((): React.ReactNode => {
-                    let summary: any;
-                    try { summary = typeof details.run.summary === "string" ? JSON.parse(details.run.summary) : details.run.summary; } catch { summary = {}; }
+                    const summary = typeof details.run.summary === "string" ? JSON.parse(details.run.summary) : details.run.summary;
                     return (
                       <div className="p-4 rounded-lg border border-border bg-card space-y-3">
                         <h3 className="text-xs font-semibold">Summary</h3>
@@ -264,8 +262,7 @@ export default function FairnessTestDashboard() {
 
                   {/* Recommendations */}
                   {details.run.recommendations ? ((): React.ReactNode => {
-                    let recs: any;
-                    try { recs = typeof details.run.recommendations === "string" ? JSON.parse(details.run.recommendations) : details.run.recommendations; } catch { recs = []; }
+                    const recs = typeof details.run.recommendations === "string" ? JSON.parse(details.run.recommendations) : details.run.recommendations;
                     if (!recs || recs.length === 0) return null;
                     return (
                       <div className="p-4 rounded-lg border border-amber-400/20 bg-amber-400/5 space-y-2">
@@ -339,8 +336,7 @@ export default function FairnessTestDashboard() {
                             </div>
                           </div>
                           {result.biasIndicators && ((): React.ReactNode => {
-                            let indicators: any;
-                            try { indicators = typeof result.biasIndicators === "string" ? JSON.parse(result.biasIndicators) : result.biasIndicators; } catch { indicators = []; }
+                            const indicators = typeof result.biasIndicators === "string" ? JSON.parse(result.biasIndicators) : result.biasIndicators;
                             if (!indicators || indicators.length === 0) return null;
                             return (
                               <div>

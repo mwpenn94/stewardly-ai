@@ -133,19 +133,15 @@ export default function TeamBuilder() {
   // tRPC mutations
   const rollUp = trpc.calculatorEngine.bieRollUp.useMutation({
     onSuccess: () => sendFeedback("calculator.result"),
-    onError: (err) => toast.error(`Roll-up failed: ${err.message}`),
   });
   const rollDown = trpc.calculatorEngine.bieRollDown.useMutation({
     onSuccess: () => sendFeedback("calculator.result"),
-    onError: (err) => toast.error(`Roll-down failed: ${err.message}`),
   });
   const economics = trpc.calculatorEngine.bieEconomics.useMutation({
     onSuccess: () => sendFeedback("calculator.result"),
-    onError: (err) => toast.error(`Economics failed: ${err.message}`),
   });
   const bieBackPlan = trpc.calculatorEngine.bieBackPlan.useMutation({
     onSuccess: () => sendFeedback("calculator.result"),
-    onError: (err) => toast.error(`Back-plan failed: ${err.message}`),
   });
 
   // Queries

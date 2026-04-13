@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
@@ -135,7 +135,7 @@ export default function AnalyticsDashboard() {
   const sources = trpc.analytics.sourceBreakdown.useQuery();
   const jobs = trpc.analytics.jobStatus.useQuery();
   const actions = trpc.analytics.actionStatus.useQuery();
-  const _volumeByType = trpc.analytics.volumeBySourceType.useQuery({ days });
+  const volumeByType = trpc.analytics.volumeBySourceType.useQuery({ days });
 
   const volumeChartData = useMemo(() => {
     if (!volume.data?.length) return null;
