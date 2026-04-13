@@ -11,6 +11,12 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **Error handling (9 mutations gained onError toast handlers)**:
+  - DynamicIntegrations archive mutation
+  - ImprovementEngine updateAction mutation
+  - PrivacyDataTab consent grant + revoke mutations (2)
+  - TeamBuilder rollUp/rollDown/economics/bieBackPlan mutations (4)
+  - ReferenceHub backtest mutation
 - **Mobile UX (10 fixes)**:
   - Chat popup menus (Add context + Focus) overflow on narrow viewports — added `max-w-[calc(100vw-2rem)]`
   - Chat voice interim text overflow on mobile — changed from fixed `max-w-[250px]` to responsive `max-w-[60vw] sm:max-w-[250px]`

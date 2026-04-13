@@ -64,6 +64,7 @@ export default function ReferenceHub() {
 
   const backtest = trpc.wealthEngine.historicalBacktest.useMutation({
     onSuccess: () => sendFeedback("calculator.result"),
+    onError: (err) => toast.error(`Backtest failed: ${err.message}`),
   });
   const stressDotcom = trpc.wealthEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });
   const stressGFC = trpc.wealthEngine.stressTest.useMutation({ onError: (e) => toast.error(e.message) });

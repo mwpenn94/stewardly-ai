@@ -44,9 +44,11 @@ export default function PrivacyDataTab() {
   const consentsQuery = trpc.consent.list.useQuery(undefined, { retry: 1, staleTime: 30000 });
   const grantMut = trpc.consent.grant.useMutation({
     onSuccess: () => consentsQuery.refetch(),
+    onError: (err) => toast.error(`Consent grant failed: ${err.message}`),
   });
   const revokeMut = trpc.consent.revoke.useMutation({
     onSuccess: () => consentsQuery.refetch(),
+    onError: (err) => toast.error(`Consent revoke failed: ${err.message}`),
   });
   const revokeAllMut = trpc.consent.revokeAll.useMutation({
     onSuccess: () => { consentsQuery.refetch(); toast.success("All consents revoked"); },

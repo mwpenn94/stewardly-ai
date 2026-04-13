@@ -132,6 +132,7 @@ export default function DynamicIntegrations() {
       toast.success("Blueprint archived");
       list.refetch();
     },
+    onError: (err) => toast.error(`Archive failed: ${err.message}`),
   });
 
   // ── Handlers ───────────────────────────────────────────────────────

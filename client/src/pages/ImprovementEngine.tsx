@@ -97,6 +97,7 @@ export default function ImprovementEngine() {
       pendingQuery.refetch();
       toast.success("Action updated");
     },
+    onError: (err) => toast.error(`Update failed: ${err.message}`),
   });
 
   const currentLayerData = (overviewQuery.data || []).find((l: any) => l.layer === selectedLayer);
