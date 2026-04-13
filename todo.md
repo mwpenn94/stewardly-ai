@@ -3915,3 +3915,9 @@
 - [ ] Keep single "Calculators" entry in sidebar as the unified hub entry point
 - [ ] Ensure v7 panel navigation lives inside the Calculators page only, not in AppShell sidebar
 - [ ] Verify no broken routes after consolidation
+
+## Business Calculator v7 — Import Fix & Verification
+- [x] Fixed useAuth import path (@/hooks/useAuth → @/_core/hooks/useAuth)
+- [x] Verified all 13 panels render correctly with scorecard and product recommendations
+- [x] Confirmed no Vite compilation errors after fix
+- [x] TypeScript: No errors, LSP: No errors
