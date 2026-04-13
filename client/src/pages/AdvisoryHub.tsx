@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Link } from "wouter";
 import { navigateToChat } from "@/lib/navigateToChat";
 import {
   Package, Briefcase, Lightbulb, Search, Filter,
@@ -28,6 +29,10 @@ export default function AdvisoryHub() {
   // Live data for QuickStats
   const productsList = trpc.products.list.useQuery(undefined, { retry: false });
   const productCount = (productsList.data as any)?.length ?? 0;
+  const workflowInstances = trpc.workflow.listInstances.useQuery(undefined, { retry: false, staleTime: 30_000 });
+  const insightStats = trpc.insights.stats.useQuery(undefined, { retry: false, staleTime: 30_000 });
+  const activeWorkflows = (workflowInstances.data ?? []).filter(w => w.status === "in_progress").length;
+  const completedWorkflows = (workflowInstances.data ?? []).filter(w => w.status === "completed").length;
 
   return (
     <AppShell title="Advisory">
@@ -47,9 +52,9 @@ export default function AdvisoryHub() {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <QuickStat icon={Package} label="Products" value={String(productCount)} color="text-blue-500" />
-          <QuickStat icon={Briefcase} label="Active Cases" value="0" color="text-purple-500" />
-          <QuickStat icon={Lightbulb} label="Recommendations" value="0" color="text-amber-500" />
-          <QuickStat icon={CheckCircle2} label="Completed" value="0" color="text-green-500" />
+          <QuickStat icon={Briefcase} label="Active Cases" value={String(activeWorkflows)} color="text-purple-500" />
+          <QuickStat icon={Lightbulb} label="Insights" value={String(insightStats.data?.total ?? 0)} color="text-amber-500" />
+          <QuickStat icon={CheckCircle2} label="Completed" value={String(completedWorkflows)} color="text-green-500" />
         </div>
 
         {/* Search */}
@@ -191,7 +196,7 @@ function ProductsSection({ searchQuery }: { searchQuery: string }) {
             <BarChart3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
             Complete your suitability profile to see product matches.
             <br />
-            <Button size="sm" variant="link" className="mt-2" onClick={() => window.location.href = '/chat'}>Start Suitability Assessment →</Button>
+            <Link href="/chat"><Button size="sm" variant="link" className="mt-2">Start Suitability Assessment →</Button></Link>
           </div>
         </CardContent>
       </Card>

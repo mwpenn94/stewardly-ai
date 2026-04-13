@@ -493,7 +493,7 @@ export default function Calculators() {
                         {pfCalc.data.spreadPct > 0 ? "+" : ""}{pfCalc.data.spreadPct}% spread
                       </Badge>
                     </div>
-                    <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
                       <div>
                         <p className="text-lg font-mono font-bold text-red-400">{pfCalc.data.loanRate}%</p>
                         <p className="text-[10px] text-muted-foreground">Loan Rate</p>

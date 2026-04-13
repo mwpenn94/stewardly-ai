@@ -194,6 +194,7 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "Scale", label: "Fairness Audit", href: "/admin/fairness", minRole: "admin" },
   { iconName: "Link2", label: "Admin Integrations", href: "/admin/integrations", minRole: "admin" },
   { iconName: "BookOpen", label: "Knowledge Base", href: "/admin/knowledge", minRole: "admin" },
+  { iconName: "Palette", label: "Org Branding", href: "/org-branding", minRole: "admin" },
 ];
 
 // ─── UTILITY section (always visible at bottom) ──────────────────────────────

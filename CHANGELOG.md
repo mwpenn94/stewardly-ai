@@ -8,8 +8,17 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - **LeadDetail wired to real tRPC (G72)** — `leadPipeline.getLead(id)` new tRPC proc, LeadDetail reads real DB data with loading/error/empty states, status update mutation with 11-status bar, enrichment data tab, compliance tab, quick actions to chat/email/calculators
 - **ProtectionScore cross-calculator persistence** — totalScore now syncs to shared financial profile on results screen; new `protectionScore` + `riskToleranceScore` fields on FinancialProfile interface
 - **ClientOnboarding controlled form state (G73)** — all personal info, financial data, and risk assessment inputs now controlled via useState; step 2 financial data syncs to shared `useFinancialProfile` for cross-calculator data bridge; step 5 review shows actual collected summary; risk scores toggle with aria-pressed
+- **Org Branding nav entry** — `/org-branding` added to ADMIN_NAV so admin users can discover the org branding editor via sidebar
 
 ### Fixed
+- **TS config: zero errors** — fixed 3 tsconfig warnings: added `ignoreDeprecations` for baseUrl, created `vite-env.d.ts` with triple-slash reference for vite/client types. TSC now reports 0 errors.
+- **OperationsHub workflows wired to real data** — replaced hardcoded `{ data: undefined }` with real `trpc.workflow.listInstances` query showing actual workflow instances with status badges
+- **IntelligenceHub stats wired to real data** — replaced hardcoded "8 models / 5 sources / 0 insights / 0 predictions" with real data from model registry (22 models), `dataIngestion.listSources`, and `insights.stats`
+- **AdvisoryHub stats wired to real data** — replaced hardcoded "0 cases / 0 recommendations / 0 completed" with real data from `workflow.listInstances` (active/completed counts) and `insights.stats`
+- **SPA routing: OperationsHub + AdvisoryHub** — replaced `window.location.href` imperative navigation with wouter `<Link>` components for proper SPA routing without full page reload
+- **Mobile: MyWork grid-cols-4 overflow** — changed to `grid-cols-2 sm:grid-cols-4` so status filter buttons display 2-per-row on 375px mobile
+- **Mobile: Calculators grid-cols-3 overflow** — changed to `grid-cols-1 sm:grid-cols-3` for PremFin calculator stats section
+- **Mobile: Community search input** — changed `min-w-[200px]` to `min-w-0 sm:min-w-[200px]` so search input can shrink on mobile
 - **Error resilience: Calculators.tsx** — 5 unguarded `.data.xxx.map()` calls on tRPC data arrays guarded with `(data?.xxx ?? []).map()` preventing crashes when API returns empty
 - **Error resilience: ImprovementDashboard.tsx** — `convergence.status` access guarded with optional chaining
 - **Error resilience: Retirement.tsx** — nested `.data.data.requiredIncome` guarded with `?.` + fallbacks
