@@ -22,8 +22,8 @@ npm test           # Run test suite
 
 ```
 client/src/
-  pages/          # 128 pages (route components)
-  components/     # 142 components (shared UI)
+  pages/          # 131+ pages (route components)
+  components/     # 145+ components (shared UI)
   lib/            # Utilities, navigation, hooks
   hooks/          # Custom React hooks
 
@@ -94,8 +94,8 @@ npm test                    # All tests
 npm test -- --run path/to   # Specific file
 ```
 
-- 5,000+ tests across 330 test files
-- 18 pre-existing env-dependent test files require DB connection
+- 7,377+ tests across 309 test files
+- 13 pre-existing env-dependent test files require DB connection
 
 ## Documentation
 

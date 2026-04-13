@@ -11,6 +11,7 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **Documentation accuracy**: README test count 5000→7377, file count 330→309, page count 128→131+, component count 142→145+
 - **Mobile responsive (learning mode selectors)**: LearningQuizRunner + LearningFlashcardStudy 3-col mode selector grids now 2-col on mobile (grid-cols-2 sm:grid-cols-3) to prevent button squeeze on 375px
 - **UI honesty — 10 "coming soon" toast lies replaced with disabled buttons**:
   - WebhookManager: added HonestPlaceholder banner, disabled Add Endpoint + Retry buttons
