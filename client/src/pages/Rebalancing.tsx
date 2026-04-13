@@ -188,7 +188,7 @@ export default function RebalancingPage() {
   }, [isLoading, result]);
 
   return (
-    <AppShell>
+    <AppShell title="Rebalancing">
       <SEOHead
         title="Rebalancing · Stewardly"
         description="Portfolio drift preview with cash-neutral trade proposals and optional tax-aware sell ordering."

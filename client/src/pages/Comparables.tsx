@@ -161,7 +161,7 @@ export default function ComparablesPage() {
     : null;
 
   return (
-    <AppShell>
+    <AppShell title="Comparables">
       <SEOHead
         title="Comparables · Stewardly"
         description="Competitive gap dashboard — how Stewardly compares to other advisor AI and wealth platforms."

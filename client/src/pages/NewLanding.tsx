@@ -7,6 +7,7 @@
  */
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
+import { SEOHead } from "@/components/SEOHead";
 import {
   Brain,
   Shield,
@@ -137,6 +138,10 @@ export default function NewLanding() {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      <SEOHead
+        title="Stewardly — AI-Powered Financial Stewardship"
+        description="Your digital financial twin that thinks like you. Multi-model AI, compliance-aware advisory, and 128+ financial tools."
+      />
       {/* ── Hero ──────────────────────────────────────────────────── */}
       <section className="relative isolate px-6 pt-20 pb-24 lg:pt-32 lg:pb-36">
         {/* Ambient glow backgrounds */}

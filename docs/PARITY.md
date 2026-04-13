@@ -1138,7 +1138,9 @@ Pass 3 · angle: dead code + bundle hygiene · queue: PartGPages dead functions,
 
 Pass 4 · angle: SEO + page titles + accessibility · queue: missing page titles on public and internal pages · commit SHA: 1d815ec · shipped: (1) SignIn.tsx: SEOHead with title + description; (2) Terms.tsx: SEOHead with title; (3) Privacy.tsx: SEOHead with title; (4) PlatformGuide.tsx: document.title via useEffect; (5) DynamicIntegrations.tsx: added title prop to AppShell · deferred: Welcome.tsx, Landing.tsx, NewLanding.tsx, NotFound.tsx titles (low priority — redirect/ephemeral pages)
 
-Pass 5 · angle: error states + graceful degradation · queue: missing tRPC error handling on high-traffic pages · commit SHA: (pending) · shipped: (1) LearningHome.tsx: error banner with retry for 6 queries; (2) Workflows.tsx: error guard in reconciliation useEffect + error banner; (3) AgentManager.tsx: error state with retry in agent listing · deferred: IntelligenceHub analytics error states, MyWork error handling
+Pass 5 · angle: error states + graceful degradation · queue: missing tRPC error handling on high-traffic pages · commit SHA: 96fb9a9 · shipped: (1) LearningHome.tsx: error banner with retry for 6 queries; (2) Workflows.tsx: error guard in reconciliation useEffect + error banner; (3) AgentManager.tsx: error state with retry in agent listing · deferred: IntelligenceHub analytics error states, MyWork error handling
+
+Pass 6 · angle: cross-app cohesion + marketing SEO + page titles · queue: NewLanding SEOHead, Comparables/Rebalancing title props · commit SHA: (pending) · shipped: (1) NewLanding.tsx: SEOHead with marketing title + OG description; (2) Comparables.tsx: added AppShell title prop; (3) Rebalancing.tsx: added AppShell title prop. Audit: RelationshipsHub outreach tab has campaign templates, CRM pages navigable · deferred: none
 
 ## Angle Glossary
 | Angle ID | Description | Disjoint from |
