@@ -132,7 +132,7 @@ export default function PracticeToWealthPage() {
 
   return (
     <AppShell title="Practice → Wealth">
-      <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
         <div>
           <h1 className="text-2xl font-bold">The Wealth Bridge</h1>
           <p className="text-sm text-muted-foreground">
@@ -212,7 +212,7 @@ export default function PracticeToWealthPage() {
             <CardHeader>
               <CardTitle className="text-base">Practice income vs. Liquid wealth</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-x-auto">
               <ProjectionChart
                 width={780}
                 height={360}
@@ -320,7 +320,7 @@ function IncomeStreamBreakdown({ bizYears }: { bizYears: any[] }) {
             <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-2 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" /> Year-by-Year Summary
             </p>
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
               {bizYears.filter((_, i) => i % Math.max(1, Math.floor(bizYears.length / 5)) === 0 || i === bizYears.length - 1).map((yr: any) => (
                 <div key={yr.year} className="p-2 rounded bg-secondary/20 text-center">
                   <p className="text-[9px] text-muted-foreground">Yr {yr.year}</p>

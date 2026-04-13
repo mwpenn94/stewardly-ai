@@ -461,7 +461,7 @@ export default function WealthEngineHub() {
         <InlineQuickBundle />
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid grid-cols-4 max-w-md">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 max-w-md">
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="plan">Plan</TabsTrigger>
             <TabsTrigger value="protect">Protect</TabsTrigger>
