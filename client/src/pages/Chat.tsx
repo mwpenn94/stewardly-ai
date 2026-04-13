@@ -1633,7 +1633,7 @@ export default function Chat() {
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
       )}
 
       {/* ─── SIDEBAR ──────────────────────────────────────────── */}
@@ -2068,9 +2068,9 @@ export default function Chat() {
               {sidebarCollapsed ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)}>
+                    <button type="button" className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)} aria-label="Expand sidebar">
                       {user?.name?.charAt(0)?.toUpperCase() || "U"}
-                    </div>
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent side="right">{user?.name || "User"} — Click to expand</TooltipContent>
                 </Tooltip>
@@ -2543,7 +2543,7 @@ export default function Chat() {
 
                 {showAddMenu && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} />
+                    <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} aria-hidden="true" />
                     <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-48 animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <button
                         className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
@@ -2670,7 +2670,7 @@ export default function Chat() {
 
                 {showModeMenu && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowModeMenu(false)} />
+                    <div className="fixed inset-0 z-40" onClick={() => setShowModeMenu(false)} aria-hidden="true" />
                     <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-52 animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Focus</div>
                       {FOCUS_OPTIONS.map(opt => (
@@ -2757,7 +2757,7 @@ export default function Chat() {
               {/* Mobile model menu (shared with desktop — rendered here for mobile access) */}
               {showModelMenu && (
                 <div className="md:hidden fixed inset-0 z-50 flex items-end justify-center">
-                  <div className="absolute inset-0 bg-black/50" onClick={() => setShowModelMenu(false)} />
+                  <div className="absolute inset-0 bg-black/50" onClick={() => setShowModelMenu(false)} aria-hidden="true" />
                   <div className="relative bg-popover text-popover-foreground border border-border rounded-t-2xl shadow-xl p-3 w-full max-h-[60vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-200 safe-bottom">
                     <div className="w-8 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-3" />
                     <div className="text-xs font-medium mb-2">Select Model</div>
@@ -2853,7 +2853,7 @@ export default function Chat() {
 
                 {showModelMenu && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowModelMenu(false)} />
+                    <div className="fixed inset-0 z-40" onClick={() => setShowModelMenu(false)} aria-hidden="true" />
                     <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-56 max-h-72 overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <div className="px-2 py-1 text-[9px] text-muted-foreground/60 uppercase tracking-wider">Select models (multi = consensus)</div>
                       {(() => {

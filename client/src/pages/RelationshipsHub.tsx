@@ -132,11 +132,11 @@ function NetworkSection({ searchQuery }: { searchQuery: string }) {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {coiCategories.map((cat) => (
-              <div key={cat.role} className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigateToChat(cat.prompt)}>
+              <button key={cat.role} type="button" className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer text-left" onClick={() => navigateToChat(cat.prompt)} aria-label={`Explore ${cat.role}`}>
                 <cat.icon className="h-4 w-4 text-muted-foreground mb-1" />
                 <div className="text-sm font-medium">{cat.role}</div>
                 <div className="text-xs text-muted-foreground">Explore →</div>
-              </div>
+              </button>
             ))}
           </div>
         </CardContent>
