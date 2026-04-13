@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { trpc } from "@/lib/trpc";
+import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,10 +60,12 @@ function formatBenchmarkValue(key: string, data: any): string {
 }
 
 export default function RetirementPage() {
-  const [age, setAge] = useState(40);
-  const [retirementAge, setRetirementAge] = useState(65);
-  const [income, setIncome] = useState(120_000);
-  const [savings, setSavings] = useState(180_000);
+  const { profile: sharedProfile, updateProfile } = useFinancialProfile("retirement");
+
+  const [age, setAge] = useState(() => profileValue(sharedProfile, "currentAge", 40));
+  const [retirementAge, setRetirementAge] = useState(() => profileValue(sharedProfile, "retirementAge", 65));
+  const [income, setIncome] = useState(() => profileValue(sharedProfile, "annualIncome", 120_000));
+  const [savings, setSavings] = useState(() => profileValue(sharedProfile, "portfolioBalance", 180_000));
   const [targetValue, setTargetValue] = useState(2_000_000);
 
   const horizon = retirementAge - age;
@@ -71,14 +74,14 @@ export default function RetirementPage() {
     () => ({
       age,
       income,
-      netWorth: 350_000,
+      netWorth: profileValue(sharedProfile, "netWorth", 350_000),
       savings,
-      dependents: 2,
-      mortgage: 250_000,
-      debts: 30_000,
+      dependents: profileValue(sharedProfile, "dependents", 2),
+      mortgage: profileValue(sharedProfile, "mortgageBalance", 250_000),
+      debts: profileValue(sharedProfile, "otherDebts", 30_000),
       marginalRate: 0.25,
     }),
-    [age, income, savings],
+    [age, income, savings, sharedProfile],
   );
 
   const [showRiskContext, setShowRiskContext] = useState(false);
@@ -116,6 +119,11 @@ export default function RetirementPage() {
   const annualContribution = income * savingsRate;
 
   const onRunGoal = () => {
+    // Sync inputs back to shared profile so other calculators see them
+    updateProfile({
+      currentAge: age, retirementAge, annualIncome: income,
+      portfolioBalance: savings,
+    });
     runPreset.mutate(
       {
         preset: "wealthbridgeClient",

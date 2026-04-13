@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { trpc } from "@/lib/trpc";
+import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -123,12 +124,14 @@ function checkInputGuardrails(
 }
 
 export default function StrategyComparisonPage() {
-  // ── Client profile inputs ──
-  const [age, setAge] = useState(40);
-  const [income, setIncome] = useState(120_000);
-  const [netWorth, setNetWorth] = useState(350_000);
-  const [savings, setSavings] = useState(180_000);
-  const [dependents, setDependents] = useState(2);
+  const { profile: sharedProfile, updateProfile } = useFinancialProfile("strategy-comparison");
+
+  // ── Client profile inputs (initialized from shared profile) ──
+  const [age, setAge] = useState(() => profileValue(sharedProfile, "currentAge", 40));
+  const [income, setIncome] = useState(() => profileValue(sharedProfile, "annualIncome", 120_000));
+  const [netWorth, setNetWorth] = useState(() => profileValue(sharedProfile, "netWorth", 350_000));
+  const [savings, setSavings] = useState(() => profileValue(sharedProfile, "portfolioBalance", 180_000));
+  const [dependents, setDependents] = useState(() => profileValue(sharedProfile, "dependents", 2));
   const [horizon, setHorizon] = useState(30);
   const [savingsRate, setSavingsRate] = useState(0.15);
   const [investReturn, setInvestReturn] = useState(0.07);
@@ -247,6 +250,11 @@ export default function StrategyComparisonPage() {
   }, [rows.length, winners.totalValue?.name]);
 
   const onRunCompare = () => {
+    // Sync inputs back to shared profile
+    updateProfile({
+      currentAge: age, annualIncome: income, netWorth,
+      portfolioBalance: savings, dependents,
+    });
     const strategies = PEER_SET.map((preset) => ({
       name: PRESET_LABELS[preset],
       config: {

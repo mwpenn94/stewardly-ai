@@ -26,6 +26,7 @@ import AppShell from "@/components/AppShell";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { persistCalculation } from "@/lib/calculatorContext";
+import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 
 // ─── UTILITIES ──────────────────────────────────────────────────────
 function fmt(n: number) {
@@ -95,20 +96,21 @@ function SliderInput({
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────
 export default function WealthConfigurator() {
   const [, navigate] = useLocation();
+  const { profile: sharedProfile, updateProfile } = useFinancialProfile("wealth-configurator");
 
-  // ── Client profile state ──
-  const [age, setAge] = useState(40);
-  const [income, setIncome] = useState(150000);
-  const [netWorth, setNetWorth] = useState(500000);
-  const [savings, setSavings] = useState(100000);
-  const [monthlySavings, setMonthlySavings] = useState(2000);
-  const [dependents, setDependents] = useState(2);
-  const [mortgage, setMortgage] = useState(300000);
-  const [debts, setDebts] = useState(25000);
+  // ── Client profile state (initialized from shared profile) ──
+  const [age, setAge] = useState(() => profileValue(sharedProfile, "currentAge", 40));
+  const [income, setIncome] = useState(() => profileValue(sharedProfile, "annualIncome", 150000));
+  const [netWorth, setNetWorth] = useState(() => profileValue(sharedProfile, "netWorth", 500000));
+  const [savings, setSavings] = useState(() => profileValue(sharedProfile, "portfolioBalance", 100000));
+  const [monthlySavings, setMonthlySavings] = useState(() => profileValue(sharedProfile, "monthlyContribution", 2000));
+  const [dependents, setDependents] = useState(() => profileValue(sharedProfile, "dependents", 2));
+  const [mortgage, setMortgage] = useState(() => profileValue(sharedProfile, "mortgageBalance", 300000));
+  const [debts, setDebts] = useState(() => profileValue(sharedProfile, "otherDebts", 25000));
   const [marginalRate, setMarginalRate] = useState(0.24);
   const [equitiesReturn, setEquitiesReturn] = useState(0.07);
-  const [existingInsurance, setExistingInsurance] = useState(0);
-  const [isBizOwner, setIsBizOwner] = useState(false);
+  const [existingInsurance, setExistingInsurance] = useState(() => profileValue(sharedProfile, "existingLifeInsurance", 0));
+  const [isBizOwner, setIsBizOwner] = useState(() => profileValue(sharedProfile, "isBizOwner", false));
 
   // ── Strategy state ──
   type CompanyKey = "wealthbridge" | "captivemutual" | "wirehouse" | "ria" | "communitybd" | "diy" | "donothing";
@@ -159,6 +161,13 @@ export default function WealthConfigurator() {
 
   // ── Actions ──
   async function runStrategy() {
+    // Sync inputs to shared profile
+    updateProfile({
+      currentAge: age, annualIncome: income, netWorth,
+      portfolioBalance: savings, monthlyContribution: monthlySavings,
+      dependents, mortgageBalance: mortgage, otherDebts: debts,
+      existingLifeInsurance: existingInsurance, isBizOwner,
+    });
     try {
       const built = await buildMut.mutateAsync({ companyKey, profile });
       const strategy = built.data;
