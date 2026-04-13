@@ -251,7 +251,7 @@ export default function ImprovementDashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-0.5">
                   <p className="text-[10px] text-muted-foreground/70 uppercase">Signals</p>
-                  <p className="text-lg font-bold">{runNow.data.signals.length}</p>
+                  <p className="text-lg font-bold">{(runNow.data.signals ?? []).length}</p>
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-[10px] text-muted-foreground/70 uppercase">Convergence</p>
@@ -268,10 +268,10 @@ export default function ImprovementDashboard() {
                   <p className="text-lg font-bold">{runNow.data.ratingsBackfilled}</p>
                 </div>
               </div>
-              {runNow.data.signals.length > 0 && (
+              {(runNow.data.signals ?? []).length > 0 && (
                 <div className="mt-3 space-y-1">
                   <p className="text-xs text-muted-foreground font-medium">Detected Signals</p>
-                  {runNow.data.signals.map((s: any, i: number) => (
+                  {(runNow.data.signals ?? []).map((s: any, i: number) => (
                     <div key={i} className={`flex items-center gap-2 text-xs p-1.5 rounded ${
                       s.severity === "critical" ? "bg-destructive/10 text-destructive" :
                       s.severity === "high" ? "bg-amber-500/10 text-amber-400" :

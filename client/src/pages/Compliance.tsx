@@ -205,7 +205,7 @@ export default function Compliance() {
                             <AlertTriangle className="w-5 h-5 text-amber-400" />
                           )}
                           <span className="text-sm font-medium">
-                            {reviewMutation.data.isClean ? "Content is compliant" : `${reviewMutation.data.flags.length} issue(s) found`}
+                            {reviewMutation.data.isClean ? "Content is compliant" : `${(reviewMutation.data.flags ?? []).length} issue(s) found`}
                           </span>
                           <Badge className={`ml-auto ${SEVERITY_CONFIG[reviewMutation.data.overallSeverity]?.bg || ""} ${SEVERITY_CONFIG[reviewMutation.data.overallSeverity]?.color || ""}`}>
                             {reviewMutation.data.overallSeverity}
@@ -215,7 +215,7 @@ export default function Compliance() {
                       </div>
 
                       {/* Individual Flags */}
-                      {reviewMutation.data.flags.map((flag: any, i: number) => {
+                      {(reviewMutation.data.flags ?? []).map((flag: any, i: number) => {
                         const sev = SEVERITY_CONFIG[flag.severity] || SEVERITY_CONFIG.info;
                         const Icon = sev.icon;
                         return (

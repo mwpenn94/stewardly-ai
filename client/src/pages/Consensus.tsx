@@ -210,7 +210,7 @@ export default function ConsensusPage() {
             </div>
 
             {/* Round C4 — preset picker */}
-            {presets.data && presets.data.presets.length > 0 && (
+            {presets.data && (presets.data.presets ?? []).length > 0 && (
               <div className="space-y-2">
                 <Label>Weight preset</Label>
                 <div className="flex flex-wrap gap-2">
@@ -225,7 +225,7 @@ export default function ConsensusPage() {
                   >
                     No preset
                   </button>
-                  {presets.data.presets.map((p) => (
+                  {(presets.data.presets ?? []).map((p) => (
                     <button
                       key={`${p.id ?? p.name}`}
                       type="button"
