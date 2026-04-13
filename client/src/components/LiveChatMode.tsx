@@ -277,11 +277,12 @@ export function LiveChatMode({
             <Button
               variant="ghost" size="icon-sm"
               onClick={() => setIsExpanded(!isExpanded)}
+              aria-label={isExpanded ? "Minimize" : "Maximize"}
             >
               {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </Button>
             {onClose && (
-              <Button variant="ghost" size="icon-sm" onClick={() => { stopLiveMode(); onClose(); }}>
+              <Button variant="ghost" size="icon-sm" onClick={() => { stopLiveMode(); onClose(); }} aria-label="Stop live mode">
                 <Square className="w-4 h-4" />
               </Button>
             )}

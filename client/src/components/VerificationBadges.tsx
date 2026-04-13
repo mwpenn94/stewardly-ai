@@ -212,6 +212,7 @@ export function VerificationBadges({ professionalId, compact = false, showAction
                           className="h-7 w-7"
                           onClick={() => handleRunVerification(v.source)}
                           disabled={runningSource === v.source}
+                          aria-label={`Verify ${v.source}`}
                         >
                           {runningSource === v.source ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -290,7 +290,7 @@ export function OnboardingTour({ onComplete, isOpen }: OnboardingTourProps) {
                   </Badge>
                 </div>
               </div>
-              <Button variant="ghost" size="icon-sm" className="shrink-0" onClick={handleSkip}>
+              <Button variant="ghost" size="icon-sm" className="shrink-0" onClick={handleSkip} aria-label="Skip tour">
                 <X className="w-4 h-4" />
               </Button>
             </div>
@@ -343,6 +343,7 @@ export function HelpButton({ onClick }: { onClick: () => void }) {
       className="rounded-full"
       onClick={onClick}
       title="Start guided tour"
+      aria-label="Start guided tour"
     >
       <HelpCircle className="w-5 h-5" />
     </Button>

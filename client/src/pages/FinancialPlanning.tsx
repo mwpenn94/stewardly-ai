@@ -778,7 +778,7 @@ function GoalTracker() {
                       value={goal.current}
                       onChange={e => updateGoalCurrent(goal.id, +e.target.value)}
                     />
-                    <Button variant="ghost" size="icon-sm" onClick={() => removeGoal(goal.id)}>
+                    <Button variant="ghost" size="icon-sm" onClick={() => removeGoal(goal.id)} aria-label="Remove goal">
                       <Trash2 className="w-3 h-3 text-muted-foreground" />
                     </Button>
                   </div>

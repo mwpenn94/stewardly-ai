@@ -59,7 +59,7 @@ export default function BusinessValuationPage() {
     <AppShell title="Business Valuation">
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/wealth-engine")}>
+          <Button variant="ghost" size="icon-sm" onClick={() => navigate("/wealth-engine")} aria-label="Back to wealth engine">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
