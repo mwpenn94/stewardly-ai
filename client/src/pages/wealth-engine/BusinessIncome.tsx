@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, TrendingUp, Loader2, Users, DollarSign, Target, Calculator } from "lucide-react";
+import { ArrowLeft, TrendingUp, Loader2, Users, DollarSign, Target, Calculator, ChevronRight, Layers } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
@@ -43,6 +43,7 @@ export default function BusinessIncome() {
   // Queries (reference data — cache 5min)
   const rolesQ = trpc.calculatorEngine.bieRoles.useQuery(undefined, { staleTime: 5 * 60_000 });
   const presetsQ = trpc.calculatorEngine.biePresets.useQuery(undefined, { staleTime: 5 * 60_000 });
+  const bracketsQ = trpc.calculatorEngine.bieBrackets.useQuery(undefined, { staleTime: 5 * 60_000 });
 
   // Mutations
   const simMutation = trpc.calculatorEngine.bieSimulate.useMutation({ onError: (e) => toast.error(e.message) });
@@ -172,15 +173,77 @@ export default function BusinessIncome() {
                   {backPlanMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Calculator className="w-4 h-4 mr-1" />}
                   Calculate Required GDC
                 </Button>
-                {backPlanMutation.data && (
-                  <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
-                    <p className="text-xs text-muted-foreground">Required GDC for {fmt(targetIncome)}/yr as {role}:</p>
-                    <p className="text-lg font-bold text-accent font-mono">{fmt((backPlanMutation.data as any).requiredGDC ?? 0)}</p>
-                    {(backPlanMutation.data as any).monthlyGDC && (
-                      <p className="text-xs text-muted-foreground">{fmt((backPlanMutation.data as any).monthlyGDC)}/mo</p>
-                    )}
-                  </div>
-                )}
+                {backPlanMutation.data && (() => {
+                  const bp = backPlanMutation.data as any;
+                  const funnel = bp.funnel;
+                  return (
+                    <div className="space-y-3">
+                      <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
+                        <p className="text-xs text-muted-foreground">Required GDC for {fmt(targetIncome)}/yr as {role}:</p>
+                        <p className="text-lg font-bold text-accent font-mono">{fmt(bp.neededGDC ?? bp.requiredGDC ?? 0)}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[10px]">{bp.bracketLabel ?? "—"}</Badge>
+                          <span className="text-[10px] text-muted-foreground">{((bp.bracketRate ?? 0) * 100).toFixed(0)}% payout</span>
+                        </div>
+                      </div>
+                      {funnel && (
+                        <div className="space-y-2">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Sales Funnel</p>
+                          <div className="space-y-1">
+                            {[
+                              { label: "Approaches", value: funnel.approaches, color: "bg-chart-1/20 border-chart-1/30" },
+                              { label: "Appointments Set", value: funnel.set, color: "bg-chart-2/20 border-chart-2/30" },
+                              { label: "Meetings Held", value: funnel.held, color: "bg-chart-3/20 border-chart-3/30" },
+                              { label: "Applications", value: funnel.apps, color: "bg-chart-4/20 border-chart-4/30" },
+                              { label: "Placed Cases", value: funnel.placed, color: "bg-accent/20 border-accent/30" },
+                            ].map((step, i) => (
+                              <div key={step.label} className="flex items-center gap-2">
+                                <div className={`flex-1 flex items-center justify-between px-2 py-1 rounded border ${step.color}`}
+                                  style={{ marginLeft: `${i * 8}px` }}>
+                                  <span className="text-[10px]">{step.label}</span>
+                                  <span className="text-xs font-mono font-semibold">{step.value?.toLocaleString()}</span>
+                                </div>
+                                {i < 4 && <ChevronRight className="w-3 h-3 text-muted-foreground/40 flex-shrink-0" />}
+                              </div>
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5 mt-2">
+                            <div className="p-2 rounded bg-card/60 border border-border/30 text-center">
+                              <p className="text-[9px] text-muted-foreground uppercase">Daily</p>
+                              <p className="text-sm font-mono font-semibold">{funnel.daily?.approaches ?? "—"}</p>
+                              <p className="text-[9px] text-muted-foreground">approaches</p>
+                            </div>
+                            <div className="p-2 rounded bg-card/60 border border-border/30 text-center">
+                              <p className="text-[9px] text-muted-foreground uppercase">Weekly</p>
+                              <p className="text-sm font-mono font-semibold">{funnel.weekly?.approaches ?? "—"}</p>
+                              <p className="text-[9px] text-muted-foreground">approaches</p>
+                            </div>
+                            <div className="p-2 rounded bg-card/60 border border-border/30 text-center">
+                              <p className="text-[9px] text-muted-foreground uppercase">Monthly</p>
+                              <p className="text-sm font-mono font-semibold">{funnel.monthly?.approaches ?? "—"}</p>
+                              <p className="text-[9px] text-muted-foreground">approaches</p>
+                            </div>
+                          </div>
+                          {funnel.monthly && (
+                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                              <span>{fmt(funnel.monthly.gdc ?? 0)}/mo GDC target</span>
+                              <span>·</span>
+                              <span>{funnel.monthly.apps ?? 0} apps/mo</span>
+                              <span>·</span>
+                              <span>{fmt(funnel.avgCase ?? 3000)} avg case</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {bp.teamNeeded != null && (
+                        <div className="p-2 rounded bg-secondary/30 border border-border/30">
+                          <p className="text-[10px] text-muted-foreground">Override stream (30% of target):</p>
+                          <p className="text-xs"><strong>{bp.teamNeeded}</strong> team members needed at {fmt(bp.overrideTarget ?? 0)} override target</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -199,6 +262,40 @@ export default function BusinessIncome() {
                       <span className="text-muted-foreground ml-2">({p.strategy.role})</span>
                     </button>
                   ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* GDC Bracket Table */}
+            {bracketsQ.data && bracketsQ.data.length > 0 && (
+              <Card className="bg-card/60 border-border/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-accent" /> GDC Brackets
+                  </CardTitle>
+                  <CardDescription className="text-xs">Commission payout rates by production level</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1">
+                    {bracketsQ.data.map((b: any, i: number) => {
+                      const isActive = results && Array.isArray(results) && results.length > 0 &&
+                        (results[0] as any)?.personalGDC >= (b.min ?? 0) &&
+                        (b.max == null || (results[0] as any)?.personalGDC <= b.max);
+                      return (
+                        <div key={i} className={`flex items-center justify-between px-2 py-1.5 rounded text-xs transition-colors ${isActive ? "bg-accent/12 border border-accent/30" : "bg-card/30"}`}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium w-28 truncate">{b.label ?? `Bracket ${i + 1}`}</span>
+                            <span className="text-muted-foreground text-[10px]">
+                              {fmt(b.min ?? 0)}{b.max ? ` – ${fmt(b.max)}` : "+"}
+                            </span>
+                          </div>
+                          <Badge variant={isActive ? "default" : "outline"} className="text-[10px] font-mono">
+                            {((b.rate ?? 0) * 100).toFixed(0)}%
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </CardContent>
               </Card>
             )}
