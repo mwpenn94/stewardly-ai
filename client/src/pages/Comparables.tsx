@@ -614,18 +614,18 @@ export default function ComparablesPage() {
                     Strengths
                   </h4>
                   <ul className="ml-4 list-disc space-y-0.5">
-                    {selectedQ.data.strengths.map((s) => (
+                    {(selectedQ.data.strengths ?? []).map((s) => (
                       <li key={s}>{s}</li>
                     ))}
                   </ul>
                 </div>
-                {selectedQ.data.gaps.length > 0 && (
+                {(selectedQ.data.gaps ?? []).length > 0 && (
                   <div>
                     <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
                       Gaps
                     </h4>
                     <ul className="ml-4 list-disc space-y-0.5">
-                      {selectedQ.data.gaps.map((g) => (
+                      {(selectedQ.data.gaps ?? []).map((g) => (
                         <li key={g}>{g}</li>
                       ))}
                     </ul>
@@ -636,7 +636,7 @@ export default function ComparablesPage() {
                     Feature scores
                   </h4>
                   <div className="grid gap-1">
-                    {selectedQ.data.features.map((f) => {
+                    {(selectedQ.data.features ?? []).map((f) => {
                       const axis = axesQ.data?.find((a) => a.id === f.axis);
                       if (!axis) return null;
                       return (

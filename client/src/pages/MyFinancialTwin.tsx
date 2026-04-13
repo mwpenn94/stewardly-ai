@@ -296,16 +296,16 @@ export default function MyFinancialTwin() {
   // Map server shape to component shape
   const mapped: FinancialTwinData | undefined = twinQ.data ? {
     profile: twinQ.data.profile,
-    goals: twinQ.data.goals.map((g: any) => ({
+    goals: (twinQ.data.goals ?? []).map((g: any) => ({
       ...g,
       status: STATUS_MAP[g.status] ?? "not-started",
       category: g.category as any,
     })),
     financialSnapshot: {
-      incomeRange: twinQ.data.financialSnapshot.annualIncome ?? undefined,
-      netWorthRange: twinQ.data.financialSnapshot.netWorth ?? undefined,
+      incomeRange: twinQ.data.financialSnapshot?.annualIncome ?? undefined,
+      netWorthRange: twinQ.data.financialSnapshot?.netWorth ?? undefined,
     },
-    insights: twinQ.data.insights.map((i: any) => ({
+    insights: (twinQ.data.insights ?? []).map((i: any) => ({
       id: i.id,
       text: i.text,
       source: "conversation" as const,
