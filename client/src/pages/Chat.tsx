@@ -163,7 +163,9 @@ export default function Chat() {
   // Pass 78: Code Chat mode config. `allowMutations` only takes effect
   // when the current user is an admin — the server enforces the gate.
   const [codeChatConfig, setCodeChatConfig] = useState({ allowMutations: false, maxIterations: 5 });
-  const codeChatMut = trpc.codeChat.chat.useMutation();
+  const codeChatMut = trpc.codeChat.chat.useMutation({
+    onError: () => toast.error("Code Chat request failed — please try again"),
+  });
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   const toggleLoopFocus = (focus: string) => {
@@ -362,7 +364,9 @@ export default function Chat() {
   const isAnonymous = !isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('anonymousMode') === 'true';
   const allowQueries = isAuthenticated || isAnonymous;
   const anonChat = useAnonymousChat();
-  const anonSendMutation = trpc.anonymousChat.send.useMutation();
+  const anonSendMutation = trpc.anonymousChat.send.useMutation({
+    onError: () => toast.error("Failed to send message — please try again"),
+  });
   const guestPrefs = useGuestPreferences();
 
   // ─── SELF-DISCOVERY LOOP ──────────────────────────────────────
@@ -435,11 +439,21 @@ export default function Chat() {
   );
 
   // ─── MUTATIONS ────────────────────────────────────────────────
-  const sendMutation = trpc.chat.send.useMutation();
-  const persistStreamedMutation = trpc.chat.persistStreamed.useMutation();
-  const createConversation = trpc.conversations.create.useMutation();
-  const deleteConversation = trpc.conversations.delete.useMutation();
-  const feedbackMutation = trpc.feedback.submit.useMutation();
+  const sendMutation = trpc.chat.send.useMutation({
+    onError: () => toast.error("Failed to send message — please try again"),
+  });
+  const persistStreamedMutation = trpc.chat.persistStreamed.useMutation({
+    onError: () => { /* Silent — stream data is ephemeral, loss is not user-visible */ },
+  });
+  const createConversation = trpc.conversations.create.useMutation({
+    onError: () => toast.error("Failed to create conversation"),
+  });
+  const deleteConversation = trpc.conversations.delete.useMutation({
+    onError: () => toast.error("Failed to delete conversation"),
+  });
+  const feedbackMutation = trpc.feedback.submit.useMutation({
+    onError: () => { /* Silent — feedback is best-effort, don't interrupt the user */ },
+  });
   const visualMutation = trpc.visual.generate.useMutation({
     onError: () => toast.error("Visual generation failed — please try again"),
   });
@@ -448,9 +462,11 @@ export default function Chat() {
   const foldersQuery = trpc.conversations.folders.useQuery(undefined, { enabled: isAuthenticated, staleTime: 30_000 });
   const togglePinMutation = trpc.conversations.togglePin.useMutation({
     onSuccess: () => utils.conversations.list.invalidate(),
+    onError: () => toast.error("Failed to pin conversation"),
   });
   const moveToFolderMutation = trpc.conversations.moveToFolder.useMutation({
     onSuccess: () => utils.conversations.list.invalidate(),
+    onError: () => toast.error("Failed to move conversation"),
   });
   const createFolderMutation = trpc.conversations.createFolder.useMutation({
     onSuccess: () => { utils.conversations.folders.invalidate(); setFolderDialogOpen(false); setNewFolderName(""); },
@@ -3116,6 +3132,7 @@ export default function Chat() {
                       variant="ghost"
                       className="h-10 w-10 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all"
                       onClick={toggleHandsFree}
+                      aria-label="Start hands-free voice mode"
                     >
                       <AudioLines className="w-5 h-5" />
                     </Button>

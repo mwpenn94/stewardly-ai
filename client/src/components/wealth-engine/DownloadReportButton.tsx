@@ -101,6 +101,7 @@ export function DownloadReportButton({
         onClick={onClick}
         disabled={disabled || isPending}
         title={label}
+        aria-label={label}
       >
         {isPending ? (
           <Loader2 className="h-4 w-4 animate-spin" />
