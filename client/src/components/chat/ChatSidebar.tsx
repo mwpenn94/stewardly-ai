@@ -123,13 +123,13 @@ export function ChatSidebar({
               <Button variant="outline" size="sm" className="flex-1 justify-start gap-2 text-xs h-8" onClick={onNewConversation}>
                 <Plus className="w-3.5 h-3.5" /> New Chat
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(""); }}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(""); }} aria-label="Search conversations">
                 <Search className="w-3.5 h-3.5" />
               </Button>
             </>
           )}
           {sidebarCollapsed && (
-            <Button variant="ghost" size="icon" className="h-8 w-8 mx-auto" onClick={onNewConversation}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 mx-auto" onClick={onNewConversation} aria-label="New conversation">
               <Plus className="w-3.5 h-3.5" />
             </Button>
           )}
