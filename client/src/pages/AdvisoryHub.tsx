@@ -230,7 +230,7 @@ function CasesSection() {
           <CardTitle className="text-base">Case Templates</CardTitle>
           <CardDescription>Quick-start templates for common advisory scenarios</CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-2">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {[
             { name: "Insurance Application", icon: Shield, prompt: "Start a new insurance application case. Walk me through the process: client intake, needs analysis, carrier selection, application preparation, and submission." },
             { name: "Estate Plan Review", icon: Scale, prompt: "Start an estate plan review case. Help me analyze the client's current estate plan, identify gaps, and recommend updates to their wills, trusts, and beneficiary designations." },

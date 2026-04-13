@@ -9,13 +9,14 @@
  * leaks to the backend until a user signs up.
  */
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
 import { LeadCaptureGate } from "@/components/LeadCaptureGate";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calculator, DollarSign, PiggyBank, TrendingUp, Shield, Heart } from "lucide-react";
 import { toast } from "sonner";
@@ -171,6 +172,7 @@ function TaxBracketCalculator() {
 }
 
 export default function PublicCalculators() {
+  const [, navigate] = useLocation();
   const [gated, setGated] = useState(false);
 
   return (
@@ -211,18 +213,17 @@ export default function PublicCalculators() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { icon: Shield, title: "Insurance Needs", desc: "Calculate your coverage gaps" },
-          { icon: Heart, title: "Medicare Costs", desc: "Estimate IRMAA surcharges" },
-          { icon: TrendingUp, title: "Social Security", desc: "Optimize claiming strategy" },
+          { icon: Shield, title: "Insurance Analysis", desc: "Calculate your coverage gaps", href: "/insurance-analysis" },
+          { icon: Heart, title: "Medicare Costs", desc: "Estimate IRMAA surcharges", href: "/medicare" },
+          { icon: TrendingUp, title: "Social Security", desc: "Optimize claiming strategy", href: "/social-security" },
         ].map(c => (
-          <Card key={c.title} className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => toast.info("Calculator coming soon")}>
+          <Card key={c.title} className="cursor-pointer hover:border-primary/30 transition-colors card-lift" onClick={() => navigate(c.href)}>
             <CardContent className="p-4 flex items-center gap-3">
               <c.icon className="h-8 w-8 text-primary/60" />
               <div>
                 <p className="text-sm font-medium">{c.title}</p>
                 <p className="text-xs text-muted-foreground">{c.desc}</p>
               </div>
-              <Badge variant="outline" className="ml-auto text-[10px]">Soon</Badge>
             </CardContent>
           </Card>
         ))}

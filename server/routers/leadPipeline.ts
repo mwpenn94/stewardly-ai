@@ -6,6 +6,19 @@ import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
 export const leadPipelineRouter = router({
+  getById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const { leadPipeline } = await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const [lead] = await db.select().from(leadPipeline).where(eq(leadPipeline.id, input.id)).limit(1);
+      if (!lead) throw new TRPCError({ code: "NOT_FOUND", message: "Lead not found" });
+      return lead;
+    }),
+
   getPipeline: protectedProcedure
     .input(z.object({ status: z.string().optional(), limit: z.number().default(50) }).optional())
     .query(async ({ input }) => {

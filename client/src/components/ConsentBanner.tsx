@@ -35,7 +35,7 @@ export default function ConsentBanner() {
   if (!wantsToShow || !canShow) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-500">
+    <div className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-500">
       <div className="max-w-4xl mx-auto px-4 pb-4">
         <div className="bg-card/95 backdrop-blur-md border border-border/50 rounded-xl px-5 py-3 flex items-center gap-4 shadow-lg">
           <p className="text-sm text-muted-foreground flex-1">
