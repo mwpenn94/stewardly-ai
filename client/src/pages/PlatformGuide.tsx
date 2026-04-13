@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Redirect } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -103,6 +103,8 @@ export default function PlatformGuide() {
   const { user, loading } = useAuth();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
+
+  useEffect(() => { document.title = "Platform Guide | Stewardly AI"; }, []);
 
   if (loading) return null;
   if (!user || (user as any).role !== "admin") return <Redirect to="/chat" />;

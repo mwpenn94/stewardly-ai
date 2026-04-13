@@ -3,12 +3,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function Terms() {
   const [, navigate] = useLocation();
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOHead title="Terms of Service" description="Stewardly AI terms of service and usage agreement" />
       <header className="h-12 border-b border-border flex items-center px-4">
         <Button variant="ghost" size="sm" className="gap-2 text-xs" onClick={() => navigate("/")}>
           <ArrowLeft className="w-3.5 h-3.5" /> Back
