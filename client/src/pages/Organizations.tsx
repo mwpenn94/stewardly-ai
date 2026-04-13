@@ -88,7 +88,7 @@ export default function Organizations() {
     onSuccess: () => {
       utils.organizations.listMembers.invalidate();
       setShowInvite(false);
-      setInviteForm({ email: "", role: "user" });
+      setInviteForm({ userId: "", role: "user" });
       toast.success("Member invited");
     },
     onError: (e) => toast.error(e.message),

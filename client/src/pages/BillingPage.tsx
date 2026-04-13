@@ -20,7 +20,6 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, CreditCard, Receipt, TrendingUp, Zap, Check } from "lucide-react";
 import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
-import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 
 const PLANS = [

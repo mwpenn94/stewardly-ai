@@ -214,7 +214,7 @@ export default function LeadDetail() {
                   </CardContent>
                 </Card>
 
-                {lead.segmentData && Object.keys(lead.segmentData as object).length > 0 && (
+                {(lead.segmentData != null && typeof lead.segmentData === "object" && Object.keys(lead.segmentData as Record<string, unknown>).length > 0) ? (
                   <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm">Segment Data</CardTitle></CardHeader>
                     <CardContent className="text-xs space-y-1">
@@ -226,7 +226,7 @@ export default function LeadDetail() {
                       ))}
                     </CardContent>
                   </Card>
-                )}
+                ) : null}
               </TabsContent>
 
               <TabsContent value="enrichment" className="mt-4">

@@ -20,7 +20,6 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Users, UserPlus, Shield, Mail, MoreHorizontal, Search } from "lucide-react";
 import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
-import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 
 const TEAM = [
