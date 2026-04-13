@@ -17,31 +17,35 @@ import {
   GraduationCap, Settings, HelpCircle,
   Search, Plus, PanelLeftClose, PanelLeft,
   ChevronDown, Pin, Compass, Scale,
+  Zap, Package, GitBranch, RefreshCw, Link2, Plug,
+  Heart, DollarSign, Target, Shield, BookOpen,
+  Key, Webhook, Bot, Globe, Building2,
+  LayoutDashboard, UserPlus, HeartPulse, Sparkles,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
-type Role = "guest" | "user" | "advisor" | "manager" | "admin";
+export type Role = "guest" | "user" | "advisor" | "manager" | "admin";
 
-interface NavItem {
+export interface NavItem {
   label: string;
   icon: any;
   path: string;
   match: string[];
 }
 
-interface PersonaLayer {
+export interface PersonaLayer {
   key: string;
   label: string;
   minRole: Role;
   items: NavItem[];
 }
 
-const ROLE_LEVEL: Record<Role, number> = {
+export const ROLE_LEVEL: Record<Role, number> = {
   guest: 0, user: 1, advisor: 2, manager: 3, admin: 4,
 };
 
-const PERSONA_LAYERS: PersonaLayer[] = [
+export const PERSONA_LAYERS: PersonaLayer[] = [
   {
     key: "person",
     label: "People",
@@ -62,6 +66,16 @@ const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "My Financial Twin", icon: Fingerprint, path: "/financial-twin", match: ["/financial-twin"] },
       { label: "Insights", icon: Star, path: "/intelligence-hub", match: ["/intelligence-hub", "/insights"] },
       { label: "Suitability", icon: ClipboardList, path: "/settings/suitability", match: ["/settings/suitability", "/suitability"] },
+      { label: "Operations", icon: Zap, path: "/operations", match: ["/operations"] },
+      { label: "Workflows", icon: GitBranch, path: "/workflows", match: ["/workflows"] },
+      { label: "Client Onboarding", icon: UserPlus, path: "/client-onboarding", match: ["/client-onboarding"] },
+      { label: "Wealth Engine", icon: Sparkles, path: "/wealth-engine", match: ["/wealth-engine"] },
+      { label: "Calculators", icon: Calculator, path: "/calculators", match: ["/calculators"] },
+      { label: "Protection Score", icon: Shield, path: "/protection-score", match: ["/protection-score", "/financial-protection-score"] },
+      { label: "Tax Planning", icon: DollarSign, path: "/tax-planning", match: ["/tax-planning"] },
+      { label: "Financial Planning", icon: LineChart, path: "/financial-planning", match: ["/financial-planning"] },
+      { label: "Integrations", icon: Link2, path: "/integrations", match: ["/integrations"] },
+      { label: "Community", icon: Users, path: "/community", match: ["/community"] },
     ],
   },
   {
@@ -69,17 +83,18 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     label: "Professionals",
     minRole: "advisor",
     items: [
+      { label: "My Work", icon: Briefcase, path: "/my-work", match: ["/my-work"] },
       { label: "Clients", icon: Users, path: "/relationships", match: ["/relationships", "/portal", "/client-dashboard"] },
-      { label: "Cases & Work", icon: Briefcase, path: "/my-work", match: ["/my-work", "/operations", "/advisory", "/workflows", "/advisory-execution", "/passive-actions"] },
       { label: "Insurance & Apps", icon: FileCheck, path: "/insurance-applications", match: ["/insurance-applications", "/carrier-connector", "/suitability-panel"] },
-      { label: "Lead Pipeline", icon: ClipboardList, path: "/leads", match: ["/leads"] },
+      { label: "Lead Pipeline", icon: Target, path: "/leads", match: ["/leads"] },
       { label: "Import Data", icon: Upload, path: "/import", match: ["/import"] },
       { label: "Compliance", icon: ShieldCheck, path: "/compliance-audit", match: ["/compliance-audit"] },
-      { label: "CRM Sync", icon: LineChart, path: "/crm-sync", match: ["/crm-sync"] },
+      { label: "CRM Sync", icon: RefreshCw, path: "/crm-sync", match: ["/crm-sync"] },
       { label: "Market Data", icon: TrendingUp, path: "/market-data", match: ["/market-data"] },
-      { label: "Calculators", icon: Calculator, path: "/calculators", match: ["/calculators", "/wealth-engine"] },
       { label: "Product Intelligence", icon: Lightbulb, path: "/product-intelligence", match: ["/product-intelligence"] },
       { label: "Rebalancing", icon: Scale, path: "/rebalancing", match: ["/rebalancing"] },
+      { label: "Dynamic Integrations", icon: Plug, path: "/dynamic-integrations", match: ["/dynamic-integrations"] },
+      { label: "Integration Health", icon: HeartPulse, path: "/integration-health", match: ["/integration-health"] },
     ],
   },
   {
@@ -88,6 +103,7 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "manager",
     items: [
       { label: "Team Dashboard", icon: UserCog, path: "/manager", match: ["/manager"] },
+      { label: "Organizations", icon: Building2, path: "/organizations", match: ["/organizations"] },
     ],
   },
   {
@@ -96,14 +112,21 @@ const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "admin",
     items: [
       { label: "Platform Admin", icon: Cog, path: "/admin", match: ["/admin"] },
+      { label: "AI Agents", icon: Bot, path: "/agents", match: ["/agents"] },
       { label: "AI Intelligence", icon: Brain, path: "/admin/intelligence", match: ["/admin/intelligence"] },
+      { label: "Improvement", icon: Zap, path: "/admin/improvement", match: ["/admin/improvement"] },
       { label: "System Health", icon: Activity, path: "/admin/system-health", match: ["/admin/system-health"] },
       { label: "Data Freshness", icon: Activity, path: "/admin/data-freshness", match: ["/admin/data-freshness"] },
       { label: "Rate Management", icon: TrendingUp, path: "/admin/rate-management", match: ["/admin/rate-management"] },
       { label: "Billing", icon: CreditCard, path: "/admin/billing", match: ["/admin/billing"] },
+      { label: "API Keys", icon: Key, path: "/admin/api-keys", match: ["/admin/api-keys"] },
+      { label: "Webhooks", icon: Webhook, path: "/admin/webhooks", match: ["/admin/webhooks"] },
+      { label: "Team", icon: Users, path: "/admin/team", match: ["/admin/team"] },
       { label: "BCP Dashboard", icon: ShieldCheck, path: "/admin/bcp", match: ["/admin/bcp"] },
       { label: "Fairness Audit", icon: Scale, path: "/admin/fairness", match: ["/admin/fairness"] },
       { label: "Comparables", icon: Compass, path: "/comparables", match: ["/comparables"] },
+      { label: "Platform Reports", icon: FileText, path: "/admin/platform-reports", match: ["/admin/platform-reports"] },
+      { label: "Knowledge Base", icon: BookOpen, path: "/admin/knowledge", match: ["/admin/knowledge"] },
     ],
   },
 ];

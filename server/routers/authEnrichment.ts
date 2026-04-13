@@ -1,4 +1,5 @@
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getDb } from "../db";
 import { users, authProviderTokens, authEnrichmentLog } from "../../drizzle/schema";
@@ -8,6 +9,43 @@ import { googleAuthService } from "../services/auth/googleAuth";
 import { emailAuthService } from "../services/auth/emailAuth";
 import { profileMerger } from "../services/auth/profileMerger";
 import { postSignupEnrichment } from "../services/auth/postSignupEnrichment";
+
+/**
+ * Validate that a redirect URI is on the allowed-origins list. Prevents open
+ * redirect attacks where an attacker crafts a redirect_uri pointing to their
+ * own domain to intercept OAuth authorization codes.
+ *
+ * The allowlist checks the ORIGIN (scheme + host + port) of the supplied URL
+ * against known deployment hosts + the ALLOWED_REDIRECT_ORIGINS env var.
+ */
+function isAllowedRedirectUri(uri: string): boolean {
+  try {
+    const parsed = new URL(uri);
+    // Always allow the deployment's own origin
+    const selfHost = process.env.PUBLIC_URL || process.env.VITE_PUBLIC_URL || "";
+    const selfOrigin = selfHost ? new URL(selfHost).origin : "";
+
+    // Configurable allowed origins (comma-separated)
+    const envOrigins = (process.env.ALLOWED_REDIRECT_ORIGINS || "")
+      .split(",")
+      .map(o => o.trim())
+      .filter(Boolean);
+
+    const allowed = new Set([
+      selfOrigin,
+      ...envOrigins,
+      // Localhost for development
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:5173",
+    ].filter(Boolean));
+
+    return allowed.has(parsed.origin);
+  } catch {
+    return false;
+  }
+}
 
 export const authEnrichmentRouter = router({
   /**
@@ -66,6 +104,9 @@ export const authEnrichmentRouter = router({
       if (!process.env.LINKEDIN_CLIENT_ID) {
         return { error: "LinkedIn sign-in is not configured", authUrl: null };
       }
+      if (!isAllowedRedirectUri(input.redirectUri)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid redirect URI" });
+      }
       const state = input.state || Math.random().toString(36).substring(2);
       const authUrl = linkedInAuthService.getAuthUrl(input.redirectUri, state);
       return { authUrl, state };
@@ -83,6 +124,9 @@ export const authEnrichmentRouter = router({
     .mutation(async ({ input }) => {
       if (!process.env.GOOGLE_CLIENT_ID) {
         return { error: "Google sign-in is not configured", authUrl: null };
+      }
+      if (!isAllowedRedirectUri(input.redirectUri)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid redirect URI" });
       }
       const state = input.state || Math.random().toString(36).substring(2);
       const authUrl = googleAuthService.getAuthUrl(

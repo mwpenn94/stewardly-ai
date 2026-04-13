@@ -182,26 +182,47 @@ export default function Calculators() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        {/* Unified Wealth Engine — the holistic entry point the user has been asking for */}
+        <div className="mb-4">
+          <button
+            onClick={() => navigate("/wealth-engine")}
+            className="w-full card-lift p-4 rounded-xl border-2 border-accent/30 bg-gradient-to-r from-accent/5 to-accent/10 hover:from-accent/10 hover:to-accent/15 transition-all text-left group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-accent/15 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold flex items-center gap-2">
+                  Holistic Wealth Engine
+                  <Badge variant="secondary" className="text-[9px]">Unified</Badge>
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  Plan + Protect + Grow in one view — practice income, team economics, personal wealth, tax, estate, retirement, and insurance all connected. Replaces bouncing between 20+ separate calculators.
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors" />
+            </div>
+          </button>
+        </div>
+
         {/* Wealth Engine — advanced multi-engine comparison tools */}
         <div className="mb-6">
           <h2 className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider mb-3">Wealth Engine</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
+              { label: "Holistic Comparison", path: "/wealth-engine/holistic-comparison", icon: <BarChart3 className="w-4 h-4" />, desc: "Unified multi-strategy view" },
               { label: "Strategy Comparison", path: "/wealth-engine/strategy-comparison", icon: <BarChart3 className="w-4 h-4" />, desc: "Compare 7 wealth strategies" },
               { label: "Retirement Planner", path: "/wealth-engine/retirement", icon: <PiggyBank className="w-4 h-4" />, desc: "Goal, smooth, guardrails" },
               { label: "Practice to Wealth", path: "/wealth-engine/practice-to-wealth", icon: <TrendingUp className="w-4 h-4" />, desc: "Practice growth modeling" },
               { label: "Quick Quote", path: "/wealth-engine/quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Instant client proposal" },
               { label: "Team Builder", path: "/wealth-engine/team-builder", icon: <Users className="w-4 h-4" />, desc: "Roll-up, roll-down, economics" },
               { label: "What-If Grid", path: "/wealth-engine/what-if", icon: <Grid3X3 className="w-4 h-4" />, desc: "2D parameter heat map" },
-              { label: "Sensitivity Sweep", path: "/wealth-engine/sensitivity", icon: <TrendingUp className="w-4 h-4" />, desc: "1D parameter sweep" },
               { label: "Reference Hub", path: "/wealth-engine/references", icon: <BookOpen className="w-4 h-4" />, desc: "Products, benchmarks, methodology" },
               { label: "Business Income", path: "/wealth-engine/business-income", icon: <DollarSign className="w-4 h-4" />, desc: "BIE practice income modeling" },
               { label: "Wealth Configurator", path: "/wealth-engine/configurator", icon: <ShieldAlert className="w-4 h-4" />, desc: "UWE — 14 products, 7 strategies" },
               { label: "Business Valuation", path: "/wealth-engine/business-valuation", icon: <Rocket className="w-4 h-4" />, desc: "SDE multiple + exit projection" },
-              { label: "Biz Income Quick Quote", path: "/wealth-engine/business-income-quick-quote", icon: <Sparkles className="w-4 h-4" />, desc: "Fast business income proposal" },
               { label: "Owner Compensation", path: "/wealth-engine/owner-comp", icon: <DollarSign className="w-4 h-4" />, desc: "Owner comp + succession analysis" },
-              { label: "Holistic Comparison", path: "/wealth-engine/holistic-comparison", icon: <BarChart3 className="w-4 h-4" />, desc: "Unified multi-strategy view" },
-              { label: "Wealth Engine Hub", path: "/wealth-engine", icon: <Grid3X3 className="w-4 h-4" />, desc: "All wealth engine tools" },
               { label: "Engine Dashboard", path: "/engine-dashboard", icon: <ListChecks className="w-4 h-4" />, desc: "Multi-engine comparison" },
             ].map(tool => (
               <button

@@ -241,7 +241,7 @@ function Router() {
         <Route path="/client-onboarding" component={ClientOnboarding} />
         <Route path="/protection-score" component={FinancialProtectionScore} />
         <Route path="/financial-planning" component={FinancialPlanning} />
-        <Route path="/financial-protection-score" component={FinancialProtectionScore} />
+        {/* /financial-protection-score removed — canonical route is /protection-score */}
         <Route path="/community" component={Community} />
         <Route path="/unsubscribe" component={Unsubscribe} />
         <Route path="/admin/system-health" component={AdminSystemHealth} />

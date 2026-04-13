@@ -261,7 +261,7 @@ export default function AppShell({ children, title }: AppShellProps) {
         */}
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto"
+          className="flex-1 overflow-y-auto pb-16 lg:pb-0"
           tabIndex={-1}
           aria-label="Main content"
           aria-busy={globalBusy ? true : undefined}
@@ -269,9 +269,48 @@ export default function AppShell({ children, title }: AppShellProps) {
           {children}
         </main>
 
-        {/* Bottom tab bar removed — sidebar (accessible via hamburger
-            menu on mobile header) is the intended navigation shell.
-            Removed to eliminate double-nav overlap on mobile. */}
+        {/* Mobile bottom tab bar — quick access to the 5 most common destinations.
+            Hidden on desktop (lg+) where the persistent sidebar handles navigation.
+            44px+ touch targets per WCAG 2.5.5. pb-16 on <main> reserves space. */}
+        <nav
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around h-14 bg-card/95 backdrop-blur-sm border-t border-border/60 safe-area-bottom"
+          aria-label="Quick navigation"
+        >
+          {[
+            { icon: MessageSquare, label: "Chat", href: "/chat" },
+            { icon: Calculator, label: "Tools", href: "/calculators" },
+            { icon: Brain, label: "Insights", href: "/intelligence-hub" },
+            { icon: GraduationCap, label: "Learn", href: "/learning" },
+            { icon: AudioLines, label: "Voice", href: null as string | null },
+          ].map((tab) => {
+            const isVoice = tab.href === null;
+            const isActive = !isVoice && (location === tab.href || location.startsWith(tab.href + "/"));
+            return (
+              <button
+                key={tab.label}
+                onClick={() => {
+                  if (isVoice) {
+                    // Dispatch hands-free toggle event matching keyboard Shift+V behavior
+                    if (location === "/chat" || location.startsWith("/chat/")) {
+                      window.dispatchEvent(new CustomEvent("chat:toggle-handsfree"));
+                    } else {
+                      window.dispatchEvent(new CustomEvent("pil:toggle-handsfree"));
+                    }
+                  } else {
+                    navigate(tab.href!);
+                  }
+                }}
+                className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] px-2 py-1 rounded-lg transition-colors
+                  ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                aria-current={isActive ? "page" : undefined}
+                aria-label={tab.label}
+              >
+                <tab.icon className="w-5 h-5" />
+                <span className="text-[10px] leading-tight font-medium">{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
         {/* Keyboard shortcut hint — visible on desktop only */}
         <div className="hidden lg:flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground/60">

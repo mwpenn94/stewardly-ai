@@ -72,16 +72,52 @@ function buildCallbackUrl(req: Request, provider: string): string {
   return `${proto}://${host}/api/auth/${provider}/callback`;
 }
 
-function parseState(state: string): { origin: string; returnPath: string; guestOpenId?: string; nonce: string } {
+/**
+ * HMAC-signed OAuth state token. The nonce + timestamp are signed with a
+ * server secret so the callback can verify the state wasn't forged and
+ * hasn't expired. This closes the CSRF gap (PARITY-SEC-0007) without
+ * needing server-side session storage.
+ */
+const STATE_SECRET = process.env.SESSION_SECRET || process.env.INTEGRATION_ENCRYPTION_KEY || "stewardly-oauth-state-secret";
+const STATE_MAX_AGE_MS = 10 * 60 * 1000; // 10 minutes
+
+function signState(payload: string): string {
+  const { createHmac } = require("crypto");
+  return createHmac("sha256", STATE_SECRET).update(payload).digest("hex").slice(0, 16);
+}
+
+interface StatePayload { origin: string; returnPath: string; guestOpenId?: string; nonce: string; ts: number; sig: string }
+
+function parseState(state: string): StatePayload {
   try {
-    return JSON.parse(Buffer.from(state, "base64url").toString("utf8"));
+    const parsed = JSON.parse(Buffer.from(state, "base64url").toString("utf8")) as StatePayload;
+    return parsed;
   } catch {
-    return { origin: "", returnPath: "/", nonce: "" };
+    return { origin: "", returnPath: "/", nonce: "", ts: 0, sig: "" };
   }
 }
 
+function validateState(state: StatePayload): { valid: boolean; reason?: string } {
+  if (!state.nonce || !state.ts || !state.sig) {
+    return { valid: false, reason: "missing_fields" };
+  }
+  // Verify HMAC signature
+  const payload = `${state.nonce}:${state.ts}`;
+  const expected = signState(payload);
+  if (state.sig !== expected) {
+    return { valid: false, reason: "invalid_signature" };
+  }
+  // Check expiry
+  if (Date.now() - state.ts > STATE_MAX_AGE_MS) {
+    return { valid: false, reason: "expired" };
+  }
+  return { valid: true };
+}
+
 function encodeState(data: { origin: string; returnPath: string; guestOpenId?: string; nonce: string }): string {
-  return Buffer.from(JSON.stringify(data)).toString("base64url");
+  const ts = Date.now();
+  const sig = signState(`${data.nonce}:${ts}`);
+  return Buffer.from(JSON.stringify({ ...data, ts, sig })).toString("base64url");
 }
 
 async function issueSessionAndRedirect(
@@ -182,7 +218,14 @@ export function registerSocialAuthRoutes(app: Express) {
       return;
     }
 
-    const { origin, returnPath, guestOpenId } = parseState(stateParam);
+    const stateData = parseState(stateParam);
+    const stateCheck = validateState(stateData);
+    if (!stateCheck.valid) {
+      logger.warn({ operation: "googleOauth", reason: stateCheck.reason }, "[Google OAuth] Invalid state");
+      res.redirect(302, "/?error=invalid_state");
+      return;
+    }
+    const { origin, returnPath, guestOpenId } = stateData;
     const redirectUri = `${origin}/api/auth/google/callback`;
 
     try {
@@ -337,7 +380,14 @@ export function registerSocialAuthRoutes(app: Express) {
       return;
     }
 
-    const { origin, returnPath, guestOpenId } = parseState(stateParam);
+    const linkedinState = parseState(stateParam);
+    const linkedinStateCheck = validateState(linkedinState);
+    if (!linkedinStateCheck.valid) {
+      logger.warn({ operation: "linkedinOauth", reason: linkedinStateCheck.reason }, "[LinkedIn OAuth] Invalid state");
+      res.redirect(302, "/?error=invalid_state");
+      return;
+    }
+    const { origin, returnPath, guestOpenId } = linkedinState;
     const redirectUri = `${origin}/api/auth/linkedin/callback`;
 
     try {
