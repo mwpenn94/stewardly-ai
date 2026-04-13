@@ -29,6 +29,7 @@ import {
   Copy, RotateCw, Download, Keyboard, BookMarked, ShieldCheck,
   LibraryBig, GitFork, Star, ThumbsUp, ThumbsDown, List,
   BookOpen, History, StickyNote, Brain, BarChart3, Globe,
+  MoreVertical, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import GitHubWritePanel from "@/components/codeChat/GitHubWritePanel";
@@ -374,6 +375,7 @@ function CodeChatInterface() {
     }
   });
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [allowMutations, setAllowMutations] = useState(false);
   const [maxIterations, setMaxIterations] = useState(5);
   const [modelOverride, setModelOverride] = useState<string | undefined>(undefined);
@@ -1298,6 +1300,89 @@ function CodeChatInterface() {
           </div>
         )}
         <div className="flex-1" />
+        {/* Mobile compact action bar — essential controls visible on small screens */}
+        <div className="flex md:hidden items-center gap-1.5">
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm("Clear conversation?")) {
+                  loadMessages([]);
+                  setCurrentSessionId(null);
+                  toast.success("Conversation cleared");
+                }
+              }}
+              className="p-1.5 rounded text-muted-foreground hover:text-destructive transition-colors"
+              aria-label="Clear conversation"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setSessionsOpen(true)}
+            className="p-1.5 rounded text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Saved sessions"
+          >
+            <BookMarked className="w-4 h-4" />
+          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className={`p-1.5 rounded transition-colors ${mobileMenuOpen ? "bg-accent/12 text-accent" : "text-muted-foreground hover:text-foreground"}`}
+              aria-label="More actions"
+              aria-expanded={mobileMenuOpen}
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            {mobileMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} aria-hidden="true" />
+                <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg border border-border bg-popover shadow-lg py-1 text-xs" role="menu">
+                  <div className="px-3 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Tools</div>
+                  <button role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setTemplatesOpen(true); setMobileMenuOpen(false); }}>
+                    <LibraryBig className="w-3.5 h-3.5" /> Templates
+                  </button>
+                  <button role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setToolsOpen(true); setMobileMenuOpen(false); }}>
+                    <ShieldCheck className="w-3.5 h-3.5" /> Permissions ({enabledTools.length}/12)
+                  </button>
+                  <button role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setSymbolNavOpen(true); setMobileMenuOpen(false); }}>
+                    <Sparkles className="w-3.5 h-3.5" /> Symbols
+                  </button>
+                  <div className="border-t border-border/40 my-1" />
+                  <div className="px-3 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Context</div>
+                  <button role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setMemoryOpen(true); setMobileMenuOpen(false); }}>
+                    <Brain className="w-3.5 h-3.5" /> Memory{memoryEntries.length > 0 ? ` (${memoryEntries.length})` : ""}
+                  </button>
+                  <button role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setInstructionsOpen(true); setMobileMenuOpen(false); }}>
+                    <BookOpen className="w-3.5 h-3.5" /> Rules
+                  </button>
+                  <button role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setBookmarksOpen(true); setMobileMenuOpen(false); }}>
+                    <Star className="w-3.5 h-3.5" /> Bookmarks
+                  </button>
+                  <div className="border-t border-border/40 my-1" />
+                  <div className="px-3 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Export</div>
+                  {messages.length > 0 && (
+                    <button role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setAnalyticsOpen(true); setMobileMenuOpen(false); }}>
+                      <BarChart3 className="w-3.5 h-3.5" /> Stats
+                    </button>
+                  )}
+                  <button role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => {
+                    setMobileMenuOpen(false);
+                    if (messages.length === 0) { toast.info("Nothing to export yet"); return; }
+                    downloadTextFile(exportConversationAsMarkdown(messages), `code-chat-${new Date().toISOString().slice(0, 10)}.md`);
+                  }}>
+                    <Download className="w-3.5 h-3.5" /> Export
+                  </button>
+                  <button role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setShortcutsOpen(true); setMobileMenuOpen(false); }}>
+                    <Keyboard className="w-3.5 h-3.5" /> Shortcuts
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
         {isAdmin && (
           <label className="flex items-center gap-1.5 cursor-pointer">
             {allowMutations ? <Unlock className="w-3 h-3 text-amber-400" /> : <Lock className="w-3 h-3 text-muted-foreground" />}
@@ -2300,8 +2385,8 @@ export default function CodeChatPage() {
       <SEOHead title="Code Chat" description="AI-powered code assistant and development tools" />
       <div className="max-w-6xl mx-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="border-b border-border/40 px-4 pt-2">
-            <TabsList className="bg-transparent">
+          <div className="border-b border-border/40 px-4 pt-2 overflow-x-auto">
+            <TabsList className="bg-transparent w-max md:w-auto">
               <TabsTrigger value="chat" className="gap-1.5">
                 <Terminal className="h-3.5 w-3.5" /> Chat
               </TabsTrigger>

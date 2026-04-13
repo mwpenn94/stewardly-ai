@@ -12,10 +12,9 @@ type PrefetchFn = () => Promise<unknown>;
 const ROUTE_PREFETCH_MAP: Record<string, PrefetchFn> = {
   "/operations":         () => import("@/pages/OperationsHub"),
   "/intelligence-hub":   () => import("@/pages/IntelligenceHub"),
-  "/advisory":           () => import("@/pages/AnalyticsHub"),
+  "/advisory":           () => import("@/pages/AdvisoryHub"),
   "/relationships":      () => import("@/pages/RelationshipsHub"),
   "/market-data":        () => import("@/pages/MarketData"),
-  "/documents":          () => import("@/pages/Documents"),
   "/integrations":       () => import("@/pages/Integrations"),
   "/integration-health": () => import("@/pages/IntegrationHealth"),
   "/passive-actions":    () => import("@/pages/PassiveActions"),
