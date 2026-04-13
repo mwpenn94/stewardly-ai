@@ -3720,3 +3720,31 @@
 - [x] G14: Expand ROUTE_MAP from 28 to 68 entries covering all major destinations
 - [x] G14: Expand friendlyName map to match all new routes
 - [x] Tests: Full suite 309 files, 7503 tests all passing
+
+## CRITICAL — Calculator Holistic Hierarchy Rebuild + Chat UI Cleanup
+
+- [x] Read HTML docs to understand the holistic calculator hierarchy structure
+- [x] Rebuild Calculators page to match HTML docs structure: forward/back, roll-up/roll-down planning across roles and income streams
+- [x] Enable holistic comprehensive aligned-across-hierarchy view for calculators
+- [ ] Support multiple income streams and related production in calculator hierarchy
+- [ ] Clean up cluttered Chat greeting — simplify "AI Context Active" bar and "Resume" cards on mobile
+- [ ] Fix crowded Chat input toolbar on mobile (overlapping labels visible in screenshot)
+- [ ] Simplify Chat mobile experience — substance over chrome
+
+## Calculator Section Review (April 2026)
+- [x] Review Calculators page within AppShell sidebar section
+- [x] Audit all calculator panels for correctness and consistency
+- [x] Add holistic scorecard integration (Plan/Protect/Grow pillars)
+- [x] Add What-If scenario engine to Calculators page
+- [x] Add wealth trajectory chart
+- [x] Ensure proper AppShell layout (remove redundant header)
+- [x] Add profile-driven pre-population for calculator inputs
+- [x] Improve empty state with quick profile entry
+- [x] Add deep-dive tool links section
+- [x] Fix any UX issues (mobile responsiveness, accessibility)
+- [x] Write/update tests for holistic scoring extensions (28 tests passing)
+- [x] Fix HSA panel to use correct tRPC input schema (HSAInput)
+- [x] Fix Charitable panel to use correct tRPC input schema (CharitableInput)
+- [x] Fix Divorce panel to use correct tRPC input schema (DivorceInput)
+- [x] Fix Education panel to use correct tRPC input schema (EducationPlanInput)
+- [x] TypeScript compilation clean (0 errors)
