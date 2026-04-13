@@ -1223,7 +1223,7 @@ function CodeChatInterface() {
   }, [handleSend, input, commandHistory, historyIndex, slashOpen, slashSuggestions, slashActiveIdx, handleSlashSelect, mentionOpen, mentionFiles, mentionActiveIdx, handleMentionSelect, isExecuting, abort]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)]">
+    <div className="flex flex-col h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] md:h-[calc(100vh-10rem)]">
       {/* Config bar */}
       <div className="flex items-center gap-3 px-3 py-2 border-b border-border/40 text-xs">
         <div className="flex items-center gap-1.5">
@@ -1339,7 +1339,7 @@ function CodeChatInterface() {
             {mobileMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} aria-hidden="true" />
-                <div className="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg border border-border bg-popover shadow-lg py-1 text-xs" role="menu">
+                <div className="absolute right-0 top-full mt-1 z-50 w-[calc(100vw-2rem)] sm:w-56 max-w-[14rem] rounded-lg border border-border bg-popover shadow-lg py-1 text-xs" role="menu">
                   <div className="px-3 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Tools</div>
                   <button role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setTemplatesOpen(true); setMobileMenuOpen(false); }}>
                     <LibraryBig className="w-3.5 h-3.5" /> Templates
