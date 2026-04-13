@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Redirect } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -104,7 +105,7 @@ export default function PlatformGuide() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  useEffect(() => { document.title = "Platform Guide | Stewardly AI"; }, []);
+  // SEOHead handles the title now
 
   if (loading) return null;
   if (!user || (user as any).role !== "admin") return <Redirect to="/chat" />;
@@ -124,6 +125,7 @@ export default function PlatformGuide() {
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
+      <SEOHead title="Platform Guide — Stewardly" description="Internal documentation for the Stewardly AI platform architecture, APIs, and development patterns" />
       {/* Left sidebar TOC */}
       <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-border bg-sidebar p-4">
         <div className="flex items-center gap-2 mb-6">

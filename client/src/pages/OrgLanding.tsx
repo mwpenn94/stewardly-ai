@@ -4,6 +4,7 @@ import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function OrgLanding() {
   const [, navigate] = useLocation();
@@ -65,6 +66,7 @@ export default function OrgLanding() {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
+      <SEOHead title={org?.name ? `${org.name} — Stewardly` : "Organization — Stewardly"} description={org?.description || "Financial advisory powered by Stewardly AI"} />
       <a href="#org-main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40">Skip to main content</a>
       {/* Animated gradient mesh background */}
       <div className="fixed inset-0 -z-10">

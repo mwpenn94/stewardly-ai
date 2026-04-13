@@ -11,6 +11,9 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **SEO metadata (7 pages gained SEOHead)**:
+  - Welcome, OrgLanding (dynamic org name), NotFound, Unsubscribe, PlatformGuide
+  - Learning: CaseStudySimulator, ConnectionMap
 - **Dead code removal (6 unused imports across 4 files)**:
   - Chat.tsx: removed entire unused dropdown-menu import (8 components)
   - SettingsHub.tsx: removed unused Camera + Brain icons

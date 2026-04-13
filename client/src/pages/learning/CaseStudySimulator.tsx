@@ -17,6 +17,7 @@ import { useCelebration } from "@/lib/CelebrationEngine";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -379,6 +380,7 @@ function CaseStudySimulatorInner({ caseStudy, onBack, onComplete }: Props) {
 export default function CaseStudySimulator(props: Props) {
   return (
     <AppShell title="Case Study">
+      <SEOHead title="Case Study Simulator — Stewardly Learning" description="Practice financial advisory scenarios with branching decision trees" />
       <CaseStudySimulatorInner {...props} />
     </AppShell>
   );

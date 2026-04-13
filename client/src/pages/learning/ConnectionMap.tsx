@@ -13,6 +13,7 @@ import { Search, Volume2, X } from "lucide-react";
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
+import { SEOHead } from "@/components/SEOHead";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -334,6 +335,7 @@ function ConnectionMapInner({ nodes, edges, onNodeClick }: Props) {
 export default function ConnectionMap(props: Props) {
   return (
     <AppShell title="Concept Map">
+      <SEOHead title="Concept Map — Stewardly Learning" description="Interactive visualization of how financial concepts relate across disciplines" />
       <ConnectionMapInner {...props} />
     </AppShell>
   );

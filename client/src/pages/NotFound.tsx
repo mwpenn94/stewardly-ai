@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle, Home } from "lucide-react";
 import { useLocation } from "wouter";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function NotFound() {
   const [, setLocation] = useLocation();
@@ -12,6 +13,7 @@ export default function NotFound() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background">
+      <SEOHead title="Page Not Found — Stewardly" description="The page you're looking for doesn't exist." />
       <Card className="w-full max-w-lg mx-4 shadow-lg border-border/50 bg-card/80 backdrop-blur-sm">
         <CardContent className="pt-8 pb-8 text-center">
           <div className="flex justify-center mb-6">
