@@ -2890,7 +2890,7 @@ export default function Chat() {
                 {showModelMenu && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowModelMenu(false)} aria-hidden="true" />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-52 sm:w-56 max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-52 sm:w-56 max-w-[calc(100vw-2rem)] max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <div className="px-2 py-1 text-[9px] text-muted-foreground/60 uppercase tracking-wider">Select models (multi = consensus)</div>
                       {(() => {
                         let lastFamily = "";
