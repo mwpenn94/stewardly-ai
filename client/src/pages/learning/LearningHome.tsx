@@ -130,7 +130,7 @@ export default function LearningHome() {
         )}
 
         {/* Snapshot row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Mastery</CardTitle>
@@ -270,7 +270,7 @@ export default function LearningHome() {
           </CardHeader>
           <CardContent>
             {tracksQ.isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {[1,2,3,4].map(i => (
                   <div key={i} className="h-32 rounded-lg bg-card/50 animate-pulse" />
                 ))}
@@ -280,7 +280,7 @@ export default function LearningHome() {
                 No tracks seeded yet. {isAdmin && "Run the admin seed from the Learning Studio."}
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {tracks.map((t: any) => (
                   <Link key={t.id} href={`/learning/tracks/${t.slug}`}>
                     <Card className="card-lift cursor-pointer h-full">
@@ -311,7 +311,7 @@ export default function LearningHome() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {tracks.length > 0 && (
                 <ToolCardWithTrackPicker
                   icon={<ClipboardCheck className="h-6 w-6 text-primary" />}

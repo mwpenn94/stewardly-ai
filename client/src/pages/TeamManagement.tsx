@@ -20,7 +20,6 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, Users, UserPlus, Shield, Mail, MoreHorizontal, Search } from "lucide-react";
 import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
-import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 
 const TEAM = [
@@ -97,7 +96,7 @@ export default function TeamManagement() {
                     </Badge>
                     <p className="text-xs text-muted-foreground mt-0.5">{member.clients > 0 ? `${member.clients} clients` : member.lastActive}</p>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => toast.info("Member actions coming soon")}>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled title="Member management requires team administration integration">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </div>

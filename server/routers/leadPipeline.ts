@@ -17,6 +17,18 @@ export const leadPipelineRouter = router({
       return db.select().from(leadPipeline).orderBy(desc(leadPipeline.createdAt)).limit(input?.limit || 50);
     }),
 
+  getLead: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return null;
+      const { leadPipeline } = await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const [lead] = await db.select().from(leadPipeline).where(eq(leadPipeline.id, input.id)).limit(1);
+      return lead ?? null;
+    }),
+
   assign: protectedProcedure
     .input(z.object({ leadId: z.number(), advisorId: z.number() }))
     .mutation(async ({ input }) => {

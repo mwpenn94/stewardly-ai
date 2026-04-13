@@ -5,6 +5,28 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Added
+- **LeadDetail wired to real tRPC (G72)** — `leadPipeline.getLead(id)` new tRPC proc, LeadDetail reads real DB data with loading/error/empty states, status update mutation with 11-status bar, enrichment data tab, compliance tab, quick actions to chat/email/calculators
+- **ProtectionScore cross-calculator persistence** — totalScore now syncs to shared financial profile on results screen; new `protectionScore` + `riskToleranceScore` fields on FinancialProfile interface
+- **ClientOnboarding controlled form state (G73)** — all personal info, financial data, and risk assessment inputs now controlled via useState; step 2 financial data syncs to shared `useFinancialProfile` for cross-calculator data bridge; step 5 review shows actual collected summary; risk scores toggle with aria-pressed
+
+### Fixed
+- **Error resilience: Calculators.tsx** — 5 unguarded `.data.xxx.map()` calls on tRPC data arrays guarded with `(data?.xxx ?? []).map()` preventing crashes when API returns empty
+- **Error resilience: ImprovementDashboard.tsx** — `convergence.status` access guarded with optional chaining
+- **Error resilience: Retirement.tsx** — nested `.data.data.requiredIncome` guarded with `?.` + fallbacks
+- **Logic bug: Organizations.tsx** — renamed misleading `inviteForm.email` → `inviteForm.userId` (field was always numeric user ID, not email) + NaN guard
+- **UI honesty: 4 more "coming soon" toast lies → disabled buttons** — BillingPage plan upgrade, APIKeys key revocation + API docs, TeamManagement member actions
+- **Mobile: TaxPlanning 5-col grid overflow** — multi-year projection table wrapped in `overflow-x-auto` with `min-w-[360px]` so it scrolls horizontally on 375px phones instead of overflowing
+- **Mobile: EstatePlanning 5-col grid overflow** — growth projection table wrapped in `overflow-x-auto` with `min-w-[360px]`
+- **Mobile: LearningHome grid breakpoints** — 4 grids fixed: snapshot row gains `sm:grid-cols-2`, exam tracks/loading/learning tools gain `grid-cols-1 sm:grid-cols-2` breakpoint so single-col at 375px
+- **Mobile: Chat model menu overflow** — model picker dropdown now has `max-w-[calc(100vw-2rem)]` preventing overflow on narrow screens
+- **Mobile: SettingsHub close button** — added visible X close button at top of mobile sidebar overlay; previously only dismissible via invisible backdrop tap
+- **Brand: EstatePlanning delta column** — `text-amber-400` → `text-accent` for Stewardship Gold consistency
+
+---
+
+## [Prior]
+
+### Added
 - **Email Campaigns page** (`/email-campaigns`) — full campaign management with AI content generation, recipient management, and analytics, wired to `emailCampaign` tRPC router
 - Navigation entries for Email Campaigns in sidebar, command palette, and persona nav
 - LeadDetail action buttons now functional (mailto: / tel: / Chat links)

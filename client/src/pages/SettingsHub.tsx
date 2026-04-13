@@ -4,7 +4,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Shield, FileText, Sparkles, User,
+  Shield, FileText, Sparkles, User, X,
   Loader2, Settings2, ChevronRight, Bell, Palette, Mic, Link2, Keyboard,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
@@ -124,6 +124,17 @@ export default function SettingsHub() {
           bg-card/20 md:bg-transparent
           fixed md:relative inset-0 top-14 z-20 md:z-0
         `}>
+          {/* Mobile close button */}
+          <div className="flex items-center justify-between p-3 pb-0 md:hidden">
+            <span className="text-sm font-medium text-muted-foreground">Settings</span>
+            <button
+              onClick={() => setMobileNavOpen(false)}
+              className="p-1.5 rounded-lg hover:bg-secondary/60 transition-colors"
+              aria-label="Close settings menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
           <div className="p-3 space-y-1" role="tablist" aria-label="Settings sections" aria-orientation="vertical">
             {TABS.map((tab) => {
               const tabRequiresAuth = !isAuthenticated && !ANONYMOUS_TABS.includes(tab.id);

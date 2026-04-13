@@ -49,6 +49,10 @@ export interface FinancialProfile {
   businessEmployees?: number;
   businessRole?: "new" | "exp" | "sa" | "dir" | "md" | "rvp" | "partner";
 
+  // Scores
+  protectionScore?: number;  // 0-100, from FinancialProtectionScore questionnaire
+  riskToleranceScore?: number;  // 0-5, from ClientOnboarding risk assessment
+
   // Meta
   updatedAt?: string;
   source?: "user" | "quick_quote" | "advisor_intake" | "csv_import" | "api";

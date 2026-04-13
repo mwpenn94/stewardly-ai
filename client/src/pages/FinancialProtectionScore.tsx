@@ -2,11 +2,12 @@
  * FinancialProtectionScore — Mobile-first 12-dimension questionnaire
  * Score gauge + share. Gate personalized plan behind email capture.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,7 @@ function scoreTier(score: number): string {
 
 export default function FinancialProtectionScore() {
   const { user, loading: authLoading } = useAuth();
+  const { profile, setProfile } = useFinancialProfile();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
 
@@ -137,8 +139,17 @@ export default function FinancialProtectionScore() {
     );
   }
 
+  // Persist score to shared financial profile when results are viewed
+  const isResults = step === DIMENSIONS.length + 1;
+  useEffect(() => {
+    if (isResults && totalScore > 0) {
+      setProfile({ ...profile, protectionScore: totalScore });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isResults, totalScore]);
+
   // Results
-  if (step === DIMENSIONS.length + 1) {
+  if (isResults) {
     const shareText = `I scored ${totalScore}/100 on my Financial Protection Score! ${scoreTier(totalScore)} rating.`;
     return (
       <AppShell title="Financial Protection">

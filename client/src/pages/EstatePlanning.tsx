@@ -263,8 +263,8 @@ export default function EstatePlanning() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">Estate Growth & Tax Projection ({annualGrowthRate}% annual growth)</CardTitle></CardHeader>
               <CardContent>
-                <div className="space-y-1">
-                  <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
+                <div className="space-y-1 overflow-x-auto">
+                  <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2 min-w-[360px]">
                     <span>Age</span>
                     <span className="text-right">Estate Value</span>
                     <span className="text-right">Tax (Current)</span>
@@ -272,12 +272,12 @@ export default function EstatePlanning() {
                     <span className="text-right">Delta</span>
                   </div>
                   {growthProjection.map(row => (
-                    <div key={row.year} className="grid grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0">
+                    <div key={row.year} className="grid grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0 min-w-[360px]">
                       <span className="font-mono">{row.age}</span>
                       <span className="text-right font-mono">{fmt(row.estate)}</span>
                       <span className={`text-right font-mono ${row.tax === 0 ? "text-emerald-400" : "text-red-400"}`}>{fmt(row.tax)}</span>
                       <span className={`text-right font-mono ${row.taxSunset === 0 ? "text-emerald-400" : "text-red-400"}`}>{fmt(row.taxSunset)}</span>
-                      <span className="text-right font-mono text-amber-400">{fmt(row.taxSunset - row.tax)}</span>
+                      <span className="text-right font-mono text-accent">{fmt(row.taxSunset - row.tax)}</span>
                     </div>
                   ))}
                 </div>
