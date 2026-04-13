@@ -39,7 +39,7 @@ describe("Bug Fix: Streaming Persistence", () => {
 
   it("Chat.tsx uses persistStreamedMutation for SSE done event", () => {
     expect(chatContent).toContain("persistStreamedMutation");
-    expect(chatContent).toContain("trpc.chat.persistStreamed.useMutation()");
+    expect(chatContent).toContain("trpc.chat.persistStreamed.useMutation(");
   });
 
   it("Chat.tsx does NOT await persistStreamed (non-blocking)", () => {

@@ -76,13 +76,13 @@ describe("Auth Enrichment — Guest Access", () => {
   });
 
   it("initiateLinkedIn should be accessible to guests (public)", async () => {
-    const result = await caller(guestCtx).authEnrichment.initiateLinkedIn({ redirectUri: "https://example.com/callback" });
+    const result = await caller(guestCtx).authEnrichment.initiateLinkedIn({ redirectUri: "http://localhost:3000/callback" });
     expect(result).toBeDefined();
     expect(result).toHaveProperty("authUrl");
   });
 
   it("initiateGoogle should be accessible to guests (public)", async () => {
-    const result = await caller(guestCtx).authEnrichment.initiateGoogle({ redirectUri: "https://example.com/callback" });
+    const result = await caller(guestCtx).authEnrichment.initiateGoogle({ redirectUri: "http://localhost:3000/callback" });
     expect(result).toBeDefined();
     expect(result).toHaveProperty("authUrl");
   });
@@ -146,7 +146,7 @@ describe("Auth Enrichment — Authenticated User", () => {
 
   it("initiateLinkedIn should return auth URL or not-configured message", async () => {
     const result = await caller(authCtx).authEnrichment.initiateLinkedIn({
-      redirectUri: "https://example.com/callback",
+      redirectUri: "http://localhost:3000/callback",
     });
     expect(result).toBeDefined();
     // Either returns authUrl or error about missing config
@@ -155,7 +155,7 @@ describe("Auth Enrichment — Authenticated User", () => {
 
   it("initiateGoogle should return auth URL or not-configured message", async () => {
     const result = await caller(authCtx).authEnrichment.initiateGoogle({
-      redirectUri: "https://example.com/callback",
+      redirectUri: "http://localhost:3000/callback",
     });
     expect(result).toBeDefined();
     expect(result).toHaveProperty("authUrl");
