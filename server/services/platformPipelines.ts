@@ -14,8 +14,7 @@
  */
 
 import { requireDb } from "../db";
-import { integrationSyncLogs, integrationConnections, enrichmentCache } from "../../drizzle/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { enrichmentCache } from "../../drizzle/schema";
 import crypto from "crypto";
 
 const uuid = () => crypto.randomUUID();
@@ -340,15 +339,7 @@ export async function fetchSECFilings(ticker?: string): Promise<{
   if (ticker) {
     // Fetch specific company filings
     try {
-      // First, resolve ticker to CIK
-      const tickerUrl = `https://efts.sec.gov/LATEST/search-index?q=%22${ticker}%22&dateRange=custom&startdt=2024-01-01&enddt=2026-12-31&forms=10-K,10-Q,8-K`;
-      // Use the company tickers endpoint instead
-      const cikUrl = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=&CIK=${ticker}&type=10-K&dateb=&owner=include&count=5&search_text=&action=getcompany&output=atom`;
-      
-      // Simpler: use the full-text search
-      const searchUrl = `https://efts.sec.gov/LATEST/search-index?q=%22${ticker}%22&forms=10-K,10-Q&dateRange=custom&startdt=2024-01-01`;
-      
-      // For now, use the EDGAR full-text search API
+      // Use the EDGAR full-text search API
       const resp = await fetch(`https://efts.sec.gov/LATEST/search-index?q=${encodeURIComponent(ticker)}&forms=10-K,10-Q,8-K`, {
         headers,
         signal: AbortSignal.timeout(15000),
@@ -467,7 +458,6 @@ export async function lookupFINRAAdvisor(name: string): Promise<{
   errors: string[];
 }> {
   const db = await requireDb();
-  const errors: string[] = [];
 
   try {
     // BrokerCheck public API

@@ -5,11 +5,11 @@
  * and persistent insight generation.
  */
 import { getDb } from "../db";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import {
-  dataSources, ingestionJobs, ingestedRecords,
-  webScrapeResults, bulkImportBatches, dataQualityScores,
-  ingestionInsights, scrapeSchedules,
+  ingestedRecords,
+  bulkImportBatches, dataQualityScores,
+  ingestionInsights,
 } from "../../drizzle/schema";
 import { contextualLLM } from "../shared/stewardlyWiring";
 import { dataIngestion } from "./dataIngestion";

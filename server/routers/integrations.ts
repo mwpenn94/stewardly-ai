@@ -8,15 +8,12 @@ import {
   integrationConnections,
   integrationSyncLogs,
   integrationFieldMappings,
-  integrationWebhookEvents,
   enrichmentCache,
-  integrationHealthChecks,
-  integrationHealthSummary,
   integrationImprovementLog,
   carrierImportTemplates,
 } from "../../drizzle/schema";
-import { eq, and, desc, sql, lte } from "drizzle-orm";
-import { encrypt, decrypt, encryptCredentials, decryptCredentials } from "../services/encryption";
+import { eq, and, desc, sql } from "drizzle-orm";
+import { encryptCredentials, decryptCredentials } from "../services/encryption";
 import { firstOrNull } from "../services/dbResilience";
 import crypto from "crypto";
 

@@ -15,8 +15,8 @@
  */
 
 import { requireDb } from "../db";
-import { integrationSyncLogs, integrationConnections, integrationProviders } from "../../drizzle/schema";
-import { eq, and, sql, lte, isNull, or } from "drizzle-orm";
+import { integrationSyncLogs } from "../../drizzle/schema";
+import { lte } from "drizzle-orm";
 import crypto from "crypto";
 import { logger } from "../_core/logger";
 
@@ -96,7 +96,6 @@ async function executeJob(job: ScheduledJob): Promise<void> {
 
   try {
     const result = await job.handler();
-    const duration = Date.now() - start;
 
     // Log the sync
     await db.insert(integrationSyncLogs).values({
@@ -119,8 +118,6 @@ async function executeJob(job: ScheduledJob): Promise<void> {
     job.nextRun = new Date(Date.now() + job.intervalMs);
 
   } catch (e: any) {
-    const duration = Date.now() - start;
-
     await db.insert(integrationSyncLogs).values({
       id: uuid(),
       connectionId: job.id,

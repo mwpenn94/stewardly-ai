@@ -11,6 +11,12 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **Server dead code removal (102 unused imports across 7 server files)**:
+  - server/services/scheduler.ts: 10 dead imports cleaned (cron job stubs prefixed, result/duration vars removed)
+  - server/services/cronManager.ts: 9 dead imports (integrationConnections/Providers, eq/and/sql/isNull/or, 2 duration vars)
+  - server/routers/integrations.ts: 6 dead (webhookEvents, healthChecks, healthSummary, lte, encrypt, decrypt)
+  - server/services/dataIngestionEnhanced.ts: 6 dead (sql, and, dataSources, ingestionJobs, webScrapeResults, scrapeSchedules)
+  - server/services/platformPipelines.ts: 7+4 dead (syncLogs, connections, eq/and/sql, 3 dead SEC URL strings, errors array)
 - **Server dead code removal (33 unused imports in 2 critical files)**:
   - server/routers.ts: removed 21 dead imports (db functions, prompts helpers, memoryEngine, knowledgeGraph, complianceCopilot, exponentialEngine, drizzle-orm) + 5 dead variables
   - server/routers/v4Features.ts: removed 12 dead imports (memoryEngine, knowledgeGraph, complianceCopilot, studentLoanOptimizer)
