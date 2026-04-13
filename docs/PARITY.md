@@ -973,6 +973,8 @@ Columns:
 | PARITY-NAV-0007       | Chat.tsx sidebar synced with PersonaSidebar5 | navigation | done | P1 | build | 9 | (CBL-RqDMj-P2) | Chat.tsx had 18 hardcoded nav items diverged from PersonaSidebar5's 53. Replaced with import of shared PERSONA_LAYERS. Now always in sync. |
 | PARITY-MOBILE-0006    | Chat.tsx mobile bottom tabs gained Voice tab | mobile_ux | done | P1 | build | 8 | (CBL-RqDMj-P2) | Chat's bottom tabs now match AppShell: Chat/Tools/Insights/Learn/Voice. Voice tab dispatches chat:toggle-handsfree. |
 | PARITY-LEARN-0003     | LearningHome tools hardcoded to first track only | learning | done | P1 | build | 8 | (CBL-RqDMj-P3) | Practice Exam, Deep Dive, Case Studies cards now have inline track picker so users can access all imported tracks, not just the first one. |
+| PARITY-NAV-0008       | WealthEngineHub hidden — no nav entry | navigation | done | P0 | build | 9 | (CBL-RqDMj-P5) | Unified Wealth Engine Hub at /wealth-engine had no nav entry, no sidebar link. Added to TOOLS_NAV, PersonaSidebar5 client layer, and promoted to hero card on Calculators page. Holistic Comparison also promoted to grid position 1. |
+| PARITY-CALC-0010      | Calculators page buries holistic tools | calculators | done | P1 | build | 8 | (CBL-RqDMj-P5) | Added prominent "Holistic Wealth Engine" hero card at top of Calculators page with gradient accent border, description explaining the unified plan+protect+grow flow, and direct /wealth-engine link. |
 
 ---
 

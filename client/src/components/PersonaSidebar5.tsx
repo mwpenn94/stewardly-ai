@@ -20,7 +20,7 @@ import {
   Zap, Package, GitBranch, RefreshCw, Link2, Plug,
   Heart, DollarSign, Target, Shield, BookOpen,
   Key, Webhook, Bot, Globe, Building2,
-  LayoutDashboard, UserPlus, HeartPulse,
+  LayoutDashboard, UserPlus, HeartPulse, Sparkles,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -69,7 +69,8 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "Operations", icon: Zap, path: "/operations", match: ["/operations"] },
       { label: "Workflows", icon: GitBranch, path: "/workflows", match: ["/workflows"] },
       { label: "Client Onboarding", icon: UserPlus, path: "/client-onboarding", match: ["/client-onboarding"] },
-      { label: "Calculators", icon: Calculator, path: "/calculators", match: ["/calculators", "/wealth-engine"] },
+      { label: "Wealth Engine", icon: Sparkles, path: "/wealth-engine", match: ["/wealth-engine"] },
+      { label: "Calculators", icon: Calculator, path: "/calculators", match: ["/calculators"] },
       { label: "Protection Score", icon: Shield, path: "/protection-score", match: ["/protection-score", "/financial-protection-score"] },
       { label: "Tax Planning", icon: DollarSign, path: "/tax-planning", match: ["/tax-planning"] },
       { label: "Financial Planning", icon: LineChart, path: "/financial-planning", match: ["/financial-planning"] },
