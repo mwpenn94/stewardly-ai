@@ -1016,6 +1016,9 @@ Columns:
 | PARITY-CRM-0001       | Email Campaigns page not surfaced (redirect to /relationships) | marketing_crm | done | P1 | build | 8 | (CBL-cxtpC-P2) | Created EmailCampaigns.tsx with full CRUD + AI content generation + analytics + recipients. Wired to emailCampaign tRPC router. Added nav entry in navigation.ts, PersonaSidebar5 (Advisor layer), and CommandPalette ICON_MAP. |
 | PARITY-CRM-0002       | LeadDetail action buttons are "coming soon" placeholders | marketing_crm | done | P1 | build | 8 | (CBL-cxtpC-P2) | Replaced placeholder toasts with real mailto: link (Email), tel: link (Call), and Chat navigation. |
 | PARITY-CRM-0003       | CommandPalette missing icons for Mail, Plug, Link nav items | ui_cohesion | done | P2 | build | 8 | (CBL-cxtpC-P2) | Added Mail, Plug, Link icons to CommandPalette ICON_MAP and lucide imports. Items now render correctly. |
+| PARITY-SHELL-0001     | CaseStudySimulator missing AppShell (dead-end on mobile) | ui_cohesion | done | P1 | build | 8 | (CBL-cxtpC-P3) | Wrapped in AppShell via inner component pattern. Users now have navigation context. |
+| PARITY-SHELL-0002     | ConnectionMap missing AppShell (dead-end on mobile) | ui_cohesion | done | P1 | build | 8 | (CBL-cxtpC-P3) | Wrapped in AppShell via inner component pattern. Users now have navigation context. |
+| PARITY-ROBUST-0001    | FairnessTestDashboard 3x unprotected JSON.parse in render | robustness | done | P1 | build | 9 | (CBL-cxtpC-P3) | All 3 JSON.parse calls now wrapped in try-catch with safe defaults (empty object/array). |
 
 ---
 
@@ -1173,6 +1176,8 @@ Pass 7 · angle: mobile bottom nav consistency + touch UX · commit SHA: 488be3f
 Pass 8 · angle: WCAG accessibility — aria-labels on icon buttons · commit SHA: dd68e83 · shipped: 7 Chat.tsx message action button aria-labels · deferred: LearningHome Card toggle a11y
 
 Pass 9 · angle: integration UX + data pipeline discoverability · commit SHA: (pending) · shipped: DynamicIntegrations back link fixed from /intelligence-hub to /integrations (correct section context) + hidden on mobile where AppShell nav covers it · deferred: none
+
+Pass 12 (CBL-cxtpC-P3) · angle: cross-app cohesion + robustness + input validation · queue: [A1: AppShell missing from CaseStudySimulator + ConnectionMap, A2: unprotected JSON.parse in FairnessTestDashboard] · commit SHA: (pending) · shipped: (1) CaseStudySimulator wrapped in AppShell (was dead-end on mobile — no nav/tabs); (2) ConnectionMap wrapped in AppShell; (3) FairnessTestDashboard 3 unprotected JSON.parse calls guarded with try-catch + safe defaults · deferred: error states on more pages (most high-traffic pages already have error handling from pass 5)
 
 Pass 11 (CBL-cxtpC-P2) · angle: marketing/CRM capabilities + navigation surfacing · queue: [A1: Email campaigns page wiring, A2: LeadDetail action buttons, A3: CommandPalette icon coverage] · commit SHA: (pending) · shipped: (1) Created EmailCampaigns.tsx — full campaign management page with list/create/detail views, AI content generation, recipient management, analytics cards, wired to emailCampaign tRPC router; (2) Replaced /email-campaigns redirect with real page in App.tsx; (3) Added Email Campaigns nav entry in navigation.ts, PersonaSidebar5 (Advisor layer), and CommandPalette; (4) Fixed LeadDetail action buttons from "coming soon" toasts to real mailto:/tel: links and Chat navigation; (5) Added Mail/Plug/Link icons to CommandPalette ICON_MAP · deferred: external email provider integration (SMTP/SendGrid — infrastructure gap), SMS outreach, marketing automation workflows
 

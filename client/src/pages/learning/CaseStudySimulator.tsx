@@ -16,6 +16,7 @@ import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import { trpc } from "@/lib/trpc";
+import AppShell from "@/components/AppShell";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -148,7 +149,7 @@ function parseCaseFromDb(row: { id: number; title: string; content: string; tags
   }
 }
 
-export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Props) {
+function CaseStudySimulatorInner({ caseStudy, onBack, onComplete }: Props) {
   const [, navigate] = useLocation();
   const [, params] = useRoute("/learning/case-study/:id");
   const audio = useAudioCompanion();
@@ -372,5 +373,13 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function CaseStudySimulator(props: Props) {
+  return (
+    <AppShell title="Case Study">
+      <CaseStudySimulatorInner {...props} />
+    </AppShell>
   );
 }
