@@ -41,10 +41,11 @@ import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorConte
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { loadCalculatorContext, recordCalculation, saveCalculatorContext, type CalculationResult } from "@/lib/calculatorContext";
+import { useLocation } from "wouter";
 import {
   Loader2, PlayCircle, Award, ChevronDown, ChevronUp,
   AlertTriangle, TrendingDown, History, BarChart3,
-  Shield, Info, CheckCircle2, Target,
+  Shield, Info, CheckCircle2, Target, ArrowLeft, ArrowRight, Grid3X3, BookOpen,
 } from "lucide-react";
 
 const PEER_SET = [
@@ -124,6 +125,7 @@ function checkInputGuardrails(
 }
 
 export default function StrategyComparisonPage() {
+  const [, navigate] = useLocation();
   const { profile: sharedProfile, updateProfile } = useFinancialProfile("strategy-comparison");
 
   // ── Client profile inputs (initialized from shared profile) ──
@@ -273,15 +275,20 @@ export default function StrategyComparisonPage() {
   return (
     <AppShell title="Strategy Comparison">
       <SectionErrorBoundary sectionName="Strategy Comparison">
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
+          <div className="flex items-start gap-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/wealth-engine")} className="mt-0.5">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Wealth Engine
+            </Button>
+            <div>
             <h1 className="text-2xl font-bold font-heading">Strategy Comparison</h1>
             <p className="text-sm text-muted-foreground">
               Run the WealthBridge plan side-by-side against the peer set at
               your chosen horizon. Winner badges highlight the leading strategy
               per metric.
             </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {rows.length > 0 && (
@@ -922,6 +929,28 @@ export default function StrategyComparisonPage() {
             {compare.error?.message || "Comparison failed"}
           </p>
         )}
+        {/* Related tools */}
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground/70 uppercase tracking-wider mb-3">Related tools</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {[
+                { icon: Target, label: "Retirement", href: "/wealth-engine/retirement", desc: "Goal, smoothing, guardrail modes" },
+                { icon: Grid3X3, label: "What-If Grid", href: "/wealth-engine/what-if", desc: "Sweep parameters with a heat map" },
+                { icon: BookOpen, label: "Reference Hub", href: "/wealth-engine/references", desc: "Products, benchmarks, methodology" },
+              ].map(tool => (
+                <button key={tool.href} type="button" onClick={() => navigate(tool.href)} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left">
+                  <tool.icon className="h-4 w-4 text-accent flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{tool.label}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{tool.desc}</p>
+                  </div>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground ml-auto flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
       </SectionErrorBoundary>
     </AppShell>

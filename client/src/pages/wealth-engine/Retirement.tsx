@@ -37,9 +37,10 @@ import StressTestPanel from "@/components/StressTestPanel";
 import MonteCarloFan from "@/components/MonteCarloFan";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
 import { formatCurrency } from "@/lib/wealth-engine/animations";
+import { useLocation } from "wouter";
 import {
   Loader2, Target, Sliders, ShieldCheck, TrendingDown, Shield,
-  ChevronDown, ChevronUp, Info, AlertTriangle,
+  ChevronDown, ChevronUp, Info, AlertTriangle, ArrowLeft, ArrowRight, BarChart3, Grid3X3, BookOpen,
 } from "lucide-react";
 
 // ─── Benchmark helpers ───────────────────────────────────────────
@@ -60,6 +61,7 @@ function formatBenchmarkValue(key: string, data: any): string {
 }
 
 export default function RetirementPage() {
+  const [, navigate] = useLocation();
   const { profile: sharedProfile, updateProfile } = useFinancialProfile("retirement");
 
   const [age, setAge] = useState(() => profileValue(sharedProfile, "currentAge", 40));
@@ -205,13 +207,18 @@ export default function RetirementPage() {
   return (
     <AppShell title="Retirement">
       <SectionErrorBoundary sectionName="Retirement Calculator">
-      <div className="p-6 max-w-6xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Retirement Planning</h1>
-          <p className="text-sm text-muted-foreground">
-            Three modes — pick a goal target, smooth consumption, or check
-            current portfolio against guardrails.
-          </p>
+      <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
+        <div className="flex items-start gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/wealth-engine")} className="mt-0.5">
+            <ArrowLeft className="h-4 w-4 mr-1" /> Wealth Engine
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Retirement Planning</h1>
+            <p className="text-sm text-muted-foreground">
+              Three modes — pick a goal target, smooth consumption, or check
+              current portfolio against guardrails.
+            </p>
+          </div>
         </div>
 
         {/* Inputs */}
@@ -546,6 +553,29 @@ export default function RetirementPage() {
             )}
           </Card>
         )}
+
+        {/* Related tools */}
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground/70 uppercase tracking-wider mb-3">Related tools</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {[
+                { icon: BarChart3, label: "Strategy Comparison", href: "/wealth-engine/strategy-comparison", desc: "Compare 7 strategies side-by-side" },
+                { icon: Grid3X3, label: "What-If Grid", href: "/wealth-engine/what-if", desc: "Sweep parameters with a heat map" },
+                { icon: BookOpen, label: "Reference Hub", href: "/wealth-engine/references", desc: "Products, benchmarks, methodology" },
+              ].map(tool => (
+                <button key={tool.href} type="button" onClick={() => navigate(tool.href)} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left">
+                  <tool.icon className="h-4 w-4 text-accent flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{tool.label}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{tool.desc}</p>
+                  </div>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground ml-auto flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
       </SectionErrorBoundary>
     </AppShell>

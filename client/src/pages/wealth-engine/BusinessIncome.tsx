@@ -117,8 +117,8 @@ export default function BusinessIncome() {
       <SEOHead title="Business Income Engine" description="Practice income modeling with role-based projections and team economics" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/calculators")}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          <Button variant="ghost" size="sm" onClick={() => navigate("/wealth-engine")}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Wealth Engine
           </Button>
           <div>
             <h1 className="text-2xl font-bold font-heading">Business Income Engine</h1>
