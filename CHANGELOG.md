@@ -11,6 +11,13 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **Server dead code removal (33 unused imports in 2 critical files)**:
+  - server/routers.ts: removed 21 dead imports (db functions, prompts helpers, memoryEngine, knowledgeGraph, complianceCopilot, exponentialEngine, drizzle-orm) + 5 dead variables
+  - server/routers/v4Features.ts: removed 12 dead imports (memoryEngine, knowledgeGraph, complianceCopilot, studentLoanOptimizer)
+- **Navigate earcon on route change (G23 completion)**:
+  - `useFocusOnRouteChange` now fires `playEarconById("navigate")` on every page transition
+  - Skip on initial mount to avoid earcon on page load
+  - Completes the full earcon suite: send + receive + error + navigate
 - **Dead code removal (~120 unused imports across 50 files)**:
   - Chat.tsx: removed 14 dead imports (ScrollArea, Briefcase, Users, Fingerprint, Shield, Scale, OnboardingChecklist, Link, parseFocusModes, chatContainerRef, proficiencyQuery, toolsExpanded/adminExpanded state, focusLabel)
   - Removed unused proficiencyQuery that was hitting exponentialEngine.getProficiency on every empty chat render (wasted network call)

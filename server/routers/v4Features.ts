@@ -5,19 +5,15 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import {
-  extractMemoriesFromMessage, saveExtractedMemories,
-  generateEpisodeSummary, saveEpisodeSummary,
-  assembleMemoryContext, getEpisodes,
+  getEpisodes,
 } from "../memoryEngine";
 import {
   addNode, getNodes, updateNode, deleteNode,
-  addEdge, getEdges, deleteEdge, getFullGraph,
-  assembleGraphContext,
+  addEdge, deleteEdge, getFullGraph,
 } from "../knowledgeGraph";
 import {
-  classifyContent, applyModifications,
-  logComplianceAudit, getComplianceAuditLog,
-  logPrivacyAudit, getPrivacyAuditLog,
+  getComplianceAuditLog,
+  getPrivacyAuditLog,
 } from "../complianceCopilot";
 import {
   getModules, getModuleById, getUserProgress,
@@ -26,7 +22,7 @@ import {
 } from "../educationEngine";
 import {
   addLoan, getLoans, updateLoan, deleteLoan,
-  compareAllScenarios, calculateStandardRepayment,
+  compareAllScenarios,
 } from "../studentLoanOptimizer";
 import {
   addGrant, getGrants, updateGrant, deleteGrant,
