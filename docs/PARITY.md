@@ -1140,7 +1140,9 @@ Pass 4 · angle: SEO + page titles + accessibility · queue: missing page titles
 
 Pass 5 · angle: error states + graceful degradation · queue: missing tRPC error handling on high-traffic pages · commit SHA: 96fb9a9 · shipped: (1) LearningHome.tsx: error banner with retry for 6 queries; (2) Workflows.tsx: error guard in reconciliation useEffect + error banner; (3) AgentManager.tsx: error state with retry in agent listing · deferred: IntelligenceHub analytics error states, MyWork error handling
 
-Pass 6 · angle: cross-app cohesion + marketing SEO + page titles · queue: NewLanding SEOHead, Comparables/Rebalancing title props · commit SHA: (pending) · shipped: (1) NewLanding.tsx: SEOHead with marketing title + OG description; (2) Comparables.tsx: added AppShell title prop; (3) Rebalancing.tsx: added AppShell title prop. Audit: RelationshipsHub outreach tab has campaign templates, CRM pages navigable · deferred: none
+Pass 6 · angle: cross-app cohesion + marketing SEO + page titles · commit SHA: 22bf0ab · shipped: NewLanding SEOHead, Comparables + Rebalancing AppShell title · deferred: none
+
+Pass 7 · angle: mobile bottom nav consistency + touch UX · commit SHA: (pending) · shipped: Chat.tsx mobile bottom nav now pixel-identical to AppShell (bg-card/95 not bg-background/95, border-border/60 not /50, text-primary active not text-accent, matching padding/rounding) · deferred: per-page inline header audit (most are fine, PartGPages already fixed)
 
 ## Angle Glossary
 | Angle ID | Description | Disjoint from |
