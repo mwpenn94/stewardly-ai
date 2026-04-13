@@ -2334,28 +2334,28 @@ export default function Chat() {
                             <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover/msg:opacity-100 transition-opacity">
                               {msg.id && (<>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => handleFeedback(msg.id, "up")}>
+                                <button aria-label="Good response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => handleFeedback(msg.id, "up")}>
                                   <ThumbsUp className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Good response</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => handleFeedback(msg.id, "down")}>
+                                <button aria-label="Bad response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => handleFeedback(msg.id, "down")}>
                                   <ThumbsDown className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Bad response</TooltipContent></Tooltip>
                               </>)}
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
+                                <button aria-label="Copy message" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
                                   <Copy className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Copy</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.forceSpeak(msg.content)}>
+                                <button aria-label="Read aloud" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.forceSpeak(msg.content)}>
                                   <Volume2 className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Read aloud</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => { if (messages.length >= 2) { const lastUserMsg = [...messages].reverse().find(m => m.role === "user"); if (lastUserMsg) handleSendWithText(lastUserMsg.content); } }}>
+                                <button aria-label="Regenerate response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => { if (messages.length >= 2) { const lastUserMsg = [...messages].reverse().find(m => m.role === "user"); if (lastUserMsg) handleSendWithText(lastUserMsg.content); } }}>
                                   <RefreshCw className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Regenerate</TooltipContent></Tooltip>
@@ -2497,7 +2497,7 @@ export default function Chat() {
                   <div key={i} className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-3 py-1 text-xs">
                     <Paperclip className="w-3 h-3 text-muted-foreground" />
                     <span className="truncate max-w-[100px]">{file.name}</span>
-                    <button onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground ml-0.5">
+                    <button aria-label={`Remove ${file.name}`} onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground ml-0.5">
                       <X className="w-3 h-3" />
                     </button>
                   </div>

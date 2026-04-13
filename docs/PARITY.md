@@ -1142,7 +1142,9 @@ Pass 5 · angle: error states + graceful degradation · queue: missing tRPC erro
 
 Pass 6 · angle: cross-app cohesion + marketing SEO + page titles · commit SHA: 22bf0ab · shipped: NewLanding SEOHead, Comparables + Rebalancing AppShell title · deferred: none
 
-Pass 7 · angle: mobile bottom nav consistency + touch UX · commit SHA: (pending) · shipped: Chat.tsx mobile bottom nav now pixel-identical to AppShell (bg-card/95 not bg-background/95, border-border/60 not /50, text-primary active not text-accent, matching padding/rounding) · deferred: per-page inline header audit (most are fine, PartGPages already fixed)
+Pass 7 · angle: mobile bottom nav consistency + touch UX · commit SHA: 488be3f · shipped: Chat.tsx mobile bottom nav pixel-identical to AppShell · deferred: per-page inline header audit
+
+Pass 8 · angle: WCAG accessibility — aria-labels on icon buttons · commit SHA: (pending) · shipped: 7 icon-only buttons in Chat.tsx message action bar given aria-labels (thumbs-up, thumbs-down, copy, read-aloud, regenerate, infographic already had title, attachment remove). WCAG 4.1.2 Name+Role compliance for assistive tech · deferred: LearningHome Card toggle a11y (low priority)
 
 ## Angle Glossary
 | Angle ID | Description | Disjoint from |
