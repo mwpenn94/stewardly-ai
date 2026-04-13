@@ -350,6 +350,7 @@ export default function Calculators() {
                   {/* Table */}
                   <Card className="bg-card/60 border-border/50">
                     <ScrollArea className="h-[300px]">
+                      <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-border">
@@ -372,6 +373,7 @@ export default function Calculators() {
                           ))}
                         </TableBody>
                       </Table>
+                    </div>
                     </ScrollArea>
                   </Card>
                 </>
@@ -503,6 +505,7 @@ export default function Calculators() {
                   {/* Year-by-year detail table */}
                   <Card className="bg-card/60 border-border/50">
                     <ScrollArea className="h-[350px]">
+                      <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-border">
@@ -534,6 +537,7 @@ export default function Calculators() {
                           ))}
                         </TableBody>
                       </Table>
+                    </div>
                     </ScrollArea>
                   </Card>
 
@@ -636,6 +640,7 @@ export default function Calculators() {
 
                   <Card className="bg-card/60 border-border/50">
                     <ScrollArea className="h-[300px]">
+                      <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-border">
@@ -658,6 +663,7 @@ export default function Calculators() {
                           ))}
                         </TableBody>
                       </Table>
+                    </div>
                     </ScrollArea>
                   </Card>
                 </>
@@ -829,6 +835,7 @@ export default function Calculators() {
 
                   <Card className="bg-card/60 border-border/50">
                     <ScrollArea className="h-[300px]">
+                      <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-border">
@@ -853,6 +860,7 @@ export default function Calculators() {
                           ))}
                         </TableBody>
                       </Table>
+                    </div>
                     </ScrollArea>
                   </Card>
                 </>

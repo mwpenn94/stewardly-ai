@@ -235,6 +235,7 @@ export default function BusinessIncome() {
                   <CardHeader className="pb-2"><CardTitle className="text-sm">Year-by-Year Income Projection</CardTitle></CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[400px] w-full">
+                      <div className="overflow-x-auto">
                       <Table className="min-w-[400px]">
                         <TableHeader>
                           <TableRow className="border-border">
@@ -257,6 +258,7 @@ export default function BusinessIncome() {
                           ))}
                         </TableBody>
                       </Table>
+                      </div>
                     </ScrollArea>
                   </CardContent>
                 </Card>

@@ -635,6 +635,7 @@ function YearByYearTable({ simData }: { simData: any[] }) {
       </CardHeader>
       <CardContent>
         <ScrollArea className="w-full max-h-[60vh] md:max-h-[500px]">
+          <div className="overflow-x-auto">
           <Table className="min-w-[500px]">
             <TableHeader>
               <TableRow>
@@ -663,6 +664,7 @@ function YearByYearTable({ simData }: { simData: any[] }) {
               ))}
             </TableBody>
           </Table>
+          </div>
         </ScrollArea>
       </CardContent>
     </Card>
@@ -695,6 +697,7 @@ function MonteCarloResults({ mcData }: { mcData: any }) {
         </CardHeader>
         <CardContent>
           <ScrollArea className="w-full max-h-[50vh] md:max-h-[400px]">
+            <div className="overflow-x-auto">
             <Table className="min-w-[450px]">
               <TableHeader>
                 <TableRow>
@@ -721,6 +724,7 @@ function MonteCarloResults({ mcData }: { mcData: any }) {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </ScrollArea>
         </CardContent>
       </Card>
