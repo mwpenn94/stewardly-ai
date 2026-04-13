@@ -105,7 +105,8 @@ export default function BillingPage() {
                 variant={plan.current ? "outline" : "default"}
                 size="sm"
                 className="w-full"
-                onClick={() => toast.info(plan.current ? "You're on this plan" : "Plan upgrade coming soon")}
+                disabled={!plan.current}
+                title={plan.current ? "You're on this plan" : "Plan management requires billing integration"}
               >
                 {plan.current ? "Current Plan" : plan.price === "Custom" ? "Contact Sales" : "Upgrade"}
               </Button>

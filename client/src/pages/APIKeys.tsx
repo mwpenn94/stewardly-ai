@@ -76,7 +76,7 @@ export default function APIKeys() {
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
                     {key.status === "active" && (
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-300" onClick={() => toast.info("Key revocation coming soon")}>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-300" disabled title="Key revocation requires API management integration">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
@@ -103,7 +103,7 @@ export default function APIKeys() {
             <p>curl -H "Authorization: Bearer sk_live_..." \</p>
             <p className="pl-4">https://api.stewardly.com/v1/clients</p>
           </div>
-          <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => toast.info("API docs coming soon")}>
+          <Button variant="link" size="sm" className="p-0 h-auto" disabled title="API documentation requires deployment configuration">
             View full API documentation →
           </Button>
         </CardContent>

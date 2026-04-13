@@ -14,6 +14,7 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - **Error resilience: ImprovementDashboard.tsx** — `convergence.status` access guarded with optional chaining
 - **Error resilience: Retirement.tsx** — nested `.data.data.requiredIncome` guarded with `?.` + fallbacks
 - **Logic bug: Organizations.tsx** — renamed misleading `inviteForm.email` → `inviteForm.userId` (field was always numeric user ID, not email) + NaN guard
+- **UI honesty: 4 more "coming soon" toast lies → disabled buttons** — BillingPage plan upgrade, APIKeys key revocation + API docs, TeamManagement member actions
 - **Mobile: TaxPlanning 5-col grid overflow** — multi-year projection table wrapped in `overflow-x-auto` with `min-w-[360px]` so it scrolls horizontally on 375px phones instead of overflowing
 - **Mobile: EstatePlanning 5-col grid overflow** — growth projection table wrapped in `overflow-x-auto` with `min-w-[360px]`
 - **Mobile: LearningHome grid breakpoints** — 4 grids fixed: snapshot row gains `sm:grid-cols-2`, exam tracks/loading/learning tools gain `grid-cols-1 sm:grid-cols-2` breakpoint so single-col at 375px
