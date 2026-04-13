@@ -5,6 +5,8 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Added
+- **LeadDetail wired to real tRPC (G72)** — `leadPipeline.getLead(id)` new tRPC proc, LeadDetail reads real DB data with loading/error/empty states, status update mutation with 11-status bar, enrichment data tab, compliance tab, quick actions to chat/email/calculators
+- **ProtectionScore cross-calculator persistence** — totalScore now syncs to shared financial profile on results screen; new `protectionScore` + `riskToleranceScore` fields on FinancialProfile interface
 - **ClientOnboarding controlled form state (G73)** — all personal info, financial data, and risk assessment inputs now controlled via useState; step 2 financial data syncs to shared `useFinancialProfile` for cross-calculator data bridge; step 5 review shows actual collected summary; risk scores toggle with aria-pressed
 
 ### Fixed
