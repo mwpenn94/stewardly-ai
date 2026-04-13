@@ -69,7 +69,7 @@ export default function DynamicIntegrations() {
   const [probeUrl, setProbeUrl] = useState("");
   const [probeResult, setProbeResult] = useState<any | null>(null);
 
-  const list = trpc.dynamicIntegrations.list.useQuery();
+  const list = trpc.dynamicIntegrations.list.useQuery(undefined, { staleTime: 60_000 });
   const blueprints = useMemo(() => list.data ?? [], [list.data]);
 
   const [selectedBlueprintId, setSelectedBlueprintId] = useState<string | null>(null);

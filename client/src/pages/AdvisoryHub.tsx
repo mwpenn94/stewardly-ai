@@ -27,7 +27,7 @@ export default function AdvisoryHub() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Live data for QuickStats
-  const productsList = trpc.products.list.useQuery(undefined, { retry: false });
+  const productsList = trpc.products.list.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
   const productCount = (productsList.data as any)?.length ?? 0;
   const workflowInstances = trpc.workflow.listInstances.useQuery(undefined, { retry: false, staleTime: 30_000 });
   const insightStats = trpc.insights.stats.useQuery(undefined, { retry: false, staleTime: 30_000 });
@@ -112,7 +112,7 @@ function QuickStat({ icon: Icon, label, value, color }: { icon: any; label: stri
 }
 
 function ProductsSection({ searchQuery }: { searchQuery: string }) {
-  const products = trpc.products.list.useQuery({});
+  const products = trpc.products.list.useQuery({}, { staleTime: 5 * 60_000 });
 
   const categories = [
     { name: "Life Insurance", icon: Shield, color: "text-blue-500", prompt: "Tell me about the life insurance products available on the platform. What are the top options and how do they compare?" },

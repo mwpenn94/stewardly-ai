@@ -542,8 +542,8 @@ function OnboardingTab() {
 // ─── Tab 5: SOFR / Premium Finance ──────────────────────────────────────
 
 function SOFRTab() {
-  const sofrData = trpc.adminIntelligence.getSOFRRates.useQuery(undefined, { retry: false });
-  const pfRates = trpc.adminIntelligence.getPremiumFinanceRates.useQuery(undefined, { retry: false });
+  const sofrData = trpc.adminIntelligence.getSOFRRates.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
+  const pfRates = trpc.adminIntelligence.getPremiumFinanceRates.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
 
   return (
     <div className="space-y-6">
