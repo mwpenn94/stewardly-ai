@@ -1001,7 +1001,7 @@ Columns:
 | PARITY-NAV-0010       | /improvement orphaned from nav (redirect + engine route) | navigation | done | P2 | build | 3 | (CBL-bjC26-P1) | /improvement now redirects to /admin/improvement. Added /admin/improvement-engine as separate admin route for ImprovementEngine page with nav entries in both ADMIN_NAV and PersonaSidebar5 Stewards layer. |
 | PARITY-NAV-0011       | 7 more routes missing from PersonaSidebar5 | navigation | done | P1 | build | 9 | (CBL-bjC26-P2) | Added Engine Dashboard, Passive Actions to client layer; Advisory to advisor layer; Platform Guide, Lead Sources to steward layer. PersonaSidebar5 now 68+ items covering all major routes. |
 | PARITY-DATA-0006      | OperationsHub compliance stats hardcoded to "0" | data_pipeline | done | P1 | build | 8 | (CBL-bjC26-P2) | Wired compliance.getDashboardStats into OperationsHub QuickStats + ComplianceSection. Hardcoded "98%" / "100%" / "0 flags" replaced with real flaggedCount/totalCount/passRate from DB. |
-| PARITY-DATA-0007      | RelationshipsHub stats all hardcoded "0" | data_pipeline | in_progress | P1 | build | 2 | (CBL-bjC26-P2) | Wired leadPipeline.getPipeline for lead count. Meetings and Campaigns stats still hardcoded — no backend query exists for meeting counts or campaign counts yet. |
+| PARITY-DATA-0007      | RelationshipsHub stats all hardcoded "0" | data_pipeline | done | P1 | build | 7 | (CBL-cxtpC-P4) | Leads wired (CBL-bjC26-P2). Campaigns count wired to emailCampaign.list (CBL-cxtpC-P4). OutreachSection now shows real campaign list with status badges. Meetings count still "0" — no meeting tracking backend exists. |
 | PARITY-MOBILE-0012    | Chat.tsx dropdown menus too wide on narrow phones | mobile_ux | done | P1 | build | 8 | (CBL-bjC26-P3) | Add context, Focus, Model dropdowns all responsive: w-44 sm:w-48, w-48 sm:w-52, w-52 sm:w-56. Focus/Model menus now max-h-[60vh] overflow-y-auto. |
 | PARITY-MOBILE-0013    | Mobile bottom padding too tight (8px margin) | mobile_ux | done | P1 | build | 9 | (CBL-bjC26-P3) | AppShell + Chat pb-16→pb-20 (80px vs 56px tab bar = 24px safety margin, handles safe-area-bottom on notched devices). |
 | PARITY-MOBILE-0014    | Model label truncated with no tooltip on mobile | mobile_ux | done | P2 | build | 8 | (CBL-bjC26-P3) | Mobile model button label widened 60→80px + title attribute for native tooltip on long-press/hover. |
@@ -1019,6 +1019,7 @@ Columns:
 | PARITY-SHELL-0001     | CaseStudySimulator missing AppShell (dead-end on mobile) | ui_cohesion | done | P1 | build | 8 | (CBL-cxtpC-P3) | Wrapped in AppShell via inner component pattern. Users now have navigation context. |
 | PARITY-SHELL-0002     | ConnectionMap missing AppShell (dead-end on mobile) | ui_cohesion | done | P1 | build | 8 | (CBL-cxtpC-P3) | Wrapped in AppShell via inner component pattern. Users now have navigation context. |
 | PARITY-ROBUST-0001    | FairnessTestDashboard 3x unprotected JSON.parse in render | robustness | done | P1 | build | 9 | (CBL-cxtpC-P3) | All 3 JSON.parse calls now wrapped in try-catch with safe defaults (empty object/array). |
+| PARITY-CRM-0004       | RelationshipsHub OutreachSection hardcoded empty state | marketing_crm | done | P1 | build | 8 | (CBL-cxtpC-P4) | Wired to emailCampaign.list — shows real campaign list with status badges, links to /email-campaigns. "New Campaign" button now navigates to campaigns page instead of chat. |
 
 ---
 
@@ -1176,6 +1177,8 @@ Pass 7 · angle: mobile bottom nav consistency + touch UX · commit SHA: 488be3f
 Pass 8 · angle: WCAG accessibility — aria-labels on icon buttons · commit SHA: dd68e83 · shipped: 7 Chat.tsx message action button aria-labels · deferred: LearningHome Card toggle a11y
 
 Pass 9 · angle: integration UX + data pipeline discoverability · commit SHA: (pending) · shipped: DynamicIntegrations back link fixed from /intelligence-hub to /integrations (correct section context) + hidden on mobile where AppShell nav covers it · deferred: none
+
+Pass 13 (CBL-cxtpC-P4) · angle: data pipeline + CRM wiring · queue: [PARITY-DATA-0007 RelationshipsHub stats, A1: OutreachSection live campaigns] · commit SHA: (pending) · shipped: (1) RelationshipsHub campaigns QuickStat wired to emailCampaign.list count; (2) OutreachSection replaced hardcoded empty state with real campaign list from emailCampaign.list — shows status badges, campaign details, and links to /email-campaigns page; (3) "New Campaign" button now navigates to /email-campaigns instead of opening chat · deferred: meetings count (no meeting tracking backend), COI partners count
 
 Pass 12 (CBL-cxtpC-P3) · angle: cross-app cohesion + robustness + input validation · queue: [A1: AppShell missing from CaseStudySimulator + ConnectionMap, A2: unprotected JSON.parse in FairnessTestDashboard] · commit SHA: (pending) · shipped: (1) CaseStudySimulator wrapped in AppShell (was dead-end on mobile — no nav/tabs); (2) ConnectionMap wrapped in AppShell; (3) FairnessTestDashboard 3 unprotected JSON.parse calls guarded with try-catch + safe defaults · deferred: error states on more pages (most high-traffic pages already have error handling from pass 5)
 
