@@ -255,8 +255,8 @@ export default function ImprovementDashboard() {
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-[10px] text-muted-foreground/70 uppercase">Convergence</p>
-                  <Badge variant={runNow.data.convergence.status === "CONVERGED" ? "default" : "outline"}>
-                    {runNow.data.convergence.status}
+                  <Badge variant={runNow.data?.convergence?.status === "CONVERGED" ? "default" : "outline"}>
+                    {runNow.data?.convergence?.status ?? "—"}
                   </Badge>
                 </div>
                 <div className="space-y-0.5">

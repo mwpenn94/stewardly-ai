@@ -370,7 +370,7 @@ export default function Calculators() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {iulCalc.data.projections.map((p) => (
+                          {(iulCalc.data?.projections ?? []).map((p) => (
                             <TableRow key={p.year} className="border-border/30">
                               <TableCell className="text-xs py-1.5">{p.year}</TableCell>
                               <TableCell className="text-xs py-1.5">{p.age}</TableCell>
@@ -534,7 +534,7 @@ export default function Calculators() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {pfCalc.data.projections.map((p) => (
+                          {(pfCalc.data?.projections ?? []).map((p) => (
                             <TableRow key={p.year} className={`border-border/30 ${p.year === pfCalc.data!.breakevenYear ? "bg-emerald-500/10" : ""}`}>
                               <TableCell className="text-xs py-1.5">
                                 {p.year}
@@ -674,7 +674,7 @@ export default function Calculators() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {retCalc.data.projections.map((p) => (
+                          {(retCalc.data?.projections ?? []).map((p) => (
                             <TableRow key={p.year} className="border-border/30">
                               <TableCell className="text-xs py-1.5">{p.year}</TableCell>
                               <TableCell className="text-xs py-1.5">{p.age}</TableCell>
@@ -997,7 +997,7 @@ function TaxProjectorPanel() {
             {taxCalc.data.bracketBreakdown?.length > 0 && (
               <div className="space-y-1">
                 <p className="text-xs font-medium">Bracket Breakdown</p>
-                {taxCalc.data.bracketBreakdown.map((b: any, i: number) => (
+                {(taxCalc.data?.bracketBreakdown ?? []).map((b: any, i: number) => (
                   <div key={i} className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{b.bracket}</span>
                     <span className="font-mono">{fmt(b.taxOnBracket)}</span>
@@ -1101,7 +1101,7 @@ function MedicarePanel() {
             {medCalc.data.enrollmentTimeline?.length > 0 && (
               <div className="space-y-1">
                 <p className="text-xs font-medium">Enrollment Timeline</p>
-                {medCalc.data.enrollmentTimeline.map((t: any, i: number) => (
+                {(medCalc.data?.enrollmentTimeline ?? []).map((t: any, i: number) => (
                   <div key={i} className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{t.event}</span>
                     <span>{t.deadline}</span>

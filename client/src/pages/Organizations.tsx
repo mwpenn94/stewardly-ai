@@ -41,7 +41,7 @@ export default function Organizations() {
   const [form, setForm] = useState({
     name: "", slug: "", description: "", website: "", ein: "", industry: "", size: "small" as const,
   });
-  const [inviteForm, setInviteForm] = useState({ email: "", role: "user" as string });
+  const [inviteForm, setInviteForm] = useState({ userId: "", role: "user" as string });
 
   // Queries
   const orgList = trpc.organizations.list.useQuery(undefined, { enabled: !!user });
@@ -293,7 +293,7 @@ export default function Organizations() {
                 <Input
                   type="number"
                   placeholder="Enter user ID to invite"
-                  value={inviteForm.email}
+                  value={inviteForm.userId}
                   onChange={(e) => setInviteForm(f => ({ ...f, email: e.target.value }))}
                   className="mt-1"
                 />
@@ -319,10 +319,10 @@ export default function Organizations() {
               <Button
                 onClick={() => inviteMember.mutate({
                   organizationId: showDetail!,
-                  userId: parseInt(inviteForm.email, 10),
+                  userId: parseInt(inviteForm.userId, 10) || 0,
                   role: inviteForm.role as any,
                 })}
-                disabled={!inviteForm.email || inviteMember.isPending}
+                disabled={!inviteForm.userId || inviteMember.isPending}
               >
                 {inviteMember.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <UserPlus className="w-4 h-4 mr-1" />}
                 Invite
