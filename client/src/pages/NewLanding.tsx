@@ -138,12 +138,13 @@ export default function NewLanding() {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      <a href="#landing-main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40">Skip to main content</a>
       <SEOHead
         title="Stewardly — AI-Powered Financial Stewardship"
         description="Your digital financial twin that thinks like you. Multi-model AI, compliance-aware advisory, and 128+ financial tools."
       />
       {/* ── Hero ──────────────────────────────────────────────────── */}
-      <section className="relative isolate px-6 pt-20 pb-24 lg:pt-32 lg:pb-36">
+      <section id="landing-main" tabIndex={-1} className="relative isolate px-6 pt-20 pb-24 lg:pt-32 lg:pb-36">
         {/* Ambient glow backgrounds */}
         <div
           aria-hidden="true"

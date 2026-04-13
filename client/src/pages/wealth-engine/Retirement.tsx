@@ -312,7 +312,7 @@ export default function RetirementPage() {
                     </span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                   <ProjectionChart
                     width={780}
                     height={320}

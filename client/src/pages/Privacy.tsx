@@ -70,6 +70,7 @@ export default function Privacy() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <a href="#privacy-main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40">Skip to main content</a>
       <SEOHead title="Privacy Policy" description="How Stewardly AI protects your data and privacy" />
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">
@@ -83,7 +84,7 @@ export default function Privacy() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div id="privacy-main" tabIndex={-1} className="max-w-4xl mx-auto px-4 py-8">
         {/* Intro */}
         <div className="mb-10">
           <h1 className="text-2xl font-bold mb-3">Privacy Policy</h1>

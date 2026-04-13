@@ -11,7 +11,15 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
-- **Mobile UX (7 fixes)**:
+- **Mobile UX (10 fixes)**:
+  - Chat popup menus (Add context + Focus) overflow on narrow viewports — added `max-w-[calc(100vw-2rem)]`
+  - Chat voice interim text overflow on mobile — changed from fixed `max-w-[250px]` to responsive `max-w-[60vw] sm:max-w-[250px]`
+  - Retirement calculator chart container missing `overflow-x-auto` for mobile scroll
+  - StrategyComparison trajectory chart container missing `overflow-x-auto` for mobile scroll
+- **Accessibility (WCAG 2.4.1 skip-to-content on ALL pages)**:
+  - Added skip-to-content links to Welcome, SignIn, NewLanding, Terms, Privacy, OrgLanding
+  - All 6 non-AppShell pages now have consistent sr-only → focus:visible skip links
+- **Mobile UX (prior fixes)**:
   - ManusDialog overflow on mobile (400px hardcoded -> responsive)
   - VideoStreamingLayout sidebars overflow on mobile (now stack vertically)
   - CodeChat outline rail + file panel accessible on mobile (full-screen overlay)

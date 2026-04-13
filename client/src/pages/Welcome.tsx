@@ -34,6 +34,7 @@ export default function Welcome() {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
+      <a href="#welcome-main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40">Skip to main content</a>
       {/* Pass 100 Stewardship Gold: background glows use semantic tokens
           (accent = gold, chart-2 = emerald, chart-5 = purple) so the
           mesh harmonizes with the gold identity instead of the old
@@ -74,7 +75,7 @@ export default function Welcome() {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10">
+      <main id="welcome-main" tabIndex={-1} className="relative z-10">
         {/* Hero section */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
           <div className="text-center space-y-8 animate-in fade-in duration-700">

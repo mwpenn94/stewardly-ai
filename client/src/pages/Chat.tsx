@@ -2500,7 +2500,7 @@ export default function Chat() {
                 {voiceState === "speaking" ? "Speaking..." : voiceState === "listening" ? "Listening..." : voiceState === "processing" ? "Thinking..." : "Ready — speak anytime"}
               </span>
               {voiceState === "listening" && voice.interimText && (
-                <span className="text-[11px] text-foreground/50 italic max-w-[250px] truncate">
+                <span className="text-[11px] text-foreground/50 italic max-w-[60vw] sm:max-w-[250px] truncate">
                   "{voice.interimText}"
                 </span>
               )}
@@ -2603,7 +2603,7 @@ export default function Chat() {
                 {showAddMenu && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} aria-hidden="true" />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-44 sm:w-48 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-44 sm:w-48 max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <button
                         className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
                         onClick={() => { fileInputRef.current?.click(); setShowAddMenu(false); }}
@@ -2737,7 +2737,7 @@ export default function Chat() {
                 {showModeMenu && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowModeMenu(false)} aria-hidden="true" />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-48 sm:w-52 max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-48 sm:w-52 max-w-[calc(100vw-2rem)] max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Focus</div>
                       {FOCUS_OPTIONS.map(opt => (
                         <button

@@ -65,6 +65,7 @@ export default function OrgLanding() {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
+      <a href="#org-main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40">Skip to main content</a>
       {/* Animated gradient mesh background */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-background" />
@@ -126,7 +127,7 @@ export default function OrgLanding() {
 
       {/* Main content */}
       {!orgQuery.isLoading && !orgQuery.isError && (
-        <main className="relative z-10">
+        <main id="org-main" tabIndex={-1} className="relative z-10">
           {/* Hero section */}
           <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
             <div className="text-center space-y-8 animate-in fade-in duration-700">
