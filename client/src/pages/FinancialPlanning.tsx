@@ -106,7 +106,7 @@ export default function FinancialPlanning() {
     <AppShell title="Financial Planning">
     <div className="min-h-screen bg-background">
       {/* Header — hidden on mobile where AppShell provides navigation */}
-      <div className="hidden lg:block border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">
+      <div className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
           <Button variant="ghost" size="icon" aria-label="Back to calculators" onClick={() => navigate("/calculators")}>

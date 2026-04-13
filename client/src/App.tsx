@@ -200,7 +200,8 @@ function Router() {
         <Route path={"/insurance-applications"} component={InsuranceApplications} />
         <Route path={"/advisory-execution"} component={AdvisoryExecution} />
         <Route path={"/carrier-connector"} component={CarrierConnector} />
-        <Route path={"/improvement"} component={ImprovementEngine} />
+        <Route path={"/improvement"}>{() => <Redirect to="/admin/improvement" />}</Route>
+        <Route path={"/admin/improvement-engine"} component={ImprovementEngine} />
         <Route path={"/integrations"} component={Integrations} />
         <Route path={"/admin/bcp"} component={BCP} />
         <Route path={"/admin/fairness"} component={FairnessTestDashboard} />

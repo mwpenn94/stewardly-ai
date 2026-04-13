@@ -170,7 +170,7 @@ export default function DynamicIntegrations() {
     <AppShell title="Dynamic Integrations">
       <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild aria-label="Back to integrations" className="hidden lg:inline-flex">
+          <Button variant="ghost" size="sm" asChild aria-label="Back to integrations">
             <Link to="/integrations">
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Link>
