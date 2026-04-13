@@ -11,6 +11,7 @@ All notable changes to Stewardly AI are documented here. The format follows [Kee
 - RelationshipsHub OutreachSection wired to live campaign data
 
 ### Fixed
+- **Mobile responsive (learning mode selectors)**: LearningQuizRunner + LearningFlashcardStudy 3-col mode selector grids now 2-col on mobile (grid-cols-2 sm:grid-cols-3) to prevent button squeeze on 375px
 - **UI honesty — 10 "coming soon" toast lies replaced with disabled buttons**:
   - WebhookManager: added HonestPlaceholder banner, disabled Add Endpoint + Retry buttons
   - AdvisorProfile: replaced 4 "coming soon" toast buttons/links with disabled + title attributes
