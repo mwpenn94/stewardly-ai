@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Bot, Play, Square, Trash2, Plus, Shield, Loader2, DollarSign, Clock, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
+import { Bot, Play, Square, Trash2, Plus, Shield, Loader2, DollarSign, Clock, ChevronDown, ChevronUp, AlertCircle, AlertTriangle } from "lucide-react";
 
 const AGENT_TYPES = [
   { value: "compliance_monitor", label: "Compliance Monitor", desc: "Reads compliance rules + communication archive, flags issues" },
@@ -96,6 +96,12 @@ export default function AgentManager() {
         <div className="container py-6">
           {agents.isLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+          ) : agents.isError ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-destructive opacity-60" />
+              <p className="text-lg font-medium">Failed to load agents</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => agents.refetch()}>Retry</Button>
+            </div>
           ) : (agents.data || []).length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <Bot className="h-12 w-12 mx-auto mb-3 opacity-40" />

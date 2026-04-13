@@ -1131,7 +1131,9 @@ Pass 2 · angle: mobile responsive depth + dead code cleanup · queue: mobile la
 
 Pass 3 · angle: dead code + bundle hygiene · queue: PartGPages dead functions, dead page file, unused imports · commit SHA: 42b4bae · shipped: (1) PartGPages.tsx: removed 5 dead exported functions (LicensedReview, AgentOperations, InsuranceQuotes, EstatePlanning, PremiumFinance — ~350 lines, all redirect routes); (2) deleted Compliance.tsx (439 lines, orphaned after App.tsx redirect); (3) cleaned PartGPages imports (removed 13 unused icon imports). Net: −789 lines of dead code · deferred: MobileChatLayout.tsx (deliberate P3 backlog, not removing)
 
-Pass 4 · angle: SEO + page titles + accessibility · queue: missing page titles on public and internal pages · commit SHA: (pending) · shipped: (1) SignIn.tsx: SEOHead with title + description; (2) Terms.tsx: SEOHead with title; (3) Privacy.tsx: SEOHead with title; (4) PlatformGuide.tsx: document.title via useEffect; (5) DynamicIntegrations.tsx: added title prop to AppShell · deferred: Welcome.tsx, Landing.tsx, NewLanding.tsx, NotFound.tsx titles (low priority — redirect/ephemeral pages)
+Pass 4 · angle: SEO + page titles + accessibility · queue: missing page titles on public and internal pages · commit SHA: 1d815ec · shipped: (1) SignIn.tsx: SEOHead with title + description; (2) Terms.tsx: SEOHead with title; (3) Privacy.tsx: SEOHead with title; (4) PlatformGuide.tsx: document.title via useEffect; (5) DynamicIntegrations.tsx: added title prop to AppShell · deferred: Welcome.tsx, Landing.tsx, NewLanding.tsx, NotFound.tsx titles (low priority — redirect/ephemeral pages)
+
+Pass 5 · angle: error states + graceful degradation · queue: missing tRPC error handling on high-traffic pages · commit SHA: (pending) · shipped: (1) LearningHome.tsx: error banner with retry for 6 queries; (2) Workflows.tsx: error guard in reconciliation useEffect + error banner; (3) AgentManager.tsx: error state with retry in agent listing · deferred: IntelligenceHub analytics error states, MyWork error handling
 
 ## Angle Glossary
 | Angle ID | Description | Disjoint from |
