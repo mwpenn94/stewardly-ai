@@ -329,7 +329,7 @@ export default function DynamicIntegrations() {
                     draftResult.draft.transformSteps.length > 0 && (
                       <div>
                         <div className="font-medium text-sm mb-1">Transform steps</div>
-                        <div className="border rounded-md p-2 bg-muted/30 max-h-40 overflow-auto text-xs font-mono whitespace-pre">
+                        <div className="border rounded-md p-2 bg-muted/30 max-h-40 overflow-auto text-xs font-mono whitespace-pre-wrap break-words max-w-full">
                           {JSON.stringify(draftResult.draft.transformSteps, null, 2)}
                         </div>
                       </div>
@@ -520,7 +520,7 @@ export default function DynamicIntegrations() {
                   <div>
                     <strong>Transform steps ({selectedBlueprint.transformSteps?.length ?? 0}):</strong>
                   </div>
-                  <pre className="text-[10px] bg-muted/30 p-2 rounded border max-h-52 overflow-auto">
+                  <pre className="text-[10px] bg-muted/30 p-2 rounded border max-h-52 overflow-auto overflow-x-auto max-w-full break-words whitespace-pre-wrap">
                     {JSON.stringify(selectedBlueprint.transformSteps ?? [], null, 2)}
                   </pre>
                 </CardContent>
