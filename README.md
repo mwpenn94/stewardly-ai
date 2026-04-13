@@ -94,7 +94,7 @@ npm test                    # All tests
 npm test -- --run path/to   # Specific file
 ```
 
-- 7,337+ tests passing across 294 files in local dev
+- 5,000+ tests across 330 test files
 - 18 pre-existing env-dependent test files require DB connection
 
 ## Documentation
