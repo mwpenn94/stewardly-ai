@@ -6,10 +6,10 @@
 
 | Field | Value |
 |---|---|
-| **Current Pass** | 1 (initialization) — COMPLETE |
+| **Current Pass** | 2 (ship) — COMPLETE |
 | **Persona Cursor** | 1 (Cold new advisor — first visit) |
-| **Last Completed Pass** | 1 (infra-only) |
-| **Last Checkpoint SHA** | pending (save after this update) |
+| **Last Completed Pass** | 2 (Persona 1, Angle A1: chat placeholder friction) |
+| **Last Checkpoint SHA** | pending |
 | **TypeScript Errors** | 0 |
 | **Test Files** | 307 passing / 0 failing |
 | **Total Tests** | 7,462 passing / 0 failing |
@@ -21,13 +21,14 @@
 
 | Pass | Persona | Angle | Scopes Touched | Outcome | SHA | Duration |
 |---|---|---|---|---|---|---|
-| 1 | — (infra) | initialization | all | Created 14 docs files (AI_CHAT_PARITY, CODE_CHAT_PARITY, AGENTIC_PARITY, CALCULATOR_PARITY, EMBA_PARITY, UI_REGRESSION_LOG, INTEGRATIONS, CURRENT_BEST, LOOP_DASHBOARD, BLOCKED_ON, PROMPT_ISSUES, PROMPT_SYNC, ROLLBACK_LOG, TRUSTED_CONTRIBUTORS). Enumerated 16 canonical routes across 3 tiers. Captured 48 baseline screenshots (16 routes x 3 viewports: 1440, 820, 390). Enumerated calculator source artifacts (3 HTML files: 20,534 lines, 300 inputs, 34 selects, 138 buttons). Enumerated EMBA modules (8 disciplines, 12 tracks). Set Persona Cursor to 1. | pending | ~15 min |
+| 1 | — (infra) | initialization | all | Created 14 docs files, enumerated 16 routes, captured 48 baseline screenshots, enumerated calculator/EMBA artifacts. Set Persona Cursor to 1. | f9dcfaaf | ~15 min |
+| 2 | 1 (cold new advisor) | A1: first-visit placeholder friction | Stream 4 (chat UX) | Walked /chat as Persona 1. Identified 6 friction points. Shipped: chat input placeholder text updated for all 3 roles (advisor/admin/user) from system-admin language to financial-advisory language. | pending | ~10 min |
 
 ## Persona Rotation
 
 | Cursor | Persona | Last Served | Pass |
 |---|---|---|---|
-| 1 | Cold new advisor (first visit) | never | — |
+| 1 | Cold new advisor (first visit) | Pass 2 | 2 |
 | 2 | Monday-morning returning advisor | never | — |
 | 3 | Mid-meeting laptop (client present) | never | — |
 | 4 | Mid-meeting phone (mobile) | never | — |
@@ -53,4 +54,4 @@
 
 ## Arc Signal
 <!-- Tracks whether the loop is converging, diverging, or stalled -->
-No arc signal yet — Pass 1 was infra-only. Arc tracking begins with Pass 2.
+Pass 2: First observable shipped. Placeholder text change is micro but touches the #1 route (/chat) seen by all 10 personas. Direction: converging (first real UX improvement). Next pass should advance Persona Cursor to 2 or deepen Persona 1 with a different angle.

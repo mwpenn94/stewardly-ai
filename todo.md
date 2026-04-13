@@ -3672,3 +3672,10 @@
 - [x] Set Persona Cursor to 1 (Cold new advisor — first visit)
 - [x] Fix pnpm-lock.yaml out of sync with package.json (deployment failure fix)
 - [x] Fix 5 test failures from GitHub PR pull (authEnrichment, streaming-notification, v9Features professionals, navReachability, commandPalette)
+
+## Continuous Build Loop — Pass 2 (Apr 13)
+- [x] Walk /chat as Persona 1 (cold new advisor) — identified 6 friction points
+- [x] Ship: Chat input placeholder text updated for all 3 roles (advisor/admin/user) from system-admin language to financial-advisory language
+- [x] Update PARITY.md Angle Log with Pass 2 entry
+- [x] Update LOOP_DASHBOARD.md with Pass 2 completion state
+- [x] Verify 0 TS errors, all tests passing

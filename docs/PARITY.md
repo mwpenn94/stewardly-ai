@@ -1120,12 +1120,18 @@ log the conflict in section 4.
 ## Reachability Audit
 | Pass | Persona | Feature | Predicted Path | Actual Result | Screenshot |
 |---|---|---|---|---|---|
+| 2 | 1 (cold new advisor) | Chat landing | /chat | Loads, greeting visible, 4 suggestion chips, 3 feature cards | baseline-desktop-chat.png |
 
 ## Angle Log
+| # | Persona | Angle | Scope | Result | SHA |
+|---|---------|-------|-------|--------|-----|
+| 1 | — | infra-only | all | scaffolded | f9dcfaaf |
+| 2 | 1 (cold new advisor) | first-visit placeholder friction | Stream 4 (chat UX) | shipped: placeholder text updated for all 3 roles | pending |
 
 ## Angle Glossary
 | Angle ID | Description | Disjoint from |
 |---|---|---|
+| A1 | first-visit placeholder friction | — |
 
 ## Persona Cursor
 1

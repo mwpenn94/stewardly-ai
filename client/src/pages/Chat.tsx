@@ -2516,7 +2516,7 @@ export default function Chat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={handsFreeActive && voice.isListening ? "Listening..." : userRole === "advisor" ? "Ask about clients, strategies, compliance..." : userRole === "admin" ? "Ask about system health, usage, configuration..." : "Ask Steward anything..."}
+                placeholder={handsFreeActive && voice.isListening ? "Listening..." : userRole === "advisor" ? "Ask about clients, strategies, compliance, or financial planning..." : userRole === "admin" ? "Ask about platform management, analytics, or financial strategies..." : "Ask about financial planning, insurance, investments, or strategies..."}
                 className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[36px] max-h-[160px] text-sm py-2 px-0"
                 rows={1}
                 disabled={isStreaming}
