@@ -1123,6 +1123,10 @@ log the conflict in section 4.
 
 ## Angle Log
 
+## Continuous Build Loop Pass Log
+
+Pass 1 · angle: correctness + mobile UX + functional gaps · queue: mobile safe-area fix, viewport-fit, nav orphans, AppShell wrapping · commit SHA: (pending) · shipped: (1) viewport-fit=cover + maximum-scale=5 for WCAG pinch-zoom + notched phones; (2) safe-area-bottom CSS class now defined (was used but never created — dead class on AppShell bottom nav); (3) Chat.tsx mobile bottom nav: h-16→h-14 for consistency with AppShell + added safe-area-bottom class; (4) /consensus added to ADMIN_NAV + PersonaSidebar5 STEWARD layer (was orphaned route); (5) AdminIntelligenceDashboard wrapped in AppShell (was missing sidebar + mobile bottom nav); (6) PartGPages: InsuranceApplications, AdvisoryExecution, CarrierConnector wrapped in AppShell with hidden-on-mobile headers (were missing entire shell chrome on mobile) · deferred: remaining mobile audit items (dropdown overflow on small viewports, <320px edge cases)
+
 ## Angle Glossary
 | Angle ID | Description | Disjoint from |
 |---|---|---|

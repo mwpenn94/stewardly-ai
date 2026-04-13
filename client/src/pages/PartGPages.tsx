@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link } from "wouter";
+import AppShell from "@/components/AppShell";
 import {
   Shield, Clock, CheckCircle, XCircle, AlertTriangle, FileText,
   Bot, Play, Pause, DollarSign, Users, Building2, Briefcase,
@@ -275,9 +276,10 @@ export function InsuranceApplications() {
   const statusSteps = ["data_collection", "pre_underwriting", "compliance_check", "licensed_review", "submitted", "underwriting", "issued"];
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <AppShell title="Insurance Applications">
+    <div className="bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
+        <div className="mb-2 hidden lg:block"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <FileCheck className="h-7 w-7 text-emerald-400" /> Insurance Applications
@@ -319,6 +321,7 @@ export function InsuranceApplications() {
         </div>
       </div>
     </div>
+    </AppShell>
   );
 }
 
@@ -338,9 +341,10 @@ export function AdvisoryExecution() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <AppShell title="Advisory Execution">
+    <div className="bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
+        <div className="mb-2 hidden lg:block"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Briefcase className="h-7 w-7 text-blue-400" /> Advisory Execution Dashboard
@@ -395,6 +399,7 @@ export function AdvisoryExecution() {
         </div>
       </div>
     </div>
+    </AppShell>
   );
 }
 
@@ -568,9 +573,10 @@ export function CarrierConnector() {
   });
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <AppShell title="Carrier Connector">
+    <div className="bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
+        <div className="mb-2 hidden lg:block"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
@@ -609,5 +615,6 @@ export function CarrierConnector() {
         </div>
       </div>
     </div>
+    </AppShell>
   );
 }

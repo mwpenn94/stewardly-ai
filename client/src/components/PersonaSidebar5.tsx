@@ -19,7 +19,7 @@ import {
   ChevronDown, Pin, Compass, Scale,
   Zap, Package, GitBranch, RefreshCw, Link2, Plug,
   Heart, DollarSign, Target, Shield, BookOpen,
-  Key, Webhook, Bot, Globe, Building2,
+  Key, Webhook, Bot, Globe, Building2, GitMerge,
   LayoutDashboard, UserPlus, HeartPulse, Sparkles,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -113,6 +113,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     items: [
       { label: "Platform Admin", icon: Cog, path: "/admin", match: ["/admin"] },
       { label: "AI Agents", icon: Bot, path: "/agents", match: ["/agents"] },
+      { label: "Consensus", icon: GitMerge, path: "/consensus", match: ["/consensus"] },
       { label: "AI Intelligence", icon: Brain, path: "/admin/intelligence", match: ["/admin/intelligence"] },
       { label: "Improvement", icon: Zap, path: "/admin/improvement", match: ["/admin/improvement"] },
       { label: "System Health", icon: Activity, path: "/admin/system-health", match: ["/admin/system-health"] },
