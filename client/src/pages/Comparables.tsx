@@ -20,6 +20,7 @@
 
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import {
   Card,
@@ -112,13 +113,15 @@ function BandBadge({
 }
 
 export default function ComparablesPage() {
-  const axesQ = trpc.comparables.listAxes.useQuery(undefined, { staleTime: 300_000 });
-  const summaryQ = trpc.comparables.summary.useQuery(undefined, { staleTime: 300_000 });
-  const matrixQ = trpc.comparables.gapMatrix.useQuery(undefined, { staleTime: 300_000 });
-  const rankingQ = trpc.comparables.ranking.useQuery(undefined, { staleTime: 300_000 });
-  const prioritiesQ = trpc.comparables.priorities.useQuery({ limit: 8 }, { staleTime: 300_000 });
-  const byCategoryQ = trpc.comparables.byCategory.useQuery(undefined, { staleTime: 300_000 });
-  const appSummariesQ = trpc.comparables.appSummaries.useQuery(undefined, { staleTime: 300_000 });
+  const { isAuthenticated } = useAuth();
+
+  const axesQ = trpc.comparables.listAxes.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
+  const summaryQ = trpc.comparables.summary.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
+  const matrixQ = trpc.comparables.gapMatrix.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
+  const rankingQ = trpc.comparables.ranking.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
+  const prioritiesQ = trpc.comparables.priorities.useQuery({ limit: 8 }, { enabled: isAuthenticated, staleTime: 300_000 });
+  const byCategoryQ = trpc.comparables.byCategory.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
+  const appSummariesQ = trpc.comparables.appSummaries.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedQ = trpc.comparables.getComparable.useQuery(

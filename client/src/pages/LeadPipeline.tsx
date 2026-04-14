@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Search, Plus, LayoutGrid, List, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
@@ -72,6 +73,8 @@ function scoreFor(l: any): number {
 }
 
 export default function LeadPipeline() {
+  const { isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
   const [search, setSearch] = useState("");

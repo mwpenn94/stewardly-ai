@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
@@ -91,6 +92,8 @@ function runMonteCarloSim(totalMonthly: number, targetMonthly: number, portfolio
 }
 
 export default function IncomeProjection() {
+  const { isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const { profile, updateProfile } = useFinancialProfile("income-projection");
 

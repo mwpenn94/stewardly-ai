@@ -6,6 +6,7 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,8 @@ import {
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 
 export default function IntelligenceHub() {
+  const { isAuthenticated } = useAuth();
+
   const [activeTab, setActiveTab] = useState("overview");
 
   return (

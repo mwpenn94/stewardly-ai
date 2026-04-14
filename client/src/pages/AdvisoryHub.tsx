@@ -7,6 +7,7 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ import {
 } from "lucide-react";
 
 export default function AdvisoryHub() {
+  const { isAuthenticated } = useAuth();
+
   const [activeTab, setActiveTab] = useState("products");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -107,7 +110,8 @@ function QuickStat({ icon: Icon, label, value, color }: { icon: any; label: stri
 }
 
 function ProductsSection({ searchQuery }: { searchQuery: string }) {
-  const products = trpc.products.list.useQuery({});
+  const { isAuthenticated } = useAuth();
+  const products = trpc.products.list.useQuery(undefined, { enabled: isAuthenticated });
 
   const categories = [
     { name: "Life Insurance", icon: Shield, color: "text-blue-500", prompt: "Tell me about the life insurance products available on the platform. What are the top options and how do they compare?" },

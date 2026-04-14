@@ -39,6 +39,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 
 type SeverityKey = "info" | "success" | "warning" | "critical";
@@ -76,14 +77,16 @@ function formatTime(createdAt: number | string | null | undefined): string {
 }
 
 export default function ComplianceAudit() {
+  const { isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "clean" | "flagged" | "pending" | "reviewed">("all");
 
-  const statsQ = trpc.compliance.getDashboardStats.useQuery(undefined, { retry: false });
+  const statsQ = trpc.compliance.getDashboardStats.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const reviewsQ = trpc.compliance.getReviews.useQuery(
     { limit: 100, status: statusFilter },
-    { retry: false },
+    { enabled: isAuthenticated, retry: false },
   );
 
   const stats = statsQ.data;

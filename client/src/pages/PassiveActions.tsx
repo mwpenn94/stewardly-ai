@@ -2,6 +2,9 @@ import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { AuthGate } from "@/components/AuthGate";
+import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -52,14 +55,37 @@ const CATEGORY_LABELS: Record<string, string> = {
 const CATEGORY_ORDER = ["government", "market", "investment", "personal", "insurance", "crm", "professional"];
 
 export default function PassiveActions() {
+  const { user, loading, isAuthenticated } = useAuth();
 
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("sources");
 
-  const { data: sourceData } = trpc.passiveActions.dataSources.useQuery();
-  const { data: preferences, refetch: refetchPrefs } = trpc.passiveActions.preferences.useQuery();
-  const { data: stats, refetch: refetchStats } = trpc.passiveActions.stats.useQuery();
-  const { data: history } = trpc.passiveActions.history.useQuery({ limit: 50 });
+  const { data: sourceData } = trpc.passiveActions.dataSources.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: preferences, refetch: refetchPrefs } = trpc.passiveActions.preferences.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: stats, refetch: refetchStats } = trpc.passiveActions.stats.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: history } = trpc.passiveActions.history.useQuery({ limit: 50 }, { enabled: isAuthenticated });
+
+  if (loading) {
+    return (
+      <AppShell title="Passive Actions">
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-accent" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AppShell title="Passive Actions">
+        <AuthGate
+          title="Passive Actions"
+          description="Sign in to configure automated background operations for your data sources — auto-refresh, sync, monitoring, and alerts."
+          icon={<RefreshCw className="w-8 h-8 text-accent" />}
+        />
+      </AppShell>
+    );
+  }
 
   const toggleMutation = trpc.passiveActions.toggle.useMutation({
     onSuccess: () => { refetchPrefs(); refetchStats(); },

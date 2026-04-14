@@ -4,6 +4,7 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,12 @@ import { toast } from "sonner";
 import { Shield, Target, AlertTriangle, CheckCircle, TrendingUp, BarChart3, FileText, Zap } from "lucide-react";
 
 export default function SuitabilityPanel() {
+  const { isAuthenticated } = useAuth();
+
   const [tab, setTab] = useState("overview");
 
-  const suitability = trpc.suitability.get.useQuery();
-  const products = trpc.products.list.useQuery({});
+  const suitability = trpc.suitability.get.useQuery(undefined, { enabled: isAuthenticated });
+  const products = trpc.products.list.useQuery(undefined, { enabled: isAuthenticated });
 
   const profile = suitability.data;
   const productList = products.data || [];

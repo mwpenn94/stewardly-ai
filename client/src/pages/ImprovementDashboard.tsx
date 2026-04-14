@@ -13,6 +13,7 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,11 +41,13 @@ const STATUS_ICONS: Record<string, typeof Clock> = {
 };
 
 export default function ImprovementDashboard() {
+  const { isAuthenticated } = useAuth();
+
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
 
   const qualitySummary = trpc.adminIntelligence.getQualityScoresSummary.useQuery(
     undefined,
-    { staleTime: 30_000, retry: false },
+    { enabled: isAuthenticated, staleTime: 30_000, retry: false },
   );
 
   const hypotheses = trpc.adminIntelligence.getImprovementHypotheses.useQuery(

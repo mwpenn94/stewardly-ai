@@ -217,7 +217,7 @@ The project maintains 7,716 unit tests across 320 test files covering server rou
 
 ### End-to-End Tests (Playwright)
 
-68 Playwright E2E tests across 22 suites provide regression protection for all critical user journeys. Tests run against the live dev server using Chromium in headless mode.
+77 Playwright E2E tests across 26 suites provide regression protection for all critical user journeys. Tests run against the live dev server using Chromium in headless mode.
 
 | Suite | Coverage Area | Tests |
 |-------|--------------|-------|
@@ -243,7 +243,30 @@ The project maintains 7,716 unit tests across 320 test files covering server rou
 | Landing/Public | Root page, terms, privacy, 404 handling | 4 |
 | Integrations/Community/Changelog | Page renders without errors | 3 |
 | Wealth Engine Sub-pages | Passive Actions, Insights, Suitability | 3 |
+| Auth Gating | Protected route loop prevention, public route access | 22 |
+| Advisor Features | Wealth Engine, Learning, Products page structure | 8 |
+| Manager Features | Operations, Advisory Hub, Settings auth gating | 7 |
+| Admin Features | Admin panel, Compliance Audit, Client Onboarding | 6 |
+| Visual Regression | Desktop + mobile screenshot comparison (14 pages) | 16 |
 
 ### Test Infrastructure
 
 The E2E test framework uses a `setupPage` helper that pre-sets `localStorage` to bypass the onboarding tour overlay (z-index 10000), preventing it from blocking test interactions. Console error tracking filters known transient errors (HMR, WebSocket, rate limits). Rate limits are set to 100,000 requests per window in development mode to accommodate test parallelism.
+
+### Auth Gating Tests
+
+Dedicated test suites verify that all protected routes (9 routes using `protectedProcedure`) show appropriate content for unauthenticated users without causing infinite redirect loops. The `auth-fixtures.ts` module provides role-based setup helpers matching the app's 5-tier role system (guest, user, advisor, manager, admin) and maps each role to its expected sidebar visibility.
+
+### Visual Regression Testing
+
+Playwright screenshot comparison tests (`e2e/27-visual-regression.spec.ts`) capture baseline screenshots of 14 key pages across desktop (1280x720) and mobile (375x812) viewports. Subsequent runs compare against baselines with a 5% pixel-ratio tolerance and 0.3 per-pixel color threshold. Generate baselines with `npx playwright test e2e/27-visual-regression.spec.ts --update-snapshots`.
+
+### CI/CD Pipeline
+
+A GitHub Actions workflow (`.github/workflows/test.yml`) runs the full test suite on every push and pull request to `main`:
+
+1. **Unit Tests job** — Installs dependencies and runs `pnpm test` (Vitest, 7,716 tests)
+2. **E2E Tests job** — Builds the app, starts the server, runs Playwright desktop-chrome tests (77 tests)
+3. **Test Summary job** — Reports pass/fail status for both suites
+
+Failed E2E runs upload `test-results/` and `playwright-report/` as artifacts for debugging.

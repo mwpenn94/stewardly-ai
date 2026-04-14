@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
@@ -58,6 +59,8 @@ function SliderInput({
 }
 
 export default function TaxPlanning() {
+  const { isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const { profile, updateProfile } = useFinancialProfile("tax-planning");
 

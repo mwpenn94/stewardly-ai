@@ -2,6 +2,7 @@
  * Advisor Integrations Settings — personal integration connections for advisors
  */
 import { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,12 @@ import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 
 export default function AdvisorIntegrations() {
+  const { isAuthenticated } = useAuth();
+
   const [tab, setTab] = useState("my-connections");
 
-  const providers = trpc.integrations.listProviders.useQuery();
-  const connections = trpc.integrations.listConnections.useQuery();
+  const providers = trpc.integrations.listProviders.useQuery(undefined, { enabled: isAuthenticated });
+  const connections = trpc.integrations.listConnections.useQuery(undefined, { enabled: isAuthenticated });
 
   const providerList = (providers.data as any)?.providers || providers.data || [];
   const availableProviders = (Array.isArray(providerList) ? providerList : []).filter((p: any) => p.status === "active");

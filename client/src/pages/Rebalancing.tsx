@@ -20,6 +20,7 @@
 
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,8 @@ function fmtPct(n: number): string {
 }
 
 export default function RebalancingPage() {
+  const { isAuthenticated } = useAuth();
+
   const [holdings, setHoldings] = useState<HoldingRow[]>(DEFAULT_HOLDINGS);
   const [targets, setTargets] = useState<TargetRow[]>(DEFAULT_TARGETS);
   const [driftThreshold, setDriftThreshold] = useState(5);

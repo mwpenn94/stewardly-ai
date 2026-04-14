@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,18 +56,20 @@ function ScoreGauge({ score, size = "lg" }: { score: number | null; size?: "sm" 
 }
 
 export default function ImprovementEngine() {
+  const { isAuthenticated } = useAuth();
+
   const [selectedLayer, setSelectedLayer] = useState<string>("platform");
   const [selectedDirection, setSelectedDirection] = useState<string>("system_infrastructure");
   const [expandedAudit, setExpandedAudit] = useState<number | null>(null);
 
   // Queries
-  const overviewQuery = trpc.improvementEngine.layerOverview.useQuery(undefined, { staleTime: 30000 });
-  const auditsQuery = trpc.improvementEngine.listAudits.useQuery({
+  const overviewQuery = trpc.improvementEngine.layerOverview.useQuery(undefined, { enabled: isAuthenticated, staleTime: 30000 });
+  const auditsQuery = trpc.improvementEngine.listAudits.useQuery({ 
     layer: selectedLayer as any,
     direction: selectedDirection as any,
     limit: 10,
   }, { staleTime: 15000 });
-  const pendingQuery = trpc.improvementEngine.listPendingActions.useQuery({
+  const pendingQuery = trpc.improvementEngine.listPendingActions.useQuery({ 
     layer: selectedLayer as any,
     direction: selectedDirection as any,
   }, { staleTime: 15000 });

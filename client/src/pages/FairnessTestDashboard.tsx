@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,12 +15,14 @@ import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 
 export default function FairnessTestDashboard() {
+  const { isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [expandedResults, setExpandedResults] = useState<Set<number>>(new Set());
 
-  const runsQuery = trpc.fairness.listRuns.useQuery(undefined, { staleTime: 10000 });
-  const promptsQuery = trpc.fairness.listPrompts.useQuery(undefined, { staleTime: 60000 });
+  const runsQuery = trpc.fairness.listRuns.useQuery(undefined, { enabled: isAuthenticated, staleTime: 10000 });
+  const promptsQuery = trpc.fairness.listPrompts.useQuery(undefined, { enabled: isAuthenticated, staleTime: 60000 });
   const seedMut = trpc.fairness.seedPrompts.useMutation({
     onSuccess: (data) => {
       if (data.seeded) {

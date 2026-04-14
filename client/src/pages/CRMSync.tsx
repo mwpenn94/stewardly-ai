@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, Clock, Database, ArrowLeftRight, Settings2, History, Info } from "lucide-react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
@@ -33,6 +34,8 @@ const SYNC_HISTORY = [
 ];
 
 export default function CRMSync() {
+  const { isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const [autoSync, setAutoSync] = useState(true);
   const [provider, setProvider] = useState<"wealthbox" | "salesforce" | "redtail">("wealthbox");

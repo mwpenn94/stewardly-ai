@@ -9,6 +9,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +56,8 @@ const SINK_LABELS: Record<SinkKind, string> = {
 };
 
 export default function DynamicIntegrations() {
+  const { isAuthenticated } = useAuth();
+
   const [tab, setTab] = useState<"draft" | "blueprints" | "runs">("draft");
 
   // ── Draft form state ───────────────────────────────────────────────
@@ -69,7 +72,7 @@ export default function DynamicIntegrations() {
   const [probeUrl, setProbeUrl] = useState("");
   const [probeResult, setProbeResult] = useState<any | null>(null);
 
-  const list = trpc.dynamicIntegrations.list.useQuery();
+  const list = trpc.dynamicIntegrations.list.useQuery(undefined, { enabled: isAuthenticated });
   const blueprints = useMemo(() => list.data ?? [], [list.data]);
 
   const [selectedBlueprintId, setSelectedBlueprintId] = useState<string | null>(null);

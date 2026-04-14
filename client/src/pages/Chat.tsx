@@ -375,7 +375,14 @@ export default function Chat() {
     "idle";
 
   // ─── ANONYMOUS MODE ──────────────────────────────────────────
+  // Clear anonymousMode flag once user authenticates to prevent stale anonymous state
   const isAnonymous = !isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('anonymousMode') === 'true';
+  // If user is authenticated but anonymousMode is still set, clean it up
+  useEffect(() => {
+    if (isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('anonymousMode') === 'true') {
+      localStorage.removeItem('anonymousMode');
+    }
+  }, [isAuthenticated]);
   const allowQueries = isAuthenticated || isAnonymous;
   const anonChat = useAnonymousChat();
   const anonSendMutation = trpc.anonymousChat.send.useMutation({
@@ -714,10 +721,12 @@ export default function Chat() {
   const handleSendWithText = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed && attachments.length === 0) return;
-    if (isStreaming) return;
+    if (isStreaming || processingRef.current) return;
+    processingRef.current = true;
     // CBL18: prevent sends while offline — saves user from a confusing network error
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       toast.error("You're offline — message not sent. Check your connection and try again.");
+      processingRef.current = false;
       return;
     }
 
@@ -823,6 +832,7 @@ export default function Chat() {
           if (anonChat.atConversationLimit) {
             toast.error("You've reached the free conversation limit. Sign up to continue!");
             setIsStreaming(false);
+            processingRef.current = false;
             return;
           }
           anonChat.createConversation();
@@ -830,6 +840,7 @@ export default function Chat() {
         if (anonChat.atMessageLimit) {
           toast.error("Message limit reached for this conversation. Start a new one or sign up!");
           setIsStreaming(false);
+          processingRef.current = false;
           return;
         }
 
@@ -865,6 +876,7 @@ export default function Chat() {
         // Mutex: prevent concurrent conversation creation (double-click, HMR, voice race)
         if (creatingConversationRef.current) {
           setIsStreaming(false);
+          processingRef.current = false;
           setMessages(prev => prev.slice(0, -1)); // remove optimistic user msg
           return;
         }
@@ -928,6 +940,7 @@ export default function Chat() {
           toast.error(err.message || "Couldn't start the analysis loop — please try again in a moment");
         }
         setIsStreaming(false);
+        processingRef.current = false;
         return;
       }
       // ─── CONSENSUS MODE: Multi-model consensus stream (Round E1) ───
@@ -1361,6 +1374,7 @@ export default function Chat() {
       // dispatcher already runs it, but sonner dedupes identical titles.
     } finally {
       setIsStreaming(false);
+      processingRef.current = false;
       setAttachments([]);
       soundCues.play("received");
       // Pass 5 (G23): earcon on receive
@@ -1372,7 +1386,6 @@ export default function Chat() {
       // If TTS IS enabled, the guard stays on until tts.onEnd releases it and restarts listening.
       if (handsFreeActive && !ttsEnabled) {
         guardRef.current = false;
-        processingRef.current = false;
         forceUpdate(n => n + 1);
         setTimeout(() => { try { voice.start(); } catch { /* voice may not be available */ } }, 600);
       }

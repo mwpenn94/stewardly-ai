@@ -6,6 +6,7 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,14 +25,16 @@ import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { IntelligenceStatusWidget } from "@/components/IntelligenceStatusWidget";
 
 export default function OperationsHub() {
+  const { isAuthenticated } = useAuth();
+
   const utils = trpc.useUtils();
   const [activeTab, setActiveTab] = useState("active");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Live data for QuickStats
-  const gateList = trpc.agentic.gate.list.useQuery({ status: "pending" as any, limit: 100 }, { retry: false });
-  const agentList = (trpc as any).agentic?.agent?.list?.useQuery?.({} as any, { retry: false }) ?? { data: undefined };
-  const complianceStats = trpc.compliance.getDashboardStats.useQuery(undefined, { retry: false });
+  const gateList = trpc.agentic.gate.list.useQuery({ status: "pending" as any, limit: 100 }, { enabled: isAuthenticated, retry: false });
+  const agentList = (trpc as any).agentic?.agent?.list?.useQuery?.({} as any, { enabled: isAuthenticated, retry: false }) ?? { data: undefined };
+  const complianceStats = trpc.compliance.getDashboardStats.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const pendingCount = (gateList.data ?? []).length;
   const runningAgents = ((agentList.data as any)?.agents ?? []).filter((a: any) => a.status === "running").length;
   const complianceFlags = (complianceStats.data as any)?.flaggedCount ?? 0;
@@ -300,7 +303,8 @@ function AgentsSection() {
 }
 
 function ComplianceSection() {
-  const statsQ = trpc.compliance.getDashboardStats.useQuery(undefined, { retry: false, staleTime: 30_000 });
+  const { isAuthenticated } = useAuth();
+  const statsQ = trpc.compliance.getDashboardStats.useQuery(undefined, { enabled: isAuthenticated, retry: false, staleTime: 30_000 });
   const stats = statsQ.data as any;
   const total = stats?.totalCount ?? 0;
   const flagged = stats?.flaggedCount ?? 0;

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,14 +71,16 @@ function timeAgo(date: Date | string | null) {
 
 // ─── Main Component ────────────────────────────────────────────────────
 export default function IntegrationHealth() {
+  const { isAuthenticated } = useAuth();
+
   const [isRunning, setIsRunning] = useState(false);
   const [isPipelinesRunning, setIsPipelinesRunning] = useState(false);
   const [pipelineResults, setPipelineResults] = useState<any[] | null>(null);
-  const dashboard = trpc.integrations.getHealthDashboard.useQuery();
-  const improvements = trpc.integrations.getImprovementLog.useQuery();
-  const healthContext = trpc.integrations.getIntegrationHealthContext.useQuery();
-  const schedulerStatus = trpc.integrations.getSchedulerStatus.useQuery();
-  const economicSummary = trpc.integrations.getEconomicDataSummary.useQuery();
+  const dashboard = trpc.integrations.getHealthDashboard.useQuery(undefined, { enabled: isAuthenticated });
+  const improvements = trpc.integrations.getImprovementLog.useQuery(undefined, { enabled: isAuthenticated });
+  const healthContext = trpc.integrations.getIntegrationHealthContext.useQuery(undefined, { enabled: isAuthenticated });
+  const schedulerStatus = trpc.integrations.getSchedulerStatus.useQuery(undefined, { enabled: isAuthenticated });
+  const economicSummary = trpc.integrations.getEconomicDataSummary.useQuery(undefined, { enabled: isAuthenticated });
   const runChecks = trpc.integrations.runHealthChecks.useMutation({ onError: (e) => toast.error(e.message) });
   const runPipelines = trpc.integrations.runAllPipelines.useMutation({ onError: (e) => toast.error(e.message) });
   const utils = trpc.useUtils();

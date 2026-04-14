@@ -6,6 +6,7 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,11 +21,13 @@ import {
 } from "lucide-react";
 
 export default function RelationshipsHub() {
+  const { isAuthenticated } = useAuth();
+
   const [activeTab, setActiveTab] = useState("network");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Wire to real data where available
-  const leadsQ = trpc.leadPipeline.getPipeline.useQuery(undefined, { retry: false });
+  const leadsQ = trpc.leadPipeline.getPipeline.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const leadCount = ((leadsQ.data as any)?.leads ?? []).length;
 
   return (

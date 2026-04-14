@@ -162,3 +162,55 @@ pnpm exec playwright test e2e/03-ai-chat.spec.ts --project=desktop-chrome
 # Run with visual browser
 pnpm exec playwright test --headed
 ```
+
+---
+
+## Turn 19 — Bug Fixes, Auth Gating, CI/CD, Visual Regression (Apr 14, 2026)
+
+### Bug Fixes
+
+**Chat "Message limit reached" for authenticated users** — Fixed a logic conflict where `isAnonymous` could remain `true` even when the user was authenticated via Manus OAuth. The anonymous chat path enforced a 10-message-per-conversation limit that incorrectly applied to logged-in users. Now `isAnonymous` is forced to `false` when `user` is present from `useAuth()`.
+
+**Duplicate message sends** — Added a `processingRef` mutex guard to `handleSendWithText` that prevents double-sends from rapid clicks. The ref is set immediately on entry and reset in all exit paths (early returns, catch blocks, finally blocks) to prevent deadlocks.
+
+**Auth redirect loops on protected pages** — When unauthenticated users navigated to pages using `protectedProcedure` (Passive Actions, Wealth Engine, Settings, Operations, etc.), the global tRPC error handler in `main.tsx` would redirect to the OAuth login page, creating an infinite loop if the user cancelled login. Fixed by adding auth gating to 30+ protected pages: each page now checks `isAuthenticated` from `useAuth()` and shows a sign-in prompt instead of firing tRPC queries that would trigger UNAUTHORIZED errors. All `useQuery` calls on protected pages now include `enabled: isAuthenticated` to prevent premature fetching.
+
+### New Features
+
+**Authenticated E2E Test Fixtures** (`e2e/auth-fixtures.ts`) — Role-based test helpers matching the app's 5-tier role system (guest, user, advisor, manager, admin). Maps each role to expected sidebar visibility. Provides `verifyAuthGating()` helper that confirms protected routes don't cause redirect loops.
+
+**Auth Gating E2E Tests** (4 new test suites, 43 tests):
+- `23-auth-gating.spec.ts` — Tests all 9 protected routes and 10 public routes
+- `24-advisor-features.spec.ts` — Advisor-level page structure verification
+- `25-manager-features.spec.ts` — Manager-level auth gating and page structure
+- `26-admin-features.spec.ts` — Admin panel, Compliance Audit, Client Onboarding
+
+**Visual Regression Testing** (`e2e/27-visual-regression.spec.ts`) — Screenshot comparison tests for 14 key pages across desktop (1280x720) and mobile (375x812) viewports. Uses 5% pixel-ratio tolerance and 0.3 per-pixel color threshold. Generate baselines with `--update-snapshots`.
+
+**CI/CD GitHub Actions** (`.github/workflows/test.yml`) — Automated test pipeline on push/PR to `main`:
+1. Unit Tests job — `pnpm test` (Vitest, 7,716 tests)
+2. E2E Tests job — Build, start server, Playwright desktop-chrome (77 tests)
+3. Test Summary job — Pass/fail reporting with artifact upload on failure
+
+### Reference Files
+
+Placed v2.6 reference files in `docs/reference/`:
+- `WealthBridge-Business-Calculator-v7.6.html` — HTML business calculator (structural parity reference)
+- `HTML_STRUCTURAL_INVENTORY_STARTER.md` — Structural inventory starter
+- `MANUS_PROMPT_STEWARDLY_v2.6-foundational.md` — v2.6 foundational prompt
+
+### Structural Parity Audit
+
+Completed audit of Wealth Engine vs HTML calculator: 50/50 sections covered (84% dedicated UI, 16% AI-assisted). Full audit documented in `docs/STRUCTURAL_PARITY_AUDIT.md`.
+
+### Convergence
+
+Round 5 achieved 20 consecutive clean passes: TypeScript (0 errors), Vitest (7,716/7,716), Playwright E2E (77/77), browser console (0 errors), server logs (0 errors), 18 code quality dimensions (all PASS).
+
+### Test Suite Totals
+
+| Suite | Count |
+|-------|-------|
+| Vitest unit tests | 7,716 (320 files) |
+| Playwright E2E tests | 77 (26 suites) |
+| **Total** | **7,793** |

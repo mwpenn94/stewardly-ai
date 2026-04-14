@@ -5,6 +5,7 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,9 @@ const AGENT_TYPES = [
 ];
 
 export default function AgentManager() {
-  const agents = trpc.openClaw.list.useQuery(undefined, { retry: false });
+  const { isAuthenticated } = useAuth();
+
+  const agents = trpc.openClaw.list.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const createMutation = trpc.openClaw.create.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent created"); } });
   const launchMutation = trpc.openClaw.launch.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent launched"); } });
   const stopMutation = trpc.openClaw.stop.useMutation({ onSuccess: () => { agents.refetch(); toast.info("Agent stopped"); } });
@@ -176,9 +179,10 @@ export default function AgentManager() {
 // $0.00" counter after a launch. The server-side listActions procedure
 // gates on userId ownership before returning rows.
 function AgentRecentRuns({ agentId }: { agentId: number }) {
+  const { isAuthenticated } = useAuth();
   const q = trpc.openClaw.listActions.useQuery(
     { agentId, limit: 10 },
-    { retry: false, refetchInterval: 5000 },
+    { enabled: isAuthenticated, retry: false, refetchInterval: 5000 },
   );
   const rows = q.data ?? [];
   return (

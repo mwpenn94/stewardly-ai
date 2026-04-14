@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,8 @@ const DEFAULT_MODELS = [
 ];
 
 export default function ConsensusPage() {
+  const { isAuthenticated } = useAuth();
+
   // Round D3 — Honor `?q=...` query string from the Chat deep link so the
   // user can hand off a draft question without retyping. Also strips the
   // param from the URL after read so refreshes don't double-prefill.
@@ -80,11 +83,11 @@ export default function ConsensusPage() {
   const [selectedPresetId, setSelectedPresetId] = useState<number | "none">("none");
 
   const consensusStream = trpc.wealthEngine.consensusStream.useMutation({ onError: (e) => toast.error(e.message) });
-  const presets = trpc.wealthEngine.listWeightPresets.useQuery();
+  const presets = trpc.wealthEngine.listWeightPresets.useQuery(undefined, { enabled: isAuthenticated });
 
   // Round D2 — pre-flight cost estimate
   const costEstimate = trpc.wealthEngine.estimateConsensusCost.useQuery(
-    {
+    { 
       question,
       selectedModels: selectedModelIds,
       domain: domain.trim() || undefined,

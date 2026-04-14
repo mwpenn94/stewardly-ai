@@ -3,6 +3,7 @@
  * Surfaces IUL crediting history, market indices, risk profiling, and eSignature tracking
  */
 import { useState, useMemo } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,8 @@ import {
 } from "lucide-react";
 
 export default function ProductIntelligence() {
+  const { isAuthenticated } = useAuth();
+
   const [activeTab, setActiveTab] = useState("market");
 
   return (
@@ -380,7 +383,7 @@ function RiskProfileSection() {
   const [incomeStability, setIncomeStability] = useState<"unstable" | "moderate" | "stable" | "very_stable">("stable");
   const [goalPriority, setGoalPriority] = useState<"preservation" | "income" | "growth" | "aggressive_growth">("growth");
 
-  const profileQuery = trpc.productIntelligence.riskProfile.useQuery(undefined, {
+  const profileQuery = trpc.productIntelligence.riskProfile.useQuery(undefined, { 
     retry: false,
   });
 
@@ -604,11 +607,11 @@ function AllocationBar({ label, value, color }: { label: string; value: number; 
 
 function EsignatureSection() {
 
-  const envelopesQuery = trpc.productIntelligence.myEnvelopes.useQuery(undefined, {
+  const envelopesQuery = trpc.productIntelligence.myEnvelopes.useQuery(undefined, { 
     retry: false,
   });
 
-  const statsQuery = trpc.productIntelligence.signatureStats.useQuery(undefined, {
+  const statsQuery = trpc.productIntelligence.signatureStats.useQuery(undefined, { 
     retry: false,
   });
 
