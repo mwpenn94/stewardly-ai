@@ -16,7 +16,6 @@ import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   BarChart3, Loader2, XCircle, DollarSign,
   Users, Target, ArrowUpRight, ArrowDownRight,

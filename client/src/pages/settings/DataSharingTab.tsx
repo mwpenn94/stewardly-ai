@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Shield, Users, ArrowRightLeft, Eye, EyeOff, Lock, Unlock, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { toast } from "sonner";
 

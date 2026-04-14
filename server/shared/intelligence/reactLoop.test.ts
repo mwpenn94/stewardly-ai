@@ -4,7 +4,7 @@
  * 10 tests covering the ReAct loop behavior.
  */
 import { describe, it, expect, vi } from "vitest";
-import { executeReActLoop, type ReActConfig } from "./reactLoop";
+import { executeReActLoop } from "./reactLoop";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

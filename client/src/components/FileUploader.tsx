@@ -6,7 +6,7 @@ import { useState, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, File, X, CheckCircle2, AlertTriangle, Loader2, Shield } from "lucide-react";
+import { Upload, File, CheckCircle2, AlertTriangle, Loader2, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 

@@ -10,7 +10,6 @@ import {
   type InsertCoiVerificationBadge,
 } from "../../drizzle/schema";
 import { eq, and, desc, lte, sql } from "drizzle-orm";
-import { ENV } from "../_core/env";
 
 // ─── Types ──────────────────────────────────────────────────────────────
 export type VerificationSource =

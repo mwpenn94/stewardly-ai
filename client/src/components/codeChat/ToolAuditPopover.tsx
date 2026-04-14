@@ -15,7 +15,6 @@ import { useState, useMemo } from "react";
 import { X, ShieldCheck, Plus, Trash2, Pencil, Check, XCircle, Download, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   addRule,

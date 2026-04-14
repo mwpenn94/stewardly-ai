@@ -9,7 +9,7 @@ import {
   type PillarId,
   type ScenarioOverride,
 } from "./holisticScoringExtensions";
-import { computeHolisticScore, type DomainScore } from "./holisticScoring";
+import { computeHolisticScore } from "./holisticScoring";
 import type { FinancialProfile } from "@/hooks/useFinancialProfile";
 
 // ─── Helpers ──────────────────────────────────────────────────────

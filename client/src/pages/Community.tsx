@@ -9,12 +9,11 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   MessageSquare, Plus, ArrowLeft, ThumbsUp, Clock,
@@ -93,6 +92,7 @@ export default function Community() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create a Post</DialogTitle>
+                <DialogDescription>Share your thoughts with the community.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <Input placeholder="Post title" value={newTitle} onChange={e => setNewTitle(e.target.value)} />

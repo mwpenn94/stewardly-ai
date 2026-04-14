@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { Streamdown } from "streamdown";
 import { ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface ProgressiveMessageProps {
   content: string;

@@ -10,11 +10,11 @@ import {
 import {
   fmt, fmtSm, pct,
   STRATEGIES, CALC_METHODS, DUE_DILIGENCE, buildActionPlan,
-  computeScorecard, calcCashFlow, calcProtection, calcGrowth, calcRetirement, calcTax, calcEstate, calcEducation,
+  computeScorecard, calcCashFlow, calcProtection,
   getBracketRate, RATES,
   type HorizonData
 } from './engine';
-import { ResultBadge, KPI, RefTip, type PanelProps } from './shared';
+import { RefTip, type PanelProps } from './shared';
 import { REFERENCE_CATEGORIES, FUNNEL_BENCHMARKS, METHODOLOGY_DISCLOSURE } from './references';
 
 export interface SavedScenario {

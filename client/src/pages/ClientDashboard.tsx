@@ -26,7 +26,6 @@ import {
   CheckCircle2, ChevronRight, AlertTriangle,
 } from "lucide-react";
 import HonestPlaceholder from "@/components/HonestPlaceholder";
-import { Link } from "wouter";
 
 interface PlanDomain {
   id: string;

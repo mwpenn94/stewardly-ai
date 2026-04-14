@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Code, Eye } from "lucide-react";
+import { Copy, Check, Code } from "lucide-react";
 import { toast } from "sonner";
 
 interface EmbedCodeGeneratorProps {

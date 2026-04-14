@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
-import { ArrowLeft, Shield, Heart, Home, Car, Umbrella, AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Shield, Heart, Home, Car, Umbrella, Plus, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useMemo, useEffect } from "react";
 import AppShell from "@/components/AppShell";

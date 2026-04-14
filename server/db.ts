@@ -12,7 +12,6 @@ import {
   type InsertAiToolExecution, type InsertAiResponseQualityEntry,
   calculatorScenarios,
 } from "../drizzle/schema";
-import { ENV } from './_core/env';
 import { normalizeQualityScore } from './shared/intelligence/types';
 
 let _db: ReturnType<typeof drizzle> | null = null;

@@ -1,7 +1,7 @@
 import { getDb } from "../../db";
 import { users, authEnrichmentLog, integrationConnections } from "../../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
-import { profileMerger, ProviderData } from "./profileMerger";
+import { profileMerger } from "./profileMerger";
 import { apolloService } from "./apolloService";
 import { decrypt } from "../encryption";
 import crypto from "crypto";

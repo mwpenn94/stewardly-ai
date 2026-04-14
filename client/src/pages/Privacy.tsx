@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield, Database, Eye, Lock, Trash2, Download, Server, Clock } from "lucide-react";
+import { ArrowLeft, Shield, Database, Eye, Lock, Server, Clock } from "lucide-react";
 import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
 

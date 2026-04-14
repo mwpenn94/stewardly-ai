@@ -12,12 +12,11 @@
  */
 import { useState } from "react";
 import { SEOHead } from "@/components/SEOHead";
-import { VerificationBadge } from "@/components/VerificationBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Users, UserPlus, Shield, Mail, MoreHorizontal, Search } from "lucide-react";
+import { ArrowLeft, Users, UserPlus, Shield, MoreHorizontal, Search } from "lucide-react";
 import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
 import { toast } from "sonner";

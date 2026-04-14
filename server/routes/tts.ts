@@ -8,7 +8,7 @@
  * All endpoints require authentication (security hardening CBL17).
  */
 
-import { Router, type Request, type Response, type NextFunction } from "express";
+import { Router } from "express";
 import { generateSpeech, getVoiceCatalog } from "../edgeTTS";
 
 const ttsRouter = Router();

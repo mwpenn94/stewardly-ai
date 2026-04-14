@@ -11,7 +11,6 @@ import { playEarconById } from "@/lib/earcons";
 import { prefetchRoute } from "@/lib/routePrefetch";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +21,7 @@ import {
   DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -2149,7 +2148,7 @@ export default function Chat() {
       <main
         id="chat-main"
         tabIndex={-1}
-        className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-0"
+        className="flex-1 flex flex-col min-w-0"
         aria-label="Chat"
         aria-busy={isStreaming ? true : undefined}
       >
@@ -3241,6 +3240,7 @@ export default function Chat() {
         <DialogContent className="sm:max-w-[360px]">
           <DialogHeader>
             <DialogTitle>{editingFolder ? "Edit Folder" : "Create Folder"}</DialogTitle>
+            <DialogDescription>Organize your conversations into color-coded folders.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <Input
@@ -3285,43 +3285,8 @@ export default function Chat() {
         </DialogContent>
       </Dialog>
 
-      {/* ─── MOBILE BOTTOM TAB BAR ──────────────────────────────
-           Matches AppShell's mobile tab bar for navigation consistency
-           so users switching between Chat and other pages always see
-           the same bottom nav. Hidden on lg+ where sidebar is visible. */}
-      <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around h-14 bg-card/95 backdrop-blur-sm border-t border-border/60 safe-area-bottom"
-        aria-label="Mobile navigation"
-      >
-        {[
-          { label: "Chat", icon: MessageSquare, path: "/chat", active: true, isVoice: false },
-          { label: "Tools", icon: Calculator, path: "/calculators", active: false, isVoice: false },
-          { label: "Insights", icon: Brain, path: "/intelligence-hub", active: false, isVoice: false },
-          { label: "Learn", icon: GraduationCap, path: "/learning", active: false, isVoice: false },
-          { label: "Voice", icon: AudioLines, path: "", active: false, isVoice: true },
-        ].map(tab => {
-          const TabIcon = tab.icon;
-          return (
-          <button
-            key={tab.label}
-            onClick={() => {
-              if (tab.isVoice) {
-                window.dispatchEvent(new CustomEvent("chat:toggle-handsfree"));
-              } else if (!tab.active) {
-                navigate(tab.path);
-              }
-            }}
-            className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] px-2 py-1 rounded-lg transition-colors ${
-              tab.active ? "text-primary" : "text-muted-foreground"
-            }`}
-            aria-current={tab.active ? "page" : undefined}
-            aria-label={tab.label}
-          >
-            <TabIcon className="w-5 h-5" />
-            <span className="text-[10px]">{tab.label}</span>
-          </button>
-        );})}
-      </nav>
+      {/* Mobile bottom tab bar REMOVED PERMANENTLY — user requested no footer nav.
+           Navigation is handled by the sidebar (hamburger menu on mobile). */}
     </div>
   );
 }

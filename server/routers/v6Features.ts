@@ -13,9 +13,9 @@ import { optimizeSS, type SSInput } from "../ssOptimizer";
 import { optimizeHSA, type HSAInput } from "../hsaOptimizer";
 import { navigateMedicare, type MedicareInput } from "../medicareNavigator";
 import { optimizeCharitable, type CharitableInput } from "../charitableOptimizer";
-import { analyzeDivorce, type DivorceInput, type DivorceAsset } from "../divorceFinancial";
+import { analyzeDivorce, type DivorceInput } from "../divorceFinancial";
 import { planEducation, type EducationPlanInput } from "../educationPlanner";
-import { generateTaskSummary, suggestTasks, type TaskInput } from "../taskEngine";
+import { generateTaskSummary, suggestTasks } from "../taskEngine";
 import { getTemplates, getTemplate, generateDraft, type CommInput } from "../commsEngine";
 import { calculateFee, compareFeeModels, type FeeInput } from "../feeBilling";
 

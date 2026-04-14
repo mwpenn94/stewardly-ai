@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Shield, CheckCircle, Loader2, Send, RotateCcw } from "lucide-react";
+import { CheckCircle, Loader2, Send, RotateCcw } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Streamdown } from "streamdown";
 

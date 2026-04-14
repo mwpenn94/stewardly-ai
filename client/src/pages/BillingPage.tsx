@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CreditCard, Receipt, TrendingUp, Zap, Check } from "lucide-react";
+import { ArrowLeft, CreditCard, Receipt, Check } from "lucide-react";
 import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { useLocation } from "wouter";
 import { toast } from "sonner";

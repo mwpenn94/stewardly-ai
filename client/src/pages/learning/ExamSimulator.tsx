@@ -40,7 +40,6 @@ import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import AppShell from "@/components/AppShell";
-import { SEOHead } from "@/components/SEOHead";
 
 /* ── types ─────────────────────────────────────────────────────── */
 

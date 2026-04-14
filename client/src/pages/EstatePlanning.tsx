@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
-import { ArrowLeft, FileText, Users, DollarSign, CheckCircle2, XCircle, Clock, AlertTriangle, Scale, Calculator } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Clock, Scale } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import AppShell from "@/components/AppShell";

@@ -255,9 +255,9 @@ export default function AppShell({ children, title }: AppShellProps) {
           when a long-running fetch starts/stops so SR users know
           loading is in flight.
 
-          Page content — scrollable. pb-20 lg:pb-0 reserves space for
-          the mobile bottom tab bar (h-14 = 56px) plus safe-area-bottom
-          on notched devices so the last row of content isn't covered.
+          Page content — scrollable. No bottom padding needed since
+          the mobile bottom tab bar has been permanently removed.
+          Navigation is handled by the sidebar (hamburger menu on mobile).
         */}
         <main
           id="main-content"
@@ -272,11 +272,16 @@ export default function AppShell({ children, title }: AppShellProps) {
         {/* Mobile bottom tab bar removed permanently — user requested no footer nav.
             Navigation is handled by the sidebar (hamburger menu on mobile). */}
 
-        {/* Keyboard shortcut hint — visible on desktop only */}
-        <div className="hidden lg:flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground/60">
-          <Keyboard className="w-3 h-3" />
-          <span>Press <kbd className="px-1 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[10px]">?</kbd> for shortcuts</span>
-        </div>
+        {/* Persistent compliance disclaimer + keyboard shortcut hint */}
+        <footer className="shrink-0 border-t border-border/30 px-4 py-1.5 flex items-center justify-between gap-4">
+          <p className="text-[10px] text-muted-foreground/60 leading-tight">
+            AI-assisted platform. Not a substitute for professional financial, legal, or tax advice.
+          </p>
+          <div className="hidden lg:flex items-center gap-1 text-[10px] text-muted-foreground/50 shrink-0">
+            <Keyboard className="w-3 h-3" />
+            <span>Press <kbd className="px-1 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[10px]">?</kbd> for shortcuts</span>
+          </div>
+        </footer>
       </div>
     </div>
   );

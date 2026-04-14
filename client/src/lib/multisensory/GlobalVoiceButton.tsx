@@ -73,13 +73,12 @@ export function GlobalVoiceButton() {
       }
       data-testid="global-voice-button"
       className={cn(
-        // Positioning — fixed bottom-left on mobile (above the bottom tab bar),
+        // Positioning — fixed bottom-left on mobile,
         // upper-left on desktop (below any top-level offline banners and
         // clear of the top-right NotificationBell / ChangelogBell cluster
-        // that Chat.tsx already owns). Pass 3: moved from top-right to
-        // avoid colliding with OfflineBanner (z-100) and NotificationBell.
+        // that Chat.tsx already owns).
         "fixed z-[60]",
-        "bottom-20 left-3 lg:bottom-auto lg:top-16 lg:left-3",
+        "bottom-4 left-3 lg:bottom-auto lg:top-16 lg:left-3",
         // Touch target baseline (WCAG 2.5.5 Target Size Level AAA)
         "min-w-[44px] min-h-[44px] rounded-full",
         // Visuals

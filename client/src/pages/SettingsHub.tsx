@@ -2,7 +2,6 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Camera, Brain, Shield, FileText, Sparkles, User,
   Loader2, Settings2, ChevronRight, Bell, Palette, Mic, Link2, Keyboard,

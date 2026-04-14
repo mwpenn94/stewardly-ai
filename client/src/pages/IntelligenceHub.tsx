@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Link } from "wouter";
 import { navigateToChat } from "@/lib/navigateToChat";
 import {
   Brain, BarChart3, Database, TrendingUp, Loader2,

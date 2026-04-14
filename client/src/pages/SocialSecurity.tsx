@@ -8,7 +8,7 @@ import { CalculatorInsight } from "@/components/CalculatorInsight";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Calendar, DollarSign, TrendingUp, Users, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, TrendingUp, Users } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";

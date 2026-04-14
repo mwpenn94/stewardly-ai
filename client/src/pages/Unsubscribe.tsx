@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CheckCircle2, XCircle, Loader2, Mail, MailX } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, MailX } from "lucide-react";
 
 function useSearchParams() {
   const [params] = useState(() => new URLSearchParams(window.location.search));

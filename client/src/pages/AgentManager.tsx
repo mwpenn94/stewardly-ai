@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Bot, Play, Square, Trash2, Plus, Shield, Loader2, DollarSign, Clock, ChevronDown, ChevronUp, AlertCircle, AlertTriangle } from "lucide-react";
 
@@ -51,7 +51,7 @@ export default function AgentManager() {
                 <Button size="sm"><Plus className="h-3 w-3 mr-1" /> New Agent</Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
-                <DialogHeader><DialogTitle>Create New Agent</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>Create New Agent</DialogTitle><DialogDescription>Configure a new AI agent with custom instructions and capabilities.</DialogDescription></DialogHeader>
                 <div className="space-y-3">
                   <Input placeholder="Agent name" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
                   <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v }))}>

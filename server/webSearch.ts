@@ -13,7 +13,7 @@
  * 4. Compare carriers, products, and rates
  */
 
-import { type Tool, type Message } from "./_core/llm";
+import { type Tool } from "./_core/llm";
 import { contextualLLM } from "./shared/stewardlyWiring";
 import { callDataApi } from "./_core/dataApi";
 import { executeWebSearch } from "./services/webSearchTool";

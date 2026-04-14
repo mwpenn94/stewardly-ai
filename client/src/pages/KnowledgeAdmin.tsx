@@ -6,9 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   BookOpen, Plus, Search, FileText, AlertTriangle, TrendingUp, BarChart3,
@@ -490,6 +489,7 @@ export default function KnowledgeAdmin() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Create Knowledge Article</DialogTitle>
+              <DialogDescription>Add a new article to the knowledge base.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <Input

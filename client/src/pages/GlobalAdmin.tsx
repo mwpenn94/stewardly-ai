@@ -20,7 +20,7 @@ import {
   AlertTriangle, Save, Sparkles, BarChart3, FileCheck, DollarSign,
   Plus, Trash2,
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function GlobalAdmin() {
   const { user, loading } = useAuth();
@@ -363,7 +363,7 @@ export default function GlobalAdmin() {
                       <Button size="sm" variant="outline" className="h-7 text-xs gap-1"><Plus className="w-3 h-3" /> Add Flag</Button>
                     </DialogTrigger>
                     <DialogContent>
-                      <DialogHeader><DialogTitle>Create Feature Flag</DialogTitle></DialogHeader>
+                      <DialogHeader><DialogTitle>Create Feature Flag</DialogTitle><DialogDescription>Define a new feature flag to control feature rollout.</DialogDescription></DialogHeader>
                       <div className="space-y-3 pt-2">
                         <div><Label className="text-xs">Flag Key</Label><Input value={newFlagKey} onChange={(e) => setNewFlagKey(e.target.value)} placeholder="e.g., new_feature" className="mt-1" /></div>
                         <div><Label className="text-xs">Label</Label><Input value={newFlagLabel} onChange={(e) => setNewFlagLabel(e.target.value)} placeholder="e.g., New Feature" className="mt-1" /></div>
