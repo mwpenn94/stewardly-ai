@@ -25,6 +25,9 @@ import {
   bieSimulate,
   bieCreateStrategy,
   monteCarloSimulate,
+  rollUp as bieRollUp,
+  PRODUCT_REFERENCES,
+  INDUSTRY_BENCHMARKS,
   type ClientProfile,
   type HolisticStrategy,
 } from "../../shared/calculators";
@@ -524,6 +527,171 @@ export async function dispatchToEngine(
       data: { warnings },
       charts: [],
       actions: { copy: true, tts: true, download: false, share: false },
+    };
+  }
+
+  // Roll-up team — aggregate multiple strategies into a team view
+  if (result.intent === "roll_up_team") {
+    const role = slots.role ?? "dir";
+    // Build a representative team: the leader + a few team members
+    const leader = bieCreateStrategy("Team Leader", {
+      role,
+      streams: { personal: true, expanded: true, override: true },
+      team: [
+        { role: "new", f: 60_000, ramp: 0.5 },
+        { role: "new", f: 45_000, ramp: 0.6 },
+        { role: "exp", f: 90_000, ramp: 1.0 },
+      ],
+    });
+    const assoc1 = bieCreateStrategy("Associate 1", {
+      role: "new",
+      streams: { personal: true },
+    });
+    const assoc2 = bieCreateStrategy("Associate 2", {
+      role: "exp",
+      streams: { personal: true, expanded: true },
+    });
+    const rollUpResult = bieRollUp([leader, assoc1, assoc2], 1);
+
+    return {
+      intent: result.intent,
+      tool: "bie.rollUp",
+      narrative: safetyWrap(
+        `Team roll-up for a ${role}-led organization (3 strategies). ` +
+        `Total GDC: $${rollUpResult.totalGDC.toLocaleString()}, ` +
+        `Total Income: $${rollUpResult.totalIncome.toLocaleString()}, ` +
+        `Override: $${rollUpResult.totalOverride.toLocaleString()}, ` +
+        `AUM: $${rollUpResult.totalAUM.toLocaleString()}, ` +
+        `Team size: ${rollUpResult.teamSize}. ` +
+        `Avg GDC per strategy: $${rollUpResult.avgGDC.toLocaleString()}.`,
+      ),
+      data: {
+        rollUp: rollUpResult,
+        strategies: ["Team Leader", "Associate 1", "Associate 2"],
+        role,
+      },
+      charts: [
+        {
+          component: "ProjectionChart",
+          caption: `Team roll-up — ${role} organization`,
+          props: {
+            series: [
+              {
+                key: "income",
+                label: "Total Team Income",
+                values: [rollUpResult.totalIncome],
+                isPracticeIncome: true,
+              },
+            ],
+          },
+        },
+      ],
+      actions: { copy: true, tts: true, download: true, share: false },
+    };
+  }
+
+  // Build strategy — recommend products and structure
+  if (result.intent === "build_strategy") {
+    const role = slots.role ?? "exp";
+    const income = slots.income ?? slots.targetIncome ?? 150_000;
+    const profile = buildProfile(slots);
+
+    // Build product recommendations from the Record<ProductType, ProductReference>
+    const productEntries = Object.entries(PRODUCT_REFERENCES).slice(0, 8);
+    const productLines = productEntries.map(([key, ref]) =>
+      `- **${key}**: ${ref.benchmark} (${ref.src.split(",")[0]})`,
+    );
+
+    // Build benchmark highlights from the Record<string, IndustryBenchmark>
+    const benchmarkEntries = Object.entries(INDUSTRY_BENCHMARKS).slice(0, 5);
+    const benchmarkLines = benchmarkEntries.map(([key, bm]) =>
+      `- ${key}: ${bm.national != null ? `${(bm.national * 100).toFixed(1)}%` : "N/A"} (${bm.source})`,
+    );
+
+    return {
+      intent: result.intent,
+      tool: "bie.buildStrategy",
+      narrative: safetyWrap(
+        `Strategy recommendation for a ${role} targeting $${income.toLocaleString()} income:\n\n` +
+        `**Recommended Product Mix:**\n` +
+        productLines.join("\n") +
+        `\n\n**Key Industry Benchmarks:**\n` +
+        benchmarkLines.join("\n") +
+        `\n\nBased on the ${role} role profile, a balanced approach combining protection products (Term, IUL) with wealth-building (FIA, Advisory) and recurring revenue (AUM trail, renewals) provides the strongest path to your income target.`,
+      ),
+      data: {
+        role,
+        targetIncome: income,
+        profile,
+        products: productEntries.map(([k, v]) => ({ type: k, ...v })),
+        benchmarks: benchmarkEntries.map(([k, v]) => ({ key: k, ...v })),
+      },
+      charts: [
+        {
+          component: "StrategyCard",
+          caption: `Recommended strategy for ${role}`,
+          props: {
+            role,
+            targetIncome: income,
+            productCount: productEntries.length,
+          },
+        },
+      ],
+      actions: { copy: true, tts: true, download: true, share: true },
+    };
+  }
+
+  // Sensitivity sweep — what-if analysis on key parameters
+  if (result.intent === "sensitivity_sweep") {
+    const role = slots.role ?? "exp";
+    const baseIncome = slots.income ?? 120_000;
+    // Sweep across different GDC levels and WB percentages
+    const sweepResults: Array<{ gdc: number; wbPct: number; income: number }> = [];
+    const gdcLevels = [50_000, 75_000, 100_000, 150_000, 200_000, 300_000];
+    const wbPcts = [0.5, 0.6, 0.7, 0.8, 0.9];
+
+    for (const gdc of gdcLevels) {
+      for (const wbPct of wbPcts) {
+        const strategy = bieCreateStrategy("Sweep", {
+          role,
+          streams: { personal: true },
+          personalGDC: gdc,
+          wbPct,
+        });
+        const yrs = bieSimulate(strategy, 1);
+        const yr1 = yrs[0];
+        sweepResults.push({
+          gdc,
+          wbPct,
+          income: yr1?.totalIncome ?? 0,
+        });
+      }
+    }
+
+    // Find the combination closest to target
+    const target = slots.targetIncome ?? baseIncome;
+    const closest = sweepResults.reduce((best, cur) =>
+      Math.abs(cur.income - target) < Math.abs(best.income - target) ? cur : best,
+    );
+
+    return {
+      intent: result.intent,
+      tool: "bie.sensitivitySweep",
+      narrative: safetyWrap(
+        `Sensitivity sweep for a ${role} role across ${gdcLevels.length} GDC levels and ${wbPcts.length} WB allocation percentages (${sweepResults.length} combinations).\n\n` +
+        `To hit ~$${target.toLocaleString()} income, the closest combination is $${closest.gdc.toLocaleString()} GDC at ${(closest.wbPct * 100).toFixed(0)}% WB allocation → $${closest.income.toLocaleString()} income.\n\n` +
+        `Higher WB allocation increases payout rates (bracket progression), while higher GDC increases total production. The optimal balance depends on your product mix and market access.`,
+      ),
+      data: {
+        role,
+        target,
+        sweepResults,
+        closest,
+        gdcLevels,
+        wbPcts,
+      },
+      charts: [],
+      actions: { copy: true, tts: true, download: true, share: false },
     };
   }
 

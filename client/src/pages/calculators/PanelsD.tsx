@@ -935,6 +935,9 @@ export function DashboardPanel(p: PracticeProps) {
           streams={p.streams}
           rd={rd}
           months={p.months}
+          recruitTracks={p.recruitTracks}
+          recSummary={recSummary}
+          overrideRate={p.overrideRate / 100}
         />
       </CardContent>
     </Card>
@@ -1034,7 +1037,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-function DashboardCharts({ dashboard, funnel, aumIncome, overrideInc, chMetrics, streams, rd, months }: {
+function DashboardCharts({ dashboard, funnel, aumIncome, overrideInc, chMetrics, streams, rd, months, recruitTracks, recSummary, overrideRate }: {
   dashboard: ReturnType<typeof calcDashboard>;
   funnel: ReturnType<typeof calcProductionFunnel>;
   aumIncome: number;
@@ -1043,6 +1046,9 @@ function DashboardCharts({ dashboard, funnel, aumIncome, overrideInc, chMetrics,
   streams: Record<string, boolean>;
   rd: { p: number };
   months: number;
+  recruitTracks: RecruitTrack[];
+  recSummary: ReturnType<typeof calcAllTracksSummary>;
+  overrideRate: number;
 }) {
   /* Revenue breakdown data for bar chart */
   const revData = [
@@ -1132,6 +1138,53 @@ function DashboardCharts({ dashboard, funnel, aumIncome, overrideInc, chMetrics,
               <Legend wrapperStyle={{ fontSize: '11px' }} />
             </PieChart>
           </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Recruiting Pipeline Chart */}
+      {recruitTracks.length > 0 && recSummary.details.length > 0 && (
+        <div className="bg-background/50 rounded-lg p-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase">Recruiting Pipeline — Override Income by Track</p>
+          <ResponsiveContainer width="100%" height={Math.max(200, recSummary.details.length * 50 + 40)}>
+            <BarChart
+              data={recSummary.details.map(d => ({
+                name: RECRUIT_LABELS[d.type] || d.type,
+                hires: d.n,
+                yr1Ovr: d.trackOvr,
+                yr2Ovr: Math.round(d.n * d.f * overrideRate),
+                trackFYC: d.trackFYC,
+              }))}
+              layout="vertical"
+              margin={{ top: 5, right: 10, left: 90, bottom: 5 }}
+            >
+              <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1e6 ? `$${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `$${Math.round(v/1e3)}K` : `$${v}`} />
+              <YAxis type="category" dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false} width={85} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: '11px' }} />
+              <Bar dataKey="yr1Ovr" name="Yr1 Override" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="yr2Ovr" name="Yr2 Override" fill="#22c55e" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+          {/* Recruiting funnel summary */}
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="text-center p-1.5 bg-muted/30 rounded">
+              <p className="text-[10px] text-muted-foreground">Total Hires</p>
+              <p className="text-sm font-bold text-foreground">{recSummary.tHires}</p>
+            </div>
+            <div className="text-center p-1.5 bg-muted/30 rounded">
+              <p className="text-[10px] text-muted-foreground">Team FYC</p>
+              <p className="text-sm font-bold text-green-400">{fmtSm(recSummary.tFYC)}</p>
+            </div>
+            <div className="text-center p-1.5 bg-muted/30 rounded">
+              <p className="text-[10px] text-muted-foreground">Rec EBITDA</p>
+              <p className={`text-sm font-bold ${recSummary.recEBITDA >= 0 ? 'text-green-400' : 'text-red-400'}`}>{fmtSm(recSummary.recEBITDA)}</p>
+            </div>
+            <div className="text-center p-1.5 bg-muted/30 rounded">
+              <p className="text-[10px] text-muted-foreground">Books Transferred</p>
+              <p className="text-sm font-bold text-foreground">{fmtSm(recSummary.tBooks)}</p>
+            </div>
+          </div>
         </div>
       )}
 

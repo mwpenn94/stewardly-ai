@@ -4009,3 +4009,30 @@
 - [x] Pass 5: CLEAN (2/3)
 - [x] Pass 6: CLEAN (3/3) — CONVERGED ✓
 - [x] All 7,642 tests passing across 315 files
+
+## Next Steps — Practice Planning Enhancement Round 2 (Apr 13, 2026)
+
+### Step 1: Persist Practice Planning Inputs to Sessions
+- [x] Wire all 26 practice planning state variables into session save logic (already done in previous round)
+- [x] Wire all 26 practice planning state variables into session restore logic (already done in previous round)
+- [x] Verify save/load round-trip preserves all practice planning data
+- [x] Test with default values and custom overrides
+
+### Step 2: Add Recruiting Pipeline Chart to Dashboard
+- [x] Add recruiting pipeline visualization showing 4 tracks side-by-side (horizontal grouped bar chart)
+- [x] Show Yr1 Override and Yr2 Override per track with summary KPIs
+- [x] Include Total Hires, Team FYC, Rec EBITDA, Books Transferred in summary
+- [x] Color-coded: Yr1 Override (amber), Yr2 Override (green)
+
+### Step 3: Connect Practice Income to Server-Side BIE/Wealth Engine
+- [x] Added roll_up_team intent handler (team leader + associates, rollUp aggregation)
+- [x] Added build_strategy intent handler (product recommendations from PRODUCT_REFERENCES, benchmarks from INDUSTRY_BENCHMARKS)
+- [x] Added sensitivity_sweep intent handler (GDC × WB% sweep matrix, closest-to-target finder)
+- [x] Fixed build_strategy to use Object.entries() on Record types (not .slice())
+- [x] Removed 7 unused preset imports from chatEngineDispatcher
+
+### Recursive Optimization
+- [x] Pass 1: Fixed build_strategy Record.slice() bug, removed unused imports (counter reset)
+- [x] Pass 2: CLEAN (1/3)
+- [x] Pass 3: CLEAN (2/3) + all 7,642 tests passing
+- [x] CONVERGED ✔ (3 consecutive clean passes)
