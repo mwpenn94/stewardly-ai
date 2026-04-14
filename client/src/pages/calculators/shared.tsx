@@ -51,7 +51,7 @@ export function ResultBadge({ label, value, variant }: { label: string; value: s
   );
 }
 
-export function KPI({ label, value, variant }: { label: string; value: string; variant?: string }) {
+export function KPI({ label, value, variant, sub }: { label: string; value: string; variant?: string; sub?: string }) {
   const colorMap: Record<string, string> = {
     grn: 'bg-green-500/10 text-green-400 border-green-500/30',
     red: 'bg-red-500/10 text-red-400 border-red-500/30',
@@ -64,6 +64,7 @@ export function KPI({ label, value, variant }: { label: string; value: string; v
     <div className={`flex flex-col items-center rounded-lg border px-3 py-2 ${cls}`}>
       <span className="text-[10px] font-medium uppercase tracking-wide opacity-70">{label}</span>
       <span className="text-sm font-bold">{value}</span>
+      {sub && <span className="text-[9px] opacity-60 mt-0.5">{sub}</span>}
     </div>
   );
 }
@@ -183,6 +184,22 @@ export interface PanelProps {
   esResult: ESResult;
   edResult: EDResult;
   horizonData: HorizonData[];
+  // Practice Income Cross-Link
+  practiceIncome: {
+    annualGDC: number;
+    annualAUM: number;
+    annualOverride: number;
+    annualExpanded: number;
+    annualChannelRev: number;
+    grandTotal: number;
+    streamCount: number;
+    items: { name: string; value: number; source: string }[];
+    pnlNetIncome: number;
+    pnlEbitda: number;
+    pnlRevenue: number;
+    monthlyGDC: number;
+    monthlyNet: number;
+  };
 }
 
 export type { Recommendation, CFResult, PRResult, GRResult, RTResult, TXResult, ESResult, EDResult, HorizonData };

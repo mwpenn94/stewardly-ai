@@ -22,6 +22,10 @@ import {
   type RoleId, type TeamMember, type RecruitTrack,
 } from './practiceEngine';
 import { KPI } from './shared';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie, Legend,
+} from 'recharts';
 
 /* ═══ SHARED PRACTICE PROPS ═══ */
 export interface PracticeProps {
@@ -919,6 +923,19 @@ export function DashboardPanel(p: PracticeProps) {
             />
           </>
         )}
+
+        {/* ═══ INTERACTIVE CHARTS ═══ */}
+        <SectionHeader>Revenue Breakdown</SectionHeader>
+        <DashboardCharts
+          dashboard={dashboard}
+          funnel={funnel}
+          aumIncome={aumIncome}
+          overrideInc={overrideInc}
+          chMetrics={chMetrics}
+          streams={p.streams}
+          rd={rd}
+          months={p.months}
+        />
       </CardContent>
     </Card>
   );
@@ -994,5 +1011,149 @@ export function PnLPanel(p: PracticeProps) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD CHARTS — Interactive Recharts visualizations
+   ═══════════════════════════════════════════════════════════════ */
+const CHART_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#14b8a6'];
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-card border border-border rounded-lg p-2 shadow-lg text-xs">
+      <p className="font-semibold text-foreground mb-1">{label}</p>
+      {payload.map((entry: any, i: number) => (
+        <p key={i} style={{ color: entry.color || entry.fill }}>
+          {entry.name}: {fmtSm(entry.value)}
+        </p>
+      ))}
+    </div>
+  );
+};
+
+function DashboardCharts({ dashboard, funnel, aumIncome, overrideInc, chMetrics, streams, rd, months }: {
+  dashboard: ReturnType<typeof calcDashboard>;
+  funnel: ReturnType<typeof calcProductionFunnel>;
+  aumIncome: number;
+  overrideInc: number;
+  chMetrics: ReturnType<typeof calcChannelMetrics>;
+  streams: Record<string, boolean>;
+  rd: { p: number };
+  months: number;
+}) {
+  /* Revenue breakdown data for bar chart */
+  const revData = [
+    streams.personal && rd.p === 1 && funnel.wbTarget > 0 ? { name: 'Personal GDC', value: funnel.wbTarget } : null,
+    streams.expanded && funnel.expTarget > 0 ? { name: 'Expanded', value: funnel.expTarget } : null,
+    streams.aum && aumIncome > 0 ? { name: 'AUM Trail', value: aumIncome } : null,
+    streams.override && overrideInc > 0 ? { name: 'Override', value: overrideInc } : null,
+    streams.channels && chMetrics.tRevMo > 0 ? { name: 'Channels', value: Math.round(chMetrics.tRevMo * 12) } : null,
+  ].filter(Boolean) as { name: string; value: number }[];
+
+  /* P&L waterfall data */
+  const waterfallData = [
+    { name: 'Revenue', value: dashboard.totalRev },
+    { name: 'OpEx', value: -dashboard.totalRev + dashboard.ebitda },
+    { name: 'EBITDA', value: dashboard.ebitda },
+    { name: 'Tax', value: -(dashboard.ebitda - dashboard.netInc) },
+    { name: 'Net Income', value: dashboard.netInc },
+  ];
+
+  /* Funnel data for pie chart (monthly values) */
+  const mo = months || 12;
+  const funnelPieData = funnel.monthlyApproaches > 0 ? [
+    { name: 'Approaches', value: funnel.monthlyApproaches },
+    { name: 'Shows', value: Math.round(funnel.held / mo) },
+    { name: 'Apps', value: funnel.monthlyApps },
+    { name: 'Placed', value: Math.round(funnel.placed / mo) },
+  ] : [];
+
+  /* Channel ROI data */
+  const channelROI = chMetrics.channelResults
+    .filter(r => r.spend > 0)
+    .map(r => ({ name: r.name, roi: r.roi, spend: r.spend, rev: r.annRev }))
+    .sort((a, b) => b.roi - a.roi)
+    .slice(0, 8);
+
+  return (
+    <div className="space-y-6">
+      {/* Revenue Breakdown Bar Chart */}
+      {revData.length > 0 && (
+        <div className="bg-background/50 rounded-lg p-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase">Annual Revenue by Stream</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={revData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+              <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1e6 ? `$${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `$${Math.round(v/1e3)}K` : `$${v}`} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="value" name="Revenue" radius={[4, 4, 0, 0]}>
+                {revData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* P&L Waterfall */}
+      {dashboard.totalRev > 0 && (
+        <div className="bg-background/50 rounded-lg p-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase">P&L Waterfall</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={waterfallData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+              <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1e6 ? `$${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `$${Math.round(v/1e3)}K` : `$${v}`} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="value" name="Amount" radius={[4, 4, 0, 0]}>
+                {waterfallData.map((d, i) => (
+                  <Cell key={i} fill={d.value >= 0 ? '#22c55e' : '#ef4444'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Sales Funnel Pie */}
+      {funnelPieData.length > 0 && (
+        <div className="bg-background/50 rounded-lg p-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase">Monthly Sales Funnel</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie data={funnelPieData} dataKey="value" nameKey="name" cx="50%" cy="50%"
+                outerRadius={80} innerRadius={40} paddingAngle={3} label={({ name, value }: any) => `${name}: ${value}`}>
+                {funnelPieData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+              <Legend wrapperStyle={{ fontSize: '11px' }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Channel ROI Comparison */}
+      {channelROI.length > 0 && (
+        <div className="bg-background/50 rounded-lg p-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase">Channel ROI Comparison</p>
+          <ResponsiveContainer width="100%" height={Math.max(180, channelROI.length * 32)}>
+            <BarChart data={channelROI} layout="vertical" margin={{ top: 5, right: 10, left: 80, bottom: 5 }}>
+              <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => `${v}%`} />
+              <YAxis type="category" dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false} width={75} />
+              <Tooltip formatter={(v: number) => [`${v.toFixed(0)}%`, 'ROI']} contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '11px' }} />
+              <Bar dataKey="roi" name="ROI %" radius={[0, 4, 4, 0]}>
+                {channelROI.map((d, i) => (
+                  <Cell key={i} fill={d.roi >= 300 ? '#22c55e' : d.roi >= 100 ? '#f59e0b' : '#ef4444'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
   );
 }

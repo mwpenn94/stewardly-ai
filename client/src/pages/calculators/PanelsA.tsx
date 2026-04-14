@@ -336,6 +336,54 @@ export function CashFlowPanel(p: PanelProps) {
         <ResultBadge label="Emergency Target" value={fmt(p.cfResult.emTarget)} variant="blu" />
         <ResultBadge label="Emergency Gap" value={fmt(p.cfResult.emGap)} variant={p.cfResult.emGap === 0 ? 'grn' : 'red'} />
       </div>
+
+      {/* ─── Practice Income Cross-Link ─── */}
+      {p.practiceIncome.grandTotal > 0 && (
+        <Card className="mt-4 border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" /> Practice Income (from Practice Planning)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">These figures are computed from your Practice Planning panels and represent your projected practice revenue streams.</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+              <KPI label="Annual Practice Revenue" value={fmtSm(p.practiceIncome.grandTotal)} sub={`${p.practiceIncome.streamCount} active streams`} />
+              <KPI label="Monthly Practice Net" value={fmtSm(p.practiceIncome.monthlyNet)} sub="After tax & OpEx" />
+              <KPI label="Practice EBITDA" value={fmtSm(p.practiceIncome.pnlEbitda)} sub="Annual" />
+              <KPI label="Combined Monthly" value={fmtSm(p.cfResult.surplus + p.practiceIncome.monthlyNet)} sub="Personal + Practice" />
+            </div>
+            {p.practiceIncome.items.length > 0 && (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-background">
+                    <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">Revenue Stream</th>
+                    <th className="text-right py-1.5 px-2 text-xs font-semibold text-muted-foreground">Annual</th>
+                    <th className="text-right py-1.5 px-2 text-xs font-semibold text-muted-foreground">Monthly</th>
+                    <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {p.practiceIncome.items.map(item => (
+                    <tr key={item.name} className="border-b border-border/50">
+                      <td className="py-1 px-2 text-foreground/80">{item.name}</td>
+                      <td className="text-right px-2 font-medium text-primary">{fmtSm(item.value)}</td>
+                      <td className="text-right px-2 text-muted-foreground">{fmtSm(Math.round(item.value / 12))}</td>
+                      <td className="px-2 text-xs text-muted-foreground">{item.source}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-border bg-background font-bold">
+                    <td className="py-1.5 px-2">Total Practice Revenue</td>
+                    <td className="text-right px-2 text-primary">{fmtSm(p.practiceIncome.grandTotal)}</td>
+                    <td className="text-right px-2 text-primary">{fmtSm(Math.round(p.practiceIncome.grandTotal / 12))}</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </section>
   );
 }

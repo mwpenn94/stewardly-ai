@@ -3981,3 +3981,31 @@
 - [x] Pass 5: CLEAN — no changes needed (convergence counter: 2/3)
 - [x] Pass 6: CLEAN — no changes needed (convergence counter: 3/3) ✓ CONVERGED
 - [x] Final: Production build verified, 7642 tests passing, checkpoint saved
+
+## Next Steps — Practice Planning Enhancement (Apr 13, 2026)
+
+### Step 1: Visual Browser Test of All 8 Practice Planning Panels
+- [x] Navigate to each panel and verify rendering (My Plan, GDC Brackets, Products, Sales Funnel, Recruiting, Channels, Dashboard, P&L)
+- [x] Verify footer no longer overlaps content (pb-24 added)
+- [x] Fix visual/rendering issues: Funnel icon → Filter, stale Vite cache cleared
+
+### Step 2: Cross-link Practice Planning with Holistic Engine
+- [x] Feed practice income (from My Plan roll-up) into Cash Flow panel as income source
+- [x] Feed practice income into Retirement panel projections
+- [x] Show practice-derived metrics in Tax panel (QBI deduction, combined income)
+- [x] Show practice-derived metrics in Summary panel (revenue, EBITDA, net income, combined)
+
+### Step 3: Add Interactive Charts to Dashboard Panel
+- [x] Revenue breakdown bar chart (Personal GDC, Expanded, AUM Trail, Override, Channels)
+- [x] Sales funnel pie/donut chart (Approaches, Shows, Apps, Placed — monthly)
+- [x] Channel ROI comparison horizontal bar chart (color-coded by ROI tier)
+- [x] P&L waterfall bar chart (Revenue → OpEx → EBITDA → Tax → Net Income)
+
+### Recursive Optimization
+- [x] Pass 1: Fixed chMetrics.rows → channelResults, KPI sub prop, funnel pie months
+- [x] Pass 2: CLEAN (1/3)
+- [x] Pass 3: Fixed channelROI r.revMo → r.annRev (counter reset)
+- [x] Pass 4: CLEAN (1/3)
+- [x] Pass 5: CLEAN (2/3)
+- [x] Pass 6: CLEAN (3/3) — CONVERGED ✓
+- [x] All 7,642 tests passing across 315 files

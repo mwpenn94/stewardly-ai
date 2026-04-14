@@ -7,7 +7,7 @@ import {
   Clock, Building2, Scale, GraduationCap, CheckCircle2
 } from 'lucide-react';
 import { fmt, fmtSm, pct } from './engine';
-import { FormInput, ResultBadge, type PanelProps } from './shared';
+import { FormInput, ResultBadge, KPI, type PanelProps } from './shared';
 
 export function RetirementPanel(p: PanelProps) {
   return (
@@ -93,6 +93,26 @@ export function RetirementPanel(p: PanelProps) {
         <ResultBadge label="Monthly Income" value={fmt(p.rtResult.monthlyIncome)} variant="grn" />
         <ResultBadge label="RMD at 72" value={fmt(p.rtResult.rmd72)} variant="gld" />
       </div>
+
+      {/* ─── Practice Income Impact on Retirement ─── */}
+      {p.practiceIncome.grandTotal > 0 && (
+        <Card className="mt-4 border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" /> Practice Income → Retirement Impact
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">Your practice income from Practice Planning adds to your retirement income sources.</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <KPI label="Practice Net/mo" value={fmtSm(p.practiceIncome.monthlyNet)} sub="After tax & OpEx" />
+              <KPI label="Retirement Income + Practice" value={fmtSm(p.rtResult.monthlyIncome + p.practiceIncome.monthlyNet)} sub="Combined monthly" />
+              <KPI label="Practice ARR" value={fmtSm(p.practiceIncome.annualAUM + p.practiceIncome.annualOverride)} sub="Recurring streams" />
+              <KPI label="Income Gap" value={p.rtResult.incomeGap > p.practiceIncome.monthlyNet ? fmtSm(p.rtResult.incomeGap - p.practiceIncome.monthlyNet) : '$0'} sub={p.rtResult.incomeGap <= p.practiceIncome.monthlyNet ? 'Covered by practice' : 'Remaining gap'} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </section>
   );
 }
@@ -171,6 +191,26 @@ export function TaxPanel(p: PanelProps) {
         <ResultBadge label="Total Savings" value={fmtSm(p.txResult.totalSaving)} variant="grn" />
         <ResultBadge label="Roth Benefit" value={fmtSm(p.txResult.rothConversion.netBenefit)} variant="grn" />
       </div>
+
+      {/* ─── Practice Income Tax Impact ─── */}
+      {p.practiceIncome.grandTotal > 0 && (
+        <Card className="mt-4 border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" /> Practice Income → Tax Impact
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground mb-3">Your practice revenue affects your total taxable income and available deductions.</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <KPI label="Practice Revenue" value={fmtSm(p.practiceIncome.pnlRevenue)} sub="Annual gross" />
+              <KPI label="Practice Tax Est." value={fmtSm(Math.round(p.practiceIncome.pnlRevenue * p.txResult.effectiveRate))} sub={`At ${pct(p.txResult.effectiveRate)} eff. rate`} />
+              <KPI label="Combined Income" value={fmtSm(p.totalIncome + p.practiceIncome.grandTotal)} sub="Personal + Practice" />
+              <KPI label="QBI Deduction (est.)" value={fmtSm(Math.round(Math.min(p.practiceIncome.pnlRevenue * 0.2, 182100) * p.txResult.marginalRate))} sub="§199A if qualified" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </section>
   );
 }

@@ -25,7 +25,12 @@ import { ProfilePanel, CashFlowPanel, ProtectionPanel, GrowthPanel } from './cal
 import { RetirementPanel, TaxPanel, EstatePanel, EducationPanel } from './calculators/PanelsB';
 import { CostBenefitPanel, StrategyComparePanel, SummaryPanel, ActionPlanPanel, ReferencesPanel } from './calculators/PanelsC';
 import { MyPlanPanel, GDCBracketsPanel, ProductsPanel, SalesFunnelPanel, RecruitingPanel, ChannelsPanel, DashboardPanel, PnLPanel, type PracticeProps } from './calculators/PanelsD';
-import { ROLE_DEFAULTS, type RoleId, type TeamMember, type RecruitTrack } from './calculators/practiceEngine';
+import {
+  ROLE_DEFAULTS, calcWeightedGDC, calcProductionFunnel, calcTeamOverride,
+  calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
+  PRODUCTS as BIE_PRODUCTS,
+  type RoleId, type TeamMember, type RecruitTrack,
+} from './calculators/practiceEngine';
 
 /* ═══ PANEL TYPE DEFINITIONS ═══ */
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
@@ -468,6 +473,46 @@ export default function Calculators() {
   const edResult = useMemo(() => calcEducation(numChildren, avgChildAge, targetCost, infRate, eduReturn, current529, monthly529), [numChildren, avgChildAge, targetCost, infRate, eduReturn, current529, monthly529]);
   const horizonData = useMemo(() => buildHorizonData(recommendations, age, totalIncome, cbHorizons), [recommendations, age, totalIncome, cbHorizons]);
 
+  /* ─── PRACTICE INCOME CROSS-LINK ─── */
+  const practiceIncome = useMemo(() => {
+    const rd = ROLE_DEFAULTS[ppRole] || ROLE_DEFAULTS.new;
+    const avgGDC = calcWeightedGDC(ppProductMix, BIE_PRODUCTS);
+    const funnel = calcProductionFunnel(ppTargetGDC, ppWbPct, ppBracketOverride, avgGDC,
+      ppFunnelRates.ap, ppFunnelRates.sh, ppFunnelRates.cl, ppFunnelRates.pl, ppMonths);
+    const teamOvr = calcTeamOverride(ppTeamMembers, ppOverrideRate / 100, ppBonusRate / 100, ppGen2Rate / 100);
+    const aumIncome = Math.round((ppAumExisting * (ppAumTrailPct / 100)) + (ppAumNew * (ppAumTrailPct / 100) * 0.5));
+    const recSummary = calcAllTracksSummary(ppRecruitTracks, ppOverrideRate / 100);
+    const chMetrics = calcChannelMetrics(ppChannelSpend);
+    const overrideInc = ppTeamMembers.length > 0 ? teamOvr.total : recSummary.tOvr;
+    const pnl = calcPnL(ppPnlLevel, ppPnlProducers, ppPnlAvgGDC, ppPnlPayoutRate / 100, ppPnlOpEx, ppPnlTaxRate / 100, ppPnlEbitGoal, ppPnlNetGoal);
+    const rollUp = calcRollUp({
+      role: ppRole, hasPersonal: rd.p === 1, wbTarget: funnel.wbTarget, expTarget: funnel.expTarget,
+      overrideIncome: overrideInc, overrideRate: ppOverrideRate / 100, aumIncome,
+      affAIncome: ppAffAIncome, affBIncome: ppAffBIncome, affCIncome: ppAffCIncome, affDIncome: ppAffDIncome,
+      channelRevAnnual: Math.round(chMetrics.tRevMo * 12), streams: ppStreams,
+    });
+    return {
+      annualGDC: funnel.wbTarget,
+      annualAUM: aumIncome,
+      annualOverride: overrideInc,
+      annualExpanded: funnel.expTarget,
+      annualChannelRev: Math.round(chMetrics.tRevMo * 12),
+      grandTotal: rollUp.grandTotal,
+      streamCount: rollUp.streamCount,
+      items: rollUp.items,
+      pnlNetIncome: pnl.netIncome,
+      pnlEbitda: pnl.ebitda,
+      pnlRevenue: pnl.revenue,
+      monthlyGDC: funnel.monthlyGDC,
+      monthlyNet: Math.round(pnl.netIncome / 12),
+    };
+  }, [ppRole, ppTargetGDC, ppWbPct, ppBracketOverride, ppProductMix, ppFunnelRates, ppMonths,
+    ppTeamMembers, ppOverrideRate, ppBonusRate, ppGen2Rate,
+    ppAumExisting, ppAumNew, ppAumTrailPct, ppRecruitTracks, ppChannelSpend,
+    ppPnlLevel, ppPnlProducers, ppPnlAvgGDC, ppPnlPayoutRate, ppPnlOpEx, ppPnlTaxRate,
+    ppPnlEbitGoal, ppPnlNetGoal, ppStreams,
+    ppAffAIncome, ppAffBIncome, ppAffCIncome, ppAffDIncome]);
+
   /* ─── SHARED PANEL PROPS ─── */
   const pp = {
     clientName, setClientName, age, setAge, spouseAge, setSpouseAge, dep, setDep,
@@ -496,6 +541,7 @@ export default function Calculators() {
     pace, setPace,
     totalIncome, scores, scorecard, recommendations, totalAnnualPremium,
     cfResult, prResult, grResult, rtResult, txResult, esResult, edResult, horizonData,
+    practiceIncome,
   };
 
   /* ─── PRACTICE PLANNING PROPS ─── */

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  BarChart3, GitCompare, FileText, ListChecks, BookOpen, Layers
+  BarChart3, GitCompare, FileText, ListChecks, BookOpen, Layers, Building2
 } from 'lucide-react';
 import {
   fmt, fmtSm, pct,
@@ -14,7 +14,7 @@ import {
   getBracketRate, RATES,
   type HorizonData
 } from './engine';
-import { ResultBadge, type PanelProps } from './shared';
+import { ResultBadge, KPI, type PanelProps } from './shared';
 
 export interface SavedScenario {
   id: number;
@@ -416,6 +416,41 @@ export function SummaryPanel(p: PanelProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* ─── Practice Planning Cross-Link Summary ─── */}
+      {p.practiceIncome.grandTotal > 0 && (
+        <Card className="mb-4 border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" /> Practice Planning Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-background rounded-lg p-3 text-center">
+                <div className="text-xs font-bold text-muted-foreground uppercase">Practice Revenue</div>
+                <div className="text-xl font-extrabold text-primary">{fmtSm(p.practiceIncome.grandTotal)}</div>
+                <div className="text-xs text-muted-foreground">{p.practiceIncome.streamCount} streams</div>
+              </div>
+              <div className="bg-background rounded-lg p-3 text-center">
+                <div className="text-xs font-bold text-muted-foreground uppercase">Practice EBITDA</div>
+                <div className="text-xl font-extrabold text-primary">{fmtSm(p.practiceIncome.pnlEbitda)}</div>
+                <div className="text-xs text-muted-foreground">annual</div>
+              </div>
+              <div className="bg-background rounded-lg p-3 text-center">
+                <div className="text-xs font-bold text-muted-foreground uppercase">Practice Net</div>
+                <div className="text-xl font-extrabold text-primary">{fmtSm(p.practiceIncome.pnlNetIncome)}</div>
+                <div className="text-xs text-muted-foreground">after tax</div>
+              </div>
+              <div className="bg-primary/10 rounded-lg p-3 text-center">
+                <div className="text-xs font-bold text-primary uppercase">Combined Income</div>
+                <div className="text-xl font-extrabold text-primary">{fmtSm(p.totalIncome + p.practiceIncome.grandTotal)}</div>
+                <div className="text-xs text-muted-foreground">personal + practice</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </section>
   );
 }
