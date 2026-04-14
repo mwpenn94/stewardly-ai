@@ -14,7 +14,8 @@ import {
   getBracketRate, RATES,
   type HorizonData
 } from './engine';
-import { ResultBadge, KPI, type PanelProps } from './shared';
+import { ResultBadge, KPI, RefTip, type PanelProps } from './shared';
+import { REFERENCE_CATEGORIES, FUNNEL_BENCHMARKS, METHODOLOGY_DISCLOSURE } from './references';
 
 export interface SavedScenario {
   id: number;
@@ -32,7 +33,7 @@ export function CostBenefitPanel(p: PanelProps & { horizonData: HorizonData[] })
       </h2>
       <p className="text-sm text-muted-foreground mb-4">Complete financial picture — what your client invests and what they receive across all products.</p>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Multi-Horizon Analysis</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Multi-Horizon Analysis<RefTip text="NPV calculations use a 3% discount rate (inflation-adjusted). ROI includes both protection value and cash value accumulation." refId="costbenefit" /></CardTitle></CardHeader>
         <CardContent>
           <table className="w-full text-sm">
             <thead>
@@ -527,66 +528,185 @@ export function ActionPlanPanel(p: PanelProps) {
 }
 
 export function ReferencesPanel() {
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set(['funnel', 'methodology']));
+  const toggle = (id: string) => setExpandedCats(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
   return (
     <section>
       <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
         <BookOpen className="w-5 h-5 text-primary" /> References & Due Diligence
       </h2>
-      <p className="text-sm text-muted-foreground mb-4">Calculation methodology, data sources, and compliance checklist.</p>
+      <p className="text-sm text-muted-foreground mb-4">50+ citations across 14 categories. Calculation methodology, industry benchmarks, product sources, and compliance resources.</p>
+
+      {/* Quick expand/collapse all */}
+      <div className="flex gap-2 mb-4">
+        <Button variant="outline" size="sm" onClick={() => setExpandedCats(new Set(REFERENCE_CATEGORIES.map(c => c.id)))}>
+          Expand All
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setExpandedCats(new Set())}>
+          Collapse All
+        </Button>
+      </div>
+
+      {/* Funnel Benchmarks Quick Reference Table */}
+      <Card className="mb-4 border-primary/20">
+        <CardHeader className="pb-2 cursor-pointer" onClick={() => toggle('_funnel_table')}>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Layers className="w-4 h-4 text-primary" />
+            Quick Reference — Funnel Step Defaults vs Industry Range
+            <span className="ml-auto text-xs text-muted-foreground">{expandedCats.has('_funnel_table') ? '−' : '+'}</span>
+          </CardTitle>
+        </CardHeader>
+        {expandedCats.has('_funnel_table') && (
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Step</th>
+                    <th className="text-center py-2 px-2 text-xs font-semibold text-primary">Calculator Default</th>
+                    <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">Industry Low</th>
+                    <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">Industry Avg</th>
+                    <th className="text-center py-2 px-2 text-xs font-semibold text-green-600">Top Performer</th>
+                    <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Key Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {FUNNEL_BENCHMARKS.map((fb, i) => (
+                    <tr key={i} className={`border-b border-border/50 ${i === FUNNEL_BENCHMARKS.length - 1 ? 'font-semibold' : ''}`}>
+                      <td className="py-1.5 px-2 text-foreground/80">{fb.step}</td>
+                      <td className="text-center px-2 font-bold text-primary">{fb.calcDefault}</td>
+                      <td className="text-center px-2 text-muted-foreground">{fb.industryLow}</td>
+                      <td className="text-center px-2 text-muted-foreground">{fb.industryAvg}</td>
+                      <td className="text-center px-2 text-green-600 font-semibold">{fb.topPerformer}</td>
+                      <td className="px-2 text-xs text-muted-foreground">{fb.source}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Reference Categories */}
+      {REFERENCE_CATEGORIES.map(cat => (
+        <Card key={cat.id} className="mb-3">
+          <CardHeader className="pb-2 cursor-pointer" onClick={() => toggle(cat.id)}>
+            <CardTitle className="text-sm flex items-justify gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-primary">{cat.name}</span>
+              <Badge variant="secondary" className="text-[10px] ml-auto mr-2">{cat.entries.length}</Badge>
+              <span className="text-xs text-muted-foreground">{expandedCats.has(cat.id) ? '−' : '+'}</span>
+            </CardTitle>
+          </CardHeader>
+          {expandedCats.has(cat.id) && (
+            <CardContent className="pt-0">
+              <div className="space-y-3">
+                {cat.id === 'duediligence' ? (
+                  /* Special rendering for due diligence checklist */
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
+                    <p className="text-sm font-semibold text-foreground">Steps You Can Take to Verify Independently:</p>
+                    {cat.entries.map((e, i) => (
+                      <div key={i} className="flex items-start gap-2 text-sm">
+                        <span className="text-green-500 mt-0.5 shrink-0">&#10003;</span>
+                        <div>
+                          <span className="font-semibold">{e.title}:</span>{' '}
+                          <span className="text-muted-foreground">{e.finding}</span>
+                          {e.url && (
+                            <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline ml-1 text-xs">
+                              {new URL(e.url).hostname} &rarr;
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : cat.id === 'benchmarks' ? (
+                  /* Special rendering for industry benchmarks */
+                  <div className="space-y-1">
+                    {cat.entries.map((e, i) => (
+                      <div key={i} className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0">
+                        <span className="text-sm font-medium text-foreground/80">{e.title}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-primary">{e.finding}</span>
+                          {e.url && (
+                            <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary">
+                              ({e.year}) &rarr;
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* Standard rendering for all other categories */
+                  cat.entries.map((e, i) => (
+                    <div key={i} className="border-b border-border/30 last:border-0 pb-2 last:pb-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-semibold text-foreground">{e.title}</span>
+                            {e.year && <span className="text-[10px] text-muted-foreground">({e.year})</span>}
+                            {e.trend && (
+                              <Badge variant={e.trend === 'up' ? 'default' : e.trend === 'down' ? 'destructive' : 'secondary'}
+                                className="text-[10px] px-1.5 py-0">
+                                {e.trend === 'up' ? '\u2191' : e.trend === 'down' ? '\u2193' : '\u2194'} {e.trendLabel}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{e.finding}</p>
+                        </div>
+                        {e.url && (
+                          <a href={e.url} target="_blank" rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline shrink-0 mt-0.5">
+                            {new URL(e.url).hostname.replace('www.', '')} &rarr;
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      ))}
+
+      {/* Calculation Methods (existing) */}
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Calculation Methods</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Calculation Methods Summary<RefTip text="Methodology follows NAIC model regulation guidelines, LIMRA needs analysis standards, and CFP Board planning practices." refId="methodology" /></CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-background">
-                <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Domain</th>
-                <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Method</th>
-                <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {CALC_METHODS.map((m, i) => (
-                <tr key={i} className="border-b border-border/50">
-                  <td className="py-1.5 px-2 font-medium text-foreground/80">{m.domain}</td>
-                  <td className="px-2 text-muted-foreground">{m.method}</td>
-                  <td className="px-2 text-xs text-muted-foreground">{m.source}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-background">
+                  <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Domain</th>
+                  <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Method</th>
+                  <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Source</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {CALC_METHODS.map((m, i) => (
+                  <tr key={i} className="border-b border-border/50">
+                    <td className="py-1.5 px-2 font-medium text-foreground/80">{m.domain}</td>
+                    <td className="px-2 text-muted-foreground">{m.method}</td>
+                    <td className="px-2 text-xs text-muted-foreground">{m.source}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
-      <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Due Diligence Checklist</CardTitle></CardHeader>
-        <CardContent>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-background">
-                <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Item</th>
-                <th className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground">Status</th>
-                <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {DUE_DILIGENCE.map((d, i) => (
-                <tr key={i} className="border-b border-border/50">
-                  <td className="py-1.5 px-2 font-medium text-foreground/80">{d.item}</td>
-                  <td className="text-center px-2">
-                    <Badge variant={d.status === 'Complete' ? 'default' : d.status === 'Pending' ? 'secondary' : 'destructive'}
-                      className="text-[10px]">{d.status}</Badge>
-                  </td>
-                  <td className="px-2 text-xs text-muted-foreground">{d.note}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+
+      {/* Disclaimer */}
       <div className="bg-muted/50 rounded-lg p-4 text-xs text-muted-foreground">
         <p className="font-bold mb-1">Disclaimer</p>
-        <p>This analysis is for educational and planning purposes only. All projections use historical averages and standard actuarial assumptions.
-        Actual results will vary. Tax laws change frequently — consult a qualified tax professional. Insurance product availability and pricing
-        subject to underwriting. Past performance does not guarantee future results. Securities offered through properly licensed representatives.</p>
+        <p>{METHODOLOGY_DISCLOSURE.disclaimer}</p>
       </div>
     </section>
   );

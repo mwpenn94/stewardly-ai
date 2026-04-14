@@ -13,7 +13,7 @@ import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { CommandPalette } from "./components/CommandPalette";
 import { VoiceOnboardingCoach } from "./components/VoiceOnboardingCoach";
 import { useGuestSession } from "./hooks/useGuestSession";
-import GlobalFooter from "./components/GlobalFooter";
+// GlobalFooter removed permanently per user request (redundant nav)
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { usePageTracking } from "./hooks/useExponentialTracking";
 import PageSuspenseFallback from "./components/PageSuspenseFallback";
@@ -368,7 +368,7 @@ function AppContent() {
       <GuestBanner />
       <Router />
       <ConsentBanner />
-      <GlobalFooter />
+      {/* GlobalFooter removed permanently — user requested no footer nav */}
       <ContextualHelp />
     </>
   );

@@ -4,10 +4,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
-  Clock, Building2, Scale, GraduationCap, CheckCircle2
+  Clock, Building2, Scale, GraduationCap
 } from 'lucide-react';
 import { fmt, fmtSm, pct } from './engine';
-import { FormInput, ResultBadge, KPI, type PanelProps } from './shared';
+import { FormInput, ResultBadge, KPI, RefTip, type PanelProps } from './shared';
 
 export function RetirementPanel(p: PanelProps) {
   return (
@@ -28,7 +28,7 @@ export function RetirementPanel(p: PanelProps) {
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Social Security Claiming Comparison</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Social Security Claiming Comparison<RefTip text="Based on SSA 2024 benefit estimates. Break-even analysis compares cumulative benefits at ages 62, 67, and 70." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
           <table className="w-full text-sm">
             <thead>
@@ -63,7 +63,7 @@ export function RetirementPanel(p: PanelProps) {
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Portfolio Withdrawal Analysis</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Portfolio Withdrawal Analysis<RefTip text="Based on the Trinity Study (Bengen Rule). 4% withdrawal rate has historically sustained portfolios for 30+ years." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
           <table className="w-full text-sm">
             <tbody>
@@ -161,7 +161,7 @@ export function TaxPanel(p: PanelProps) {
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Roth Conversion Analysis</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Roth Conversion Analysis<RefTip text="Compares tax-now vs tax-later strategies. Roth conversions (IRC §408A) can reduce future RMDs and estate tax exposure." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
           <table className="w-full text-sm">
             <tbody>
@@ -244,7 +244,7 @@ export function EstatePanel(p: PanelProps) {
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Estate Tax Analysis</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Estate Tax Analysis<RefTip text="Federal estate tax exemption: $13.61M (2024). Rate: 40% on amounts above exemption. Sunset to ~$7M in 2026 under TCJA." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
           <table className="w-full text-sm">
             <tbody>
@@ -339,7 +339,7 @@ export function EducationPanel(p: PanelProps) {
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">529 Projection ({p.edResult.yrsToCollege} years to college)</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">529 Projection ({p.edResult.yrsToCollege} years to college)<RefTip text="529 plans offer tax-free growth for qualified education expenses. Average 4-year public university: ~$100K; private: ~$200K (College Board 2024)." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
           <table className="w-full text-sm">
             <thead>

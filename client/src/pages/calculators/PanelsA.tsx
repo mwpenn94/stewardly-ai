@@ -7,7 +7,7 @@ import {
   User, DollarSign, Shield, TrendingUp, Building2, CheckCircle2, XCircle
 } from 'lucide-react';
 import { fmt, fmtSm, pct } from './engine';
-import { FormInput, ScoreBadge, ResultBadge, KPI, ScoreGauge, type PanelProps } from './shared';
+import { FormInput, ScoreBadge, ResultBadge, KPI, ScoreGauge, RefTip, PillarTooltip, type PanelProps } from './shared';
 
 export function ProfilePanel(p: PanelProps) {
   const keyMetrics: Record<string, string> = {
@@ -167,7 +167,7 @@ export function ProfilePanel(p: PanelProps) {
 
       {/* Financial Health Scorecard */}
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Financial Health Scorecard</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Financial Health Scorecard<RefTip text="7-domain scoring based on DIME method, BLS spending data, and Trinity Study withdrawal rates." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-6">
             <ScoreGauge pct={p.scorecard.pctScore} total={p.scorecard.overall} max={p.scorecard.maxScore} />
@@ -200,10 +200,10 @@ export function ProfilePanel(p: PanelProps) {
               </table>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
             {p.scorecard.pillars.map(pl => (
               <div key={pl.name} className="bg-background rounded-lg p-3 text-center">
-                <div className="text-xs font-semibold text-muted-foreground uppercase">{pl.name}</div>
+                <div className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-center">{pl.name}<PillarTooltip pillar={pl.name} /></div>
                 <div className="mt-1 h-2 rounded-full bg-muted overflow-hidden">
                   <div className={`h-full rounded-full ${pl.score / pl.maxScore >= 0.8 ? 'bg-green-500' : pl.score / pl.maxScore >= 0.5 ? 'bg-primary' : 'bg-red-500'}`}
                     style={{ width: `${(pl.score / pl.maxScore * 100).toFixed(0)}%` }} />
@@ -217,7 +217,7 @@ export function ProfilePanel(p: PanelProps) {
 
       {/* Recommended Products */}
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">Recommended Products</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Recommended Products<RefTip text="Recommendations based on gap analysis across all 7 domains. Premiums reflect industry averages from AM Best and NAIC data." refId="premiums" /></CardTitle></CardHeader>
         <CardContent>
           {p.recommendations.length === 0 ? (
             <p className="text-sm text-muted-foreground italic">No recommendations — all domains scoring well.</p>
@@ -408,7 +408,7 @@ export function ProtectionPanel(p: PanelProps) {
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">DIME Analysis</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">DIME Analysis<RefTip text="Debt + Income replacement + Mortgage + Education. Standard needs-based method per LIMRA and SOA guidelines." refId="premiums" /></CardTitle></CardHeader>
         <CardContent>
           <table className="w-full text-sm">
             <thead>
@@ -505,7 +505,7 @@ export function GrowthPanel(p: PanelProps) {
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Vehicle Comparison ({p.grResult.yrs} years to retirement)</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Vehicle Comparison ({p.grResult.yrs} years to retirement)<RefTip text="Projections use historical averages: S&P 500 ~10%, bonds ~5%. IUL uses illustrated rates per AG49A. FIA uses fixed-index crediting." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
           <table className="w-full text-sm">
             <thead>
@@ -532,7 +532,7 @@ export function GrowthPanel(p: PanelProps) {
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Tax-Free Edge Analysis</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Tax-Free Edge Analysis<RefTip text="Compares after-tax wealth: Roth (IRC §408A) and IUL (IRC §7702) vs traditional taxable accounts over the accumulation period." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
             By using Roth + IUL instead of taxable + traditional 401(k), the projected tax-free advantage over {p.grResult.yrs} years is:

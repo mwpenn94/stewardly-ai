@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 import { sc } from './engine';
 import type { Recommendation, CFResult, PRResult, GRResult, RTResult, TXResult, ESResult, EDResult, HorizonData } from './engine';
 
@@ -89,6 +91,54 @@ export function ScoreGauge({ pct: pctVal, total, max }: { pct: number; total: nu
         {pctVal >= 80 ? 'All domains well-positioned' : 'Some domains below target'}
       </div>
     </div>
+  );
+}
+
+/* ═══ INLINE CITATION TOOLTIP ═══ */
+/** RefTip — small info icon that shows a citation tooltip on hover.
+ *  `refId` maps to a REFERENCE_CATEGORIES id for deep-link, `text` is the tooltip content. */
+export function RefTip({ text, refId }: { text: string; refId?: string }) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" className="inline-flex items-center align-middle ml-0.5 text-muted-foreground/50 hover:text-primary transition-colors" aria-label="Source info">
+            <Info className="w-3 h-3" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+          <p>{text}</p>
+          {refId && <p className="mt-1 text-primary/80 text-[10px]">See References → {refId}</p>}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+/* ═══ PILLAR SCORE TOOLTIP ═══ */
+const PILLAR_EXPLANATIONS: Record<string, string> = {
+  'Plan': 'Measures cash flow health, emergency fund adequacy, and debt management. Score 3 = savings rate ≥ 20%, adequate emergency fund.',
+  'Protect': 'Evaluates life insurance coverage vs DIME need, disability income, and key-person/buy-sell coverage for business owners.',
+  'Grow': 'Assesses retirement savings rate, investment growth trajectory, tax optimization, estate planning, and education funding.',
+};
+
+export function PillarTooltip({ pillar }: { pillar: string }) {
+  const explanation = PILLAR_EXPLANATIONS[pillar];
+  if (!explanation) return null;
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" className="inline-flex items-center align-middle ml-1 text-muted-foreground/40 hover:text-primary transition-colors" aria-label={`${pillar} pillar explanation`}>
+            <Info className="w-3 h-3" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+          <p className="font-semibold mb-1">{pillar} Pillar</p>
+          <p>{explanation}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 

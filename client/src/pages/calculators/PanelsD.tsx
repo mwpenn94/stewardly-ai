@@ -23,7 +23,7 @@ import {
   fmt, fmtSm, pct,
   type RoleId, type TeamMember, type RecruitTrack,
 } from './practiceEngine';
-import { KPI } from './shared';
+import { KPI, RefTip } from './shared';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid, Area, AreaChart,
@@ -185,8 +185,24 @@ export function MyPlanPanel(p: PracticeProps) {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <PInput label="WB Platform %" value={p.wbPct} onChange={v => p.setWbPct(+v || 0)} suffix="%" />
+          <div className="space-y-0.5">
+            <Label className="text-[10px] font-medium text-muted-foreground">Payout Override</Label>
+            <Select value={p.bracketOverride} onValueChange={p.setBracketOverride}>
+              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto (by GDC)</SelectItem>
+                {GDC_BRACKETS.map(b => (
+                  <SelectItem key={String(b.r)} value={String(Math.round(b.r * 100))}>
+                    {Math.round(b.r * 100)}% — {b.l}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <PInput label="AUM Existing ($)" value={p.aumExisting} onChange={v => p.setAumExisting(+v || 0)} prefix="$" />
           <PInput label="AUM New ($)" value={p.aumNew} onChange={v => p.setAumNew(+v || 0)} prefix="$" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <PInput label="AUM Trail %" value={p.aumTrailPct} onChange={v => p.setAumTrailPct(+v || 0)} suffix="%" />
         </div>
 
@@ -348,10 +364,10 @@ export function GDCBracketsPanel(p: PracticeProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base text-primary">GDC Brackets</CardTitle>
+        <CardTitle className="text-base text-primary flex items-center gap-1">GDC Brackets<RefTip text="Commission brackets based on National Life Group 2026 schedules. FYC rates: IUL 90-110%, WL 55-80%, Term 80-100%." refId="commission" /></CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <PInput label="Your GDC ($)" value={gdcInput} onChange={v => setGdcInput(+v || 0)} prefix="$" />
           <PInput label="Team Size" value={teamSize} onChange={v => setTeamSize(+v || 0)} />
           <PInput label="Team Avg GDC" value={teamAvgGDC} onChange={v => setTeamAvgGDC(+v || 0)} prefix="$" />
@@ -383,7 +399,7 @@ export function GDCBracketsPanel(p: PracticeProps) {
         {/* Override Rate Inputs */}
         <Separator />
         <SectionHeader>Override Settings</SectionHeader>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <PInput label="Override Rate %" value={p.overrideRate} onChange={v => p.setOverrideRate(+v || 0)} suffix="%" />
           <PInput label="Bonus Rate %" value={p.bonusRate} onChange={v => p.setBonusRate(+v || 0)} suffix="%" />
           <PInput label="Gen2 Rate %" value={p.gen2Rate} onChange={v => p.setGen2Rate(+v || 0)} suffix="%" />
@@ -514,7 +530,7 @@ export function SalesFunnelPanel(p: PracticeProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base text-primary">Sales Funnel</CardTitle>
+        <CardTitle className="text-base text-primary flex items-center gap-1">Sales Funnel<RefTip text="Conversion rates from LIMRA, Legacy Agent, and EverQuote research. Industry averages: approach-to-set 15-40%, held 65-85%, close 25-70%, place 60-85%." refId="funnel" /></CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -604,7 +620,7 @@ export function RecruitingPanel(p: PracticeProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base text-primary">Recruiting</CardTitle>
+        <CardTitle className="text-base text-primary flex items-center gap-1">Recruiting<RefTip text="Override rates: 5-15% first-gen, 2-5% second-gen. Recruiting costs and retention from LIMRA Agent Compensation Study 2024." refId="recruiting" /></CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Add Track Buttons */}
@@ -723,7 +739,7 @@ export function ChannelsPanel(p: PracticeProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base text-primary">Marketing Channels</CardTitle>
+        <CardTitle className="text-base text-primary flex items-center gap-1">Marketing Channels<RefTip text="CPL benchmarks from FirstPageSage 2025: LinkedIn $75-180, Google $85-120, Facebook $50-90, SEO $45-75, Referrals $15-30." refId="marketing" /></CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Channel Input Table */}
@@ -1469,7 +1485,7 @@ export function MonthlyProductionPanel(p: PracticeProps) {
 
         {/* Monthly Production Table */}
         <SectionHeader>Year {selectedYear} — Monthly Breakdown</SectionHeader>
-        <div className="grid grid-cols-3 gap-3 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
           <KPI label="Annual GDC" value={fmt(currentYearData?.annGDC || 0)} />
           <KPI label="Annual Income" value={fmt(currentYearData?.annIncome || 0)} />
           <KPI label="Avg Monthly" value={fmt(Math.round((currentYearData?.annGDC || 0) / 12))} />

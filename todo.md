@@ -4068,3 +4068,40 @@
 - [x] Pass 8: CLEAN (1/3) — PanelsA/B/C, session save/restore, sidebar nav, backPlan
 - [x] Pass 9: CLEAN (2/3) — Server engines, chatDispatcher, tRPC routers, export functions
 - [x] Pass 10: CLEAN (3/3) — CONVERGENCE CONFIRMED ✔️
+
+## Round 4: Source HTML Structure Fulfillment + Industry Data Optimization
+
+### Step 1: Wire Bracket Override Selector UI
+- [x] Add bracket override dropdown to My Plan panel (auto + manual rate options)
+- [x] Wire to existing ppBracketOverride state variable
+
+### Step 2: Expand References Panel with Full Source HTML Content
+- [x] Add all 14 reference categories from source HTML
+- [x] Add 50+ individual citations with titles, years, findings, and URLs
+- [x] Add PRODUCT_REFERENCES data (per-product citations with benchmarks)
+- [x] Add INDUSTRY_BENCHMARKS data (comparison metrics)
+- [x] Add METHODOLOGY_DISCLOSURE (engine methodology explanations)
+- [x] Add Due Diligence Checklist with actionable verification links
+- [x] Add Regulatory & Compliance section (FINRA, NAIC, SEC, AM Best)
+
+### Step 3: Add Inline Citation Tooltips
+- [x] Add info tooltips throughout calculator panels linking to reference sources
+- [x] Create reusable RefTip component for inline citations
+
+### Step 4: Optimize Defaults with Industry Data
+- [x] Verify all default values match latest industry benchmarks
+- [x] Add recruiting source benchmarks (LIMRA, AllCalls, FirstPageSage)
+- [x] Ensure channel CPL defaults match industry averages
+
+### Step 5: Recursive Optimization
+- [x] Pass 1: Comprehensive audit
+- [x] Pass 2: Verify convergence (1/3)
+- [x] Pass 3: Verify convergence (2/3)
+- [x] Pass 4: Verify convergence (3/3) — CONVERGED
+
+### Urgent Fixes (User Request)
+- [x] Remove footer nav bar permanently (GlobalFooter + mobile bottom tab bar)
+- [x] Fix app shell sidebar to be available on Wealth Engine page (wrapped in AppShell)
+- [x] Fix mobile readability of Wealth Engine page — sidebar now slide-out drawer on mobile
+- [x] Fix component rendering — grids stack to single column on mobile
+- [x] Validate all fixes visually as a virtual user (desktop + mobile)
