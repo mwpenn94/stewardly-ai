@@ -4150,3 +4150,32 @@
 - [x] Recursive Pass 36: CLEAN (18/20) — 0 TS errors, 5674 total lines across 9 calculator files (well-split), PanelsD largest at 1555 (practice planning charts, acceptable), 1 recharts import (only PanelsD), 0 tab bar, compliance present
 - [x] Recursive Pass 37: CLEAN (19/20) — visual+interaction validation: Cash Flow click, My Plan click, desktop+mobile all clean, 0 tab bar, compliance present, ConsentBanner working, internal sidebar navigation functional
 - [x] Recursive Pass 38: CLEAN (20/20) — CONVERGED. 0 TS errors, 0 unused imports, 0 tab bar, 1 compliance footer, 0 missing DialogDescription, 0 GlobalFooter imports, 0 new browser errors
+
+## v2.6 Foundational — Scope #4 Unified Wealth Engine Structural Parity
+- [x] Create exhaustive HTML_STRUCTURAL_INVENTORY.md (500+ rows, all categories)
+- [x] Create CALCULATOR_PARITY.md with Section A-0 structural inventory
+- [x] Audit current codebase against parity matrix
+- [x] Implement Advanced Strategies Panel (Premium Financing, ILIT, Exec Comp, Charitable Vehicles)
+- [x] Implement Business Client Panel (Key Person, Buy-Sell, Group Benefits)
+- [x] Implement Timeline Panel (Implementation Timeline with pace presets + Client KPIs)
+- [x] Implement Partner / Affiliate Earnings Panel
+- [x] Add calcAdvanced(), calcBizClient(), calcPartner() engine functions
+- [x] Add year-by-year tables for Premium Financing
+- [x] Add ILIT metrics table (net to heirs, estate tax saved, gift exclusion)
+- [x] Add Executive Compensation metrics table
+- [x] Add Charitable Vehicles metrics table (CRT income, deduction, net benefit)
+- [x] Add Business Client products table (coverage, product, premium, monthly)
+- [x] Add Partner earnings breakdown table (tier, intros, fee, monthly, annual)
+- [x] Add FINRA/SIPC compliance disclaimer card
+- [x] Add Welcome Tip with localStorage persistence
+- [x] Add Reset All Inputs button with confirmation
+- [x] Add JSON Import/Export to toolbar
+- [x] Add Print CSS (@media print)
+- [x] Add new state variables to gatherInputs/restoreInputs for save/load
+- [x] Add 4 new nav items to sidebar (Advanced, Business Client, Timeline, Partner)
+- [x] Write vitest tests for calcAdvanced, calcBizClient, calcPartner (12 tests)
+- [x] All 316 test files pass (7,654 tests)
+- [x] TypeScript: No errors, LSP: No errors
+- [x] Test on 375px viewport for mobile responsiveness
+- [x] Visual verification of all 4 new panels on desktop
+- [x] Visual verification of all 4 new panels on mobile

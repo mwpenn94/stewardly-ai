@@ -11,9 +11,10 @@ import { trpc } from '@/lib/trpc';
 import {
   User, DollarSign, Shield, TrendingUp, Clock, Building2, GraduationCap,
   Scale, BarChart3, GitCompare, FileText, ListChecks, BookOpen,
-  Calculator, CheckCircle2, Save, FolderOpen, Download, Trash2,
+  Calculator, CheckCircle2, Save, FolderOpen, Download, Trash2, Upload,
   Target, Layers, Package, Filter, Users, Megaphone, LayoutDashboard, Receipt,
-  Flag, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu
+  Flag, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu,
+  Briefcase, Gem, Handshake, CalendarRange, RotateCcw, X, Info
 } from 'lucide-react';
 
 import {
@@ -26,6 +27,7 @@ import {
 import { ProfilePanel, CashFlowPanel, ProtectionPanel, GrowthPanel } from './calculators/PanelsA';
 import { RetirementPanel, TaxPanel, EstatePanel, EducationPanel } from './calculators/PanelsB';
 import { CostBenefitPanel, StrategyComparePanel, SummaryPanel, ActionPlanPanel, ReferencesPanel } from './calculators/PanelsC';
+import { AdvancedStrategiesPanel, BusinessClientPanel, TimelinePanel, PartnerPanel } from './calculators/PanelsE';
 import { MyPlanPanel, GDCBracketsPanel, ProductsPanel, SalesFunnelPanel, RecruitingPanel, ChannelsPanel, DashboardPanel, PnLPanel, GoalTrackerPanel, MonthlyProductionPanel, type PracticeProps } from './calculators/PanelsD';
 import {
   ROLE_DEFAULTS, calcWeightedGDC, calcProductionFunnel, calcTeamOverride,
@@ -36,9 +38,9 @@ import {
 
 /* ═══ PANEL TYPE DEFINITIONS ═══ */
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
-  'costben' | 'compare' | 'summary' | 'timeline' | 'refs' |
+  'advanced' | 'bizclient' | 'costben' | 'compare' | 'summary' | 'timeline' | 'impl_timeline' | 'refs' |
   'myplan' | 'gdcbrackets' | 'products' | 'salesfunnel' | 'recruiting' | 'channels' | 'dashboard' | 'pnl' |
-  'goaltracker' | 'monthlyproduction';
+  'goaltracker' | 'monthlyproduction' | 'partner';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Your Profile', items: [
@@ -52,6 +54,8 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'tax', label: 'Tax Planning', icon: <Building2 className="w-4 h-4" /> },
     { id: 'estate', label: 'Estate', icon: <Scale className="w-4 h-4" /> },
     { id: 'edu', label: 'Education', icon: <GraduationCap className="w-4 h-4" /> },
+    { id: 'advanced', label: 'Advanced', icon: <Gem className="w-4 h-4" /> },
+    { id: 'bizclient', label: 'Business Client', icon: <Briefcase className="w-4 h-4" /> },
   ]},
   { group: 'Practice Planning', items: [
     { id: 'myplan' as PanelId, label: 'My Plan', icon: <Target className="w-4 h-4" /> },
@@ -70,6 +74,8 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'compare', label: 'Strategy Compare', icon: <GitCompare className="w-4 h-4" /> },
     { id: 'summary', label: 'Summary', icon: <FileText className="w-4 h-4" /> },
     { id: 'timeline', label: 'Action Plan', icon: <ListChecks className="w-4 h-4" /> },
+    { id: 'impl_timeline', label: 'Timeline', icon: <CalendarRange className="w-4 h-4" /> },
+    { id: 'partner', label: 'Partner Earnings', icon: <Handshake className="w-4 h-4" /> },
   ]},
   { group: 'Resources', items: [
     { id: 'refs', label: 'References', icon: <BookOpen className="w-4 h-4" /> },
@@ -190,9 +196,47 @@ export default function Calculators() {
   const [current529, setCurrent529] = useState(30000);
   const [monthly529, setMonthly529] = useState(300);
 
+  /* ─── ADVANCED STRATEGIES INPUTS ─── */
+  const [pfFace, setPfFace] = useState(5000000);
+  const [pfPrem, setPfPrem] = useState(100000);
+  const [pfCash, setPfCash] = useState(25000);
+  const [pfLoan, setPfLoan] = useState(5);
+  const [pfCred, setPfCred] = useState(6.5);
+  const [pfYrs, setPfYrs] = useState(10);
+  const [ilDB, setIlDB] = useState(3000000);
+  const [ilPr, setIlPr] = useState(30000);
+  const [ilCr, setIlCr] = useState(3);
+  const [ilTx, setIlTx] = useState(40);
+  const [exSal, setExSal] = useState(200000);
+  const [ex162, setEx162] = useState(25000);
+  const [exSERP, setExSERP] = useState(50000);
+  const [exSD, setExSD] = useState(0);
+  const [cvCRT, setCvCRT] = useState(500000);
+  const [cvPO, setCvPO] = useState(5);
+  const [cvDAF, setCvDAF] = useState(50000);
+  const [cvLI, setCvLI] = useState(500000);
+  const [advGoal, setAdvGoal] = useState(0);
+
+  /* ─── BUSINESS CLIENT INPUTS ─── */
+  const [bcBizValue, setBcBizValue] = useState(1000000);
+  const [bcKeyPersonSalary, setBcKeyPersonSalary] = useState(150000);
+  const [bcKeyPersonMult, setBcKeyPersonMult] = useState(5);
+  const [bcOwners, setBcOwners] = useState(2);
+  const [bcEmployees, setBcEmployees] = useState(15);
+
+  /* ─── PARTNER / AFFILIATE INPUTS ─── */
+  const [paLow, setPaLow] = useState(4);
+  const [paMid, setPaMid] = useState(4);
+  const [paHigh, setPaHigh] = useState(2);
+
   /* ─── COST-BENEFIT & ACTION PLAN ─── */
   const [cbHorizons] = useState<number[]>([5, 10, 15, 20, 30]);
   const [pace, setPace] = useState<'standard'|'aggressive'|'gradual'>('standard');
+
+  /* ─── WELCOME TIP ─── */
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try { return localStorage.getItem('wb-welcome-dismissed') !== 'true'; } catch { return true; }
+  });
 
   /* ─── PRACTICE PLANNING STATE ─── */
   const [ppRole, setPpRole] = useState<RoleId>('new');
@@ -251,6 +295,14 @@ export default function Calculators() {
     grossEstate, exemption, estateGrowth, giftingAnnual, willStatus,
     numChildren, avgChildAge, targetCost, eduReturn, current529, monthly529,
     pace,
+    /* Advanced Strategies */
+    pfFace, pfPrem, pfCash, pfLoan, pfCred, pfYrs,
+    ilDB, ilPr, ilCr, ilTx, exSal, ex162, exSERP, exSD,
+    cvCRT, cvPO, cvDAF, cvLI, advGoal,
+    /* Business Client */
+    bcBizValue, bcKeyPersonSalary, bcKeyPersonMult, bcOwners, bcEmployees,
+    /* Partner */
+    paLow, paMid, paHigh,
     /* Practice Planning */
     ppRole, ppTargetGDC, ppWbPct, ppMonths, ppBracketOverride, ppProductMix, ppFunnelRates,
     ppOverrideRate, ppBonusRate, ppGen2Rate, ppTeamMembers, ppRecruitTracks, ppChannelSpend,
@@ -328,6 +380,36 @@ export default function Calculators() {
     if (d.current529 !== undefined) setCurrent529(d.current529);
     if (d.monthly529 !== undefined) setMonthly529(d.monthly529);
     if (d.pace !== undefined) setPace(d.pace);
+    /* Advanced Strategies */
+    if (d.pfFace !== undefined) setPfFace(d.pfFace);
+    if (d.pfPrem !== undefined) setPfPrem(d.pfPrem);
+    if (d.pfCash !== undefined) setPfCash(d.pfCash);
+    if (d.pfLoan !== undefined) setPfLoan(d.pfLoan);
+    if (d.pfCred !== undefined) setPfCred(d.pfCred);
+    if (d.pfYrs !== undefined) setPfYrs(d.pfYrs);
+    if (d.ilDB !== undefined) setIlDB(d.ilDB);
+    if (d.ilPr !== undefined) setIlPr(d.ilPr);
+    if (d.ilCr !== undefined) setIlCr(d.ilCr);
+    if (d.ilTx !== undefined) setIlTx(d.ilTx);
+    if (d.exSal !== undefined) setExSal(d.exSal);
+    if (d.ex162 !== undefined) setEx162(d.ex162);
+    if (d.exSERP !== undefined) setExSERP(d.exSERP);
+    if (d.exSD !== undefined) setExSD(d.exSD);
+    if (d.cvCRT !== undefined) setCvCRT(d.cvCRT);
+    if (d.cvPO !== undefined) setCvPO(d.cvPO);
+    if (d.cvDAF !== undefined) setCvDAF(d.cvDAF);
+    if (d.cvLI !== undefined) setCvLI(d.cvLI);
+    if (d.advGoal !== undefined) setAdvGoal(d.advGoal);
+    /* Business Client */
+    if (d.bcBizValue !== undefined) setBcBizValue(d.bcBizValue);
+    if (d.bcKeyPersonSalary !== undefined) setBcKeyPersonSalary(d.bcKeyPersonSalary);
+    if (d.bcKeyPersonMult !== undefined) setBcKeyPersonMult(d.bcKeyPersonMult);
+    if (d.bcOwners !== undefined) setBcOwners(d.bcOwners);
+    if (d.bcEmployees !== undefined) setBcEmployees(d.bcEmployees);
+    /* Partner */
+    if (d.paLow !== undefined) setPaLow(d.paLow);
+    if (d.paMid !== undefined) setPaMid(d.paMid);
+    if (d.paHigh !== undefined) setPaHigh(d.paHigh);
     /* Practice Planning */
     if (d.ppRole !== undefined) setPpRole(d.ppRole);
     if (d.ppTargetGDC !== undefined) setPpTargetGDC(d.ppTargetGDC);
@@ -892,8 +974,61 @@ export default function Calculators() {
                 className="text-xs gap-1 h-7">
                 <Download className="w-3 h-3" /> <span className="hidden sm:inline">CSV</span>
               </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file'; input.accept = '.json';
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    try {
+                      const data = JSON.parse(ev.target?.result as string);
+                      restoreInputs(data);
+                      toast.success('Session imported from JSON');
+                    } catch { toast.error('Invalid JSON file'); }
+                  };
+                  reader.readAsText(file);
+                };
+                input.click();
+              }} className="text-xs gap-1 h-7">
+                <Upload className="w-3 h-3" /> <span className="hidden sm:inline">Import</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                const json = JSON.stringify(gatherInputs(), null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `WealthBridge-${clientName || 'Session'}-${new Date().toISOString().slice(0,10)}.json`;
+                a.click(); URL.revokeObjectURL(url);
+                toast.success('JSON exported!');
+              }} className="text-xs gap-1 h-7">
+                <Download className="w-3 h-3" /> <span className="hidden sm:inline">JSON</span>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => {
+                if (confirm('Reset all inputs to defaults? This cannot be undone.')) {
+                  window.location.reload();
+                }
+              }} className="text-xs gap-1 h-7 text-red-400 hover:text-red-300">
+                <RotateCcw className="w-3 h-3" /> <span className="hidden sm:inline">Reset</span>
+              </Button>
             </div>
           </div>
+
+          {/* ─── WELCOME TIP ─── */}
+          {showWelcome && (
+            <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-start gap-3">
+              <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground mb-1">Welcome to the Unified Wealth Engine</p>
+                <p className="text-xs text-muted-foreground">Start by entering your client profile, then explore each planning domain. All calculations update in real-time. Use Save/Load to manage multiple client scenarios, and Export to generate reports.</p>
+              </div>
+              <button onClick={() => { setShowWelcome(false); try { localStorage.setItem('wb-welcome-dismissed', 'true'); } catch {} }}
+                className="text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* ═══ PANEL RENDERING ═══ */}
           {activePanel === 'profile' && <ProfilePanel {...pp} />}
@@ -904,6 +1039,26 @@ export default function Calculators() {
           {activePanel === 'tax' && <TaxPanel {...pp} />}
           {activePanel === 'estate' && <EstatePanel {...pp} />}
           {activePanel === 'edu' && <EducationPanel {...pp} />}
+          {activePanel === 'advanced' && <AdvancedStrategiesPanel
+            pfFace={pfFace} setPfFace={setPfFace} pfPrem={pfPrem} setPfPrem={setPfPrem}
+            pfCash={pfCash} setPfCash={setPfCash} pfLoan={pfLoan} setPfLoan={setPfLoan}
+            pfCred={pfCred} setPfCred={setPfCred} pfYrs={pfYrs} setPfYrs={setPfYrs}
+            ilDB={ilDB} setIlDB={setIlDB} ilPr={ilPr} setIlPr={setIlPr}
+            ilCr={ilCr} setIlCr={setIlCr} ilTx={ilTx} setIlTx={setIlTx}
+            exSal={exSal} setExSal={setExSal} ex162={ex162} setEx162={setEx162}
+            exSERP={exSERP} setExSERP={setExSERP} exSD={exSD} setExSD={setExSD}
+            cvCRT={cvCRT} setCvCRT={setCvCRT} cvPO={cvPO} setCvPO={setCvPO}
+            cvDAF={cvDAF} setCvDAF={setCvDAF} cvLI={cvLI} setCvLI={setCvLI}
+            advGoal={advGoal} setAdvGoal={setAdvGoal}
+          />}
+          {activePanel === 'bizclient' && <BusinessClientPanel
+            bcBizValue={bcBizValue} setBcBizValue={setBcBizValue}
+            bcKeyPersonSalary={bcKeyPersonSalary} setBcKeyPersonSalary={setBcKeyPersonSalary}
+            bcKeyPersonMult={bcKeyPersonMult} setBcKeyPersonMult={setBcKeyPersonMult}
+            bcOwners={bcOwners} setBcOwners={setBcOwners}
+            bcEmployees={bcEmployees} setBcEmployees={setBcEmployees}
+            age={age}
+          />}
           {activePanel === 'costben' && <CostBenefitPanel {...pp} horizonData={horizonData} />}
           {activePanel === 'compare' && <StrategyComparePanel {...pp} savedScenarios={
             (sessionsQuery.data || []).map((s: any) => ({
@@ -916,6 +1071,8 @@ export default function Calculators() {
           } />}
           {activePanel === 'summary' && <SummaryPanel {...pp} />}
           {activePanel === 'timeline' && <ActionPlanPanel {...pp} />}
+          {activePanel === 'impl_timeline' && <TimelinePanel {...pp} />}
+          {activePanel === 'partner' && <PartnerPanel paLow={paLow} setPaLow={setPaLow} paMid={paMid} setPaMid={setPaMid} paHigh={paHigh} setPaHigh={setPaHigh} />}
           {activePanel === 'refs' && <ReferencesPanel />}
 
           {/* ═══ PRACTICE PLANNING PANELS ═══ */}
@@ -929,6 +1086,15 @@ export default function Calculators() {
           {activePanel === 'pnl' && <PnLPanel {...practiceProps} />}
           {activePanel === 'goaltracker' && <GoalTrackerPanel {...practiceProps} />}
           {activePanel === 'monthlyproduction' && <MonthlyProductionPanel {...practiceProps} />}
+
+          {/* ═══ FINRA/SIPC COMPLIANCE DISCLAIMER ═══ */}
+          <div className="mt-8 rounded-lg border border-border/50 bg-card/50 p-4 text-[10px] text-muted-foreground/60 leading-relaxed space-y-2">
+            <p className="font-semibold text-muted-foreground/80 text-xs">Important Disclosures</p>
+            <p>This calculator is designed for educational and illustrative purposes only and does not constitute financial, tax, legal, or investment advice. All projections are hypothetical, based on the assumptions and inputs you provide, and are not guarantees of future results. Actual outcomes may vary significantly.</p>
+            <p>Securities offered through registered broker-dealers. Investment advisory services offered through registered investment advisers. Insurance products offered through licensed insurance agents. Check the background of your financial professional on FINRA's BrokerCheck. Member FINRA/SIPC.</p>
+            <p>National Life Group® products are issued by Life Insurance Company of the Southwest, National Life Insurance Company, and their affiliates. Products and their features may not be available in all states. Guarantees are subject to the claims-paying ability of the issuing company.</p>
+            <p>Tax information provided is general in nature and should not be construed as tax advice. Consult a qualified tax professional regarding your specific situation. IRS Circular 230 Disclosure: To ensure compliance with requirements imposed by the IRS, we inform you that any U.S. federal tax advice contained herein is not intended or written to be used, and cannot be used, for the purpose of avoiding penalties under the Internal Revenue Code.</p>
+          </div>
 
         </div>
       </div>

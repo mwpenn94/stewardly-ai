@@ -490,3 +490,127 @@ export function buildActionPlan(pace: 'standard'|'aggressive'|'gradual', recs: R
   phases.push({ name: 'Optimization', timeline: `Month ${Math.round(8*mult)+1}-${Math.round(12*mult)}`, actions: p4Actions, priority: 'Medium' });
   return phases;
 }
+
+
+/* ═══ ADVANCED STRATEGIES ENGINE ═══ */
+export interface AdvResult {
+  pf: { face: number; premium: number; cashOutlay: number; loanRate: number; creditRate: number; years: number;
+    totalCashOutlay: number; totalLoanInterest: number; totalCashValue: number; netBenefit: number; leverage: string;
+    yearByYear: { yr: number; cashOutlay: number; loanBal: number; cashValue: number; net: number }[] };
+  ilit: { deathBenefit: number; premium: number; crummey: number; estateTaxRate: number;
+    estateTaxSaved: number; annualGiftExclusion: number; netToHeirs: number; withoutILIT: number };
+  exec: { baseSalary: number; bonus162: number; serp: number; splitDollar: number;
+    totalComp: number; taxBenefit: number; retentionValue: number };
+  cv: { crtContrib: number; crtPayout: number; dafContrib: number; liReplacement: number;
+    annualIncome: number; taxDeduction: number; totalCharitable: number; netBenefit: number };
+  taxSavingsGoal: number; totalTaxSavings: number; goalMet: boolean;
+}
+export function calcAdvanced(
+  pfFace: number, pfPrem: number, pfCash: number, pfLoan: number, pfCred: number, pfYrs: number,
+  ilDB: number, ilPr: number, ilCr: number, ilTx: number,
+  exSal: number, ex162: number, exSERP: number, exSD: number,
+  cvCRT: number, cvPO: number, cvDAF: number, cvLI: number,
+  taxGoal: number
+): AdvResult {
+  /* Premium Financing */
+  const yearByYear: AdvResult['pf']['yearByYear'] = [];
+  let loanBal = 0, totalCashOutlay = 0, cashValue = 0;
+  for (let yr = 1; yr <= pfYrs; yr++) {
+    totalCashOutlay += pfCash;
+    loanBal = (loanBal + pfPrem - pfCash) * (1 + pfLoan / 100);
+    cashValue = (cashValue + pfPrem) * (1 + pfCred / 100);
+    yearByYear.push({ yr, cashOutlay: totalCashOutlay, loanBal: Math.round(loanBal), cashValue: Math.round(cashValue), net: Math.round(cashValue - loanBal) });
+  }
+  const totalLoanInterest = Math.round(loanBal - (pfPrem - pfCash) * pfYrs);
+  const pf = {
+    face: pfFace, premium: pfPrem, cashOutlay: pfCash, loanRate: pfLoan, creditRate: pfCred, years: pfYrs,
+    totalCashOutlay: Math.round(totalCashOutlay), totalLoanInterest, totalCashValue: Math.round(cashValue),
+    netBenefit: Math.round(cashValue - loanBal), leverage: pfCash > 0 ? (pfFace / totalCashOutlay).toFixed(1) + 'x' : '—',
+    yearByYear,
+  };
+
+  /* ILIT */
+  const annualGiftExclusion = ilCr * 18000; // 2024 annual exclusion per beneficiary
+  const estateTaxSaved = Math.round(ilDB * (ilTx / 100));
+  const ilit = {
+    deathBenefit: ilDB, premium: ilPr, crummey: ilCr, estateTaxRate: ilTx,
+    estateTaxSaved, annualGiftExclusion,
+    netToHeirs: ilDB, // ILIT: full DB passes estate-tax-free
+    withoutILIT: Math.round(ilDB * (1 - ilTx / 100)),
+  };
+
+  /* Executive Compensation */
+  const totalComp = exSal + ex162 + exSERP + exSD;
+  const taxBenefit = Math.round((ex162 + exSERP) * 0.37); // top marginal rate deduction for employer
+  const retentionValue = Math.round(exSERP * 5); // 5-year vesting value
+  const exec = { baseSalary: exSal, bonus162: ex162, serp: exSERP, splitDollar: exSD, totalComp, taxBenefit, retentionValue };
+
+  /* Charitable Vehicles */
+  const annualIncome = Math.round(cvCRT * (cvPO / 100));
+  const taxDeduction = Math.round(cvCRT * 0.35 + cvDAF * 0.37); // approximate deduction
+  const totalCharitable = cvCRT + cvDAF;
+  const cv = {
+    crtContrib: cvCRT, crtPayout: cvPO, dafContrib: cvDAF, liReplacement: cvLI,
+    annualIncome, taxDeduction, totalCharitable,
+    netBenefit: Math.round(annualIncome * 20 + taxDeduction - cvLI * 0.02 * 20), // 20yr net
+  };
+
+  /* Tax Savings Goal */
+  const totalTaxSavings = Math.round(
+    (pf.netBenefit > 0 ? pf.netBenefit * 0.15 : 0) + // PF tax efficiency
+    ilit.estateTaxSaved * 0.04 + // annualized estate tax savings
+    exec.taxBenefit +
+    cv.taxDeduction
+  );
+  const goalMet = taxGoal > 0 ? totalTaxSavings >= taxGoal : true;
+
+  return { pf, ilit, exec, cv, taxSavingsGoal: taxGoal, totalTaxSavings, goalMet };
+}
+
+/* ═══ BUSINESS CLIENT ENGINE ═══ */
+export interface BizClientResult {
+  bizValue: number; keyPersonSalary: number; keyPersonMultiplier: number; owners: number; employees: number;
+  keyPersonNeed: number; keyPersonPrem: number;
+  buySellNeed: number; buySellPremPerOwner: number; buySellTotalPrem: number;
+  groupBenefitsCost: number;
+  totalAnnualCost: number;
+  products: { need: string; coverage: number; product: string; premium: number; monthly: number; carrier: string }[];
+}
+export function calcBizClient(bizValue: number, keyPersonSalary: number, keyPersonMultiplier: number,
+  owners: number, employees: number, age: number): BizClientResult {
+  const keyPersonNeed = keyPersonSalary * keyPersonMultiplier;
+  const keyPersonPrem = estPrem('term', age, keyPersonNeed);
+  const buySellNeed = Math.round(bizValue / Math.max(1, owners));
+  const buySellPremPerOwner = estPrem('term', age, buySellNeed);
+  const buySellTotalPrem = buySellPremPerOwner * Math.max(0, owners - 1); // cross-purchase
+  const groupBenefitsCost = RATES.groupPerEmp * employees;
+  const totalAnnualCost = keyPersonPrem + buySellTotalPrem + groupBenefitsCost;
+
+  const products: BizClientResult['products'] = [];
+  if (keyPersonNeed > 0) products.push({ need: 'Key Person', coverage: keyPersonNeed, product: 'NLG Term 20yr', premium: keyPersonPrem, monthly: Math.round(keyPersonPrem / 12), carrier: 'National Life Group' });
+  if (buySellNeed > 0 && owners > 1) products.push({ need: 'Buy-Sell', coverage: buySellNeed, product: 'Cross-Purchase Term', premium: buySellTotalPrem, monthly: Math.round(buySellTotalPrem / 12), carrier: 'National Life Group' });
+  if (employees > 0) products.push({ need: 'Group Benefits', coverage: employees, product: `Group Health (${employees} emp)`, premium: groupBenefitsCost, monthly: Math.round(groupBenefitsCost / 12), carrier: 'Multiple Carriers' });
+
+  return { bizValue, keyPersonSalary, keyPersonMultiplier, owners, employees,
+    keyPersonNeed, keyPersonPrem, buySellNeed, buySellPremPerOwner, buySellTotalPrem,
+    groupBenefitsCost, totalAnnualCost, products };
+}
+
+/* ═══ PARTNER / AFFILIATE EARNINGS ENGINE ═══ */
+export interface PartnerResult {
+  lowIntros: number; midIntros: number; highIntros: number;
+  lowEarnings: number; midEarnings: number; highEarnings: number;
+  totalIntros: number; totalMonthly: number; totalAnnual: number;
+}
+export function calcPartner(lowIntros: number, midIntros: number, highIntros: number): PartnerResult {
+  const lowEarnings = lowIntros * 250;
+  const midEarnings = midIntros * 500;
+  const highEarnings = highIntros * 1000;
+  const totalMonthly = lowEarnings + midEarnings + highEarnings;
+  return {
+    lowIntros, midIntros, highIntros,
+    lowEarnings, midEarnings, highEarnings,
+    totalIntros: lowIntros + midIntros + highIntros,
+    totalMonthly, totalAnnual: totalMonthly * 12,
+  };
+}
