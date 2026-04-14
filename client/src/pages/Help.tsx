@@ -206,6 +206,38 @@ const FAQ_DATA: FAQItem[] = [
     category: "Keyboard Shortcuts",
     tags: ["keyboard", "shortcuts", "hotkey"],
   },
+
+  // PDF Export
+  {
+    question: "How do I export calculator results as a PDF?",
+    answer: "Every calculator panel has an 'Export PDF' button in its header. Click it to generate a branded PDF report with your results, charts, and a compliance disclaimer footer. The PDF downloads automatically to your device.",
+    category: "Financial Tools",
+    tags: ["pdf", "export", "download", "calculator", "report"],
+  },
+
+  // Income Streams
+  {
+    question: "What is the Income Streams calculator?",
+    answer: "The Income Streams panel lets you model multiple income sources (salary, business income, investments, rental, etc.) with individual growth rates, tax treatments, and frequencies. Each stream shows its contribution to the Plan/Protect/Grow pillars, and the data feeds into your holistic financial score.",
+    category: "Financial Tools",
+    tags: ["income", "streams", "calculator", "salary", "business"],
+  },
+
+  // Onboarding Tour
+  {
+    question: "How do I restart the onboarding tour?",
+    answer: "The Spotlight Tour automatically appears for first-time users. If you dismissed it and want to restart, clear your browser's local storage for this site, or open the browser console and run: localStorage.removeItem('onboarding_tour_completed'). Then refresh the page.",
+    category: "Getting Started",
+    tags: ["tour", "onboarding", "spotlight", "guide", "walkthrough"],
+  },
+
+  // Multi-Model Synthesis
+  {
+    question: "What is Multi-Model Synthesis?",
+    answer: "Multi-Model Synthesis queries multiple AI perspectives simultaneously (Conservative, Growth, Balanced, Tax-Optimized) and merges their responses into a unified answer with confidence scoring. Toggle it on in the chat toolbar to get cross-verified financial guidance.",
+    category: "AI Features",
+    tags: ["multi-model", "synthesis", "ensemble", "verification"],
+  },
 ];
 
 const CATEGORIES = Array.from(new Set(FAQ_DATA.map(f => f.category)));
@@ -325,6 +357,8 @@ const GUIDE_SECTIONS: GuideSection[] = [
       { name: "Divorce Analysis", desc: "Asset division modeling, alimony projections, and equitable distribution analysis.", route: "/calculators" },
       { name: "Education Planner", desc: "529 plan projections and education funding strategy with financial aid impact.", route: "/calculators" },
       { name: "Charitable Giving", desc: "Donor-advised fund, QCD, and charitable remainder trust strategy optimization.", route: "/calculators" },
+      { name: "Income Streams", desc: "Model multiple income sources with growth rates, tax treatments, and pillar contributions.", route: "/calculators" },
+      { name: "PDF Export", desc: "Export any calculator result as a branded PDF report with compliance disclaimers.", route: "/calculators" },
     ],
   },
   {
@@ -442,6 +476,9 @@ const ARCHITECTURE_LAYERS = [
       "Exponential improvement engine with prompt A/B testing",
       "Knowledge base health scoring and gap analysis",
       "Collaborative annotations for document review",
+      "TF-IDF relevance scoring for document search",
+      "Multi-model synthesis with cross-verification",
+      "Spotlight onboarding tour for new users",
       "In-app notification system (zero external emails)",
     ],
   },

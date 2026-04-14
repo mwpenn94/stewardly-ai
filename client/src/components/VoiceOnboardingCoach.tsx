@@ -58,6 +58,8 @@ export function VoiceOnboardingCoach() {
     if (caps.mode === "unsupported") return;
     try {
       if (localStorage.getItem(STORAGE_KEY) === "true") return;
+      // Don't overlap with the main onboarding tour — wait until it's done
+      if (localStorage.getItem("onboarding_tour_completed") !== "true") return;
     } catch {
       return;
     }

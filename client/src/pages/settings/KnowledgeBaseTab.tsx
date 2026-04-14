@@ -12,7 +12,8 @@ import {
   GraduationCap, FileCode, ScrollText, FolderOpen,
   Eye, EyeOff, Shield, Users, Lock, Sparkles,
 } from "lucide-react";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, lazy, Suspense } from "react";
+const DocumentAnnotations = lazy(() => import("@/components/DocumentAnnotations"));
 
 const STATUS_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   uploading: { icon: <Clock className="w-3 h-3" />, color: "text-amber-400", label: "Uploading" },
@@ -440,6 +441,13 @@ export default function KnowledgeBaseTab() {
               >
                 <FileText className="w-3 h-3" /> View original file
               </a>
+            )}
+
+            {/* Collaborative Annotations */}
+            {selectedDoc?.id && (
+              <Suspense fallback={<div className="text-xs text-muted-foreground py-2">Loading annotations...</div>}>
+                <DocumentAnnotations documentId={selectedDoc.id} />
+              </Suspense>
             )}
           </div>
         </DialogContent>

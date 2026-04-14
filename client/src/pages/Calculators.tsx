@@ -984,9 +984,9 @@ export default function Calculators() {
 
       {/* ─── CALCULATOR SIDEBAR ─── */}
       <aside role="complementary" aria-label="Calculator navigation sidebar" className={`
-        fixed lg:sticky lg:top-0 z-50 lg:z-auto
+        fixed inset-y-0 left-0 lg:sticky lg:top-0 z-50 lg:z-auto
         w-56 shrink-0 border-r border-border bg-card flex flex-col
-        h-full lg:h-auto lg:max-h-screen lg:self-start
+        max-h-[100dvh] lg:max-h-screen lg:self-start
         transition-transform duration-200 ease-in-out
         ${calcSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
@@ -1002,7 +1002,7 @@ export default function Calculators() {
             <PanelLeftClose className="w-4 h-4" />
           </Button>
         </div>
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
           <nav className="p-2 space-y-3" role="navigation" aria-label="Wealth Engine panels">
             {NAV_SECTIONS.map(section => (
               <div key={section.group} role="group" aria-label={section.group}>

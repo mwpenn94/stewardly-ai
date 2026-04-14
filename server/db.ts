@@ -363,14 +363,74 @@ export async function searchDocumentChunks(userId: number, query: string, catego
   if (!db) return [];
   const conditions = [eq(documentChunks.userId, userId)];
   if (category) conditions.push(eq(documentChunks.category, category as any));
-  const allChunks = await db.select().from(documentChunks).where(and(...conditions)).limit(100);
-  // Simple keyword-based retrieval (production would use embeddings)
-  const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-  const scored = allChunks.map(chunk => {
-    const text = chunk.content.toLowerCase();
-    const score = queryWords.reduce((acc, word) => acc + (text.includes(word) ? 1 : 0), 0);
+  const allChunks = await db.select().from(documentChunks).where(and(...conditions)).limit(200);
+
+  // ── TF-IDF scoring ──────────────────────────────────────────────────
+  const STOP_WORDS = new Set([
+    'the','a','an','and','or','but','in','on','at','to','for','of','with',
+    'by','from','is','it','this','that','are','was','were','be','been',
+    'has','have','had','not','no','can','will','do','does','did','may',
+    'should','would','could','about','into','through','during','before',
+    'after','above','below','between','out','off','over','under','again',
+    'further','then','once','here','there','when','where','why','how',
+    'all','each','every','both','few','more','most','other','some','such',
+    'than','too','very','just','also','now','so','if','its','my','your',
+  ]);
+
+  const queryWords = query.toLowerCase()
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+
+  if (queryWords.length === 0) return [];
+
+  // Build document-frequency map (how many chunks contain each word)
+  const docFreq: Record<string, number> = {};
+  const N = allChunks.length || 1;
+  const chunkTexts = allChunks.map(c => c.content.toLowerCase());
+
+  for (const word of queryWords) {
+    docFreq[word] = chunkTexts.filter(t => t.includes(word)).length;
+  }
+
+  // Score each chunk with TF-IDF
+  const scored = allChunks.map((chunk, idx) => {
+    const text = chunkTexts[idx];
+    const words = text.split(/\s+/);
+    const totalWords = words.length || 1;
+
+    let tfidfScore = 0;
+    let exactPhraseBonus = 0;
+
+    for (const qw of queryWords) {
+      // Term frequency: count of word / total words in chunk
+      const tf = words.filter(w => w.includes(qw)).length / totalWords;
+      // Inverse document frequency: log(N / (df + 1))
+      const idf = Math.log((N + 1) / ((docFreq[qw] || 0) + 1)) + 1;
+      tfidfScore += tf * idf;
+    }
+
+    // Exact phrase match bonus (query appears as substring)
+    const queryLower = query.toLowerCase();
+    if (text.includes(queryLower)) {
+      exactPhraseBonus = 2.0;
+    } else {
+      // Check for bigram matches (consecutive query words)
+      for (let i = 0; i < queryWords.length - 1; i++) {
+        if (text.includes(`${queryWords[i]} ${queryWords[i + 1]}`)) {
+          exactPhraseBonus += 0.5;
+        }
+      }
+    }
+
+    // Position bonus: chunks near the beginning of a document score slightly higher
+    const positionBonus = chunk.chunkIndex !== undefined && chunk.chunkIndex !== null
+      ? 0.1 / (1 + (chunk.chunkIndex as number))
+      : 0;
+
+    const score = tfidfScore + exactPhraseBonus + positionBonus;
     return { ...chunk, score };
   }).filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, limit);
+
   return scored;
 }
 

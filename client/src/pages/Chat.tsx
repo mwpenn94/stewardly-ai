@@ -1685,7 +1685,7 @@ export default function Chat() {
       )}
 
       {/* ─── SIDEBAR ──────────────────────────────────────────── */}
-      <aside className={`
+      <aside data-tour="sidebar" className={`
         fixed lg:relative z-50 h-full bg-card border-r border-border flex flex-col
         transition-all duration-200
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
@@ -1998,6 +1998,7 @@ export default function Chat() {
                           <button
                             key={item.path}
                             onClick={() => { navigate(item.path); setSidebarOpen(false); }}
+                            data-tour={item.path === "/calculators" ? "financial-tools" : item.path === "/settings/knowledge" ? "data-intelligence" : item.path === "/products" ? "products" : item.path === "/compliance-audit" ? "compliance" : item.path === "/intelligence-hub" ? "market-data" : item.path === "/campaigns" ? "email-campaigns" : undefined}
                             className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
                               active ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                             }`}
@@ -2024,7 +2025,7 @@ export default function Chat() {
                   }`}>
                   <HelpCircle className="w-4 h-4" /> <span className="truncate">Help</span>
                 </button>
-                <button onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                <button data-tour="settings" onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
                   className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
                     location.startsWith("/settings") ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                   }`}>

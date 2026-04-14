@@ -12,6 +12,7 @@ import { ContextualHelp } from "./components/ContextualHelp";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { CommandPalette } from "./components/CommandPalette";
 import { VoiceOnboardingCoach } from "./components/VoiceOnboardingCoach";
+import { OnboardingTour, useOnboardingTour } from "./components/OnboardingTour";
 import { useGuestSession } from "./hooks/useGuestSession";
 // GlobalFooter removed permanently per user request (redundant nav)
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -350,6 +351,7 @@ function AppContent() {
   // Global keyboard shortcut handler — must live INSIDE PILProvider so the
   // IntentRouter can handle dispatched intents with pil context available.
   useGlobalShortcuts();
+  const { isOpen: tourOpen, completeTour } = useOnboardingTour();
   return (
     <>
       {/* Pass 1: Live regions + intent router + global voice button.
@@ -370,6 +372,7 @@ function AppContent() {
       <ConsentBanner />
       {/* GlobalFooter removed permanently — user requested no footer nav */}
       <ContextualHelp />
+      <OnboardingTour isOpen={tourOpen} onComplete={completeTour} />
     </>
   );
 }
