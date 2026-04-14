@@ -1,5 +1,5 @@
 /* WealthBridge Unified Wealth Engine v7 — Orchestrator */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -21,13 +21,17 @@ import {
   RATES, fmt, fmtSm, pct, getBracketRate,
   computeScorecard, buildRecommendations, buildHorizonData,
   calcCashFlow, calcProtection, calcGrowth, calcRetirement, calcTax, calcEstate, calcEducation,
+  calcIncomeStreams,
 } from './calculators/engine';
+import type { IncomeStream } from './calculators/engine';
 
 /* ─── Lazy-loaded panel groups ─── */
 import { ProfilePanel, CashFlowPanel, ProtectionPanel, GrowthPanel } from './calculators/PanelsA';
 import { RetirementPanel, TaxPanel, EstatePanel, EducationPanel } from './calculators/PanelsB';
 import { CostBenefitPanel, StrategyComparePanel, SummaryPanel, ActionPlanPanel, ReferencesPanel } from './calculators/PanelsC';
 import { AdvancedStrategiesPanel, BusinessClientPanel, TimelinePanel, PartnerPanel } from './calculators/PanelsE';
+import { IncomeStreamsPanel } from './calculators/PanelsF';
+import { CalcNarrator } from './calculators/CalcNarrator';
 import { MyPlanPanel, GDCBracketsPanel, ProductsPanel, SalesFunnelPanel, RecruitingPanel, ChannelsPanel, DashboardPanel, PnLPanel, GoalTrackerPanel, MonthlyProductionPanel, type PracticeProps } from './calculators/PanelsD';
 import {
   ROLE_DEFAULTS, calcWeightedGDC, calcProductionFunnel, calcTeamOverride,
@@ -40,22 +44,26 @@ import {
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
   'advanced' | 'bizclient' | 'costben' | 'compare' | 'summary' | 'timeline' | 'impl_timeline' | 'refs' |
   'myplan' | 'gdcbrackets' | 'products' | 'salesfunnel' | 'recruiting' | 'channels' | 'dashboard' | 'pnl' |
-  'goaltracker' | 'monthlyproduction' | 'partner';
+  'goaltracker' | 'monthlyproduction' | 'partner' | 'income';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Your Profile', items: [
     { id: 'profile', label: 'Client Profile', icon: <User className="w-4 h-4" /> },
   ]},
-  { group: 'Planning Domains', items: [
+  { group: 'Plan', items: [
     { id: 'cash', label: 'Cash Flow', icon: <DollarSign className="w-4 h-4" /> },
-    { id: 'protect', label: 'Protection', icon: <Shield className="w-4 h-4" /> },
-    { id: 'grow', label: 'Growth', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'retire', label: 'Retirement', icon: <Clock className="w-4 h-4" /> },
     { id: 'tax', label: 'Tax Planning', icon: <Building2 className="w-4 h-4" /> },
     { id: 'estate', label: 'Estate', icon: <Scale className="w-4 h-4" /> },
     { id: 'edu', label: 'Education', icon: <GraduationCap className="w-4 h-4" /> },
-    { id: 'advanced', label: 'Advanced', icon: <Gem className="w-4 h-4" /> },
+  ]},
+  { group: 'Protect', items: [
+    { id: 'protect', label: 'Protection', icon: <Shield className="w-4 h-4" /> },
     { id: 'bizclient', label: 'Business Client', icon: <Briefcase className="w-4 h-4" /> },
+  ]},
+  { group: 'Grow', items: [
+    { id: 'grow', label: 'Growth', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'advanced', label: 'Advanced', icon: <Gem className="w-4 h-4" /> },
   ]},
   { group: 'Practice Planning', items: [
     { id: 'myplan' as PanelId, label: 'My Plan', icon: <Target className="w-4 h-4" /> },
@@ -76,6 +84,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'timeline', label: 'Action Plan', icon: <ListChecks className="w-4 h-4" /> },
     { id: 'impl_timeline', label: 'Timeline', icon: <CalendarRange className="w-4 h-4" /> },
     { id: 'partner', label: 'Partner Earnings', icon: <Handshake className="w-4 h-4" /> },
+    { id: 'income', label: 'Income Streams', icon: <DollarSign className="w-4 h-4" /> },
   ]},
   { group: 'Resources', items: [
     { id: 'refs', label: 'References', icon: <BookOpen className="w-4 h-4" /> },
@@ -229,9 +238,13 @@ export default function Calculators() {
   const [paMid, setPaMid] = useState(4);
   const [paHigh, setPaHigh] = useState(2);
 
+  /* ─── INCOME STREAMS ─── */
+  const [incomeStreams, setIncomeStreams] = useState<IncomeStream[]>([]);
+
   /* ─── COST-BENEFIT & ACTION PLAN ─── */
   const [cbHorizons] = useState<number[]>([5, 10, 15, 20, 30]);
   const [pace, setPace] = useState<'standard'|'aggressive'|'gradual'>('standard');
+  const [expandedPhases, setExpandedPhases] = useState<Set<number>>(new Set());
 
   /* ─── WELCOME TIP ─── */
   const [showWelcome, setShowWelcome] = useState(() => {
@@ -281,6 +294,72 @@ export default function Calculators() {
   const [ppSeasonHorizon, setPpSeasonHorizon] = useState(3);
   const [ppSeasonRampMonths, setPpSeasonRampMonths] = useState(0);
 
+  /* ─── LOCAL STORAGE AUTO-SAVE ─── */
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isRestoringRef = useRef(false);
+
+  const gatherInputsForSave = useCallback(() => ({
+    clientName, age, spouseAge, dep, income, spouseIncome, nw, savings, retirement401k,
+    mortgage, debt, existIns, filing, stateRate, riskTolerance, isBiz,
+    bizEntityType, bizRevenue, bizExpenses, bizEmployees, bizSeasonality,
+    bizRevenueStreams, bizProductMix, bizGrowthRate, bizDebtService, bizKeyPerson, bizSuccessionPlan, bizBuySell,
+    housing, transport, food, insurancePmt, debtPmt, otherExp, emMonths,
+    replaceYrs, payoffRate, eduPerChild, finalExp, ssBenefit, diPct,
+    retireAge, monthlySav, infRate, taxReturn, iulReturn, fiaReturn,
+    ss62, ss67, ss70, pension, withdrawalRate, hsaContrib, charitableGiving,
+    grossEstate, exemption, estateGrowth, giftingAnnual, willStatus,
+    numChildren, avgChildAge, targetCost, eduReturn, current529, monthly529, pace,
+    pfFace, pfPrem, pfCash, pfLoan, pfCred, pfYrs,
+    ilDB, ilPr, ilCr, ilTx, exSal, ex162, exSERP, exSD,
+    cvCRT, cvPO, cvDAF, cvLI, advGoal,
+    bcBizValue, bcKeyPersonSalary, bcKeyPersonMult, bcOwners, bcEmployees,
+    paLow, paMid, paHigh,
+    incomeStreams,
+    ppRole, ppTargetGDC, ppWbPct, ppMonths, ppBracketOverride, ppProductMix, ppFunnelRates,
+    ppOverrideRate, ppBonusRate, ppGen2Rate, ppTeamMembers, ppRecruitTracks, ppChannelSpend,
+    ppAumExisting, ppAumNew, ppAumTrailPct, ppPnlLevel, ppPnlProducers, ppPnlAvgGDC,
+    ppPnlPayoutRate, ppPnlOpEx, ppPnlTaxRate, ppPnlEbitGoal, ppPnlNetGoal, ppStreams,
+    ppAffAIncome, ppAffBIncome, ppAffCIncome, ppAffDIncome,
+    ppGoalIncome, ppGoalAUM, ppGoalRecruits, ppGoalGDC, ppGoalCases,
+    ppSeasonProfile, ppCustomSeason, ppSeasonGrowthRate, ppSeasonHorizon, ppSeasonRampMonths,
+  }), [
+    clientName, age, spouseAge, dep, income, spouseIncome, nw, savings, retirement401k,
+    mortgage, debt, existIns, filing, stateRate, riskTolerance, isBiz,
+    bizEntityType, bizRevenue, bizExpenses, bizEmployees, bizSeasonality,
+    bizRevenueStreams, bizProductMix, bizGrowthRate, bizDebtService, bizKeyPerson, bizSuccessionPlan, bizBuySell,
+    housing, transport, food, insurancePmt, debtPmt, otherExp, emMonths,
+    replaceYrs, payoffRate, eduPerChild, finalExp, ssBenefit, diPct,
+    retireAge, monthlySav, infRate, taxReturn, iulReturn, fiaReturn,
+    ss62, ss67, ss70, pension, withdrawalRate, hsaContrib, charitableGiving,
+    grossEstate, exemption, estateGrowth, giftingAnnual, willStatus,
+    numChildren, avgChildAge, targetCost, eduReturn, current529, monthly529, pace,
+    pfFace, pfPrem, pfCash, pfLoan, pfCred, pfYrs,
+    ilDB, ilPr, ilCr, ilTx, exSal, ex162, exSERP, exSD,
+    cvCRT, cvPO, cvDAF, cvLI, advGoal,
+    bcBizValue, bcKeyPersonSalary, bcKeyPersonMult, bcOwners, bcEmployees,
+    paLow, paMid, paHigh,
+    incomeStreams,
+    ppRole, ppTargetGDC, ppWbPct, ppMonths, ppBracketOverride, ppProductMix, ppFunnelRates,
+    ppOverrideRate, ppBonusRate, ppGen2Rate, ppTeamMembers, ppRecruitTracks, ppChannelSpend,
+    ppAumExisting, ppAumNew, ppAumTrailPct, ppPnlLevel, ppPnlProducers, ppPnlAvgGDC,
+    ppPnlPayoutRate, ppPnlOpEx, ppPnlTaxRate, ppPnlEbitGoal, ppPnlNetGoal, ppStreams,
+    ppAffAIncome, ppAffBIncome, ppAffCIncome, ppAffDIncome,
+    ppGoalIncome, ppGoalAUM, ppGoalRecruits, ppGoalGDC, ppGoalCases,
+    ppSeasonProfile, ppCustomSeason, ppSeasonGrowthRate, ppSeasonHorizon, ppSeasonRampMonths,
+  ]);
+
+  /* Auto-save to localStorage with 2s debounce */
+  useEffect(() => {
+    if (isRestoringRef.current) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem('wb-calc-autosave', JSON.stringify(gatherInputsForSave()));
+      } catch { /* quota exceeded — ignore */ }
+    }, 2000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [gatherInputsForSave]);
+
   /* ─── SESSION HELPERS ─── */
   const gatherInputs = () => ({
     clientName, age, spouseAge, dep, income, spouseIncome, nw, savings, retirement401k,
@@ -303,6 +382,8 @@ export default function Calculators() {
     bcBizValue, bcKeyPersonSalary, bcKeyPersonMult, bcOwners, bcEmployees,
     /* Partner */
     paLow, paMid, paHigh,
+    /* Income Streams */
+    incomeStreams,
     /* Practice Planning */
     ppRole, ppTargetGDC, ppWbPct, ppMonths, ppBracketOverride, ppProductMix, ppFunnelRates,
     ppOverrideRate, ppBonusRate, ppGen2Rate, ppTeamMembers, ppRecruitTracks, ppChannelSpend,
@@ -410,6 +491,8 @@ export default function Calculators() {
     if (d.paLow !== undefined) setPaLow(d.paLow);
     if (d.paMid !== undefined) setPaMid(d.paMid);
     if (d.paHigh !== undefined) setPaHigh(d.paHigh);
+    /* Income Streams */
+    if (d.incomeStreams !== undefined) setIncomeStreams(d.incomeStreams);
     /* Practice Planning */
     if (d.ppRole !== undefined) setPpRole(d.ppRole);
     if (d.ppTargetGDC !== undefined) setPpTargetGDC(d.ppTargetGDC);
@@ -453,6 +536,20 @@ export default function Calculators() {
     if (d.ppSeasonHorizon !== undefined) setPpSeasonHorizon(d.ppSeasonHorizon);
     if (d.ppSeasonRampMonths !== undefined) setPpSeasonRampMonths(d.ppSeasonRampMonths);
   };
+
+  /* Auto-restore from localStorage on mount */
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('wb-calc-autosave');
+      if (saved) {
+        isRestoringRef.current = true;
+        const d = JSON.parse(saved);
+        restoreInputs(d);
+        setTimeout(() => { isRestoringRef.current = false; }, 100);
+      }
+    } catch { /* corrupt data — ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSave = () => {
     if (!user) { toast.error('Please sign in to save sessions'); return; }
@@ -825,6 +922,7 @@ export default function Calculators() {
     numChildren, setNumChildren, avgChildAge, setAvgChildAge, targetCost, setTargetCost,
     eduReturn, setEduReturn, current529, setCurrent529, monthly529, setMonthly529,
     pace, setPace,
+    expandedPhases, setExpandedPhases,
     totalIncome, scores, scorecard, recommendations, totalAnnualPremium,
     cfResult, prResult, grResult, rtResult, txResult, esResult, edResult, horizonData,
     practiceIncome,
@@ -881,11 +979,11 @@ export default function Calculators() {
     <div className="flex min-h-full bg-background relative">
       {/* ─── MOBILE SIDEBAR OVERLAY ─── */}
       {calcSidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setCalcSidebarOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setCalcSidebarOpen(false)} role="presentation" aria-hidden="true" />
       )}
 
       {/* ─── CALCULATOR SIDEBAR ─── */}
-      <aside className={`
+      <aside role="complementary" aria-label="Calculator navigation sidebar" className={`
         fixed lg:sticky lg:top-0 z-50 lg:z-auto
         w-56 shrink-0 border-r border-border bg-card flex flex-col
         h-full lg:h-auto lg:max-h-screen lg:self-start
@@ -905,26 +1003,31 @@ export default function Calculators() {
           </Button>
         </div>
         <ScrollArea className="flex-1">
-          <nav className="p-2 space-y-3">
+          <nav className="p-2 space-y-3" role="navigation" aria-label="Wealth Engine panels">
             {NAV_SECTIONS.map(section => (
-              <div key={section.group}>
-                <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-2 mb-1">{section.group}</p>
-                {section.items.map(item => (
-                  <button key={item.id} onClick={() => { setActivePanel(item.id); setCalcSidebarOpen(false); }}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                      activePanel === item.id
-                        ? 'bg-primary/10 text-primary border border-primary/30'
-                        : 'text-muted-foreground hover:bg-background hover:text-foreground border border-transparent'
-                    }`}>
-                    {item.icon}
-                    {item.label}
-                  </button>
-                ))}
+              <div key={section.group} role="group" aria-label={section.group}>
+                <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-2 mb-1" id={`nav-group-${section.group.toLowerCase().replace(/\s+/g, '-')}`}>{section.group}</p>
+                <div role="list" aria-labelledby={`nav-group-${section.group.toLowerCase().replace(/\s+/g, '-')}`}>
+                  {section.items.map(item => (
+                    <button key={item.id} role="listitem" onClick={() => { setActivePanel(item.id); setCalcSidebarOpen(false); }}
+                      aria-label={`Navigate to ${item.label} panel`}
+                      aria-current={activePanel === item.id ? 'page' : undefined}
+                      tabIndex={0}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                        activePanel === item.id
+                          ? 'bg-primary/10 text-primary border border-primary/30'
+                          : 'text-muted-foreground hover:bg-background hover:text-foreground border border-transparent'
+                      }`}>
+                      {item.icon}
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             ))}
           </nav>
         </ScrollArea>
-        <div className="p-3 border-t border-border/50 bg-background">
+        <div className="p-3 border-t border-border/50 bg-background space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Health Score</span>
             <span className={`font-bold ${scorecard.pctScore >= 80 ? 'text-green-400' : scorecard.pctScore >= 60 ? 'text-primary' : 'text-red-400'}`}>
@@ -935,11 +1038,20 @@ export default function Calculators() {
             <div className={`h-full rounded-full transition-all ${scorecard.pctScore >= 80 ? 'bg-green-500' : scorecard.pctScore >= 60 ? 'bg-primary' : 'bg-red-500'}`}
               style={{ width: `${scorecard.pctScore}%` }} />
           </div>
+          <div className="flex items-center justify-between pt-1 border-t border-border/30">
+            <span className="text-[10px] text-muted-foreground/50">
+              {sessionsQuery.data?.length || 0}/10 slots
+            </span>
+            <button onClick={handleExportPdf} className="text-[10px] text-muted-foreground/50 hover:text-primary transition-colors" title="Print Report">
+              Print
+            </button>
+          </div>
+          <div className="text-center text-[9px] text-muted-foreground/30">v7.6 · Unified Wealth Engine</div>
         </div>
       </aside>
 
       {/* ─── MAIN CONTENT ─── */}
-      <div className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0" role="main" aria-label="Calculator panel content">
         <div className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-6">
 
           {/* ─── TOOLBAR ─── */}
@@ -971,7 +1083,7 @@ export default function Calculators() {
                 <Download className="w-3 h-3" /> <span className="hidden sm:inline">PDF</span>
               </Button>
               <Button variant="outline" size="sm" onClick={handleExportCsv}
-                className="text-xs gap-1 h-7">
+                className="text-xs gap-1 h-7" aria-label="Export as CSV">
                 <Download className="w-3 h-3" /> <span className="hidden sm:inline">CSV</span>
               </Button>
               <Button variant="outline" size="sm" onClick={() => {
@@ -991,7 +1103,7 @@ export default function Calculators() {
                   reader.readAsText(file);
                 };
                 input.click();
-              }} className="text-xs gap-1 h-7">
+              }} className="text-xs gap-1 h-7" aria-label="Import session from JSON file">
                 <Upload className="w-3 h-3" /> <span className="hidden sm:inline">Import</span>
               </Button>
               <Button variant="outline" size="sm" onClick={() => {
@@ -1002,17 +1114,23 @@ export default function Calculators() {
                 a.href = url; a.download = `WealthBridge-${clientName || 'Session'}-${new Date().toISOString().slice(0,10)}.json`;
                 a.click(); URL.revokeObjectURL(url);
                 toast.success('JSON exported!');
-              }} className="text-xs gap-1 h-7">
+              }} className="text-xs gap-1 h-7" aria-label="Export session as JSON">
                 <Download className="w-3 h-3" /> <span className="hidden sm:inline">JSON</span>
               </Button>
               <Button variant="ghost" size="sm" onClick={() => {
                 if (confirm('Reset all inputs to defaults? This cannot be undone.')) {
+                  try { localStorage.removeItem('wb-calc-autosave'); } catch {}
                   window.location.reload();
                 }
-              }} className="text-xs gap-1 h-7 text-red-400 hover:text-red-300">
+              }} className="text-xs gap-1 h-7 text-red-400 hover:text-red-300" aria-label="Reset all inputs to defaults">
                 <RotateCcw className="w-3 h-3" /> <span className="hidden sm:inline">Reset</span>
               </Button>
             </div>
+          </div>
+
+          {/* ─── CALC NARRATOR ─── */}
+          <div className="mb-4">
+            <CalcNarrator activePanel={activePanel} onNavigate={(id) => setActivePanel(id as PanelId)} />
           </div>
 
           {/* ─── WELCOME TIP ─── */}
@@ -1073,6 +1191,7 @@ export default function Calculators() {
           {activePanel === 'timeline' && <ActionPlanPanel {...pp} />}
           {activePanel === 'impl_timeline' && <TimelinePanel {...pp} />}
           {activePanel === 'partner' && <PartnerPanel paLow={paLow} setPaLow={setPaLow} paMid={paMid} setPaMid={setPaMid} paHigh={paHigh} setPaHigh={setPaHigh} />}
+          {activePanel === 'income' && <IncomeStreamsPanel incomeStreams={incomeStreams} setIncomeStreams={setIncomeStreams} scores={pp.scores} />}
           {activePanel === 'refs' && <ReferencesPanel />}
 
           {/* ═══ PRACTICE PLANNING PANELS ═══ */}
@@ -1097,18 +1216,18 @@ export default function Calculators() {
           </div>
 
         </div>
-      </div>
+      </main>
 
       {/* ─── SAVE DIALOG ─── */}
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent>
+        <DialogContent aria-describedby="save-desc">
           <DialogHeader>
             <DialogTitle>Save Session</DialogTitle>
-            <DialogDescription>Save your current calculator inputs as a named session for later retrieval.</DialogDescription>
+            <DialogDescription id="save-desc">Save your current calculator inputs as a named session for later retrieval. Sessions are stored securely and can be loaded from any device.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">Session Name</label>
-            <Input value={sessionName} onChange={e => setSessionName(e.target.value)} placeholder="My Financial Plan" />
+            <label htmlFor="session-name" className="text-sm text-muted-foreground">Session Name</label>
+            <Input id="session-name" value={sessionName} onChange={e => setSessionName(e.target.value)} placeholder="My Financial Plan" aria-label="Session name" />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSaveDialog(false)}>Cancel</Button>
@@ -1121,17 +1240,17 @@ export default function Calculators() {
 
       {/* ─── LOAD DIALOG ─── */}
       <Dialog open={showLoadDialog} onOpenChange={setShowLoadDialog}>
-        <DialogContent>
+        <DialogContent aria-describedby="load-desc">
           <DialogHeader>
             <DialogTitle>Load Session</DialogTitle>
-            <DialogDescription>Select a previously saved session to restore its calculator inputs.</DialogDescription>
+            <DialogDescription id="load-desc">Select a previously saved session to restore its calculator inputs. Loading a session will replace your current inputs.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="space-y-2 max-h-64 overflow-y-auto" role="list" aria-label="Saved sessions">
             {sessionsQuery.data?.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">No saved sessions yet.</p>
             )}
             {sessionsQuery.data?.map((s: any) => (
-              <div key={s.id} className="flex items-center justify-between p-2 rounded-lg border border-border hover:bg-card transition-colors">
+              <div key={s.id} role="listitem" className="flex items-center justify-between p-2 rounded-lg border border-border hover:bg-card transition-colors">
                 <div className="cursor-pointer flex-1" onClick={() => handleLoad(s.id)}>
                   <p className="text-sm font-medium text-foreground">{s.name}</p>
                   <p className="text-xs text-muted-foreground">{new Date(s.updatedAt).toLocaleDateString()}</p>

@@ -6597,3 +6597,4 @@ export const integrationBlueprintRuns = mysqlTable("integration_blueprint_runs",
 }));
 export type IntegrationBlueprintRun = typeof integrationBlueprintRuns.$inferSelect;
 export type InsertIntegrationBlueprintRun = typeof integrationBlueprintRuns.$inferInsert;
+

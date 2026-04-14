@@ -163,6 +163,19 @@ describe("applyScenario", () => {
 
     expect(adjusted.annualIncome).toBe(200000);
   });
+
+  it("applies inflationRate override", () => {
+    const profile = makeProfile();
+    const adjusted = applyScenario(profile, { inflationRate: 0.08 });
+    expect((adjusted as any).inflationRate).toBe(0.08);
+  });
+
+  it("applies incomeGrowth override and caps projectedIncome when zero", () => {
+    const profile = makeProfile({ annualIncome: 150000 });
+    const adjusted = applyScenario(profile, { incomeGrowth: 0 });
+    expect((adjusted as any).incomeGrowthRate).toBe(0);
+    expect((adjusted as any).projectedIncome).toBe(150000);
+  });
 });
 
 // ─── runScenarioComparison ──────────────────────────────────────

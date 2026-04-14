@@ -614,3 +614,106 @@ export function calcPartner(lowIntros: number, midIntros: number, highIntros: nu
     totalMonthly, totalAnnual: totalMonthly * 12,
   };
 }
+
+/* ═══ INCOME STREAMS ENGINE ═══ */
+export interface IncomeStream {
+  id: string;
+  source: string;
+  amount: number;
+  frequency: 'monthly' | 'quarterly' | 'annual' | 'one-time';
+  taxTreatment: 'w2' | '1099' | 'passive' | 'tax-free';
+  growthRate: number;
+  category: 'earned' | 'business' | 'investment' | 'passive' | 'retirement';
+}
+
+export interface IncomeStreamResult {
+  streams: IncomeStream[];
+  totalMonthly: number;
+  totalAnnual: number;
+  byCategory: { category: string; monthly: number; annual: number; pct: number }[];
+  byTax: { treatment: string; monthly: number; annual: number; effectiveRate: number }[];
+  diversificationScore: number; // 0-100
+  projectedYear5: number;
+  projectedYear10: number;
+  pillarContributions: { plan: number; protect: number; grow: number };
+}
+
+const TAX_RATES: Record<string, number> = {
+  w2: 0.30, '1099': 0.35, passive: 0.20, 'tax-free': 0.0,
+};
+
+const FREQ_MULTIPLIER: Record<string, number> = {
+  monthly: 12, quarterly: 4, annual: 1, 'one-time': 0,
+};
+
+export function calcIncomeStreams(streams: IncomeStream[]): IncomeStreamResult {
+  const activeStreams = streams.filter(s => s.amount > 0);
+  
+  // Annualize each stream
+  const annualized = activeStreams.map(s => ({
+    ...s,
+    annual: s.amount * (FREQ_MULTIPLIER[s.frequency] || 1),
+    monthly: s.amount * (FREQ_MULTIPLIER[s.frequency] || 1) / 12,
+  }));
+  
+  const totalAnnual = annualized.reduce((sum, s) => sum + s.annual, 0);
+  const totalMonthly = Math.round(totalAnnual / 12);
+
+  // By category
+  const catMap = new Map<string, number>();
+  for (const s of annualized) catMap.set(s.category, (catMap.get(s.category) || 0) + s.annual);
+  const byCategory = Array.from(catMap.entries()).map(([category, annual]) => ({
+    category,
+    monthly: Math.round(annual / 12),
+    annual: Math.round(annual),
+    pct: totalAnnual > 0 ? annual / totalAnnual : 0,
+  })).sort((a, b) => b.annual - a.annual);
+
+  // By tax treatment
+  const taxMap = new Map<string, number>();
+  for (const s of annualized) taxMap.set(s.taxTreatment, (taxMap.get(s.taxTreatment) || 0) + s.annual);
+  const byTax = Array.from(taxMap.entries()).map(([treatment, annual]) => ({
+    treatment,
+    monthly: Math.round(annual / 12),
+    annual: Math.round(annual),
+    effectiveRate: TAX_RATES[treatment] || 0.25,
+  })).sort((a, b) => b.annual - a.annual);
+
+  // Diversification score (0-100): more categories + more even distribution = higher
+  const catCount = byCategory.length;
+  const maxCat = 5;
+  const catDiversity = Math.min(catCount / maxCat, 1) * 50;
+  const hhi = byCategory.reduce((sum, c) => sum + Math.pow(c.pct, 2), 0);
+  const evenness = (1 - hhi) * 50;
+  const diversificationScore = Math.round(catDiversity + evenness);
+
+  // Projections
+  const avgGrowth = activeStreams.length > 0
+    ? annualized.reduce((sum, s) => sum + s.growthRate * s.annual, 0) / Math.max(totalAnnual, 1)
+    : 0;
+  const projectedYear5 = Math.round(totalAnnual * Math.pow(1 + avgGrowth, 5));
+  const projectedYear10 = Math.round(totalAnnual * Math.pow(1 + avgGrowth, 10));
+
+  // Pillar contributions
+  const planIncome = annualized.filter(s => ['earned', 'business'].includes(s.category)).reduce((sum, s) => sum + s.annual, 0);
+  const protectIncome = annualized.filter(s => ['passive', 'retirement'].includes(s.category)).reduce((sum, s) => sum + s.annual, 0);
+  const growIncome = annualized.filter(s => ['investment'].includes(s.category)).reduce((sum, s) => sum + s.annual, 0);
+  const pillarTotal = Math.max(planIncome + protectIncome + growIncome, 1);
+  const pillarContributions = {
+    plan: Math.round(planIncome / pillarTotal * 100),
+    protect: Math.round(protectIncome / pillarTotal * 100),
+    grow: Math.round(growIncome / pillarTotal * 100),
+  };
+
+  return {
+    streams: activeStreams,
+    totalMonthly,
+    totalAnnual: Math.round(totalAnnual),
+    byCategory,
+    byTax,
+    diversificationScore,
+    projectedYear5,
+    projectedYear10,
+    pillarContributions,
+  };
+}

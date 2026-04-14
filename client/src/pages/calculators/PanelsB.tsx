@@ -7,14 +7,17 @@ import {
   Clock, Building2, Scale, GraduationCap
 } from 'lucide-react';
 import { fmt, fmtSm, pct } from './engine';
-import { FormInput, ResultBadge, KPI, RefTip, type PanelProps } from './shared';
+import { FormInput, ResultBadge, KPI, RefTip, CrossCalcRecs, ExportPDFButton, type PanelProps } from './shared';
 
 export function RetirementPanel(p: PanelProps) {
   return (
-    <section>
-      <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-        <Clock className="w-5 h-5 text-primary" /> Retirement Readiness
-      </h2>
+    <section aria-label="Retirement Planning" role="region">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <Clock className="w-5 h-5 text-primary" /> Retirement Readiness
+        </h2>
+        <ExportPDFButton title="Retirement Planning" clientName={p.clientName} />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">Social Security claiming comparison + portfolio withdrawal analysis. Sources: SSA 2024, Trinity Study, Bengen Rule.</p>
       <Card className="mb-4">
         <CardContent className="pt-4">
@@ -30,7 +33,8 @@ export function RetirementPanel(p: PanelProps) {
       <Card className="mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Social Security Claiming Comparison<RefTip text="Based on SSA 2024 benefit estimates. Break-even analysis compares cumulative benefits at ages 62, 67, and 70." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-background">
                 <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Claim Age</th>
@@ -56,6 +60,7 @@ export function RetirementPanel(p: PanelProps) {
               ))}
             </tbody>
           </table>
+          </div>
           <p className="text-xs text-muted-foreground mt-2">
             <strong>Optimal claiming age: {p.rtResult.bestAge}</strong> — maximizes cumulative benefits to age 85.
             Delaying from 62 to 70 increases monthly benefit by ~77%.
@@ -65,7 +70,8 @@ export function RetirementPanel(p: PanelProps) {
       <Card className="mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Portfolio Withdrawal Analysis<RefTip text="Based on the Trinity Study (Bengen Rule). 4% withdrawal rate has historically sustained portfolios for 30+ years." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <tbody>
               <tr className="border-b border-border/50">
                 <td className="py-1.5 text-muted-foreground">Portfolio at Retirement</td>
@@ -85,6 +91,7 @@ export function RetirementPanel(p: PanelProps) {
               </tr>
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -100,6 +107,7 @@ export function RetirementPanel(p: PanelProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Building2 className="w-4 h-4 text-primary" /> Practice Income → Retirement Impact
+              <RefTip text="Practice income augments retirement projections. Recurring revenue streams (AUM, overrides) provide more stable retirement income than one-time commissions." refId="planning" />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -113,16 +121,20 @@ export function RetirementPanel(p: PanelProps) {
           </CardContent>
         </Card>
       )}
+      <CrossCalcRecs currentPanel="retire" scores={p.scores} />
     </section>
   );
 }
 
 export function TaxPanel(p: PanelProps) {
   return (
-    <section>
-      <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-        <Building2 className="w-5 h-5 text-primary" /> Tax Optimization
-      </h2>
+    <section aria-label="Tax Planning" role="region">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <Building2 className="w-5 h-5 text-primary" /> Tax Optimization
+        </h2>
+        <ExportPDFButton title="Tax Planning" clientName={p.clientName} />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">Marginal bracket analysis + deduction strategies. Sources: IRS 2024, IRC §199A/§408A.</p>
       <Card className="mb-4">
         <CardContent className="pt-4">
@@ -135,7 +147,8 @@ export function TaxPanel(p: PanelProps) {
       <Card className="mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-base">Tax Reduction Strategies</CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-background">
                 <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Strategy</th>
@@ -158,12 +171,14 @@ export function TaxPanel(p: PanelProps) {
               </tr>
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
       <Card className="mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Roth Conversion Analysis<RefTip text="Compares tax-now vs tax-later strategies. Roth conversions (IRC §408A) can reduce future RMDs and estate tax exposure." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <tbody>
               <tr className="border-b border-border/50">
                 <td className="py-1.5 text-muted-foreground">Conversion Amount</td>
@@ -183,6 +198,7 @@ export function TaxPanel(p: PanelProps) {
               </tr>
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -198,6 +214,7 @@ export function TaxPanel(p: PanelProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Building2 className="w-4 h-4 text-primary" /> Practice Income → Tax Impact
+              <RefTip text="Self-employment tax (15.3%) applies to practice income. QBI deduction (IRC §199A) may reduce taxable income by up to 20% for qualifying businesses." refId="planning" />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -211,22 +228,26 @@ export function TaxPanel(p: PanelProps) {
           </CardContent>
         </Card>
       )}
+      <CrossCalcRecs currentPanel="tax" scores={p.scores} />
     </section>
   );
 }
 
 export function EstatePanel(p: PanelProps) {
   return (
-    <section>
-      <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-        <Scale className="w-5 h-5 text-primary" /> Estate Planning
-      </h2>
+    <section aria-label="Estate Planning" role="region">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <Scale className="w-5 h-5 text-primary" /> Estate Planning
+        </h2>
+        <ExportPDFButton title="Estate Planning" clientName={p.clientName} />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">Estate tax analysis + ILIT strategy + document checklist. Sources: IRS 2024 exemption, IRC §2010.</p>
       <Card className="mb-4">
         <CardContent className="pt-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <FormInput id="grossEstate" label="Gross Estate Value" value={p.grossEstate} onChange={v => p.setGrossEstate(+v)} prefix="$" />
-            <FormInput id="exemption" label="Federal Exemption" value={p.exemption} onChange={v => p.setExemption(+v)} prefix="$" />
+            <FormInput id="grossEstate" label="Gross Estate Value" value={p.grossEstate} onChange={v => p.setGrossEstate(+v)} prefix="$" max={500000000} />
+            <FormInput id="exemption" label="Federal Exemption" value={p.exemption} onChange={v => p.setExemption(+v)} prefix="$" max={100000000} />
             <FormInput id="estateGrowth" label="Growth Rate" value={(p.estateGrowth * 100).toFixed(1)} onChange={v => p.setEstateGrowth(+v / 100)} suffix="%" />
             <FormInput id="giftingAnnual" label="Annual Gifting" value={p.giftingAnnual} onChange={v => p.setGiftingAnnual(+v)} prefix="$" />
             <div className="space-y-1">
@@ -246,7 +267,8 @@ export function EstatePanel(p: PanelProps) {
       <Card className="mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Estate Tax Analysis<RefTip text="Federal estate tax exemption: $13.61M (2024). Rate: 40% on amounts above exemption. Sunset to ~$7M in 2026 under TCJA." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <tbody>
               <tr className="border-b border-border/50">
                 <td className="py-1.5 text-muted-foreground">Gross Estate</td>
@@ -274,12 +296,14 @@ export function EstatePanel(p: PanelProps) {
               </tr>
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
       <Card className="mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-base">Estate Document Checklist</CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-background">
                 <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Document</th>
@@ -307,6 +331,7 @@ export function EstatePanel(p: PanelProps) {
               ))}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -315,16 +340,20 @@ export function EstatePanel(p: PanelProps) {
         <ResultBadge label="Net to Heirs" value={fmtSm(p.esResult.withPlanning)} variant="grn" />
         <ResultBadge label="Documents" value={`${p.esResult.documents.filter(d => d.status === 'Complete').length}/${p.esResult.documents.length}`} variant="gld" />
       </div>
+      <CrossCalcRecs currentPanel="estate" scores={p.scores} />
     </section>
   );
 }
 
 export function EducationPanel(p: PanelProps) {
   return (
-    <section>
-      <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-        <GraduationCap className="w-5 h-5 text-primary" /> Education Planning
-      </h2>
+    <section aria-label="Education Planning" role="region">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <GraduationCap className="w-5 h-5 text-primary" /> Education Planning
+        </h2>
+        <ExportPDFButton title="Education Planning" clientName={p.clientName} />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">529 plan projections + funding gap analysis. Sources: College Board 2024, Vanguard 529.</p>
       <Card className="mb-4">
         <CardContent className="pt-4">
@@ -341,7 +370,8 @@ export function EducationPanel(p: PanelProps) {
       <Card className="mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">529 Projection ({p.edResult.yrsToCollege} years to college)<RefTip text="529 plans offer tax-free growth for qualified education expenses. Average 4-year public university: ~$100K; private: ~$200K (College Board 2024)." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-background">
                 <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Metric</th>
@@ -367,6 +397,7 @@ export function EducationPanel(p: PanelProps) {
               </tr>
             </tbody>
           </table>
+          </div>
           {p.edResult.additionalMonthlyNeeded > 0 && (
             <p className="text-sm text-primary mt-3 bg-primary/10 border border-primary/30 rounded-lg p-3">
               <strong>To close the gap:</strong> Increase monthly 529 contribution by {fmt(p.edResult.additionalMonthlyNeeded)}/mo per child.
@@ -380,6 +411,7 @@ export function EducationPanel(p: PanelProps) {
         <ResultBadge label="Gap" value={fmtSm(p.edResult.totalGap)} variant={p.edResult.totalGap === 0 ? 'grn' : 'red'} />
         <ResultBadge label="Add'l Needed" value={fmt(p.edResult.additionalMonthlyNeeded) + '/mo'} variant="gld" />
       </div>
+      <CrossCalcRecs currentPanel="edu" scores={p.scores} />
     </section>
   );
 }

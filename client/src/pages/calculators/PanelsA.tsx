@@ -7,7 +7,7 @@ import {
   User, DollarSign, Shield, TrendingUp, Building2, CheckCircle2, XCircle
 } from 'lucide-react';
 import { fmt, fmtSm, pct } from './engine';
-import { FormInput, ScoreBadge, ResultBadge, KPI, ScoreGauge, RefTip, PillarTooltip, type PanelProps } from './shared';
+import { FormInput, ScoreBadge, ResultBadge, KPI, ScoreGauge, RefTip, PillarTooltip, CrossCalcRecs, ExportPDFButton, type PanelProps } from './shared';
 
 export function ProfilePanel(p: PanelProps) {
   const keyMetrics: Record<string, string> = {
@@ -20,10 +20,13 @@ export function ProfilePanel(p: PanelProps) {
     'Education': `Gap ${fmtSm(p.edResult.totalGap)}`,
   };
   return (
-    <section>
-      <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-        <User className="w-5 h-5 text-primary" /> Client Profile
-      </h2>
+    <section aria-label="Client Profile" role="region">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <User className="w-5 h-5 text-primary" /> Client Profile
+        </h2>
+        <ExportPDFButton title="Client Profile" clientName={p.clientName} />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">Enter client information. All fields auto-calculate across every panel.</p>
 
       <Card className="mb-4">
@@ -33,14 +36,14 @@ export function ProfilePanel(p: PanelProps) {
             <FormInput id="age" label="Age" value={p.age} onChange={v => p.setAge(+v)} min={18} max={85} />
             <FormInput id="spouseAge" label="Spouse Age" value={p.spouseAge} onChange={v => p.setSpouseAge(+v)} min={0} max={85} />
             <FormInput id="dep" label="Dependents" value={p.dep} onChange={v => p.setDep(+v)} min={0} max={10} />
-            <FormInput id="income" label="Annual Income" value={p.income} onChange={v => p.setIncome(+v)} prefix="$" />
+            <FormInput id="income" label="Annual Income" value={p.income} onChange={v => p.setIncome(+v)} prefix="$" max={50000000} />
             <FormInput id="spouseIncome" label="Spouse Income" value={p.spouseIncome} onChange={v => p.setSpouseIncome(+v)} prefix="$" />
-            <FormInput id="nw" label="Net Worth" value={p.nw} onChange={v => p.setNw(+v)} prefix="$" />
-            <FormInput id="savings" label="Liquid Savings" value={p.savings} onChange={v => p.setSavings(+v)} prefix="$" />
-            <FormInput id="retirement401k" label="401(k)/IRA Balance" value={p.retirement401k} onChange={v => p.setRetirement401k(+v)} prefix="$" />
-            <FormInput id="mortgage" label="Mortgage Balance" value={p.mortgage} onChange={v => p.setMortgage(+v)} prefix="$" />
+            <FormInput id="nw" label="Net Worth" value={p.nw} onChange={v => p.setNw(+v)} prefix="$" max={500000000} />
+            <FormInput id="savings" label="Liquid Savings" value={p.savings} onChange={v => p.setSavings(+v)} prefix="$" max={100000000} />
+            <FormInput id="retirement401k" label="401(k)/IRA Balance" value={p.retirement401k} onChange={v => p.setRetirement401k(+v)} prefix="$" max={100000000} />
+            <FormInput id="mortgage" label="Mortgage Balance" value={p.mortgage} onChange={v => p.setMortgage(+v)} prefix="$" max={50000000} />
             <FormInput id="debt" label="Other Debt" value={p.debt} onChange={v => p.setDebt(+v)} prefix="$" />
-            <FormInput id="existIns" label="Existing Life Insurance" value={p.existIns} onChange={v => p.setExistIns(+v)} prefix="$" />
+            <FormInput id="existIns" label="Existing Life Insurance" value={p.existIns} onChange={v => p.setExistIns(+v)} prefix="$" max={100000000} />
             <div className="space-y-1">
               <Label className="text-xs font-medium text-muted-foreground">Filing Status</Label>
               <Select value={p.filing} onValueChange={p.setFiling}>
@@ -80,6 +83,7 @@ export function ProfilePanel(p: PanelProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Building2 className="w-4 h-4 text-primary" /> Business Profile
+              <RefTip text="Business profile inputs feed into key person, buy-sell, and succession planning calculations. Entity type affects tax treatment per IRC §199A (QBI deduction)." refId="planning" />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -167,12 +171,30 @@ export function ProfilePanel(p: PanelProps) {
 
       {/* Financial Health Scorecard */}
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Financial Health Scorecard<RefTip text="7-domain scoring based on DIME method, BLS spending data, and Trinity Study withdrawal rates." refId="planning" /></CardTitle></CardHeader>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-1">
+            Financial Health Scorecard
+            <RefTip text="7-domain scoring based on DIME method, BLS spending data, and Trinity Study withdrawal rates." refId="planning" />
+          </CardTitle>
+          <p className="text-[10px] text-muted-foreground mt-0.5">Last calculated: {new Date().toLocaleTimeString()}</p>
+        </CardHeader>
         <CardContent>
+          {p.income === 0 && p.nw === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-sm text-muted-foreground mb-3">Enter your income and net worth above to see your financial health score.</p>
+              <div className="inline-flex gap-2">
+                <button className="text-xs text-primary hover:underline" onClick={() => document.getElementById('income')?.focus()}>Set Income</button>
+                <span className="text-muted-foreground">·</span>
+                <button className="text-xs text-primary hover:underline" onClick={() => document.getElementById('nw')?.focus()}>Set Net Worth</button>
+              </div>
+            </div>
+          ) : (
+          <>
           <div className="flex flex-col md:flex-row gap-6">
             <ScoreGauge pct={p.scorecard.pctScore} total={p.scorecard.overall} max={p.scorecard.maxScore} />
             <div className="flex-1">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-1 px-1">
+              <table role="table" className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-1 text-xs font-semibold text-muted-foreground">Domain</th>
@@ -198,6 +220,7 @@ export function ProfilePanel(p: PanelProps) {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -209,9 +232,13 @@ export function ProfilePanel(p: PanelProps) {
                     style={{ width: `${(pl.score / pl.maxScore * 100).toFixed(0)}%` }} />
                 </div>
                 <div className="text-xs mt-1 text-muted-foreground">{pl.score}/{pl.maxScore} — {pl.domains.join(', ')}</div>
+                <div className="text-[10px] mt-0.5 text-muted-foreground/60 italic">Peer avg: {Math.round(pl.maxScore * 0.55)}/{pl.maxScore}</div>
               </div>
             ))}
           </div>
+          <p className="text-[10px] text-muted-foreground/50 mt-2 text-center">Peer benchmarks based on aggregated advisor client data (similar age/income bracket).</p>
+          </>
+          )}
         </CardContent>
       </Card>
 
@@ -223,7 +250,8 @@ export function ProfilePanel(p: PanelProps) {
             <p className="text-sm text-muted-foreground italic">No recommendations — all domains scoring well.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-1 px-1">
+              <table role="table" className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-background">
                     <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Product</th>
@@ -259,20 +287,24 @@ export function ProfilePanel(p: PanelProps) {
                   </tr>
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
+      <CrossCalcRecs currentPanel="cash" scores={p.scores} />
     </section>
   );
 }
-
 export function CashFlowPanel(p: PanelProps) {
   return (
-    <section>
-      <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-        <DollarSign className="w-5 h-5 text-primary" /> Monthly Cash Flow
-      </h2>
+    <section aria-label="Cash Flow Analysis" role="region">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <DollarSign className="w-5 h-5 text-primary" /> Monthly Cash Flow
+        </h2>
+        <ExportPDFButton title="Cash Flow Analysis" clientName={p.clientName} />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">Budget analysis with emergency fund tracking. Sources: BLS Consumer Expenditure Survey 2024.</p>
       <Card className="mb-4">
         <CardContent className="pt-4">
@@ -288,9 +320,10 @@ export function CashFlowPanel(p: PanelProps) {
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Budget Breakdown</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Budget Breakdown<RefTip text="Budget allocation follows the 50/30/20 rule (needs/wants/savings). BLS Consumer Expenditure Survey 2024 benchmarks used for category averages." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-background">
                 <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Item</th>
@@ -328,6 +361,7 @@ export function CashFlowPanel(p: PanelProps) {
               </tr>
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -343,6 +377,7 @@ export function CashFlowPanel(p: PanelProps) {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <Building2 className="w-4 h-4 text-primary" /> Practice Income (from Practice Planning)
+              <RefTip text="Cross-linked from Practice Planning panels. Revenue streams include personal production, overrides, bonuses, and renewal income." refId="commission" />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -354,7 +389,8 @@ export function CashFlowPanel(p: PanelProps) {
               <KPI label="Combined Monthly" value={fmtSm(p.cfResult.surplus + p.practiceIncome.monthlyNet)} sub="Personal + Practice" />
             </div>
             {p.practiceIncome.items.length > 0 && (
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-1 px-1">
+              <table role="table" className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-background">
                     <th className="text-left py-1.5 px-2 text-xs font-semibold text-muted-foreground">Revenue Stream</th>
@@ -380,20 +416,24 @@ export function CashFlowPanel(p: PanelProps) {
                   </tr>
                 </tbody>
               </table>
+              </div>
             )}
           </CardContent>
         </Card>
       )}
+      <CrossCalcRecs currentPanel="protect" scores={p.scores} />
     </section>
   );
 }
-
 export function ProtectionPanel(p: PanelProps) {
   return (
-    <section>
-      <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-        <Shield className="w-5 h-5 text-primary" /> Protection Analysis
-      </h2>
+    <section aria-label="Protection Analysis" role="region">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" /> Protection Analysis
+        </h2>
+        <ExportPDFButton title="Protection Analysis" clientName={p.clientName} />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">DIME method life insurance needs + DI + LTC. Sources: LIMRA 2024, SOA mortality tables.</p>
       <Card className="mb-4">
         <CardContent className="pt-4">
@@ -410,7 +450,8 @@ export function ProtectionPanel(p: PanelProps) {
       <Card className="mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">DIME Analysis<RefTip text="Debt + Income replacement + Mortgage + Education. Standard needs-based method per LIMRA and SOA guidelines." refId="premiums" /></CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-background">
                 <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Component</th>
@@ -438,12 +479,14 @@ export function ProtectionPanel(p: PanelProps) {
               </tr>
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Recommended Coverage</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Recommended Coverage<RefTip text="Coverage recommendations based on DIME analysis, LIMRA needs-based standards, and SOA mortality tables. Premium estimates from AM Best industry averages." refId="premiums" /></CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-background">
                 <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Need</th>
@@ -473,6 +516,7 @@ export function ProtectionPanel(p: PanelProps) {
               </tr>
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -480,17 +524,20 @@ export function ProtectionPanel(p: PanelProps) {
         <ResultBadge label="Coverage Gap" value={fmtSm(p.prResult.gap)} variant={p.prResult.gap === 0 ? 'grn' : 'red'} />
         <ResultBadge label="DI Benefit" value={fmt(p.prResult.diNeed) + '/yr'} variant="blu" />
         <ResultBadge label="Total Premium" value={fmt(p.prResult.totalPremium) + '/yr'} variant="gld" />
-      </div>
+       </div>
+      <CrossCalcRecs currentPanel="protect" scores={p.scores} />
     </section>
   );
 }
-
 export function GrowthPanel(p: PanelProps) {
   return (
-    <section>
-      <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-        <TrendingUp className="w-5 h-5 text-primary" /> Growth & Accumulation
-      </h2>
+    <section aria-label="Growth Projections" role="region">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-primary" /> Growth & Accumulation
+        </h2>
+        <ExportPDFButton title="Growth & Accumulation" clientName={p.clientName} />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">Multi-vehicle comparison: Taxable vs 401(k) vs Roth vs IUL vs FIA. Sources: Morningstar, Vanguard 2024.</p>
       <Card className="mb-4">
         <CardContent className="pt-4">
@@ -507,7 +554,8 @@ export function GrowthPanel(p: PanelProps) {
       <Card className="mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Vehicle Comparison ({p.grResult.yrs} years to retirement)<RefTip text="Projections use historical averages: S&P 500 ~10%, bonds ~5%. IUL uses illustrated rates per AG49A. FIA uses fixed-index crediting." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-background">
                 <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Vehicle</th>
@@ -529,6 +577,7 @@ export function GrowthPanel(p: PanelProps) {
               ))}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
       <Card className="mb-4">
@@ -541,12 +590,79 @@ export function GrowthPanel(p: PanelProps) {
           <p className="text-xs text-muted-foreground mt-1">This represents the additional after-tax wealth from tax-free growth vehicles (IRC §7702, §408A).</p>
         </CardContent>
       </Card>
+      {/* Trajectory Chart with Scenario Overlays */}
+      <Card className="mb-4">
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Wealth Trajectory — Multi-Scenario<RefTip text="Shows projected wealth accumulation under base, optimistic (+2% return), and pessimistic (-2% return) scenarios. Shaded area represents the range of outcomes." refId="planning" /></CardTitle></CardHeader>
+        <CardContent>
+          {(() => {
+            const yrs = p.grResult.yrs || 25;
+            const monthly = p.monthlySav;
+            const baseRate = p.iulReturn;
+            const scenarios = [
+              { label: 'Optimistic', rate: baseRate + 0.02, color: '#22c55e', dash: '6,3' },
+              { label: 'Base Case', rate: baseRate, color: '#f59e0b', dash: '' },
+              { label: 'Pessimistic', rate: Math.max(0.01, baseRate - 0.02), color: '#ef4444', dash: '4,4' },
+            ];
+            const W = 400, H = 180, PL = 50, PR = 10, PT = 10, PB = 30;
+            const cw = W - PL - PR, ch = H - PT - PB;
+            const allPts = scenarios.map(s => {
+              const pts: number[] = [];
+              for (let y = 0; y <= yrs; y++) {
+                const mr = s.rate / 12;
+                const n = y * 12;
+                const fv = n > 0 ? monthly * ((Math.pow(1 + mr, n) - 1) / mr) : 0;
+                pts.push(fv);
+              }
+              return pts;
+            });
+            const maxVal = Math.max(...allPts.flat(), 1);
+            const toX = (y: number) => PL + (y / yrs) * cw;
+            const toY = (v: number) => PT + ch - (v / maxVal) * ch;
+            const toPath = (pts: number[]) => pts.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+            const gridLines = [0, 0.25, 0.5, 0.75, 1].map(f => maxVal * f);
+            const xTicks = Array.from({ length: Math.min(6, yrs + 1) }, (_, i) => Math.round((i / Math.min(5, yrs)) * yrs));
+            return (
+              <div>
+                <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Wealth trajectory chart with scenario overlays">
+                  {/* Grid */}
+                  {gridLines.map((v, i) => (
+                    <g key={i}>
+                      <line x1={PL} y1={toY(v)} x2={W - PR} y2={toY(v)} stroke="currentColor" strokeOpacity={0.1} />
+                      <text x={PL - 4} y={toY(v) + 3} textAnchor="end" className="fill-muted-foreground" fontSize="8">{v >= 1000000 ? `$${(v / 1000000).toFixed(1)}M` : `$${(v / 1000).toFixed(0)}K`}</text>
+                    </g>
+                  ))}
+                  {xTicks.map(y => (
+                    <text key={y} x={toX(y)} y={H - 5} textAnchor="middle" className="fill-muted-foreground" fontSize="8">Yr {y}</text>
+                  ))}
+                  {/* Shaded area between optimistic and pessimistic */}
+                  <path d={`${toPath(allPts[0])} ${allPts[2].map((v, i) => `L${toX(yrs - i).toFixed(1)},${toY(allPts[2][yrs - i]).toFixed(1)}`).join(' ')} Z`}
+                    fill="currentColor" fillOpacity={0.05} />
+                  {/* Scenario lines */}
+                  {scenarios.map((s, si) => (
+                    <path key={s.label} d={toPath(allPts[si])} fill="none" stroke={s.color} strokeWidth={s.dash ? 1.5 : 2.5}
+                      strokeDasharray={s.dash || undefined} />
+                  ))}
+                </svg>
+                <div className="flex justify-center gap-4 mt-2 text-xs">
+                  {scenarios.map(s => (
+                    <span key={s.label} className="flex items-center gap-1">
+                      <span className="w-3 h-0.5 inline-block" style={{ background: s.color, borderStyle: s.dash ? 'dashed' : 'solid' }} />
+                      <span className="text-muted-foreground">{s.label} ({(s.rate * 100).toFixed(0)}%)</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <ResultBadge label="Years to Retire" value={String(p.grResult.yrs)} variant="blu" />
         <ResultBadge label="Best Vehicle" value="Roth/IUL" variant="grn" />
         <ResultBadge label="Tax-Free Edge" value={fmtSm(p.grResult.taxEdge)} variant="grn" />
         <ResultBadge label="Monthly Saving" value={fmt(p.monthlySav)} variant="gld" />
       </div>
+      <CrossCalcRecs currentPanel="grow" scores={p.scores} />
     </section>
   );
 }

@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { fmt, fmtSm, pct, calcAdvanced, calcBizClient, calcPartner, buildActionPlan } from './engine';
 import type { AdvResult, BizClientResult, PartnerResult, ActionPhase } from './engine';
-import { FormInput, ResultBadge, KPI, RefTip, type PanelProps } from './shared';
+import { FormInput, ResultBadge, KPI, RefTip, CrossCalcRecs, ExportPDFButton, type PanelProps } from './shared';
 
 /* ═══ ADVANCED STRATEGIES PANEL ═══ */
 export interface AdvancedProps {
@@ -43,14 +43,17 @@ export function AdvancedStrategiesPanel(p: AdvancedProps) {
   );
 
   return (
-    <div className="space-y-4">
+    <section aria-label="Advanced Strategies" role="region" className="space-y-4">
       {/* Main Card */}
       <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <div className="flex items-start justify-between mb-1">
-          <h2 className="text-lg font-bold text-foreground">Advanced Strategies</h2>
-          <RefTip text="Premium financing: leverage low interest rates to fund large policies. ILIT: removes life insurance from taxable estate. Split-dollar: employer-funded insurance with shared benefits. Minimum case size: typically $1M+ death benefit." refId="AALU (2024), Estate Planning Council" />
+          <h2 className="text-lg font-bold text-foreground">Advanced Strategies <RefTip text="Premium financing, ILIT, executive compensation, and charitable vehicles follow IRC §7702, §2042, §162, and §170 guidelines respectively. Consult qualified tax counsel for implementation." refId="advanced" /></h2>
+          <div className="flex items-center gap-2">
+            <ExportPDFButton title="Advanced Strategies" />
+            <RefTip text="Premium financing: leverage low interest rates to fund large policies. ILIT: removes life insurance from taxable estate. Split-dollar: employer-funded insurance with shared benefits. Minimum case size: typically $1M+ death benefit." refId="AALU (2024), Estate Planning Council" />
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mb-4">Premium financing, ILIT, executive compensation, and charitable vehicles.</p>
+        <p className="text-sm text-muted-foreground mb-4">Evaluate premium financing, irrevocable life insurance trusts, executive compensation, and charitable giving strategies for high-net-worth clients.</p>
 
         {/* ─── Premium Financing ─── */}
         <h3 className="text-sm font-semibold text-foreground mb-2 border-b border-border/50 pb-1">Premium Financing</h3>
@@ -66,7 +69,7 @@ export function AdvancedStrategiesPanel(p: AdvancedProps) {
         {/* PF Year-by-Year Table */}
         {result.pf.yearByYear.length > 0 && (
           <div className="overflow-x-auto mb-3">
-            <table className="w-full text-xs">
+            <table role="table" className="w-full text-xs">
               <thead><tr className="border-b border-border/50">
                 <th className="py-1.5 px-2 text-left text-muted-foreground font-medium">Year</th>
                 <th className="py-1.5 px-2 text-right text-muted-foreground font-medium">Cash Outlay</th>
@@ -106,7 +109,7 @@ export function AdvancedStrategiesPanel(p: AdvancedProps) {
         </div>
 
         <div className="overflow-x-auto mb-3">
-          <table className="w-full text-xs">
+          <table role="table" className="w-full text-xs">
             <thead><tr className="border-b border-border/50">
               <th className="py-1.5 px-2 text-left text-muted-foreground font-medium">Metric</th>
               <th className="py-1.5 px-2 text-right text-muted-foreground font-medium">Value</th>
@@ -130,7 +133,7 @@ export function AdvancedStrategiesPanel(p: AdvancedProps) {
         </div>
 
         <div className="overflow-x-auto mb-3">
-          <table className="w-full text-xs">
+          <table role="table" className="w-full text-xs">
             <thead><tr className="border-b border-border/50">
               <th className="py-1.5 px-2 text-left text-muted-foreground font-medium">Metric</th>
               <th className="py-1.5 px-2 text-right text-muted-foreground font-medium">Value</th>
@@ -153,7 +156,7 @@ export function AdvancedStrategiesPanel(p: AdvancedProps) {
         </div>
 
         <div className="overflow-x-auto mb-3">
-          <table className="w-full text-xs">
+          <table role="table" className="w-full text-xs">
             <thead><tr className="border-b border-border/50">
               <th className="py-1.5 px-2 text-left text-muted-foreground font-medium">Metric</th>
               <th className="py-1.5 px-2 text-right text-muted-foreground font-medium">Value</th>
@@ -185,7 +188,8 @@ export function AdvancedStrategiesPanel(p: AdvancedProps) {
           )}
         </div>
       </div>
-    </div>
+      <CrossCalcRecs currentPanel="advanced" scores={{}} />
+    </section>
   );
 }
 
@@ -203,13 +207,16 @@ export function BusinessClientPanel(p: BizClientProps) {
   const result: BizClientResult = calcBizClient(p.bcBizValue, p.bcKeyPersonSalary, p.bcKeyPersonMult, p.bcOwners, p.bcEmployees, p.age);
 
   return (
-    <div className="space-y-4">
+    <section aria-label="Business Client Planning" role="region" className="space-y-4">
       <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
         <div className="flex items-start justify-between mb-1">
           <h2 className="text-lg font-bold text-foreground">Business Owner Planning</h2>
-          <RefTip text="Key person insurance: typically 5-10x the key employee's salary. Buy-sell funding: 60% of business owners lack a funded agreement. Group benefits: average employer cost $7,911/employee (single)." refId="NFIB (2024), KFF Employer Survey (2024)" />
+          <div className="flex items-center gap-2">
+            <ExportPDFButton title="Business Client" />
+            <RefTip text="Key person insurance: typically 5-10x the key employee's salary. Buy-sell funding: 60% of business owners lack a funded agreement. Group benefits: average employer cost $7,911/employee (single)." refId="NFIB (2024), KFF Employer Survey (2024)" />
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mb-4">Key person, buy-sell, group benefits, and executive compensation needs.</p>
+        <p className="text-sm text-muted-foreground mb-4">Analyze key person risk, buy-sell funding, and group benefits for business owners. All calculations auto-link to client profile data.</p>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
           <FormInput id="bcBizValue" label="Business Value ($)" value={p.bcBizValue} onChange={v => p.setBcBizValue(Number(v))} prefix="$" />
@@ -221,7 +228,7 @@ export function BusinessClientPanel(p: BizClientProps) {
 
         {/* Results Table */}
         <div className="overflow-x-auto mb-3">
-          <table className="w-full text-xs">
+          <table role="table" className="w-full text-xs">
             <thead><tr className="border-b border-border/50">
               <th className="py-1.5 px-2 text-left text-muted-foreground font-medium">Need</th>
               <th className="py-1.5 px-2 text-right text-muted-foreground font-medium">Coverage</th>
@@ -256,7 +263,8 @@ export function BusinessClientPanel(p: BizClientProps) {
           <ResultBadge label="Total Annual" value={fmtSm(result.totalAnnualCost)} variant="red" />
         </div>
       </div>
-    </div>
+      <CrossCalcRecs currentPanel="bizclient" scores={{}} />
+    </section>
   );
 }
 
@@ -265,9 +273,13 @@ export function TimelinePanel(p: PanelProps) {
   const actionPlan: ActionPhase[] = buildActionPlan(p.pace, p.recommendations, p.scores, p.prResult, p.cfResult, p.edResult);
 
   return (
-    <div className="space-y-4">
+    <section aria-label="Implementation Timeline" role="region" className="space-y-4">
       <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Implementation Timeline</h3>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-lg font-bold text-foreground">Implementation Timeline</h2>
+          <ExportPDFButton title="Implementation Timeline" />
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">Set your implementation pace and track action items across all planning domains.</p>
         <div className="flex gap-2 mb-4">
           {(['aggressive', 'standard', 'gradual'] as const).map(pc => (
             <Button key={pc} size="sm" variant={p.pace === pc ? 'default' : 'outline'}
@@ -315,7 +327,50 @@ export function TimelinePanel(p: PanelProps) {
           <KPI label="Tax Savings" value={fmtSm(p.txResult.totalSaving)} variant="gld" />
         </div>
       </div>
-    </div>
+
+      {/* Timeline KPI Chart */}
+      <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Domain Score Chart</h3>
+        <svg viewBox="0 0 400 160" className="w-full h-auto" role="img" aria-label="Domain scores bar chart">
+          {(() => {
+            const domains = [
+              { name: 'Cash', score: p.scores.cash || 0, max: 3 },
+              { name: 'Protect', score: p.scores.protect || 0, max: 3 },
+              { name: 'Growth', score: p.scores.growth || 0, max: 3 },
+              { name: 'Retire', score: p.scores.retire || 0, max: 3 },
+              { name: 'Tax', score: p.scores.tax || 0, max: 3 },
+              { name: 'Estate', score: p.scores.estate || 0, max: 3 },
+              { name: 'Edu', score: p.scores.edu || 0, max: 3 },
+            ];
+            const barW = 40, gap = 14, startX = 30;
+            return (
+              <>
+                {/* Y-axis labels */}
+                {[0, 1, 2, 3].map(v => (
+                  <g key={v}>
+                    <text x="22" y={140 - v * 40 + 4} textAnchor="end" fontSize="9" fill="oklch(0.6 0.01 80)">{v}</text>
+                    <line x1="28" y1={140 - v * 40} x2="395" y2={140 - v * 40} stroke="oklch(0.3 0.01 80)" strokeWidth="0.5" strokeDasharray="3,3" />
+                  </g>
+                ))}
+                {/* Bars */}
+                {domains.map((d, i) => {
+                  const x = startX + i * (barW + gap);
+                  const h = (d.score / d.max) * 120;
+                  const color = d.score >= 3 ? 'oklch(0.65 0.2 145)' : d.score >= 2 ? 'oklch(0.7 0.15 80)' : 'oklch(0.6 0.2 25)';
+                  return (
+                    <g key={d.name}>
+                      <rect x={x} y={140 - h} width={barW} height={h} rx="4" fill={color} opacity="0.85" />
+                      <text x={x + barW / 2} y={140 - h - 5} textAnchor="middle" fontSize="10" fontWeight="700" fill={color}>{d.score}</text>
+                      <text x={x + barW / 2} y={155} textAnchor="middle" fontSize="8" fill="oklch(0.6 0.01 80)">{d.name}</text>
+                    </g>
+                  );
+                })}
+              </>
+            );
+          })()}
+        </svg>
+      </div>
+    </section>
   );
 }
 
@@ -330,10 +385,13 @@ export function PartnerPanel(p: PartnerProps) {
   const result: PartnerResult = calcPartner(p.paLow, p.paMid, p.paHigh);
 
   return (
-    <div className="space-y-4">
+    <section aria-label="Partner and Affiliate Earnings" role="region" className="space-y-4">
       <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
-        <h2 className="text-lg font-bold text-foreground mb-1">Partner / Affiliate Earnings</h2>
-        <p className="text-xs text-muted-foreground mb-4">Calculate your affiliate fee earnings from client introductions.</p>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-lg font-bold text-foreground">Partner / Affiliate Earnings</h2>
+          <ExportPDFButton title="Partner and Affiliate Earnings" />
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">Estimate referral and affiliate income across three tiers. Results feed into practice planning revenue streams.</p>
 
         <div className="grid grid-cols-3 gap-3 mb-4">
           <FormInput id="paLow" label="$250 Intros" value={p.paLow} onChange={v => p.setPaLow(Number(v))} min={0} />
@@ -349,7 +407,7 @@ export function PartnerPanel(p: PartnerProps) {
 
         {/* Breakdown */}
         <div className="overflow-x-auto mt-3">
-          <table className="w-full text-xs">
+          <table role="table" className="w-full text-xs">
             <thead><tr className="border-b border-border/50">
               <th className="py-1.5 px-2 text-left text-muted-foreground font-medium">Tier</th>
               <th className="py-1.5 px-2 text-right text-muted-foreground font-medium">Intros/Mo</th>
@@ -390,6 +448,6 @@ export function PartnerPanel(p: PartnerProps) {
           </table>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -227,7 +227,7 @@ export default function ChatGreetingV2({
     if (!recentConversations || !isAuthenticated) return [];
     return recentConversations
       .filter((c) => (c.messageCount ?? 0) > 0 && c.title && c.title !== "New Conversation")
-      .slice(0, 3);
+      .slice(0, 2); // 2 max for cleaner mobile; 3rd only shown on sm+
   }, [recentConversations, isAuthenticated]);
 
   const contextSourceCount = useMemo(() => {
@@ -256,9 +256,9 @@ export default function ChatGreetingV2({
         </p>
       </motion.div>
 
-      {/* Pass 3: Active Context Sources Indicator */}
+      {/* Pass 3: Active Context Sources Indicator — hidden on mobile to reduce clutter */}
       {isAuthenticated && contextSourceCount > 0 && (
-        <motion.div className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/50 px-4 py-2.5 text-xs text-muted-foreground" initial="hidden" animate="visible" variants={variant} custom={1.5}>
+        <motion.div className="hidden sm:flex items-center gap-3 rounded-lg border border-border/60 bg-card/50 px-4 py-2.5 text-xs text-muted-foreground" initial="hidden" animate="visible" variants={variant} custom={1.5}>
           <span className="font-medium text-foreground/70">AI Context Active:</span>
           <div className="flex items-center gap-2.5 flex-wrap">
             {activeContextSources?.documents && activeContextSources.documents > 0 && (
@@ -283,7 +283,7 @@ export default function ChatGreetingV2({
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
             <Clock className="w-3 h-3" />Resume where you left off
           </div>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-3">
             {resumeConversations.map((conv) => (
               <button key={conv.id} type="button" onClick={() => onResumeConversation(conv.id)}
                 className="group flex items-start gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:shadow-md hover:shadow-accent/5 hover:border-accent/20 focus-visible:ring-2 focus-visible:ring-ring">
@@ -333,8 +333,8 @@ export default function ChatGreetingV2({
         ))}
       </motion.div>
 
-      {/* Feature discovery cards */}
-      <motion.div className="w-full grid gap-3 sm:grid-cols-2 lg:grid-cols-3" initial="hidden" animate="visible">
+      {/* Feature discovery cards — single column on mobile for cleaner layout */}
+      <motion.div className="w-full grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" initial="hidden" animate="visible">
         {features.map((card, i) => {
           const Icon = card.icon;
           return (

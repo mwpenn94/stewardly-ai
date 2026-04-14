@@ -103,7 +103,7 @@ function DataTable({ headers, rows, className = '' }: {
 }) {
   return (
     <div className={`overflow-x-auto -mx-2 px-2 ${className}`}>
-      <table className="w-full text-xs border-collapse min-w-[400px]">
+      <table role="table" className="w-full text-xs border-collapse min-w-[400px]">
         <thead>
           <tr className="bg-muted/40 text-foreground/90">
             {headers.map((h, i) => (
@@ -150,13 +150,16 @@ export function MyPlanPanel(p: PracticeProps) {
     streams: p.streams,
   });
 
-  return (
+  return (    <section aria-label="My Plan" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">My Plan</h2>
+    <p className="text-sm text-muted-foreground mb-4">Configure your income streams, role, and GDC targets. All calculations auto-cascade across practice planning panels.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <span className="text-primary">My Plan</span>
           <Badge variant="outline" className="text-[10px]">{HIER_NAMES[p.role]}</Badge>
           <Badge variant="outline" className="text-[10px] text-primary">{rollUp.streamCount} streams</Badge>
+          <RefTip text="Practice plan based on your role hierarchy. Revenue streams include personal production, overrides, bonuses, AUM fees, and renewal income." refId="commission" />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -346,6 +349,7 @@ export function MyPlanPanel(p: PracticeProps) {
         )}
       </CardContent>
     </Card>
+    </section>
   );
 }
 
@@ -362,6 +366,9 @@ export function GDCBracketsPanel(p: PracticeProps) {
   const nextBracket = GDC_BRACKETS.find(b => b.mn > gdcInput);
 
   return (
+    <section aria-label="GDC Brackets" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">GDC Brackets</h2>
+    <p className="text-sm text-muted-foreground mb-4">View commission brackets and weighted GDC based on your product mix and production level.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base text-primary flex items-center gap-1">GDC Brackets<RefTip text="Commission brackets based on National Life Group 2026 schedules. FYC rates: IUL 90-110%, WL 55-80%, Term 80-100%." refId="commission" /></CardTitle>
@@ -406,6 +413,7 @@ export function GDCBracketsPanel(p: PracticeProps) {
         </div>
       </CardContent>
     </Card>
+    </section>
   );
 }
 
@@ -418,11 +426,14 @@ export function ProductsPanel(p: PracticeProps) {
   const totalMixPct = Object.values(p.productMix).reduce((a, b) => a + b, 0);
   const avgGDC = calcWeightedGDC(p.productMix, PRODUCTS);
 
-  return (
+  return (    <section aria-label="Products and Mix" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">Products &amp; Mix</h2>
+    <p className="text-sm text-muted-foreground mb-4">Set your product allocation percentages. Mix impacts weighted GDC, commission rates, and revenue projections.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <span className="text-primary">Products & Mix</span>
+          <RefTip text="Product mix based on NLG 2026 commission schedules. FYC rates: IUL 90-110%, WL 55-80%, Term 80-100%. Target premium allocations per LIMRA industry averages." refId="commission" />
           <label className="flex items-center gap-1.5 text-[11px] cursor-pointer ml-auto font-normal">
             <Checkbox checked={showExpanded} onCheckedChange={c => setShowExpanded(!!c)} />
             Show Expanded/Specialty
@@ -451,7 +462,7 @@ export function ProductsPanel(p: PracticeProps) {
         {/* Product Comparison Table */}
         <SectionHeader>Product Comparison — Commission Rates</SectionHeader>
         <div className="overflow-x-auto -mx-2 px-2">
-          <table className="w-full text-[11px] border-collapse min-w-[700px]">
+          <table role="table" className="w-full text-[11px] border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-muted/40 text-foreground/90">
                 <th className="px-2 py-1.5 text-left font-semibold">Product</th>
@@ -504,11 +515,11 @@ export function ProductsPanel(p: PracticeProps) {
           <span className="text-red-400"> ● Red</span> = below 85% of best.
           Source: TBA 2025, Sonant AI 2026, SmartAsset 2025.
         </div>
-      </CardContent>
+       </CardContent>
     </Card>
+    </section>
   );
 }
-
 /* ═══════════════════════════════════════════════════════════════
    PANEL 4: SALES FUNNEL
    ═══════════════════════════════════════════════════════════════ */
@@ -528,6 +539,9 @@ export function SalesFunnelPanel(p: PracticeProps) {
   const perHour = Math.max(1, Math.round(daily / 8));
 
   return (
+    <section aria-label="Sales Funnel" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">Sales Funnel</h2>
+    <p className="text-sm text-muted-foreground mb-4">Model your conversion pipeline from approaches through placed business. Industry benchmarks pre-loaded.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base text-primary flex items-center gap-1">Sales Funnel<RefTip text="Conversion rates from LIMRA, Legacy Agent, and EverQuote research. Industry averages: approach-to-set 15-40%, held 65-85%, close 25-70%, place 60-85%." refId="funnel" /></CardTitle>
@@ -589,6 +603,7 @@ export function SalesFunnelPanel(p: PracticeProps) {
         />
       </CardContent>
     </Card>
+    </section>
   );
 }
 
@@ -617,7 +632,9 @@ export function RecruitingPanel(p: PracticeProps) {
 
   const summary = calcAllTracksSummary(p.recruitTracks, p.overrideRate / 100);
 
-  return (
+  return (    <section aria-label="Recruiting" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">Recruiting</h2>
+    <p className="text-sm text-muted-foreground mb-4">Build your team roster, track override income, and project recruiting pipeline economics.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base text-primary flex items-center gap-1">Recruiting<RefTip text="Override rates: 5-15% first-gen, 2-5% second-gen. Recruiting costs and retention from LIMRA Agent Compensation Study 2024." refId="recruiting" /></CardTitle>
@@ -727,6 +744,7 @@ export function RecruitingPanel(p: PracticeProps) {
         )}
       </CardContent>
     </Card>
+    </section>
   );
 }
 
@@ -736,7 +754,9 @@ export function RecruitingPanel(p: PracticeProps) {
 export function ChannelsPanel(p: PracticeProps) {
   const metrics = calcChannelMetrics(p.channelSpend);
 
-  return (
+  return (    <section aria-label="Channels" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">Marketing Channels</h2>
+    <p className="text-sm text-muted-foreground mb-4">Allocate marketing spend across channels. CPL and ROI benchmarks from industry research.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base text-primary flex items-center gap-1">Marketing Channels<RefTip text="CPL benchmarks from FirstPageSage 2025: LinkedIn $75-180, Google $85-120, Facebook $50-90, SEO $45-75, Referrals $15-30." refId="marketing" /></CardTitle>
@@ -744,7 +764,7 @@ export function ChannelsPanel(p: PracticeProps) {
       <CardContent className="space-y-4">
         {/* Channel Input Table */}
         <div className="overflow-x-auto -mx-2 px-2">
-          <table className="w-full text-[11px] border-collapse min-w-[700px]">
+          <table role="table" className="w-full text-[11px] border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-muted/40 text-foreground/90">
                 <th className="px-2 py-1.5 text-left">Channel</th>
@@ -831,6 +851,7 @@ export function ChannelsPanel(p: PracticeProps) {
         )}
       </CardContent>
     </Card>
+    </section>
   );
 }
 
@@ -859,6 +880,9 @@ export function DashboardPanel(p: PracticeProps) {
   });
 
   return (
+    <section aria-label="Dashboard" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">Dashboard</h2>
+    <p className="text-sm text-muted-foreground mb-4">Real-time production and financial metrics aggregated from all practice planning inputs.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base text-primary">Dashboard</CardTitle>
@@ -971,6 +995,7 @@ export function DashboardPanel(p: PracticeProps) {
         />
       </CardContent>
     </Card>
+    </section>
   );
 }
 
@@ -980,11 +1005,14 @@ export function DashboardPanel(p: PracticeProps) {
 export function PnLPanel(p: PracticeProps) {
   const pnl = calcPnL(p.pnlLevel, p.pnlProducers, p.pnlAvgGDC, p.pnlPayoutRate / 100, p.pnlOpEx, p.pnlTaxRate / 100, p.pnlEbitGoal, p.pnlNetGoal);
 
-  return (
+  return (    <section aria-label="Profit and Loss" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">P&amp;L Statement</h2>
+    <p className="text-sm text-muted-foreground mb-4">Individual or team-level profit and loss with EBIT, net income, and back-plan goal tracking.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <span className="text-primary">P&L (Profit & Loss)</span>
+          <RefTip text="P&L follows standard financial statement format. OpEx benchmarks from LIMRA Agent Compensation Study 2024. Tax rates per IRS 2024 brackets." refId="commission" />
           <Badge variant="outline" className="text-[10px]">{p.pnlLevel === 'ind' ? 'Individual' : 'Team/Agency'}</Badge>
           {pnl.backPlanned && <Badge variant="outline" className="text-[10px] text-primary">Back-Planned</Badge>}
         </CardTitle>
@@ -1044,6 +1072,7 @@ export function PnLPanel(p: PracticeProps) {
         )}
       </CardContent>
     </Card>
+    </section>
   );
 }
 
@@ -1280,11 +1309,14 @@ export function GoalTrackerPanel(p: PracticeProps) {
   const getColor = (pct: number) => pct >= 100 ? 'bg-green-500' : pct >= 75 ? 'bg-primary' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
   const getTextColor = (pct: number) => pct >= 100 ? 'text-green-400' : pct >= 75 ? 'text-primary' : pct >= 50 ? 'text-amber-400' : 'text-red-400';
 
-  return (
+  return (    <section aria-label="Goal Tracker" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">Goal Tracker</h2>
+    <p className="text-sm text-muted-foreground mb-4">Set income, AUM, recruiting, GDC, and case targets. Track progress against your goals.</p>
     <Card className="border-border bg-card">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-bold text-foreground flex items-center justify-between">
           <span>Goal Tracker</span>
+          <RefTip text="Goals tracked against your production plan targets. Progress calculated from actual vs planned metrics across all revenue streams." refId="commission" />
           <Badge variant="outline" className={`text-xs ${getTextColor(progress.overallPct)}`}>
             {progress.overallPct}% Overall
           </Badge>
@@ -1382,6 +1414,7 @@ export function GoalTrackerPanel(p: PracticeProps) {
         )}
       </CardContent>
     </Card>
+    </section>
   );
 }
 
@@ -1411,10 +1444,14 @@ export function MonthlyProductionPanel(p: PracticeProps) {
     : (SEASON_PROFILES[p.seasonProfile] || SEASON_PROFILES.flat);
 
   return (
+    <section aria-label="Monthly Production" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">Monthly Production</h2>
+    <p className="text-sm text-muted-foreground mb-4">Seasonality-adjusted monthly projections with ramp modeling and multi-year horizon.</p>
     <Card className="border-border bg-card">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-bold text-foreground flex items-center justify-between">
           <span>Monthly Production Plan</span>
+          <RefTip text="Monthly production targets derived from annual plan. Seasonality adjustments based on industry patterns: Q1 heavy (tax season), Q4 heavy (year-end planning)." refId="commission" />
           <Badge variant="outline" className="text-xs">{production.profileName}</Badge>
         </CardTitle>
       </CardHeader>
@@ -1551,5 +1588,6 @@ export function MonthlyProductionPanel(p: PracticeProps) {
         )}
       </CardContent>
     </Card>
+    </section>
   );
 }

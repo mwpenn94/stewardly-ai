@@ -3167,12 +3167,12 @@ export default function Chat() {
                 </TooltipTrigger>
                 <TooltipContent>{voice.isListening ? "Stop listening" : "Voice input (tap to speak)"}</TooltipContent>
               </Tooltip>
-              {/* Audio toggle */}
+              {/* Audio toggle — hidden on mobile to reduce toolbar clutter */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     data-tour="voice-toggle"
-                    className={`p-2.5 rounded-full transition-all ${
+                    className={`hidden sm:block p-2.5 rounded-full transition-all ${
                       ttsEnabled
                         ? "bg-accent/15 text-accent"
                         : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
