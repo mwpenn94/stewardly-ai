@@ -1,7 +1,7 @@
 # Changelog — April 14, 2026
 
-**Build**: Convergence session with 30 passes (29 consecutive clean)
-**Tests**: 7,702 passed across 319 test files
+**Build**: Convergence session with 72 passes (30 consecutive clean in Round 2)
+**Tests**: 7,715 passed across 320 test files
 **TypeScript**: 0 errors
 
 ---
@@ -95,4 +95,41 @@ Added a default empty object guard for the `scores` prop in CrossCalcRecs to pre
 |-----------|-------|--------|
 | server/pdfExport.test.ts | 14 | All pass |
 | server/april14-features.test.ts | 12 | All pass |
-| Total suite | 7,702 | All pass |
+| server/orgBranding.test.ts | 14 | All pass |
+| Total suite | 7,715 | All pass |
+
+---
+
+## Org Branding (White-Label) — Late Addition
+
+### Org Branding Editor (OrgBrandingEditor.tsx)
+Enhanced the existing branding editor with 5 tabs:
+- **Content**: Headline, subtitle, CTA text, trust signals, disclaimer
+- **Colors & Logo**: 3-color palette (primary, accent, secondary) with visual swatches + logo URL
+- **Fonts**: 12 Google Fonts with live specimen preview (Inter, Playfair Display, Roboto, Lora, etc.)
+- **Media**: Hero image URL with preview + favicon URL with preview
+- **Advanced**: Background pattern selector (5 options: mesh, dots, lines, radial, solid) + custom CSS with XSS sanitization
+
+Includes live desktop/mobile preview toggle.
+
+### Org Landing Page (OrgLanding.tsx)
+Updated the public landing page renderer at `/org/:slug` to apply all new branding fields:
+- Dynamic Google Font loading via CDN link injection
+- Hero image with gradient overlay
+- 5 background patterns (CSS-generated)
+- Secondary color support for gradient accents
+- Custom CSS injection with XSS sanitization (strips HTML tags, `expression()`, `javascript:`, `data:` URIs, `@import`)
+- Dynamic favicon injection
+
+### Schema Migration
+Added 6 new columns to `organization_landing_page_config`:
+- `secondaryColor` (varchar 20)
+- `fontFamily` (varchar 100)
+- `heroImageUrl` (text)
+- `customCss` (text)
+- `backgroundPattern` (varchar 50)
+- `faviconUrl` (text)
+
+### Security
+- CSS sanitization function strips dangerous patterns before injection
+- All branding fields validated via Zod schemas in tRPC router

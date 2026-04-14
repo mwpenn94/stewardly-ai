@@ -111,6 +111,22 @@ Press **?** at any time to see all keyboard shortcuts. Key ones:
 
 ---
 
+## For Advisors: Customize Your Organization's Branding
+
+If you manage an advisory firm, navigate to **Settings → Org Branding Editor** to create a white-labeled experience for your clients:
+
+| Tab | What You Can Customize |
+|-----|------------------------|
+| Content | Headline, subtitle, CTA button text, trust signals, disclaimer |
+| Colors & Logo | Logo URL, primary/accent/secondary colors with visual swatches |
+| Fonts | Choose from 12 Google Fonts with live specimen preview |
+| Media | Hero image and favicon with preview |
+| Advanced | Background pattern (mesh, dots, lines, radial, solid) + custom CSS |
+
+Use the **desktop/mobile preview toggle** to see your changes in real-time before saving. Your branded landing page will be available at `/org/your-slug`.
+
+---
+
 ## Getting Help
 
 - **In-app**: Navigate to **Help** in the sidebar for searchable FAQ, feature guides, and contact form

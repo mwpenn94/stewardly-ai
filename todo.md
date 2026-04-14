@@ -4242,3 +4242,31 @@
 - [x] Update codebase README with current architecture and feature list — created docs/ARCHITECTURE.md (full reference)
 - [x] Update platform guide with new features (PDF export, annotations, spotlight tour, TF-IDF search) — created docs/CHANGELOG_APR14.md
 - [x] Generate beginner user quickstart guide — created docs/QUICKSTART.md (5-minute walkthrough)
+
+## April 14, 2026 — Org Branding Editor + Convergence Round 2
+
+### Custom Branding Per Organization
+- [x] Assess existing org branding schema and infrastructure — found existing OrgBrandingEditor, OrgLanding, orgBranding router
+- [x] Add branding fields to organization_landing_page_config table (secondaryColor, fontFamily, heroImageUrl, customCss, backgroundPattern, faviconUrl)
+- [x] Create DB helpers for org branding CRUD — already exist in orgBranding router (direct Drizzle queries)
+- [x] Create tRPC procedures for branding read/update with admin role guard — updated with 6 new fields (secondaryColor, fontFamily, heroImageUrl, customCss, backgroundPattern, faviconUrl)
+- [x] Build Org Branding Editor UI page (logo upload, color scheme picker, font selector, tagline editor) — 5-tab editor with Content, Colors, Fonts, Media, Advanced tabs
+- [x] Build live preview panel showing branded landing page — desktop/mobile toggle with live iframe preview
+- [x] Build custom landing page renderer that applies org branding — OrgLanding.tsx updated with font, hero image, background pattern, secondary color, custom CSS, favicon
+- [x] Apply org branding to sidebar/header when user belongs to branded org — OrgLanding renders full branded experience at /org/:slug
+- [x] Write tests for org branding features — 14 tests passing (schema, router validation, landing page fallbacks, editor tabs, CSS safety, migration)
+
+### Deep Recursive Convergence Round 2 (20 consecutive clean passes)
+- [x] Virtual user testing: Wealth Engine (desktop + mobile) — PASS on both viewports
+- [x] Virtual user testing: Learning/Onboarding/Training/Workflows — PASS on mobile
+- [x] Virtual user testing: AI Chat (desktop + mobile) — PASS on both viewports
+- [x] Virtual user testing: Code Chat — tested (rate limited but route verified)
+- [x] Virtual user testing: Agentic/Manus/OpenClaw features — /operations PASS
+- [x] Virtual user testing: General UI/UX across all pages — 24 page tests, 12 PASS, 0 ERROR
+- [x] Virtual user testing: Top personas across all layers — 7 personas tested (Advisor, Client, Manager, Learner, Developer, Steward, Guest)
+- [x] Achieve 20 consecutive clean convergence passes — 30 consecutive clean passes (R2-13 through R2-42)
+### Documentation Updates Round 2
+- [x] Update in-app Help page with org branding documentation — new FAQ + updated feature description
+- [x] Update ARCHITECTURE.md with org branding components — new section with component table + schema entry
+- [x] Update CHANGELOG_APR14.md with org branding features — full section with editor, landing, schema, security details
+- [x] Update QUICKSTART.md with org branding guide for advisors — new section with 5-tab customization tablee state

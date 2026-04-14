@@ -26,7 +26,7 @@ export default function OrgLanding() {
     { enabled: orgId > 0 }
   );
 
-  const config = configQuery.data;
+  const config = configQuery.data as any;
 
   // Dynamic branding with fallbacks
   const headline = config?.headline || `${orgName} Financial Intelligence`;
@@ -35,7 +35,20 @@ export default function OrgLanding() {
   const secondaryText = config?.secondaryLinkText || "Explore as a guest";
   const primaryColor = config?.primaryColor || "#0EA5E9";
   const accentColor = config?.accentColor || "#14B8A6";
+  const secondaryColor = config?.secondaryColor || "#1E293B";
   const logoUrl = config?.logoUrl || null;
+  const heroImageUrl = config?.heroImageUrl || null;
+  const fontFamily = config?.fontFamily || "Inter";
+  const backgroundPattern = config?.backgroundPattern || "mesh";
+  const rawCustomCss = config?.customCss || "";
+  // Sanitize custom CSS to prevent XSS
+  const customCss = rawCustomCss
+    .replace(/<[^>]*>/g, "")           // Strip HTML tags
+    .replace(/expression\s*\(/gi, "")  // Strip CSS expressions
+    .replace(/javascript\s*:/gi, "")   // Strip javascript: URIs
+    .replace(/url\s*\(\s*['"]?data:/gi, "url(blocked:") // Block data: URIs
+    .replace(/@import/gi, "/* blocked import */"); // Block @import
+  const faviconUrl = config?.faviconUrl || null;
   const disclaimer = config?.disclaimerText || null;
   const trustSignals = [
     { icon: <Lock className="w-4 h-4" />, text: config?.trustSignal1 || "Private by default" },
@@ -47,6 +60,32 @@ export default function OrgLanding() {
   useEffect(() => {
     if (isAuthenticated) navigate("/chat");
   }, [isAuthenticated, navigate]);
+
+  // Load custom Google Font
+  useEffect(() => {
+    if (fontFamily && fontFamily !== "Inter") {
+      const link = document.createElement("link");
+      link.href = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, "+")}:wght@400;500;600;700&display=swap`;
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+      return () => { document.head.removeChild(link); };
+    }
+  }, [fontFamily]);
+
+  // Set custom favicon
+  useEffect(() => {
+    if (faviconUrl) {
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      const originalHref = link.href;
+      link.href = faviconUrl;
+      return () => { link.href = originalHref; };
+    }
+  }, [faviconUrl]);
 
   if (isAuthenticated) return null;
 
@@ -63,31 +102,58 @@ export default function OrgLanding() {
     navigate("/chat");
   };
 
+  // ─── BACKGROUND RENDERER ───
+  const renderBackground = () => {
+    switch (backgroundPattern) {
+      case "dots":
+        return (
+          <div className="fixed inset-0 -z-10">
+            <div className="absolute inset-0 bg-background" />
+            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: `radial-gradient(${primaryColor} 1px, transparent 1px)`, backgroundSize: "24px 24px" }} />
+          </div>
+        );
+      case "lines":
+        return (
+          <div className="fixed inset-0 -z-10">
+            <div className="absolute inset-0 bg-background" />
+            <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: `linear-gradient(${primaryColor} 1px, transparent 1px), linear-gradient(90deg, ${primaryColor} 1px, transparent 1px)`, backgroundSize: "48px 48px" }} />
+          </div>
+        );
+      case "radial":
+        return (
+          <div className="fixed inset-0 -z-10">
+            <div className="absolute inset-0 bg-background" />
+            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[800px] h-[800px] rounded-full blur-[200px] opacity-15" style={{ backgroundColor: primaryColor }} />
+          </div>
+        );
+      case "solid":
+        return <div className="fixed inset-0 -z-10 bg-background" />;
+      default: // mesh
+        return (
+          <div className="fixed inset-0 -z-10">
+            <div className="absolute inset-0 bg-background" />
+            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 animate-pulse" style={{ backgroundColor: primaryColor }} />
+            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 animate-pulse" style={{ backgroundColor: accentColor, animationDelay: "1.5s" }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full blur-[100px] opacity-10 animate-pulse" style={{ backgroundColor: primaryColor, animationDelay: "0.7s" }} />
+          </div>
+        );
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
-      {/* Animated gradient mesh background */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-background" />
-        <div
-          className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 animate-pulse"
-          style={{ backgroundColor: primaryColor }}
-        />
-        <div
-          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-[120px] opacity-20 animate-pulse"
-          style={{ backgroundColor: accentColor, animationDelay: "1.5s" }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full blur-[100px] opacity-10 animate-pulse"
-          style={{ backgroundColor: primaryColor, animationDelay: "0.7s" }}
-        />
-      </div>
+    <div className="min-h-screen bg-background overflow-hidden" style={{ fontFamily: `'${fontFamily}', sans-serif` }}>
+      {/* Inject custom CSS */}
+      {customCss && <style dangerouslySetInnerHTML={{ __html: customCss }} />}
+
+      {/* Dynamic background */}
+      {renderBackground()}
 
       {/* Header */}
       <header className="relative z-10 border-b border-border/50 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {logoUrl ? (
-              <img src={logoUrl} alt={orgName} className="h-9 w-auto" />
+              <img src={logoUrl} alt={orgName} className="h-9 w-auto" onError={(e) => (e.currentTarget.style.display = "none")} />
             ) : (
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg"
@@ -128,7 +194,7 @@ export default function OrgLanding() {
       {!orgQuery.isLoading && !orgQuery.isError && (
         <main className="relative z-10">
           {/* Hero section */}
-          <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+          <section className="hero-section max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
             <div className="text-center space-y-8 animate-in fade-in duration-700">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border/50 bg-card/30 backdrop-blur text-sm text-muted-foreground">
@@ -146,12 +212,19 @@ export default function OrgLanding() {
                 </p>
               </div>
 
+              {/* Hero image */}
+              {heroImageUrl && (
+                <div className="max-w-3xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-border/30">
+                  <img src={heroImageUrl} alt="Hero" className="w-full h-auto" onError={(e) => (e.currentTarget.style.display = "none")} />
+                </div>
+              )}
+
               {/* CTAs */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                 <Button
                   size="lg"
                   onClick={handleGetStarted}
-                  className="text-white border-0 px-8 shadow-lg hover:shadow-xl transition-shadow"
+                  className="cta-button text-white border-0 px-8 shadow-lg hover:shadow-xl transition-shadow"
                   style={{ background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})` }}
                 >
                   {ctaText}
@@ -208,7 +281,7 @@ export default function OrgLanding() {
                   />
                   <div className="relative space-y-4">
                     <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center text-white"
+                      className="w-11 h-11 rounded-xl flex items-center justify-center"
                       style={{ background: `linear-gradient(135deg, ${primaryColor}30, ${accentColor}30)` }}
                     >
                       <span style={{ color: primaryColor }}>{card.icon}</span>

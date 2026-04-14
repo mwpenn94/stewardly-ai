@@ -238,6 +238,14 @@ const FAQ_DATA: FAQItem[] = [
     category: "AI Features",
     tags: ["multi-model", "synthesis", "ensemble", "verification"],
   },
+
+  // Org Branding
+  {
+    question: "How do I customize my organization's branding?",
+    answer: "Navigate to Settings → Org Branding Editor. You can customize your logo, choose from 12 Google Fonts, set a 3-color palette (primary, accent, secondary), upload a hero image, select from 5 background patterns (mesh, dots, lines, radial, solid), add custom CSS for advanced styling, and set a custom favicon. Use the live preview to see changes in real-time on both desktop and mobile before saving. Your branded landing page will be available at /org/your-slug.",
+    category: "Account & Settings",
+    tags: ["branding", "organization", "white-label", "logo", "colors", "fonts", "landing page"],
+  },
 ];
 
 const CATEGORIES = Array.from(new Set(FAQ_DATA.map(f => f.category)));
@@ -411,7 +419,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       { name: "Global Admin", desc: "Platform-wide administration, user management, and system configuration.", route: "/admin" },
       { name: "Manager Dashboard", desc: "Team performance KPIs, briefings, and advisor oversight.", route: "/manager" },
       { name: "Organizations", desc: "Multi-org support with custom branding, AI configuration, and member management.", route: "/organizations" },
-      { name: "Org Branding Editor", desc: "Customize organization landing pages, logos, and color schemes.", route: "/org-branding" },
+      { name: "Org Branding Editor", desc: "Full white-label branding: logo, 3-color palette, 12 Google Fonts, hero images, 5 background patterns, custom CSS, favicon, and live desktop/mobile preview.", route: "/settings/org-branding" },
       { name: "Knowledge Admin", desc: "Manage platform-wide knowledge base content and categories.", route: "/admin/knowledge" },
       { name: "Admin Integrations", desc: "Configure platform-level API credentials and integration settings.", route: "/admin/integrations" },
       { name: "Improvement Engine", desc: "AI self-improvement tracking, prompt A/B testing, and capability expansion.", route: "/improvement" },

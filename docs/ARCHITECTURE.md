@@ -23,7 +23,7 @@ Stewardly is a full-stack TypeScript application built on React 19 + Express 4 +
 | AI | Built-in LLM helpers (invokeLLM) | Multi-model AI with structured responses |
 | Storage | S3 (storagePut/storageGet) | File and document storage |
 | Voice | Deepgram + Edge TTS | Speech-to-text and text-to-speech |
-| Testing | Vitest | 7,702 tests across 319 files |
+| Testing | Vitest | 7,715 tests across 320 files |
 
 ---
 
@@ -165,6 +165,22 @@ The database contains 40+ tables. Key entities:
 | `model_presets` | Custom AI model configurations |
 | `learning_tracks` | Educational content tracks |
 | `onboarding_progress` | User onboarding completion state |
+| `organization_landing_page_config` | White-label branding configuration |
+
+---
+
+## Organization Branding (White-Label)
+
+The platform supports full white-label branding per organization:
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Branding Editor | `OrgBrandingEditor.tsx` | 5-tab editor (Content, Colors, Fonts, Media, Advanced) with live preview |
+| Landing Page | `OrgLanding.tsx` | Public branded page at `/org/:slug` with dynamic theming |
+| Router | `orgBranding.ts` | tRPC CRUD for landing config + AI settings |
+| Schema | `organization_landing_page_config` | 20+ fields: logo, 3-color palette, 12 fonts, hero image, 5 patterns, custom CSS, favicon |
+
+CSS injection is sanitized to prevent XSS (strips HTML tags, `expression()`, `javascript:`, `data:` URIs, `@import`).
 
 ---
 
@@ -177,6 +193,7 @@ The database contains 40+ tables. Key entities:
 - Dynamic compliance disclaimers on all AI responses
 - Reg BI documentation support
 - Data encryption in transit and at rest
+- CSS sanitization on user-provided custom styles (XSS prevention)
 
 ---
 
