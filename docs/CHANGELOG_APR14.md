@@ -1,7 +1,8 @@
 # Changelog — April 14, 2026
 
-**Build**: Convergence session with 72 passes (30 consecutive clean in Round 2)
-**Tests**: 7,715 passed across 320 test files
+**Build**: Convergence session with 92+ passes (20 consecutive clean in Rounds 2, 3, and 4)
+**Unit Tests**: 7,716 passed across 320 test files
+**E2E Tests**: 68 Playwright tests across 22 suites (100% pass rate)
 **TypeScript**: 0 errors
 
 ---
@@ -133,3 +134,31 @@ Added 6 new columns to `organization_landing_page_config`:
 ### Security
 - CSS sanitization function strips dangerous patterns before injection
 - All branding fields validated via Zod schemas in tRPC router
+
+
+---
+
+## Playwright E2E Test Suite
+
+Added comprehensive end-to-end testing with Playwright covering all critical user journeys. The suite includes 68 tests across 22 test files, all running against the live dev server in headless Chromium.
+
+### Test Coverage
+
+The E2E tests cover onboarding tour completion and skip flows, sidebar navigation to all 7 guest-accessible pages, AI Chat conversation rendering (greeting, action cards, input area, mode selector, new conversation button), Code Chat page interaction, Wealth Engine Hub with 8 tests covering sections, Quick Bundle form, calculator panels, toolbar actions, and panel navigation, Settings page with tab navigation and form rendering, Learning page with KPI cards and exam tracks, Help page with guide/FAQ/architecture tabs, Documents page, Command Palette search, Financial Twin dashboard, Products marketplace, Workflows page, Client Onboarding flow, Operations Hub, mobile responsive layout verification (sidebar collapse, touch targets), dark theme consistency, compliance footer and disclosure verification, accessibility checks (heading hierarchy, ARIA labels, focus management), landing page and public routes (terms, privacy, 404), Integrations/Community/Changelog pages, and Wealth Engine sub-pages (Passive Actions, Insights, Suitability).
+
+### Infrastructure
+
+The test framework uses a `setupPage` helper that pre-sets `localStorage` to bypass the onboarding tour overlay, preventing the z-index 10000 overlay from blocking test interactions. Console error tracking filters known transient errors. Rate limits are set to 100,000 in development mode to accommodate test parallelism.
+
+### Running Tests
+
+```bash
+# Run all E2E tests
+pnpm exec playwright test --project=desktop-chrome
+
+# Run specific test suite
+pnpm exec playwright test e2e/03-ai-chat.spec.ts --project=desktop-chrome
+
+# Run with visual browser
+pnpm exec playwright test --headed
+```

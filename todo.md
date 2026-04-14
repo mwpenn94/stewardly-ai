@@ -4270,3 +4270,42 @@
 - [x] Update ARCHITECTURE.md with org branding components — new section with component table + schema entry
 - [x] Update CHANGELOG_APR14.md with org branding features — full section with editor, landing, schema, security details
 - [x] Update QUICKSTART.md with org branding guide for advisors — new section with 5-tab customization tablee state
+
+## Turn 18 — Playwright E2E Tests + Convergence Round 4
+
+### E2E Test Infrastructure
+- [x] Install Playwright and configure test infrastructure
+- [x] Write E2E test: Onboarding tour completion journey (3 tests)
+- [x] Write E2E test: Sidebar navigation across all sections (7 tests)
+- [x] Write E2E test: AI Chat conversation flow (5 tests)
+- [x] Write E2E test: Code Chat page interaction (2 tests)
+- [x] Write E2E test: Wealth Engine Hub and Calculators (8 tests)
+- [x] Write E2E test: Settings page navigation and forms (3 tests)
+- [x] Write E2E test: Learning page and exam tracks (3 tests)
+- [x] Write E2E test: Help page guide/FAQ/architecture tabs (3 tests)
+- [x] Write E2E test: Documents page (2 tests)
+- [x] Write E2E test: Command palette search (2 tests)
+- [x] Write E2E test: Financial Twin dashboard (2 tests)
+- [x] Write E2E test: Products marketplace (2 tests)
+- [x] Write E2E test: Workflows page (2 tests)
+- [x] Write E2E test: Client Onboarding flow (2 tests)
+- [x] Write E2E test: Operations Hub (2 tests)
+- [x] Write E2E test: Mobile responsive layout verification (3 tests)
+- [x] Write E2E test: Dark theme consistency (2 tests)
+- [x] Write E2E test: Compliance footer and disclosures (4 tests)
+- [x] Write E2E test: Accessibility (keyboard nav, ARIA) (3 tests)
+- [x] Write E2E test: Landing page and public routes (4 tests)
+- [x] Write E2E test: Integrations/Community/Changelog pages (3 tests)
+- [x] Write E2E test: Wealth Engine sub-pages (3 tests)
+- [x] Run all E2E tests and achieve 100% pass rate — 68/68 passing
+
+### Convergence Round 4 (20 consecutive clean passes required)
+- [x] TypeScript compilation check (0 errors)
+- [x] Vitest unit test suite (7,716/7,716 passing, 320 files)
+- [x] Playwright E2E test suite (68/68 passing, 22 suites)
+- [x] Browser console error audit (0 actionable errors)
+- [x] Server log error audit (0 ERROR entries)
+- [x] Code quality dimensions (18 checks — all PASS)
+- [x] Visual inspection of key pages (desktop + mobile)
+- [x] Achieve 20 consecutive clean convergence passes
+- [x] Update documentation with E2E test coverage details (ARCHITECTURE.md, CHANGELOG_APR14.md, convergence-pass-r4.md)

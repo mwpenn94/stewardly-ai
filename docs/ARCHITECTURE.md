@@ -23,7 +23,8 @@ Stewardly is a full-stack TypeScript application built on React 19 + Express 4 +
 | AI | Built-in LLM helpers (invokeLLM) | Multi-model AI with structured responses |
 | Storage | S3 (storagePut/storageGet) | File and document storage |
 | Voice | Deepgram + Edge TTS | Speech-to-text and text-to-speech |
-| Testing | Vitest | 7,715 tests across 320 files |
+| Unit Testing | Vitest | 7,716 tests across 320 files |
+| E2E Testing | Playwright | 68 tests across 22 suites |
 
 ---
 
@@ -205,3 +206,44 @@ CSS injection is sanitized to prevent XSS (strips HTML tags, `expression()`, `ja
 - **Optimistic updates**: Used for list operations, toggles, and profile edits
 - **Memory management**: 31 interval/listener setups balanced by 35 cleanup handlers
 - **SEO**: 214 meta tag patterns across pages
+
+---
+
+## Testing Architecture
+
+### Unit Tests (Vitest)
+
+The project maintains 7,716 unit tests across 320 test files covering server routers, database helpers, UI components, utility functions, and business logic. Tests run in under 60 seconds with Vitest's parallel execution.
+
+### End-to-End Tests (Playwright)
+
+68 Playwright E2E tests across 22 suites provide regression protection for all critical user journeys. Tests run against the live dev server using Chromium in headless mode.
+
+| Suite | Coverage Area | Tests |
+|-------|--------------|-------|
+| Onboarding Tour | Tour display, step navigation, skip, consent | 3 |
+| Sidebar Navigation | All 5 guest-visible nav items + Settings + Help | 7 |
+| AI Chat | Greeting, action cards, input area, mode selector, new conversation | 5 |
+| Code Chat | Page render, code input area | 2 |
+| Wealth Engine | Hub sections, Quick Bundle, calculator panels, toolbar, navigation | 8 |
+| Settings | Tab navigation, profile form, theme toggle | 3 |
+| Learning | KPI cards, exam tracks, progress tracking | 3 |
+| Help | Guide tab, FAQ search, architecture tab | 3 |
+| Documents | Page render, upload area | 2 |
+| Command Palette | Search trigger, result display | 2 |
+| Financial Twin | Dashboard render, data sections | 2 |
+| Products | Marketplace render, category filters | 2 |
+| Workflows | Page render, workflow cards | 2 |
+| Client Onboarding | Flow render, step navigation | 2 |
+| Operations | Hub render, section cards | 2 |
+| Mobile Responsive | Sidebar collapse, touch targets, viewport adaptation | 3 |
+| Dark Theme | Color consistency, contrast ratios | 2 |
+| Compliance | Footer disclosures, consent banner, detailed disclaimers | 4 |
+| Accessibility | Heading hierarchy, ARIA labels, focus management | 3 |
+| Landing/Public | Root page, terms, privacy, 404 handling | 4 |
+| Integrations/Community/Changelog | Page renders without errors | 3 |
+| Wealth Engine Sub-pages | Passive Actions, Insights, Suitability | 3 |
+
+### Test Infrastructure
+
+The E2E test framework uses a `setupPage` helper that pre-sets `localStorage` to bypass the onboarding tour overlay (z-index 10000), preventing it from blocking test interactions. Console error tracking filters known transient errors (HMR, WebSocket, rate limits). Rate limits are set to 100,000 requests per window in development mode to accommodate test parallelism.
