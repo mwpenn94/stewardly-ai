@@ -11,7 +11,8 @@ import {
   User, DollarSign, Shield, TrendingUp, Clock, Building2, GraduationCap,
   Scale, BarChart3, GitCompare, FileText, ListChecks, BookOpen,
   Calculator, CheckCircle2, Save, FolderOpen, Download, Trash2,
-  Target, Layers, Package, Filter, Users, Megaphone, LayoutDashboard, Receipt
+  Target, Layers, Package, Filter, Users, Megaphone, LayoutDashboard, Receipt,
+  Flag, CalendarDays
 } from 'lucide-react';
 
 import {
@@ -24,18 +25,19 @@ import {
 import { ProfilePanel, CashFlowPanel, ProtectionPanel, GrowthPanel } from './calculators/PanelsA';
 import { RetirementPanel, TaxPanel, EstatePanel, EducationPanel } from './calculators/PanelsB';
 import { CostBenefitPanel, StrategyComparePanel, SummaryPanel, ActionPlanPanel, ReferencesPanel } from './calculators/PanelsC';
-import { MyPlanPanel, GDCBracketsPanel, ProductsPanel, SalesFunnelPanel, RecruitingPanel, ChannelsPanel, DashboardPanel, PnLPanel, type PracticeProps } from './calculators/PanelsD';
+import { MyPlanPanel, GDCBracketsPanel, ProductsPanel, SalesFunnelPanel, RecruitingPanel, ChannelsPanel, DashboardPanel, PnLPanel, GoalTrackerPanel, MonthlyProductionPanel, type PracticeProps } from './calculators/PanelsD';
 import {
   ROLE_DEFAULTS, calcWeightedGDC, calcProductionFunnel, calcTeamOverride,
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
-  PRODUCTS as BIE_PRODUCTS,
+  PRODUCTS as BIE_PRODUCTS, getBracket,
   type RoleId, type TeamMember, type RecruitTrack,
 } from './calculators/practiceEngine';
 
 /* ═══ PANEL TYPE DEFINITIONS ═══ */
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
   'costben' | 'compare' | 'summary' | 'timeline' | 'refs' |
-  'myplan' | 'gdcbrackets' | 'products' | 'salesfunnel' | 'recruiting' | 'channels' | 'dashboard' | 'pnl';
+  'myplan' | 'gdcbrackets' | 'products' | 'salesfunnel' | 'recruiting' | 'channels' | 'dashboard' | 'pnl' |
+  'goaltracker' | 'monthlyproduction';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Your Profile', items: [
@@ -59,6 +61,8 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'channels' as PanelId, label: 'Channels', icon: <Megaphone className="w-4 h-4" /> },
     { id: 'dashboard' as PanelId, label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'pnl' as PanelId, label: 'P&L', icon: <Receipt className="w-4 h-4" /> },
+    { id: 'goaltracker' as PanelId, label: 'Goal Tracker', icon: <Flag className="w-4 h-4" /> },
+    { id: 'monthlyproduction' as PanelId, label: 'Monthly Production', icon: <CalendarDays className="w-4 h-4" /> },
   ]},
   { group: 'Analysis', items: [
     { id: 'costben', label: 'Cost-Benefit', icon: <BarChart3 className="w-4 h-4" /> },
@@ -218,6 +222,18 @@ export default function Calculators() {
   const [ppAffBIncome, setPpAffBIncome] = useState(0);
   const [ppAffCIncome, setPpAffCIncome] = useState(0);
   const [ppAffDIncome, setPpAffDIncome] = useState(0);
+  /* Goal Tracker */
+  const [ppGoalIncome, setPpGoalIncome] = useState(150000);
+  const [ppGoalAUM, setPpGoalAUM] = useState(5000000);
+  const [ppGoalRecruits, setPpGoalRecruits] = useState(4);
+  const [ppGoalGDC, setPpGoalGDC] = useState(200000);
+  const [ppGoalCases, setPpGoalCases] = useState(60);
+  /* Seasonality */
+  const [ppSeasonProfile, setPpSeasonProfile] = useState('flat');
+  const [ppCustomSeason, setPpCustomSeason] = useState<number[]>([1,1,1,1,1,1,1,1,1,1,1,1]);
+  const [ppSeasonGrowthRate, setPpSeasonGrowthRate] = useState(10);
+  const [ppSeasonHorizon, setPpSeasonHorizon] = useState(3);
+  const [ppSeasonRampMonths, setPpSeasonRampMonths] = useState(0);
 
   /* ─── SESSION HELPERS ─── */
   const gatherInputs = () => ({
@@ -239,6 +255,8 @@ export default function Calculators() {
     ppAumExisting, ppAumNew, ppAumTrailPct, ppPnlLevel, ppPnlProducers, ppPnlAvgGDC,
     ppPnlPayoutRate, ppPnlOpEx, ppPnlTaxRate, ppPnlEbitGoal, ppPnlNetGoal, ppStreams,
     ppAffAIncome, ppAffBIncome, ppAffCIncome, ppAffDIncome,
+    ppGoalIncome, ppGoalAUM, ppGoalRecruits, ppGoalGDC, ppGoalCases,
+    ppSeasonProfile, ppCustomSeason, ppSeasonGrowthRate, ppSeasonHorizon, ppSeasonRampMonths,
   });
 
   const restoreInputs = (d: Record<string, any>) => {
@@ -312,7 +330,7 @@ export default function Calculators() {
     if (d.ppRole !== undefined) setPpRole(d.ppRole);
     if (d.ppTargetGDC !== undefined) setPpTargetGDC(d.ppTargetGDC);
     if (d.ppWbPct !== undefined) setPpWbPct(d.ppWbPct);
-    if (d.ppMonths !== undefined) setPpMonths(d.ppMonths);
+    if (d.ppMonths !== undefined) setPpMonths(Math.max(1, d.ppMonths));
     if (d.ppBracketOverride !== undefined) setPpBracketOverride(d.ppBracketOverride);
     if (d.ppProductMix !== undefined) setPpProductMix(d.ppProductMix);
     if (d.ppFunnelRates !== undefined) setPpFunnelRates(d.ppFunnelRates);
@@ -338,6 +356,18 @@ export default function Calculators() {
     if (d.ppAffBIncome !== undefined) setPpAffBIncome(d.ppAffBIncome);
     if (d.ppAffCIncome !== undefined) setPpAffCIncome(d.ppAffCIncome);
     if (d.ppAffDIncome !== undefined) setPpAffDIncome(d.ppAffDIncome);
+    /* Goal Tracker */
+    if (d.ppGoalIncome !== undefined) setPpGoalIncome(d.ppGoalIncome);
+    if (d.ppGoalAUM !== undefined) setPpGoalAUM(d.ppGoalAUM);
+    if (d.ppGoalRecruits !== undefined) setPpGoalRecruits(d.ppGoalRecruits);
+    if (d.ppGoalGDC !== undefined) setPpGoalGDC(d.ppGoalGDC);
+    if (d.ppGoalCases !== undefined) setPpGoalCases(d.ppGoalCases);
+    /* Seasonality */
+    if (d.ppSeasonProfile !== undefined) setPpSeasonProfile(d.ppSeasonProfile);
+    if (d.ppCustomSeason !== undefined) setPpCustomSeason(d.ppCustomSeason);
+    if (d.ppSeasonGrowthRate !== undefined) setPpSeasonGrowthRate(d.ppSeasonGrowthRate);
+    if (d.ppSeasonHorizon !== undefined) setPpSeasonHorizon(d.ppSeasonHorizon);
+    if (d.ppSeasonRampMonths !== undefined) setPpSeasonRampMonths(d.ppSeasonRampMonths);
   };
 
   const handleSave = () => {
@@ -378,21 +408,48 @@ export default function Calculators() {
 
   const handleExportPdf = () => {
     toast.info('Generating PDF report...');
+    // Compute practice planning data for the report
+    const rd = ROLE_DEFAULTS[ppRole] || ROLE_DEFAULTS.new;
+    const avgGDC = calcWeightedGDC(ppProductMix, BIE_PRODUCTS);
+    const ppBracket = getBracket(ppTargetGDC);
+    const ppFunnel = calcProductionFunnel(ppTargetGDC, ppWbPct, ppBracketOverride, avgGDC,
+      ppFunnelRates.ap, ppFunnelRates.sh, ppFunnelRates.cl, ppFunnelRates.pl, ppMonths);
+    const teamOvr = calcTeamOverride(ppTeamMembers, ppOverrideRate / 100, ppBonusRate / 100, ppGen2Rate / 100);
+    const aumIncome = Math.round((ppAumExisting * (ppAumTrailPct / 100)) + (ppAumNew * (ppAumTrailPct / 100) * 0.5));
+    const ppRecSummary = calcAllTracksSummary(ppRecruitTracks, ppOverrideRate / 100);
+    const ppChMetrics = calcChannelMetrics(ppChannelSpend);
+    const overrideInc = ppTeamMembers.length > 0 ? teamOvr.total : ppRecSummary.tOvr;
+    const ppPnlResult = calcPnL(ppPnlLevel, ppPnlProducers, ppPnlAvgGDC, ppPnlPayoutRate / 100, ppPnlOpEx, ppPnlTaxRate / 100, ppPnlEbitGoal, ppPnlNetGoal);
+    const ppRollUp = calcRollUp({
+      role: ppRole, hasPersonal: rd.p === 1, wbTarget: ppFunnel.wbTarget, expTarget: ppFunnel.expTarget,
+      overrideIncome: overrideInc, overrideRate: ppOverrideRate / 100, aumIncome,
+      affAIncome: ppAffAIncome, affBIncome: ppAffBIncome, affCIncome: ppAffCIncome, affDIncome: ppAffDIncome,
+      channelRevAnnual: Math.round(ppChMetrics.tRevMo * 12), streams: ppStreams,
+    });
+
     const printContent = `
       <html><head><title>WealthBridge Report - ${clientName || 'Client'}</title>
-      <style>body{font-family:system-ui;padding:40px;color:#1e293b}h1{color:#92400e}table{width:100%;border-collapse:collapse;margin:16px 0}th,td{border:1px solid #e2e8f0;padding:8px;text-align:left}th{background:#f8fafc;font-size:12px}h2{margin-top:24px;color:#334155}.badge{display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600}</style>
+      <style>body{font-family:system-ui;padding:40px;color:#1e293b;max-width:900px;margin:0 auto}h1{color:#92400e;border-bottom:2px solid #92400e;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin:16px 0}th,td{border:1px solid #e2e8f0;padding:8px;text-align:left}th{background:#f8fafc;font-size:12px}h2{margin-top:24px;color:#334155;border-bottom:1px solid #e2e8f0;padding-bottom:4px}h3{margin-top:16px;color:#475569}.badge{display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600}.section{page-break-inside:avoid}.kpi{display:inline-block;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;margin:4px;text-align:center}.kpi .val{font-size:18px;font-weight:700;color:#334155}.kpi .lbl{font-size:10px;color:#94a3b8}</style>
       </head><body>
       <h1>WealthBridge — Unified Wealth Engine Report</h1>
       <p><strong>Client:</strong> ${clientName || 'N/A'} | <strong>Age:</strong> ${age} | <strong>Income:</strong> $${totalIncome.toLocaleString()} | <strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+
+      <div class="section">
       <h2>Financial Health Score: ${scorecard.pctScore}% (${scorecard.overall}/${scorecard.maxScore})</h2>
       <table><tr><th>Domain</th><th>Score</th><th>Status</th></tr>
       ${scorecard.domains.map(d => `<tr><td>${d.name}</td><td>${d.score}/3</td><td>${d.score >= 3 ? 'Strong' : d.score >= 2 ? 'Moderate' : 'Needs Attention'}</td></tr>`).join('')}
       </table>
+      </div>
+
+      <div class="section">
       <h2>Recommended Products</h2>
       <table><tr><th>Product</th><th>Coverage</th><th>Annual</th><th>Carrier</th><th>Priority</th></tr>
       ${recommendations.map(r => `<tr><td>${r.product}</td><td>${r.coverage}</td><td>${fmt(r.premium)}</td><td>${r.carrier}</td><td>${r.priority}</td></tr>`).join('')}
       <tr style="font-weight:bold;background:#f8fafc"><td>TOTAL</td><td>${recommendations.length} products</td><td>${fmt(totalAnnualPremium)}</td><td colspan="2">${pct(totalIncome > 0 ? totalAnnualPremium / totalIncome : 0)} of income</td></tr>
       </table>
+      </div>
+
+      <div class="section">
       <h2>Key Metrics</h2>
       <table>
       <tr><td>Monthly Cash Flow Surplus</td><td>${fmt(cfResult.surplus)}/mo</td></tr>
@@ -403,11 +460,156 @@ export default function Calculators() {
       <tr><td>Estate Tax Exposure</td><td>${fmtSm(esResult.estateTax)}</td></tr>
       <tr><td>Education Funding Gap</td><td>${fmtSm(edResult.totalGap)}</td></tr>
       </table>
+      </div>
+
+      <div style="page-break-before:always"></div>
+      <h1>Practice Planning — Business Income Engine</h1>
+      <p><strong>Role:</strong> ${ppRole} | <strong>Target GDC:</strong> ${fmt(ppTargetGDC)} | <strong>WB %:</strong> ${pct(ppWbPct / 100)} | <strong>Bracket:</strong> ${ppBracket.l} (${pct(ppBracket.r)})</p>
+
+      <div class="section">
+      <h2>Income Roll-Up Dashboard</h2>
+      <table><tr><th>Stream</th><th>Annual</th><th>Monthly</th></tr>
+      ${ppRollUp.items.map(it => `<tr><td>${it.name}</td><td>${fmt(it.value)}</td><td>${fmt(Math.round(it.value / 12))}</td></tr>`).join('')}
+      <tr style="font-weight:bold;background:#f8fafc"><td>TOTAL INCOME (${ppRollUp.streamCount} streams)</td><td>${fmt(ppRollUp.grandTotal)}</td><td>${fmt(Math.round(ppRollUp.grandTotal / 12))}</td></tr>
+      </table>
+      </div>
+
+      <div class="section">
+      <h2>Sales Funnel</h2>
+      <table><tr><th>Metric</th><th>Annual</th><th>Monthly</th><th>Weekly</th><th>Daily</th></tr>
+      <tr><td>Approaches</td><td>${ppFunnel.approaches}</td><td>${ppFunnel.monthlyApproaches}</td><td>${Math.round(ppFunnel.monthlyApproaches / 4.3)}</td><td>${ppFunnel.dailyApproaches}</td></tr>
+      <tr><td>Set (Appointments)</td><td>${ppFunnel.set}</td><td>${Math.round(ppFunnel.set / Math.max(1, ppMonths))}</td><td>—</td><td>—</td></tr>
+      <tr><td>Held (Shows)</td><td>${ppFunnel.held}</td><td>${Math.round(ppFunnel.held / Math.max(1, ppMonths))}</td><td>—</td><td>—</td></tr>
+      <tr><td>Apps Submitted</td><td>${ppFunnel.apps}</td><td>${ppFunnel.monthlyApps}</td><td>—</td><td>—</td></tr>
+      <tr><td>Placed Cases</td><td>${ppFunnel.placed}</td><td>${Math.round(ppFunnel.placed / Math.max(1, ppMonths))}</td><td>—</td><td>—</td></tr>
+      </table>
+      </div>
+
+      <div class="section">
+      <h2>Recruiting Summary</h2>
+      <table><tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Total Hires</td><td>${ppRecSummary.tHires}</td></tr>
+      <tr><td>Team FYC</td><td>${fmt(ppRecSummary.tFYC)}</td></tr>
+      <tr><td>Recruiting EBITDA</td><td>${fmt(ppRecSummary.recEBITDA)}</td></tr>
+      <tr><td>Books Transferred</td><td>${fmt(ppRecSummary.tBooks)}</td></tr>
+      </table>
+      </div>
+
+      <div class="section">
+      <h2>P&L Statement (${ppPnlLevel === 'team' ? 'Team' : 'Individual'})</h2>
+      <table><tr><th>Line Item</th><th>Amount</th></tr>
+      <tr><td>Revenue</td><td>${fmt(ppPnlResult.revenue)}</td></tr>
+      <tr><td>COGS (Payout)</td><td>(${fmt(ppPnlResult.cogs)})</td></tr>
+      <tr><td>Gross Margin</td><td>${fmt(ppPnlResult.grossMargin)} (${ppPnlResult.gmPct}%)</td></tr>
+      <tr><td>Operating Expenses</td><td>(${fmt(ppPnlResult.opEx)})</td></tr>
+      <tr style="font-weight:bold"><td>EBITDA</td><td>${fmt(ppPnlResult.ebitda)}</td></tr>
+      <tr><td>Tax</td><td>(${fmt(ppPnlResult.tax)})</td></tr>
+      <tr style="font-weight:bold;background:#f8fafc"><td>Net Income</td><td>${fmt(ppPnlResult.netIncome)}</td></tr>
+      <tr><td>EBITDA Margin</td><td>${ppPnlResult.marginPct}%</td></tr>
+      </table>
+      </div>
+
+      <div class="section">
+      <h2>Channel Marketing ROI</h2>
+      <table><tr><th>Channel</th><th>Spend/Mo</th><th>Leads/Mo</th><th>Clients/Mo</th><th>Revenue</th><th>ROI</th></tr>
+      ${ppChMetrics.channelResults.filter(c => c.spend > 0).map(c => `<tr><td>${c.name}</td><td>${fmt(c.spend)}</td><td>${c.annLeads}</td><td>${c.annClients}</td><td>${fmt(c.annRev)}</td><td>${c.roi}%</td></tr>`).join('')}
+      <tr style="font-weight:bold;background:#f8fafc"><td>TOTAL</td><td>${fmt(ppChMetrics.tSpend * 12)}</td><td>${ppChMetrics.tLeads}</td><td>${ppChMetrics.tClients}</td><td>${fmt(ppChMetrics.annualRev)}</td><td>${ppChMetrics.roiPct}%</td></tr>
+      </table>
+      </div>
+
       <p style="margin-top:32px;font-size:11px;color:#94a3b8">Generated by WealthBridge Unified Wealth Engine v7 — ${new Date().toISOString()}</p>
       </body></html>
     `;
     const w = window.open('', '_blank');
     if (w) { w.document.write(printContent); w.document.close(); w.print(); }
+  };
+
+  const handleExportCsv = () => {
+    toast.info('Generating CSV export...');
+    const csvRd = ROLE_DEFAULTS[ppRole] || ROLE_DEFAULTS.new;
+    const csvAvgGDC = calcWeightedGDC(ppProductMix, BIE_PRODUCTS);
+    const ppFunnel = calcProductionFunnel(ppTargetGDC, ppWbPct, ppBracketOverride, csvAvgGDC,
+      ppFunnelRates.ap, ppFunnelRates.sh, ppFunnelRates.cl, ppFunnelRates.pl, ppMonths);
+    const csvTeamOvr = calcTeamOverride(ppTeamMembers, ppOverrideRate / 100, ppBonusRate / 100, ppGen2Rate / 100);
+    const csvAumIncome = Math.round((ppAumExisting * (ppAumTrailPct / 100)) + (ppAumNew * (ppAumTrailPct / 100) * 0.5));
+    const ppRecSummary = calcAllTracksSummary(ppRecruitTracks, ppOverrideRate / 100);
+    const ppChMetrics = calcChannelMetrics(ppChannelSpend);
+    const csvOverrideInc = ppTeamMembers.length > 0 ? csvTeamOvr.total : ppRecSummary.tOvr;
+    const ppPnlResult = calcPnL(ppPnlLevel, ppPnlProducers, ppPnlAvgGDC, ppPnlPayoutRate / 100, ppPnlOpEx, ppPnlTaxRate / 100, ppPnlEbitGoal, ppPnlNetGoal);
+    const ppRollUp = calcRollUp({
+      role: ppRole, hasPersonal: csvRd.p === 1, wbTarget: ppFunnel.wbTarget, expTarget: ppFunnel.expTarget,
+      overrideIncome: csvOverrideInc, overrideRate: ppOverrideRate / 100, aumIncome: csvAumIncome,
+      affAIncome: ppAffAIncome, affBIncome: ppAffBIncome, affCIncome: ppAffCIncome, affDIncome: ppAffDIncome,
+      channelRevAnnual: Math.round(ppChMetrics.tRevMo * 12), streams: ppStreams,
+    });
+
+    const rows: string[][] = [
+      ['WealthBridge Unified Wealth Engine Report'],
+      ['Client', clientName || 'N/A'],
+      ['Date', new Date().toLocaleDateString()],
+      [''],
+      ['=== FINANCIAL HEALTH ==='],
+      ['Score', `${scorecard.pctScore}%`, `${scorecard.overall}/${scorecard.maxScore}`],
+      ...scorecard.domains.map(d => [d.name, `${d.score}/3`, d.score >= 3 ? 'Strong' : d.score >= 2 ? 'Moderate' : 'Needs Attention']),
+      [''],
+      ['=== RECOMMENDED PRODUCTS ==='],
+      ['Product', 'Coverage', 'Annual Premium', 'Carrier', 'Priority'],
+      ...recommendations.map(r => [r.product, r.coverage, String(r.premium), r.carrier, r.priority]),
+      [''],
+      ['=== KEY METRICS ==='],
+      ['Monthly Cash Flow Surplus', String(cfResult.surplus)],
+      ['Protection Gap', String(prResult.gap)],
+      ['Years to Retirement', String(grResult.yrs)],
+      ['Effective Tax Rate', String(txResult.effectiveRate)],
+      ['Estate Tax Exposure', String(esResult.estateTax)],
+      ['Education Funding Gap', String(edResult.totalGap)],
+      [''],
+      ['=== PRACTICE PLANNING ==='],
+      ['Role', ppRole],
+      ['Target GDC', String(ppTargetGDC)],
+      ['WB %', String(ppWbPct)],
+      [''],
+      ['=== INCOME ROLL-UP ==='],
+      ['Stream', 'Annual', 'Monthly'],
+      ...ppRollUp.items.map(it => [it.name, String(it.value), String(Math.round(it.value / 12))]),
+      ['TOTAL', String(ppRollUp.grandTotal), String(Math.round(ppRollUp.grandTotal / 12))],
+      [''],
+      ['=== SALES FUNNEL ==='],
+      ['Metric', 'Annual', 'Monthly', 'Weekly', 'Daily'],
+      ['Approaches', String(ppFunnel.approaches), String(ppFunnel.monthlyApproaches), String(Math.round(ppFunnel.monthlyApproaches / 4.3)), String(ppFunnel.dailyApproaches)],
+      ['Set', String(ppFunnel.set), String(Math.round(ppFunnel.set / Math.max(1, ppMonths))), '', ''],
+      ['Held', String(ppFunnel.held), String(Math.round(ppFunnel.held / Math.max(1, ppMonths))), '', ''],
+      ['Apps', String(ppFunnel.apps), String(ppFunnel.monthlyApps), '', ''],
+      ['Placed', String(ppFunnel.placed), String(Math.round(ppFunnel.placed / Math.max(1, ppMonths))), '', ''],
+      [''],
+      ['=== RECRUITING ==='],
+      ['Total Hires', String(ppRecSummary.tHires)],
+      ['Team FYC', String(ppRecSummary.tFYC)],
+      ['Recruiting EBITDA', String(ppRecSummary.recEBITDA)],
+      ['Books Transferred', String(ppRecSummary.tBooks)],
+      [''],
+      ['=== P&L ==='],
+      ['Revenue', String(ppPnlResult.revenue)],
+      ['COGS', String(ppPnlResult.cogs)],
+      ['OpEx', String(ppPnlResult.opEx)],
+      ['EBITDA', String(ppPnlResult.ebitda)],
+      ['Tax', String(ppPnlResult.tax)],
+      ['Net Income', String(ppPnlResult.netIncome)],
+      [''],
+      ['=== CHANNELS ==='],
+      ['Channel', 'Spend/Mo', 'Leads/Mo', 'Clients/Mo', 'Revenue', 'ROI'],
+      ...ppChMetrics.channelResults.filter(c => c.spend > 0).map(c => [c.name, String(c.spend), String(c.annLeads), String(c.annClients), String(c.annRev), c.roi + '%']),
+    ];
+
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `WealthBridge-Report-${clientName || 'Client'}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('CSV downloaded!');
   };
 
   /* ═══ COMPUTED RESULTS ═══ */
@@ -575,6 +777,18 @@ export default function Calculators() {
     affBIncome: ppAffBIncome, setAffBIncome: setPpAffBIncome,
     affCIncome: ppAffCIncome, setAffCIncome: setPpAffCIncome,
     affDIncome: ppAffDIncome, setAffDIncome: setPpAffDIncome,
+    /* Goal Tracker */
+    goalIncome: ppGoalIncome, setGoalIncome: setPpGoalIncome,
+    goalAUM: ppGoalAUM, setGoalAUM: setPpGoalAUM,
+    goalRecruits: ppGoalRecruits, setGoalRecruits: setPpGoalRecruits,
+    goalGDC: ppGoalGDC, setGoalGDC: setPpGoalGDC,
+    goalCases: ppGoalCases, setGoalCases: setPpGoalCases,
+    /* Seasonality */
+    seasonProfile: ppSeasonProfile, setSeasonProfile: setPpSeasonProfile,
+    customSeason: ppCustomSeason, setCustomSeason: setPpCustomSeason,
+    seasonGrowthRate: ppSeasonGrowthRate, setSeasonGrowthRate: setPpSeasonGrowthRate,
+    seasonHorizon: ppSeasonHorizon, setSeasonHorizon: setPpSeasonHorizon,
+    seasonRampMonths: ppSeasonRampMonths, setSeasonRampMonths: setPpSeasonRampMonths,
   };
 
   /* ═══ RENDER ═══ */
@@ -649,6 +863,10 @@ export default function Calculators() {
                 className="text-xs gap-1.5">
                 <Download className="w-3.5 h-3.5" /> Export PDF
               </Button>
+              <Button variant="outline" size="sm" onClick={handleExportCsv}
+                className="text-xs gap-1.5">
+                <Download className="w-3.5 h-3.5" /> Export CSV
+              </Button>
             </div>
           </div>
 
@@ -684,6 +902,8 @@ export default function Calculators() {
           {activePanel === 'channels' && <ChannelsPanel {...practiceProps} />}
           {activePanel === 'dashboard' && <DashboardPanel {...practiceProps} />}
           {activePanel === 'pnl' && <PnLPanel {...practiceProps} />}
+          {activePanel === 'goaltracker' && <GoalTrackerPanel {...practiceProps} />}
+          {activePanel === 'monthlyproduction' && <MonthlyProductionPanel {...practiceProps} />}
 
         </div>
       </main>

@@ -4036,3 +4036,35 @@
 - [x] Pass 2: CLEAN (1/3)
 - [x] Pass 3: CLEAN (2/3) + all 7,642 tests passing
 - [x] CONVERGED ✔ (3 consecutive clean passes)
+
+## Next Steps — Practice Planning Enhancement Round 3 (Apr 13, 2026)
+
+### Step 1: Goal Tracker Panel
+- [x] Create GoalTrackerPanel with visual progress bars for income, AUM, and recruiting goals
+- [x] Add milestone markers with projected completion dates
+- [x] Support user-defined targets with auto-computed progress from practice engine data
+- [x] Add to sidebar navigation under Practice Planning section
+
+### Step 2: Export to PDF/CSV
+- [x] Add export button to Dashboard, P&L, and Summary panels
+- [x] Generate formatted PDF report with all practice planning data
+- [x] Generate CSV data export for spreadsheet analysis
+- [x] Use client-side generation (no server dependency for export)
+
+### Step 3: Seasonality Modeling
+- [x] Port seasonality profiles from v7 HTML (flat, front-loaded, back-loaded, custom)
+- [x] Add monthly production curves to the engine
+- [x] Show seasonal cash flow projections in Dashboard
+- [x] Add seasonality selector to My Plan panel
+
+### Recursive Optimization — Round 3
+- [x] Pass 1: Audit — CLEAN
+- [x] Pass 2: Fixed division-by-zero guards (11 locations) — COUNTER RESET
+- [x] Pass 3: CLEAN
+- [x] Pass 4: Fixed rollUp data accuracy (totalGDC/totalOverride/totalAUM) — COUNTER RESET
+- [x] Pass 5: Fixed rollDown guards + engines/bie expanded GDC — COUNTER RESET
+- [x] Pass 6: Fixed calcPnL numProducers guard — COUNTER RESET
+- [x] Pass 7: Fixed calcEducation children=0 + returnRate=0 NaN — COUNTER RESET
+- [x] Pass 8: CLEAN (1/3) — PanelsA/B/C, session save/restore, sidebar nav, backPlan
+- [x] Pass 9: CLEAN (2/3) — Server engines, chatDispatcher, tRPC routers, export functions
+- [x] Pass 10: CLEAN (3/3) — CONVERGENCE CONFIRMED ✔️

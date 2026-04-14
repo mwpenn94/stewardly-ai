@@ -425,7 +425,7 @@ export function rollUp(strategies: BIEStrategy[], year: number = 1): RollUpResul
 
     for (const [key, stream] of Object.entries(yr.streams)) {
       byStream[key] = (byStream[key] || 0) + stream.income;
-      if (key === "personal") {
+      if (key === "personal" || key === "expanded") {
         totalGDC += stream.gdc || 0;
       }
       if (key === "override" || key === "overrideG2") {
@@ -440,7 +440,7 @@ export function rollUp(strategies: BIEStrategy[], year: number = 1): RollUpResul
     if (!byRole[role]) byRole[role] = { count: 0, income: 0, gdc: 0 };
     byRole[role].count++;
     byRole[role].income += yr.totalIncome;
-    byRole[role].gdc += yr.streams.personal?.gdc || 0;
+    byRole[role].gdc += (yr.streams.personal?.gdc || 0) + (yr.streams.expanded?.gdc || 0);
   }
 
   return {

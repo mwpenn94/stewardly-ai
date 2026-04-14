@@ -315,15 +315,16 @@ export function calcPnL(
   payoutRate: number, opEx: number, taxRate: number,
   ebitGoal?: number, netGoal?: number
 ) {
+  const safeProducers = Math.max(1, numProducers); // guard: prevent division by zero
   let g = avgGDC;
   if (netGoal && netGoal > 0) {
     const effPayout = Math.min(payoutRate, 0.99); // guard: prevent division by zero
     const revNeeded = Math.round(netGoal / (1 - taxRate)) + opEx + Math.round(netGoal / (1 - taxRate) * effPayout / (1 - effPayout));
-    g = level === 'ind' ? revNeeded : Math.round(revNeeded / numProducers);
+    g = level === 'ind' ? revNeeded : Math.round(revNeeded / safeProducers);
   } else if (ebitGoal && ebitGoal > 0) {
     const effPayout2 = Math.min(payoutRate, 0.99);
     const revNeeded = Math.round((ebitGoal + opEx) / (1 - effPayout2));
-    g = level === 'ind' ? revNeeded : Math.round(revNeeded / numProducers);
+    g = level === 'ind' ? revNeeded : Math.round(revNeeded / safeProducers);
   }
 
   const rev = level === 'ind' ? g : numProducers * g;
@@ -443,6 +444,101 @@ export function calcYr2OvrPerHire(type: string, overrideRate: number): number {
 export function calcFunnelYield(type: string): number {
   const d = RECRUIT_DEFAULTS[type] || RECRUIT_DEFAULTS.newAssoc;
   return (d.i / 100) * (d.v / 100) * (d.o / 100) * (d.a / 100) * (d.p / 100);
+}
+
+/* ═══ SEASONALITY PROFILES ═══ */
+export const SEASON_PROFILES: Record<string, number[]> = {
+  flat:    [1,1,1,1,1,1,1,1,1,1,1,1],
+  q4Heavy: [0.80,0.80,0.90,0.90,1.00,0.80,0.70,0.80,1.00,1.30,1.50,1.50],
+  summer:  [1.00,1.00,1.10,1.00,0.80,0.70,0.60,0.70,0.90,1.10,1.20,1.30],
+  eventDriven: [0.60,0.80,1.50,0.80,0.60,0.80,1.50,0.80,0.60,0.80,1.50,0.80],
+  ramp:    [0.30,0.50,0.70,0.80,0.90,1.00,1.00,1.10,1.10,1.20,1.20,1.30],
+};
+
+export const SEASON_LABELS: Record<string, string> = {
+  flat: 'Flat (Even)',
+  q4Heavy: 'Q4 Push',
+  summer: 'Summer Light',
+  eventDriven: 'Event-Driven',
+  ramp: 'New Start Ramp',
+};
+
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/** Build monthly production detail with seasonality */
+export function buildMonthlyProduction(params: {
+  annualGDC: number;
+  seasonProfile: string;
+  customSeason?: number[];
+  horizonYears: number;
+  growthRate: number;
+  bracketRate: number;
+  rampMonths?: number;
+  rampPct?: number;
+}) {
+  const { annualGDC, seasonProfile, customSeason, horizonYears, growthRate, bracketRate, rampMonths = 0, rampPct = 0.3 } = params;
+  const mults = (seasonProfile === 'custom' && customSeason?.length === 12)
+    ? customSeason
+    : (SEASON_PROFILES[seasonProfile] || SEASON_PROFILES.flat);
+
+  const years: {
+    year: number; annGDC: number; annIncome: number;
+    months: { mo: number; name: string; mult: number; gdc: number; income: number }[];
+  }[] = [];
+
+  for (let yr = 1; yr <= horizonYears; yr++) {
+    const yrGDC = yr === 1 ? annualGDC : Math.round(annualGDC * Math.pow(1 + growthRate, yr - 1));
+    const moGDC = yrGDC / 12;
+    let yrTotalGDC = 0;
+    const months: { mo: number; name: string; mult: number; gdc: number; income: number }[] = [];
+
+    for (let m = 0; m < 12; m++) {
+      let mult = mults[m] || 1;
+      let mGDC = Math.round(moGDC * mult);
+      // Year 1 ramp adjustment
+      if (yr === 1 && m < rampMonths) {
+        mGDC = Math.round(mGDC * rampPct);
+      }
+      yrTotalGDC += mGDC;
+      months.push({ mo: m + 1, name: MONTH_NAMES[m], mult, gdc: mGDC, income: Math.round(mGDC * bracketRate) });
+    }
+
+    years.push({ year: yr, annGDC: yrTotalGDC, annIncome: Math.round(yrTotalGDC * bracketRate), months });
+  }
+
+  return { years, profileName: SEASON_LABELS[seasonProfile] || 'Custom' };
+}
+
+/** Calculate goal progress metrics */
+export function calcGoalProgress(params: {
+  incomeGoal: number; currentIncome: number;
+  aumGoal: number; currentAUM: number;
+  recruitGoal: number; currentRecruits: number;
+  gdcGoal: number; currentGDC: number;
+  casesGoal: number; currentCases: number;
+}) {
+  const { incomeGoal, currentIncome, aumGoal, currentAUM, recruitGoal, currentRecruits, gdcGoal, currentGDC, casesGoal, currentCases } = params;
+
+  const goals: { id: string; label: string; goal: number; current: number; pct: number; remaining: number; format: 'dollar' | 'number' }[] = [];
+
+  if (incomeGoal > 0) {
+    goals.push({ id: 'income', label: 'Total Income', goal: incomeGoal, current: currentIncome, pct: Math.min(100, Math.round(currentIncome / incomeGoal * 100)), remaining: Math.max(0, incomeGoal - currentIncome), format: 'dollar' });
+  }
+  if (aumGoal > 0) {
+    goals.push({ id: 'aum', label: 'AUM Under Management', goal: aumGoal, current: currentAUM, pct: Math.min(100, Math.round(currentAUM / aumGoal * 100)), remaining: Math.max(0, aumGoal - currentAUM), format: 'dollar' });
+  }
+  if (recruitGoal > 0) {
+    goals.push({ id: 'recruits', label: 'Team Hires', goal: recruitGoal, current: currentRecruits, pct: Math.min(100, Math.round(currentRecruits / recruitGoal * 100)), remaining: Math.max(0, recruitGoal - currentRecruits), format: 'number' });
+  }
+  if (gdcGoal > 0) {
+    goals.push({ id: 'gdc', label: 'Gross Dealer Concession', goal: gdcGoal, current: currentGDC, pct: Math.min(100, Math.round(currentGDC / gdcGoal * 100)), remaining: Math.max(0, gdcGoal - currentGDC), format: 'dollar' });
+  }
+  if (casesGoal > 0) {
+    goals.push({ id: 'cases', label: 'Cases Placed', goal: casesGoal, current: currentCases, pct: Math.min(100, Math.round(currentCases / casesGoal * 100)), remaining: Math.max(0, casesGoal - currentCases), format: 'number' });
+  }
+
+  const overallPct = goals.length > 0 ? Math.round(goals.reduce((s, g) => s + g.pct, 0) / goals.length) : 0;
+  return { goals, overallPct };
 }
 
 export { fmt, fmtSm, pct };

@@ -160,14 +160,14 @@ export default function EmbedCalculator() {
   const scorecard = useMemo(() => computeScorecard(scores), [scores]);
   const cfResult = useMemo(() => calcCashFlow(grossMonthly, combinedRate, housing, transport, food, insurancePmt, debtPmt, otherExp, emMonths, savings), [grossMonthly, combinedRate, housing, transport, food, insurancePmt, debtPmt, otherExp, emMonths, savings]);
   const prResult = useMemo(() => calcProtection(totalIncome, dep, mortgage, debt, existIns, age, replaceYrs, payoffRate, eduPerChild, finalExp, ssBenefit, diPct), [totalIncome, dep, mortgage, debt, existIns, age, replaceYrs, payoffRate, eduPerChild, finalExp, ssBenefit, diPct]);
-  const grResult = useMemo(() => calcGrowth(age, retireAge, monthlySav, retirement401k, savings, infRate, taxReturn, iulReturn, fiaReturn, combinedRate), [age, retireAge, monthlySav, retirement401k, savings, infRate, taxReturn, iulReturn, fiaReturn, combinedRate]);
-  const rtResult = useMemo(() => calcRetirement(ss62, ss67, ss70, pension, retirement401k, savings, withdrawalRate, totalIncome), [ss62, ss67, ss70, pension, retirement401k, savings, withdrawalRate, totalIncome]);
-  const txResult = useMemo(() => calcTax(totalIncome, filing, stateRate, retirement401k, hsaContrib, charitableGiving, isBiz), [totalIncome, filing, stateRate, retirement401k, hsaContrib, charitableGiving, isBiz]);
-  const esResult = useMemo(() => calcEstate(grossEstate, exemption, estateGrowth, giftingAnnual, dep, age), [grossEstate, exemption, estateGrowth, giftingAnnual, dep, age]);
-  const edResult = useMemo(() => calcEducation(numChildren, avgChildAge, targetCost, eduReturn, current529, monthly529, infRate), [numChildren, avgChildAge, targetCost, eduReturn, current529, monthly529, infRate]);
-  const recommendations = useMemo(() => buildRecommendations(age, dep, totalIncome, prResult, scores, riskTolerance, isBiz), [age, dep, totalIncome, prResult, scores, riskTolerance, isBiz]);
-  const totalAnnualPremium = useMemo(() => recommendations.reduce((s, r) => s + r.annualPremium, 0), [recommendations]);
-  const horizonData = useMemo(() => buildHorizonData([5, 10, 15, 20, 30], totalAnnualPremium, recommendations, prResult, grResult, txResult, esResult, edResult), [totalAnnualPremium, recommendations, prResult, grResult, txResult, esResult, edResult]);
+  const grResult = useMemo(() => calcGrowth(age, retireAge, monthlySav, savings, infRate, taxReturn, iulReturn, fiaReturn), [age, retireAge, monthlySav, savings, infRate, taxReturn, iulReturn, fiaReturn]);
+  const rtResult = useMemo(() => calcRetirement(age, retireAge, ss62, ss67, ss70, pension, withdrawalRate, savings, monthlySav), [age, retireAge, ss62, ss67, ss70, pension, withdrawalRate, savings, monthlySav]);
+  const txResult = useMemo(() => calcTax(totalIncome, stateRate, isBiz, filing, retirement401k, hsaContrib, charitableGiving), [totalIncome, stateRate, isBiz, filing, retirement401k, hsaContrib, charitableGiving]);
+  const esResult = useMemo(() => calcEstate(grossEstate, exemption, estateGrowth, giftingAnnual, willStatus), [grossEstate, exemption, estateGrowth, giftingAnnual, willStatus]);
+  const edResult = useMemo(() => calcEducation(numChildren, avgChildAge, targetCost, infRate, eduReturn, current529, monthly529), [numChildren, avgChildAge, targetCost, infRate, eduReturn, current529, monthly529]);
+  const recommendations = useMemo(() => buildRecommendations(age, totalIncome, dep, nw, existIns, mortgage, debt, isBiz, scores), [age, totalIncome, dep, nw, existIns, mortgage, debt, isBiz, scores]);
+  const totalAnnualPremium = useMemo(() => recommendations.reduce((s, r) => s + r.premium, 0), [recommendations]);
+  const horizonData = useMemo(() => buildHorizonData(recommendations, age, totalIncome, [5, 10, 15, 20, 30]), [recommendations, age, totalIncome]);
 
   const pp = {
     clientName, setClientName, age, setAge, spouseAge, setSpouseAge, dep, setDep,
@@ -196,6 +196,11 @@ export default function EmbedCalculator() {
     pace, setPace,
     totalIncome, scores, scorecard, recommendations, totalAnnualPremium,
     cfResult, prResult, grResult, rtResult, txResult, esResult, edResult, horizonData,
+    practiceIncome: {
+      annualGDC: 0, annualAUM: 0, annualOverride: 0, annualExpanded: 0,
+      annualChannelRev: 0, grandTotal: 0, streamCount: 0, items: [],
+      pnlNetIncome: 0, pnlEbitda: 0, pnlRevenue: 0, monthlyGDC: 0, monthlyNet: 0,
+    },
   };
 
   const handleExportPdf = () => {

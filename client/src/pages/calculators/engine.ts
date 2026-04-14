@@ -361,16 +361,17 @@ export interface EDResult {
 }
 export function calcEducation(children: number, avgAge: number, targetCost: number,
   infRate: number, returnRate: number, currentBal: number, monthlyContrib: number): EDResult {
+  const safeChildren = Math.max(1, children); // guard: prevent division by zero
   const yrs = Math.max(1, 18 - avgAge);
   const futureCostPerChild = Math.round(targetCost * Math.pow(1 + infRate, yrs));
-  const totalFutureCost = futureCostPerChild * children;
-  const projectedPer529 = Math.round(fv(currentBal / children, monthlyContrib / children, returnRate, yrs));
-  const totalProjected = projectedPer529 * children;
+  const totalFutureCost = futureCostPerChild * safeChildren;
+  const projectedPer529 = Math.round(fv(currentBal / safeChildren, monthlyContrib / safeChildren, returnRate, yrs));
+  const totalProjected = projectedPer529 * safeChildren;
   const gapPerChild = Math.max(0, futureCostPerChild - projectedPer529);
-  const totalGap = gapPerChild * children;
+  const totalGap = gapPerChild * safeChildren;
   const rm = returnRate / 12;
   const additionalMonthlyNeeded = gapPerChild > 0 && yrs > 0
-    ? Math.round(gapPerChild / ((Math.pow(1 + rm, yrs * 12) - 1) / rm))
+    ? (rm > 0 ? Math.round(gapPerChild / ((Math.pow(1 + rm, yrs * 12) - 1) / rm)) : Math.round(gapPerChild / (yrs * 12)))
     : 0;
   return { children, avgAge, yrsToCollege: yrs, futureCostPerChild, totalFutureCost,
     projectedPer529, totalProjected, gapPerChild, totalGap, additionalMonthlyNeeded };

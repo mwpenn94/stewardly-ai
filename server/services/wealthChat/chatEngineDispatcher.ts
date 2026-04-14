@@ -538,9 +538,9 @@ export async function dispatchToEngine(
       role,
       streams: { personal: true, expanded: true, override: true },
       team: [
-        { role: "new", f: 60_000, ramp: 0.5 },
-        { role: "new", f: 45_000, ramp: 0.6 },
-        { role: "exp", f: 90_000, ramp: 1.0 },
+        { name: "New Assoc 1", role: "new", f: 60_000 },
+        { name: "New Assoc 2", role: "new", f: 45_000 },
+        { name: "Exp Pro 1", role: "exp", f: 90_000 },
       ],
     });
     const assoc1 = bieCreateStrategy("Associate 1", {
@@ -551,7 +551,7 @@ export async function dispatchToEngine(
       role: "exp",
       streams: { personal: true, expanded: true },
     });
-    const rollUpResult = bieRollUp([leader, assoc1, assoc2], 1);
+    const rollUpResult = bieRollUp([leader, assoc1, assoc2]);
 
     return {
       intent: result.intent,

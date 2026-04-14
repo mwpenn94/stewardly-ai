@@ -1,9 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════
    PanelsD — Practice Planning Panels (Business Income Engine)
-   8 panels: My Plan, GDC Brackets, Products, Sales Funnel,
-             Recruiting, Channels, Dashboard, P&L
+   10 panels: My Plan, GDC Brackets, Products, Sales Funnel,
+              Recruiting, Channels, Dashboard, P&L,
+              Goal Tracker, Monthly Production
    ═══════════════════════════════════════════════════════════════ */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,16 +16,17 @@ import { Separator } from '@/components/ui/separator';
 import {
   PRODUCTS, GDC_BRACKETS, CHANNELS, HIER_NAMES, HIER_SHORT, HIER_ORDER, HIER_UP, HIER_DOWN,
   ROLE_DEFAULTS, RECRUIT_DEFAULTS, RECRUIT_LABELS, RECRUIT_SOURCES,
+  SEASON_PROFILES, SEASON_LABELS,
   getBracket, calcWeightedGDC, calcProductionFunnel, calcTeamOverride,
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
-  calcTrackFunnel, blendSources,
+  calcTrackFunnel, blendSources, buildMonthlyProduction, calcGoalProgress,
   fmt, fmtSm, pct,
   type RoleId, type TeamMember, type RecruitTrack,
 } from './practiceEngine';
 import { KPI } from './shared';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, Legend,
+  PieChart, Pie, Legend, LineChart, Line, CartesianGrid, Area, AreaChart,
 } from 'recharts';
 
 /* ═══ SHARED PRACTICE PROPS ═══ */
@@ -60,6 +62,18 @@ export interface PracticeProps {
   affBIncome: number; setAffBIncome: (v: number) => void;
   affCIncome: number; setAffCIncome: (v: number) => void;
   affDIncome: number; setAffDIncome: (v: number) => void;
+  /* Goal Tracker inputs */
+  goalIncome: number; setGoalIncome: (v: number) => void;
+  goalAUM: number; setGoalAUM: (v: number) => void;
+  goalRecruits: number; setGoalRecruits: (v: number) => void;
+  goalGDC: number; setGoalGDC: (v: number) => void;
+  goalCases: number; setGoalCases: (v: number) => void;
+  /* Seasonality inputs */
+  seasonProfile: string; setSeasonProfile: (v: string) => void;
+  customSeason: number[]; setCustomSeason: (v: number[]) => void;
+  seasonGrowthRate: number; setSeasonGrowthRate: (v: number) => void;
+  seasonHorizon: number; setSeasonHorizon: (v: number) => void;
+  seasonRampMonths: number; setSeasonRampMonths: (v: number) => void;
 }
 
 /* ═══ SMALL HELPERS ═══ */
@@ -267,9 +281,9 @@ export function MyPlanPanel(p: PracticeProps) {
               headers={['Step', 'Daily', 'Weekly', 'Monthly', 'Annual']}
               rows={[
                 ['Approaches', funnel.dailyApproaches, Math.round(funnel.monthlyApproaches / 4.3), funnel.monthlyApproaches, funnel.approaches],
-                ['Held', '—', Math.round(funnel.held / p.months / 4.3), Math.round(funnel.held / p.months), funnel.held],
+                ['Held', '—', Math.round(funnel.held / Math.max(1, p.months) / 4.3), Math.round(funnel.held / Math.max(1, p.months)), funnel.held],
                 [<b key="apps">Apps</b>, '—', Math.round(funnel.monthlyApps / 4.3), funnel.monthlyApps, funnel.apps],
-                ['Placed', '—', Math.round(funnel.placed / p.months / 4.3), Math.round(funnel.placed / p.months), funnel.placed],
+                ['Placed', '—', Math.round(funnel.placed / Math.max(1, p.months) / 4.3), Math.round(funnel.placed / Math.max(1, p.months)), funnel.placed],
                 [<b key="gdc">GDC</b>, '—', '—', <span key="mg" className="text-green-400 font-semibold">{fmt(funnel.monthlyGDC)}</span>, <span key="ag" className="text-green-400 font-semibold">{fmt(funnel.gdcNeeded)}</span>],
               ]}
             />
@@ -439,7 +453,7 @@ export function ProductsPanel(p: PracticeProps) {
                 const isWbBest = pr.wbRate >= pr.bestRate;
                 const wbColor = isWbBest ? 'text-green-400' : pr.wbRate >= pr.bestRate * 0.85 ? 'text-yellow-400' : 'text-red-400';
                 const prevSuite = idx > 0 ? arr[idx - 1].s : null;
-                const nodes: JSX.Element[] = [];
+                const nodes: React.JSX.Element[] = [];
                 if (prevSuite !== pr.s) {
                   nodes.push(
                     <tr key={`sep-${pr.s}`}>
@@ -854,9 +868,9 @@ export function DashboardPanel(p: PracticeProps) {
               headers={['KPI', 'Monthly Target', 'Weekly', 'Daily']}
               rows={[
                 [<b key="ap">Approaches</b>, <span key="ma" className="text-green-400">{funnel.monthlyApproaches}</span>, Math.round(funnel.monthlyApproaches / 4.3), funnel.dailyApproaches],
-                ['Appts Held', Math.round(funnel.held / p.months), Math.round(funnel.held / p.months / 4.3), '—'],
+                ['Appts Held', Math.round(funnel.held / Math.max(1, p.months)), Math.round(funnel.held / Math.max(1, p.months) / 4.3), '—'],
                 [<b key="apps">Applications</b>, <span key="mapp" className="text-green-400">{funnel.monthlyApps}</span>, Math.round(funnel.monthlyApps / 4.3), '—'],
-                ['Placed', Math.round(funnel.placed / p.months), Math.round(funnel.placed / p.months / 4.3), '—'],
+                ['Placed', Math.round(funnel.placed / Math.max(1, p.months)), Math.round(funnel.placed / Math.max(1, p.months) / 4.3), '—'],
                 [<b key="gdc">GDC</b>, <span key="mg" className="text-green-400">{fmt(funnel.monthlyGDC)}</span>, '—', '—'],
                 ['AUM Trail', fmt(Math.round(aumIncome / 12)), '—', '—'],
                 ['Override', fmt(Math.round(overrideInc / 12)), '—', '—'],
@@ -1208,5 +1222,318 @@ function DashboardCharts({ dashboard, funnel, aumIncome, overrideInc, chMetrics,
         </div>
       )}
     </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   GOAL TRACKER PANEL
+   ═══════════════════════════════════════════════════════════════ */
+export function GoalTrackerPanel(p: PracticeProps) {
+  const rd = ROLE_DEFAULTS[p.role] || ROLE_DEFAULTS.new;
+  const avgGDC = calcWeightedGDC(p.productMix, PRODUCTS);
+  const funnel = calcProductionFunnel(p.targetGDC, p.wbPct, p.bracketOverride, avgGDC,
+    p.funnelRates.ap, p.funnelRates.sh, p.funnelRates.cl, p.funnelRates.pl, p.months);
+  const teamOvr = calcTeamOverride(p.teamMembers, p.overrideRate / 100, p.bonusRate / 100, p.gen2Rate / 100);
+  const aumIncome = Math.round((p.aumExisting * (p.aumTrailPct / 100)) + (p.aumNew * (p.aumTrailPct / 100) * 0.5));
+  const recSummary = calcAllTracksSummary(p.recruitTracks, p.overrideRate / 100);
+  const chMetrics = calcChannelMetrics(p.channelSpend);
+  const overrideInc = p.teamMembers.length > 0 ? teamOvr.total : recSummary.tOvr;
+  const rollUp = calcRollUp({
+    role: p.role, hasPersonal: rd.p === 1, wbTarget: funnel.wbTarget, expTarget: funnel.expTarget,
+    overrideIncome: overrideInc, overrideRate: p.overrideRate / 100, aumIncome,
+    affAIncome: p.affAIncome, affBIncome: p.affBIncome, affCIncome: p.affCIncome, affDIncome: p.affDIncome,
+    channelRevAnnual: Math.round(chMetrics.tRevMo * 12), streams: p.streams,
+  });
+
+  // Compute "current" values from the engine
+  const currentIncome = rollUp.grandTotal;
+  const currentAUM = p.aumExisting + p.aumNew;
+  const currentRecruits = recSummary.tHires;
+  const currentGDC = funnel.gdcNeeded;
+  const currentCases = funnel.placed;
+
+  const progress = calcGoalProgress({
+    incomeGoal: p.goalIncome, currentIncome,
+    aumGoal: p.goalAUM, currentAUM,
+    recruitGoal: p.goalRecruits, currentRecruits,
+    gdcGoal: p.goalGDC, currentGDC,
+    casesGoal: p.goalCases, currentCases,
+  });
+
+  const getColor = (pct: number) => pct >= 100 ? 'bg-green-500' : pct >= 75 ? 'bg-primary' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
+  const getTextColor = (pct: number) => pct >= 100 ? 'text-green-400' : pct >= 75 ? 'text-primary' : pct >= 50 ? 'text-amber-400' : 'text-red-400';
+
+  return (
+    <Card className="border-border bg-card">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base font-bold text-foreground flex items-center justify-between">
+          <span>Goal Tracker</span>
+          <Badge variant="outline" className={`text-xs ${getTextColor(progress.overallPct)}`}>
+            {progress.overallPct}% Overall
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Overall Progress Ring */}
+        <div className="flex items-center gap-4 bg-muted/30 rounded-lg p-4">
+          <div className="relative w-20 h-20 shrink-0">
+            <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
+              <circle cx="40" cy="40" r="34" fill="none" stroke={progress.overallPct >= 100 ? '#22c55e' : progress.overallPct >= 75 ? 'hsl(var(--primary))' : progress.overallPct >= 50 ? '#f59e0b' : '#ef4444'}
+                strokeWidth="6" strokeLinecap="round"
+                strokeDasharray={`${(progress.overallPct / 100) * 213.6} 213.6`} />
+            </svg>
+            <span className={`absolute inset-0 flex items-center justify-center text-sm font-bold ${getTextColor(progress.overallPct)}`}>
+              {progress.overallPct}%
+            </span>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">
+              {progress.overallPct >= 100 ? 'All Goals Achieved!' : progress.overallPct >= 75 ? 'Almost There!' : progress.overallPct >= 50 ? 'Making Progress' : 'Getting Started'}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {progress.goals.filter(g => g.pct >= 100).length} of {progress.goals.length} goals met
+            </p>
+          </div>
+        </div>
+
+        {/* Goal Setting Inputs */}
+        <SectionHeader>Set Your Goals</SectionHeader>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <PInput label="Income Goal" value={p.goalIncome} onChange={v => p.setGoalIncome(+v || 0)} prefix="$" />
+          <PInput label="GDC Goal" value={p.goalGDC} onChange={v => p.setGoalGDC(+v || 0)} prefix="$" />
+          <PInput label="AUM Goal" value={p.goalAUM} onChange={v => p.setGoalAUM(+v || 0)} prefix="$" />
+          <PInput label="Recruit Goal" value={p.goalRecruits} onChange={v => p.setGoalRecruits(+v || 0)} />
+          <PInput label="Cases Goal" value={p.goalCases} onChange={v => p.setGoalCases(+v || 0)} />
+        </div>
+
+        {/* Individual Goal Progress Bars */}
+        {progress.goals.length > 0 && (
+          <>
+            <SectionHeader>Progress</SectionHeader>
+            <div className="space-y-3">
+              {progress.goals.map(g => (
+                <div key={g.id} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-foreground">{g.label}</span>
+                    <span className={`font-bold ${getTextColor(g.pct)}`}>
+                      {g.pct}% — {g.format === 'dollar' ? fmt(g.current) : g.current} / {g.format === 'dollar' ? fmt(g.goal) : g.goal}
+                    </span>
+                  </div>
+                  <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-500 ${getColor(g.pct)}`}
+                      style={{ width: `${Math.min(100, g.pct)}%` }} />
+                  </div>
+                  {g.remaining > 0 && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {g.format === 'dollar' ? fmt(g.remaining) : g.remaining} remaining to goal
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Goal Breakdown Chart */}
+        {progress.goals.length > 0 && (
+          <>
+            <SectionHeader>Goal Completion Chart</SectionHeader>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={progress.goals.map(g => ({ name: g.label.split(' ')[0], pct: g.pct, goal: 100 }))}
+                margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false}
+                  domain={[0, 120]} tickFormatter={(v: number) => `${v}%`} />
+                <Tooltip formatter={(v: number) => [`${v}%`, 'Progress']}
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '11px' }} />
+                <Bar dataKey="pct" name="Progress" radius={[4, 4, 0, 0]}>
+                  {progress.goals.map((g, i) => (
+                    <Cell key={i} fill={g.pct >= 100 ? '#22c55e' : g.pct >= 75 ? 'hsl(var(--primary))' : g.pct >= 50 ? '#f59e0b' : '#ef4444'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </>
+        )}
+
+        {progress.goals.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">Set at least one goal above to track your progress.</p>
+            <p className="text-xs mt-1">Goals are computed from your Practice Planning inputs.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MONTHLY PRODUCTION PANEL (Seasonality)
+   ═══════════════════════════════════════════════════════════════ */
+export function MonthlyProductionPanel(p: PracticeProps) {
+  const [selectedYear, setSelectedYear] = useState(1);
+
+  const bracket = getBracket(p.targetGDC);
+  const payoutRate = p.bracketOverride !== 'auto' ? parseFloat(p.bracketOverride) / 100 : bracket.r;
+
+  const production = useMemo(() => buildMonthlyProduction({
+    annualGDC: p.targetGDC,
+    seasonProfile: p.seasonProfile,
+    customSeason: p.customSeason,
+    horizonYears: p.seasonHorizon,
+    growthRate: p.seasonGrowthRate / 100,
+    bracketRate: payoutRate,
+    rampMonths: p.seasonRampMonths,
+    rampPct: 0.3,
+  }), [p.targetGDC, p.seasonProfile, p.customSeason, p.seasonHorizon, p.seasonGrowthRate, payoutRate, p.seasonRampMonths]);
+
+  const currentYearData = production.years.find(y => y.year === selectedYear) || production.years[0];
+  const profileMults = (p.seasonProfile === 'custom' && p.customSeason?.length === 12)
+    ? p.customSeason
+    : (SEASON_PROFILES[p.seasonProfile] || SEASON_PROFILES.flat);
+
+  return (
+    <Card className="border-border bg-card">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base font-bold text-foreground flex items-center justify-between">
+          <span>Monthly Production Plan</span>
+          <Badge variant="outline" className="text-xs">{production.profileName}</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Seasonality Profile Selection */}
+        <SectionHeader>Seasonality Profile</SectionHeader>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="space-y-0.5">
+            <Label className="text-[10px] font-medium text-muted-foreground">Profile</Label>
+            <Select value={p.seasonProfile} onValueChange={v => p.setSeasonProfile(v)}>
+              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Object.entries(SEASON_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+                <SelectItem value="custom">Custom</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <PInput label="Growth Rate" value={p.seasonGrowthRate} onChange={v => p.setSeasonGrowthRate(+v || 0)} suffix="%" />
+          <PInput label="Horizon (Years)" value={p.seasonHorizon} onChange={v => p.setSeasonHorizon(Math.max(1, Math.min(10, +v || 1)))} />
+          <PInput label="Ramp Months (Yr1)" value={p.seasonRampMonths} onChange={v => p.setSeasonRampMonths(Math.max(0, Math.min(12, +v || 0)))} />
+        </div>
+
+        {/* Custom Multipliers */}
+        {p.seasonProfile === 'custom' && (
+          <>
+            <SectionHeader>Custom Monthly Multipliers</SectionHeader>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                <PInput key={m} label={m} value={p.customSeason[i] ?? 1}
+                  onChange={v => {
+                    const next = [...p.customSeason];
+                    next[i] = Math.max(0, parseFloat(v) || 0);
+                    p.setCustomSeason(next);
+                  }} suffix="×" />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Seasonality Curve Visualization */}
+        <SectionHeader>Seasonality Curve</SectionHeader>
+        <ResponsiveContainer width="100%" height={180}>
+          <AreaChart data={profileMults.map((m, i) => ({ name: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][i], mult: m }))}
+            margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false}
+              domain={[0, 'auto']} tickFormatter={(v: number) => `${v}×`} />
+            <Tooltip formatter={(v: number) => [`${v.toFixed(2)}×`, 'Multiplier']}
+              contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '11px' }} />
+            <Area type="monotone" dataKey="mult" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.15} strokeWidth={2} />
+          </AreaChart>
+        </ResponsiveContainer>
+
+        {/* Year Selector */}
+        {production.years.length > 1 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {production.years.map(y => (
+              <Button key={y.year} variant={selectedYear === y.year ? 'default' : 'outline'} size="sm"
+                className="text-xs h-7" onClick={() => setSelectedYear(y.year)}>
+                Year {y.year}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {/* Monthly Production Table */}
+        <SectionHeader>Year {selectedYear} — Monthly Breakdown</SectionHeader>
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          <KPI label="Annual GDC" value={fmt(currentYearData?.annGDC || 0)} />
+          <KPI label="Annual Income" value={fmt(currentYearData?.annIncome || 0)} />
+          <KPI label="Avg Monthly" value={fmt(Math.round((currentYearData?.annGDC || 0) / 12))} />
+        </div>
+
+        <DataTable
+          headers={['Month', 'Multiplier', 'GDC', 'Income', 'Cum. GDC']}
+          rows={(() => {
+            let cumGDC = 0;
+            return (currentYearData?.months || []).map(m => {
+              cumGDC += m.gdc;
+              return [m.name, `${m.mult.toFixed(2)}×`, fmt(m.gdc), fmt(m.income), fmt(cumGDC)];
+            });
+          })()}
+        />
+
+        {/* Monthly GDC Bar Chart */}
+        <SectionHeader>Monthly GDC — Year {selectedYear}</SectionHeader>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={currentYearData?.months || []} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+            <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false}
+              tickFormatter={(v: number) => fmtSm(v)} />
+            <Tooltip formatter={(v: number) => [fmt(v), 'GDC']}
+              contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '11px' }} />
+            <Bar dataKey="gdc" name="GDC" radius={[4, 4, 0, 0]}>
+              {(currentYearData?.months || []).map((m, i) => (
+                <Cell key={i} fill={m.mult >= 1.2 ? '#22c55e' : m.mult >= 0.9 ? 'hsl(var(--primary))' : m.mult >= 0.7 ? '#f59e0b' : '#ef4444'} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+
+        {/* Multi-Year Projection */}
+        {production.years.length > 1 && (
+          <>
+            <SectionHeader>Multi-Year Projection</SectionHeader>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={production.years.map(y => ({ name: `Yr ${y.year}`, gdc: y.annGDC, income: y.annIncome }))}
+                margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} axisLine={false} tickLine={false}
+                  tickFormatter={(v: number) => fmtSm(v)} />
+                <Tooltip formatter={(v: number) => [fmt(v)]}
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '11px' }} />
+                <Line type="monotone" dataKey="gdc" name="GDC" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="income" name="Income" stroke="#22c55e" strokeWidth={2} dot={{ r: 4 }} />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
+              </LineChart>
+            </ResponsiveContainer>
+
+            <DataTable
+              headers={['Year', 'Annual GDC', 'Annual Income', 'Growth']}
+              rows={production.years.map((y, i) => [
+                `Year ${y.year}`,
+                fmt(y.annGDC),
+                fmt(y.annIncome),
+                i === 0 ? '—' : `+${pct((y.annGDC - production.years[i-1].annGDC) / production.years[i-1].annGDC)}`,
+              ])}
+            />
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

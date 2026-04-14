@@ -1023,11 +1023,26 @@ export function rollUp(strategies: BIEStrategy[]): BIERollUpResult {
     totals.totalCost += yr1.totalCost;
     totals.teamSize++;
 
+    // Accumulate GDC from personal + expanded streams
+    const personalGDC = yr1.streams.personal?.gdc || 0;
+    const expandedGDC = yr1.streams.expanded?.gdc || 0;
+    totals.totalGDC += personalGDC + expandedGDC;
+
+    // Accumulate override income (gen1 + gen2)
+    totals.totalOverride += (yr1.streams.override?.income || 0) + (yr1.streams.overrideG2?.income || 0);
+
+    // Accumulate AUM from the year result
+    totals.totalAUM += yr1.aum || 0;
+
+    // Accumulate channel revenue
+    totals.totalChannelRev += yr1.streams.channels?.income || 0;
+
     const rKey = s.role || "new";
     if (!totals.byRole[rKey])
       totals.byRole[rKey] = { count: 0, income: 0, gdc: 0 };
     totals.byRole[rKey].count++;
     totals.byRole[rKey].income += yr1.totalIncome;
+    totals.byRole[rKey].gdc += personalGDC + expandedGDC;
 
     Object.keys(yr1.streams).forEach((sk) => {
       if (!totals.byStream[sk]) totals.byStream[sk] = 0;
@@ -1037,6 +1052,7 @@ export function rollUp(strategies: BIEStrategy[]): BIERollUpResult {
 
   if (totals.teamSize > 0) {
     totals.avgIncome = Math.round(totals.totalIncome / totals.teamSize);
+    totals.avgGDC = Math.round(totals.totalGDC / totals.teamSize);
   }
 
   return totals;
@@ -1071,13 +1087,15 @@ export function rollDown(
     const r = ROLES[tc.role] || ROLES.new;
     totalWeight += r.baseGDC * tc.count;
   });
+  if (totalWeight === 0) totalWeight = 1; // guard: prevent division by zero
 
   const targets: BIERollDownResult[] = [];
   teamComposition.forEach((tc) => {
     const r = ROLES[tc.role] || ROLES.new;
     const weight = (r.baseGDC * tc.count) / totalWeight;
     const roleTarget = Math.round(orgTarget * weight);
-    const perPerson = Math.round(roleTarget / tc.count);
+    const safeCount = Math.max(1, tc.count); // guard: prevent division by zero
+    const perPerson = Math.round(roleTarget / safeCount);
     targets.push({
       role: tc.role,
       roleName: r.name,
