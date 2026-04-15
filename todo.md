@@ -4465,3 +4465,34 @@
 - [ ] Validate on deployed site: Guest can chat without "Session refreshing" toast
 - [ ] Validate on deployed site: Guest can sign in via OAuth and land as authenticated user
 - [ ] Validate on deployed site: Authenticated user can chat without errors
+
+## Recommended Next Steps (User-requested)
+- [x] Step 1: Safari/mobile compatibility verification and fixes for localStorage + Authorization header auth
+  - [x] sessionStorage fallback for Safari Private Browsing
+  - [x] In-memory fallback when no storage available
+  - [x] JWT expiry check before returning token (60s buffer for clock skew)
+  - [x] Cross-tab storage sync via window.storage event
+  - [x] getTokenExpiry() helper for token refresh logic
+- [x] Step 2: Silent token refresh — auto-refresh before 24h expiry, user-togglable (enabled by default)
+  - [x] Server: auth.refreshToken protectedProcedure returns new JWT
+  - [x] Client: useTokenRefresh hook schedules refresh 5min before expiry
+  - [x] Client: Refreshes on window focus if token near expiry
+  - [x] Client: Retry once on failure, then gracefully stop
+  - [x] AuthContext: autoRefreshEnabled state with localStorage persistence
+  - [x] Settings: Toggle in Privacy & Data > Session Security section
+- [x] Step 3: Welcome-back toast after successful OAuth sign-in
+  - [x] Detect OAuth completion via justCompletedOAuth ref
+  - [x] Show "Welcome back, {firstName}!" toast with "You're now signed in." description
+  - [x] Only shows for non-guest authenticated users
+
+## Convergence Cycle 1
+- [ ] Run recursive optimization passes until 3 consecutive passes confirm convergence
+- [ ] Any fix/update resets the convergence counter
+
+## Documentation Update
+- [ ] Update all in-app documentation (help text, tooltips, user-facing docs)
+- [ ] Update all in-codebase documentation (README, code comments, JSDoc)
+
+## Convergence Cycle 2
+- [ ] Run recursive optimization passes until 3 consecutive passes confirm convergence
+- [ ] Any fix/update resets the convergence counter

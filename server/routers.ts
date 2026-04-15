@@ -1,4 +1,4 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, AUTHENTICATED_SESSION_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
@@ -2153,6 +2153,22 @@ export const appRouter = router({
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
+    }),
+    /**
+     * Refresh the session token. Returns a new JWT with a fresh 24h expiry.
+     * The caller must store the new token in localStorage.
+     * Only works for authenticated (non-guest) users.
+     */
+    refreshToken: protectedProcedure.mutation(async ({ ctx }) => {
+      const { sdk } = await import("./_core/sdk");
+      const newToken = await sdk.createSessionToken(ctx.user.openId, {
+        name: ctx.user.name || "",
+        expiresInMs: AUTHENTICATED_SESSION_MS,
+      });
+      // Also set the cookie as a fallback
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, newToken, { ...cookieOptions, maxAge: AUTHENTICATED_SESSION_MS });
+      return { token: newToken };
     }),
   }),
   chat: chatRouter,

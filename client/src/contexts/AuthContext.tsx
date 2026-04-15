@@ -3,6 +3,8 @@ import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { getLoginUrl } from "@/const";
 import { setSessionToken, clearSessionToken } from "@/lib/sessionToken";
+import { useTokenRefresh } from "@/hooks/useTokenRefresh";
+import { toast } from "sonner";
 
 /**
  * AuthContext — single source of truth for authentication state.
@@ -10,7 +12,8 @@ import { setSessionToken, clearSessionToken } from "@/lib/sessionToken";
  * Manages the full lifecycle:
  *   1. Initial auth.me query (uses Authorization header from localStorage)
  *   2. Guest session auto-provisioning (if no user)
- *   3. Exposes stable `loading` / `user` / `isAuthenticated` that accounts
+ *   3. Silent token refresh before expiry (user-togglable, enabled by default)
+ *   4. Exposes stable `loading` / `user` / `isAuthenticated` that accounts
  *      for the guest provisioning window so pages never flash "Please sign in"
  *      while a guest session is being created.
  *
@@ -21,6 +24,8 @@ import { setSessionToken, clearSessionToken } from "@/lib/sessionToken";
  *   accepts both cookies and Authorization headers.
  */
 
+const AUTO_REFRESH_KEY = "stewardly_auto_refresh_enabled";
+
 interface AuthState {
   user: any | null;
   loading: boolean;
@@ -29,6 +34,10 @@ interface AuthState {
   error: any | null;
   logout: () => Promise<void>;
   refresh: () => void;
+  /** Whether silent token refresh is enabled (user-togglable) */
+  autoRefreshEnabled: boolean;
+  /** Toggle silent token refresh on/off */
+  setAutoRefreshEnabled: (enabled: boolean) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -36,6 +45,25 @@ const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const utils = trpc.useUtils();
+
+  // Auto-refresh preference (persisted in localStorage, enabled by default)
+  const [autoRefreshEnabled, setAutoRefreshEnabledState] = useState(() => {
+    try {
+      const stored = localStorage.getItem(AUTO_REFRESH_KEY);
+      return stored !== "false"; // default to true
+    } catch {
+      return true;
+    }
+  });
+
+  const setAutoRefreshEnabled = useCallback((enabled: boolean) => {
+    setAutoRefreshEnabledState(enabled);
+    try {
+      localStorage.setItem(AUTO_REFRESH_KEY, String(enabled));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: 2,
@@ -91,6 +119,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [utils]);
 
+  // Track whether user just completed OAuth (for welcome-back toast)
+  const justCompletedOAuth = useRef(false);
+
   // Check for OAuth token in URL fragment (set by OAuth callback page)
   useEffect(() => {
     const hash = window.location.hash;
@@ -104,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Mark as already attempted so guest provisioning doesn't run
         hasAttempted.current = true;
         setGuestProvisioningDone(true);
+        justCompletedOAuth.current = true;
         // Refresh auth.me with the new token
         utils.auth.me.invalidate();
       }
@@ -116,12 +148,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // User exists (real or guest) — mark provisioning as done
       hasAttempted.current = true;
       setGuestProvisioningDone(true);
+
+      // Show welcome-back toast after OAuth sign-in
+      if (justCompletedOAuth.current && meQuery.data.authTier !== "anonymous") {
+        justCompletedOAuth.current = false;
+        const name = meQuery.data.name || "";
+        const firstName = name.split(" ")[0] || "";
+        toast.success(
+          firstName ? `Welcome back, ${firstName}!` : "Welcome back!",
+          { description: "You're now signed in." }
+        );
+      }
       return;
     }
 
     // No user — provision a guest session
     provisionGuest();
   }, [meQuery.isLoading, meQuery.data, provisionGuest]);
+
+  const isGuest = meQuery.data?.authTier === "anonymous";
+
+  // Silent token refresh — only for authenticated non-guest users
+  useTokenRefresh({
+    enabled: autoRefreshEnabled && !isGuest,
+    isGuest,
+  });
 
   const logout = useCallback(async () => {
     try {
@@ -157,10 +208,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: meQuery.data ?? null,
       loading: isInitialLoading || isStillProvisioning,
       isAuthenticated: Boolean(meQuery.data),
-      isGuest: meQuery.data?.authTier === "anonymous",
+      isGuest,
       error: meQuery.error ?? logoutMutation.error ?? null,
       logout,
       refresh: () => meQuery.refetch(),
+      autoRefreshEnabled,
+      setAutoRefreshEnabled,
     };
   }, [
     meQuery.data,
@@ -169,7 +222,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logoutMutation.error,
     logoutMutation.isPending,
     guestProvisioningDone,
+    isGuest,
     logout,
+    autoRefreshEnabled,
+    setAutoRefreshEnabled,
   ]);
 
   return (

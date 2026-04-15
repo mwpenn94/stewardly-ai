@@ -7,7 +7,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Shield, Download, Trash2, Eye, Database, Mic, FileText,
   MessageSquare, AlertTriangle, CheckCircle, Loader2, Clock,
-  Archive, Settings, ScrollText, UserCircle,
+  Archive, Settings, ScrollText, UserCircle, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,7 +28,7 @@ const EXPORT_SECTIONS = [
 ];
 
 export default function PrivacyDataTab() {
-  const { user } = useAuth();
+  const { user, autoRefreshEnabled, setAutoRefreshEnabled } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportSections, setExportSections] = useState({
@@ -116,6 +116,36 @@ export default function PrivacyDataTab() {
           Manage your data, consent preferences, and privacy settings. Consent changes are tracked and auditable.
         </p>
       </div>
+
+      {/* ─── SESSION SECURITY ─── */}
+      <section>
+        <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+          <RefreshCw className="w-4 h-4" />
+          Session Security
+        </h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Manage how your login session is maintained. Auto-refresh keeps you signed in by
+          silently renewing your session before it expires.
+        </p>
+        <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-card border border-border/50">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="text-muted-foreground shrink-0"><RefreshCw className="w-4 h-4" /></div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">Auto-refresh session</p>
+              <p className="text-[10px] text-muted-foreground">
+                Automatically renew your session before it expires (24h). When disabled, you may need to sign in again after the session expires.
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={autoRefreshEnabled}
+            onCheckedChange={(v) => {
+              setAutoRefreshEnabled(v);
+              toast.success(v ? "Session auto-refresh enabled" : "Session auto-refresh disabled");
+            }}
+          />
+        </div>
+      </section>
 
       {/* ─── CONSENT MANAGEMENT (1F) ─── */}
       <section>
