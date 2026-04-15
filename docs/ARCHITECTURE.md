@@ -15,7 +15,7 @@ Stewardly is a full-stack TypeScript application built on React 19 + Express 4 +
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
 | Frontend | React 19, Tailwind CSS 4, shadcn/ui | UI framework and component library |
-| Routing | wouter | Client-side routing (145 routes) |
+| Routing | wouter | Client-side routing (146 routes) |
 | State | tRPC React Query | Server state management with type safety |
 | Backend | Express 4, tRPC 11 | API server with end-to-end type safety |
 | Database | TiDB (MySQL) via Drizzle ORM | Relational data storage |
@@ -47,7 +47,7 @@ client/
       learning/       ← Learning module pages
       settings/       ← Settings tab pages
       wealth-engine/  ← Wealth Engine hub and sub-pages
-    App.tsx           ← Route definitions (145 routes)
+    App.tsx           ← Route definitions (146 routes)
     index.css         ← Global theme (Stewardship Gold)
     main.tsx          ← Providers and entry point
 
@@ -113,35 +113,34 @@ The Wealth Engine uses a three-layer architecture:
 | tRPC Router | `server/routers/calculatorEngine.ts` | 25 endpoints with Zod validation |
 | React UI | `client/src/pages/calculators/PanelsA-F.tsx` | 28 calculator panels with visualization |
 
-Calculators are organized into 7 navigation groups:
+Calculators are organized into 4 navigation groups (sidebar sections):
 
 | Group | Panels | Calculators |
 |-------|--------|-------------|
-| Core Financial | PanelsA | Retirement, Cash Flow, Protection Scorecard |
-| Tax & Estate | PanelsB | Tax Projection, Estate Planning, Education Funding |
-| Advanced | PanelsC | Risk Assessment, Strategy Comparison, Insurance Needs, Scenario Comparison, Social Security |
-| Premium | PanelsD | IUL Projection, Premium Finance, Monte Carlo, Financial Twin |
-| Business | PanelsE | Engine Dashboard, Owner Compensation, Business Planning, Implementation Timeline, Partner Earnings, Practice Tracker |
-| Income | PanelsF | Income Streams, Cross-Calculator Recommendations |
-| Holistic | Shared | Holistic Scorecard (aggregates all calculator results) |
+| Practice Management | PanelsD, PanelsA | Client Profile, My Plan, GDC Brackets, Products, Sales Funnel, Recruiting, Channels, Dashboard, P&L, Goal Tracker, Monthly Production |
+| Client Planning | PanelsA, PanelsB | Cash Flow, Retirement, Tax Planning, Estate, Education, Protection, Business Client, Growth |
+| Advanced | PanelsC, PanelsE, PanelsF | Advanced Strategies, Cost-Benefit, Strategy Compare, Summary, Action Plan, Timeline, Partner Earnings, Income Streams |
+| References | PanelsC | References, Holistic Scorecard |
 
 ### 4. Persona-Based Navigation
 
 The sidebar uses a 5-layer persona model defined in `PersonaSidebar5.tsx`:
 
-| Layer | Section | Target User |
-|-------|---------|-------------|
-| 1 | People | All users — core communication tools |
-| 2 | Clients | Advisors — client management and analysis |
-| 3 | Tools | Power users — calculators, products, integrations |
-| 4 | Learning | Continuous education — tracks, exams, flashcards |
-| 5 | System | Settings and help |
+| Layer | Section | Min Role | Target User |
+|-------|---------|----------|-------------|
+| 1 | People | Guest | All users — Chat, Code Chat, Documents, My Progress, Audio |
+| 2 | Clients | User | Authenticated users — Financial Twin, Insights, Wealth Engine, Products, Integrations |
+| 3 | Professionals | Advisor | Licensed advisors — Advisory, Insurance & Apps, Compliance, Market Data, Rebalancing |
+| 4 | Leaders | Manager | Team leads — Team Dashboard, Organizations |
+| 5 | Stewards | Admin | Platform admins — AI Agents, Consensus, System Health, Billing, API Keys |
+
+Settings, Help, and Learning are pinned to the bottom of the sidebar and visible to all roles.
 
 ### 5. Onboarding Flow
 
 New users experience a three-stage onboarding:
 
-1. **Spotlight Tour** (OnboardingTour.tsx) — 14-step guided walkthrough of key features
+1. **Spotlight Tour** (OnboardingTour.tsx) — 15-step guided walkthrough of key features
 2. **Voice Onboarding Coach** (VoiceOnboardingCoach.tsx) — Audio-guided introduction (after tour completion)
 3. **Suitability Assessment** — Financial profile questionnaire for personalization
 

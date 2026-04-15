@@ -419,7 +419,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       { name: "Global Admin", desc: "Platform-wide administration, user management, and system configuration.", route: "/admin" },
       { name: "Manager Dashboard", desc: "Team performance KPIs, briefings, and advisor oversight.", route: "/manager" },
       { name: "Organizations", desc: "Multi-org support with custom branding, AI configuration, and member management.", route: "/organizations" },
-      { name: "Org Branding Editor", desc: "Full white-label branding: logo, 3-color palette, 12 Google Fonts, hero images, 5 background patterns, custom CSS, favicon, and live desktop/mobile preview.", route: "/settings/org-branding" },
+      { name: "Org Branding Editor", desc: "Full white-label branding: logo, 3-color palette, 12 Google Fonts, hero images, 5 background patterns, custom CSS, favicon, and live desktop/mobile preview.", route: "/org-branding" },
       { name: "Knowledge Admin", desc: "Manage platform-wide knowledge base content and categories.", route: "/admin/knowledge" },
       { name: "Admin Integrations", desc: "Configure platform-level API credentials and integration settings.", route: "/admin/integrations" },
       { name: "Improvement Engine", desc: "AI self-improvement tracking, prompt A/B testing, and capability expansion.", route: "/improvement" },
@@ -585,7 +585,7 @@ export default function Help() {
           </div>
           <h2 className="text-2xl font-bold">Stewardly Platform Guide</h2>
           <p className="text-muted-foreground text-sm max-w-lg mx-auto">
-            Comprehensive guide to all 62 pages, 102 services, and 53 API routers powering your digital financial twin.
+            Comprehensive guide to all 146 pages, 170+ services, and 85 API routers powering your digital financial twin.
           </p>
         </div>
 
@@ -653,25 +653,25 @@ export default function Help() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">62</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">146</p>
                   <p className="text-[10px] text-muted-foreground">Pages</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">102</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">170+</p>
                   <p className="text-[10px] text-muted-foreground">Services</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">53</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">85</p>
                   <p className="text-[10px] text-muted-foreground">API Routers</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">1,627+</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">7,750+</p>
                   <p className="text-[10px] text-muted-foreground">Tests Passing</p>
                 </CardContent>
               </Card>

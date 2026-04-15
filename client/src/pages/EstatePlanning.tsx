@@ -263,7 +263,8 @@ export default function EstatePlanning() {
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">Estate Growth & Tax Projection ({annualGrowthRate}% annual growth)</CardTitle></CardHeader>
               <CardContent>
-                <div className="space-y-1">
+                <div className="overflow-x-auto -mx-2 px-2">
+                <div className="min-w-[420px] space-y-1">
                   <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
                     <span>Age</span>
                     <span className="text-right">Estate Value</span>
@@ -280,6 +281,7 @@ export default function EstatePlanning() {
                       <span className="text-right font-mono text-amber-400">{fmt(row.taxSunset - row.tax)}</span>
                     </div>
                   ))}
+                </div>
                 </div>
               </CardContent>
             </Card>

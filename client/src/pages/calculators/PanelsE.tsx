@@ -393,7 +393,7 @@ export function PartnerPanel(p: PartnerProps) {
         </div>
         <p className="text-sm text-muted-foreground mb-4">Estimate referral and affiliate income across three tiers. Results feed into practice planning revenue streams.</p>
 
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <FormInput id="paLow" label="$250 Intros" value={p.paLow} onChange={v => p.setPaLow(Number(v))} min={0} />
           <FormInput id="paMid" label="$500 Intros" value={p.paMid} onChange={v => p.setPaMid(Number(v))} min={0} />
           <FormInput id="paHigh" label="$1K Intros" value={p.paHigh} onChange={v => p.setPaHigh(Number(v))} min={0} />

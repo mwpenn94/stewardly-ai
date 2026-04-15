@@ -301,7 +301,7 @@ export default function OrgBrandingEditor() {
 
         {/* Stats */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-3 gap-8 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
             {[
               { value: "24/7", label: "AI availability" },
               { value: "100%", label: "Data privacy" },
@@ -391,7 +391,7 @@ export default function OrgBrandingEditor() {
           /* ─── EDITOR ─── */
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <Tabs defaultValue="content" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5">
                 <TabsTrigger value="content" className="gap-1.5 text-xs sm:text-sm">
                   <Type className="w-3.5 h-3.5" /> Content
                 </TabsTrigger>
@@ -491,7 +491,7 @@ export default function OrgBrandingEditor() {
                     <CardDescription>Set your organization's color palette for the landing page</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="grid grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                       {[
                         { label: "Primary", value: primaryColor, setter: setPrimaryColor, desc: "Buttons, icons, accents" },
                         { label: "Accent", value: accentColor, setter: setAccentColor, desc: "Gradients, highlights" },
@@ -531,7 +531,7 @@ export default function OrgBrandingEditor() {
                     <CardDescription>Choose the background style for your landing page</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                       {BG_PATTERNS.map((p) => (
                         <button key={p.value}
                           className={`p-3 rounded-xl border text-center transition-all ${backgroundPattern === p.value ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-border/80"}`}

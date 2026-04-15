@@ -370,7 +370,8 @@ export default function TaxPlanning() {
                   </CardHeader>
                   <CardContent>
                     {Array.isArray(multiYearResult.years ?? multiYearResult) ? (
-                      <div className="space-y-2">
+                      <div className="overflow-x-auto -mx-2 px-2">
+                      <div className="min-w-[420px] space-y-2">
                         <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
                           <span>Year</span>
                           <span className="text-right">Income</span>
@@ -387,6 +388,7 @@ export default function TaxPlanning() {
                             <span className="text-right font-mono text-accent">{fmt(yr.totalTax ?? 0)}</span>
                           </div>
                         ))}
+                      </div>
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground">Multi-year projection data format not recognized.</p>

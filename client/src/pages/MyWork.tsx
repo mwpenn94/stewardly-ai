@@ -72,7 +72,7 @@ export default function MyWork({ items = [], isLoading = false }: MyWorkProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
         {(["action-needed", "in-progress", "review", "complete"] as const).map((status) => {
           const config = STATUS_CONFIG[status];
           const count = items.filter((i) => i.status === status).length;

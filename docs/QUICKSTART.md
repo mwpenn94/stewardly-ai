@@ -25,7 +25,7 @@ Navigate to the app URL and click **Sign In**. Stewardly supports multiple sign-
 
 ## Step 2: Complete the Onboarding Tour (2 minutes)
 
-When you first sign in, a **Spotlight Tour** automatically appears. It walks you through 14 key features across three categories:
+When you first sign in, a **Spotlight Tour** automatically appears. It walks you through 15 steps across three categories:
 
 1. **Getting Started** — sidebar navigation, AI chat, search
 2. **Key Features** — Wealth Engine, calculators, documents, learning
@@ -60,11 +60,12 @@ Navigate to **Wealth Engine** in the sidebar. This is your complete financial pl
 | **Owner Comp** | S-Corp vs LLC vs C-Corp compensation optimization |
 | **Financial Twin** | Full digital twin simulation of your financial life |
 
-Below the Quick Bundle section, you will find **28 individual calculators** organized into three pillars:
+Below the Quick Bundle section, you will find **28 individual calculators** organized into four groups:
 
-- **Plan** — Retirement, tax projection, estate planning, education funding, social security, income protection, IUL, premium finance, Monte Carlo, financial twin
-- **Protect** — Quick quoting, protection scorecard, insurance needs, risk assessment, strategy comparison
-- **Grow** — Engine dashboard, owner compensation, business planning, implementation timeline, partner earnings, practice tracker, income streams
+- **Practice Management** — Client Profile, My Plan, GDC Brackets, Products, Sales Funnel, Recruiting, Channels, Dashboard, P&L, Goal Tracker, Monthly Production
+- **Client Planning** — Cash Flow, Retirement, Tax Planning, Estate, Education, Protection, Business Client, Growth
+- **Advanced** — Advanced Strategies, Cost-Benefit, Strategy Compare, Summary, Action Plan, Timeline, Partner Earnings, Income Streams
+- **References** — Reference materials, compliance resources, and holistic scorecard
 
 Each calculator has an **Export PDF** button that generates a branded report with compliance disclaimers.
 
@@ -83,14 +84,17 @@ Navigate to **Settings** in the sidebar. Complete these tabs for the best experi
 
 ## Key Navigation
 
-The sidebar organizes features into persona-based sections:
+The sidebar organizes features into role-based layers that expand as your role increases:
 
-| Section | Features |
-|---------|----------|
-| **People** | Chat, Code Chat, Documents, My Progress, Audio |
-| **Clients** | My Financial Twin, Insights, Suitability, Operations, Workflows, Client Onboarding |
-| **Tools** | Wealth Engine, Passive Actions, Products, Integrations, Community, Learning |
-| **System** | Settings, Help |
+| Layer | Min Role | Key Features |
+|-------|----------|-------------|
+| **People** | Guest | Chat, Code Chat, Documents, My Progress, Audio |
+| **Clients** | User | Financial Twin, Insights, Suitability, Operations, Workflows, Wealth Engine, Products, Integrations, Community |
+| **Professionals** | Advisor | Advisory, Clients, Insurance & Apps, Compliance, Market Data, Product Intelligence, Rebalancing |
+| **Leaders** | Manager | Team Dashboard, Organizations |
+| **Stewards** | Admin | Platform Admin, AI Agents, Consensus, AI Intelligence, System Health, Billing, API Keys |
+
+Settings, Help, and Learning are always accessible from the bottom of the sidebar regardless of role.
 
 On mobile, tap the **hamburger menu** (top-left) to open the sidebar. The sidebar scrolls to show all items.
 
@@ -104,10 +108,15 @@ Press **?** at any time to see all keyboard shortcuts. Key ones:
 |----------|--------|
 | `?` | Show keyboard shortcuts |
 | `/` | Focus search |
-| `g` then `h` | Go to home/chat |
+| `Ctrl+K` | Open command palette |
+| `g` then `c` | Go to chat |
 | `g` then `s` | Go to settings |
-| `g` then `c` | Go to calculators |
+| `g` then `h` | Go to help |
 | `g` then `d` | Go to documents |
+| `g` then `m` | Go to market data |
+| `g` then `i` | Go to intelligence hub |
+
+Shortcuts are customizable in **Settings > Keyboard Shortcuts**. You can reassign any `g` then `X` shortcut to any page.
 
 ---
 

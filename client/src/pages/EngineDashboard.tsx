@@ -628,7 +628,7 @@ export default function EngineDashboard() {
                     />
                     Include Business Income (BIE)
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <SliderInput label="Save %" value={Math.round(s.savingsRate * 100)} onChange={(v) => updateStrategy(s.id, { savingsRate: v / 100 })} min={0} max={50} suffix="%" />
                     <SliderInput label="Return" value={Math.round(s.investmentReturn * 100)} onChange={(v) => updateStrategy(s.id, { investmentReturn: v / 100 })} min={0} max={15} suffix="%" />
                     <SliderInput label="Tax" value={Math.round(s.taxRate * 100)} onChange={(v) => updateStrategy(s.id, { taxRate: v / 100 })} min={10} max={50} suffix="%" />

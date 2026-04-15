@@ -163,7 +163,7 @@ export function ChatInputBar({
         {/* Action bar below textarea */}
         <div className="chat-input-bar flex items-center gap-1 mt-1.5">
           {/* + Add context button */}
-          <div className="relative">
+          <div className="relative" data-tour="context-buttons">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button

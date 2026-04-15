@@ -48,25 +48,8 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
   'goaltracker' | 'monthlyproduction' | 'partner' | 'income';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
-  { group: 'Your Profile', items: [
+  { group: 'Practice Management', items: [
     { id: 'profile', label: 'Client Profile', icon: <User className="w-4 h-4" /> },
-  ]},
-  { group: 'Plan', items: [
-    { id: 'cash', label: 'Cash Flow', icon: <DollarSign className="w-4 h-4" /> },
-    { id: 'retire', label: 'Retirement', icon: <Clock className="w-4 h-4" /> },
-    { id: 'tax', label: 'Tax Planning', icon: <Building2 className="w-4 h-4" /> },
-    { id: 'estate', label: 'Estate', icon: <Scale className="w-4 h-4" /> },
-    { id: 'edu', label: 'Education', icon: <GraduationCap className="w-4 h-4" /> },
-  ]},
-  { group: 'Protect', items: [
-    { id: 'protect', label: 'Protection', icon: <Shield className="w-4 h-4" /> },
-    { id: 'bizclient', label: 'Business Client', icon: <Briefcase className="w-4 h-4" /> },
-  ]},
-  { group: 'Grow', items: [
-    { id: 'grow', label: 'Growth', icon: <TrendingUp className="w-4 h-4" /> },
-    { id: 'advanced', label: 'Advanced', icon: <Gem className="w-4 h-4" /> },
-  ]},
-  { group: 'Practice Planning', items: [
     { id: 'myplan' as PanelId, label: 'My Plan', icon: <Target className="w-4 h-4" /> },
     { id: 'gdcbrackets' as PanelId, label: 'GDC Brackets', icon: <Layers className="w-4 h-4" /> },
     { id: 'products' as PanelId, label: 'Products', icon: <Package className="w-4 h-4" /> },
@@ -78,7 +61,18 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'goaltracker' as PanelId, label: 'Goal Tracker', icon: <Flag className="w-4 h-4" /> },
     { id: 'monthlyproduction' as PanelId, label: 'Monthly Production', icon: <CalendarDays className="w-4 h-4" /> },
   ]},
-  { group: 'Analysis', items: [
+  { group: 'Client Planning', items: [
+    { id: 'cash', label: 'Cash Flow', icon: <DollarSign className="w-4 h-4" /> },
+    { id: 'retire', label: 'Retirement', icon: <Clock className="w-4 h-4" /> },
+    { id: 'tax', label: 'Tax Planning', icon: <Building2 className="w-4 h-4" /> },
+    { id: 'estate', label: 'Estate', icon: <Scale className="w-4 h-4" /> },
+    { id: 'edu', label: 'Education', icon: <GraduationCap className="w-4 h-4" /> },
+    { id: 'protect', label: 'Protection', icon: <Shield className="w-4 h-4" /> },
+    { id: 'bizclient', label: 'Business Client', icon: <Briefcase className="w-4 h-4" /> },
+    { id: 'grow', label: 'Growth', icon: <TrendingUp className="w-4 h-4" /> },
+  ]},
+  { group: 'Advanced', items: [
+    { id: 'advanced', label: 'Advanced Strategies', icon: <Gem className="w-4 h-4" /> },
     { id: 'costben', label: 'Cost-Benefit', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'compare', label: 'Strategy Compare', icon: <GitCompare className="w-4 h-4" /> },
     { id: 'summary', label: 'Summary', icon: <FileText className="w-4 h-4" /> },
@@ -87,7 +81,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'partner', label: 'Partner Earnings', icon: <Handshake className="w-4 h-4" /> },
     { id: 'income', label: 'Income Streams', icon: <DollarSign className="w-4 h-4" /> },
   ]},
-  { group: 'Resources', items: [
+  { group: 'References', items: [
     { id: 'refs', label: 'References', icon: <BookOpen className="w-4 h-4" /> },
   ]},
 ];
@@ -999,7 +993,7 @@ export default function Calculators() {
             </div>
             <p className="text-[10px] text-muted-foreground/60 mt-0.5">Unified Wealth Engine v7</p>
           </div>
-          <Button variant="ghost" size="icon" className="lg:hidden h-7 w-7" onClick={() => setCalcSidebarOpen(false)}>
+          <Button variant="ghost" size="icon" className="lg:hidden h-7 w-7" onClick={() => setCalcSidebarOpen(false)} aria-label="Close calculator sidebar">
             <PanelLeftClose className="w-4 h-4" />
           </Button>
         </div>
@@ -1059,7 +1053,7 @@ export default function Calculators() {
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4 bg-card rounded-lg border border-border px-3 py-2">
             <div className="flex items-center gap-2">
               {/* Mobile: open calculator sidebar */}
-              <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setCalcSidebarOpen(true)}>
+              <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setCalcSidebarOpen(true)} aria-label="Open calculator sidebar">
                 <PanelLeftOpen className="w-4 h-4" />
               </Button>
               <div className="text-sm text-muted-foreground">

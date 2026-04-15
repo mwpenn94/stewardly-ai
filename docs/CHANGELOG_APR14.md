@@ -35,7 +35,7 @@ A new annotation system integrated into the Knowledge Base tab. Users can add co
 - Real-time updates via tRPC invalidation
 
 ### Spotlight Onboarding Tour (OnboardingTour.tsx)
-A 14-step guided walkthrough that auto-starts for first-time users. The tour covers three categories (Getting Started, Key Features, Personalization) and highlights key sidebar navigation items with data-tour attributes. Progress is saved to localStorage.
+A 15-step guided walkthrough that auto-starts for first-time users. The tour covers three categories (Getting Started, Key Features, Personalization) and highlights key sidebar navigation items with data-tour attributes. Progress is saved to localStorage.
 
 ### Contextual First Response (prompts.ts)
 Enhanced the system prompt with explicit instructions for the AI's first response in a new conversation. The AI now:

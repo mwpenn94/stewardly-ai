@@ -336,7 +336,7 @@ export function ScorecardSkeleton() {
           <div className="h-3 bg-muted rounded w-1/2" />
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {[1,2,3].map(i => <div key={i} className="h-16 bg-muted rounded-lg" />)}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">

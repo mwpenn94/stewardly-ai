@@ -415,7 +415,8 @@ export default function IncomeProjection() {
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Year-by-Year Projection</CardTitle></CardHeader>
         <CardContent>
-          <div className="space-y-1">
+          <div className="overflow-x-auto -mx-2 px-2">
+          <div className="min-w-[420px] space-y-1">
             <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
               <span>Age</span>
               <span className="text-right">Income</span>
@@ -432,6 +433,7 @@ export default function IncomeProjection() {
                 <span className="text-right font-mono text-muted-foreground">{fmt(row.target)}</span>
               </div>
             ))}
+          </div>
           </div>
         </CardContent>
       </Card>

@@ -187,10 +187,10 @@ export function IncomeStreamsPanel({ incomeStreams, setIncomeStreams, scores }: 
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-sm font-bold text-primary">{fmt(stream.amount * (stream.frequency === 'monthly' ? 12 : stream.frequency === 'quarterly' ? 4 : 1))}/yr</span>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingId(stream.id)}>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingId(stream.id)} aria-label={`Edit ${stream.name} stream`}>
                           <span className="text-xs">✏️</span>
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-6 w-6 text-red-400 hover:text-red-300" onClick={() => removeStream(stream.id)}>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-red-400 hover:text-red-300" onClick={() => removeStream(stream.id)} aria-label={`Delete ${stream.name} stream`}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
@@ -293,7 +293,7 @@ export function IncomeStreamsPanel({ incomeStreams, setIncomeStreams, scores }: 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { name: 'Plan', value: result.pillarContributions.plan, color: 'bg-blue-500', icon: '📋' },
                   { name: 'Protect', value: result.pillarContributions.protect, color: 'bg-green-500', icon: '🛡️' },
@@ -320,7 +320,7 @@ export function IncomeStreamsPanel({ incomeStreams, setIncomeStreams, scores }: 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <KPI label="Current" value={fmtSm(result.totalAnnual)} variant="gld" sub="Annual" />
                 <KPI label="Year 5" value={fmtSm(result.projectedYear5)} variant="blu" sub={`+${fmtSm(result.projectedYear5 - result.totalAnnual)}`} />
                 <KPI label="Year 10" value={fmtSm(result.projectedYear10)} variant="grn" sub={`+${fmtSm(result.projectedYear10 - result.totalAnnual)}`} />

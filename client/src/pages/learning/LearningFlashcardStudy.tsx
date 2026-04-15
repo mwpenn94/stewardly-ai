@@ -295,7 +295,7 @@ export default function LearningFlashcardStudy() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                     Order
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
                     <Button
                       variant={mode === "shuffle" ? "default" : "outline"}
                       size="sm"

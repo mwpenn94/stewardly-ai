@@ -22,6 +22,8 @@ The following variables are automatically injected by the Manus platform and req
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe frontend key |
 | `PLAID_CLIENT_ID` / `PLAID_SECRET` | Plaid financial data aggregation |
 | `SNAPTRADE_CLIENT_ID` / `SNAPTRADE_CONSUMER_KEY` | SnapTrade brokerage integration |
+| `BEA_API_KEY` | Bureau of Economic Analysis data |
+| `BLS_API_KEY` | Bureau of Labor Statistics data |
 | `DEEPGRAM_API_KEY` | Voice transcription |
 | `DAILY_API_KEY` | Video conferencing |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth |
@@ -95,6 +97,54 @@ If the key is invalid, you will see in server logs:
 ```
 CENSUS_API_KEY not set — returning empty demographics
 ```
+
+---
+
+## Optional: BLS API Key
+
+**Purpose:** Powers Bureau of Labor Statistics data feeds — Consumer Price Index (CPI), employment statistics, and wage data used in inflation-adjusted financial projections.
+
+**Impact when missing:** BLS-based inflation and employment data returns empty. Financial planning projections still work but use static inflation assumptions.
+
+**Used by:**
+- `server/_core/index.ts` — Government data API proxy endpoint
+- `server/seeds/seedDataSources.ts` — Data source registry
+
+### Setup Steps
+
+1. **Register for a BLS API key** at [https://data.bls.gov/registrationEngine/](https://data.bls.gov/registrationEngine/) (free, no credit card required)
+2. Fill in your name, email, and organization
+3. You will receive an API key via email
+4. **Add the key to Stewardly:**
+   - Open the Manus Management UI
+   - Navigate to **Settings > Secrets**
+   - Add a new secret with key `BLS_API_KEY` and paste your API key as the value
+   - Click Save
+5. **Restart the server** (the key takes effect on next server start)
+
+---
+
+## Optional: BEA API Key
+
+**Purpose:** Powers Bureau of Economic Analysis data feeds — GDP, personal income, and regional economic data used in macroeconomic context for financial planning.
+
+**Impact when missing:** BEA-based economic data returns empty. Financial planning recommendations still work but without macroeconomic context.
+
+**Used by:**
+- `server/_core/index.ts` — Government data API proxy endpoint
+- `server/seeds/seedDataSources.ts` — Data source registry
+
+### Setup Steps
+
+1. **Register for a BEA API key** at [https://apps.bea.gov/API/signup/](https://apps.bea.gov/API/signup/) (free, no credit card required)
+2. Fill in your name, email, and organization
+3. You will receive an API key via email
+4. **Add the key to Stewardly:**
+   - Open the Manus Management UI
+   - Navigate to **Settings > Secrets**
+   - Add a new secret with key `BEA_API_KEY` and paste your API key as the value
+   - Click Save
+5. **Restart the server** (the key takes effect on next server start)
 
 ---
 

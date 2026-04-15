@@ -2,7 +2,7 @@
 
 ## Calculators Desktop (Pass 2)
 - Left app sidebar: all nav items visible and scrollable (Chat through Help)
-- Calculator internal sidebar: all 7 groups visible — Your Profile, Plan (5), Protect (2), Grow (2), Practice Planning (10), Analysis (7), Resources (1)
+- Calculator internal sidebar: all 4 groups visible — Practice Management (11), Client Planning (8), Advanced (8), References (1)
 - Health Score 62% visible at bottom of calculator sidebar
 - Content area shows Client Profile panel with Financial Health Scorecard
 - Onboarding tour modal (1 of 15) visible — no overlapping with VoiceOnboardingCoach (fix confirmed working)

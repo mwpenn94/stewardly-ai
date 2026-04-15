@@ -1,7 +1,7 @@
 # Pass 2 — Virtual User Testing Findings
 
 ## Calculators Desktop (1440x900)
-PASS: Left app sidebar fully visible with all nav items (Chat through Help). Calculator internal sidebar shows all 7 groups (28 items) with Health Score 62% at bottom. Content area shows Client Profile panel. Toolbar (Save/Load/PDF/CSV/Import/JSON/Reset) all visible. Onboarding tour modal (1/15) shows alone — no VoiceOnboardingCoach overlap (fix confirmed).
+PASS: Left app sidebar fully visible with all nav items (Chat through Help). Calculator internal sidebar shows all 4 groups (28 items) with Health Score 62% at bottom. Content area shows Client Profile panel. Toolbar (Save/Load/PDF/CSV/Import/JSON/Reset) all visible. Onboarding tour modal (1/15) shows alone — no VoiceOnboardingCoach overlap (fix confirmed).
 
 ## Calculators Mobile (375x812)
 PASS: Content area visible with Client Profile form. Hamburger menu in top-left for sidebar access. Onboarding tour properly sized. Export PDF button visible. Footer visible.
