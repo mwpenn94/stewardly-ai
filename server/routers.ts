@@ -1661,8 +1661,8 @@ const voiceRouter = router({
       const { url } = await storagePut(fileKey, buffer, input.mimeType);
       return { url };
     }),
-  /** Edge TTS — high-quality neural speech synthesis */
-  speak: protectedProcedure
+  /** Edge TTS — high-quality neural speech synthesis (public: guests can use TTS too) */
+  speak: publicProcedure
     .input(z.object({
       text: z.string().min(1).max(5000),
       voice: z.string().default("en-US-GuyNeural"),
@@ -1690,8 +1690,8 @@ const voiceRouter = router({
         });
       }
     }),
-  /** List available Edge TTS voices with metadata */
-  voices: protectedProcedure.query(() => getVoiceCatalog()),
+  /** List available Edge TTS voices with metadata (public: guests can browse voices) */
+  voices: publicProcedure.query(() => getVoiceCatalog()),
 });
 
 // ─── SETTINGS ROUTER ──────────────────────────────────────────────

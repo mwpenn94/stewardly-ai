@@ -13,9 +13,12 @@ import { getLoginUrl } from "@/const";
  *      for the guest provisioning window so pages never flash "Please sign in"
  *      while a guest session is being created.
  *
- * After OAuth callback, the session cookie is set via an XHR call to
- * /api/auth/set-session BEFORE the client-side redirect. By the time
- * the app loads, the cookie is already in place and auth.me returns the user.
+ * Cookie handling:
+ *   The Manus reverse proxy strips Set-Cookie headers from server responses.
+ *   To work around this, both OAuth and guest session flows return the session
+ *   token in the response body, then the client calls /api/auth/set-session
+ *   via XHR to set the httpOnly cookie. The proxy preserves Set-Cookie on
+ *   XHR/fetch JSON responses.
  */
 
 interface AuthState {
@@ -57,13 +60,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasAttempted.current = true;
 
     try {
+      // Step 1: Create the guest session (server creates user + token)
       const res = await fetch("/api/auth/guest-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
 
-      if (res.ok) {
+      if (!res.ok) {
+        console.warn("[AuthProvider] Guest session creation failed:", res.status);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data.status === "existing") {
+        // Already has a valid session — just refresh auth.me
+        await utils.auth.me.invalidate();
+        return;
+      }
+
+      if (data.status === "created" && data.token) {
+        // Step 2: Set the cookie via XHR (proxy preserves Set-Cookie on JSON XHR)
+        // This is the critical workaround for the Manus proxy stripping Set-Cookie
+        const setCookieRes = await fetch("/api/auth/set-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ token: data.token }),
+        });
+
+        if (setCookieRes.ok) {
+          // Step 3: Now auth.me should return the guest user
+          await utils.auth.me.invalidate();
+        } else {
+          console.warn("[AuthProvider] set-session failed:", setCookieRes.status);
+          // Even if set-session fails, the cookie might have been set by the
+          // guest-session response directly (works in dev, not behind proxy)
+          await utils.auth.me.invalidate();
+        }
+      } else if (data.status === "created") {
+        // Legacy: no token in response (shouldn't happen with new code)
         await utils.auth.me.invalidate();
       }
     } catch (err) {

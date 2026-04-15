@@ -13,6 +13,11 @@ import { logger } from "./logger";
  * The guest user has authTier="anonymous" and a unique openId like "guest_<uuid>".
  * Data persists in DB during the session. When the user signs in via OAuth,
  * we can optionally migrate their guest data to the real account.
+ * 
+ * IMPORTANT: The Manus reverse proxy strips Set-Cookie headers from server
+ * responses. To work around this, the guest-session endpoint returns the
+ * session token in the JSON body. The client then calls /api/auth/set-session
+ * (a separate endpoint) to set the cookie via XHR, which the proxy preserves.
  */
 
 const GUEST_SESSION_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -68,16 +73,19 @@ export function registerGuestSessionRoutes(app: Express) {
         expiresInMs: GUEST_SESSION_EXPIRY_MS,
       });
 
-      // Set session cookie
+      // ALSO set the cookie on this response (works in dev, may be stripped by proxy)
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, {
         ...cookieOptions,
         maxAge: GUEST_SESSION_EXPIRY_MS,
       });
 
+      // Return the token in the body so the client can use /api/auth/set-session
+      // as a fallback if the proxy strips the Set-Cookie header
       res.json({
         status: "created",
         isGuest: true,
+        token: sessionToken,
       });
     } catch (error) {
       logger.error( { operation: "guestSession", err: error },"[GuestSession] Failed to create guest session:", error);

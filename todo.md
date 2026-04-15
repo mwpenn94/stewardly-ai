@@ -4444,3 +4444,15 @@
 - [x] Removed OAuth retry logic from AuthContext (no longer needed)
 - [x] Added /api/auth/set-session to skipPaths for tenant context middleware
 - [x] Updated OAuth callback tests (10 tests passing)
+
+## Session Refreshing Toast Bug
+- [ ] Fix "Session refreshing..." toast appearing after sending a chat message as guest user
+
+## Auth Loop Fix — COMPREHENSIVE (Round 4)
+- [ ] Reproduce auth loop on deployed site as virtual user
+- [ ] Trace every request in the guest → sign-in → post-login flow
+- [ ] Fix: "Session refreshing" toast appearing after guest sends chat message
+- [ ] Fix: OAuth sign-in loop (cookie not persisting after callback)
+- [ ] Validate: Guest can chat without "Session refreshing" toast
+- [ ] Validate: Guest can sign in via OAuth and land as authenticated user
+- [ ] Validate: Authenticated user can chat without errors
