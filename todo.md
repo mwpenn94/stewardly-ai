@@ -4392,3 +4392,11 @@
 - [ ] Fix auth loop across all affected routes
 - [x] Verify fix with browser testing
 - [x] Run TypeScript + Vitest verification (7731/7731, 322 files)
+
+### Turn 23 — Auth Loop Fix (REAL) (Apr 15)
+- [ ] Reproduce auth loop by sending message in AI chat
+- [ ] Trace full redirect/error chain during the loop
+- [ ] Identify the REAL root cause (not a guess)
+- [ ] Fix the root cause
+- [ ] Verify fix by reproducing the exact same scenario
+- [ ] Run full test suite

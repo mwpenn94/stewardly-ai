@@ -6,7 +6,6 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import { toast } from "sonner";
 import App from "./App";
-import { getLoginUrl } from "./const";
 import "./index.css";
 
 /** Detect transient "server restarting" errors where the HTML fallback is returned instead of JSON */
@@ -43,21 +42,47 @@ const queryClient = new QueryClient({
   },
 });
 
-const redirectToLoginIfUnauthorized = (error: unknown) => {
+/**
+ * Handle UNAUTHORIZED errors gracefully — NO automatic redirect to login.
+ *
+ * The old approach (`window.location.href = getLoginUrl()`) caused an auth
+ * redirect loop: any 401 from a protectedProcedure would force a full-page
+ * OAuth redirect, which would provision a guest session, which would expire,
+ * which would trigger another redirect, etc.
+ *
+ * New approach:
+ *   1. Invalidate auth.me so the AuthProvider re-checks the session
+ *   2. Show a toast telling the user their session expired
+ *   3. The AuthProvider will re-provision a guest session if needed
+ *   4. The user can click "Sign in" manually if they want a real account
+ *
+ * This prevents the redirect loop entirely.
+ */
+let _lastAuthToastTime = 0;
+const AUTH_TOAST_COOLDOWN_MS = 10_000; // Don't spam auth toasts
+
+const handleUnauthorizedGracefully = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
-  if (typeof window === "undefined") return;
+  if (error.message !== UNAUTHED_ERR_MSG) return;
 
-  const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
+  // Invalidate auth.me so AuthProvider re-checks and re-provisions if needed
+  queryClient.invalidateQueries({ queryKey: [["auth", "me"]] });
 
-  if (!isUnauthorized) return;
-
-  window.location.href = getLoginUrl();
+  // Show a toast (with cooldown to prevent spam)
+  const now = Date.now();
+  if (now - _lastAuthToastTime > AUTH_TOAST_COOLDOWN_MS) {
+    _lastAuthToastTime = now;
+    toast.info("Session refreshing...", {
+      description: "Your session is being refreshed. Please try again in a moment.",
+      duration: 4000,
+    });
+  }
 };
 
 /** Deduplicate toasts — track recently shown error keys to avoid spamming */
 const _recentErrorToasts = new Set<string>();
 function showRetryExhaustedToast(error: unknown, queryKey: unknown) {
-  // Skip auth redirect errors — those are handled by redirectToLoginIfUnauthorized
+  // Skip auth errors — those are handled by handleUnauthorizedGracefully
   if (error instanceof TRPCClientError && error.message === UNAUTHED_ERR_MSG) return;
 
   const key = String(Array.isArray(queryKey) ? queryKey.join(".") : queryKey);
@@ -84,7 +109,9 @@ function showRetryExhaustedToast(error: unknown, queryKey: unknown) {
 queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
-    redirectToLoginIfUnauthorized(error);
+
+    // Handle auth errors gracefully — NO redirect
+    handleUnauthorizedGracefully(error);
 
     // Suppress transient server-restart errors from user-facing toasts — they auto-retry
     if (isTransientServerRestart(error)) {
@@ -107,7 +134,9 @@ queryClient.getQueryCache().subscribe(event => {
 queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
-    redirectToLoginIfUnauthorized(error);
+
+    // Handle auth errors gracefully — NO redirect
+    handleUnauthorizedGracefully(error);
 
     // Show toast for mutation failures (mutations don't auto-retry by default)
     if (error instanceof TRPCClientError && error.message !== UNAUTHED_ERR_MSG) {
