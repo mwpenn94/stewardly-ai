@@ -287,6 +287,28 @@ export const integrationsRouter = router({
             testUrl = "https://tool-it.smsit.ai/api/user";
             headers["Authorization"] = `Bearer ${apiKey}`;
             break;
+          case "gohighlevel": {
+            // GHL uses OAuth2 bearer token + locationId
+            const locationId = (creds.location_id || creds.locationId || "") as string;
+            testUrl = `https://services.leadconnectorhq.com/contacts/?locationId=${locationId}&limit=1`;
+            headers["Authorization"] = `Bearer ${apiKey}`;
+            headers["Version"] = "2021-07-28";
+            break;
+          }
+          case "wealthbox":
+            // Wealthbox uses bearer token, test /me endpoint
+            testUrl = "https://api.crmworkspace.com/v1/me";
+            headers["Authorization"] = `Bearer ${apiKey}`;
+            headers["Accept"] = "application/json";
+            break;
+          case "redtail": {
+            // Redtail uses Userkeyauth header
+            const userKey = (creds.user_key || creds.userKey || apiKey) as string;
+            testUrl = "https://smf.crm3.redtailtechnology.com/api/public/v1/authentication";
+            headers["Authorization"] = `Userkeyauth ${userKey}`;
+            headers["Accept"] = "application/json";
+            break;
+          }
           default:
             if (provider.baseUrl) {
               testUrl = provider.baseUrl;
@@ -1097,5 +1119,38 @@ export const integrationsRouter = router({
         endpointsTried: input.endpointsTried,
       });
       return { result, summary: summarizeAuthProbe(result) };
+    }),
+
+  // ─── Integration Failover & Demo Data ────────────────────────────────
+  failoverStatus: protectedProcedure
+    .input(z.object({ providerSlug: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const { getAllFailoverStatuses, getFailoverStatus } = await import("../services/integrationFailover");
+      if (input?.providerSlug) {
+        return { statuses: [await getFailoverStatus(input.providerSlug, ctx.user.id)] };
+      }
+      return { statuses: await getAllFailoverStatuses(ctx.user.id) };
+    }),
+
+  failoverData: protectedProcedure
+    .input(z.object({
+      providerSlug: z.enum(["gohighlevel", "wealthbox", "redtail", "smsit"]),
+      dataType: z.enum(["contacts", "pipelines", "messages", "activities"]).default("contacts"),
+    }))
+    .query(async ({ ctx, input }) => {
+      const failover = await import("../services/integrationFailover");
+      switch (input.providerSlug) {
+        case "gohighlevel":
+          if (input.dataType === "pipelines") return failover.getGHLPipelinesWithFailover(ctx.user.id);
+          return failover.getGHLContactsWithFailover(ctx.user.id);
+        case "wealthbox":
+          return failover.getWealthboxContactsWithFailover(ctx.user.id);
+        case "redtail":
+          return failover.getRedtailContactsWithFailover(ctx.user.id);
+        case "smsit":
+          return failover.getSMSiTMessagesWithFailover(ctx.user.id);
+        default:
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Unsupported provider" });
+      }
     }),
 });
