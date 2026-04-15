@@ -172,7 +172,7 @@ describe("Pass 6 Landscape — Sub-router Structure", () => {
     expect(keys.length).toBe(11);
   });
 
-  it("finalOrphans has 8 sub-routers", async () => {
+  it("finalOrphans has 13 sub-routers", async () => {
     const { finalOrphansRouter } = await import("./finalOrphans");
     const keys = Object.keys(finalOrphansRouter._def.record);
     expect(keys).toContain("syncConfig");
@@ -183,7 +183,12 @@ describe("Pass 6 Landscape — Sub-router Structure", () => {
     expect(keys).toContain("promptExperiments");
     expect(keys).toContain("modelSchedules");
     expect(keys).toContain("modelBacktests");
-    expect(keys.length).toBe(8);
+    expect(keys).toContain("documentVersions");
+    expect(keys).toContain("documentAnnotations");
+    expect(keys).toContain("aiToolExecutions");
+    expect(keys).toContain("aiResponseQuality");
+    expect(keys).toContain("aiConfigLayers");
+    expect(keys.length).toBe(13);
   });
 });
 

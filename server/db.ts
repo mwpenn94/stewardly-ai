@@ -31,7 +31,7 @@ export async function getDb() {
         enableKeepAlive: true,
         keepAliveInitialDelay: 10000,
       });
-      _db = drizzle({ client: _pool });
+      _db = drizzle({ client: _pool }) as any;
     } catch (error) {
       logger.warn( { operation: "database" },"[Database] Failed to connect:", error);
       _db = null;

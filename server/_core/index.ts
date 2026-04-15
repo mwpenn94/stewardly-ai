@@ -156,6 +156,20 @@ async function startServer() {
   app.use("/api/oauth", authLimiter);
   app.use("/auth", authLimiter);
 
+  // ─── Stripe Webhook (MUST be before express.json to get raw body) ───
+  app.post("/api/stripe/webhook",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+      try {
+        const { stripeWebhookHandler } = await import("../stripe/webhookHandler");
+        return stripeWebhookHandler(req, res);
+      } catch (err: any) {
+        console.error("[Stripe Webhook] Handler error:", err.message);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+    }
+  );
+
   // Configure body parser with size limits
   app.use(express.json({ limit: "5mb" }));
   app.use(express.urlencoded({ limit: "5mb", extended: true }));

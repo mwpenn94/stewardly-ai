@@ -13,6 +13,21 @@ export const ENV = {
   linkedinClientSecret: process.env.LINKEDIN_CLIENT_SECRET ?? "",
   snapTradeClientId: process.env.SNAPTRADE_CLIENT_ID ?? "",
   snapTradeConsumerKey: process.env.SNAPTRADE_CONSUMER_KEY ?? "",
+  // Stripe billing
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
+  // Deepgram real-time transcription
+  deepgramApiKey: process.env.DEEPGRAM_API_KEY ?? "",
+  // Daily.co video conferencing
+  dailyApiKey: process.env.DAILY_API_KEY ?? "",
+  // Data APIs
+  fredApiKey: process.env.FRED_API_KEY ?? "",
+  beaApiKey: process.env.BEA_API_KEY ?? "",
+  blsApiKey: process.env.BLS_API_KEY ?? "",
+  censusApiKey: process.env.CENSUS_API_KEY ?? "",
+  // Plaid
+  plaidClientId: process.env.PLAID_CLIENT_ID ?? "",
+  plaidSecret: process.env.PLAID_SECRET ?? "",
 };
 
 const REQUIRED_IN_PRODUCTION = ["DATABASE_URL", "JWT_SECRET", "ALLOWED_ORIGINS"] as const;

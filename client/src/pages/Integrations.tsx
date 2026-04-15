@@ -97,7 +97,7 @@ function getCostTier(provider: Provider): string {
   // Freemium sources
   if (["snaptrade", "compulife", "canopy-connect", "peopledatalabs", "github"].includes(slug)) return "freemium";
   // Paid sources
-  if (["plaid", "bridgeft", "esi-fidelity", "attom", "gohighlevel", "smsit"].includes(slug)) return "paid";
+  if (["plaid", "bridgeft", "esi-fidelity", "attom", "gohighlevel", "smsit", "wealthbox", "redtail"].includes(slug)) return "paid";
   // Carriers (manual upload, no API cost)
   if (["national-life", "massmutual"].includes(slug)) return "free";
   return "freemium";

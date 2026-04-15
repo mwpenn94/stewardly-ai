@@ -13,6 +13,8 @@ import {
   integrationSyncConfig, plaidWebhooksLog, exportJobs,
   documentTemplates, integrationOptimizationCycles,
   promptExperiments, modelSchedules, modelBacktests,
+  documentVersions, documentAnnotations,
+  aiToolExecutions, aiResponseQuality, aiConfigLayers,
 } from "../../drizzle/schema";
 import crypto from "crypto";
 
@@ -234,18 +236,166 @@ const modelBacktestsRouter = router({
     return db.select().from(modelBacktests).where(eq(modelBacktests.userId, ctx.user.id)).orderBy(desc(modelBacktests.createdAt)).limit(input.limit);
   }),
   create: protectedProcedure.input(z.object({
-    modelName: z.string().max(100), startDate: z.string(), endDate: z.string(),
-    initialCapital: z.string(), finalCapital: z.string().optional(),
-    returnPct: z.string().optional(), maxDrawdown: z.string().optional(),
-    sharpeRatio: z.string().optional(), parameters: z.any().optional(),
-    results: z.any().optional(),
+    modelType: z.string().max(64),
+    historicalEvent: z.string().max(128),
+    eventYear: z.number().int(),
+    portfolioParams: z.any().optional(),
+    resultJson: z.any().optional(),
+    maxDrawdown: z.number().optional(),
+    recoveryMonths: z.number().int().optional(),
   })).mutation(async ({ ctx, input }) => {
     const db = await dbOrThrow();
-    const [r] = await db.insert(modelBacktests).values({ ...input, userId: ctx.user.id });
+    const [r] = await db.insert(modelBacktests).values({
+      userId: ctx.user.id,
+      modelType: input.modelType,
+      historicalEvent: input.historicalEvent,
+      eventYear: input.eventYear,
+      portfolioParams: input.portfolioParams ?? null,
+      resultJson: input.resultJson ?? null,
+      maxDrawdown: input.maxDrawdown ?? null,
+      recoveryMonths: input.recoveryMonths ?? null,
+    });
     return { id: r.insertId };
   }),
 });
 
+// ─── Document Versions ─────────────────────────────────────────
+const documentVersionsRouter = router({
+  list: protectedProcedure.input(z.object({ documentId: z.number() })).query(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    return db.select().from(documentVersions).where(and(eq(documentVersions.documentId, input.documentId), eq(documentVersions.userId, ctx.user.id))).orderBy(desc(documentVersions.createdAt));
+  }),
+  create: protectedProcedure.input(z.object({
+    documentId: z.number(), versionNumber: z.number(),
+    filename: z.string().max(512), fileUrl: z.string(),
+    fileKey: z.string(), mimeType: z.string().max(128).optional(),
+    extractedText: z.string().optional(), chunkCount: z.number().default(0),
+    sizeBytes: z.number().optional(),
+  })).mutation(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    const [r] = await db.insert(documentVersions).values({ ...input, userId: ctx.user.id });
+    return { id: r.insertId };
+  }),
+  delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    await db.delete(documentVersions).where(and(eq(documentVersions.id, input.id), eq(documentVersions.userId, ctx.user.id)));
+    return { success: true };
+  }),
+});
+// ─── Document Annotations ──────────────────────────────────────
+const documentAnnotationsRouter = router({
+  list: protectedProcedure.input(z.object({ documentId: z.number() })).query(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    return db.select().from(documentAnnotations).where(and(eq(documentAnnotations.documentId, input.documentId), eq(documentAnnotations.userId, ctx.user.id))).orderBy(desc(documentAnnotations.createdAt));
+  }),
+  create: protectedProcedure.input(z.object({
+    documentId: z.number(), content: z.string(),
+    highlightText: z.string().optional(), highlightStart: z.number().optional(),
+    highlightEnd: z.number().optional(),
+    annotationType: z.enum(["comment", "highlight", "question", "action_item", "ai_insight"]).default("comment"),
+    parentId: z.number().optional(),
+  })).mutation(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    const [r] = await db.insert(documentAnnotations).values({ ...input, userId: ctx.user.id });
+    return { id: r.insertId };
+  }),
+  resolve: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    await db.update(documentAnnotations).set({ resolved: true, resolvedBy: ctx.user.id, resolvedAt: new Date() }).where(and(eq(documentAnnotations.id, input.id), eq(documentAnnotations.userId, ctx.user.id)));
+    return { success: true };
+  }),
+  delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    await db.delete(documentAnnotations).where(and(eq(documentAnnotations.id, input.id), eq(documentAnnotations.userId, ctx.user.id)));
+    return { success: true };
+  }),
+});
+// ─── AI Tool Executions ────────────────────────────────────────
+const aiToolExecutionsRouter = router({
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(20), conversationId: z.number().optional() })).query(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    const conditions = [eq(aiToolExecutions.userId, ctx.user.id)];
+    if (input.conversationId) conditions.push(eq(aiToolExecutions.conversationId, input.conversationId));
+    return db.select().from(aiToolExecutions).where(and(...conditions)).orderBy(desc(aiToolExecutions.createdAt)).limit(input.limit);
+  }),
+  record: protectedProcedure.input(z.object({
+    conversationId: z.number().optional(), messageId: z.number().optional(),
+    toolName: z.string().max(100), toolArgs: z.any(),
+    toolResult: z.any().optional(), autoPopulatedFields: z.any().optional(),
+    executionMs: z.number().optional(), success: z.boolean().default(true),
+    errorMessage: z.string().optional(),
+  })).mutation(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    const [r] = await db.insert(aiToolExecutions).values({ ...input, userId: ctx.user.id });
+    return { id: r.insertId };
+  }),
+  stats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await dbOrThrow();
+    const rows = await db.select({
+      toolName: aiToolExecutions.toolName,
+      count: sql<number>`COUNT(*)`,
+      avgMs: sql<number>`AVG(${aiToolExecutions.executionMs})`,
+      successRate: sql<number>`AVG(CASE WHEN ${aiToolExecutions.success} = 1 THEN 1.0 ELSE 0.0 END)`,
+    }).from(aiToolExecutions).where(eq(aiToolExecutions.userId, ctx.user.id)).groupBy(aiToolExecutions.toolName);
+    return rows;
+  }),
+});
+// ─── AI Response Quality ───────────────────────────────────────
+const aiResponseQualityRouter = router({
+  list: protectedProcedure.input(z.object({ limit: z.number().min(1).max(100).default(20) })).query(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    return db.select().from(aiResponseQuality).where(eq(aiResponseQuality.userId, ctx.user.id)).orderBy(desc(aiResponseQuality.createdAt)).limit(input.limit);
+  }),
+  record: protectedProcedure.input(z.object({
+    conversationId: z.number().optional(), messageId: z.number().optional(),
+    responseEmpty: z.boolean().default(false), disclaimerCount: z.number().default(0),
+    toolCallsAttempted: z.number().default(0), toolCallsCompleted: z.number().default(0),
+    retryCount: z.number().default(0), latencyMs: z.number().optional(),
+  })).mutation(async ({ ctx, input }) => {
+    const db = await dbOrThrow();
+    const [r] = await db.insert(aiResponseQuality).values({ ...input, userId: ctx.user.id });
+    return { id: r.insertId };
+  }),
+  avgMetrics: protectedProcedure.query(async ({ ctx }) => {
+    const db = await dbOrThrow();
+    const [row] = await db.select({
+      avgLatency: sql<number>`AVG(${aiResponseQuality.latencyMs})`,
+      avgRetries: sql<number>`AVG(${aiResponseQuality.retryCount})`,
+      emptyRate: sql<number>`AVG(CASE WHEN ${aiResponseQuality.responseEmpty} = 1 THEN 1.0 ELSE 0.0 END)`,
+      total: sql<number>`COUNT(*)`,
+    }).from(aiResponseQuality).where(eq(aiResponseQuality.userId, ctx.user.id));
+    return row;
+  }),
+});
+// ─── AI Config Layers ──────────────────────────────────────────
+const aiConfigLayersRouter = router({
+  list: adminProcedure.query(async () => {
+    const db = await dbOrThrow();
+    return db.select().from(aiConfigLayers).orderBy(aiConfigLayers.layerType);
+  }),
+  get: adminProcedure.input(z.object({ layerType: z.enum(["platform", "organization", "manager", "professional", "client"]), entityId: z.number() })).query(async ({ input }) => {
+    const db = await dbOrThrow();
+    return db.select().from(aiConfigLayers).where(and(eq(aiConfigLayers.layerType, input.layerType), eq(aiConfigLayers.entityId, input.entityId)));
+  }),
+  upsert: adminProcedure.input(z.object({
+    layerType: z.enum(["platform", "organization", "manager", "professional", "client"]),
+    entityId: z.number(), config: z.any(),
+  })).mutation(async ({ input }) => {
+    const db = await dbOrThrow();
+    const existing = await db.select().from(aiConfigLayers).where(and(eq(aiConfigLayers.layerType, input.layerType), eq(aiConfigLayers.entityId, input.entityId)));
+    if (existing.length > 0) {
+      await db.update(aiConfigLayers).set({ config: input.config, updatedAt: new Date() }).where(eq(aiConfigLayers.id, existing[0].id));
+      return { id: existing[0].id, updated: true };
+    }
+    const [r] = await db.insert(aiConfigLayers).values(input);
+    return { id: r.insertId, updated: false };
+  }),
+  delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    const db = await dbOrThrow();
+    await db.delete(aiConfigLayers).where(eq(aiConfigLayers.id, input.id));
+    return { success: true };
+  }),
+});
 export const finalOrphansRouter = router({
   syncConfig: syncConfigRouter,
   plaidWebhooks: plaidWebhooksRouter,
@@ -255,4 +405,9 @@ export const finalOrphansRouter = router({
   promptExperiments: promptExperimentsRouter,
   modelSchedules: modelSchedulesRouter,
   modelBacktests: modelBacktestsRouter,
+  documentVersions: documentVersionsRouter,
+  documentAnnotations: documentAnnotationsRouter,
+  aiToolExecutions: aiToolExecutionsRouter,
+  aiResponseQuality: aiResponseQualityRouter,
+  aiConfigLayers: aiConfigLayersRouter,
 });

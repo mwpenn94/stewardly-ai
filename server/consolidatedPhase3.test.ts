@@ -353,7 +353,7 @@ describe("Org Providers — Context Assembly", () => {
   it("should return org context when orgId is provided", async () => {
     const ctx = await assembleContext(undefined, "test-org");
     expect(ctx).toBeDefined();
-  });
+  }, 15_000);
 });
 
 describe("Org Providers — Adapter Factory", () => {

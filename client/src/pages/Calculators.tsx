@@ -1250,7 +1250,7 @@ export default function Calculators() {
                   <p className="text-sm font-medium text-foreground">{s.name}</p>
                   <p className="text-xs text-muted-foreground">{new Date(s.updatedAt).toLocaleDateString()}</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => deleteMut.mutate({ id: s.id })}
+                <Button variant="ghost" size="sm" aria-label="Delete saved scenario" onClick={() => deleteMut.mutate({ id: s.id })}
                   className="text-red-400 hover:text-red-300 h-7 w-7 p-0">
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>

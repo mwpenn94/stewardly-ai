@@ -72,11 +72,11 @@ export default function APIKeys() {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { navigator.clipboard.writeText(key.prefix); toast.success("Key prefix copied"); }}>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" aria-label="Copy API key" onClick={() => { navigator.clipboard.writeText(key.prefix); toast.success("Key prefix copied"); }}>
                       <Copy className="h-3.5 w-3.5" />
                     </Button>
                     {key.status === "active" && (
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-300" onClick={() => toast.info("Key revocation coming soon")}>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-300" aria-label="Revoke API key" onClick={() => toast.info("Key revocation coming soon")}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}

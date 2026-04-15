@@ -150,8 +150,15 @@ export const users = mysqlTable("users", {
   profileEnrichedAt: timestamp("profile_enriched_at"),
   profileEnrichmentSource: varchar("profile_enrichment_source", { length: 50 }),
   signInDataJson: json("sign_in_data_json"),
+  // Stripe billing
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  stripePlanId: varchar("stripe_plan_id", { length: 255 }),
+  stripeSubscriptionStatus: varchar("stripe_subscription_status", { length: 50 }),
+  stripeCurrentPeriodEnd: timestamp("stripe_current_period_end"),
 }, (table) => ({
     openIdIdx: index("idx_users_open_id").on(table.openId),
+    stripeCustomerIdIdx: index("idx_users_stripe_customer_id").on(table.stripeCustomerId),
     affiliateOrgIdIdx: index("idx_users_affiliate_org_id").on(table.affiliateOrgId),
     linkedinIdIdx: index("idx_users_linkedin_id").on(table.linkedinId),
     googleIdIdx: index("idx_users_google_id").on(table.googleId),
@@ -6604,3 +6611,29 @@ export const integrationBlueprintRuns = mysqlTable("integration_blueprint_runs",
 export type IntegrationBlueprintRun = typeof integrationBlueprintRuns.$inferSelect;
 export type InsertIntegrationBlueprintRun = typeof integrationBlueprintRuns.$inferInsert;
 
+
+
+// ─── BILLING EVENTS (Stripe webhook event log) ─────────────────────────────
+// DB table: billing_events
+export const billingEvents = mysqlTable("billing_events", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  stripeEventId: varchar("stripe_event_id", { length: 255 }).notNull(),
+  eventType: varchar("event_type", { length: 100 }).notNull(),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
+  stripeInvoiceId: varchar("stripe_invoice_id", { length: 255 }),
+  amountCents: int("amount_cents"),
+  currency: varchar("currency", { length: 10 }).default("usd"),
+  status: varchar("status", { length: 50 }),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_billing_events_user_id").on(table.userId),
+  stripeEventIdIdx: index("idx_billing_events_stripe_event_id").on(table.stripeEventId),
+  eventTypeIdx: index("idx_billing_events_event_type").on(table.eventType),
+}));
+
+export type BillingEvent = typeof billingEvents.$inferSelect;
+export type InsertBillingEvent = typeof billingEvents.$inferInsert;

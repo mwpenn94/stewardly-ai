@@ -187,10 +187,10 @@ export function IncomeStreamsPanel({ incomeStreams, setIncomeStreams, scores }: 
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-sm font-bold text-primary">{fmt(stream.amount * (stream.frequency === 'monthly' ? 12 : stream.frequency === 'quarterly' ? 4 : 1))}/yr</span>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingId(stream.id)} aria-label={`Edit ${stream.name} stream`}>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingId(stream.id)} aria-label={`Edit ${stream.source} stream`}>
                           <span className="text-xs">✏️</span>
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-6 w-6 text-red-400 hover:text-red-300" onClick={() => removeStream(stream.id)} aria-label={`Delete ${stream.name} stream`}>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-red-400 hover:text-red-300" onClick={() => removeStream(stream.id)} aria-label={`Delete ${stream.source} stream`}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>

@@ -2154,6 +2154,8 @@ import { workflowAutomationRouter } from "./routers/workflowAutomation";
 import { enrichmentEngineRouter } from "./routers/enrichmentEngine";
 import { professionalPracticeRouter } from "./routers/professionalPractice";
 import { finalOrphansRouter } from "./routers/finalOrphans";
+import { billingRouter } from "./stripe/billingRouter";
+import { videoConferencingRouter } from "./routers/videoConferencing";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2319,6 +2321,8 @@ export const appRouter = router({
   enrichmentEngine: enrichmentEngineRouter,
   professionalPractice: professionalPracticeRouter,
   finalOrphans: finalOrphansRouter,
+  billing: billingRouter,
+  videoConferencing: videoConferencingRouter,
 });
 
 export type AppRouter = typeof appRouter;

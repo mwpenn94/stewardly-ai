@@ -224,6 +224,24 @@ const PROVIDERS = [
     freeTierDescription: "Free for all GitHub accounts. Fine-grained PATs recommended with Contents + Pull requests read/write.",
     freeTierLimit: "Unlimited",
   },
+  {
+    id: uuid(), slug: "wealthbox", name: "Wealthbox CRM", description: "Financial advisor CRM with contact management, pipeline tracking, and workflow automation. Two-way sync for client data.", category: "crm" as const,
+    ownershipTier: "professional" as const, authMethod: "bearer_token" as const,
+    baseUrl: "https://api.crmworkspace.com/v1",
+    docsUrl: "https://dev.wealthbox.com/",
+    signupUrl: "https://www.wealthbox.com/",
+    freeTierDescription: "No free tier. Plans from $49/mo per user. API included on all plans.",
+    freeTierLimit: "None",
+  },
+  {
+    id: uuid(), slug: "redtail", name: "Redtail CRM", description: "Industry-leading CRM for financial advisors. Contact management, workflow automation, and compliance tracking.", category: "crm" as const,
+    ownershipTier: "professional" as const, authMethod: "api_key" as const,
+    baseUrl: "https://smf.crm3.redtailtechnology.com/api/public/v1",
+    docsUrl: "https://corporate.redtailtechnology.com/api",
+    signupUrl: "https://corporate.redtailtechnology.com/",
+    freeTierDescription: "No free tier. $99/mo per database (up to 15 users). API included.",
+    freeTierLimit: "None",
+  },
 ];
 
 const CARRIER_TEMPLATES = [

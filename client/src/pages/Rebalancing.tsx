@@ -488,6 +488,7 @@ export default function RebalancingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border text-left uppercase text-[10px] text-muted-foreground">
@@ -523,6 +524,7 @@ export default function RebalancingPage() {
                     ))}
                   </tbody>
                 </table>
+                </div>
                 {result.warnings.length > 0 && (
                   <div
                     role="alert"
