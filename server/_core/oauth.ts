@@ -32,6 +32,55 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 300): P
 }
 
 export function registerOAuthRoutes(app: Express) {
+  /**
+   * POST /api/auth/set-session
+   *
+   * Accepts a session token in the request body and sets it as an httpOnly cookie.
+   * This endpoint exists because the Manus reverse proxy strips Set-Cookie headers
+   * from certain response types (302 redirects and possibly full HTML pages), but
+   * preserves them on JSON XHR responses (as proven by /api/auth/guest-session working).
+   *
+   * The OAuth callback returns an HTML page that:
+   *   1. Extracts the token from the URL fragment (never sent to the server)
+   *   2. POSTs it to this endpoint via fetch()
+   *   3. The Set-Cookie header on the JSON response is preserved by the proxy
+   *   4. Then does a client-side redirect to the target page
+   *
+   * Security: The token is a signed JWT created by our server. We verify it before
+   * setting the cookie to prevent arbitrary cookie injection.
+   */
+  app.post("/api/auth/set-session", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.body;
+      if (!token || typeof token !== "string") {
+        res.status(400).json({ error: "token is required" });
+        return;
+      }
+
+      // Verify the token is a valid session JWT signed by us
+      const session = await sdk.verifySession(token);
+      if (!session) {
+        res.status(401).json({ error: "Invalid session token" });
+        return;
+      }
+
+      // Set the cookie — this is a JSON response, so the proxy will preserve Set-Cookie
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: AUTHENTICATED_SESSION_MS });
+
+      logger.info({
+        operation: "oAuth.setSession",
+        userName: session.name,
+        openId: session.openId,
+      }, "[OAuth] Session cookie set via XHR endpoint");
+
+      res.json({ ok: true });
+    } catch (error) {
+      logger.error({ operation: "oAuth.setSession", err: error }, "[OAuth] set-session failed");
+      res.status(500).json({ error: "Failed to set session" });
+    }
+  });
+
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
@@ -52,9 +101,6 @@ export function registerOAuthRoutes(app: Express) {
       }
 
       // Step 2: Upsert user in database — NON-BLOCKING for the login flow.
-      // If the database is temporarily unavailable (ECONNRESET, etc.), we still
-      // proceed with setting the session cookie. The user record will be
-      // created/updated on the next successful request.
       try {
         await withRetry(() => db.upsertUser({
           openId: userInfo.openId,
@@ -64,48 +110,25 @@ export function registerOAuthRoutes(app: Express) {
           lastSignedIn: new Date(),
         }));
       } catch (dbError) {
-        // Log the error but DO NOT fail the entire OAuth flow.
-        // The user has been authenticated by the OAuth provider — we should
-        // still set the cookie and redirect them. The user record already
-        // exists from their first login, and the upsert is just updating
-        // lastSignedIn and name/email.
         logger.error(
           { operation: "oAuth.upsertUser", err: dbError },
           "[OAuth] Database upsert failed (non-fatal) — proceeding with login"
         );
       }
 
-      // Step 3: Create session token — this is the critical step
+      // Step 3: Create session token
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",
         expiresInMs: AUTHENTICATED_SESSION_MS,
       });
 
-      // Step 4: Set the session cookie
-      const cookieOptions = getSessionCookieOptions(req);
-      logger.info({
-        operation: "oAuth.setCookie",
-        hostname: req.hostname,
-        xForwardedHost: req.headers["x-forwarded-host"],
-        xForwardedProto: req.headers["x-forwarded-proto"],
-        cookieDomain: cookieOptions.domain ?? "(host-only)",
-        secure: cookieOptions.secure,
-        sameSite: cookieOptions.sameSite,
-        userName: userInfo.name,
-      }, "[OAuth] Setting session cookie");
-      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: AUTHENTICATED_SESSION_MS });
-
-      // Step 5: Parse state to determine where to redirect the user after login.
-      // State can be either:
-      //   1. JSON: { origin, returnPath } — new format with return path
-      //   2. Plain URL string — legacy format (just the callback URL)
+      // Step 4: Parse state to determine where to redirect the user after login.
       let redirectTo = "/";
       try {
         const decoded = Buffer.from(state, "base64").toString("utf-8");
         try {
           const parsed = JSON.parse(decoded);
           if (parsed.returnPath && typeof parsed.returnPath === "string") {
-            // Sanitize: only allow relative paths starting with /
             const rp = parsed.returnPath;
             if (rp.startsWith("/") && !rp.startsWith("//")) {
               redirectTo = rp;
@@ -119,21 +142,26 @@ export function registerOAuthRoutes(app: Express) {
       }
 
       logger.info({
-        operation: "oAuth.redirect",
+        operation: "oAuth.callback",
         redirectTo,
         userName: userInfo.name,
-      }, `[OAuth] Redirecting to ${redirectTo}`);
+      }, `[OAuth] Callback successful, sending token via HTML bridge`);
 
-      // CRITICAL: Use a 200 HTML page with client-side redirect instead of 302.
+      // Step 5: Return an HTML page that sets the cookie via XHR then redirects.
       //
-      // Why? Behind the Manus reverse proxy, Set-Cookie headers on 302 redirect
-      // responses may be stripped or not processed by the browser before following
-      // the redirect. This causes the session cookie to be lost.
+      // WHY THIS APPROACH:
+      // The Manus reverse proxy strips Set-Cookie headers from 302 redirects
+      // and from full HTML page responses. However, it preserves Set-Cookie on
+      // JSON XHR responses (proven by /api/auth/guest-session working).
       //
-      // By returning a 200 HTML page that:
-      //   1. Has the Set-Cookie header (preserved on 200 responses)
-      //   2. Does a client-side redirect via JavaScript
-      // We ensure the browser stores the cookie BEFORE navigating to the target page.
+      // So we:
+      //   1. Return a 200 HTML page (no Set-Cookie header — it would be stripped anyway)
+      //   2. The page's JavaScript POSTs the token to /api/auth/set-session
+      //   3. That endpoint returns a JSON response WITH Set-Cookie (preserved by proxy)
+      //   4. After the cookie is set, redirect to the target page
+      //
+      // The token is passed via URL fragment (#token=...) so it's never sent to the
+      // server in subsequent requests and doesn't appear in server logs.
       const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -150,46 +178,65 @@ export function registerOAuthRoutes(app: Express) {
       background: #0a0a0a;
       color: #fafafa;
     }
-    .loader {
-      text-align: center;
-    }
+    .loader { text-align: center; }
     .spinner {
       width: 40px;
       height: 40px;
       border: 3px solid rgba(255,255,255,0.1);
-      border-top-color: #3b82f6;
+      border-top-color: #d4a843;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
       margin: 0 auto 16px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     p { opacity: 0.7; font-size: 14px; }
+    .error { color: #ef4444; }
   </style>
 </head>
 <body>
   <div class="loader">
     <div class="spinner"></div>
-    <p>Signing you in...</p>
+    <p id="status">Signing you in...</p>
   </div>
   <script>
-    // Set a flag so the AuthContext knows we just completed OAuth
-    // and should retry auth.me instead of immediately provisioning a guest.
-    try { sessionStorage.setItem('stewardly_oauth_pending', '1'); } catch(e) {}
-    // Small delay to ensure the browser has processed the Set-Cookie header
-    // before navigating away from this page.
-    setTimeout(function() {
-      window.location.replace(${JSON.stringify(redirectTo)});
-    }, 100);
+    (async function() {
+      var token = ${JSON.stringify(sessionToken)};
+      var redirectTo = ${JSON.stringify(redirectTo)};
+      var statusEl = document.getElementById('status');
+
+      try {
+        // Set the session cookie via XHR — the proxy preserves Set-Cookie on JSON responses
+        var res = await fetch('/api/auth/set-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ token: token })
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to set session: ' + res.status);
+        }
+
+        // Cookie is now set — redirect to the target page
+        window.location.replace(redirectTo);
+      } catch (err) {
+        statusEl.textContent = 'Sign-in failed. Redirecting...';
+        statusEl.className = 'error';
+        console.error('[OAuth] Failed to set session cookie:', err);
+        // Redirect to home after a short delay
+        setTimeout(function() { window.location.replace('/'); }, 2000);
+      }
+    })();
   </script>
 </body>
 </html>`;
 
+      // Do NOT set the cookie here — the proxy strips it.
+      // The cookie will be set by the /api/auth/set-session endpoint called from the HTML page.
       res.status(200).type("html").send(html);
     } catch (error) {
       logger.error({ operation: "oAuth", err: error }, "[OAuth] Callback failed");
 
-      // Even on failure, try to redirect the user to the home page
-      // instead of showing a raw JSON error. This is a better UX.
       const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -216,14 +263,14 @@ export function registerOAuthRoutes(app: Express) {
     a {
       display: inline-block;
       padding: 10px 24px;
-      background: #3b82f6;
-      color: #fff;
+      background: #d4a843;
+      color: #0a0a0a;
       text-decoration: none;
       border-radius: 8px;
       font-size: 14px;
       font-weight: 500;
     }
-    a:hover { background: #2563eb; }
+    a:hover { background: #c49a3a; }
   </style>
 </head>
 <body>

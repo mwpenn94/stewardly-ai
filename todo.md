@@ -4435,3 +4435,12 @@
 - [x] Improve DB connection pool with enableKeepAlive and proper pool settings
 - [x] Replace raw JSON error response with friendly HTML error page
 - [x] All 7,738 tests passing across 323 files
+
+## Auth Loop Fix — Round 3 (Perpetual spinner)
+- [x] Fix perpetual spinner on OAuth sign-in — HTML redirect page stuck loading
+- [x] Root cause: Manus proxy strips Set-Cookie from ALL server responses (302 + HTML)
+- [x] Solution: XHR-based cookie setting via /api/auth/set-session (proxy preserves Set-Cookie on JSON XHR)
+- [x] OAuth callback returns HTML that POSTs token to /api/auth/set-session, then redirects client-side
+- [x] Removed OAuth retry logic from AuthContext (no longer needed)
+- [x] Added /api/auth/set-session to skipPaths for tenant context middleware
+- [x] Updated OAuth callback tests (10 tests passing)

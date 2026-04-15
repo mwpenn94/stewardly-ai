@@ -170,7 +170,7 @@ async function startServer() {
   // ─── Tenant Context Middleware (AsyncLocalStorage for non-tRPC routes) ──
   app.use(async (req, _res, next) => {
     // Skip auth check for paths that don't need tenant context
-    const skipPaths = ["/api/oauth/", "/api/auth/guest-session", "/health", "/ready"];
+    const skipPaths = ["/api/oauth/", "/api/auth/guest-session", "/api/auth/set-session", "/health", "/ready"];
     if (skipPaths.some(p => req.path.startsWith(p))) {
       return next();
     }
