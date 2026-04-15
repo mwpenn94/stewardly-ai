@@ -43,6 +43,16 @@ export function registerOAuthRoutes(app: Express) {
       });
 
       const cookieOptions = getSessionCookieOptions(req);
+      logger.info({
+        operation: "oAuth.setCookie",
+        hostname: req.hostname,
+        xForwardedHost: req.headers["x-forwarded-host"],
+        xForwardedProto: req.headers["x-forwarded-proto"],
+        cookieDomain: cookieOptions.domain ?? "(host-only)",
+        secure: cookieOptions.secure,
+        sameSite: cookieOptions.sameSite,
+        userName: userInfo.name,
+      }, "[OAuth] Setting session cookie");
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: AUTHENTICATED_SESSION_MS });
 
       // Parse state to determine where to redirect the user after login.

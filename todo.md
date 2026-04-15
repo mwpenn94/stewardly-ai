@@ -4400,3 +4400,12 @@
 - [ ] Fix the root cause
 - [ ] Verify fix by reproducing the exact same scenario
 - [ ] Run full test suite
+
+### Turn 23 — Auth Loop Fix (Apr 14 2026)
+- [x] Diagnose auth loop triggered by sending chat message
+- [x] Fix main.tsx: remove global redirectToLoginIfUnauthorized auto-redirect
+- [x] Fix Chat.tsx: don't fall back to tRPC sendMutation on 401/403 stream errors
+- [x] Fix cookies.ts: remove explicit domain from cookie options (host-only cookies)
+- [x] Fix AuthContext.tsx: move localStorage.setItem from useMemo to useEffect
+- [x] Verify on dev preview: 0 errors, 0 redirects, message sent successfully
+- [x] Vitest: 7,727/7,727 passed (321 files), 0 failed (1 external API test excluded - transient network)

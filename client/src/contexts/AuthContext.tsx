@@ -102,14 +102,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   //   2. Guest provisioning has completed (if it was needed)
   // This prevents pages from flashing "Please sign in" during the
   // ~200-400ms window while the guest session is being created.
+  // Persist user info to localStorage for cross-tab awareness (side effect → useEffect)
+  useEffect(() => {
+    localStorage.setItem(
+      "manus-runtime-user-info",
+      JSON.stringify(meQuery.data ?? null)
+    );
+  }, [meQuery.data]);
+
   const state = useMemo<AuthState>(() => {
     const isInitialLoading = meQuery.isLoading || logoutMutation.isPending;
     const isStillProvisioning = !isInitialLoading && !meQuery.data && !guestProvisioningDone;
-
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
 
     return {
       user: meQuery.data ?? null,

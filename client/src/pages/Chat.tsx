@@ -1290,7 +1290,16 @@ export default function Chat() {
             setStreamingContent("");
             return;
           }
-          // If streaming fails, fall back to tRPC
+          // If the stream failed due to auth (401/403), do NOT fall back to tRPC
+          // (it will also fail and trigger the global mutation error handler,
+          // creating a cascading error loop). Instead, throw immediately so
+          // the outer catch shows the AUTH_EXPIRED feedback.
+          const errMsg = (streamErr?.message || "").toLowerCase();
+          if (errMsg.includes("401") || errMsg.includes("403") || errMsg.includes("unauth")) {
+            setMessages(prev => prev.slice(0, -1)); // remove placeholder
+            throw streamErr;
+          }
+          // For non-auth errors (network, 500, etc.), fall back to tRPC
           setMessages(prev => prev.slice(0, -1)); // remove placeholder
           const result = await sendMutation.mutateAsync({
             content: trimmed,
