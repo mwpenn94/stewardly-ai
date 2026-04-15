@@ -74,6 +74,7 @@ import AdmZip from "adm-zip";
 import { exportsRouter } from "./routers/exports";
 import { resolveAIConfig, buildLayerOverlayPrompt } from "./aiConfigResolver";
 import { learningRouter } from "./routers/learning";
+import { learningSocialRouter } from "./routers/learningSocial";
 import { ghlWebhookRouter } from "./routers/ghlWebhook";
 import { dripifyWebhookRouter } from "./routers/dripifyWebhook";
 import { smsitWebhookRouter } from "./routers/smsitWebhook";
@@ -2144,6 +2145,15 @@ import { wealthEngineRouter } from "./routers/wealthEngine";
 import { codeChatRouter } from "./routers/codeChat";
 import { calculatorEngineRouter } from "./routers/calculatorEngine";
 import { financialProfileRouter } from "./routers/financialProfile";
+import { financialInstrumentsRouter } from "./routers/financialInstruments";
+import { securityPrivacyRouter } from "./routers/securityPrivacy";
+import { aiAutonomyRouter } from "./routers/aiAutonomy";
+import { remainingOrphansRouter } from "./routers/remainingOrphans";
+import { complianceGovernanceRouter } from "./routers/complianceGovernance";
+import { workflowAutomationRouter } from "./routers/workflowAutomation";
+import { enrichmentEngineRouter } from "./routers/enrichmentEngine";
+import { professionalPracticeRouter } from "./routers/professionalPractice";
+import { finalOrphansRouter } from "./routers/finalOrphans";
 
 export const appRouter = router({
   system: systemRouter,
@@ -2286,6 +2296,7 @@ export const appRouter = router({
   calculatorEngine: calculatorEngineRouter,
   financialProfile: financialProfileRouter,
   learning: learningRouter,
+  learningSocial: learningSocialRouter,
   ghlWebhook: ghlWebhookRouter,
   dripifyWebhook: dripifyWebhookRouter,
   smsitWebhook: smsitWebhookRouter,
@@ -2299,6 +2310,15 @@ export const appRouter = router({
   reportsFiduciary: reportsFiduciaryRouter,
   dynamicIntegrations: dynamicIntegrationsRouter,
   calcSession: calcSessionRouter,
+  financialInstruments: financialInstrumentsRouter,
+  securityPrivacy: securityPrivacyRouter,
+  aiAutonomy: aiAutonomyRouter,
+  remainingOrphans: remainingOrphansRouter,
+  complianceGovernance: complianceGovernanceRouter,
+  workflowAutomation: workflowAutomationRouter,
+  enrichmentEngine: enrichmentEngineRouter,
+  professionalPractice: professionalPracticeRouter,
+  finalOrphans: finalOrphansRouter,
 });
 
 export type AppRouter = typeof appRouter;

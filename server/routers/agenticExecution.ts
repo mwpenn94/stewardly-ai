@@ -21,6 +21,7 @@ import {
   premiumFinanceCases, carrierConnections,
 } from "../../drizzle/schema";
 import { contextualLLM } from "../shared/stewardlyWiring";
+import * as agentPerfService from "../services/agentPerformance";
 
 // ─── G8: Licensed Review Gate ──────────────────────────────────────────────
 const gateRouter = router({
@@ -732,6 +733,45 @@ const carrierRouter = router({
     }),
 });
 
+// ─── G9: Agent Performance Tracking ─────────────────────────────────────────
+const performanceRouter = router({
+  /** Get or create performance record for an agent template */
+  get: protectedProcedure
+    .input(z.object({ agentTemplateId: z.number() }))
+    .query(async ({ input }) => {
+      return agentPerfService.getOrCreate(input.agentTemplateId);
+    }),
+  /** Record a completed agent run */
+  recordRun: protectedProcedure
+    .input(z.object({
+      agentTemplateId: z.number(),
+      success: z.boolean(),
+      durationMs: z.number().optional(),
+      costUsd: z.number().optional(),
+      satisfactionScore: z.number().min(0).max(5).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { agentTemplateId, ...opts } = input;
+      return agentPerfService.recordRun(agentTemplateId, opts);
+    }),
+  /** List all performance records */
+  list: protectedProcedure.query(async () => {
+    return agentPerfService.listAll();
+  }),
+  /** Get top performers */
+  topPerformers: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(10) }).optional())
+    .query(async ({ input }) => {
+      return agentPerfService.topPerformers(input?.limit ?? 10);
+    }),
+  /** Reset stats for a template */
+  reset: protectedProcedure
+    .input(z.object({ agentTemplateId: z.number() }))
+    .mutation(async ({ input }) => {
+      return agentPerfService.resetStats(input.agentTemplateId);
+    }),
+});
+
 // ─── Combined Agentic Execution Router ─────────────────────────────────────
 export const agenticRouter = router({
   gate: gateRouter,
@@ -742,4 +782,5 @@ export const agenticRouter = router({
   estateDocs: estateDocRouter,
   premiumFinance: premiumFinanceRouter,
   carrier: carrierRouter,
+  performance: performanceRouter,
 });
