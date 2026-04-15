@@ -4662,3 +4662,14 @@
 - [x] Pass 25: Clean pass (1/3)
 - [x] Pass 26: Clean pass (2/3)
 - [x] Pass 27: Clean pass (3/3 CONVERGED)
+
+## Integration Testing & Browser Verification (Passes 28+)
+- [x] Complete Stripe test payment with 4242 card — full programmatic E2E (checkout + payment + subscription + portal + cleanup)
+- [x] Verify Stripe webhook processes checkout.session.completed event (signature verification confirmed)
+- [x] Verify subscription activation — subscription status ACTIVE, invoice PAID ($49.00)
+- [x] Test Plaid bank linking — full sandbox E2E (link token + token exchange + 12 accounts + $213K balance + holdings)
+- [x] Verify Plaid account data — 12 accounts, 13 holdings, ACH routing numbers, investment data
+- [x] Pass 28: Clean pass (4/3 maintained)
+- [x] Pass 29: Clean pass (5/3 maintained)
+- [x] Pass 30: Clean pass (6/3 maintained)
+- [x] Convergence maintained through 6+ consecutive clean passes (Passes 25-30)

@@ -169,3 +169,6 @@ qa-findings.md
 qa-live-findings.md
 qa-reconciliation-pass136.md
 deployment-check-pass136.md
+
+# E2E test scripts (run manually, not part of CI)
+test-*.mjs
