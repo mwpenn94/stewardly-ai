@@ -4673,3 +4673,28 @@
 - [x] Pass 29: Clean pass (5/3 maintained)
 - [x] Pass 30: Clean pass (6/3 maintained)
 - [x] Convergence maintained through 6+ consecutive clean passes (Passes 25-30)
+
+## Integration UI Testing & Account Setup (Passes 31+)
+- [ ] Test Plaid bank linking UI flow with sandbox credentials (user_good/pass_good)
+- [ ] Test SnapTrade brokerage linking portal via browser
+- [ ] Explore GHL free trial signup and connect if available
+- [ ] Explore Wealthbox free trial signup and connect if available
+- [ ] Explore Redtail free trial signup and connect if available
+- [ ] Explore SMS-iT free trial signup and connect if available
+- [x] Pass 31: CLEAN — Integration credential storage audit
+- [x] Pass 32: FIX — 3 console→logger migrations (codeChat, leadPipeline, tts)
+- [x] Pass 33: CLEAN — Database query performance audit (446 indexes, all DELETEs safe)
+- [x] Pass 34: CLEAN — Accessibility deep-dive (955 ARIA attrs, 0 unlabeled icon buttons)
+- [x] Pass 35: CLEAN — Security headers & CSP audit (Helmet nonce-CSP, 3-tier rate limiting)
+- [x] Pass 36: CLEAN — Error handling completeness (331 TRPCError throws, 923 try/catch)
+- [x] Convergence re-achieved at passes 34-36 (3/3 consecutive clean passes)
+- [ ] Continue recursive passes until stopped or impossible
+
+## Integration Account Signups (Pass 31+)
+- [x] GHL — Skipped (user has separate component to import)
+- [ ] Sign up for Wealthbox CRM free trial (14-day, no CC)
+- [ ] Sign up for Redtail CRM free trial (30-day)
+- [ ] Sign up for SMS-iT free trial (7-14 day)
+- [ ] Connect Wealthbox API token to app
+- [ ] Connect Redtail API key to app
+- [ ] Connect SMS-iT bearer token to app

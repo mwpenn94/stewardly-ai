@@ -292,8 +292,7 @@ function persistRoadmap(next: Roadmap): void {
     // The user sees the in-memory state either way; a failed persist
     // will surface on next restart via the "items you added are gone"
     // symptom, which is recoverable via re-entry.
-    // eslint-disable-next-line no-console
-    console.warn("[codeChat] roadmap persist failed:", err);
+    logger.warn("[codeChat] roadmap persist failed", { error: err instanceof Error ? err.message : String(err) });
   }
 }
 

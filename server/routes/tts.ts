@@ -10,6 +10,7 @@
 
 import { Router } from "express";
 import { generateSpeech, getVoiceCatalog } from "../edgeTTS";
+import { logger } from "../_core/logger";
 
 const ttsRouter = Router();
 
@@ -56,7 +57,7 @@ ttsRouter.post("/api/tts", async (req, res) => {
     res.setHeader("Cache-Control", "public, max-age=86400");
     res.send(audioBuffer);
   } catch (error: any) {
-    console.error("[TTS] Error:", error.message);
+    logger.error("[TTS] Error", { error: error.message });
     res.status(500).json({ error: "TTS generation failed" });
   }
 });

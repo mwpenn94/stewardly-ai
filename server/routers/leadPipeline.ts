@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
+import { logger } from "../_core/logger";
 
 export const leadPipelineRouter = router({
   getPipeline: protectedProcedure
@@ -18,7 +19,7 @@ export const leadPipelineRouter = router({
         return db.select().from(leadPipeline).orderBy(desc(leadPipeline.createdAt)).limit(input?.limit || 50);
       } catch (e: any) {
         // Table may not exist yet — return empty array gracefully
-        console.warn("[leadPipeline.getPipeline]", e?.message?.slice(0, 120));
+        logger.warn("[leadPipeline.getPipeline]", { error: e?.message?.slice(0, 120) });
         return [];
       }
     }),
