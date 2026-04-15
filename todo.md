@@ -4386,3 +4386,9 @@
 ### Documentation
 - [x] Update ARCHITECTURE.md with v2.6.1 sourcing policy
 - [x] Update CHANGELOG with all changes (CHANGELOG_APR14_R6.md)
+
+### Turn 22 — Auth Loop Fix (Critical)
+- [x] Diagnose auth redirect loop root cause
+- [ ] Fix auth loop across all affected routes
+- [x] Verify fix with browser testing
+- [x] Run TypeScript + Vitest verification (7731/7731, 322 files)

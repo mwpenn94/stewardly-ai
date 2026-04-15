@@ -13,7 +13,7 @@ import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { CommandPalette } from "./components/CommandPalette";
 import { VoiceOnboardingCoach } from "./components/VoiceOnboardingCoach";
 import { OnboardingTour, useOnboardingTour } from "./components/OnboardingTour";
-import { useGuestSession } from "./hooks/useGuestSession";
+import { AuthProvider } from "./contexts/AuthContext";
 // GlobalFooter removed permanently per user request (redundant nav)
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { usePageTracking } from "./hooks/useExponentialTracking";
@@ -344,8 +344,7 @@ function Router() {
 }
 
 function AppContent() {
-  // Auto-provision guest session for anonymous visitors
-  useGuestSession();
+  // Auth lifecycle (including guest provisioning) is handled by AuthProvider
   // Track page visits for the Exponential Engine (adaptive AI personalization)
   usePageTracking();
   // Global keyboard shortcut handler — must live INSIDE PILProvider so the
@@ -382,17 +381,19 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <NotificationProvider>
-            <AudioCompanionProvider>
-              <PILProvider>
-                <Toaster />
-                <KeyboardShortcuts />
-                <CommandPalette />
-                <VoiceOnboardingCoach />
-                <AppContent />
-              </PILProvider>
-            </AudioCompanionProvider>
-          </NotificationProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <AudioCompanionProvider>
+                <PILProvider>
+                  <Toaster />
+                  <KeyboardShortcuts />
+                  <CommandPalette />
+                  <VoiceOnboardingCoach />
+                  <AppContent />
+                </PILProvider>
+              </AudioCompanionProvider>
+            </NotificationProvider>
+          </AuthProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
