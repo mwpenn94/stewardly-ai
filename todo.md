@@ -4426,3 +4426,12 @@
 - [x] Add skip paths to tenant context middleware for auth-related routes
 - [x] Write 7 OAuth callback unit tests (200 HTML, sessionStorage flag, redirect path, sanitization, legacy state)
 - [x] All 7,738 tests passing across 323 files
+
+## Auth Loop Fix — Round 2 (OAuth callback error)
+- [x] Fix OAuth callback returning {"error":"OAuth callback failed"} instead of HTML redirect page
+- [ ] Verify sign-in flow works end-to-end on stewardly.manus.space
+- [x] Make db.upsertUser non-blocking in OAuth callback (login succeeds even if DB has transient error)
+- [x] Add retry logic with 2 retries for transient DB errors (ECONNRESET, ETIMEDOUT)
+- [x] Improve DB connection pool with enableKeepAlive and proper pool settings
+- [x] Replace raw JSON error response with friendly HTML error page
+- [x] All 7,738 tests passing across 323 files

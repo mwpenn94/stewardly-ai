@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { eq, desc, and, or, sql, asc, inArray, like, gte, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import { logger } from "./_core/logger";
 import {
   InsertUser, users, conversations, messages, documents, documentChunks,
@@ -15,14 +16,26 @@ import {
 import { normalizeQualityScore } from './shared/intelligence/types';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: mysql.Pool | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      // Create a connection pool with resilient settings.
+      // enableKeepAlive prevents ECONNRESET from idle connections.
+      // waitForConnections ensures we queue rather than fail immediately.
+      _pool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
+        waitForConnections: true,
+        connectionLimit: 10,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10000,
+      });
+      _db = drizzle({ client: _pool });
     } catch (error) {
       logger.warn( { operation: "database" },"[Database] Failed to connect:", error);
       _db = null;
+      _pool = null;
     }
   }
   return _db;
