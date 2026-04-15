@@ -6,16 +6,16 @@ const PROJECT_ROOT = path.resolve(import.meta.dirname, "..");
 const WHATS_NEW_PATH = path.join(PROJECT_ROOT, "client/src/components/WhatsNewModal.tsx");
 const CHANGELOG_BELL_PATH = path.join(PROJECT_ROOT, "client/src/components/ChangelogBell.tsx");
 
-describe("Changelog Data Update (v2026.04.04)", () => {
+describe("Changelog Data Update (v2026.04.15)", () => {
   const content = readFileSync(WHATS_NEW_PATH, "utf-8");
 
-  it("CURRENT_VERSION is updated to 2026.04.04", () => {
-    expect(content).toContain('CURRENT_VERSION = "2026.04.04"');
+  it("CURRENT_VERSION is updated to 2026.04.15", () => {
+    expect(content).toContain('CURRENT_VERSION = "2026.04.15"');
   });
 
-  it("v2026.04.04 release is the first entry in CHANGELOG array", () => {
-    const firstVersionIdx = content.indexOf('version: "2026.04.04"');
-    const secondVersionIdx = content.indexOf('version: "2026.04.01"');
+  it("v2026.04.15 release is the first entry in CHANGELOG array", () => {
+    const firstVersionIdx = content.indexOf('version: "2026.04.15"');
+    const secondVersionIdx = content.indexOf('version: "2026.04.04"');
     expect(firstVersionIdx).toBeGreaterThan(0);
     expect(secondVersionIdx).toBeGreaterThan(firstVersionIdx);
   });
@@ -53,9 +53,9 @@ describe("Changelog Data Update (v2026.04.04)", () => {
     expect(securityCount).toBe(1);
   });
 
-  it("previous releases are preserved (5 total releases)", () => {
+  it("previous releases are preserved (6 total releases)", () => {
     const releases = content.match(/version: "20\d{2}\.\d{2}\.\d{2}/g) || [];
-    expect(releases.length).toBeGreaterThanOrEqual(5);
+    expect(releases.length).toBeGreaterThanOrEqual(6);
   });
 });
 

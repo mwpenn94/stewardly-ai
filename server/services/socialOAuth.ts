@@ -9,8 +9,16 @@
  * 1. Frontend redirects to provider's auth URL
  * 2. Provider redirects back to /api/auth/{provider}/callback with code
  * 3. Server exchanges code for tokens, fetches user info
- * 4. Server creates/updates user in DB, issues session cookie
- * 5. Migrates guest data if applicable
+ * 4. Server creates/updates user in DB, issues session JWT
+ * 5. Server returns an HTML bridge page that:
+ *    a. Stores the token in localStorage (primary auth mechanism)
+ *    b. Calls /api/auth/set-session to set cookie (fallback)
+ *    c. Redirects to the target page
+ * 6. Migrates guest data if applicable
+ *
+ * The HTML bridge pattern is necessary because the Manus reverse proxy
+ * strips Set-Cookie headers from redirect responses. By rendering an
+ * intermediate HTML page, the token is stored client-side before navigation.
  */
 
 import type { Express, Request, Response } from "express";
@@ -167,7 +175,71 @@ async function issueSessionAndRedirect(
     }
   }
 
-  res.redirect(302, returnPath || "/");
+  // Use HTML bridge page instead of 302 redirect.
+  // The Manus reverse proxy strips Set-Cookie from 302 responses.
+  // The HTML page stores the token in localStorage and redirects client-side.
+  const redirectTo = returnPath || "/";
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Signing in...</title>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #fafafa;
+    }
+    .loader { text-align: center; }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #d4a843;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    p { opacity: 0.7; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="loader">
+    <div class="spinner"></div>
+    <p>Signing you in...</p>
+  </div>
+  <script>
+    (function() {
+      var token = ${JSON.stringify(sessionToken)};
+      var redirectTo = ${JSON.stringify(redirectTo)};
+      try {
+        localStorage.setItem('stewardly_session_token', token);
+      } catch(e) {
+        console.warn('[SocialOAuth] Failed to save token:', e);
+      }
+      try {
+        fetch('/api/auth/set-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ token: token })
+        }).finally(function() {
+          window.location.replace(redirectTo);
+        });
+      } catch(e) {
+        window.location.replace(redirectTo);
+      }
+    })();
+  </script>
+</body>
+</html>`;
+  res.status(200).type("html").send(html);
 }
 
 // ─── ROUTE REGISTRATION ──────────────────────────────────────────

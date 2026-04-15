@@ -11,7 +11,7 @@ The following variables are automatically injected by the Manus platform and req
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | MySQL/TiDB connection string |
-| `JWT_SECRET` | Session cookie signing |
+| `JWT_SECRET` | Session token signing (JWT used in both cookies and Authorization: Bearer header) |
 | `VITE_APP_ID` | Manus OAuth application ID |
 | `OAUTH_SERVER_URL` | Manus OAuth backend base URL |
 | `BUILT_IN_FORGE_API_URL` | Manus built-in APIs (LLM, storage, etc.) |

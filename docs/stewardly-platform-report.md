@@ -23,7 +23,7 @@
 
 ## 1. Executive Summary
 
-Stewardly is a full-stack AI-powered financial advisory platform built on React 19, Tailwind 4, Express 4, and tRPC 11 with Manus OAuth, a TiDB database layer, and S3 storage. The platform serves as a **digital financial twin** — an intelligent, continuously improving system that combines conversational AI, financial planning tools, compliance infrastructure, and multi-role advisory capabilities into a single unified experience.
+Stewardly is a full-stack AI-powered financial advisory platform built on React 19, Tailwind 4, Express 4, and tRPC 11 with multi-method authentication (Manus OAuth, Google, LinkedIn, Email), a TiDB database layer, and S3 storage. The platform serves as a **digital financial twin** — an intelligent, continuously improving system that combines conversational AI, financial planning tools, compliance infrastructure, and multi-role advisory capabilities into a single unified experience.
 
 _(Metrics below reflect the March 22, 2026 audit baseline. See the note at the top of this file for the current pass-63 counts.)_ The codebase spanned **128,728 lines** of TypeScript across **473 files** at the time of this audit, with **62 page components**, **89 reusable UI components**, **104 server service modules**, **53 tRPC router files**, and **262 database tables**. The test suite contained **63 test files** with **1,746 passing tests** (zero failures).
 
@@ -98,13 +98,13 @@ The codebase is well-structured with clear separation between services, routers,
 
 | Metric | Value |
 |--------|-------|
-| Test files | 63 |
-| Total tests | 1,746 |
-| Pass rate | 100% (1,746/1,746) |
-| Duration | ~22 seconds |
+| Test files | 324 |
+| Total tests | 7,751 |
+| Pass rate | 100% (7,751/7,751) |
+| Duration | ~53 seconds |
 | Largest test file | consolidatedPhase3.test.ts (98 tests) |
 
-The test suite covers foundation layer operations, data ingestion, social auth, exponential engine, product intelligence, user types, WebSocket notifications, and the new annotations/deep context features. All tests pass cleanly.
+The test suite covers foundation layer operations, data ingestion, social auth (including HTML bridge token flow), exponential engine, product intelligence, user types, WebSocket notifications, Bearer token authentication, and the annotations/deep context features. All tests pass cleanly.
 
 ---
 

@@ -41,10 +41,11 @@ export function registerOAuthRoutes(app: Express) {
    * preserves them on JSON XHR responses (as proven by /api/auth/guest-session working).
    *
    * The OAuth callback returns an HTML page that:
-   *   1. Extracts the token from the URL fragment (never sent to the server)
-   *   2. POSTs it to this endpoint via fetch()
-   *   3. The Set-Cookie header on the JSON response is preserved by the proxy
-   *   4. Then does a client-side redirect to the target page
+   *   1. Reads the token from an inline variable (embedded via JSON.stringify)
+   *   2. Stores it in localStorage (PRIMARY auth mechanism)
+   *   3. POSTs it to this endpoint via fetch() to set cookie (fallback)
+   *   4. The Set-Cookie header on the JSON response is preserved by the proxy
+   *   5. Then does a client-side redirect to the target page
    *
    * Security: The token is a signed JWT created by our server. We verify it before
    * setting the cookie to prevent arbitrary cookie injection.
@@ -147,7 +148,7 @@ export function registerOAuthRoutes(app: Express) {
         userName: userInfo.name,
       }, `[OAuth] Callback successful, sending token via HTML bridge`);
 
-      // Step 5: Return an HTML page that sets the cookie via XHR then redirects.
+      // Step 5: Return an HTML page that stores the token and redirects.
       //
       // WHY THIS APPROACH:
       // The Manus reverse proxy strips Set-Cookie headers from 302 redirects
@@ -155,13 +156,13 @@ export function registerOAuthRoutes(app: Express) {
       // JSON XHR responses (proven by /api/auth/guest-session working).
       //
       // So we:
-      //   1. Return a 200 HTML page (no Set-Cookie header — it would be stripped anyway)
-      //   2. The page's JavaScript POSTs the token to /api/auth/set-session
-      //   3. That endpoint returns a JSON response WITH Set-Cookie (preserved by proxy)
-      //   4. After the cookie is set, redirect to the target page
+      //   1. Return a 200 HTML page with the token embedded inline via JSON.stringify
+      //   2. The page's JavaScript stores the token in localStorage (PRIMARY auth path)
+      //   3. Also POSTs the token to /api/auth/set-session to set cookie (fallback)
+      //   4. After storage, redirect to the target page
       //
-      // The token is passed via URL fragment (#token=...) so it's never sent to the
-      // server in subsequent requests and doesn't appear in server logs.
+      // The token is embedded inline (not via URL fragment) so it never appears
+      // in browser history, server logs, or referrer headers.
       const html = `<!DOCTYPE html>
 <html>
 <head>

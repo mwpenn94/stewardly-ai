@@ -1,6 +1,6 @@
 # Stewardly AI — Quickstart Guide
 
-**Last updated**: April 14, 2026
+**Last updated**: April 15, 2026
 
 This guide walks a first-time user through the platform in under five minutes. Every step assumes you are starting from the login screen.
 
@@ -8,7 +8,7 @@ This guide walks a first-time user through the platform in under five minutes. E
 
 ## Step 1: Sign In (30 seconds)
 
-Navigate to the app URL and click **Sign In**. Stewardly uses Manus OAuth — no separate password to remember. If you prefer to explore first, you can use the platform as a **Guest** with limited features.
+Navigate to the app URL and click **Sign In**. Stewardly supports multiple sign-in methods: **Manus OAuth**, **Google**, **LinkedIn**, or **Email/Password**. If you prefer to explore first, you can use the platform as a **Guest** with limited features. Your session is automatically maintained across browser tabs and refreshed before expiry.
 
 | Feature | Guest | Signed In |
 |---------|-------|-----------|

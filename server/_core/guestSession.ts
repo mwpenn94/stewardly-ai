@@ -26,10 +26,16 @@ export function registerGuestSessionRoutes(app: Express) {
   // POST /api/auth/guest-session — create or refresh a guest session
   app.post("/api/auth/guest-session", async (req: Request, res: Response) => {
     try {
-      // Check if user already has a valid session
+      // Check if user already has a valid session (cookie OR Authorization header)
       const existingCookie = req.cookies?.app_session_id || parseCookieManual(req.headers.cookie, COOKIE_NAME);
-      if (existingCookie) {
-        const session = await sdk.verifySession(existingCookie);
+      let tokenFromHeader: string | undefined;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        tokenFromHeader = authHeader.slice(7);
+      }
+      const existingToken = existingCookie || tokenFromHeader;
+      if (existingToken) {
+        const session = await sdk.verifySession(existingToken);
         if (session) {
           // Already has a valid session — check if user exists
           const existingUser = await db.getUserByOpenId(session.openId);
@@ -98,7 +104,13 @@ export function registerGuestSessionRoutes(app: Express) {
     try {
       // Require authenticated session — caller must be the target user
       const existingCookie = req.cookies?.app_session_id || parseCookieManual(req.headers.cookie, COOKIE_NAME);
-      const session = existingCookie ? await sdk.verifySession(existingCookie) : null;
+      let migrateTokenFromHeader: string | undefined;
+      const migrateAuthHeader = req.headers.authorization;
+      if (migrateAuthHeader && migrateAuthHeader.startsWith('Bearer ')) {
+        migrateTokenFromHeader = migrateAuthHeader.slice(7);
+      }
+      const migrateToken = existingCookie || migrateTokenFromHeader;
+      const session = migrateToken ? await sdk.verifySession(migrateToken) : null;
       if (!session) {
         res.status(401).json({ error: "Authentication required" });
         return;

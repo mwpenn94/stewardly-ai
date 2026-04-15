@@ -40,7 +40,7 @@ const FAQ_DATA: FAQItem[] = [
   },
   {
     question: "How do I get started?",
-    answer: "Start by chatting with the AI on the main page. You can use it as a guest for general financial education, or sign in to unlock personalized features like suitability assessment, AI memory, document analysis, and multi-focus advisory modes.",
+    answer: "Start by chatting with the AI on the main page. You can use it as a guest for general financial education, or sign in (via Manus OAuth, Google, LinkedIn, or Email) to unlock personalized features like suitability assessment, AI memory, document analysis, and multi-focus advisory modes. Your session is automatically maintained and refreshed across browser tabs.",
     category: "Getting Started",
     tags: ["start", "begin", "new user"],
   },
@@ -808,9 +808,9 @@ export default function Help() {
                     { label: "Interface", value: "Modern, responsive design with real-time updates" },
                     { label: "AI Engine", value: "Multi-model intelligence with automatic failover (17+ models)" },
                     { label: "Voice", value: "Natural speech input and text-to-speech output" },
-                    { label: "Security", value: "Enterprise-grade encryption and OAuth authentication" },
+                    { label: "Security", value: "Enterprise-grade encryption with multi-method auth (OAuth, Google, LinkedIn, Email)" },
                     { label: "Data Sources", value: "6 government APIs with automated daily sync" },
-                    { label: "Reliability", value: "3,200+ automated tests, 99.9% uptime target" },
+                    { label: "Reliability", value: "7,750+ automated tests, 99.9% uptime target" },
                   ].map((tech, ti) => (
                     <div key={ti} className="p-2 rounded-md bg-secondary/30">
                       <p className="text-[10px] text-muted-foreground font-medium">{tech.label}</p>

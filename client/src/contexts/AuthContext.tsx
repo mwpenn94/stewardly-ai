@@ -122,7 +122,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Track whether user just completed OAuth (for welcome-back toast)
   const justCompletedOAuth = useRef(false);
 
-  // Check for OAuth token in URL fragment (set by OAuth callback page)
+  // Legacy safety net: Check for OAuth token in URL fragment.
+  // Current OAuth callbacks store tokens directly in localStorage via inline JS,
+  // so this code path is rarely triggered. Kept as a fallback for edge cases.
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && hash.includes('token=')) {
@@ -194,10 +196,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Persist user info to localStorage for cross-tab awareness
   useEffect(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data ?? null)
-    );
+    try {
+      localStorage.setItem(
+        "manus-runtime-user-info",
+        JSON.stringify(meQuery.data ?? null)
+      );
+    } catch {
+      // Safari Private Browsing may block localStorage
+    }
   }, [meQuery.data]);
 
   const state = useMemo<AuthState>(() => {

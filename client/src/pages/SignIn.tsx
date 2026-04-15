@@ -6,6 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { Chrome, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { setSessionToken } from "@/lib/sessionToken";
 import { SEOHead } from "@/components/SEOHead";
 
 export default function SignIn() {
@@ -19,11 +20,12 @@ export default function SignIn() {
   const [error, setError] = useState("");
 
   const signInMutation = trpc.emailAuth.signIn.useMutation({
-    onSuccess: () => {
-      // Pass 85 (v10.0 revert): Chat IS the landing page and the
-      // feature gateway. Post-login lands directly in Chat — no
-      // extra /dashboard hop. Feature discoverability lives INSIDE
-      // the Chat empty state (Pass 86 builds that).
+    onSuccess: (data) => {
+      // Store the session token in localStorage so the Authorization header
+      // is sent on subsequent requests (proxy strips Set-Cookie headers).
+      if (data.token) {
+        setSessionToken(data.token);
+      }
       window.location.href = "/chat";
     },
     onError: (err) => {
@@ -32,7 +34,12 @@ export default function SignIn() {
   });
 
   const signUpMutation = trpc.emailAuth.signUp.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Store the session token in localStorage so the Authorization header
+      // is sent on subsequent requests (proxy strips Set-Cookie headers).
+      if (data.token) {
+        setSessionToken(data.token);
+      }
       window.location.href = "/chat";
     },
     onError: (err) => {

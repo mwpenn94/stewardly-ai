@@ -25,6 +25,7 @@ export function useTokenRefresh({
 } = {}) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryCountRef = useRef(0);
+  const scheduleRef = useRef<() => void>(() => {});
   const MAX_RETRIES = 1;
 
   const refreshMutation = trpc.auth.refreshToken.useMutation({
@@ -32,8 +33,8 @@ export function useTokenRefresh({
       if (data.token) {
         setSessionToken(data.token);
         retryCountRef.current = 0;
-        // Schedule next refresh based on new token
-        scheduleRefresh();
+        // Schedule next refresh based on new token — use ref to avoid stale closure
+        scheduleRef.current();
       }
     },
     onError: (error) => {
@@ -65,7 +66,7 @@ export function useTokenRefresh({
     const expiryMs = getTokenExpiry();
     if (!expiryMs) {
       // No expiry claim — check again in 30 minutes
-      timerRef.current = setTimeout(() => scheduleRefresh(), 30 * 60 * 1000);
+      timerRef.current = setTimeout(() => scheduleRef.current(), 30 * 60 * 1000);
       return;
     }
 
@@ -85,6 +86,11 @@ export function useTokenRefresh({
       refreshMutation.mutate();
     }, timeUntilRefresh);
   }, [enabled, isGuest, refreshMutation]);
+
+  // Keep the ref in sync with the latest scheduleRefresh
+  useEffect(() => {
+    scheduleRef.current = scheduleRefresh;
+  }, [scheduleRefresh]);
 
   useEffect(() => {
     scheduleRefresh();
@@ -116,13 +122,13 @@ export function useTokenRefresh({
         refreshMutation.mutate();
       } else {
         // Re-schedule in case the timer was cleared during sleep
-        scheduleRefresh();
+        scheduleRef.current();
       }
     };
 
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, [enabled, isGuest, refreshMutation, scheduleRefresh]);
+  }, [enabled, isGuest, refreshMutation]);
 
   return {
     isRefreshing: refreshMutation.isPending,

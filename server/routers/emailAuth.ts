@@ -11,12 +11,16 @@ import { nanoid } from "nanoid";
 
 /**
  * Email/Password Authentication Router
- * Provides non-Google account CRUD operations
+ * Provides email-based account CRUD operations.
+ *
+ * Sign-up and sign-in return the session token in the response body
+ * so the client can store it in localStorage (the primary auth mechanism).
+ * Cookies are set as a fallback but not relied upon due to proxy stripping.
  */
 export const emailAuthRouter = router({
   /**
    * Sign up with email and password
-   * Creates a new user account and sets session cookie
+   * Creates a new user account, sets session cookie, and returns token in body
    */
   signUp: publicProcedure
     .input(
@@ -102,12 +106,12 @@ export const emailAuthRouter = router({
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: AUTHENTICATED_SESSION_MS });
 
-      return { success: true, message: "Account created successfully" };
+      return { success: true, message: "Account created successfully", token: sessionToken };
     }),
 
   /**
    * Sign in with email and password
-   * Verifies credentials and sets session cookie
+   * Verifies credentials, sets session cookie, and returns token in body
    */
   signIn: publicProcedure
     .input(
@@ -163,7 +167,7 @@ export const emailAuthRouter = router({
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: AUTHENTICATED_SESSION_MS });
 
-      return { success: true, message: "Signed in successfully" };
+      return { success: true, message: "Signed in successfully", token: sessionToken };
     }),
 
   /**

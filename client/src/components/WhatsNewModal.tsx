@@ -13,7 +13,7 @@ import {
 
 // ── Changelog entries — newest first ──────────────────────────────────
 
-export const CURRENT_VERSION = "2026.04.04";
+export const CURRENT_VERSION = "2026.04.15";
 
 type ChangeCategory = "feature" | "fix" | "improvement" | "security";
 
@@ -39,6 +39,41 @@ export const CATEGORY_STYLES: Record<ChangeCategory, { label: string; className:
 };
 
 export const CHANGELOG: ChangelogRelease[] = [
+  {
+    version: "2026.04.15",
+    date: "April 15, 2026",
+    headline: "Authentication system hardening and proxy-resilient token management",
+    entries: [
+      {
+        category: "security",
+        title: "Proxy-resilient authentication",
+        description:
+          "All auth flows (Manus OAuth, Google, LinkedIn, Email, Guest) now store session tokens in localStorage and send them via Authorization: Bearer header. This eliminates session loss caused by the reverse proxy stripping Set-Cookie headers.",
+        icon: <Lock className="w-5 h-5 text-purple-400" />,
+      },
+      {
+        category: "security",
+        title: "Social OAuth HTML bridge",
+        description:
+          "Google and LinkedIn OAuth callbacks now use an HTML bridge page to store the session token in localStorage before redirecting, matching the Manus OAuth pattern.",
+        icon: <Shield className="w-5 h-5 text-purple-400" />,
+      },
+      {
+        category: "feature",
+        title: "Silent token refresh",
+        description:
+          "Session tokens are automatically refreshed 5 minutes before expiry. This is user-togglable in Settings and enabled by default. Cross-tab sync ensures all open tabs stay authenticated.",
+        icon: <RefreshCw className="w-5 h-5 text-emerald-400" />,
+      },
+      {
+        category: "improvement",
+        title: "7,751 unit tests",
+        description:
+          "13 new tests covering Bearer token authentication, OAuth HTML bridge generation, and token lifecycle management. Full test suite passes in under 60 seconds.",
+        icon: <Gauge className="w-5 h-5 text-blue-400" />,
+      },
+    ],
+  },
   {
     version: "2026.04.04",
     date: "April 4, 2026",
