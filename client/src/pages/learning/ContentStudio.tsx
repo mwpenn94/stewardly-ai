@@ -272,8 +272,7 @@ export default function ContentStudio() {
                   practice questions + flashcards) from{" "}
                   <a
                     href="https://github.com/mwpenn94/emba_modules"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    target="_blank" rel="noopener noreferrer"
                     className="underline"
                   >
                     github.com/mwpenn94/emba_modules

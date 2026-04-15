@@ -435,8 +435,7 @@ export default function KnowledgeBaseTab() {
             {selectedDoc?.fileUrl && (
               <a
                 href={selectedDoc.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
               >
                 <FileText className="w-3 h-3" /> View original file

@@ -597,8 +597,7 @@ export default function ComparablesPage() {
                   {selectedQ.data.url && (
                     <a
                       href={selectedQ.data.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target="_blank" rel="noopener noreferrer"
                       className="ml-auto inline-flex items-center gap-1 text-xs text-accent"
                     >
                       <ExternalLink className="h-3 w-3" />

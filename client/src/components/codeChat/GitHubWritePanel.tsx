@@ -584,8 +584,7 @@ function PullRequestsCard({
                   <span className="text-xs font-medium truncate flex-1">{pr.title}</span>
                   <a
                     href={pr.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    target="_blank" rel="noopener noreferrer"
                     className="text-muted-foreground hover:text-foreground"
                     aria-label="Open on GitHub"
                   >

@@ -1577,8 +1577,7 @@ function CodeChatInterface() {
                     Gist created.{" "}
                     <a
                       href={result.gist.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target="_blank" rel="noopener noreferrer"
                       className="underline"
                     >
                       Open
@@ -3153,8 +3152,7 @@ function GitHubPanel() {
                   </div>
                   <a
                     href={pr.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    target="_blank" rel="noopener noreferrer"
                     className="shrink-0 text-muted-foreground hover:text-foreground"
                     title="Open on GitHub"
                   >

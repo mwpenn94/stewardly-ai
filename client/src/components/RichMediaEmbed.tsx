@@ -99,8 +99,7 @@ function DocumentEmbed({ embed }: { embed: MediaEmbed }) {
   return (
     <a
       href={embed.source}
-      target="_blank"
-      rel="noopener noreferrer"
+      target="_blank" rel="noopener noreferrer"
       className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/40 hover:bg-muted/50 transition-colors"
     >
       <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
@@ -120,8 +119,7 @@ function ShoppingEmbed({ embed }: { embed: MediaEmbed }) {
   return (
     <a
       href={embed.source}
-      target="_blank"
-      rel="noopener noreferrer"
+      target="_blank" rel="noopener noreferrer"
       className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:bg-muted/50 transition-colors"
     >
       {embed.thumbnailUrl ? (

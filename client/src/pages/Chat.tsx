@@ -3012,8 +3012,7 @@ export default function Chat() {
               {chatMode === "consensus" && (
                 <a
                   href={`/consensus${input ? `?q=${encodeURIComponent(input)}` : ""}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target="_blank" rel="noopener noreferrer"
                   className="ml-1 px-2 h-7 text-[10px] inline-flex items-center rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-all"
                   title="Open the multi-model consensus panel with timing breakdown + diff view"
                 >
@@ -3058,8 +3057,7 @@ export default function Chat() {
                   </label>
                   <a
                     href="/code-chat"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    target="_blank" rel="noopener noreferrer"
                     className="px-2 h-6 text-[10px] inline-flex items-center rounded border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
                     title="Open the full Code Chat admin panel (file browser + roadmap + GitHub)"
                   >
