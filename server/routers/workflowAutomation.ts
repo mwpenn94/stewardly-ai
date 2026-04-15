@@ -10,7 +10,7 @@ import { workflowEventChains, workflowExecutionLog, workflowCheckpoints } from "
 
 const dbOrThrow = async () => {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
   return db;
 };
 

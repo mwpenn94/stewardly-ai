@@ -227,7 +227,7 @@ export const adminIntelligenceRouter = router({
 
   runImprovementEngineNow: adminProcedure.mutation(async () => {
     const db = await getDb();
-    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
     const { detectSignals, checkConvergence } = await import("../shared/engine/improvementEngine");
     const { executeImprovementCycle } = await import("../services/improvement/improvementCycleRunner");

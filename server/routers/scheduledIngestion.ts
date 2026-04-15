@@ -46,7 +46,7 @@ export const scheduledIngestionRouter = router({
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
         const nextRun = scheduleRunner.calculateNextRun(input.cronExpression);
         const [result] = await db.insert(scrapeSchedules).values({
@@ -73,7 +73,7 @@ export const scheduledIngestionRouter = router({
       }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
         const updates: any = {};
         if (input.cronExpression !== undefined) {
@@ -94,7 +94,7 @@ export const scheduledIngestionRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
         await db.delete(scrapeSchedules).where(eq(scrapeSchedules.id, input.id));
         return { success: true };
       }),
@@ -103,7 +103,7 @@ export const scheduledIngestionRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         const db = await getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
         // Set nextRunAt to now to trigger on next tick
         await db.update(scrapeSchedules).set({ nextRunAt: Date.now() - 1000 })

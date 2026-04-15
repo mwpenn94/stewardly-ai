@@ -1,6 +1,6 @@
 # Stewardly AI — Architecture Reference
 
-**Last updated**: April 15, 2026 (v2.6.2 — Auth System Hardening)
+**Last updated**: April 15, 2026 (v2.7.0 — Recursive Optimization Pass 38)
 
 ---
 
@@ -15,7 +15,7 @@ Stewardly is a full-stack TypeScript application built on React 19 + Express 4 +
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
 | Frontend | React 19, Tailwind CSS 4, shadcn/ui | UI framework and component library |
-| Routing | wouter | Client-side routing (146 routes) |
+| Routing | wouter | Client-side routing (106 lazy-loaded routes) |
 | State | tRPC React Query | Server state management with type safety |
 | Backend | Express 4, tRPC 11 | API server with end-to-end type safety |
 | Database | TiDB (MySQL) via Drizzle ORM | Relational data storage |
@@ -23,7 +23,7 @@ Stewardly is a full-stack TypeScript application built on React 19 + Express 4 +
 | AI | Built-in LLM helpers (invokeLLM) | Multi-model AI with structured responses |
 | Storage | S3 (storagePut/storageGet) | File and document storage |
 | Voice | Deepgram + Edge TTS | Speech-to-text and text-to-speech |
-| Unit Testing | Vitest | 7,751 tests across 324 files |
+| Unit Testing | Vitest | 8,366 tests across 335 files |
 | E2E Testing | Playwright | 100 tests across 27 suites |
 
 ---
@@ -34,20 +34,20 @@ Stewardly is a full-stack TypeScript application built on React 19 + Express 4 +
 client/
   src/
     _core/            ← Auth hooks, providers
-    components/       ← 50+ reusable components
+    components/       ← 210+ reusable components
       ui/             ← shadcn/ui primitives
       codeChat/       ← Code Chat sub-components
       learning/       ← Learning module components
       wealth-engine/  ← Calculator helpers and components
     contexts/         ← Theme, auth, preferences
-    hooks/            ← 20+ custom hooks
+    hooks/            ← 32 custom hooks
     lib/              ← tRPC client, navigation config, utilities
-    pages/            ← 100+ page components
+    pages/            ← 134 page components
       calculators/    ← PanelsA-F (28 calculator panels)
       learning/       ← Learning module pages
       settings/       ← Settings tab pages
       wealth-engine/  ← Wealth Engine hub and sub-pages
-    App.tsx           ← Route definitions (146 routes)
+    App.tsx           ← Route definitions (106 lazy-loaded routes)
     index.css         ← Global theme (Stewardship Gold)
     main.tsx          ← Providers and entry point
 
@@ -64,7 +64,7 @@ server/
   multiModel.ts       ← Multi-model synthesis engine
 
 drizzle/
-  schema.ts           ← Database schema (40+ tables)
+  schema.ts           ← Database schema (361 tables)
   migrations/         ← SQL migration files
 
 docs/                 ← Documentation (this directory)
@@ -163,7 +163,7 @@ The Integrations page displays a **CostTierBadge** on each provider card showing
 
 ## Database Schema Highlights
 
-The database contains 40+ tables. Key entities:
+The database contains 361 tables with 484 indexes and 358 enum definitions. Key entities:
 
 | Table | Purpose |
 |-------|---------|
@@ -202,7 +202,7 @@ CSS injection is sanitized to prevent XSS (strips HTML tags, `expression()`, `ja
 ## Security and Compliance
 
 - All API calls use tRPC with `protectedProcedure` for authenticated endpoints
-- Zod validation on all inputs (2,618 validation rules)
+- Zod validation on all inputs (3,482+ validation rules)
 - **Dual-path auth**: JWT tokens stored in localStorage and sent via `Authorization: Bearer` header; cookies set as fallback but not relied upon (Manus proxy strips `Set-Cookie`)
 - **Token lifecycle**: Creation → localStorage storage → Bearer header transmission → server verification (checks both cookie and header) → silent refresh before expiry → graceful expiry handling
 - **Auth flows**: Manus OAuth (HTML bridge page), Google/LinkedIn Social OAuth (HTML bridge page), Email sign-in/sign-up (token in response body), Guest auto-provisioning (token in response body)
@@ -233,7 +233,7 @@ CSS injection is sanitized to prevent XSS (strips HTML tags, `expression()`, `ja
 
 ### Unit Tests (Vitest)
 
-The project maintains 7,751 unit tests across 324 test files covering server routers, database helpers, UI components, utility functions, and business logic. Tests run in under 60 seconds with Vitest's parallel execution.
+The project maintains 8,366 unit tests across 335 test files covering server routers, database helpers, UI components, utility functions, and business logic. Tests run in under 70 seconds with Vitest's parallel execution.
 
 ### End-to-End Tests (Playwright)
 
@@ -286,7 +286,7 @@ Playwright screenshot comparison tests (`e2e/27-visual-regression.spec.ts`) capt
 
 A GitHub Actions workflow (`.github/workflows/test.yml`) runs the full test suite on every push and pull request to `main`:
 
-1. **Unit Tests job** — Installs dependencies and runs `pnpm test` (Vitest, 7,751 tests)
+1. **Unit Tests job** — Installs dependencies and runs `pnpm test` (Vitest, 8,366 tests)
 2. **E2E Tests job** — Builds the app, starts the server, runs Playwright desktop-chrome tests (77 tests)
 3. **Test Summary job** — Reports pass/fail status for both suites
 

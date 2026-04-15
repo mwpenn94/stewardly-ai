@@ -26,7 +26,7 @@ export class BulkScraperService {
     triggeredBy?: number
   ) {
     const db = await getDb();
-    if (!db) throw new Error("DB unavailable");
+    if (!db) throw new Error("Database unavailable");
 
     // Create batch record
     const [batch] = await db.insert(bulkImportBatches).values({
@@ -98,7 +98,7 @@ export class BulkScraperService {
    */
   async crawlSitemap(sitemapUrl: string, batchName: string, maxUrls = 50, triggeredBy?: number) {
     const db = await getDb();
-    if (!db) throw new Error("DB unavailable");
+    if (!db) throw new Error("Database unavailable");
 
     // Fetch sitemap XML
     const response = await fetch(sitemapUrl, {
@@ -167,7 +167,7 @@ export class RSSFeedService {
    */
   async ingestFeed(feedUrl: string, batchName: string, maxItems = 25, triggeredBy?: number) {
     const db = await getDb();
-    if (!db) throw new Error("DB unavailable");
+    if (!db) throw new Error("Database unavailable");
 
     const response = await fetch(feedUrl, {
       headers: { "User-Agent": "Stewardly/1.0 FeedReader" },
@@ -276,7 +276,7 @@ export class DataQualityService {
    */
   async scoreDataSource(dataSourceId: number, ingestionJobId?: number) {
     const db = await getDb();
-    if (!db) throw new Error("DB unavailable");
+    if (!db) throw new Error("Database unavailable");
 
     // Get recent records for this source
     const records = await db.select().from(ingestedRecords)
@@ -371,7 +371,7 @@ export class InsightGeneratorService {
    */
   async generateAndPersistInsights() {
     const db = await getDb();
-    if (!db) throw new Error("DB unavailable");
+    if (!db) throw new Error("Database unavailable");
 
     // Get recent records
     const recentRecords = await db.select().from(ingestedRecords)

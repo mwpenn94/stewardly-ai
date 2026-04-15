@@ -585,7 +585,7 @@ export default function Help() {
           </div>
           <h2 className="text-2xl font-bold">Stewardly Platform Guide</h2>
           <p className="text-muted-foreground text-sm max-w-lg mx-auto">
-            Comprehensive guide to all 146 pages, 170+ services, and 85 API routers powering your digital financial twin.
+            Comprehensive guide to all 134 pages, 357+ services, and 97 API routers powering your digital financial twin.
           </p>
         </div>
 
@@ -653,25 +653,25 @@ export default function Help() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">146</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">134</p>
                   <p className="text-[10px] text-muted-foreground">Pages</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">170+</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">357+</p>
                   <p className="text-[10px] text-muted-foreground">Services</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">85</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">97</p>
                   <p className="text-[10px] text-muted-foreground">API Routers</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">7,750+</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">8,366+</p>
                   <p className="text-[10px] text-muted-foreground">Tests Passing</p>
                 </CardContent>
               </Card>

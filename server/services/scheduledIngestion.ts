@@ -227,7 +227,7 @@ export class CSVUploadService {
     triggeredBy?: number
   ) {
     const db = await getDb();
-    if (!db) throw new Error("DB unavailable");
+    if (!db) throw new Error("Database unavailable");
 
     // Parse CSV
     const rows = this.parseCSV(csvContent);
