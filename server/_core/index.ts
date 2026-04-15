@@ -160,8 +160,20 @@ async function startServer() {
   app.use(express.json({ limit: "5mb" }));
   app.use(express.urlencoded({ limit: "5mb", extended: true }));
 
+  // OAuth callback under /api/oauth/callback
+  // IMPORTANT: Register OAuth and guest session routes BEFORE the tenant context
+  // middleware so they don't trigger unnecessary auth checks that log noise.
+  registerOAuthRoutes(app);
+  // Guest session auto-provisioning
+  registerGuestSessionRoutes(app);
+
   // ─── Tenant Context Middleware (AsyncLocalStorage for non-tRPC routes) ──
   app.use(async (req, _res, next) => {
+    // Skip auth check for paths that don't need tenant context
+    const skipPaths = ["/api/oauth/", "/api/auth/guest-session", "/health", "/ready"];
+    if (skipPaths.some(p => req.path.startsWith(p))) {
+      return next();
+    }
     try {
       const user = await sdk.authenticateRequest(req);
       if (user?.affiliateOrgId) {
@@ -170,11 +182,6 @@ async function startServer() {
     } catch { /* Auth is optional — proceed without tenant context */ }
     next();
   });
-
-  // OAuth callback under /api/oauth/callback
-  registerOAuthRoutes(app);
-  // Guest session auto-provisioning
-  registerGuestSessionRoutes(app);
   // Social OAuth (Google + LinkedIn)
   registerSocialAuthRoutes(app);
   // Public webhook ingestion endpoints

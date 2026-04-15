@@ -77,7 +77,81 @@ export function registerOAuthRoutes(app: Express) {
       } catch {
         // Failed to decode state — fall back to /
       }
-      res.redirect(302, redirectTo);
+
+      logger.info({
+        operation: "oAuth.redirect",
+        redirectTo,
+        userName: userInfo.name,
+      }, `[OAuth] Redirecting to ${redirectTo}`);
+
+      // CRITICAL: Use a 200 HTML page with client-side redirect instead of 302.
+      //
+      // Why? Behind the Manus reverse proxy, Set-Cookie headers on 302 redirect
+      // responses may be stripped or not processed by the browser before following
+      // the redirect. This causes the session cookie to be lost.
+      //
+      // By returning a 200 HTML page that:
+      //   1. Has the Set-Cookie header (preserved on 200 responses)
+      //   2. Does a client-side redirect via JavaScript
+      // We ensure the browser stores the cookie BEFORE navigating to the target page.
+      const safeRedirectTo = redirectTo
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Signing in...</title>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #fafafa;
+    }
+    .loader {
+      text-align: center;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    p { opacity: 0.7; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="loader">
+    <div class="spinner"></div>
+    <p>Signing you in...</p>
+  </div>
+  <script>
+    // Set a flag so the AuthContext knows we just completed OAuth
+    // and should retry auth.me instead of immediately provisioning a guest.
+    try { sessionStorage.setItem('stewardly_oauth_pending', '1'); } catch(e) {}
+    // Small delay to ensure the browser has processed the Set-Cookie header
+    // before navigating away from this page.
+    setTimeout(function() {
+      window.location.replace(${JSON.stringify(redirectTo)});
+    }, 100);
+  </script>
+</body>
+</html>`;
+
+      res.status(200).type("html").send(html);
     } catch (error) {
       logger.error( { operation: "oAuth", err: error },"[OAuth] Callback failed", error);
       res.status(500).json({ error: "OAuth callback failed" });

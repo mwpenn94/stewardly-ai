@@ -4409,3 +4409,20 @@
 - [x] Fix AuthContext.tsx: move localStorage.setItem from useMemo to useEffect
 - [x] Verify on dev preview: 0 errors, 0 redirects, message sent successfully
 - [x] Vitest: 7,727/7,727 passed (321 files), 0 failed (1 external API test excluded - transient network)
+
+### Turn 24 — Auth Loop STILL occurring on deployed site (Apr 14 2026)
+- [ ] Reproduce auth loop on stewardly.manus.space/learning
+- [ ] Identify the REAL root cause (previous 4 fixes were insufficient)
+- [ ] Fix the root cause
+- [ ] Verify fix on deployed site
+- [ ] Run tests and save checkpoint
+
+## Auth Loop Fix (Session 3)
+- [x] Diagnose OAuth cookie not persisting after 302 redirect (Set-Cookie stripped by reverse proxy on 302)
+- [x] Change OAuth callback from 302 redirect to 200 HTML page with client-side redirect
+- [x] Add sessionStorage flag (stewardly_oauth_pending) to prevent guest provisioning race condition
+- [x] Add OAuth retry logic in AuthContext (3 retries with 500ms delay before guest fallback)
+- [x] Move OAuth/guest-session routes before tenant context middleware to reduce noise
+- [x] Add skip paths to tenant context middleware for auth-related routes
+- [x] Write 7 OAuth callback unit tests (200 HTML, sessionStorage flag, redirect path, sanitization, legacy state)
+- [x] All 7,738 tests passing across 323 files

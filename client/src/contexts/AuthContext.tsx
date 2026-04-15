@@ -12,6 +12,11 @@ import { getLoginUrl } from "@/const";
  *   3. Exposes stable `loading` / `user` / `isAuthenticated` that accounts
  *      for the guest provisioning window so pages never flash "Please sign in"
  *      while a guest session is being created.
+ *
+ * IMPORTANT: After OAuth callback, the session cookie is set via a 200 HTML
+ * page with client-side redirect. The auth.me query may initially return null
+ * if the cookie hasn't been fully processed. We retry auth.me a few times
+ * before falling back to guest provisioning to avoid overwriting the OAuth cookie.
  */
 
 interface AuthState {
@@ -26,11 +31,37 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+/**
+ * Detect if we just came from an OAuth callback.
+ * The OAuth callback page sets a sessionStorage flag before redirecting.
+ * We also check the referrer for oauth/callback paths.
+ */
+function didJustCompleteOAuth(): boolean {
+  try {
+    const flag = sessionStorage.getItem("stewardly_oauth_pending");
+    if (flag) {
+      return true;
+    }
+  } catch {
+    // sessionStorage not available
+  }
+  return false;
+}
+
+function clearOAuthFlag(): void {
+  try {
+    sessionStorage.removeItem("stewardly_oauth_pending");
+  } catch {
+    // ignore
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const utils = trpc.useUtils();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
-    retry: false,
+    retry: 2,
+    retryDelay: 300,
     refetchOnWindowFocus: false,
   });
 
@@ -44,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isProvisioning = useRef(false);
   const hasAttempted = useRef(false);
   const [guestProvisioningDone, setGuestProvisioningDone] = useState(false);
+  const oauthRetryCount = useRef(0);
+  const maxOAuthRetries = 3;
 
   const provisionGuest = useCallback(async () => {
     if (isProvisioning.current || hasAttempted.current) return;
@@ -74,11 +107,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // User exists (real or guest) — mark provisioning as done
       hasAttempted.current = true;
       setGuestProvisioningDone(true);
+      clearOAuthFlag();
       return;
     }
+
+    // No user returned from auth.me.
+    // If we just came from OAuth, the cookie might not have been processed yet.
+    // Retry auth.me a few times before falling back to guest provisioning.
+    if (didJustCompleteOAuth() && oauthRetryCount.current < maxOAuthRetries) {
+      oauthRetryCount.current += 1;
+      console.log(`[AuthProvider] OAuth detected, retrying auth.me (attempt ${oauthRetryCount.current}/${maxOAuthRetries})`);
+      const timer = setTimeout(() => {
+        utils.auth.me.invalidate();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+
+    // Clear the OAuth flag — we've exhausted retries
+    clearOAuthFlag();
+
     // No user — provision a guest session
     provisionGuest();
-  }, [meQuery.isLoading, meQuery.data, provisionGuest]);
+  }, [meQuery.isLoading, meQuery.data, provisionGuest, utils]);
 
   const logout = useCallback(async () => {
     try {
