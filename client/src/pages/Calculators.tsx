@@ -1,4 +1,5 @@
 /* WealthBridge Unified Wealth Engine v7 — Orchestrator */
+import { authFetch } from "@/lib/sessionToken";
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -573,7 +574,7 @@ export default function Calculators() {
 
   const handleLoad = async (id: number) => {
     try {
-      const resp = await fetch(`/api/trpc/calcSession.get?input=${encodeURIComponent(JSON.stringify({ id }))}`, {
+      const resp = await authFetch(`/api/trpc/calcSession.get?input=${encodeURIComponent(JSON.stringify({ id }))}`, {
         credentials: 'include',
       });
       const json = await resp.json();

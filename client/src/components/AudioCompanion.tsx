@@ -11,6 +11,7 @@
  * Controlled via the useAudioCompanion hook.
  */
 
+import { authFetch } from "@/lib/sessionToken";
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -166,7 +167,7 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
     }
 
     try {
-      const res = await fetch("/api/tts", {
+      const res = await authFetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: item.script, speed }),

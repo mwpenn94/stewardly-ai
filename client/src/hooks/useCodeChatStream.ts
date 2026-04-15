@@ -5,6 +5,7 @@
  * tool execution events, providing live updates to the UI.
  */
 
+import { authFetch } from "@/lib/sessionToken";
 import { useState, useCallback, useRef } from "react";
 import {
   parseTodosPayload,
@@ -123,7 +124,7 @@ export function useCodeChatStream() {
     abortRef.current = controller;
 
     try {
-      const resp = await fetch("/api/codechat/stream", {
+      const resp = await authFetch("/api/codechat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -4446,13 +4446,22 @@
 - [x] Updated OAuth callback tests (10 tests passing)
 
 ## Session Refreshing Toast Bug
-- [ ] Fix "Session refreshing..." toast appearing after sending a chat message as guest user
+- [x] Fix "Session refreshing..." toast appearing after sending a chat message as guest user
+- [x] Root cause: voice.speak was protectedProcedure, failed for guests, triggered UNAUTHORIZED toast
+- [x] Fix: Changed voice.speak and voice.voices to publicProcedure
 
-## Auth Loop Fix — COMPREHENSIVE (Round 4)
-- [ ] Reproduce auth loop on deployed site as virtual user
-- [ ] Trace every request in the guest → sign-in → post-login flow
-- [ ] Fix: "Session refreshing" toast appearing after guest sends chat message
-- [ ] Fix: OAuth sign-in loop (cookie not persisting after callback)
-- [ ] Validate: Guest can chat without "Session refreshing" toast
-- [ ] Validate: Guest can sign in via OAuth and land as authenticated user
-- [ ] Validate: Authenticated user can chat without errors
+## Auth Loop Fix — COMPREHENSIVE (Round 4) - localStorage + Authorization header approach
+- [x] Root cause: Manus proxy strips Set-Cookie from ALL server responses (not just 302s)
+- [x] Solution: Store session tokens in localStorage, send via Authorization: Bearer header
+- [x] Created client/src/lib/sessionToken.ts (getSessionToken, setSessionToken, clearSessionToken, authFetch)
+- [x] Updated sdk.ts authenticateRequest() to check Authorization header in addition to cookies
+- [x] Updated tRPC httpBatchLink in main.tsx to send Authorization header from localStorage
+- [x] Updated AuthContext to store guest session token in localStorage
+- [x] Updated OAuth callback HTML to store token in localStorage
+- [x] Updated Chat.tsx, AudioCompanion.tsx, useCodeChatStream.ts, useGuestSession.ts, Calculators.tsx to use authFetch
+- [x] Updated guest session endpoint to return token in response body
+- [x] All 21 auth tests passing (oauth.callback: 10, auth.bearer: 10, auth.logout: 1)
+- [x] 0 TypeScript errors, all dependencies OK
+- [ ] Validate on deployed site: Guest can chat without "Session refreshing" toast
+- [ ] Validate on deployed site: Guest can sign in via OAuth and land as authenticated user
+- [ ] Validate on deployed site: Authenticated user can chat without errors

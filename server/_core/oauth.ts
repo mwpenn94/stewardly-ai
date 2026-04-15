@@ -205,19 +205,29 @@ export function registerOAuthRoutes(app: Express) {
       var statusEl = document.getElementById('status');
 
       try {
-        // Set the session cookie via XHR — the proxy preserves Set-Cookie on JSON responses
-        var res = await fetch('/api/auth/set-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ token: token })
-        });
-
-        if (!res.ok) {
-          throw new Error('Failed to set session: ' + res.status);
+        // Store token in localStorage — this is the PRIMARY auth mechanism.
+        // The Manus reverse proxy strips Set-Cookie from ALL responses,
+        // so we store the token client-side and send it via Authorization header.
+        try {
+          localStorage.setItem('stewardly_session_token', token);
+        } catch(e) {
+          console.warn('[OAuth] Failed to save token to localStorage:', e);
         }
 
-        // Cookie is now set — redirect to the target page
+        // Also try to set the cookie via XHR as a fallback
+        try {
+          await fetch('/api/auth/set-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ token: token })
+          });
+        } catch(e) {
+          // Non-fatal — localStorage token is the primary mechanism
+          console.warn('[OAuth] set-session fallback failed:', e);
+        }
+
+        // Token is stored — redirect to the target page
         window.location.replace(redirectTo);
       } catch (err) {
         statusEl.textContent = 'Sign-in failed. Redirecting...';

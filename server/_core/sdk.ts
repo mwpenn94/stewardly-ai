@@ -258,10 +258,19 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<User> {
-    // Regular authentication flow
+    // Try cookie first, then Authorization header (Bearer token)
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
-    const session = await this.verifySession(sessionCookie);
+    
+    // Also check Authorization header for Bearer token
+    let tokenFromHeader: string | undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      tokenFromHeader = authHeader.slice(7);
+    }
+    
+    const tokenToVerify = sessionCookie || tokenFromHeader;
+    const session = await this.verifySession(tokenToVerify);
 
     if (!session) {
       throw ForbiddenError("Invalid session cookie");
@@ -274,7 +283,7 @@ class SDKServer {
     // If user not in DB, sync from OAuth server automatically
     if (!user) {
       try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+        const userInfo = await this.getUserInfoWithJwt(tokenToVerify ?? "");
         await db.upsertUser({
           openId: userInfo.openId,
           name: userInfo.name || null,

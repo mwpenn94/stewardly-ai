@@ -2,23 +2,23 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback, us
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { getLoginUrl } from "@/const";
+import { setSessionToken, clearSessionToken } from "@/lib/sessionToken";
 
 /**
  * AuthContext — single source of truth for authentication state.
  *
  * Manages the full lifecycle:
- *   1. Initial auth.me query
+ *   1. Initial auth.me query (uses Authorization header from localStorage)
  *   2. Guest session auto-provisioning (if no user)
  *   3. Exposes stable `loading` / `user` / `isAuthenticated` that accounts
  *      for the guest provisioning window so pages never flash "Please sign in"
  *      while a guest session is being created.
  *
- * Cookie handling:
- *   The Manus reverse proxy strips Set-Cookie headers from server responses.
- *   To work around this, both OAuth and guest session flows return the session
- *   token in the response body, then the client calls /api/auth/set-session
- *   via XHR to set the httpOnly cookie. The proxy preserves Set-Cookie on
- *   XHR/fetch JSON responses.
+ * Token handling:
+ *   The Manus reverse proxy strips Set-Cookie headers from ALL server responses.
+ *   To work around this, session tokens are stored in localStorage and sent
+ *   via the Authorization: Bearer header on every tRPC request. The server
+ *   accepts both cookies and Authorization headers.
  */
 
 interface AuthState {
@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
+      clearSessionToken();
       utils.auth.me.setData(undefined, null);
     },
   });
@@ -60,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasAttempted.current = true;
 
     try {
-      // Step 1: Create the guest session (server creates user + token)
+      // Create the guest session (server creates user + returns token)
       const res = await fetch("/api/auth/guest-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,40 +75,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await res.json();
 
-      if (data.status === "existing") {
-        // Already has a valid session — just refresh auth.me
-        await utils.auth.me.invalidate();
-        return;
+      if (data.token) {
+        // Store token in localStorage — this is the primary auth mechanism
+        // since the proxy strips Set-Cookie headers
+        setSessionToken(data.token);
       }
 
-      if (data.status === "created" && data.token) {
-        // Step 2: Set the cookie via XHR (proxy preserves Set-Cookie on JSON XHR)
-        // This is the critical workaround for the Manus proxy stripping Set-Cookie
-        const setCookieRes = await fetch("/api/auth/set-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ token: data.token }),
-        });
-
-        if (setCookieRes.ok) {
-          // Step 3: Now auth.me should return the guest user
-          await utils.auth.me.invalidate();
-        } else {
-          console.warn("[AuthProvider] set-session failed:", setCookieRes.status);
-          // Even if set-session fails, the cookie might have been set by the
-          // guest-session response directly (works in dev, not behind proxy)
-          await utils.auth.me.invalidate();
-        }
-      } else if (data.status === "created") {
-        // Legacy: no token in response (shouldn't happen with new code)
-        await utils.auth.me.invalidate();
-      }
+      // Refresh auth.me — now the tRPC link will send the token via Authorization header
+      await utils.auth.me.invalidate();
     } catch (err) {
       console.warn("[AuthProvider] Failed to provision guest:", err);
     } finally {
       isProvisioning.current = false;
       setGuestProvisioningDone(true);
+    }
+  }, [utils]);
+
+  // Check for OAuth token in URL fragment (set by OAuth callback page)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes('token=')) {
+      const params = new URLSearchParams(hash.slice(1));
+      const token = params.get('token');
+      if (token) {
+        setSessionToken(token);
+        // Clean the URL
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        // Mark as already attempted so guest provisioning doesn't run
+        hasAttempted.current = true;
+        setGuestProvisioningDone(true);
+        // Refresh auth.me with the new token
+        utils.auth.me.invalidate();
+      }
     }
   }, [utils]);
 
@@ -136,17 +135,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       throw error;
     } finally {
+      clearSessionToken();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }
   }, [logoutMutation, utils]);
 
-  // The key insight: `loading` is true until BOTH:
-  //   1. The initial auth.me query has resolved
-  //   2. Guest provisioning has completed (if it was needed)
-  // This prevents pages from flashing "Please sign in" during the
-  // ~200-400ms window while the guest session is being created.
-  // Persist user info to localStorage for cross-tab awareness (side effect → useEffect)
+  // Persist user info to localStorage for cross-tab awareness
   useEffect(() => {
     localStorage.setItem(
       "manus-runtime-user-info",

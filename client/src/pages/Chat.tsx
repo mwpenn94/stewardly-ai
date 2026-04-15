@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { authFetch } from "@/lib/sessionToken";
 import { PERSONA_LAYERS as SIDEBAR_PERSONA_LAYERS, ROLE_LEVEL as SIDEBAR_ROLE_LEVEL } from "@/components/PersonaSidebar5";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadCalculatorContext, buildContextOverlay } from "@/lib/calculatorContext";
@@ -1142,10 +1143,9 @@ export default function Chat() {
           };
           window.addEventListener("offline", onOffline);
 
-          const sseResponse = await fetch("/api/chat/stream", {
+          const sseResponse = await authFetch("/api/chat/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include",
             signal: abortController.signal,
             body: JSON.stringify({
               messages: [

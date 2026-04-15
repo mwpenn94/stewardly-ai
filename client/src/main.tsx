@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
+import { getSessionToken } from "./lib/sessionToken";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import { toast } from "sonner";
@@ -161,8 +162,14 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
+        const token = getSessionToken();
+        const headers = new Headers((init as RequestInit)?.headers);
+        if (token) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
         return globalThis.fetch(input, {
           ...(init ?? {}),
+          headers,
           credentials: "include",
         });
       },

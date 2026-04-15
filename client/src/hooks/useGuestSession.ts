@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
+import { authFetch } from "@/lib/sessionToken";
 import { trpc } from "@/lib/trpc";
 
 /**
@@ -27,10 +28,9 @@ export function useGuestSession() {
     hasAttempted.current = true;
 
     try {
-      const res = await fetch("/api/auth/guest-session", {
+      const res = await authFetch("/api/auth/guest-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
       });
 
       if (res.ok) {
