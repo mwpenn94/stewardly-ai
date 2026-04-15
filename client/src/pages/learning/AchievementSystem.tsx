@@ -13,6 +13,8 @@ import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 /* ── types ─────────────────────────────────────────────────────── */
 
 interface Achievement {
@@ -114,13 +116,15 @@ interface Props {
 }
 
 export default function AchievementSystem({ data, onGoalTap }: Props) {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   // Fetch real mastery data when used as a page (no data prop)
   const summaryQuery = trpc.learning.mastery.summary.useQuery(undefined, {
-    enabled: !data,
+    enabled: isAuthenticated && !data,
     retry: false,
   });
   const dueQuery = trpc.learning.mastery.dueNow.useQuery(undefined, {
-    enabled: !data,
+    enabled: isAuthenticated && !data,
     retry: false,
   });
 
@@ -139,6 +143,24 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
   const inProgress = d.achievements.filter(a => a.progress > 0 && a.progress < 100);
 
   const filtered = filter === "all" ? d.achievements : d.achievements.filter(a => a.category === filter);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="Achievements">

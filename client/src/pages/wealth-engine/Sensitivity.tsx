@@ -24,6 +24,8 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 // ─── PARAMETER DEFINITIONS ───────────────────────────────────────────
 
 const PARAMS = {
@@ -67,6 +69,8 @@ function heatColor(value: number, min: number, max: number): string {
 // ─── COMPONENT ──────────────────────────────────────────────────────
 
 export default function Sensitivity() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
 
   // Parameter selection
@@ -110,6 +114,24 @@ export default function Sensitivity() {
   }, [xParam, yParam, gridSize, metric, age, income, horizon, xDef, yDef, sweep]);
 
   const data = sweep.data;
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="What-If Sensitivity">

@@ -38,6 +38,8 @@ import { useLocation } from "wouter";
 import { PremiumEstimator } from "@/components/wealth-engine/PremiumEstimator";
 import { SEOHead } from "@/components/SEOHead";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 interface QuickQuoteInputs {
   age: number;
   income: number;
@@ -77,6 +79,8 @@ function scoreDomains(inputs: QuickQuoteInputs): Record<DomainKey, number> {
 }
 
 export default function QuickQuoteFlowPage() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [inputs, setInputs] = useState<QuickQuoteInputs>({
@@ -138,6 +142,24 @@ export default function QuickQuoteFlowPage() {
 
   const projection = runPreset.data?.data ?? [];
   const finalSnap = projection[projection.length - 1];
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="Quick Quote">

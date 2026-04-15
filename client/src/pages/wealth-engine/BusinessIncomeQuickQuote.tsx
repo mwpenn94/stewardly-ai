@@ -58,12 +58,16 @@ import {
   summarizeBizProjection,
   type BizRoleKey,
 } from "./businessIncomeQuickQuoteHelpers";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 // Re-export for downstream consumers (tests target the helpers module directly).
 export { ROLE_OPTIONS, profileToBizQuickQuote, summarizeBizProjection };
 export type { BizRoleKey };
 
 export default function BusinessIncomeQuickQuotePage() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const { profile, updateProfile, hasProfile } = useFinancialProfile();
   const { recordRun } = useRunTimeline();
@@ -184,6 +188,24 @@ export default function BusinessIncomeQuickQuotePage() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yearsData, summary.totalEarnings]);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="Business Income Quick Quote">

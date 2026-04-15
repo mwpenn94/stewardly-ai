@@ -23,6 +23,8 @@ import StressTestPanel from "@/components/StressTestPanel";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import { SEOHead } from "@/components/SEOHead";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 /* ── helpers ──────────────────────────────────────────────────── */
 
 const fmt = (n: number) => {
@@ -39,10 +41,12 @@ type SortDir = "asc" | "desc";
 /* ── component ────────────────────────────────────────────────── */
 
 export default function ReferenceHub() {
-  const { data: references } = trpc.wealthEngine.productReferences.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
-  const { data: benchmarks } = trpc.wealthEngine.industryBenchmarks.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
-  const { data: methodology } = trpc.wealthEngine.methodology.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
-  const { data: sp500Raw } = trpc.wealthEngine.sp500History.useQuery(undefined, { retry: false, staleTime: 5 * 60_000 });
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
+  const { data: references } = trpc.wealthEngine.productReferences.useQuery(undefined, { enabled: isAuthenticated, retry: false, staleTime: 5 * 60_000 });
+  const { data: benchmarks } = trpc.wealthEngine.industryBenchmarks.useQuery(undefined, { enabled: isAuthenticated, retry: false, staleTime: 5 * 60_000 });
+  const { data: methodology } = trpc.wealthEngine.methodology.useQuery(undefined, { enabled: isAuthenticated, retry: false, staleTime: 5 * 60_000 });
+  const { data: sp500Raw } = trpc.wealthEngine.sp500History.useQuery(undefined, { enabled: isAuthenticated, retry: false, staleTime: 5 * 60_000 });
   const { data: guardrails } = trpc.wealthEngine.checkGuardrails.useQuery(
     { params: { returnRate: 0.07, savingsRate: 0.15 } },
     { retry: false, staleTime: 5 * 60_000 },
@@ -134,6 +138,24 @@ export default function ReferenceHub() {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir(key === "year" ? "desc" : "desc"); }
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="Reference Hub">

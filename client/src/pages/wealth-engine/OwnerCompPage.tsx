@@ -27,6 +27,8 @@ import {
 import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 type Entity = "sole_prop" | "llc" | "s_corp" | "c_corp";
 
 const ENTITY_LABELS: Record<Entity, string> = {
@@ -45,6 +47,8 @@ const fmt = (n: number) => {
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 
 export default function OwnerCompPage() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const [profit, setProfit] = useState(250_000);
   const [filing, setFiling] = useState<"single" | "mfj" | "hoh">("single");
@@ -74,6 +78,24 @@ export default function OwnerCompPage() {
     if (!result) return null;
     return result.results.find((r: { entity: string }) => r.entity === result.recommended) ?? result.results[0];
   }, [result]);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="Owner Compensation">

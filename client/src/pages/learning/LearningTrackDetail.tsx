@@ -1,3 +1,5 @@
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 /**
  * EMBA Learning — Track Detail page (pass 58).
  *
@@ -53,6 +55,8 @@ import {
 } from "./lib/trackProgress";
 
 export default function LearningTrackDetail() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const params = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
   const slug = params?.slug ?? "";
@@ -74,7 +78,7 @@ export default function LearningTrackDetail() {
     { enabled: !!trackQ.data?.id },
   );
   // Pass 5 (build loop) — fold mastery into per-chapter progress.
-  const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, {
+  const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, { enabled: isAuthenticated,
     refetchOnWindowFocus: false,
   });
 
@@ -106,6 +110,24 @@ export default function LearningTrackDetail() {
   const [expandedChapterId, setExpandedChapterId] = useState<number | null>(
     null,
   );
+
+  // Conditional returns AFTER all hooks
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
 
   if (trackQ.isLoading) {
     return (

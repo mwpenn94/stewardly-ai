@@ -28,6 +28,8 @@ import { toast } from "sonner";
 import { persistCalculation } from "@/lib/calculatorContext";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 // ─── UTILITIES ──────────────────────────────────────────────────────
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
@@ -95,6 +97,8 @@ function SliderInput({
 
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────
 export default function WealthConfigurator() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const { profile: sharedProfile, updateProfile } = useFinancialProfile("wealth-configurator");
 

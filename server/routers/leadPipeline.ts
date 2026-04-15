@@ -9,12 +9,18 @@ export const leadPipelineRouter = router({
   getPipeline: protectedProcedure
     .input(z.object({ status: z.string().optional(), limit: z.number().default(50) }).optional())
     .query(async ({ input }) => {
-      const { getDb } = await import("../db");
-      const db = await getDb();
-      if (!db) return [];
-      const { leadPipeline } = await import("../../drizzle/schema");
-      const { desc } = await import("drizzle-orm");
-      return db.select().from(leadPipeline).orderBy(desc(leadPipeline.createdAt)).limit(input?.limit || 50);
+      try {
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (!db) return [];
+        const { leadPipeline } = await import("../../drizzle/schema");
+        const { desc } = await import("drizzle-orm");
+        return db.select().from(leadPipeline).orderBy(desc(leadPipeline.createdAt)).limit(input?.limit || 50);
+      } catch (e: any) {
+        // Table may not exist yet — return empty array gracefully
+        console.warn("[leadPipeline.getPipeline]", e?.message?.slice(0, 120));
+        return [];
+      }
     }),
 
   assign: protectedProcedure

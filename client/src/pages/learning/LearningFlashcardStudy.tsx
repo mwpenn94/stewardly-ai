@@ -48,7 +48,11 @@ import { recordStudyNow } from "./lib/studyStreak";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 export default function LearningFlashcardStudy() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const params = useParams<{ slug: string }>();
   const [, navigate] = useLocation();
   const slug = params?.slug ?? "";
@@ -61,7 +65,7 @@ export default function LearningFlashcardStudy() {
     { trackId: trackQ.data?.id ?? 0 },
     { enabled: !!trackQ.data?.id },
   );
-  const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, {
+  const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, { enabled: isAuthenticated,
     refetchOnWindowFocus: false,
   });
   const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
@@ -157,6 +161,24 @@ export default function LearningFlashcardStudy() {
   };
 
   if (trackQ.isLoading || flashcardsQ.isLoading) {
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
     return (
       <AppShell title="Flashcards">
       <SEOHead title="Flashcards" description="Study flashcards with spaced repetition" />

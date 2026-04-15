@@ -34,6 +34,8 @@ import { sendFeedback } from "@/lib/feedbackSpecs";
 import BackPlanFunnel from "@/components/BackPlanFunnel";
 import { SEOHead } from "@/components/SEOHead";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 /* ── helpers ───────────────────────────────────────────────────── */
 
 const fmt = (n: number) => {
@@ -77,6 +79,8 @@ interface Campaign {
 /* ── component ─────────────────────────────────────────────────── */
 
 export default function TeamBuilder() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [tab, setTab] = useState("compose");
 
   // Team composition
@@ -145,7 +149,7 @@ export default function TeamBuilder() {
   });
 
   // Queries
-  const channelsQ = trpc.calculatorEngine.bieChannels.useQuery(undefined, { retry: false });
+  const channelsQ = trpc.calculatorEngine.bieChannels.useQuery(undefined, { enabled: isAuthenticated, retry: false });
 
   const addMember = () => {
     setMembers((prev) => [
@@ -225,6 +229,24 @@ export default function TeamBuilder() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [economics.data]);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="BIE Team Builder">

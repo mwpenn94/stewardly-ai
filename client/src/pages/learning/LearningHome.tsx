@@ -32,19 +32,20 @@ import {
   getRecentTracks,
   type RecentTrack,
 } from "./lib/recentTracks";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 export default function LearningHome() {
-  const meQ = trpc.auth.me.useQuery();
-  const summaryQ = trpc.learning.mastery.summary.useQuery();
-  const licensesQ = trpc.learning.licenses.list.useQuery();
-  const alertsQ = trpc.learning.licenses.alerts.useQuery();
-  const recsQ = trpc.learning.recommendations.forMe.useQuery(undefined);
-  const tracksQ = trpc.learning.content.listTracks.useQuery(undefined);
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
 
-  // Pass 7 (build loop) — streak is read from localStorage on mount
-  // and refreshed when the page regains focus so a fresh session
-  // picks up days marked on another device / tab. Hooks live at
-  // component top per React rules.
+  // All hooks MUST be called before any conditional returns (React rules of hooks)
+  const meQ = trpc.auth.me.useQuery(undefined, { enabled: !!isAuthenticated });
+  const summaryQ = trpc.learning.mastery.summary.useQuery(undefined, { enabled: !!isAuthenticated });
+  const licensesQ = trpc.learning.licenses.list.useQuery(undefined, { enabled: !!isAuthenticated });
+  const alertsQ = trpc.learning.licenses.alerts.useQuery(undefined, { enabled: !!isAuthenticated });
+  const recsQ = trpc.learning.recommendations.forMe.useQuery(undefined, { enabled: !!isAuthenticated });
+  const tracksQ = trpc.learning.content.listTracks.useQuery(undefined, { enabled: !!isAuthenticated });
+
   const [streak, setStreak] = useState<StreakSummary>({
     current: 0,
     longest: 0,
@@ -62,6 +63,23 @@ export default function LearningHome() {
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
+
+  // Conditional returns AFTER all hooks
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
 
   const role = meQ.data?.role ?? "user";
   const isAdvisorPlus = role === "advisor" || role === "manager" || role === "admin";

@@ -175,6 +175,39 @@ const PROVIDERS = [
     freeTierLimit: "Unlimited (self-hosted)",
   },
   {
+    id: uuid(), slug: "gleif", name: "GLEIF (Global LEI Foundation)", description: "Legal Entity Identifier (LEI) lookup, entity verification, and ownership chain resolution. Zero-cost, foundational for cross-client portfolio analytics.", category: "regulatory" as const,
+    ownershipTier: "platform" as const, authMethod: "none" as const,
+    baseUrl: "https://api.gleif.org/api/v1",
+    docsUrl: "https://www.gleif.org/en/lei-data/gleif-api",
+    freeTierDescription: "Completely free. No API key required. 60 req/min.",
+    freeTierLimit: "Unlimited",
+  },
+  {
+    id: uuid(), slug: "openfigi", name: "OpenFIGI", description: "Financial Instrument Global Identifier (FIGI) mapping service. FIGI-to-ticker, CUSIP, ISIN resolution for instrument identification.", category: "enrichment" as const,
+    ownershipTier: "platform" as const, authMethod: "api_key" as const,
+    baseUrl: "https://api.openfigi.com",
+    docsUrl: "https://www.openfigi.com/api",
+    signupUrl: "https://www.openfigi.com/api#api-key",
+    freeTierDescription: "Free API key. 250 req/min with key, 25 req/min without.",
+    freeTierLimit: "250 req/min with free key",
+  },
+  {
+    id: uuid(), slug: "naic", name: "NAIC Financial Data", description: "National Association of Insurance Commissioners — carrier financial data, consumer complaint ratios, model regulations. Foundational for Protection surfaces.", category: "regulatory" as const,
+    ownershipTier: "platform" as const, authMethod: "none" as const,
+    baseUrl: "https://content.naic.org",
+    docsUrl: "https://content.naic.org/cipr-topics",
+    freeTierDescription: "Public data freely available. Some reports require NAIC membership.",
+    freeTierLimit: "Unlimited (public data)",
+  },
+  {
+    id: uuid(), slug: "ffiec", name: "FFIEC (Federal Financial Institutions Examination Council)", description: "Bank financial data, CRA ratings, demographic data. Foundational for banking-side defaults and institution verification.", category: "regulatory" as const,
+    ownershipTier: "platform" as const, authMethod: "none" as const,
+    baseUrl: "https://cdr.ffiec.gov/public",
+    docsUrl: "https://www.ffiec.gov/",
+    freeTierDescription: "Completely free. Public access to all financial institution data.",
+    freeTierLimit: "Unlimited",
+  },
+  {
     // Pass 77: GitHub is the first "developer tool" integration and
     // underpins the Code Chat self-update flow. It lives in the
     // `middleware` category alongside n8n because the enum doesn't

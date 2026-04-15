@@ -48,6 +48,8 @@ import {
   AlertTriangle, TrendingDown, History, BarChart3,
   Shield, Info, CheckCircle2, Target, ArrowLeft, ArrowRight, Grid3X3, BookOpen,
 } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 const PEER_SET = [
   "wealthbridgeClient",
@@ -126,6 +128,8 @@ function checkInputGuardrails(
 }
 
 export default function StrategyComparisonPage() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const { profile: sharedProfile, updateProfile } = useFinancialProfile("strategy-comparison");
 
@@ -173,9 +177,9 @@ export default function StrategyComparisonPage() {
   const [chartMetric, setChartMetric] = useState("totalValue");
 
   // Enrichment queries — load reference data eagerly (canonical wealthEngine router)
-  const benchmarks = trpc.wealthEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
-  const stressScenarios = trpc.wealthEngine.stressScenarios.useQuery(undefined, { staleTime: 300_000 });
-  const productRefs = trpc.wealthEngine.productReferences.useQuery(undefined, { staleTime: 300_000 });
+  const benchmarks = trpc.wealthEngine.industryBenchmarks.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
+  const stressScenarios = trpc.wealthEngine.stressScenarios.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
+  const productRefs = trpc.wealthEngine.productReferences.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
 
   // Stress test + backtest — fire after comparison completes
   const onStressError = () => toast.error("Stress test failed — results may be incomplete");
@@ -272,6 +276,24 @@ export default function StrategyComparisonPage() {
     }));
     compare.mutate({ strategies, horizon });
   };
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="Strategy Comparison">

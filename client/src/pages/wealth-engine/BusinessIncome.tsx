@@ -21,6 +21,8 @@ import { toast } from "sonner";
 import { persistCalculation } from "@/lib/calculatorContext";
 import { DiscussInChatButton } from "@/components/wealth-engine/DiscussInChatButton";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 }
@@ -34,6 +36,8 @@ function safeNum(raw: string, min = 0, max = 1e12): number | null {
 }
 
 export default function BusinessIncome() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
 
   // Strategy config
@@ -49,11 +53,11 @@ export default function BusinessIncome() {
   const [targetIncome, setTargetIncome] = useState(200000);
 
   // Queries (reference data — cache 5min)
-  const rolesQ = trpc.calculatorEngine.bieRoles.useQuery(undefined, { staleTime: 5 * 60_000 });
-  const presetsQ = trpc.calculatorEngine.biePresets.useQuery(undefined, { staleTime: 5 * 60_000 });
-  const bracketsQ = trpc.calculatorEngine.bieBrackets.useQuery(undefined, { staleTime: 5 * 60_000 });
-  const channelsQ = trpc.calculatorEngine.bieChannels.useQuery(undefined, { staleTime: 5 * 60_000 });
-  const productsQ = trpc.calculatorEngine.productReferences.useQuery(undefined, { staleTime: 5 * 60_000 });
+  const rolesQ = trpc.calculatorEngine.bieRoles.useQuery(undefined, { enabled: isAuthenticated, staleTime: 5 * 60_000 });
+  const presetsQ = trpc.calculatorEngine.biePresets.useQuery(undefined, { enabled: isAuthenticated, staleTime: 5 * 60_000 });
+  const bracketsQ = trpc.calculatorEngine.bieBrackets.useQuery(undefined, { enabled: isAuthenticated, staleTime: 5 * 60_000 });
+  const channelsQ = trpc.calculatorEngine.bieChannels.useQuery(undefined, { enabled: isAuthenticated, staleTime: 5 * 60_000 });
+  const productsQ = trpc.calculatorEngine.productReferences.useQuery(undefined, { enabled: isAuthenticated, staleTime: 5 * 60_000 });
 
   // Expandable sections
   const [showChannels, setShowChannels] = useState(false);
@@ -111,6 +115,24 @@ export default function BusinessIncome() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [results]);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="Business Income">

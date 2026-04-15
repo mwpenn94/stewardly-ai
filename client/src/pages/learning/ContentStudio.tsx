@@ -35,18 +35,22 @@ import {
 import { toast } from "sonner";
 import { Redirect } from "wouter";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 export default function ContentStudio() {
-  const meQ = trpc.auth.me.useQuery();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
+  const meQ = trpc.auth.me.useQuery(undefined, { enabled: isAuthenticated });
   const role = meQ.data?.role ?? "user";
   const isAdvisorPlus = role === "advisor" || role === "manager" || role === "admin";
   const isAdmin = role === "admin";
 
-  const defsQ = trpc.learning.content.listDefinitions.useQuery({ limit: 20 });
-  const tracksQ = trpc.learning.content.listTracks.useQuery({ limit: 50 });
+  const defsQ = trpc.learning.content.listDefinitions.useQuery({ limit: 20 }, { enabled: isAuthenticated });
+  const tracksQ = trpc.learning.content.listTracks.useQuery({ limit: 50 }, { enabled: isAuthenticated });
   const pendingQ = trpc.learning.freshness.pendingUpdates.useQuery(undefined, { enabled: isAdmin });
   // Pass 4 (build loop) — admin-only import history.
   const importHistoryQ = trpc.learning.importHistory.useQuery(undefined, {
-    enabled: isAdmin,
+    enabled: isAuthenticated && isAdmin,
     refetchOnWindowFocus: false,
   });
   const utils = trpc.useUtils();
@@ -106,6 +110,24 @@ export default function ContentStudio() {
   const [definition, setDefinition] = useState("");
 
   if (meQ.isLoading) {
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
     return <AppShell title="Content Studio"><SEOHead title="Content Studio" description="Author and manage learning content" /><div className="p-6 text-sm text-muted-foreground">Loading…</div></AppShell>;
   }
   if (!isAdvisorPlus) {

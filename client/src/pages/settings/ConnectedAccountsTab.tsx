@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Link2, Unlink, RefreshCw, Shield, Linkedin, Mail, Chrome, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 const PROVIDER_META: Record<string, {
   name: string;
   icon: React.ReactNode;
@@ -46,11 +48,13 @@ const PROVIDER_META: Record<string, {
 };
 
 export default function ConnectedAccountsTab() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
 
-  const { data: providers, isLoading: loadingProviders } = trpc.authEnrichment.getConnectedProviders.useQuery();
-  const { data: completeness, isLoading: loadingCompleteness } = trpc.authEnrichment.getProfileCompleteness.useQuery();
-  const { data: history } = trpc.authEnrichment.getEnrichmentHistory.useQuery();
-  const { data: signInMethods } = trpc.authEnrichment.getSignInMethods.useQuery();
+
+  const { data: providers, isLoading: loadingProviders } = trpc.authEnrichment.getConnectedProviders.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: completeness, isLoading: loadingCompleteness } = trpc.authEnrichment.getProfileCompleteness.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: history } = trpc.authEnrichment.getEnrichmentHistory.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: signInMethods } = trpc.authEnrichment.getSignInMethods.useQuery(undefined, { enabled: isAuthenticated });
 
   const unlinkMutation = trpc.authEnrichment.unlinkProvider.useMutation({
     onSuccess: () => {
@@ -71,6 +75,24 @@ export default function ConnectedAccountsTab() {
   });
 
   if (loadingProviders || loadingCompleteness) {
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
     return (
       <div className="space-y-4">
         <div className="h-8 w-48 bg-muted animate-pulse rounded" />

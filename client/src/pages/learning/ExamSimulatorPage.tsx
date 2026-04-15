@@ -20,7 +20,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import ExamSimulator, { type ExamConfig } from "./ExamSimulator";
 import { transformDbQuestions } from "@/components/wealth-engine/calculatorHelpers";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 export default function ExamSimulatorPage() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const params = useParams<{ moduleSlug: string }>();
   const [, navigate] = useLocation();
   const slug = params.moduleSlug ?? "general";
@@ -55,6 +59,24 @@ export default function ExamSimulatorPage() {
   const isLoading = trackLoading || questionsLoading;
 
   if (isLoading) {
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
     return (
       <AppShell title="Exam Simulator">
         <div className="flex items-center justify-center min-h-[50vh]">

@@ -22,6 +22,8 @@ import { sendFeedback } from "@/lib/feedbackSpecs";
 import { checkGuardrail } from "@/components/wealth-engine/GuardrailWarning";
 import { SEOHead } from "@/components/SEOHead";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 /* ── parameter definitions ──────────────────────────────────── */
 
 interface ParamDef {
@@ -98,6 +100,8 @@ const fmt = (n: number) => {
 /* ── component ─────────────────────────────────────────────── */
 
 export default function WhatIfSensitivity() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [rowParam, setRowParam] = useState("savingsRate");
   const [colParam, setColParam] = useState("investmentReturn");
   const [gridSize, setGridSize] = useState(5);
@@ -229,6 +233,24 @@ export default function WhatIfSensitivity() {
   const maxVal = allValues.length ? Math.max(...allValues) : 0;
 
   const getCell = (r: number, c: number) => grid?.find((cell) => cell.rowVal === r && cell.colVal === c);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="What-If Sensitivity">

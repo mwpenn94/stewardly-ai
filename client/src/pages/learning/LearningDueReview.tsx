@@ -57,9 +57,13 @@ import { recordStudyNow } from "./lib/studyStreak";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 type KindFilter = "all" | "flashcard" | "question";
 
 export default function LearningDueReview() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [limit, setLimit] = useState<10 | 20 | 50>(20);
@@ -177,6 +181,24 @@ export default function LearningDueReview() {
   // ── Render ─────────────────────────────────────────────────────────────
 
   if (deckQ.isLoading) {
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
     return (
       <AppShell title="Due Review">
         <SEOHead title="Due Review" description="SRS review across all exam tracks" />

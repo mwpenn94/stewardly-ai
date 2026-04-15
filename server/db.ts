@@ -873,9 +873,9 @@ export async function saveSuitabilityAssessment(data: {
 
 export async function getUserSuitability(userId: number) {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) return null;
   const result = await db.select().from(suitabilityAssessments).where(eq(suitabilityAssessments.userId, userId)).orderBy(desc(suitabilityAssessments.createdAt)).limit(1);
-  return result[0];
+  return result[0] ?? null;
 }
 
 // ─── DOCUMENT ANNOTATIONS (collaborative) ──────────────────────────────────

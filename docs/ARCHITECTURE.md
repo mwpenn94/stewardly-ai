@@ -1,6 +1,6 @@
 # Stewardly AI — Architecture Reference
 
-**Last updated**: April 14, 2026
+**Last updated**: April 14, 2026 (v2.6.1 — Cost-Tier Sourcing Policy)
 
 ---
 
@@ -24,7 +24,7 @@ Stewardly is a full-stack TypeScript application built on React 19 + Express 4 +
 | Storage | S3 (storagePut/storageGet) | File and document storage |
 | Voice | Deepgram + Edge TTS | Speech-to-text and text-to-speech |
 | Unit Testing | Vitest | 7,716 tests across 320 files |
-| E2E Testing | Playwright | 68 tests across 22 suites |
+| E2E Testing | Playwright | 100 tests across 27 suites |
 
 ---
 
@@ -147,6 +147,21 @@ New users experience a three-stage onboarding:
 
 ---
 
+## Financial Data Sourcing Policy (v2.6.1)
+
+All external data integrations follow a four-tier cost hierarchy defined in `docs/reference/FINANCIAL_DATA_TOOLS_TIERED.md` and `docs/reference/v2.6.1-cost-tier-sourcing-policy.md`:
+
+| Tier | Cost | Examples | Usage |
+|------|------|----------|-------|
+| 1 — Free / Open | $0 | FRED, BLS, SEC EDGAR, GLEIF, OpenFIGI | Default for all macro, labor, regulatory data |
+| 2 — Freemium | $0–low | Alpha Vantage, Finnhub, IEX Cloud free tier | Real-time quotes, basic fundamentals |
+| 3 — Bundled | Platform fee | Plaid, SnapTrade | Account aggregation (already contracted) |
+| 4 — Premium | Per-call/seat | Bloomberg, Morningstar, FactSet | Only with explicit user opt-in + cost disclosure |
+
+The Integrations page displays a **CostTierBadge** on each provider card showing its tier classification and a summary banner with the cost-tier distribution across all connected integrations.
+
+---
+
 ## Database Schema Highlights
 
 The database contains 40+ tables. Key entities:
@@ -188,7 +203,7 @@ CSS injection is sanitized to prevent XSS (strips HTML tags, `expression()`, `ja
 ## Security and Compliance
 
 - All API calls use tRPC with `protectedProcedure` for authenticated endpoints
-- Zod validation on all inputs (2,562 validation rules)
+- Zod validation on all inputs (2,618 validation rules)
 - JWT session cookies with secure flags
 - S3 storage with non-enumerable file keys
 - Dynamic compliance disclaimers on all AI responses
@@ -217,7 +232,7 @@ The project maintains 7,716 unit tests across 320 test files covering server rou
 
 ### End-to-End Tests (Playwright)
 
-77 Playwright E2E tests across 26 suites provide regression protection for all critical user journeys. Tests run against the live dev server using Chromium in headless mode.
+100 Playwright E2E tests across 27 suites provide regression protection for all critical user journeys. Tests run against the live dev server using Chromium in headless mode.
 
 | Suite | Coverage Area | Tests |
 |-------|--------------|-------|
@@ -244,6 +259,7 @@ The project maintains 7,716 unit tests across 320 test files covering server rou
 | Integrations/Community/Changelog | Page renders without errors | 3 |
 | Wealth Engine Sub-pages | Passive Actions, Insights, Suitability | 3 |
 | Auth Gating | Protected route loop prevention, public route access | 22 |
+| Cost-Tier Transparency | Integration cost badges, tier summary | 2 |
 | Advisor Features | Wealth Engine, Learning, Products page structure | 8 |
 | Manager Features | Operations, Advisory Hub, Settings auth gating | 7 |
 | Admin Features | Admin panel, Compliance Audit, Client Onboarding | 6 |

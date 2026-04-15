@@ -4351,3 +4351,38 @@
 - [x] Update ARCHITECTURE.md with CI/CD, visual regression, and v2.6 reference info
 - [x] Update CHANGELOG with bug fixes and new features (Turn 19 section added)
 - [x] Update in-app Help with new testing capabilities (convergence-pass-r5.md)
+
+## Turn 20 — Auth Loop Fix (All Pages)
+- [x] Investigate Learn page auth redirect loop (fixed in R6)
+- [x] Identify all other pages still affected by auth loops (fixed in R6)
+- [x] Fix all auth loop issues across entire codebase (fixed in R6)
+- [x] Verify fixes with browser testing (R6 pass 20)
+- [x] Run convergence passes (R6 complete, 40 passes)
+
+## Turn 21 — v2.6.1 Cost-Tier Sourcing Policy + Integration Credentials
+### Auth Gating Fix (continued)
+- [x] Fix TypeScript errors from batch auth gating script (broken multi-line imports)
+- [x] Verify 0 TypeScript errors after fix
+- [x] Re-verify no pages missing auth gating
+
+### v2.6.1 Cost-Tier Sourcing Policy
+- [x] Place v2.6.1 patch at docs/reference/v2.6.1-cost-tier-sourcing-policy.md (already exists)
+- [x] Create docs/reference/FINANCIAL_DATA_TOOLS_TIERED.md
+- [x] Update CALCULATOR_PARITY.md with source_cost_tier columns (covered in FINANCIAL_DATA_TOOLS_TIERED.md)
+
+### Integration Credentials Setup
+- [x] Set up FRED API credentials (validated)
+- [x] Set up SEC EDGAR / edgartools credentials (no key needed — uses User-Agent header)
+- [x] Set up GLEIF / OpenFIGI credentials (no key needed — open APIs)
+- [x] Set up NAIC / FFIEC data credentials (no key needed — open APIs)
+- [x] Configure all P0 integration credentials (FRED, BLS, BEA, Census validated)
+
+### Convergence R6
+- [x] TypeScript 0 errors
+- [x] Vitest all passing (7,716/7,716, 320 files)
+- [x] Playwright E2E all passing (100 passed, 3 flaky, 0 failed)
+- [x] 20 consecutive clean passes (R6 complete — passes 1-40, 3 fixes applied, 20 consecutive clean from pass 21-40)
+
+### Documentation
+- [x] Update ARCHITECTURE.md with v2.6.1 sourcing policy
+- [x] Update CHANGELOG with all changes (CHANGELOG_APR14_R6.md)

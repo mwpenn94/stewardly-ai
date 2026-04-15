@@ -43,6 +43,8 @@ import {
   Loader2, Target, Sliders, ShieldCheck, TrendingDown, Shield,
   ChevronDown, ChevronUp, Info, AlertTriangle, ArrowLeft, ArrowRight, BarChart3, Grid3X3, BookOpen,
 } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 // ─── Benchmark helpers ───────────────────────────────────────────
 const BENCHMARK_LABELS: Record<string, string> = {
@@ -62,6 +64,8 @@ function formatBenchmarkValue(key: string, data: any): string {
 }
 
 export default function RetirementPage() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
   const [, navigate] = useLocation();
   const { profile: sharedProfile, updateProfile } = useFinancialProfile("retirement");
 
@@ -105,7 +109,7 @@ export default function RetirementPage() {
   const onBacktestError = () => toast.error("Backtest failed — historical data unavailable");
   const stressGfc = trpc.wealthEngine.stressTest.useMutation({ onError: onStressError });
   const backtestRun = trpc.wealthEngine.historicalBacktest.useMutation({ onError: onBacktestError });
-  const benchmarks = trpc.wealthEngine.industryBenchmarks.useQuery(undefined, { staleTime: 300_000 });
+  const benchmarks = trpc.wealthEngine.industryBenchmarks.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
   // Stress testing + historical backtest + Monte Carlo
   const stressDotcom = trpc.wealthEngine.stressTest.useMutation({ onError: onStressError });
   const stressGFC = trpc.wealthEngine.stressTest.useMutation({ onError: onStressError });
@@ -204,6 +208,24 @@ export default function RetirementPage() {
   // Phase 7 wires in the consumption-smoothing engine)
   const lowerThreshold = finalSnap ? finalSnap.totalLiquidWealth * 0.85 : 0;
   const upperThreshold = finalSnap ? finalSnap.totalLiquidWealth * 1.15 : 0;
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="Retirement">

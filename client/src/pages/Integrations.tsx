@@ -83,6 +83,40 @@ function TierBadge({ tier }: { tier: string }) {
   );
 }
 
+// ─── Cost Tier Badge (v2.6.1) ─────────────────────────────────────────
+const COST_TIER_MAP: Record<string, { emoji: string; label: string; color: string; tooltip: string }> = {
+  free: { emoji: "🟢", label: "FREE", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", tooltip: "Zero-cost access. No usage limits for production." },
+  freemium: { emoji: "🟡", label: "FREEMIUM", color: "bg-amber-500/10 text-amber-400 border-amber-500/20", tooltip: "Free tier available with usage caps. May require paid upgrade at scale." },
+  paid: { emoji: "🔴", label: "PAID", color: "bg-red-500/10 text-red-400 border-red-500/20", tooltip: "Requires paid subscription or per-transaction fees for production use." },
+};
+
+function getCostTier(provider: Provider): string {
+  const slug = provider.slug;
+  // Government / zero-cost sources
+  if (["fred", "bls", "bea", "census-bureau", "sec-edgar", "finra-brokercheck", "gleif", "openfigi", "naic", "ffiec", "n8n"].includes(slug)) return "free";
+  // Freemium sources
+  if (["snaptrade", "compulife", "canopy-connect", "peopledatalabs", "github"].includes(slug)) return "freemium";
+  // Paid sources
+  if (["plaid", "bridgeft", "esi-fidelity", "attom", "gohighlevel", "smsit"].includes(slug)) return "paid";
+  // Carriers (manual upload, no API cost)
+  if (["national-life", "massmutual"].includes(slug)) return "free";
+  return "freemium";
+}
+
+function CostTierBadge({ provider }: { provider: Provider }) {
+  const tier = getCostTier(provider);
+  const config = COST_TIER_MAP[tier] || COST_TIER_MAP.freemium;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${config.color}`}
+      title={config.tooltip}
+    >
+      <span>{config.emoji}</span>
+      {config.label}
+    </span>
+  );
+}
+
 // ─── Provider Card ─────────────────────────────────────────────────────
 function ProviderCard({
   provider,
@@ -115,8 +149,9 @@ function ProviderCard({
             </div>
             <div>
               <CardTitle className="text-base">{provider.name}</CardTitle>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <TierBadge tier={provider.ownershipTier} />
+                <CostTierBadge provider={provider} />
                 <span className="text-xs text-muted-foreground">{provider.category}</span>
               </div>
             </div>
@@ -1319,6 +1354,43 @@ export default function Integrations() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Cost-Tier Transparency (v2.6.1) */}
+      {providers && providers.length > 0 && (() => {
+        const allP = providers as unknown as Provider[];
+        const freeCount = allP.filter(p => getCostTier(p) === "free").length;
+        const freemiumCount = allP.filter(p => getCostTier(p) === "freemium").length;
+        const paidCount = allP.filter(p => getCostTier(p) === "paid").length;
+        return (
+          <Card className="border-border/50 bg-muted/30">
+            <CardContent className="pt-3 pb-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">Vendor Cost Transparency</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                    {freeCount} Free
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+                    {freemiumCount} Freemium
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+                    {paidCount} Paid
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Tier 0/1 defaults use only free government sources. Paid integrations require explicit setup.
+              </p>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">

@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Shield, Plus, AlertTriangle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 const LICENSE_TYPES = [
   { value: "sie", label: "SIE (Securities Industry Essentials)" },
   { value: "series7", label: "Series 7" },
@@ -31,9 +33,11 @@ const LICENSE_TYPES = [
 ];
 
 export default function LicenseTracker() {
-  const licensesQ = trpc.learning.licenses.list.useQuery();
-  const alertsQ = trpc.learning.licenses.alerts.useQuery();
-  const progressQ = trpc.learning.licenses.ceProgress.useQuery();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
+  const licensesQ = trpc.learning.licenses.list.useQuery(undefined, { enabled: isAuthenticated });
+  const alertsQ = trpc.learning.licenses.alerts.useQuery(undefined, { enabled: isAuthenticated });
+  const progressQ = trpc.learning.licenses.ceProgress.useQuery(undefined, { enabled: isAuthenticated });
   const utils = trpc.useUtils();
 
   const addMut = trpc.learning.licenses.add.useMutation({
@@ -65,6 +69,24 @@ export default function LicenseTracker() {
   const licenses = licensesQ.data ?? [];
   const alerts = alertsQ.data ?? [];
   const progress = progressQ.data ?? [];
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <AppShell title="License Tracker">

@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Shield, Users, ArrowRightLeft, Eye, EyeOff, Lock, Unlock, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 const TOPIC_LABELS: Record<string, string> = {
   insurance: "Insurance",
   investments: "Investments",
@@ -32,12 +34,14 @@ const ACCESS_LABELS: Record<string, { label: string; color: string; icon: any }>
 };
 
 export default function DataSharingTab() {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+
 
   const [expandedGrantee, setExpandedGrantee] = useState<number | null>(null);
 
-  const permsQuery = trpc.kbAccess.getMyPermissions.useQuery();
-  const defaultsQuery = trpc.kbAccess.getDefaults.useQuery();
-  const transitionsQuery = trpc.kbAccess.getTransitionHistory.useQuery();
+  const permsQuery = trpc.kbAccess.getMyPermissions.useQuery(undefined, { enabled: isAuthenticated });
+  const defaultsQuery = trpc.kbAccess.getDefaults.useQuery(undefined, { enabled: isAuthenticated });
+  const transitionsQuery = trpc.kbAccess.getTransitionHistory.useQuery(undefined, { enabled: isAuthenticated });
   const utils = trpc.useUtils();
 
   const setPermission = trpc.kbAccess.setPermission.useMutation({
@@ -71,6 +75,24 @@ export default function DataSharingTab() {
     }
     return Object.entries(map).map(([k, v]) => [Number(k), v] as [number, any[]]);
   }, [permsQuery.data]);
+
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-muted-foreground">Please sign in to access this page.</p>
+        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-6">
