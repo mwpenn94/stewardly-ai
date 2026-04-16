@@ -26,6 +26,8 @@ export default function ManagerDashboard() {
   const { data: reviewQueue, isLoading: _pageLoading } = trpc.review.pending.useQuery(undefined, { enabled: !!user });
   const auditTrail = trpc.review.audit.useQuery({ limit: 50 }, { enabled: !!user });
   const feedbackStats = trpc.feedback.stats.useQuery(undefined, { enabled: !!user });
+  const leadPipeline = trpc.leadPipeline.getPipeline.useQuery(undefined, { enabled: !!user });
+  const complianceStats = trpc.compliance.getDashboardStats.useQuery(undefined, { enabled: !!user });
 
   const approveReview = trpc.review.approve.useMutation({
     onSuccess: () => { utils.review.pending.invalidate(); toast.success("Review approved"); setSelectedItem(null); setReviewNote(""); },
@@ -71,6 +73,22 @@ export default function ManagerDashboard() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        {/* Cross-module summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          <Card className="bg-card border-border cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate("/lead-pipeline")}>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1"><TrendingUp className="w-4 h-4 text-purple-400" /><span className="text-xs text-muted-foreground">Active Leads</span></div>
+              <p className="text-2xl font-bold font-mono tabular-nums">{leadPipeline.data?.length ?? 0}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate("/compliance-audit")}>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2 mb-1"><Shield className="w-4 h-4 text-cyan-400" /><span className="text-xs text-muted-foreground">Compliance Score</span></div>
+              <p className="text-2xl font-bold font-mono tabular-nums">{complianceStats.data?.complianceRate ?? "--"}%</p>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           <Card className="bg-card border-border">

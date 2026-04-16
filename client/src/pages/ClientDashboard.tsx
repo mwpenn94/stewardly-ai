@@ -19,6 +19,7 @@ import {
   Loader2, Shield, TrendingUp, Heart, FileText,
   DollarSign, Users, Umbrella, GraduationCap, Clock,
   CheckCircle2, ChevronRight, AlertTriangle, ArrowRight,
+  MessageSquare, BookOpen, Activity,
 } from "lucide-react";
 import { ExportDataButton } from "@/components/ExportDataButton";
 import { useLocation } from "wouter";
@@ -55,6 +56,12 @@ export default function ClientDashboard() {
   const [expandedDomain, setExpandedDomain] = useState<string | null>(null);
 
   const profile = trpc.financialProfile.get.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const conversations = trpc.conversation.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const learningProgress = trpc.learning.dashboard.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
@@ -123,6 +130,43 @@ export default function ClientDashboard() {
           <p className="text-muted-foreground">
             {completedCount} of {DOMAINS.length} domains complete &middot; {totalActions} action items
           </p>
+        </div>
+
+        {/* Cross-module activity summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate("/")}>
+            <CardContent className="py-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold tabular-nums">{conversations.data?.length ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Conversations</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate("/learning")}>
+            <CardContent className="py-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold tabular-nums">{learningProgress.data?.mastery?.totalMastered ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Topics Mastered</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigate("/my-work")}>
+            <CardContent className="py-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <Activity className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold tabular-nums">{DOMAINS.filter(d => d.status !== "complete").length}</p>
+                <p className="text-xs text-muted-foreground">Active Domains</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Domain cards */}

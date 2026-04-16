@@ -17,6 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { ExportDataButton } from "@/components/ExportDataButton";
 
 const ACTION_CONFIG: Record<string, { label: string; color: string; icon: typeof Shield; bg: string }> = {
   grant_permission: { label: "Permission Granted", color: "text-emerald-400", icon: Unlock, bg: "bg-emerald-500/10" },
@@ -111,9 +112,11 @@ export default function AdminAuditTrail() {
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-3.5 w-3.5 mr-1" /> Export CSV
-            </Button>
+            <ExportDataButton
+              data={filtered}
+              filename="audit-trail"
+              columns={["actionType", "featureId", "actorId", "targetUserId", "previousValue", "newValue", "reason", "createdAt"]}
+            />
           </div>
         </header>
 

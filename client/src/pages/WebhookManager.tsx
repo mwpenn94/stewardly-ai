@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Webhook, Plus, CheckCircle2, XCircle, Clock, RotateCcw, Loader2, Trash2, ToggleLeft, ToggleRight, RefreshCw } from "lucide-react";
+import { ExportDataButton } from "@/components/ExportDataButton";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
@@ -51,9 +52,16 @@ export default function WebhookManager() {
             <p className="text-sm text-muted-foreground">Manage endpoints and monitor delivery health</p>
           </div>
         </div>
-        <Button size="sm" onClick={() => toast.info("Webhook registration form coming soon")}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> Add Endpoint
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportDataButton
+            data={(eventLog ?? []) as any[]}
+            filename="webhook-deliveries"
+            columns={["eventType", "statusCode", "status", "createdAt"]}
+          />
+          <Button size="sm" onClick={() => toast.info("Webhook registration form coming soon")}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Add Endpoint
+          </Button>
+        </div>
       </div>
 
       {/* Stats summary */}

@@ -239,6 +239,12 @@ export function CommandPalette() {
     { enabled: isAuthenticated && debouncedQuery.length >= 2 },
   );
 
+  // Search documents (knowledge base) when query is long enough
+  const documentSearch = trpc.documents.search.useQuery(
+    { query: debouncedQuery, limit: 3 },
+    { enabled: isAuthenticated && debouncedQuery.length >= 3 },
+  );
+
   // ── Keyboard listener ──
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -362,7 +368,7 @@ export function CommandPalette() {
       open={open}
       onOpenChange={setOpen}
       title="Command Palette"
-      description="Search pages, actions, and conversations"
+      description="Search pages, actions, conversations, and documents"
     >
       {/* Pass 13 (G17): wrap the CommandInput + mic button in a flex
           row so the mic affordance sits alongside the input. The
@@ -515,6 +521,31 @@ export function CommandPalette() {
                   <span className="truncate">{conv.title || "Untitled conversation"}</span>
                   <CommandShortcut>
                     <ArrowRight className="w-3 h-3" />
+                  </CommandShortcut>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
+
+        {/* Document search results */}
+        {isAuthenticated && (documentSearch.data?.length ?? 0) > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Knowledge Base">
+              {documentSearch.data!.map((doc: any) => (
+                <CommandItem
+                  key={`doc:${doc.id}`}
+                  value={`doc:${doc.id}`}
+                  keywords={[doc.content]}
+                  onSelect={() => { setOpen(false); navigate("/knowledge-base"); }}
+                >
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <span className="truncate text-sm">{doc.content}</span>
+                  <CommandShortcut>
+                    <span className="text-[10px] text-muted-foreground/50">
+                      {Math.round(doc.score * 100)}%
+                    </span>
                   </CommandShortcut>
                 </CommandItem>
               ))}

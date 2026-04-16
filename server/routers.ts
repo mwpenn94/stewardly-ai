@@ -1336,6 +1336,17 @@ const documentsRouter = router({
       await deleteAnnotation(input.id);
       return { success: true };
     }),
+  search: protectedProcedure
+    .input(z.object({ query: z.string().min(2), limit: z.number().min(1).max(20).default(5) }))
+    .query(async ({ ctx, input }) => {
+      const chunks = await searchDocumentChunks(ctx.user.id, input.query, undefined, input.limit);
+      return chunks.map((c: any) => ({
+        id: c.id,
+        documentId: c.documentId,
+        content: c.content?.substring(0, 200) ?? "",
+        score: c.score ?? 0,
+      }));
+    }),
 });
 
 // ─── PRODUCTS ROUTER ──────────────────────────────────────────────

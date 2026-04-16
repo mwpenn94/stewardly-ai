@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { ArrowLeft, Users, UserPlus, Shield, MoreHorizontal, Search, Loader2, Trash2, Mail, CheckCircle } from "lucide-react";
+import { ExportDataButton } from "@/components/ExportDataButton";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
@@ -182,9 +183,16 @@ export default function TeamManagement() {
 
       {orgId && !members.isLoading && (
         <>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search team members..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search team members..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+            </div>
+            <ExportDataButton
+              data={memberList}
+              filename="team-members"
+              columns={["name", "email", "organizationRole", "status"]}
+            />
           </div>
 
           <Card>

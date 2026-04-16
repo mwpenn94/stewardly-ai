@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, Clock, Database, ArrowLeftRight, Settings2, History, Loader2 } from "lucide-react";
+import { ExportDataButton } from "@/components/ExportDataButton";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -202,6 +203,13 @@ export default function CRMSync() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
+          <div className="flex justify-end mb-2">
+            <ExportDataButton
+              data={historyRows}
+              filename="crm-sync-history"
+              columns={["crmProvider", "direction", "status", "recordsSynced", "createdAt"]}
+            />
+          </div>
           <Card>
             <CardContent className="p-4">
               {syncHistory.isLoading ? (

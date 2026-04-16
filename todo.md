@@ -5220,3 +5220,15 @@
 - [x] AdminSystemHealth: Now has 3+ trpc calls (was 2)
 - [x] 11/11 pass84-depth tests passing
 - [x] 246/246 tests passing across passes 70-84
+
+## Pass 85 — Cross-Module Integration & Data Export
+- [x] ClientDashboard: Enhanced with cross-module data (learning progress, conversations, platform stats)
+- [x] ManagerDashboard: Enhanced with lead pipeline summary and compliance stats
+- [x] documents.search: Added search procedure to documentsRouter (query + limit inputs, returns id/documentId/content/score)
+- [x] CommandPalette: Enhanced with document search via documents.search tRPC query
+- [x] ExportDataButton: Added to TeamManagement (team member data export)
+- [x] ExportDataButton: Added to CRMSync (sync history export)
+- [x] ExportDataButton: Added to WebhookManager (delivery log export)
+- [x] ExportDataButton: Added to MyWork (work items export)
+- [x] ExportDataButton: Added to AdminAuditTrail (replaced custom CSV export with reusable component)
+- [x] 15/15 pass85-export-search tests passing

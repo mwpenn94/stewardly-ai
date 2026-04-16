@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
+import { ExportDataButton } from "@/components/ExportDataButton";
 
 interface WorkItem {
   id: string;
@@ -133,6 +134,11 @@ export default function MyWork() {
             {isLoading ? "Loading..." : actionNeeded.length > 0 ? `${actionNeeded.length} item${actionNeeded.length > 1 ? "s" : ""} need your attention` : "You're all caught up"}
           </p>
         </div>
+        <ExportDataButton
+          data={items}
+          filename="my-work"
+          columns={["type", "title", "status", "priority", "updatedAt"]}
+        />
       </div>
 
       <QueryErrorBanner query={workflowsQ} label="workflows" />

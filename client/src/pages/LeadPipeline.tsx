@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Search, Plus, LayoutGrid, List, Loader2, TrendingUp, CheckSquare, Square, X } from "lucide-react";
+import { ExportDataButton } from "@/components/ExportDataButton";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -168,6 +169,11 @@ export default function LeadPipeline() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <ExportDataButton
+            data={filtered}
+            filename="lead-pipeline"
+            columns={["firstName", "lastName", "email", "status", "score", "source", "assignedTo"]}
+          />
           <Button size="sm" onClick={() => navigate("/import")}>
             <Plus className="h-3.5 w-3.5 mr-1" /> Import Leads
           </Button>
