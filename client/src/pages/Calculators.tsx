@@ -298,11 +298,17 @@ export default function Calculators() {
   const [ppPnlTaxRate, setPpPnlTaxRate] = useState(30);
   const [ppPnlEbitGoal, setPpPnlEbitGoal] = useState(0);
   const [ppPnlNetGoal, setPpPnlNetGoal] = useState(0);
-  const [ppStreams, setPpStreams] = useState<Record<string, boolean>>({ personal: true, expanded: false, override: false, aum: false, channels: false });
+  const [ppStreams, setPpStreams] = useState<Record<string, boolean>>({ personal: true, expanded: false, override: false, aum: true, channels: false, affA: true, affB: true, affC: true, affD: true });
   const [ppAffAIncome, setPpAffAIncome] = useState(0);
   const [ppAffBIncome, setPpAffBIncome] = useState(0);
   const [ppAffCIncome, setPpAffCIncome] = useState(0);
   const [ppAffDIncome, setPpAffDIncome] = useState(0);
+  /* Unified Income Planning */
+  const [ppTargetIncome, setPpTargetIncome] = useState(() => ROLE_DEFAULTS.new.defaultTargetIncome);
+  const [ppIncomeSplits, setPpIncomeSplits] = useState(() => ({ ...ROLE_DEFAULTS.new.incomeSplits }));
+  const [ppAffCounts, setPpAffCounts] = useState(() => ({ ...ROLE_DEFAULTS.new.defaultAffiliates }));
+  const [ppAffAvgProd, setPpAffAvgProd] = useState(() => ({ ...ROLE_DEFAULTS.new.defaultAffProd }));
+  const [ppTeamAvgGDC, setPpTeamAvgGDC] = useState(100000);
   /* Goal Tracker */
   const [ppGoalIncome, setPpGoalIncome] = useState(150000);
   const [ppGoalAUM, setPpGoalAUM] = useState(5000000);
@@ -981,6 +987,12 @@ export default function Calculators() {
     affBIncome: ppAffBIncome, setAffBIncome: setPpAffBIncome,
     affCIncome: ppAffCIncome, setAffCIncome: setPpAffCIncome,
     affDIncome: ppAffDIncome, setAffDIncome: setPpAffDIncome,
+    /* Unified Income Planning */
+    targetIncome: ppTargetIncome, setTargetIncome: setPpTargetIncome,
+    incomeSplits: ppIncomeSplits, setIncomeSplits: setPpIncomeSplits,
+    affCounts: ppAffCounts, setAffCounts: setPpAffCounts,
+    affAvgProd: ppAffAvgProd, setAffAvgProd: setPpAffAvgProd,
+    teamAvgGDC: ppTeamAvgGDC, setTeamAvgGDC: setPpTeamAvgGDC,
     /* Goal Tracker */
     goalIncome: ppGoalIncome, setGoalIncome: setPpGoalIncome,
     goalAUM: ppGoalAUM, setGoalAUM: setPpGoalAUM,

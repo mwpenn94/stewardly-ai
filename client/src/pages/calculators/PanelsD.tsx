@@ -21,7 +21,8 @@ import {
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
   calcTrackFunnel, blendSources, buildMonthlyProduction, calcGoalProgress,
   fmt, fmtSm, pct,
-  type RoleId, type TeamMember, type RecruitTrack,
+  calcUnifiedIncomePlan,
+  type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits,
 } from './practiceEngine';
 import { KPI, RefTip } from './shared';
 import {
@@ -62,6 +63,15 @@ export interface PracticeProps {
   affBIncome: number; setAffBIncome: (v: number) => void;
   affCIncome: number; setAffCIncome: (v: number) => void;
   affDIncome: number; setAffDIncome: (v: number) => void;
+  /* Unified Income Planning */
+  targetIncome: number; setTargetIncome: (v: number) => void;
+  incomeSplits: { gdc: number; aum: number; affiliate: number; override: number; channel: number };
+  setIncomeSplits: (v: { gdc: number; aum: number; affiliate: number; override: number; channel: number }) => void;
+  affCounts: { a: number; b: number; c: number; d: number };
+  setAffCounts: (v: { a: number; b: number; c: number; d: number }) => void;
+  affAvgProd: { a: number; b: number; c: number; d: number };
+  setAffAvgProd: (v: { a: number; b: number; c: number; d: number }) => void;
+  teamAvgGDC: number; setTeamAvgGDC: (v: number) => void;
   /* Goal Tracker inputs */
   goalIncome: number; setGoalIncome: (v: number) => void;
   goalAUM: number; setGoalAUM: (v: number) => void;
@@ -126,19 +136,66 @@ function DataTable({ headers, rows, className = '' }: {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   PANEL 1: MY PLAN — Multi-Stream Roll-Up
+   PANEL 1: MY PLAN — Unified Income Planning Hub
+   Target Income → Channel Splits → Forward/Back Cascade
    ═══════════════════════════════════════════════════════════════ */
+
+const SPLIT_LABELS: Record<string, string> = {
+  gdc: 'GDC Production', aum: 'AUM/Advisory', affiliate: 'Affiliates',
+  override: 'Team Override', channel: 'Marketing Channels',
+};
+const SPLIT_COLORS: Record<string, string> = {
+  gdc: '#f59e0b', aum: '#3b82f6', affiliate: '#10b981',
+  override: '#8b5cf6', channel: '#ec4899',
+};
+
+function SplitSlider({ label, value, onChange, color, targetAmount }: {
+  label: string; value: number; onChange: (v: number) => void; color: string; targetAmount: number;
+}) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="font-medium" style={{ color }}>{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">{value}%</span>
+          <span className="font-semibold text-foreground">{fmtSm(targetAmount)}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
+          <div className="h-full rounded-full transition-all" style={{ width: `${value}%`, backgroundColor: color }} />
+        </div>
+        <Input type="number" value={value} onChange={e => onChange(Math.max(0, Math.min(100, +e.target.value || 0)))}
+          className="h-6 w-14 text-[10px] text-right" />
+      </div>
+    </div>
+  );
+}
+
 export function MyPlanPanel(p: PracticeProps) {
   const rd = ROLE_DEFAULTS[p.role] || ROLE_DEFAULTS.new;
   const avgGDC = calcWeightedGDC(p.productMix, PRODUCTS);
   const funnel = calcProductionFunnel(p.targetGDC, p.wbPct, p.bracketOverride, avgGDC,
     p.funnelRates.ap, p.funnelRates.sh, p.funnelRates.cl, p.funnelRates.pl, p.months);
   const teamOvr = calcTeamOverride(p.teamMembers, p.overrideRate / 100, p.bonusRate / 100, p.gen2Rate / 100);
-  const aumIncome = Math.round((p.aumExisting * (p.aumTrailPct / 100)) + (p.aumNew * (p.aumTrailPct / 100) * 0.5));
   const recSummary = calcAllTracksSummary(p.recruitTracks, p.overrideRate / 100);
   const chMetrics = calcChannelMetrics(p.channelSpend);
 
+  // Unified income plan
+  const plan = useMemo(() => calcUnifiedIncomePlan({
+    targetIncome: p.targetIncome, splits: p.incomeSplits, role: p.role,
+    targetGDC: p.targetGDC, wbPct: p.wbPct, bracketOverride: p.bracketOverride,
+    avgGDC, funnelRates: p.funnelRates, months: p.months,
+    aumExisting: p.aumExisting, aumNew: p.aumNew, aumTrailPct: p.aumTrailPct,
+    affCounts: p.affCounts, affAvgProd: p.affAvgProd,
+    teamSize: p.teamMembers.length, teamAvgGDC: p.teamAvgGDC, overrideRate: p.overrideRate,
+    channelSpend: p.channelSpend,
+  }), [p.targetIncome, p.incomeSplits, p.role, p.targetGDC, p.wbPct, p.bracketOverride,
+    avgGDC, p.funnelRates, p.months, p.aumExisting, p.aumNew, p.aumTrailPct,
+    p.affCounts, p.affAvgProd, p.teamMembers.length, p.teamAvgGDC, p.overrideRate, p.channelSpend]);
+
   const overrideInc = p.teamMembers.length > 0 ? teamOvr.total : recSummary.tOvr;
+  const aumIncome = Math.round((p.aumExisting * (p.aumTrailPct / 100)) + (p.aumNew * (p.aumTrailPct / 100) * 0.5));
   const rollUp = calcRollUp({
     role: p.role, hasPersonal: rd.p === 1,
     wbTarget: funnel.wbTarget, expTarget: funnel.expTarget,
@@ -150,29 +207,51 @@ export function MyPlanPanel(p: PracticeProps) {
     streams: p.streams,
   });
 
-  return (    <section aria-label="My Plan" role="region">
-    <h2 className="text-lg font-bold text-foreground mb-1">My Plan</h2>
-    <p className="text-sm text-muted-foreground mb-4">Configure your income streams, role, and GDC targets. All calculations auto-cascade across practice planning panels.</p>
+  const splitTotal = p.incomeSplits.gdc + p.incomeSplits.aum + p.incomeSplits.affiliate + p.incomeSplits.override + p.incomeSplits.channel;
+
+  // Pie chart data for income split
+  const pieData = Object.entries(p.incomeSplits)
+    .filter(([, v]) => v > 0)
+    .map(([k, v]) => ({ name: SPLIT_LABELS[k], value: Math.round(p.targetIncome * v / 100), pct: v, fill: SPLIT_COLORS[k] }));
+
+  return (
+    <section aria-label="My Plan" role="region">
+    <h2 className="text-lg font-bold text-foreground mb-1">My Plan — Unified Income Hub</h2>
+    <p className="text-sm text-muted-foreground mb-4">Set your Target Income, then adjust channel splits. All calculations cascade forward through GDC, AUM, Affiliates, Override, and Marketing channels.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
-          <span className="text-primary">My Plan</span>
+          <span className="text-primary">Income Plan</span>
           <Badge variant="outline" className="text-[10px]">{HIER_NAMES[p.role]}</Badge>
-          <Badge variant="outline" className="text-[10px] text-primary">{rollUp.streamCount} streams</Badge>
-          <RefTip text="Practice plan based on your role hierarchy. Revenue streams include personal production, overrides, bonuses, AUM fees, and renewal income." refId="commission" />
+          <Badge variant="outline" className={`text-[10px] ${plan.onTrack ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>
+            {plan.onTrack ? '✓ On Track' : `Gap: ${fmtSm(plan.totalGap)}`}
+          </Badge>
+          <RefTip text="Unified income planning: set a target income, allocate across channels, and the engine calculates what's needed in each channel to hit your goal. Defaults based on role-specific industry benchmarks." refId="commission" />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Role Selector */}
+
+        {/* ─── SECTION 1: Role + Target Income ─── */}
+        <SectionHeader>1. Role &amp; Target Income</SectionHeader>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div className="col-span-2">
             <Label className="text-[10px] text-muted-foreground">Role / Segment</Label>
             <Select value={p.role} onValueChange={(v) => {
-              p.setRole(v as RoleId);
+              const nr = v as RoleId;
+              p.setRole(nr);
               const nd = ROLE_DEFAULTS[v] || ROLE_DEFAULTS.new;
               if (nd.mo) p.setMonths(nd.mo);
               if (nd.mix) p.setProductMix(nd.mix);
               p.setFunnelRates({ ap: nd.ap, sh: nd.sh, cl: nd.cl, pl: nd.pl });
+              // Update unified income defaults for new role
+              p.setTargetIncome(nd.defaultTargetIncome);
+              p.setIncomeSplits({ ...nd.incomeSplits });
+              p.setAffCounts({ ...nd.defaultAffiliates });
+              p.setAffAvgProd({ ...nd.defaultAffProd });
+              // Set GDC target from income split
+              p.setTargetGDC(Math.round(nd.defaultTargetIncome * nd.incomeSplits.gdc / 100));
+              // Set AUM from role default
+              p.setAumExisting(nd.defaultAUM);
             }}>
               <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -182,11 +261,24 @@ export function MyPlanPanel(p: PracticeProps) {
               </SelectContent>
             </Select>
           </div>
-          <PInput label="Target GDC ($)" value={p.targetGDC} onChange={v => p.setTargetGDC(+v || 0)} prefix="$" />
-          <PInput label="Active Months" value={p.months} onChange={v => p.setMonths(+v || 10)} />
+          <div className="col-span-2">
+            <Label className="text-[10px] text-muted-foreground font-bold text-primary">Target Annual Income ($)</Label>
+            <div className="relative">
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-primary font-bold">$</span>
+              <Input type="number" value={p.targetIncome}
+                onChange={e => {
+                  const v = +e.target.value || 0;
+                  p.setTargetIncome(v);
+                  // Forward cascade: update GDC target from split
+                  p.setTargetGDC(Math.round(v * p.incomeSplits.gdc / 100));
+                }}
+                className="h-9 text-lg font-bold pl-6 border-primary/30 bg-primary/5" />
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <PInput label="Active Months" value={p.months} onChange={v => p.setMonths(+v || 10)} />
           <PInput label="WB Platform %" value={p.wbPct} onChange={v => p.setWbPct(+v || 0)} suffix="%" />
           <div className="space-y-0.5">
             <Label className="text-[10px] font-medium text-muted-foreground">Payout Override</Label>
@@ -202,11 +294,6 @@ export function MyPlanPanel(p: PracticeProps) {
               </SelectContent>
             </Select>
           </div>
-          <PInput label="AUM Existing ($)" value={p.aumExisting} onChange={v => p.setAumExisting(+v || 0)} prefix="$" />
-          <PInput label="AUM New ($)" value={p.aumNew} onChange={v => p.setAumNew(+v || 0)} prefix="$" />
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <PInput label="AUM Trail %" value={p.aumTrailPct} onChange={v => p.setAumTrailPct(+v || 0)} suffix="%" />
         </div>
 
         {/* Hierarchy Chain */}
@@ -229,100 +316,123 @@ export function MyPlanPanel(p: PracticeProps) {
           </>}
         </div>
 
-        {/* Stream Toggles */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {[
-            { key: 'personal', label: 'Personal Production' },
-            { key: 'expanded', label: 'Expanded Platform' },
-            { key: 'override', label: 'Team Override' },
-            { key: 'aum', label: 'AUM/Advisory' },
-            { key: 'channels', label: 'Marketing Channels' },
-            { key: 'affA', label: 'Affiliate A (Fee-Based)' },
-            { key: 'affB', label: 'Affiliate B (Referral)' },
-            { key: 'affC', label: 'Affiliate C (Co-Broker)' },
-            { key: 'affD', label: 'Affiliate D (Wholesale)' },
-          ].map(s => (
-            <label key={s.key} className="flex items-center gap-1.5 text-[11px] cursor-pointer">
-              <Checkbox checked={!!p.streams[s.key]}
-                onCheckedChange={(c) => p.setStreams({ ...p.streams, [s.key]: !!c })} />
-              {s.label}
-            </label>
-          ))}
-        </div>
+        <Separator />
 
-        {/* Affiliate Income Inputs (show when toggled) */}
-        {(p.streams.affA || p.streams.affB || p.streams.affC || p.streams.affD) && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {p.streams.affA && <PInput label="Affiliate A Income" value={p.affAIncome} onChange={v => p.setAffAIncome(+v || 0)} prefix="$" />}
-            {p.streams.affB && <PInput label="Affiliate B Income" value={p.affBIncome} onChange={v => p.setAffBIncome(+v || 0)} prefix="$" />}
-            {p.streams.affC && <PInput label="Affiliate C Income" value={p.affCIncome} onChange={v => p.setAffCIncome(+v || 0)} prefix="$" />}
-            {p.streams.affD && <PInput label="Affiliate D Income" value={p.affDIncome} onChange={v => p.setAffDIncome(+v || 0)} prefix="$" />}
+        {/* ─── SECTION 2: Channel Income Splits ─── */}
+        <SectionHeader>2. Income Channel Allocation {splitTotal !== 100 && <span className="text-red-400 ml-2">⚠ Splits sum to {splitTotal}% (should be 100%)</span>}</SectionHeader>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            {(['gdc', 'aum', 'affiliate', 'override', 'channel'] as const).map(k => (
+              <SplitSlider key={k} label={SPLIT_LABELS[k]} value={p.incomeSplits[k]} color={SPLIT_COLORS[k]}
+                targetAmount={Math.round(p.targetIncome * p.incomeSplits[k] / 100)}
+                onChange={v => {
+                  const next = { ...p.incomeSplits, [k]: v };
+                  p.setIncomeSplits(next);
+                  if (k === 'gdc') p.setTargetGDC(Math.round(p.targetIncome * v / 100));
+                }} />
+            ))}
+            <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={() => {
+              p.setIncomeSplits({ ...rd.incomeSplits });
+              p.setTargetGDC(Math.round(p.targetIncome * rd.incomeSplits.gdc / 100));
+            }}>Reset to {HIER_NAMES[p.role]} Defaults</Button>
           </div>
-        )}
+          <div className="flex items-center justify-center">
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70}
+                  label={({ name, pct: pc }) => `${name} ${pc}%`} labelLine={false}>
+                  {pieData.map((d, i) => <Cell key={i} fill={d.fill} />)}
+                </Pie>
+                <Tooltip formatter={(v: number) => fmtSm(v)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
         <Separator />
 
-        {/* Roll-Up Table */}
-        <SectionHeader>Multi-Stream Roll-Up ({rollUp.streamCount} active)</SectionHeader>
-        <DataTable
-          headers={['Stream', 'Annual', 'Monthly', '% of Total']}
-          rows={[
-            ...rollUp.items.map(item => [
-              <span key={item.name}><b>{item.name}</b><br /><span className="text-[10px] text-muted-foreground">{item.source}</span></span>,
-              <span key={`v-${item.name}`} className="text-green-400 font-semibold">{fmt(item.value)}</span>,
-              fmt(Math.round(item.value / 12)),
-              rollUp.grandTotal > 0 ? pct(item.value / rollUp.grandTotal) : '—',
-            ]),
-            [
-              <b key="total" className="text-primary">TOTAL YEAR 1 ({rollUp.streamCount} streams)</b>,
-              <b key="tv" className="text-green-400">{fmt(rollUp.grandTotal)}</b>,
-              <b key="tm" className="text-green-400">{fmt(Math.round(rollUp.grandTotal / 12))}</b>,
-              <b key="tp" className="text-green-400">100%</b>,
-            ],
-          ]}
-        />
-
-        {/* KPI Summary */}
-        <div className="flex flex-wrap gap-2">
-          <KPI label="Total Yr1" value={fmtSm(rollUp.grandTotal)} variant="grn" />
-          <KPI label="Monthly" value={fmtSm(Math.round(rollUp.grandTotal / 12))} variant="gld" />
-          <KPI label="GDC Needed" value={fmtSm(funnel.gdcNeeded)} variant="blu" />
+        {/* ─── SECTION 3: Channel Detail — GDC ─── */}
+        <SectionHeader>3a. GDC Production — Target: {fmtSm(plan.channels.gdc.target)}</SectionHeader>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <PInput label="Target GDC ($)" value={p.targetGDC} onChange={v => p.setTargetGDC(+v || 0)} prefix="$" />
+          <KPI label="Projected" value={fmtSm(plan.channels.gdc.projected)} variant={plan.channels.gdc.gap === 0 ? 'grn' : 'gld'} />
+          <KPI label="Gap" value={plan.channels.gdc.gap > 0 ? fmtSm(plan.channels.gdc.gap) : '✓ Met'} variant={plan.channels.gdc.gap > 0 ? 'red' : 'grn'} />
           <KPI label="Bracket" value={pct(funnel.bracketRate)} variant="gld" />
-          <KPI label="Daily Appr" value={String(funnel.dailyApproaches)} variant="grn" />
-          <KPI label="Mo Apps" value={String(funnel.monthlyApps)} variant="" />
         </div>
-
-        {/* Production Funnel Summary */}
-        {p.streams.personal && rd.p === 1 && (
-          <>
-            <SectionHeader>Production Funnel (Annual)</SectionHeader>
-            <DataTable
-              headers={['Step', 'Daily', 'Weekly', 'Monthly', 'Annual']}
-              rows={[
-                ['Approaches', funnel.dailyApproaches, Math.round(funnel.monthlyApproaches / 4.3), funnel.monthlyApproaches, funnel.approaches],
-                ['Held', '—', Math.round(funnel.held / Math.max(1, p.months) / 4.3), Math.round(funnel.held / Math.max(1, p.months)), funnel.held],
-                [<b key="apps">Apps</b>, '—', Math.round(funnel.monthlyApps / 4.3), funnel.monthlyApps, funnel.apps],
-                ['Placed', '—', Math.round(funnel.placed / Math.max(1, p.months) / 4.3), Math.round(funnel.placed / Math.max(1, p.months)), funnel.placed],
-                [<b key="gdc">GDC</b>, '—', '—', <span key="mg" className="text-green-400 font-semibold">{fmt(funnel.monthlyGDC)}</span>, <span key="ag" className="text-green-400 font-semibold">{fmt(funnel.gdcNeeded)}</span>],
-              ]}
-            />
-          </>
+        {rd.p === 1 && (
+          <DataTable
+            headers={['Step', 'Daily', 'Monthly', 'Annual']}
+            rows={[
+              ['Approaches', funnel.dailyApproaches, funnel.monthlyApproaches, funnel.approaches],
+              ['Held', '—', Math.round(funnel.held / Math.max(1, p.months)), funnel.held],
+              [<b key="apps">Apps</b>, '—', funnel.monthlyApps, funnel.apps],
+              ['Placed', '—', Math.round(funnel.placed / Math.max(1, p.months)), funnel.placed],
+              [<b key="gdc">GDC</b>, '—', <span key="mg" className="text-green-400 font-semibold">{fmt(funnel.monthlyGDC)}</span>, <span key="ag" className="text-green-400 font-semibold">{fmt(funnel.gdcNeeded)}</span>],
+            ]}
+          />
         )}
 
-        {/* Team Members (quick add/view) */}
-        {p.streams.override && (
-          <>
-            <SectionHeader>Team Members ({p.teamMembers.length})</SectionHeader>
-            <div className="space-y-2">
-              {p.teamMembers.map((m, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <Input value={m.n} onChange={e => {
-                    const next = [...p.teamMembers]; next[i] = { ...next[i], n: e.target.value }; p.setTeamMembers(next);
-                  }} className="h-6 w-28 text-xs" placeholder="Name" />
-                  <Select value={m.role} onValueChange={v => {
-                    const next = [...p.teamMembers]; next[i] = { ...next[i], role: v as RoleId }; p.setTeamMembers(next);
-                  }}>
-                    <SelectTrigger className="h-6 w-24 text-[11px]"><SelectValue /></SelectTrigger>
+        {/* ─── SECTION 3b: AUM/Advisory ─── */}
+        <SectionHeader>3b. AUM/Advisory — Target: {fmtSm(plan.channels.aum.target)}</SectionHeader>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <PInput label="Existing AUM ($)" value={p.aumExisting} onChange={v => p.setAumExisting(+v || 0)} prefix="$" />
+          <PInput label="New AUM/Year ($)" value={p.aumNew} onChange={v => p.setAumNew(+v || 0)} prefix="$" />
+          <PInput label="Trail %" value={p.aumTrailPct} onChange={v => p.setAumTrailPct(+v || 0)} suffix="%" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <KPI label="Projected Income" value={fmtSm(plan.channels.aum.detail.projectedIncome)} variant={plan.channels.aum.detail.gap === 0 ? 'grn' : 'gld'} />
+          <KPI label="Required AUM Book" value={fmtSm(plan.channels.aum.detail.requiredBookForTarget)} variant="blu" />
+          <KPI label="Gap" value={plan.channels.aum.detail.gap > 0 ? fmtSm(plan.channels.aum.detail.gap) : '✓ Met'} variant={plan.channels.aum.detail.gap > 0 ? 'red' : 'grn'} />
+        </div>
+
+        {/* ─── SECTION 3c: Affiliates ─── */}
+        <SectionHeader>3c. Affiliate Income — Target: {fmtSm(plan.channels.affiliate.target)}</SectionHeader>
+        <div className="space-y-2">
+          {(['a', 'b', 'c', 'd'] as const).map(t => {
+            const d = plan.channels.affiliate.details.find(x => x.type === t);
+            if (!d) return null;
+            return (
+              <div key={t} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
+                <div className="col-span-2 sm:col-span-1">
+                  <Label className="text-[10px] text-muted-foreground font-semibold">{d.label}</Label>
+                </div>
+                <PInput label="# Affiliates" value={p.affCounts[t]} onChange={v => p.setAffCounts({ ...p.affCounts, [t]: +v || 0 })} />
+                <PInput label="Avg Production" value={p.affAvgProd[t]} onChange={v => p.setAffAvgProd({ ...p.affAvgProd, [t]: +v || 0 })} prefix="$" />
+                <div className="text-[10px] text-muted-foreground">Rate: {pct(d.incomeRate)}</div>
+                <KPI label="Projected" value={fmtSm(d.projectedIncome)} variant={d.projectedIncome > 0 ? 'grn' : ''} />
+              </div>
+            );
+          })}
+          <div className="flex flex-wrap gap-2 mt-2">
+            <KPI label="Total Affiliate" value={fmtSm(plan.channels.affiliate.totalProjected)} variant={plan.channels.affiliate.gap === 0 ? 'grn' : 'gld'} />
+            <KPI label="Gap" value={plan.channels.affiliate.gap > 0 ? fmtSm(plan.channels.affiliate.gap) : '✓ Met'} variant={plan.channels.affiliate.gap > 0 ? 'red' : 'grn'} />
+          </div>
+        </div>
+
+        {/* ─── SECTION 3d: Team Override ─── */}
+        <SectionHeader>3d. Team Override — Target: {fmtSm(plan.channels.override.target)}</SectionHeader>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <PInput label="Override Rate %" value={p.overrideRate} onChange={v => p.setOverrideRate(+v || 0)} suffix="%" />
+          <PInput label="Team Avg GDC" value={p.teamAvgGDC} onChange={v => p.setTeamAvgGDC(+v || 0)} prefix="$" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <KPI label="Team Size" value={String(p.teamMembers.length)} variant="" />
+          <KPI label="Projected" value={fmtSm(plan.channels.override.detail.projectedIncome)} variant={plan.channels.override.detail.gap === 0 ? 'grn' : 'gld'} />
+          <KPI label="Team Needed" value={String(plan.channels.override.detail.requiredTeamSizeForTarget)} variant="blu" />
+          <KPI label="Gap" value={plan.channels.override.detail.gap > 0 ? fmtSm(plan.channels.override.detail.gap) : '✓ Met'} variant={plan.channels.override.detail.gap > 0 ? 'red' : 'grn'} />
+        </div>
+
+        {/* Team Members quick add */}
+        <div className="space-y-2">
+          {p.teamMembers.map((m, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs">
+              <Input value={m.n} onChange={e => {
+                const next = [...p.teamMembers]; next[i] = { ...next[i], n: e.target.value }; p.setTeamMembers(next);
+              }} className="h-6 w-28 text-xs" placeholder="Name" />
+              <Select value={m.role} onValueChange={v => {
+                const next = [...p.teamMembers]; next[i] = { ...next[i], role: v as RoleId }; p.setTeamMembers(next);
+              }}>
+                <SelectTrigger className="h-6 w-24 text-[11px]"><SelectValue /></SelectTrigger>
                     <SelectContent>{HIER_ORDER.map(r => <SelectItem key={r} value={r}>{HIER_SHORT[r]}</SelectItem>)}</SelectContent>
                   </Select>
                   <PInput label="" value={m.f} onChange={v => {
@@ -347,6 +457,75 @@ export function MyPlanPanel(p: PracticeProps) {
             </div>
           </>
         )}
+
+        {/* ─── SECTION 3e: Marketing Channels ─── */}
+        <SectionHeader>3e. Marketing Channels — Target: {fmtSm(plan.channels.channel.target)}</SectionHeader>
+        <div className="flex flex-wrap gap-2">
+          <KPI label="Current Spend/mo" value={fmtSm(plan.channels.channel.detail.totalMonthlySpend)} variant="" />
+          <KPI label="Projected Revenue" value={fmtSm(plan.channels.channel.detail.projectedAnnualRevenue)} variant={plan.channels.channel.detail.gap === 0 ? 'grn' : 'gld'} />
+          <KPI label="Required Spend/mo" value={fmtSm(plan.channels.channel.detail.requiredSpendForTarget)} variant="blu" />
+          <KPI label="Gap" value={plan.channels.channel.detail.gap > 0 ? fmtSm(plan.channels.channel.detail.gap) : '\u2713 Met'} variant={plan.channels.channel.detail.gap > 0 ? 'red' : 'grn'} />
+        </div>
+        <p className="text-[10px] text-muted-foreground">Configure individual channel budgets in the Channels panel for detailed ROI analysis.</p>
+
+        <Separator />
+
+        {/* ─── SECTION 4: Unified Income Roll-Up ─── */}
+        <SectionHeader>4. Unified Income Roll-Up</SectionHeader>
+        <DataTable
+          headers={['Channel', 'Target', 'Projected', 'Gap', 'Status']}
+          rows={[
+            ['GDC Production', fmtSm(plan.channels.gdc.target), fmtSm(plan.channels.gdc.projected), plan.channels.gdc.gap > 0 ? fmtSm(plan.channels.gdc.gap) : '—',
+              <Badge key="gs" variant="outline" className={`text-[9px] ${plan.channels.gdc.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{plan.channels.gdc.gap === 0 ? '\u2713' : '\u26a0'}</Badge>],
+            ['AUM/Advisory', fmtSm(plan.channels.aum.target), fmtSm(plan.channels.aum.detail.projectedIncome), plan.channels.aum.detail.gap > 0 ? fmtSm(plan.channels.aum.detail.gap) : '—',
+              <Badge key="as" variant="outline" className={`text-[9px] ${plan.channels.aum.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{plan.channels.aum.detail.gap === 0 ? '\u2713' : '\u26a0'}</Badge>],
+            ['Affiliates', fmtSm(plan.channels.affiliate.target), fmtSm(plan.channels.affiliate.totalProjected), plan.channels.affiliate.gap > 0 ? fmtSm(plan.channels.affiliate.gap) : '—',
+              <Badge key="fs" variant="outline" className={`text-[9px] ${plan.channels.affiliate.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{plan.channels.affiliate.gap === 0 ? '\u2713' : '\u26a0'}</Badge>],
+            ['Team Override', fmtSm(plan.channels.override.target), fmtSm(plan.channels.override.detail.projectedIncome), plan.channels.override.detail.gap > 0 ? fmtSm(plan.channels.override.detail.gap) : '—',
+              <Badge key="os" variant="outline" className={`text-[9px] ${plan.channels.override.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{plan.channels.override.detail.gap === 0 ? '\u2713' : '\u26a0'}</Badge>],
+            ['Marketing', fmtSm(plan.channels.channel.target), fmtSm(plan.channels.channel.detail.projectedAnnualRevenue), plan.channels.channel.detail.gap > 0 ? fmtSm(plan.channels.channel.detail.gap) : '—',
+              <Badge key="cs" variant="outline" className={`text-[9px] ${plan.channels.channel.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{plan.channels.channel.detail.gap === 0 ? '\u2713' : '\u26a0'}</Badge>],
+            [<b key="tt" className="text-primary">TOTAL</b>, <b key="tv" className="text-primary">{fmtSm(p.targetIncome)}</b>,
+              <b key="tp" className="text-green-400">{fmtSm(plan.totalProjected)}</b>,
+              plan.totalGap > 0 ? <b key="tg" className="text-red-400">{fmtSm(plan.totalGap)}</b> : <b key="tg" className="text-green-400">—</b>,
+              <Badge key="ts" variant="outline" className={`text-[9px] ${plan.onTrack ? 'text-green-400 border-green-400/30' : 'text-red-400 border-red-400/30'}`}>{plan.onTrack ? '\u2713 On Track' : '\u26a0 Gap'}</Badge>],
+          ]}
+        />
+
+        {/* KPI Summary */}
+        <div className="flex flex-wrap gap-2">
+          <KPI label="Target" value={fmtSm(p.targetIncome)} variant="gld" />
+          <KPI label="Projected" value={fmtSm(plan.totalProjected)} variant="grn" />
+          <KPI label="Monthly" value={fmtSm(Math.round(plan.totalProjected / 12))} variant="blu" />
+          <KPI label="Gap" value={plan.totalGap > 0 ? fmtSm(plan.totalGap) : '\u2713 Met'} variant={plan.totalGap > 0 ? 'red' : 'grn'} />
+          <KPI label="Bracket" value={pct(funnel.bracketRate)} variant="gld" />
+          <KPI label="Daily Appr" value={String(funnel.dailyApproaches)} variant="" />
+        </div>
+
+        {/* Stream Toggles (for legacy roll-up compatibility) */}
+        <details className="text-[10px]">
+          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Advanced: Stream Toggles</summary>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+            {[
+              { key: 'personal', label: 'Personal Production' },
+              { key: 'expanded', label: 'Expanded Platform' },
+              { key: 'override', label: 'Team Override' },
+              { key: 'aum', label: 'AUM/Advisory' },
+              { key: 'channels', label: 'Marketing Channels' },
+              { key: 'affA', label: 'Affiliate A (Fee-Based)' },
+              { key: 'affB', label: 'Affiliate B (Referral)' },
+              { key: 'affC', label: 'Affiliate C (Co-Broker)' },
+              { key: 'affD', label: 'Affiliate D (Wholesale)' },
+            ].map(s => (
+              <label key={s.key} className="flex items-center gap-1.5 cursor-pointer">
+                <Checkbox checked={!!p.streams[s.key]}
+                  onCheckedChange={(c) => p.setStreams({ ...p.streams, [s.key]: !!c })} />
+                {s.label}
+              </label>
+            ))}
+          </div>
+        </details>
+
       </CardContent>
     </Card>
     </section>

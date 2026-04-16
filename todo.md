@@ -5269,3 +5269,17 @@
 - [x] Added nav items: Email Campaigns, Marketing Assets, Data Pipelines, Outreach Automation
 - [x] Added routes in App.tsx for DataPipelines and OutreachAutomation
 - [x] 25 tests passing for Phase 5 command center integration
+
+## Pass 89 — Unified Income Planning Hub (My Plan Restructure)
+- [x] Add Target Income as master input to My Plan panel
+- [x] Add role-based default channel splits (GDC%, AUM%, Affiliate%, Override%, Marketing%)
+- [x] Forward cascade: changing Target Income recalculates all channel targets proportionally
+- [x] Back cascade: changing any channel target recalculates Target Income total
+- [x] AUM planning depth in My Plan: target AUM, trail %, new AUM/year, existing book → annual AUM income
+- [x] Affiliate planning depth in My Plan: per-affiliate (A-D) production targets → annual affiliate income
+- [x] Override income planning: team size × avg production × override rate → annual override income
+- [x] Marketing channel income planning: channel spend → leads → conversion → revenue
+- [x] Roll-up/roll-down hierarchy alignment: Director targets include team production
+- [x] Wire standalone AUM Override/Pipeline/Affiliate Pipeline panels to feed into unified My Plan totals
+- [x] Rich references for default splits per role (industry benchmarks)
+- [x] Unified income summary showing all channels → total projected income

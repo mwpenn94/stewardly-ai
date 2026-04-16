@@ -93,14 +93,36 @@ export const HIER_UP: Record<RoleId, RoleId[]> = {
 export interface RoleDefaults {
   p: number; wb: number; mo: number; ap: number; sh: number; cl: number; pl: number;
   mix: Record<string, number>;
+  /* Unified income channel splits (%) — must sum to 100 */
+  incomeSplits: { gdc: number; aum: number; affiliate: number; override: number; channel: number };
+  /* Default target income for role */
+  defaultTargetIncome: number;
+  /* Default AUM book size for role */
+  defaultAUM: number;
+  /* Default affiliate counts per type */
+  defaultAffiliates: { a: number; b: number; c: number; d: number };
+  /* Default avg affiliate production per type */
+  defaultAffProd: { a: number; b: number; c: number; d: number };
 }
 export const ROLE_DEFAULTS: Record<string, RoleDefaults> = {
-  new: {p:1,wb:70,mo:10,ap:.15,sh:.75,cl:.30,pl:.80,mix:{term:30,iul:20,rapid:15,wl:10,fia:10,group:15}},
-  exp: {p:1,wb:60,mo:11,ap:.20,sh:.85,cl:.45,pl:.85,mix:{iul:30,fia:20,wl:15,term:10,pf:5,exec:10,group:10}},
-  sa:  {p:1,wb:65,mo:11,ap:.18,sh:.82,cl:.40,pl:.83,mix:{iul:28,fia:18,wl:12,term:12,rapid:10,group:12,exec:8}},
-  dir: {p:1,wb:60,mo:12,ap:.22,sh:.85,cl:.45,pl:.85,mix:{iul:30,fia:20,wl:15,pf:8,exec:12,group:15}},
-  md:  {p:1,wb:60,mo:12,ap:.22,sh:.85,cl:.45,pl:.85,mix:{iul:30,fia:20,wl:15,pf:8,exec:12,group:15}},
-  rvp: {p:1,wb:50,mo:12,ap:.25,sh:.90,cl:.50,pl:.85,mix:{iul:25,fia:20,pf:15,exec:20,wl:10,group:10}},
+  new: {p:1,wb:70,mo:10,ap:.15,sh:.75,cl:.30,pl:.80,mix:{term:30,iul:20,rapid:15,wl:10,fia:10,group:15},
+    incomeSplits:{gdc:80,aum:10,affiliate:5,override:0,channel:5},defaultTargetIncome:75000,defaultAUM:0,
+    defaultAffiliates:{a:0,b:1,c:0,d:0},defaultAffProd:{a:0,b:5000,c:0,d:0}},
+  exp: {p:1,wb:60,mo:11,ap:.20,sh:.85,cl:.45,pl:.85,mix:{iul:30,fia:20,wl:15,term:10,pf:5,exec:10,group:10},
+    incomeSplits:{gdc:55,aum:20,affiliate:10,override:10,channel:5},defaultTargetIncome:150000,defaultAUM:5000000,
+    defaultAffiliates:{a:1,b:2,c:1,d:0},defaultAffProd:{a:8000,b:6000,c:10000,d:0}},
+  sa:  {p:1,wb:65,mo:11,ap:.18,sh:.82,cl:.40,pl:.83,mix:{iul:28,fia:18,wl:12,term:12,rapid:10,group:12,exec:8},
+    incomeSplits:{gdc:50,aum:20,affiliate:10,override:15,channel:5},defaultTargetIncome:200000,defaultAUM:8000000,
+    defaultAffiliates:{a:2,b:3,c:1,d:1},defaultAffProd:{a:10000,b:8000,c:12000,d:15000}},
+  dir: {p:1,wb:60,mo:12,ap:.22,sh:.85,cl:.45,pl:.85,mix:{iul:30,fia:20,wl:15,pf:8,exec:12,group:15},
+    incomeSplits:{gdc:35,aum:25,affiliate:10,override:25,channel:5},defaultTargetIncome:350000,defaultAUM:15000000,
+    defaultAffiliates:{a:3,b:4,c:2,d:2},defaultAffProd:{a:12000,b:10000,c:15000,d:20000}},
+  md:  {p:1,wb:60,mo:12,ap:.22,sh:.85,cl:.45,pl:.85,mix:{iul:30,fia:20,wl:15,pf:8,exec:12,group:15},
+    incomeSplits:{gdc:25,aum:30,affiliate:10,override:30,channel:5},defaultTargetIncome:500000,defaultAUM:25000000,
+    defaultAffiliates:{a:5,b:6,c:3,d:3},defaultAffProd:{a:15000,b:12000,c:18000,d:25000}},
+  rvp: {p:1,wb:50,mo:12,ap:.25,sh:.90,cl:.50,pl:.85,mix:{iul:25,fia:20,pf:15,exec:20,wl:10,group:10},
+    incomeSplits:{gdc:15,aum:30,affiliate:10,override:40,channel:5},defaultTargetIncome:750000,defaultAUM:50000000,
+    defaultAffiliates:{a:8,b:10,c:5,d:5},defaultAffProd:{a:20000,b:15000,c:25000,d:35000}},
 };
 
 /* ═══ RECRUITING DEFAULTS ═══ */
@@ -539,6 +561,184 @@ export function calcGoalProgress(params: {
 
   const overallPct = goals.length > 0 ? Math.round(goals.reduce((s, g) => s + g.pct, 0) / goals.length) : 0;
   return { goals, overallPct };
+}
+
+/* ═══ UNIFIED INCOME PLANNING ═══ */
+
+/** Income split configuration */
+export interface IncomeSplits {
+  gdc: number; aum: number; affiliate: number; override: number; channel: number;
+}
+
+/** Affiliate planning detail per type */
+export interface AffiliatePlanDetail {
+  type: 'a' | 'b' | 'c' | 'd';
+  label: string;
+  count: number;
+  avgProduction: number;
+  incomeRate: number; // % of their production you earn
+  projectedIncome: number;
+}
+
+/** AUM planning detail */
+export interface AUMPlanDetail {
+  existingBook: number;
+  newAnnual: number;
+  trailPct: number;
+  projectedIncome: number;
+  requiredBookForTarget: number;
+  gap: number;
+}
+
+/** Override planning detail */
+export interface OverridePlanDetail {
+  teamSize: number;
+  avgGDCPerMember: number;
+  overrideRate: number;
+  projectedIncome: number;
+  requiredTeamSizeForTarget: number;
+  gap: number;
+}
+
+/** Channel planning detail */
+export interface ChannelPlanDetail {
+  totalMonthlySpend: number;
+  projectedAnnualRevenue: number;
+  requiredSpendForTarget: number;
+  gap: number;
+}
+
+/** Full unified income plan result */
+export interface UnifiedIncomePlan {
+  targetIncome: number;
+  splits: IncomeSplits;
+  channels: {
+    gdc: { target: number; projected: number; gap: number };
+    aum: { target: number; detail: AUMPlanDetail };
+    affiliate: { target: number; details: AffiliatePlanDetail[]; totalProjected: number; gap: number };
+    override: { target: number; detail: OverridePlanDetail };
+    channel: { target: number; detail: ChannelPlanDetail };
+  };
+  totalProjected: number;
+  totalGap: number;
+  onTrack: boolean;
+}
+
+const AFF_LABELS: Record<string, string> = {
+  a: 'Affiliate A (Fee-Based)', b: 'Affiliate B (Referral)',
+  c: 'Affiliate C (Co-Broker)', d: 'Affiliate D (Wholesale)',
+};
+const AFF_RATES: Record<string, number> = { a: 0.15, b: 0.10, c: 0.20, d: 0.08 };
+
+/** Calculate unified income plan from target income + splits */
+export function calcUnifiedIncomePlan(params: {
+  targetIncome: number;
+  splits: IncomeSplits;
+  role: RoleId;
+  /* GDC channel */
+  targetGDC: number;
+  wbPct: number;
+  bracketOverride: string;
+  avgGDC: number;
+  funnelRates: { ap: number; sh: number; cl: number; pl: number };
+  months: number;
+  /* AUM channel */
+  aumExisting: number;
+  aumNew: number;
+  aumTrailPct: number;
+  /* Affiliate channel */
+  affCounts: { a: number; b: number; c: number; d: number };
+  affAvgProd: { a: number; b: number; c: number; d: number };
+  /* Override channel */
+  teamSize: number;
+  teamAvgGDC: number;
+  overrideRate: number;
+  /* Channel/marketing */
+  channelSpend: Record<string, number>;
+}): UnifiedIncomePlan {
+  const { targetIncome, splits, role } = params;
+  const rd = ROLE_DEFAULTS[role] || ROLE_DEFAULTS.new;
+
+  // Channel targets from splits
+  const gdcTarget = Math.round(targetIncome * splits.gdc / 100);
+  const aumTarget = Math.round(targetIncome * splits.aum / 100);
+  const affTarget = Math.round(targetIncome * splits.affiliate / 100);
+  const ovrTarget = Math.round(targetIncome * splits.override / 100);
+  const chTarget = Math.round(targetIncome * splits.channel / 100);
+
+  // GDC projected
+  const funnel = calcProductionFunnel(
+    params.targetGDC, params.wbPct, params.bracketOverride, params.avgGDC,
+    params.funnelRates.ap, params.funnelRates.sh, params.funnelRates.cl, params.funnelRates.pl, params.months
+  );
+  const gdcProjected = funnel.wbTarget + funnel.expTarget;
+  const gdcGap = Math.max(0, gdcTarget - gdcProjected);
+
+  // AUM projected
+  const aumIncome = Math.round((params.aumExisting * (params.aumTrailPct / 100)) + (params.aumNew * (params.aumTrailPct / 100) * 0.5));
+  const requiredAUM = params.aumTrailPct > 0 ? Math.round(aumTarget / (params.aumTrailPct / 100)) : 0;
+  const aumGap = Math.max(0, aumTarget - aumIncome);
+  const aumDetail: AUMPlanDetail = {
+    existingBook: params.aumExisting, newAnnual: params.aumNew, trailPct: params.aumTrailPct,
+    projectedIncome: aumIncome, requiredBookForTarget: requiredAUM, gap: aumGap,
+  };
+
+  // Affiliate projected
+  const affDetails: AffiliatePlanDetail[] = (['a','b','c','d'] as const).map(t => {
+    const count = params.affCounts[t];
+    const avgProd = params.affAvgProd[t];
+    const rate = AFF_RATES[t];
+    const projected = Math.round(count * avgProd * rate);
+    return { type: t, label: AFF_LABELS[t], count, avgProduction: avgProd, incomeRate: rate, projectedIncome: projected };
+  });
+  const affTotalProjected = affDetails.reduce((s, d) => s + d.projectedIncome, 0);
+  const affGap = Math.max(0, affTarget - affTotalProjected);
+
+  // Override projected
+  const ovrProjected = Math.round(params.teamSize * params.teamAvgGDC * (params.overrideRate / 100));
+  const requiredTeam = params.teamAvgGDC > 0 && params.overrideRate > 0
+    ? Math.ceil(ovrTarget / (params.teamAvgGDC * (params.overrideRate / 100)))
+    : 0;
+  const ovrGap = Math.max(0, ovrTarget - ovrProjected);
+  const ovrDetail: OverridePlanDetail = {
+    teamSize: params.teamSize, avgGDCPerMember: params.teamAvgGDC, overrideRate: params.overrideRate,
+    projectedIncome: ovrProjected, requiredTeamSizeForTarget: requiredTeam, gap: ovrGap,
+  };
+
+  // Channel/marketing projected
+  const chMetrics = calcChannelMetrics(params.channelSpend);
+  const chProjected = chMetrics.annualRev;
+  const chGap = Math.max(0, chTarget - chProjected);
+  // Estimate required spend: if current spend → current rev, then required spend = target / (rev/spend) ratio
+  const revPerSpend = chMetrics.annualSpend > 0 ? chMetrics.annualRev / chMetrics.annualSpend : 3;
+  const requiredSpend = Math.round(chTarget / revPerSpend / 12);
+  const chDetail: ChannelPlanDetail = {
+    totalMonthlySpend: chMetrics.tSpend, projectedAnnualRevenue: chProjected,
+    requiredSpendForTarget: requiredSpend, gap: chGap,
+  };
+
+  const totalProjected = gdcProjected + aumIncome + affTotalProjected + ovrProjected + chProjected;
+  const totalGap = Math.max(0, targetIncome - totalProjected);
+
+  return {
+    targetIncome, splits,
+    channels: {
+      gdc: { target: gdcTarget, projected: gdcProjected, gap: gdcGap },
+      aum: { target: aumTarget, detail: aumDetail },
+      affiliate: { target: affTarget, details: affDetails, totalProjected: affTotalProjected, gap: affGap },
+      override: { target: ovrTarget, detail: ovrDetail },
+      channel: { target: chTarget, detail: chDetail },
+    },
+    totalProjected, totalGap, onTrack: totalProjected >= targetIncome,
+  };
+}
+
+/** Back-calculate: given channel projections, compute what target income they support */
+export function calcBackFromChannels(params: {
+  gdcProjected: number; aumProjected: number; affProjected: number;
+  ovrProjected: number; chProjected: number;
+}): number {
+  return params.gdcProjected + params.aumProjected + params.affProjected + params.ovrProjected + params.chProjected;
 }
 
 export { fmt, fmtSm, pct };
