@@ -22,7 +22,7 @@ import {
   calcTrackFunnel, blendSources, buildMonthlyProduction, calcGoalProgress,
   fmt, fmtSm, pct,
   calcUnifiedIncomePlan,
-  type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits,
+  type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels,
 } from './practiceEngine';
 import { KPI, RefTip } from './shared';
 import {
@@ -67,6 +67,7 @@ export interface PracticeProps {
   targetIncome: number; setTargetIncome: (v: number) => void;
   incomeSplits: { gdc: number; aum: number; affiliate: number; override: number; channel: number };
   setIncomeSplits: (v: { gdc: number; aum: number; affiliate: number; override: number; channel: number }) => void;
+  enabledChannels: EnabledChannels; setEnabledChannels: (v: EnabledChannels) => void;
   affCounts: { a: number; b: number; c: number; d: number };
   setAffCounts: (v: { a: number; b: number; c: number; d: number }) => void;
   affAvgProd: { a: number; b: number; c: number; d: number };
@@ -181,18 +182,38 @@ export function MyPlanPanel(p: PracticeProps) {
   const recSummary = calcAllTracksSummary(p.recruitTracks, p.overrideRate / 100);
   const chMetrics = calcChannelMetrics(p.channelSpend);
 
-  // Unified income plan
+  // Unified income plan (with enabledChannels)
   const plan = useMemo(() => calcUnifiedIncomePlan({
     targetIncome: p.targetIncome, splits: p.incomeSplits, role: p.role,
+    enabledChannels: p.enabledChannels,
     targetGDC: p.targetGDC, wbPct: p.wbPct, bracketOverride: p.bracketOverride,
     avgGDC, funnelRates: p.funnelRates, months: p.months,
     aumExisting: p.aumExisting, aumNew: p.aumNew, aumTrailPct: p.aumTrailPct,
     affCounts: p.affCounts, affAvgProd: p.affAvgProd,
     teamSize: p.teamMembers.length, teamAvgGDC: p.teamAvgGDC, overrideRate: p.overrideRate,
     channelSpend: p.channelSpend,
-  }), [p.targetIncome, p.incomeSplits, p.role, p.targetGDC, p.wbPct, p.bracketOverride,
+  }), [p.targetIncome, p.incomeSplits, p.role, p.enabledChannels,
+    p.targetGDC, p.wbPct, p.bracketOverride,
     avgGDC, p.funnelRates, p.months, p.aumExisting, p.aumNew, p.aumTrailPct,
     p.affCounts, p.affAvgProd, p.teamMembers.length, p.teamAvgGDC, p.overrideRate, p.channelSpend]);
+
+  /** Forward cascade helper: when target income changes, push proportional targets to all channels */
+  const forwardCascade = (newTarget: number) => {
+    p.setTargetIncome(newTarget);
+    // GDC target from split
+    if (p.enabledChannels.gdc) {
+      p.setTargetGDC(Math.round(newTarget * p.incomeSplits.gdc / 100));
+    }
+    // AUM: if trail% > 0, set existing AUM to what's needed to hit the AUM target
+    // (don't override if user has manually set a value — only set if currently at role default)
+    // We update the target display but don't force AUM book changes
+  };
+
+  /** Toggle a channel on/off */
+  const toggleChannel = (ch: keyof typeof p.enabledChannels) => {
+    const next = { ...p.enabledChannels, [ch]: !p.enabledChannels[ch] };
+    p.setEnabledChannels(next);
+  };
 
   const overrideInc = p.teamMembers.length > 0 ? teamOvr.total : recSummary.tOvr;
   const aumIncome = Math.round((p.aumExisting * (p.aumTrailPct / 100)) + (p.aumNew * (p.aumTrailPct / 100) * 0.5));
@@ -209,9 +230,9 @@ export function MyPlanPanel(p: PracticeProps) {
 
   const splitTotal = p.incomeSplits.gdc + p.incomeSplits.aum + p.incomeSplits.affiliate + p.incomeSplits.override + p.incomeSplits.channel;
 
-  // Pie chart data for income split
+  // Pie chart data for income split (only enabled channels)
   const pieData = Object.entries(p.incomeSplits)
-    .filter(([, v]) => v > 0)
+    .filter(([k, v]) => v > 0 && p.enabledChannels[k as keyof typeof p.enabledChannels])
     .map(([k, v]) => ({ name: SPLIT_LABELS[k], value: Math.round(p.targetIncome * v / 100), pct: v, fill: SPLIT_COLORS[k] }));
 
   return (
@@ -266,12 +287,7 @@ export function MyPlanPanel(p: PracticeProps) {
             <div className="relative">
               <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-primary font-bold">$</span>
               <Input type="number" value={p.targetIncome}
-                onChange={e => {
-                  const v = +e.target.value || 0;
-                  p.setTargetIncome(v);
-                  // Forward cascade: update GDC target from split
-                  p.setTargetGDC(Math.round(v * p.incomeSplits.gdc / 100));
-                }}
+                onChange={e => forwardCascade(+e.target.value || 0)}
                 className="h-9 text-lg font-bold pl-6 border-primary/30 bg-primary/5" />
             </div>
           </div>
@@ -318,22 +334,33 @@ export function MyPlanPanel(p: PracticeProps) {
 
         <Separator />
 
-        {/* ─── SECTION 2: Channel Income Splits ─── */}
-        <SectionHeader>2. Income Channel Allocation {splitTotal !== 100 && <span className="text-red-400 ml-2">⚠ Splits sum to {splitTotal}% (should be 100%)</span>}</SectionHeader>
+        {/* ─── SECTION 2: Channel Income Splits with Enable/Disable ─── */}
+        <SectionHeader>2. Income Channels {splitTotal !== 100 && <span className="text-red-400 ml-2">⚠ Splits sum to {splitTotal}% (should be 100%)</span>}</SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Toggle channels on/off to include them in your plan. Adjust the % split to set how much of your target income each channel should contribute.</p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="space-y-3">
             {(['gdc', 'aum', 'affiliate', 'override', 'channel'] as const).map(k => (
-              <SplitSlider key={k} label={SPLIT_LABELS[k]} value={p.incomeSplits[k]} color={SPLIT_COLORS[k]}
-                targetAmount={Math.round(p.targetIncome * p.incomeSplits[k] / 100)}
-                onChange={v => {
-                  const next = { ...p.incomeSplits, [k]: v };
-                  p.setIncomeSplits(next);
-                  if (k === 'gdc') p.setTargetGDC(Math.round(p.targetIncome * v / 100));
-                }} />
+              <div key={k} className={`rounded-md transition-all ${p.enabledChannels[k] ? '' : 'opacity-40'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Checkbox checked={p.enabledChannels[k]} onCheckedChange={() => toggleChannel(k)} />
+                  <span className="text-[11px] font-semibold" style={{ color: p.enabledChannels[k] ? SPLIT_COLORS[k] : undefined }}>{SPLIT_LABELS[k]}</span>
+                  {!p.enabledChannels[k] && <Badge variant="outline" className="text-[9px] text-muted-foreground">Disabled</Badge>}
+                </div>
+                {p.enabledChannels[k] && (
+                  <SplitSlider label={SPLIT_LABELS[k]} value={p.incomeSplits[k]} color={SPLIT_COLORS[k]}
+                    targetAmount={Math.round(p.targetIncome * p.incomeSplits[k] / 100)}
+                    onChange={v => {
+                      const next = { ...p.incomeSplits, [k]: v };
+                      p.setIncomeSplits(next);
+                      if (k === 'gdc') p.setTargetGDC(Math.round(p.targetIncome * v / 100));
+                    }} />
+                )}
+              </div>
             ))}
             <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={() => {
               p.setIncomeSplits({ ...rd.incomeSplits });
               p.setTargetGDC(Math.round(p.targetIncome * rd.incomeSplits.gdc / 100));
+              p.setEnabledChannels({ gdc: true, aum: true, affiliate: true, override: true, channel: true });
             }}>Reset to {HIER_NAMES[p.role]} Defaults</Button>
           </div>
           <div className="flex items-center justify-center">
@@ -351,7 +378,8 @@ export function MyPlanPanel(p: PracticeProps) {
 
         <Separator />
 
-        {/* ─── SECTION 3: Channel Detail — GDC ─── */}
+        {/* ─── SECTION 3: Channel Details (only show enabled channels) ─── */}
+        {p.enabledChannels.gdc && <>
         <SectionHeader>3a. GDC Production — Target: {fmtSm(plan.channels.gdc.target)}</SectionHeader>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <PInput label="Target GDC ($)" value={p.targetGDC} onChange={v => p.setTargetGDC(+v || 0)} prefix="$" />
@@ -372,7 +400,9 @@ export function MyPlanPanel(p: PracticeProps) {
           />
         )}
 
-        {/* ─── SECTION 3b: AUM/Advisory ─── */}
+        </>}
+
+        {p.enabledChannels.aum && <>
         <SectionHeader>3b. AUM/Advisory — Target: {fmtSm(plan.channels.aum.target)}</SectionHeader>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <PInput label="Existing AUM ($)" value={p.aumExisting} onChange={v => p.setAumExisting(+v || 0)} prefix="$" />
@@ -385,7 +415,9 @@ export function MyPlanPanel(p: PracticeProps) {
           <KPI label="Gap" value={plan.channels.aum.detail.gap > 0 ? fmtSm(plan.channels.aum.detail.gap) : '✓ Met'} variant={plan.channels.aum.detail.gap > 0 ? 'red' : 'grn'} />
         </div>
 
-        {/* ─── SECTION 3c: Affiliates ─── */}
+        </>}
+
+        {p.enabledChannels.affiliate && <>
         <SectionHeader>3c. Affiliate Income — Target: {fmtSm(plan.channels.affiliate.target)}</SectionHeader>
         <div className="space-y-2">
           {(['a', 'b', 'c', 'd'] as const).map(t => {
@@ -409,7 +441,9 @@ export function MyPlanPanel(p: PracticeProps) {
           </div>
         </div>
 
-        {/* ─── SECTION 3d: Team Override ─── */}
+        </>}
+
+        {p.enabledChannels.override && <>
         <SectionHeader>3d. Team Override — Target: {fmtSm(plan.channels.override.target)}</SectionHeader>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <PInput label="Override Rate %" value={p.overrideRate} onChange={v => p.setOverrideRate(+v || 0)} suffix="%" />
@@ -456,7 +490,9 @@ export function MyPlanPanel(p: PracticeProps) {
               )}
             </div>
 
-        {/* ─── SECTION 3e: Marketing Channels ─── */}
+        </>}
+
+        {p.enabledChannels.channel && <>
         <SectionHeader>3e. Marketing Channels — Target: {fmtSm(plan.channels.channel.target)}</SectionHeader>
         <div className="flex flex-wrap gap-2">
           <KPI label="Current Spend/mo" value={fmtSm(plan.channels.channel.detail.totalMonthlySpend)} variant="" />
@@ -465,28 +501,40 @@ export function MyPlanPanel(p: PracticeProps) {
           <KPI label="Gap" value={plan.channels.channel.detail.gap > 0 ? fmtSm(plan.channels.channel.detail.gap) : '\u2713 Met'} variant={plan.channels.channel.detail.gap > 0 ? 'red' : 'grn'} />
         </div>
         <p className="text-[10px] text-muted-foreground">Configure individual channel budgets in the Channels panel for detailed ROI analysis.</p>
+        </>}
 
         <Separator />
 
         {/* ─── SECTION 4: Unified Income Roll-Up ─── */}
         <SectionHeader>4. Unified Income Roll-Up</SectionHeader>
         <DataTable
-          headers={['Channel', 'Target', 'Projected', 'Gap', 'Status']}
+          headers={['Channel', 'Enabled', 'Target', 'Projected', 'Gap', 'Status']}
           rows={[
-            ['GDC Production', fmtSm(plan.channels.gdc.target), fmtSm(plan.channels.gdc.projected), plan.channels.gdc.gap > 0 ? fmtSm(plan.channels.gdc.gap) : '—',
-              <Badge key="gs" variant="outline" className={`text-[9px] ${plan.channels.gdc.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{plan.channels.gdc.gap === 0 ? '\u2713' : '\u26a0'}</Badge>],
-            ['AUM/Advisory', fmtSm(plan.channels.aum.target), fmtSm(plan.channels.aum.detail.projectedIncome), plan.channels.aum.detail.gap > 0 ? fmtSm(plan.channels.aum.detail.gap) : '—',
-              <Badge key="as" variant="outline" className={`text-[9px] ${plan.channels.aum.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{plan.channels.aum.detail.gap === 0 ? '\u2713' : '\u26a0'}</Badge>],
-            ['Affiliates', fmtSm(plan.channels.affiliate.target), fmtSm(plan.channels.affiliate.totalProjected), plan.channels.affiliate.gap > 0 ? fmtSm(plan.channels.affiliate.gap) : '—',
-              <Badge key="fs" variant="outline" className={`text-[9px] ${plan.channels.affiliate.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{plan.channels.affiliate.gap === 0 ? '\u2713' : '\u26a0'}</Badge>],
-            ['Team Override', fmtSm(plan.channels.override.target), fmtSm(plan.channels.override.detail.projectedIncome), plan.channels.override.detail.gap > 0 ? fmtSm(plan.channels.override.detail.gap) : '—',
-              <Badge key="os" variant="outline" className={`text-[9px] ${plan.channels.override.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{plan.channels.override.detail.gap === 0 ? '\u2713' : '\u26a0'}</Badge>],
-            ['Marketing', fmtSm(plan.channels.channel.target), fmtSm(plan.channels.channel.detail.projectedAnnualRevenue), plan.channels.channel.detail.gap > 0 ? fmtSm(plan.channels.channel.detail.gap) : '—',
-              <Badge key="cs" variant="outline" className={`text-[9px] ${plan.channels.channel.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{plan.channels.channel.detail.gap === 0 ? '\u2713' : '\u26a0'}</Badge>],
-            [<b key="tt" className="text-primary">TOTAL</b>, <b key="tv" className="text-primary">{fmtSm(p.targetIncome)}</b>,
+            [p.enabledChannels.gdc ? 'GDC Production' : <span key="gn" className="text-muted-foreground line-through">GDC Production</span>,
+              p.enabledChannels.gdc ? '✓' : '—',
+              fmtSm(plan.channels.gdc.target), fmtSm(plan.channels.gdc.projected), plan.channels.gdc.gap > 0 ? fmtSm(plan.channels.gdc.gap) : '—',
+              <Badge key="gs" variant="outline" className={`text-[9px] ${!p.enabledChannels.gdc ? 'text-muted-foreground' : plan.channels.gdc.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{!p.enabledChannels.gdc ? 'Off' : plan.channels.gdc.gap === 0 ? '✓' : '⚠'}</Badge>],
+            [p.enabledChannels.aum ? 'AUM/Advisory' : <span key="an" className="text-muted-foreground line-through">AUM/Advisory</span>,
+              p.enabledChannels.aum ? '✓' : '—',
+              fmtSm(plan.channels.aum.target), fmtSm(plan.channels.aum.detail.projectedIncome), plan.channels.aum.detail.gap > 0 ? fmtSm(plan.channels.aum.detail.gap) : '—',
+              <Badge key="as" variant="outline" className={`text-[9px] ${!p.enabledChannels.aum ? 'text-muted-foreground' : plan.channels.aum.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{!p.enabledChannels.aum ? 'Off' : plan.channels.aum.detail.gap === 0 ? '✓' : '⚠'}</Badge>],
+            [p.enabledChannels.affiliate ? 'Affiliates' : <span key="fn" className="text-muted-foreground line-through">Affiliates</span>,
+              p.enabledChannels.affiliate ? '✓' : '—',
+              fmtSm(plan.channels.affiliate.target), fmtSm(plan.channels.affiliate.totalProjected), plan.channels.affiliate.gap > 0 ? fmtSm(plan.channels.affiliate.gap) : '—',
+              <Badge key="fs" variant="outline" className={`text-[9px] ${!p.enabledChannels.affiliate ? 'text-muted-foreground' : plan.channels.affiliate.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{!p.enabledChannels.affiliate ? 'Off' : plan.channels.affiliate.gap === 0 ? '✓' : '⚠'}</Badge>],
+            [p.enabledChannels.override ? 'Team Override' : <span key="on" className="text-muted-foreground line-through">Team Override</span>,
+              p.enabledChannels.override ? '✓' : '—',
+              fmtSm(plan.channels.override.target), fmtSm(plan.channels.override.detail.projectedIncome), plan.channels.override.detail.gap > 0 ? fmtSm(plan.channels.override.detail.gap) : '—',
+              <Badge key="os" variant="outline" className={`text-[9px] ${!p.enabledChannels.override ? 'text-muted-foreground' : plan.channels.override.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{!p.enabledChannels.override ? 'Off' : plan.channels.override.detail.gap === 0 ? '✓' : '⚠'}</Badge>],
+            [p.enabledChannels.channel ? 'Marketing' : <span key="cn" className="text-muted-foreground line-through">Marketing</span>,
+              p.enabledChannels.channel ? '✓' : '—',
+              fmtSm(plan.channels.channel.target), fmtSm(plan.channels.channel.detail.projectedAnnualRevenue), plan.channels.channel.detail.gap > 0 ? fmtSm(plan.channels.channel.detail.gap) : '—',
+              <Badge key="cs" variant="outline" className={`text-[9px] ${!p.enabledChannels.channel ? 'text-muted-foreground' : plan.channels.channel.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{!p.enabledChannels.channel ? 'Off' : plan.channels.channel.detail.gap === 0 ? '✓' : '⚠'}</Badge>],
+            [<b key="tt" className="text-primary">TOTAL</b>, '',
+              <b key="tv" className="text-primary">{fmtSm(p.targetIncome)}</b>,
               <b key="tp" className="text-green-400">{fmtSm(plan.totalProjected)}</b>,
               plan.totalGap > 0 ? <b key="tg" className="text-red-400">{fmtSm(plan.totalGap)}</b> : <b key="tg" className="text-green-400">—</b>,
-              <Badge key="ts" variant="outline" className={`text-[9px] ${plan.onTrack ? 'text-green-400 border-green-400/30' : 'text-red-400 border-red-400/30'}`}>{plan.onTrack ? '\u2713 On Track' : '\u26a0 Gap'}</Badge>],
+              <Badge key="ts" variant="outline" className={`text-[9px] ${plan.onTrack ? 'text-green-400 border-green-400/30' : 'text-red-400 border-red-400/30'}`}>{plan.onTrack ? '✓ On Track' : '⚠ Gap'}</Badge>],
           ]}
         />
 
@@ -500,29 +548,17 @@ export function MyPlanPanel(p: PracticeProps) {
           <KPI label="Daily Appr" value={String(funnel.dailyApproaches)} variant="" />
         </div>
 
-        {/* Stream Toggles (for legacy roll-up compatibility) */}
-        <details className="text-[10px]">
-          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Advanced: Stream Toggles</summary>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
-            {[
-              { key: 'personal', label: 'Personal Production' },
-              { key: 'expanded', label: 'Expanded Platform' },
-              { key: 'override', label: 'Team Override' },
-              { key: 'aum', label: 'AUM/Advisory' },
-              { key: 'channels', label: 'Marketing Channels' },
-              { key: 'affA', label: 'Affiliate A (Fee-Based)' },
-              { key: 'affB', label: 'Affiliate B (Referral)' },
-              { key: 'affC', label: 'Affiliate C (Co-Broker)' },
-              { key: 'affD', label: 'Affiliate D (Wholesale)' },
-            ].map(s => (
-              <label key={s.key} className="flex items-center gap-1.5 cursor-pointer">
-                <Checkbox checked={!!p.streams[s.key]}
-                  onCheckedChange={(c) => p.setStreams({ ...p.streams, [s.key]: !!c })} />
-                {s.label}
-              </label>
-            ))}
+        {/* Backward Cascade Summary: shows actual projected vs target */}
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mt-2">
+          <div className="text-[11px] font-bold text-primary mb-1">Backward Cascade Summary</div>
+          <p className="text-[10px] text-muted-foreground mb-2">Adjusting any channel input above automatically recalculates the unified total. The projected income below reflects your actual inputs across all enabled channels.</p>
+          <div className="flex flex-wrap gap-2">
+            <KPI label="Target" value={fmtSm(p.targetIncome)} variant="gld" />
+            <KPI label="Projected" value={fmtSm(plan.totalProjected)} variant={plan.onTrack ? 'grn' : 'red'} />
+            <KPI label="Surplus/Gap" value={plan.totalProjected >= p.targetIncome ? '+' + fmtSm(plan.totalProjected - p.targetIncome) : '-' + fmtSm(plan.totalGap)} variant={plan.onTrack ? 'grn' : 'red'} />
+            <KPI label="Monthly Projected" value={fmtSm(Math.round(plan.totalProjected / 12))} variant="blu" />
           </div>
-        </details>
+        </div>
 
       </CardContent>
     </Card>

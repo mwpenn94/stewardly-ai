@@ -321,7 +321,237 @@ export function AUMOverrideCascadePanel() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   PANEL: AUM PIPELINE & PRODUCTION FORECASTING
+   AFFILIATE OWN PERSPECTIVE — Independent Planning View
+   The affiliate plans their own pipeline, ramp, activity, and income
+   from their own vantage point (not the recruiter's view of them).
+   ═══════════════════════════════════════════════════════════════ */
+
+const RAMP_MILESTONES = [
+  { month: 1, label: 'Licensing & Onboarding', pctOfTarget: 0 },
+  { month: 2, label: 'First Appointments', pctOfTarget: 5 },
+  { month: 3, label: 'First Placements', pctOfTarget: 15 },
+  { month: 6, label: 'Building Momentum', pctOfTarget: 40 },
+  { month: 9, label: 'Approaching Stride', pctOfTarget: 70 },
+  { month: 12, label: 'Full Production', pctOfTarget: 100 },
+  { month: 18, label: 'Growth Phase', pctOfTarget: 130 },
+  { month: 24, label: 'Senior Producer', pctOfTarget: 160 },
+];
+
+function AffiliateOwnPerspective() {
+  // Affiliate's own income target
+  const [affTargetIncome, setAffTargetIncome] = useState(75000);
+  const [affRampMonths, setAffRampMonths] = useState(12);
+  const [affCurrentMonth, setAffCurrentMonth] = useState(1);
+  const [affAvgCaseSize, setAffAvgCaseSize] = useState(2500);
+  const [affCloseRate, setAffCloseRate] = useState(30);
+  const [affApptRate, setAffApptRate] = useState(25);
+
+  // Activity goals
+  const [affDailyCalls, setAffDailyCalls] = useState(15);
+  const [affWeeklyMeetings, setAffWeeklyMeetings] = useState(8);
+  const [affWeeklyProposals, setAffWeeklyProposals] = useState(4);
+
+  // Mentorship needs
+  const [affNeedsTraining, setAffNeedsTraining] = useState(true);
+  const [affNeedsJointWork, setAffNeedsJointWork] = useState(true);
+  const [affNeedsLeads, setAffNeedsLeads] = useState(false);
+  const [affNeedsMarketing, setAffNeedsMarketing] = useState(false);
+
+  // Computed metrics
+  const rampPct = useMemo(() => {
+    // Find where we are in the ramp
+    const sorted = [...RAMP_MILESTONES].sort((a, b) => a.month - b.month);
+    let pct = 0;
+    for (const m of sorted) {
+      if (affCurrentMonth >= m.month) pct = m.pctOfTarget;
+    }
+    return pct;
+  }, [affCurrentMonth]);
+
+  const currentTarget = Math.round(affTargetIncome * rampPct / 100);
+  const monthlyTarget = Math.round(currentTarget / 12);
+  const casesNeeded = affAvgCaseSize > 0 ? Math.ceil(monthlyTarget / affAvgCaseSize) : 0;
+  const proposalsNeeded = affCloseRate > 0 ? Math.ceil(casesNeeded / (affCloseRate / 100)) : 0;
+  const meetingsNeeded = affApptRate > 0 ? Math.ceil(proposalsNeeded / (affApptRate / 100)) : 0;
+  const callsNeeded = meetingsNeeded > 0 ? Math.ceil(meetingsNeeded / 0.25) : 0; // 25% call-to-meeting rate
+
+  // Weekly/daily breakdown
+  const weeklyCases = Math.ceil(casesNeeded / 4.3);
+  const dailyCallsNeeded = Math.ceil(callsNeeded / 22); // 22 working days
+
+  // Ramp chart data
+  const rampData = RAMP_MILESTONES.map(m => ({
+    label: `M${m.month}`,
+    target: Math.round(affTargetIncome * m.pctOfTarget / 100 / 12),
+    milestone: m.label,
+    pct: m.pctOfTarget,
+  }));
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <span className="text-primary">Affiliate's Own Planning View</span>
+          <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-400/30">Independent Perspective</Badge>
+          <RefTip text="This view is designed for the affiliate themselves to plan their own production, ramp timeline, and activity goals. Share this with your affiliates to help them build their own business plan." refId="commission" />
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+
+        {/* Section 1: Income Target & Ramp */}
+        <SectionHeader>1. My Income Target & Ramp</SectionHeader>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <PInput label="My Target Annual Income" value={affTargetIncome} onChange={v => setAffTargetIncome(+v || 0)} prefix="$" />
+          <PInput label="Ramp to Full Production (mo)" value={affRampMonths} onChange={v => setAffRampMonths(+v || 12)} />
+          <PInput label="Current Month in Ramp" value={affCurrentMonth} onChange={v => setAffCurrentMonth(Math.max(1, +v || 1))} />
+          <PInput label="Avg Case Size ($)" value={affAvgCaseSize} onChange={v => setAffAvgCaseSize(+v || 0)} prefix="$" />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <KPI label="Ramp %" value={`${rampPct}%`} variant={rampPct >= 100 ? 'grn' : 'gld'} />
+          <KPI label="Current Target" value={fmtSm(currentTarget)} variant="gld" />
+          <KPI label="Monthly Target" value={fmtSm(monthlyTarget)} variant="blu" />
+          <KPI label="Full Target" value={fmtSm(affTargetIncome)} variant="" />
+        </div>
+
+        {/* Ramp Timeline Chart */}
+        <div className="h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={rampData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.5)' }} />
+              <YAxis tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.5)' }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+              <Tooltip formatter={(v: number) => fmtSm(v)} />
+              <Area type="monotone" dataKey="target" stroke="#10b981" fill="#10b981" fillOpacity={0.15} strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <Separator />
+
+        {/* Section 2: Activity Goals (backward from income) */}
+        <SectionHeader>2. Activity Goals (Backward from Income)</SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Based on your income target and conversion rates, here's what you need to do each period.</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <PInput label="Close Rate %" value={affCloseRate} onChange={v => setAffCloseRate(+v || 0)} suffix="%" />
+          <PInput label="Appt Show Rate %" value={affApptRate} onChange={v => setAffApptRate(+v || 0)} suffix="%" />
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-muted/40">
+                <th className="px-2 py-1.5 text-left font-semibold">Metric</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Daily</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Weekly</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Monthly</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Your Goal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-border/30">
+                <td className="px-2 py-1 font-semibold">Calls / Outreach</td>
+                <td className="px-2 py-1 text-right">{dailyCallsNeeded}</td>
+                <td className="px-2 py-1 text-right">{dailyCallsNeeded * 5}</td>
+                <td className="px-2 py-1 text-right">{callsNeeded}</td>
+                <td className="px-2 py-1 text-right"><Input type="number" value={affDailyCalls} onChange={e => setAffDailyCalls(+e.target.value || 0)} className="h-6 w-14 text-[10px] text-right inline-block" /></td>
+              </tr>
+              <tr className="border-b border-border/30">
+                <td className="px-2 py-1 font-semibold">Meetings / Appts</td>
+                <td className="px-2 py-1 text-right">{Math.ceil(meetingsNeeded / 22)}</td>
+                <td className="px-2 py-1 text-right">{Math.ceil(meetingsNeeded / 4.3)}</td>
+                <td className="px-2 py-1 text-right">{meetingsNeeded}</td>
+                <td className="px-2 py-1 text-right"><Input type="number" value={affWeeklyMeetings} onChange={e => setAffWeeklyMeetings(+e.target.value || 0)} className="h-6 w-14 text-[10px] text-right inline-block" /></td>
+              </tr>
+              <tr className="border-b border-border/30">
+                <td className="px-2 py-1 font-semibold">Proposals</td>
+                <td className="px-2 py-1 text-right">—</td>
+                <td className="px-2 py-1 text-right">{Math.ceil(proposalsNeeded / 4.3)}</td>
+                <td className="px-2 py-1 text-right">{proposalsNeeded}</td>
+                <td className="px-2 py-1 text-right"><Input type="number" value={affWeeklyProposals} onChange={e => setAffWeeklyProposals(+e.target.value || 0)} className="h-6 w-14 text-[10px] text-right inline-block" /></td>
+              </tr>
+              <tr className="bg-primary/5 font-semibold">
+                <td className="px-2 py-1.5">Placements Needed</td>
+                <td className="px-2 py-1.5 text-right">—</td>
+                <td className="px-2 py-1.5 text-right text-green-400">{weeklyCases}</td>
+                <td className="px-2 py-1.5 text-right text-green-400">{casesNeeded}</td>
+                <td className="px-2 py-1.5 text-right text-green-400">{casesNeeded}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <KPI label="Calls vs Need" value={`${affDailyCalls} / ${dailyCallsNeeded}`} variant={affDailyCalls >= dailyCallsNeeded ? 'grn' : 'red'} />
+          <KPI label="Meetings vs Need" value={`${affWeeklyMeetings} / ${Math.ceil(meetingsNeeded / 4.3)}`} variant={affWeeklyMeetings >= Math.ceil(meetingsNeeded / 4.3) ? 'grn' : 'red'} />
+          <KPI label="Proposals vs Need" value={`${affWeeklyProposals} / ${Math.ceil(proposalsNeeded / 4.3)}`} variant={affWeeklyProposals >= Math.ceil(proposalsNeeded / 4.3) ? 'grn' : 'red'} />
+        </div>
+
+        <Separator />
+
+        {/* Section 3: Mentorship & Support Needs */}
+        <SectionHeader>3. Support I Need from My Upline</SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Check what support you need. This helps your manager/mentor understand how to help you succeed.</p>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { key: 'training', label: 'Product & Sales Training', desc: 'Weekly training sessions, product knowledge', checked: affNeedsTraining, set: setAffNeedsTraining },
+            { key: 'joint', label: 'Joint Field Work', desc: 'Ride-alongs, joint appointments, case clinics', checked: affNeedsJointWork, set: setAffNeedsJointWork },
+            { key: 'leads', label: 'Lead Generation Support', desc: 'Shared leads, referral introductions', checked: affNeedsLeads, set: setAffNeedsLeads },
+            { key: 'marketing', label: 'Marketing & Branding', desc: 'Co-branded materials, social media support', checked: affNeedsMarketing, set: setAffNeedsMarketing },
+          ].map(item => (
+            <div key={item.key} className={`p-2 rounded-md border transition-all cursor-pointer ${item.checked ? 'border-primary/40 bg-primary/5' : 'border-border/30 opacity-60'}`}
+              onClick={() => item.set(!item.checked)}>
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-sm border ${item.checked ? 'bg-primary border-primary' : 'border-muted-foreground/40'}`}>
+                  {item.checked && <span className="text-[8px] text-primary-foreground flex items-center justify-center">✓</span>}
+                </div>
+                <span className="text-[11px] font-semibold">{item.label}</span>
+              </div>
+              <p className="text-[9px] text-muted-foreground mt-0.5 ml-5">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <Separator />
+
+        {/* Section 4: Ramp Milestones */}
+        <SectionHeader>4. Ramp Milestones</SectionHeader>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-muted/40">
+                <th className="px-2 py-1.5 text-left font-semibold">Month</th>
+                <th className="px-2 py-1.5 text-left font-semibold">Milestone</th>
+                <th className="px-2 py-1.5 text-right font-semibold">% of Target</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Monthly Income</th>
+                <th className="px-2 py-1.5 text-center font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {RAMP_MILESTONES.map(m => {
+                const monthlyInc = Math.round(affTargetIncome * m.pctOfTarget / 100 / 12);
+                const reached = affCurrentMonth >= m.month;
+                return (
+                  <tr key={m.month} className={`border-b border-border/30 ${reached ? 'bg-green-500/5' : ''}`}>
+                    <td className="px-2 py-1 font-semibold">Month {m.month}</td>
+                    <td className="px-2 py-1">{m.label}</td>
+                    <td className="px-2 py-1 text-right">{m.pctOfTarget}%</td>
+                    <td className="px-2 py-1 text-right">{fmtSm(monthlyInc)}</td>
+                    <td className="px-2 py-1 text-center">{reached ? <Badge variant="outline" className="text-[9px] text-green-400 border-green-400/30">✓ Reached</Badge> : <Badge variant="outline" className="text-[9px] text-muted-foreground">Upcoming</Badge>}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PANEL: AFFILIATE PIPELINE & ACTIVITY
    ═══════════════════════════════════════════════════════════════ */
 export function AUMPipelinePanel() {
   const [stages, setStages] = useState<AUMPipelineStage[]>(() => DEFAULT_AUM_PIPELINE.map(s => ({ ...s })));
@@ -584,9 +814,10 @@ export function AffiliatePipelinePanel() {
       </p>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-3">
-          <TabsTrigger value="recruiting">Recruiting Affiliates</TabsTrigger>
-          <TabsTrigger value="production">Affiliate Production</TabsTrigger>
+        <TabsList className="mb-3 flex-wrap">
+          <TabsTrigger value="recruiting">Recruiting</TabsTrigger>
+          <TabsTrigger value="production">Production</TabsTrigger>
+          <TabsTrigger value="perspective">Affiliate Perspective</TabsTrigger>
           <TabsTrigger value="activity">Activity Metrics</TabsTrigger>
         </TabsList>
 
@@ -692,6 +923,11 @@ export function AffiliatePipelinePanel() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Affiliate Perspective Tab — Independent Planning View */}
+        <TabsContent value="perspective">
+          <AffiliateOwnPerspective />
         </TabsContent>
 
         {/* Activity Metrics Tab */}

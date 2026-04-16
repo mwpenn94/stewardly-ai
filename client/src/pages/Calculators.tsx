@@ -309,6 +309,7 @@ export default function Calculators() {
   const [ppAffCounts, setPpAffCounts] = useState(() => ({ ...ROLE_DEFAULTS.new.defaultAffiliates }));
   const [ppAffAvgProd, setPpAffAvgProd] = useState(() => ({ ...ROLE_DEFAULTS.new.defaultAffProd }));
   const [ppTeamAvgGDC, setPpTeamAvgGDC] = useState(100000);
+  const [ppEnabledChannels, setPpEnabledChannels] = useState<{ gdc: boolean; aum: boolean; affiliate: boolean; override: boolean; channel: boolean }>({ gdc: true, aum: true, affiliate: true, override: true, channel: true });
   /* Goal Tracker */
   const [ppGoalIncome, setPpGoalIncome] = useState(150000);
   const [ppGoalAUM, setPpGoalAUM] = useState(5000000);
@@ -350,6 +351,7 @@ export default function Calculators() {
     ppAffAIncome, ppAffBIncome, ppAffCIncome, ppAffDIncome,
     ppGoalIncome, ppGoalAUM, ppGoalRecruits, ppGoalGDC, ppGoalCases,
     ppSeasonProfile, ppCustomSeason, ppSeasonGrowthRate, ppSeasonHorizon, ppSeasonRampMonths,
+    ppTargetIncome, ppIncomeSplits, ppAffCounts, ppAffAvgProd, ppTeamAvgGDC, ppEnabledChannels,
   }), [
     clientName, age, spouseAge, dep, income, spouseIncome, nw, savings, retirement401k,
     mortgage, debt, existIns, filing, stateRate, riskTolerance, isBiz,
@@ -374,6 +376,7 @@ export default function Calculators() {
     ppAffAIncome, ppAffBIncome, ppAffCIncome, ppAffDIncome,
     ppGoalIncome, ppGoalAUM, ppGoalRecruits, ppGoalGDC, ppGoalCases,
     ppSeasonProfile, ppCustomSeason, ppSeasonGrowthRate, ppSeasonHorizon, ppSeasonRampMonths,
+    ppTargetIncome, ppIncomeSplits, ppAffCounts, ppAffAvgProd, ppTeamAvgGDC, ppEnabledChannels,
   ]);
 
   /* Auto-save to localStorage with 2s debounce */
@@ -563,6 +566,13 @@ export default function Calculators() {
     if (d.ppSeasonGrowthRate !== undefined) setPpSeasonGrowthRate(d.ppSeasonGrowthRate);
     if (d.ppSeasonHorizon !== undefined) setPpSeasonHorizon(d.ppSeasonHorizon);
     if (d.ppSeasonRampMonths !== undefined) setPpSeasonRampMonths(d.ppSeasonRampMonths);
+    /* Unified Income Planning */
+    if (d.ppTargetIncome !== undefined) setPpTargetIncome(d.ppTargetIncome);
+    if (d.ppIncomeSplits !== undefined) setPpIncomeSplits(d.ppIncomeSplits);
+    if (d.ppAffCounts !== undefined) setPpAffCounts(d.ppAffCounts);
+    if (d.ppAffAvgProd !== undefined) setPpAffAvgProd(d.ppAffAvgProd);
+    if (d.ppTeamAvgGDC !== undefined) setPpTeamAvgGDC(d.ppTeamAvgGDC);
+    if (d.ppEnabledChannels !== undefined) setPpEnabledChannels(d.ppEnabledChannels);
   };
 
   /* Auto-restore from localStorage on mount */
@@ -993,6 +1003,7 @@ export default function Calculators() {
     affCounts: ppAffCounts, setAffCounts: setPpAffCounts,
     affAvgProd: ppAffAvgProd, setAffAvgProd: setPpAffAvgProd,
     teamAvgGDC: ppTeamAvgGDC, setTeamAvgGDC: setPpTeamAvgGDC,
+    enabledChannels: ppEnabledChannels, setEnabledChannels: setPpEnabledChannels,
     /* Goal Tracker */
     goalIncome: ppGoalIncome, setGoalIncome: setPpGoalIncome,
     goalAUM: ppGoalAUM, setGoalAUM: setPpGoalAUM,

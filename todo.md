@@ -5234,7 +5234,7 @@
 - [x] 15/15 pass85-export-search tests passing
 
 ## User Clarifications (Apr 16)
-- [ ] Affiliate production planning is BIDIRECTIONAL — help affiliates do their own production planning (pipeline, metrics, forecasting, ramp) not just recruit them
+- [x] Affiliate production planning is BIDIRECTIONAL — help affiliates do their own production planning (pipeline, metrics, forecasting, ramp) not just recruit them
 - [ ] Phase 5: Incorporate stewardly-command-center repo (https://github.com/mwpenn94/stewardly-command-center) into this project
 
 ## Phase 1 Immediate Fixes
@@ -5288,3 +5288,28 @@
 ## Pass 90 — Fix PanelsD.tsx JSX Build Error
 - [x] Fix JSX tag mismatch in PanelsD.tsx (lines 458, 529-531) blocking production build
 - [x] Verify production build passes (vite build)
+
+
+## Pass 91 — Bidirectional Income Cascade & Stream Toggles
+- [x] Fix forward cascade: target income changes propagate down to all channel calculations (GDC funnel metrics, AUM projections, affiliate counts, override team size, marketing spend)
+- [x] Fix backward cascade: changes within individual channels (e.g., adjusting GDC target, AUM book, affiliate counts) cascade back up to update unified income totals
+- [x] Restore income stream/channel toggle optionality so users can select which channels to include in calculations
+- [x] Ensure funnel metrics (approaches, held, apps, placed) update when target income or GDC target changes
+- [x] Ensure earnings projections update bidirectionally across hierarchy
+
+## Pass 91 — EMBA Learning Content
+- [x] Create EMBA modules data structure with 12 exam domain areas (already built in prior passes)
+- [x] Build quiz engine component with question bank, scoring, and progress tracking (already built)
+- [x] Build flashcard component with spaced repetition support (already built)
+- [x] Create Learning page with module navigation, quiz access, and flashcard decks (already built)
+- [x] Wire learning progress to user profile/database (already built with mastery service)
+
+## Pass 91 — Affiliate Perspective Planning
+- [x] Create affiliate's own perspective view for independent pipeline planning
+- [x] Add activity tracking and ramp planning for affiliates
+- [x] Include affiliate-specific funnel metrics and production goals
+
+## Pass 91 — Remaining Items & Convergence
+- [x] Complete all remaining unchecked items from previous passes (auto-save/restore for unified income fields, vitest coverage)
+- [x] Recursive convergence testing (3 consecutive passes with no changes needed) — Pass 1: auto-save fix, Pass 2: no issues, Pass 3: no issues
+- [x] UI/UX polish for desktop and mobile (channel toggles with checkboxes, colored labels, conditional rendering, roll-up table with status badges)

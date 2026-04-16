@@ -630,11 +630,17 @@ const AFF_LABELS: Record<string, string> = {
 };
 const AFF_RATES: Record<string, number> = { a: 0.15, b: 0.10, c: 0.20, d: 0.08 };
 
+/** Enabled channels configuration */
+export interface EnabledChannels {
+  gdc: boolean; aum: boolean; affiliate: boolean; override: boolean; channel: boolean;
+}
+
 /** Calculate unified income plan from target income + splits */
 export function calcUnifiedIncomePlan(params: {
   targetIncome: number;
   splits: IncomeSplits;
   role: RoleId;
+  enabledChannels: EnabledChannels;
   /* GDC channel */
   targetGDC: number;
   wbPct: number;
@@ -656,27 +662,29 @@ export function calcUnifiedIncomePlan(params: {
   /* Channel/marketing */
   channelSpend: Record<string, number>;
 }): UnifiedIncomePlan {
-  const { targetIncome, splits, role } = params;
+  const { targetIncome, splits, role, enabledChannels } = params;
   const rd = ROLE_DEFAULTS[role] || ROLE_DEFAULTS.new;
 
-  // Channel targets from splits
-  const gdcTarget = Math.round(targetIncome * splits.gdc / 100);
-  const aumTarget = Math.round(targetIncome * splits.aum / 100);
-  const affTarget = Math.round(targetIncome * splits.affiliate / 100);
-  const ovrTarget = Math.round(targetIncome * splits.override / 100);
-  const chTarget = Math.round(targetIncome * splits.channel / 100);
+  // Channel targets from splits (zero if channel disabled)
+  const gdcTarget = enabledChannels.gdc ? Math.round(targetIncome * splits.gdc / 100) : 0;
+  const aumTarget = enabledChannels.aum ? Math.round(targetIncome * splits.aum / 100) : 0;
+  const affTarget = enabledChannels.affiliate ? Math.round(targetIncome * splits.affiliate / 100) : 0;
+  const ovrTarget = enabledChannels.override ? Math.round(targetIncome * splits.override / 100) : 0;
+  const chTarget = enabledChannels.channel ? Math.round(targetIncome * splits.channel / 100) : 0;
 
   // GDC projected
   const funnel = calcProductionFunnel(
     params.targetGDC, params.wbPct, params.bracketOverride, params.avgGDC,
     params.funnelRates.ap, params.funnelRates.sh, params.funnelRates.cl, params.funnelRates.pl, params.months
   );
-  const gdcProjected = funnel.wbTarget + funnel.expTarget;
+  const gdcProjected = enabledChannels.gdc ? (funnel.wbTarget + funnel.expTarget) : 0;
   const gdcGap = Math.max(0, gdcTarget - gdcProjected);
 
   // AUM projected
-  const aumIncome = Math.round((params.aumExisting * (params.aumTrailPct / 100)) + (params.aumNew * (params.aumTrailPct / 100) * 0.5));
-  const requiredAUM = params.aumTrailPct > 0 ? Math.round(aumTarget / (params.aumTrailPct / 100)) : 0;
+  const aumIncome = enabledChannels.aum
+    ? Math.round((params.aumExisting * (params.aumTrailPct / 100)) + (params.aumNew * (params.aumTrailPct / 100) * 0.5))
+    : 0;
+  const requiredAUM = enabledChannels.aum && params.aumTrailPct > 0 ? Math.round(aumTarget / (params.aumTrailPct / 100)) : 0;
   const aumGap = Math.max(0, aumTarget - aumIncome);
   const aumDetail: AUMPlanDetail = {
     existingBook: params.aumExisting, newAnnual: params.aumNew, trailPct: params.aumTrailPct,
@@ -685,7 +693,7 @@ export function calcUnifiedIncomePlan(params: {
 
   // Affiliate projected
   const affDetails: AffiliatePlanDetail[] = (['a','b','c','d'] as const).map(t => {
-    const count = params.affCounts[t];
+    const count = enabledChannels.affiliate ? params.affCounts[t] : 0;
     const avgProd = params.affAvgProd[t];
     const rate = AFF_RATES[t];
     const projected = Math.round(count * avgProd * rate);
@@ -695,8 +703,10 @@ export function calcUnifiedIncomePlan(params: {
   const affGap = Math.max(0, affTarget - affTotalProjected);
 
   // Override projected
-  const ovrProjected = Math.round(params.teamSize * params.teamAvgGDC * (params.overrideRate / 100));
-  const requiredTeam = params.teamAvgGDC > 0 && params.overrideRate > 0
+  const ovrProjected = enabledChannels.override
+    ? Math.round(params.teamSize * params.teamAvgGDC * (params.overrideRate / 100))
+    : 0;
+  const requiredTeam = enabledChannels.override && params.teamAvgGDC > 0 && params.overrideRate > 0
     ? Math.ceil(ovrTarget / (params.teamAvgGDC * (params.overrideRate / 100)))
     : 0;
   const ovrGap = Math.max(0, ovrTarget - ovrProjected);
@@ -707,11 +717,10 @@ export function calcUnifiedIncomePlan(params: {
 
   // Channel/marketing projected
   const chMetrics = calcChannelMetrics(params.channelSpend);
-  const chProjected = chMetrics.annualRev;
+  const chProjected = enabledChannels.channel ? chMetrics.annualRev : 0;
   const chGap = Math.max(0, chTarget - chProjected);
-  // Estimate required spend: if current spend → current rev, then required spend = target / (rev/spend) ratio
   const revPerSpend = chMetrics.annualSpend > 0 ? chMetrics.annualRev / chMetrics.annualSpend : 3;
-  const requiredSpend = Math.round(chTarget / revPerSpend / 12);
+  const requiredSpend = enabledChannels.channel ? Math.round(chTarget / revPerSpend / 12) : 0;
   const chDetail: ChannelPlanDetail = {
     totalMonthlySpend: chMetrics.tSpend, projectedAnnualRevenue: chProjected,
     requiredSpendForTarget: requiredSpend, gap: chGap,
