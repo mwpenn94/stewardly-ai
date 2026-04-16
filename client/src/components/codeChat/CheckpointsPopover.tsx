@@ -106,7 +106,7 @@ export default function CheckpointsPopover({
               {checkpoints.length}/30
             </Badge>
           </div>
-          <button
+          <button type="button"
             onClick={onClose}
             aria-label="Close"
             className="text-muted-foreground hover:text-foreground"
@@ -200,14 +200,14 @@ export default function CheckpointsPopover({
                             <span>· {formatAge(cp.meta.createdAt)}</span>
                           </div>
                         </div>
-                        <button
+                        <button type="button"
                           onClick={() => startEdit(cp)}
                           className="text-muted-foreground hover:text-foreground"
                           aria-label={`Edit ${cp.meta.name}`}
                         >
                           <Pencil className="w-3 h-3" />
                         </button>
-                        <button
+                        <button type="button"
                           onClick={() => onDelete(cp.meta.id)}
                           className="text-muted-foreground hover:text-destructive"
                           aria-label={`Delete ${cp.meta.name}`}

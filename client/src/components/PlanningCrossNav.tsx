@@ -33,7 +33,7 @@ export function PlanningCrossNav() {
         const hasPageData = page.key ? (profile as any)[page.key] != null : false;
 
         return (
-          <button
+          <button type="button"
             key={page.href}
             onClick={() => navigate(page.href)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${

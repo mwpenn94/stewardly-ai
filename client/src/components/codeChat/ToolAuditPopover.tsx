@@ -183,7 +183,7 @@ export default function ToolAuditPopover({
               {summary.total} entries
             </Badge>
           </div>
-          <button
+          <button type="button"
             onClick={onClose}
             aria-label="Close"
             className="text-muted-foreground hover:text-foreground"
@@ -193,7 +193,7 @@ export default function ToolAuditPopover({
         </div>
 
         <div className="flex gap-1 px-4 pt-3 border-b border-border/40">
-          <button
+          <button type="button"
             onClick={() => setTab("rules")}
             className={`px-3 py-1.5 text-xs rounded-t border-b-2 transition-colors ${
               tab === "rules"
@@ -203,7 +203,7 @@ export default function ToolAuditPopover({
           >
             Rules
           </button>
-          <button
+          <button type="button"
             onClick={() => setTab("trail")}
             className={`px-3 py-1.5 text-xs rounded-t border-b-2 transition-colors ${
               tab === "trail"
@@ -260,7 +260,7 @@ export default function ToolAuditPopover({
                   <div className="flex gap-1">
                     {(["log", "safe", "warn", "block"] as AuditVerdict[]).map(
                       (v) => (
-                        <button
+                        <button type="button"
                           key={v}
                           type="button"
                           onClick={() => setDraftVerdict(v)}
@@ -328,7 +328,7 @@ export default function ToolAuditPopover({
                           <div className="flex gap-1">
                             {(["log", "safe", "warn", "block"] as AuditVerdict[]).map(
                               (v) => (
-                                <button
+                                <button type="button"
                                   key={v}
                                   type="button"
                                   onClick={() =>
@@ -395,14 +395,14 @@ export default function ToolAuditPopover({
                               </div>
                             )}
                           </div>
-                          <button
+                          <button type="button"
                             onClick={() => startEdit(rule)}
                             className="text-muted-foreground hover:text-foreground"
                             aria-label={`Edit rule ${rule.label}`}
                           >
                             <Pencil className="w-3 h-3" />
                           </button>
-                          <button
+                          <button type="button"
                             onClick={() => handleDelete(rule.id)}
                             className="text-muted-foreground hover:text-destructive"
                             aria-label={`Delete rule ${rule.label}`}
@@ -425,7 +425,7 @@ export default function ToolAuditPopover({
                   {(["all", "block", "warn", "log", "safe"] as const).map((v) => {
                     const count = v === "all" ? summary.total : summary.byVerdict[v];
                     return (
-                      <button
+                      <button type="button"
                         key={v}
                         type="button"
                         onClick={() => setTrailFilter(v)}

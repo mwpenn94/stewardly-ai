@@ -120,7 +120,7 @@ export default function AIOnboardingWidget() {
   return (
     <div className="mx-3 mb-3 rounded-xl bg-card/80 border border-border/50 overflow-hidden">
       {/* Header */}
-      <button
+      <button type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center gap-2 p-3 hover:bg-secondary/30 transition-colors"
       >
@@ -172,7 +172,7 @@ export default function AIOnboardingWidget() {
             const isSignInItem = item.href === "/signin" || item.title.includes("Create an account");
 
             return (
-              <button
+              <button type="button"
                 key={item.id}
                 onClick={() => {
                   if (isSignInItem) {
@@ -216,7 +216,7 @@ export default function AIOnboardingWidget() {
 
           {/* Show more/less toggle */}
           {items.length > 5 && (
-            <button
+            <button type="button"
               onClick={() => setShowAll(!showAll)}
               className="w-full text-center text-[10px] text-muted-foreground hover:text-accent transition-colors py-1"
             >

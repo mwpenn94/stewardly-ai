@@ -151,7 +151,7 @@ export default function ToolPermissionsPopover({
         className="relative w-full max-w-md max-h-[80vh] overflow-auto rounded-xl border border-border/60 bg-card p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
+        <button type="button"
           onClick={onClose}
           className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
           aria-label="Close tool permissions"
@@ -212,14 +212,14 @@ export default function ToolPermissionsPopover({
         </ul>
 
         <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between text-[10px]">
-          <button
+          <button type="button"
             type="button"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => onChange(DEFAULT_ENABLED_TOOLS)}
           >
             Reset to defaults
           </button>
-          <button
+          <button type="button"
             type="button"
             className="text-muted-foreground hover:text-foreground"
             onClick={() =>

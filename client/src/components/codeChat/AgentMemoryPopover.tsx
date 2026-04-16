@@ -129,7 +129,7 @@ export default function AgentMemoryPopover({
               {summary.total} entries
             </Badge>
           </div>
-          <button
+          <button type="button"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
             aria-label="Close memory"
@@ -191,7 +191,7 @@ export default function AgentMemoryPopover({
 
         {/* Filter chips */}
         <div className="flex items-center gap-1.5 px-5 py-2 border-b border-border/30 overflow-x-auto">
-          <button
+          <button type="button"
             type="button"
             className={`px-2 py-0.5 rounded-full text-[10px] border transition-colors ${
               filter === "all"
@@ -204,7 +204,7 @@ export default function AgentMemoryPopover({
             all ({summary.total})
           </button>
           {CATEGORIES.map((c) => (
-            <button
+            <button type="button"
               key={c}
               type="button"
               className={`px-2 py-0.5 rounded-full text-[10px] border transition-colors ${
@@ -280,7 +280,7 @@ export default function AgentMemoryPopover({
                               ))}
                             </select>
                             <div className="flex-1" />
-                            <button
+                            <button type="button"
                               type="button"
                               className="p-1 rounded hover:bg-emerald-500/10 text-emerald-500"
                               onClick={commitEdit}
@@ -288,7 +288,7 @@ export default function AgentMemoryPopover({
                             >
                               <Check className="h-3 w-3" />
                             </button>
-                            <button
+                            <button type="button"
                               type="button"
                               className="p-1 rounded hover:bg-destructive/10 text-destructive"
                               onClick={() => setEditingId(null)}
@@ -309,7 +309,7 @@ export default function AgentMemoryPopover({
                             </p>
                           </div>
                           <div className="flex items-center gap-0.5 shrink-0">
-                            <button
+                            <button type="button"
                               type="button"
                               className="p-1 rounded hover:bg-accent/10 text-muted-foreground hover:text-foreground"
                               onClick={() => startEdit(e)}
@@ -318,7 +318,7 @@ export default function AgentMemoryPopover({
                             >
                               <Pencil className="h-3 w-3" />
                             </button>
-                            <button
+                            <button type="button"
                               type="button"
                               className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
                               onClick={() => onChange(removeMemory(entries, e.id))}

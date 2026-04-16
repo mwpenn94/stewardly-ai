@@ -417,7 +417,7 @@ export default function IncomeProjection() {
         <CardContent>
           <div className="overflow-x-auto -mx-2 px-2">
           <div className="min-w-[420px] space-y-1">
-            <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
               <span>Age</span>
               <span className="text-right">Income</span>
               <span className="text-right">Withdrawal</span>
@@ -425,7 +425,7 @@ export default function IncomeProjection() {
               <span className="text-right">Target</span>
             </div>
             {projection.map(row => (
-              <div key={row.age} className={`grid grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0 ${row.balance <= 0 ? "text-red-400" : ""}`}>
+              <div key={row.age} className={`grid grid-cols-2 sm:grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0 ${row.balance <= 0 ? "text-red-400" : ""}`}>
                 <span className="font-mono">{row.age}</span>
                 <span className="text-right font-mono">{fmt(row.income)}</span>
                 <span className="text-right font-mono">{fmt(row.withdrawal)}</span>

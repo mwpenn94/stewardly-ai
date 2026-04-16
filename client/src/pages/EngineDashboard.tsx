@@ -507,7 +507,7 @@ export default function EngineDashboard() {
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {QUICK_PRESETS.map((preset, i) => (
-                  <button
+                  <button type="button"
                     key={i}
                     onClick={() => loadPreset(preset)}
                     className="text-left p-3 rounded-lg border border-border/50 hover:border-[#C9A84C]/50 hover:bg-[#C9A84C]/10 transition-all group"

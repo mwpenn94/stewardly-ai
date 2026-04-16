@@ -81,7 +81,7 @@ export default function GuestPreferencesTab() {
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {(["brief", "balanced", "detailed"] as const).map((depth) => (
-              <button
+              <button type="button"
                 key={depth}
                 onClick={() => setPreferences({ responseDepth: depth })}
                 className={`px-3 py-2.5 rounded-lg border text-xs font-medium transition-all ${
@@ -116,7 +116,7 @@ export default function GuestPreferencesTab() {
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {(["professional", "friendly", "casual"] as const).map((tone) => (
-              <button
+              <button type="button"
                 key={tone}
                 onClick={() => setPreferences({ tone })}
                 className={`px-3 py-2.5 rounded-lg border text-xs font-medium transition-all ${
@@ -217,7 +217,7 @@ export default function GuestPreferencesTab() {
         <CardContent>
           <div className="flex flex-wrap gap-2">
             {FOCUS_OPTIONS.map((opt) => (
-              <button
+              <button type="button"
                 key={opt.value}
                 onClick={() => toggleFocusArea(opt.value)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${

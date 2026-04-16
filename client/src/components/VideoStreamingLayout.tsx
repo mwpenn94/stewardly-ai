@@ -110,13 +110,13 @@ export default function VideoStreamingLayout({ streamType, onEnd, children, clas
             </div>
           </div>
           <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
-            <button onClick={() => setIsMuted(!isMuted)} className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70" aria-label={isMuted ? "Unmute" : "Mute"}>
+            <button type="button" onClick={() => setIsMuted(!isMuted)} className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70" aria-label={isMuted ? "Unmute" : "Mute"}>
               {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </button>
-            <button onClick={toggleFullscreen} className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70" aria-label="Toggle fullscreen">
+            <button type="button" onClick={toggleFullscreen} className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70" aria-label="Toggle fullscreen">
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
-            <button onClick={onEnd} className="p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-500" aria-label="End stream">
+            <button type="button" onClick={onEnd} className="p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-500" aria-label="End stream">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -140,10 +140,10 @@ export default function VideoStreamingLayout({ streamType, onEnd, children, clas
             <span className="animate-pulse">LIVE</span>
           </div>
           <div className="absolute top-2 right-2 flex items-center gap-1">
-            <button onClick={() => setIsMuted(!isMuted)} className="p-1 rounded bg-black/50 text-white" aria-label={isMuted ? "Unmute" : "Mute"}>
+            <button type="button" onClick={() => setIsMuted(!isMuted)} className="p-1 rounded bg-black/50 text-white" aria-label={isMuted ? "Unmute" : "Mute"}>
               {isMuted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
             </button>
-            <button onClick={onEnd} className="p-1 rounded bg-red-500/80 text-white" aria-label="End stream">
+            <button type="button" onClick={onEnd} className="p-1 rounded bg-red-500/80 text-white" aria-label="End stream">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -165,10 +165,10 @@ export default function VideoStreamingLayout({ streamType, onEnd, children, clas
           <span>Co-Browse</span>
         </div>
         <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
-          <button onClick={() => setIsMuted(!isMuted)} className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70" aria-label={isMuted ? "Unmute" : "Mute"}>
+          <button type="button" onClick={() => setIsMuted(!isMuted)} className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70" aria-label={isMuted ? "Unmute" : "Mute"}>
             {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
           </button>
-          <button onClick={onEnd} className="p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-500" aria-label="End stream">
+          <button type="button" onClick={onEnd} className="p-1.5 rounded-lg bg-red-500/80 text-white hover:bg-red-500" aria-label="End stream">
             <X className="w-4 h-4" />
           </button>
         </div>

@@ -226,7 +226,7 @@ export default function EmbedCalculator() {
               <div key={section.group}>
                 <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-2 mb-1">{section.group}</p>
                 {section.items.map(item => (
-                  <button key={item.id} onClick={() => setActivePanel(item.id)}
+                  <button type="button" key={item.id} onClick={() => setActivePanel(item.id)}
                     className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
                       activePanel === item.id
                         ? 'bg-primary/10 text-primary border border-primary/30'

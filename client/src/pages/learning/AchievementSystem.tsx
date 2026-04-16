@@ -203,7 +203,7 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
             const pct = Math.min(100, Math.round((goal.current / goal.target) * 100));
             const complete = pct >= 100;
             return (
-              <button key={goal.id} onClick={() => onGoalTap?.(goal.id)}
+              <button type="button" key={goal.id} onClick={() => onGoalTap?.(goal.id)}
                 className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-border bg-card/40 cursor-pointer hover:bg-card/60 transition-colors text-left">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
@@ -229,7 +229,7 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
           { key: "case", label: "Cases" },
           { key: "milestone", label: "Milestones" },
         ].map(cat => (
-          <button key={cat.key} onClick={() => setFilter(cat.key)}
+          <button type="button" key={cat.key} onClick={() => setFilter(cat.key)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors whitespace-nowrap
               ${filter === cat.key ? "bg-primary/15 text-primary border border-primary/30" : "bg-card/60 text-muted-foreground border border-border"}`}>
             {cat.label}

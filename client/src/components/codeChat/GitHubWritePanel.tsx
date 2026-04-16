@@ -260,7 +260,7 @@ function BranchesCard({
                   activeBranch === b.name ? "bg-accent/10" : ""
                 }`}
               >
-                <button
+                <button type="button"
                   className="flex-1 text-left font-mono truncate"
                   onClick={() => setActiveBranch(b.name)}
                   title={`sha: ${b.sha.slice(0, 7)}`}
@@ -271,7 +271,7 @@ function BranchesCard({
                 {!b.protected &&
                   b.name !== "main" &&
                   b.name !== "master" && (
-                    <button
+                    <button type="button"
                       className="text-muted-foreground hover:text-destructive"
                       onClick={async () => {
                         if (!confirm(`Delete branch '${b.name}'?`)) return;
@@ -475,7 +475,7 @@ function CommitFilesCard({
                   <Badge variant="outline" className="text-[9px]">
                     {f.deleted ? "delete" : `${new Blob([f.content]).size}B`}
                   </Badge>
-                  <button
+                  <button type="button"
                     onClick={() =>
                       setFiles((prev) => prev.filter((p) => p.path !== f.path))
                     }

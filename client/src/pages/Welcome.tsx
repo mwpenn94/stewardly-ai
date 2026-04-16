@@ -213,13 +213,13 @@ export default function Welcome() {
               AI-powered. Not a substitute for professional financial advice.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center text-sm">
-              <button onClick={() => navigate("/terms")} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button type="button" onClick={() => navigate("/terms")} className="text-muted-foreground hover:text-foreground transition-colors">
                 Privacy
               </button>
-              <button onClick={() => navigate("/terms")} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button type="button" onClick={() => navigate("/terms")} className="text-muted-foreground hover:text-foreground transition-colors">
                 Terms
               </button>
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
+              <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
                 About
               </button>
             </div>

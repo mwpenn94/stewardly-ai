@@ -4,6 +4,7 @@ import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import DOMPurify from "dompurify";
 
 export default function OrgLanding() {
   const [, navigate] = useLocation();
@@ -143,7 +144,7 @@ export default function OrgLanding() {
   return (
     <div className="min-h-screen bg-background overflow-hidden" style={{ fontFamily: `'${fontFamily}', sans-serif` }}>
       {/* Inject custom CSS */}
-      {customCss && <style dangerouslySetInnerHTML={{ __html: customCss }} />}
+      {customCss && <style dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(customCss, { ALLOWED_TAGS: [], KEEP_CONTENT: true }) }} />}
 
       {/* Dynamic background */}
       {renderBackground()}
@@ -327,8 +328,8 @@ export default function OrgLanding() {
               </p>
             )}
             <div className="flex flex-col sm:flex-row gap-6 justify-center text-sm">
-              <button className="text-muted-foreground hover:text-foreground transition-colors" onClick={() => navigate("/terms")}>Privacy</button>
-              <button className="text-muted-foreground hover:text-foreground transition-colors" onClick={() => navigate("/terms")}>Terms</button>
+              <button type="button" className="text-muted-foreground hover:text-foreground transition-colors" onClick={() => navigate("/terms")}>Privacy</button>
+              <button type="button" className="text-muted-foreground hover:text-foreground transition-colors" onClick={() => navigate("/terms")}>Terms</button>
             </div>
             <p className="text-xs text-muted-foreground/50 text-center">
               &copy; {new Date().getFullYear()} {orgName}. All rights reserved.

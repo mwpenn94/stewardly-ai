@@ -26,6 +26,7 @@ import {
   CheckCircle2, ChevronRight, AlertTriangle,
 } from "lucide-react";
 import HonestPlaceholder from "@/components/HonestPlaceholder";
+import { ExportDataButton } from "@/components/ExportDataButton";
 
 interface PlanDomain {
   id: string;
@@ -95,6 +96,20 @@ export default function ClientDashboard() {
           needed="Build a `holisticPlan` backend that scores Cash Flow / Debt / Investments / Insurance / Tax / Estate / Retirement / Education / Charitable. The scorecard below is mock data."
           workingAlternative={{ href: "/protection-score", label: "Protection Score (live 12-dimension scorecard)" }}
         />
+
+        <div className="flex justify-end">
+          <ExportDataButton
+            data={DOMAINS.map(d => ({
+              domain: d.label,
+              score: String(d.score),
+              status: d.status,
+              actions: d.actions.join("; "),
+            }))}
+            filename="client-dashboard"
+            columns={["domain", "score", "status", "actions"]}
+            headers={["Domain", "Score", "Status", "Actions"]}
+          />
+        </div>
 
         {/* Overall score */}
         <div className="text-center space-y-4">

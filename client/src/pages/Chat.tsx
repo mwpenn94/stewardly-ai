@@ -1757,7 +1757,7 @@ export default function Chat() {
             the `toggle-command-palette` event. */}
         {!sidebarCollapsed ? (
           <div className="px-2 py-1.5 border-b border-border/40 shrink-0">
-            <button
+            <button type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
               aria-label="Open Command Palette"
               className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors text-[12px]"
@@ -1771,7 +1771,7 @@ export default function Chat() {
           <div className="p-1 border-b border-border/40 shrink-0">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
+                <button type="button"
                   onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
                   aria-label="Open Command Palette"
                   className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
@@ -1798,7 +1798,7 @@ export default function Chat() {
                 autoFocus
               />
               {searchQuery && (
-                <button
+                <button type="button"
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   onClick={() => { setSearchQuery(""); setSearchOpen(false); }}
                 >
@@ -1898,7 +1898,7 @@ export default function Chat() {
                 {groupedConversations.folderGroups.map((folder: any) => (
                   folder.conversations.length > 0 && (
                     <div key={folder.id} className="mb-1">
-                      <button
+                      <button type="button"
                         className="flex items-center gap-1.5 px-2 py-1 w-full text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors group"
                         onClick={() => toggleFolderExpand(folder.id)}
                       >
@@ -1921,7 +1921,7 @@ export default function Chat() {
 
                 {/* Folder management button */}
                 {isAuthenticated && (
-                  <button
+                  <button type="button"
                     className="flex items-center gap-1.5 px-2 py-1 w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                     onClick={() => { setEditingFolder(null); setNewFolderName(""); setNewFolderColor("#6366f1"); setFolderDialogOpen(true); }}
                   >
@@ -1969,7 +1969,7 @@ export default function Chat() {
                 return (
                 <Tooltip key={item.path}>
                   <TooltipTrigger asChild>
-                    <button
+                    <button type="button"
                       onClick={() => { navigate(item.path); setSidebarOpen(false); }}
                       onMouseEnter={() => prefetchRoute(item.path)}
                       className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
@@ -1987,7 +1987,7 @@ export default function Chat() {
               <Separator className="mx-1" />
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                  <button type="button" onClick={() => { navigate("/help"); setSidebarOpen(false); }}
                     className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
                     <HelpCircle className="w-4 h-4" />
                   </button>
@@ -1996,7 +1996,7 @@ export default function Chat() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                  <button type="button" onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
                     className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
                     <Settings className="w-4 h-4" />
                   </button>
@@ -2017,7 +2017,7 @@ export default function Chat() {
                         const active = item.match.some(m => location === m || location.startsWith(m + "/"));
                         const Icon = item.icon;
                         return (
-                          <button
+                          <button type="button"
                             key={item.path}
                             onClick={() => { navigate(item.path); setSidebarOpen(false); }}
                             data-tour={item.path === "/calculators" ? "financial-tools" : item.path === "/settings/knowledge" ? "data-intelligence" : item.path === "/products" ? "products" : item.path === "/compliance-audit" ? "compliance" : item.path === "/intelligence-hub" ? "market-data" : item.path === "/campaigns" ? "email-campaigns" : undefined}
@@ -2035,19 +2035,19 @@ export default function Chat() {
               </nav>
               <Separator className="my-1 mx-2" />
               <div className="px-1.5 pb-1 space-y-[1px]">
-                <button onClick={() => { navigate("/learning"); setSidebarOpen(false); }}
+                <button type="button" onClick={() => { navigate("/learning"); setSidebarOpen(false); }}
                   className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
                     location.startsWith("/learning") ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                   }`}>
                   <GraduationCap className="w-4 h-4" /> <span className="truncate">Learn</span>
                 </button>
-                <button onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                <button type="button" onClick={() => { navigate("/help"); setSidebarOpen(false); }}
                   className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
                     location === "/help" ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                   }`}>
                   <HelpCircle className="w-4 h-4" /> <span className="truncate">Help</span>
                 </button>
-                <button data-tour="settings" onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                <button type="button" data-tour="settings" onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
                   className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
                     location.startsWith("/settings") ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                   }`}>
@@ -2081,7 +2081,7 @@ export default function Chat() {
               <div className="p-2 space-y-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
+                    <button type="button"
                       onClick={() => {
                         if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
                         window.location.href = getLoginUrl();
@@ -2095,7 +2095,7 @@ export default function Chat() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
+                    <button type="button"
                       onClick={() => { logout(); }}
                       className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors mx-auto"
                     >
@@ -2116,7 +2116,7 @@ export default function Chat() {
                     <span className="text-[10px] text-muted-foreground">Session is temporary</span>
                   </div>
                 </div>
-                <button
+                <button type="button"
                   onClick={() => {
                     if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
                     window.location.href = getLoginUrl();
@@ -2125,7 +2125,7 @@ export default function Chat() {
                 >
                   <LogIn className="w-3.5 h-3.5" /> Sign In to Save Progress
                 </button>
-                <button
+                <button type="button"
                   onClick={() => { logout(); }}
                   className="flex items-center justify-center gap-1.5 w-full px-3 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors text-[11px]"
                 >
@@ -2139,7 +2139,7 @@ export default function Chat() {
               {sidebarCollapsed ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)} aria-label="Expand sidebar">
+                    <button type="button" type="button" className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)} aria-label="Expand sidebar">
                       {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </button>
                   </TooltipTrigger>
@@ -2154,10 +2154,10 @@ export default function Chat() {
                     <span className="text-xs truncate block">{user?.name || "User"}</span>
                     <span className="text-[10px] text-muted-foreground capitalize">{userRole}</span>
                   </div>
-                  <button onClick={() => setSidebarCollapsed(true)} className="text-muted-foreground hover:text-foreground" title="Collapse sidebar">
+                  <button type="button" onClick={() => setSidebarCollapsed(true)} className="text-muted-foreground hover:text-foreground" title="Collapse sidebar">
                     <PanelLeftClose className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => logout()} className="text-muted-foreground hover:text-foreground" title="Sign out">
+                  <button type="button" onClick={() => logout()} className="text-muted-foreground hover:text-foreground" title="Sign out">
                     <LogOut className="w-3.5 h-3.5" />
                   </button>
                 </>
@@ -2279,7 +2279,7 @@ export default function Chat() {
                         {/* Edit & resend button — appears on hover */}
                         <div className="absolute -bottom-2 right-2 opacity-0 group-hover/user-msg:opacity-100 transition-opacity flex gap-0.5">
                           <Tooltip><TooltipTrigger asChild>
-                            <button
+                            <button type="button"
                               className="p-1 rounded bg-secondary/80 backdrop-blur-sm text-muted-foreground hover:text-foreground transition-colors"
                               aria-label="Edit and resend"
                               onClick={() => {
@@ -2296,7 +2296,7 @@ export default function Chat() {
                             </button>
                           </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Edit & resend</TooltipContent></Tooltip>
                           <Tooltip><TooltipTrigger asChild>
-                            <button
+                            <button type="button"
                               className="p-1 rounded bg-secondary/80 backdrop-blur-sm text-muted-foreground hover:text-foreground transition-colors"
                               aria-label="Copy message"
                               onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}
@@ -2328,7 +2328,7 @@ export default function Chat() {
                           {/* Multi-model consensus details — show individual model responses */}
                           {msg.metadata?.consensusScore != null && (
                             <div className="mt-2 border border-purple-500/20 rounded-lg overflow-hidden">
-                              <button
+                              <button type="button"
                                 className="w-full flex items-center justify-between px-3 py-1.5 bg-purple-500/5 text-[10px] text-purple-400 hover:bg-purple-500/10 transition-colors"
                                 onClick={(e) => {
                                   const details = (e.currentTarget.nextElementSibling as HTMLElement);
@@ -2440,38 +2440,38 @@ export default function Chat() {
                             <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover/msg:opacity-100 transition-opacity">
                               {msg.id && (<>
                               <Tooltip><TooltipTrigger asChild>
-                                <button aria-label="Good response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => handleFeedback(msg.id, "up")}>
+                                <button type="button" aria-label="Good response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => handleFeedback(msg.id, "up")}>
                                   <ThumbsUp className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Good response</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button aria-label="Bad response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => handleFeedback(msg.id, "down")}>
+                                <button type="button" aria-label="Bad response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => handleFeedback(msg.id, "down")}>
                                   <ThumbsDown className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Bad response</TooltipContent></Tooltip>
                               </>)}
                               <Tooltip><TooltipTrigger asChild>
-                                <button aria-label="Copy message" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
+                                <button type="button" aria-label="Copy message" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
                                   <Copy className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Copy</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button aria-label="Read aloud" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.forceSpeak(msg.content)}>
+                                <button type="button" aria-label="Read aloud" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.forceSpeak(msg.content)}>
                                   <Volume2 className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Read aloud</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button aria-label="Regenerate response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => { if (messages.length >= 2) { const lastUserMsg = [...messages].reverse().find(m => m.role === "user"); if (lastUserMsg) handleSendWithText(lastUserMsg.content); } }}>
+                                <button type="button" aria-label="Regenerate response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => { if (messages.length >= 2) { const lastUserMsg = [...messages].reverse().find(m => m.role === "user"); if (lastUserMsg) handleSendWithText(lastUserMsg.content); } }}>
                                   <RefreshCw className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Regenerate</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-purple-400 transition-colors" onClick={async () => { toast.info("Generating infographic..."); try { const result = await visualMutation.mutateAsync({ prompt: `Create a professional infographic summarizing: ${msg.content.slice(0, 500)}` }); if (result.url) { setMessages(prev => [...prev, { role: "assistant" as const, content: `Here's the infographic:`, metadata: { imageUrl: result.url }, createdAt: new Date() }]); } } catch (e: any) { toast.error(e.message || "The infographic couldn't be created right now — try again shortly"); } }} title="Generate Infographic">
+                                <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-purple-400 transition-colors" onClick={async () => { toast.info("Generating infographic..."); try { const result = await visualMutation.mutateAsync({ prompt: `Create a professional infographic summarizing: ${msg.content.slice(0, 500)}` }); if (result.url) { setMessages(prev => [...prev, { role: "assistant" as const, content: `Here's the infographic:`, metadata: { imageUrl: result.url }, createdAt: new Date() }]); } } catch (e: any) { toast.error(e.message || "The infographic couldn't be created right now — try again shortly"); } }} title="Generate Infographic">
                                   <Palette className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate Infographic</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-teal-400 transition-colors" onClick={() => { const prevUserMsg = messages.slice(0, i).reverse().find(m => m.role === "user"); if (prevUserMsg) { toast.info("Branching conversation..."); handleSendWithText(prevUserMsg.content); } else { toast.info("No previous prompt to branch from"); } }} aria-label="Fork conversation">
+                                <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-teal-400 transition-colors" onClick={() => { const prevUserMsg = messages.slice(0, i).reverse().find(m => m.role === "user"); if (prevUserMsg) { toast.info("Branching conversation..."); handleSendWithText(prevUserMsg.content); } else { toast.info("No previous prompt to branch from"); } }} aria-label="Fork conversation">
                                   <GitBranch className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fork / Branch</TooltipContent></Tooltip>
@@ -2511,7 +2511,7 @@ export default function Chat() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {followUpSuggestions.map((suggestion, idx) => (
-                      <button
+                      <button type="button"
                         key={idx}
                         onClick={() => {
                           setFollowUpSuggestions([]);
@@ -2591,7 +2591,7 @@ export default function Chat() {
                     aria-hidden="true"
                   />
                   <div className="flex-1 leading-snug">{captionText}</div>
-                  <button
+                  <button type="button"
                     type="button"
                     onClick={() => setCaptionText("")}
                     className="shrink-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
@@ -2609,7 +2609,7 @@ export default function Chat() {
                   <div key={i} className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-3 py-1 text-xs">
                     <Paperclip className="w-3 h-3 text-muted-foreground" />
                     <span className="truncate max-w-[100px]">{file.name}</span>
-                    <button aria-label={`Remove ${file.name}`} onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground ml-0.5">
+                    <button type="button" aria-label={`Remove ${file.name}`} onClick={() => removeAttachment(i)} className="text-muted-foreground hover:text-foreground ml-0.5">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
@@ -2641,7 +2641,7 @@ export default function Chat() {
               <div className="relative" data-tour="context-buttons">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
+                    <button type="button"
                       className={`p-2.5 rounded-full transition-all ${
                         showAddMenu ? "bg-accent/20 text-accent rotate-45" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
                       }`}
@@ -2657,21 +2657,21 @@ export default function Chat() {
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} aria-hidden="true" />
                     <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-44 sm:w-48 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                      <button
+                      <button type="button"
                         className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
                         onClick={() => { fileInputRef.current?.click(); setShowAddMenu(false); }}
                       >
                         <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
                         <span>Attach file</span>
                       </button>
-                      <button
+                      <button type="button"
                         className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
                         onClick={() => { imageInputRef.current?.click(); setShowAddMenu(false); }}
                       >
                         <Image className="w-3.5 h-3.5 text-muted-foreground" />
                         <span>Attach image</span>
                       </button>
-                      <button
+                      <button type="button"
                         className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors ${visualMutation.isPending ? "opacity-50" : ""}`}
                         disabled={visualMutation.isPending}
                         onClick={async () => {
@@ -2691,7 +2691,7 @@ export default function Chat() {
                         <Palette className="w-3.5 h-3.5 text-muted-foreground" />
                         <span>{visualMutation.isPending ? "Generating..." : "Generate visual"}</span>
                       </button>
-                      <button
+                      <button type="button"
                         className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
                         onClick={() => { setShowAddMenu(false); navigate("/calculators"); }}
                       >
@@ -2699,7 +2699,7 @@ export default function Chat() {
                         <span>Run calculator</span>
                       </button>
                       <div className="h-px bg-border my-0.5" />
-                      <button
+                      <button type="button"
                         className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-colors ${
                           liveSessionMode === "screen" ? "bg-red-500/10 text-red-400" : "hover:bg-secondary/60"
                         }`}
@@ -2708,7 +2708,7 @@ export default function Chat() {
                         <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
                         <span>{liveSessionMode === "screen" ? "End screen share" : "Go live — Screen"}</span>
                       </button>
-                      <button
+                      <button type="button"
                         className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-colors ${
                           liveSessionMode === "camera" ? "bg-red-500/10 text-red-400" : "hover:bg-secondary/60"
                         }`}
@@ -2725,7 +2725,7 @@ export default function Chat() {
               {/* Inline media shortcuts — always visible for quick access */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <button type="button"
                     className="p-2 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all hidden sm:block"
                     onClick={() => fileInputRef.current?.click()}
                     aria-label="Attach file"
@@ -2737,7 +2737,7 @@ export default function Chat() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <button type="button"
                     className="p-2 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all hidden sm:block"
                     onClick={() => imageInputRef.current?.click()}
                     aria-label="Attach image"
@@ -2749,7 +2749,7 @@ export default function Chat() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <button type="button"
                     className={`p-2 rounded-full transition-all hidden sm:block ${
                       liveSessionMode === "screen" ? "bg-red-500/15 text-red-400" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
                     }`}
@@ -2763,7 +2763,7 @@ export default function Chat() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <button type="button"
                     className={`p-2 rounded-full transition-all hidden sm:block ${
                       liveSessionMode === "camera" ? "bg-red-500/15 text-red-400" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
                     }`}
@@ -2778,7 +2778,7 @@ export default function Chat() {
 
               {/* Mode dropdown — Copilot "Smart v" style */}
               <div className="relative" data-tour="focus-mode">
-                  <button
+                  <button type="button"
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium bg-secondary/40 text-foreground hover:bg-secondary/60 border border-border transition-all"
                     onClick={() => setShowModeMenu(!showModeMenu)}
                   >
@@ -2793,7 +2793,7 @@ export default function Chat() {
                     <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-48 sm:w-52 max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Focus</div>
                       {FOCUS_OPTIONS.map(opt => (
-                        <button
+                        <button type="button"
                           key={opt.value}
                           className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
                             selectedFocus.includes(opt.value) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
@@ -2810,7 +2810,7 @@ export default function Chat() {
                           <div className="h-px bg-border my-1" />
                           <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Advisory Mode</div>
                           {availableModes.map(opt => (
-                            <button
+                            <button type="button"
                               key={opt.value}
                               className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
                                 mode === opt.value ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
@@ -2827,7 +2827,7 @@ export default function Chat() {
                       <div className="h-px bg-border my-1" />
                       <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Processing</div>
                       {(["single", "loop", "consensus", "codechat"] as const).map(m => (
-                        <button
+                        <button type="button"
                           key={m}
                           className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
                             chatMode === m
@@ -2859,7 +2859,7 @@ export default function Chat() {
                   the user can see at a glance what mode they're in. */}
               {/* Mobile model picker — always visible on mobile so users can
                   switch models without needing the hidden More/Less toggle */}
-              <button
+              <button type="button"
                 type="button"
                 onClick={() => setShowModelMenu(!showModelMenu)}
                 className={`md:hidden h-7 text-[10px] rounded-lg px-2 flex items-center gap-1 transition-all ${
@@ -2890,7 +2890,7 @@ export default function Chat() {
                           <div key={opt.id}>
                             {showDivider && <div className="h-px bg-border my-1" />}
                             {showDivider && <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider py-1">{opt.family}</div>}
-                            <button
+                            <button type="button"
                               className={`flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] ${
                                 selectedModels.includes(opt.id) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
                               }`}
@@ -2903,7 +2903,7 @@ export default function Chat() {
                         );
                       });
                     })()}
-                    <button
+                    <button type="button"
                       onClick={() => setShowModelMenu(false)}
                       className="w-full mt-3 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-medium min-h-[44px]"
                     >
@@ -2915,7 +2915,7 @@ export default function Chat() {
 
               {/* Mode badge — desktop only (mobile users switch via Focus menu) */}
               {!advancedOpen && chatMode !== "single" && (
-                <button
+                <button type="button"
                   type="button"
                   onClick={() => setAdvancedOpen(true)}
                   className={`hidden md:inline-flex h-7 px-2 text-[10px] rounded-full border transition-colors ${
@@ -2932,7 +2932,7 @@ export default function Chat() {
               )}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <button type="button"
                     type="button"
                     onClick={() => setAdvancedOpen((p) => !p)}
                     aria-label={advancedOpen ? "Hide advanced controls" : "Show advanced controls"}
@@ -2954,7 +2954,7 @@ export default function Chat() {
               <>
               {/* Model selector — multi-select popup (mirrors focus mode pattern) */}
               <div className="relative">
-                <button
+                <button type="button"
                   className={`h-7 text-[10px] rounded-lg px-2 flex items-center gap-1 transition-all ${
                     isMultiModel
                       ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
@@ -2984,7 +2984,7 @@ export default function Chat() {
                             <div key={opt.id}>
                               {showDivider && <div className="h-px bg-border my-0.5" />}
                               {showDivider && <div className="px-2 py-0.5 text-[9px] text-muted-foreground/60 uppercase tracking-wider">{opt.family}</div>}
-                              <button
+                              <button type="button"
                                 className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-colors ${
                                   selectedModels.includes(opt.id) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
                                 }`}
@@ -3006,7 +3006,7 @@ export default function Chat() {
               {/* Processing mode toggle — Single / Loop / Consensus / CodeChat */}
               <div className="flex items-center rounded-lg border border-border overflow-hidden h-7">
                 {(["single", "loop", "consensus", "codechat"] as const).map(m => (
-                  <button
+                  <button type="button"
                     key={m}
                     className={`px-2 text-[10px] h-full transition-all ${
                       chatMode === m
@@ -3102,7 +3102,7 @@ export default function Chat() {
                 <div className="flex items-center gap-1 flex-wrap">
                   {/* Focus pills — multi-select */}
                   {(["discovery", "apply", "connect", "critique"] as const).map(f => (
-                    <button
+                    <button type="button"
                       key={f}
                       className={`h-6 px-2 text-[10px] rounded-full border transition-all ${
                         loopConfig.foci.includes(f)
@@ -3117,7 +3117,7 @@ export default function Chat() {
                   ))}
                   {/* Iterations: 0 = continuous until stopped */}
                   <div className="flex items-center h-6 rounded-full border border-border overflow-hidden">
-                    <button
+                    <button type="button"
                       className={`px-2 text-[10px] h-full ${loopConfig.maxIterations === 0 ? "bg-amber-500/15 text-amber-400" : "text-muted-foreground hover:bg-secondary/30"}`}
                       onClick={() => setLoopConfig(p => ({ ...p, maxIterations: 0 }))}
                       title="Run continuously until stopped"
@@ -3125,7 +3125,7 @@ export default function Chat() {
                       ∞
                     </button>
                     {[3, 5, 10, 25].map(n => (
-                      <button
+                      <button type="button"
                         key={n}
                         className={`px-1.5 text-[10px] h-full ${loopConfig.maxIterations === n ? "bg-amber-500/15 text-amber-400" : "text-muted-foreground hover:bg-secondary/30"}`}
                         onClick={() => setLoopConfig(p => ({ ...p, maxIterations: n }))}
@@ -3144,7 +3144,7 @@ export default function Chat() {
                     title="Optional: categorize this loop (e.g. 'tax-planning', 'lead-gen', 'compliance-review'). Passed to the model as context."
                   />
                   {/* Loop previous prompt — re-runs the last user message through the loop */}
-                  <button
+                  <button type="button"
                     className="h-6 px-2 text-[10px] rounded-full border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-colors"
                     title="Re-run the most recent user prompt through the loop"
                     onClick={() => {
@@ -3156,7 +3156,7 @@ export default function Chat() {
                     ↻ Loop previous
                   </button>
                   {activeSessionId && (
-                    <button
+                    <button type="button"
                       className="h-7 px-2 text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-lg"
                       onClick={() => {
                         if (activeSessionId) autonomousStop.mutate({ sessionId: activeSessionId });
@@ -3180,7 +3180,7 @@ export default function Chat() {
               {!isAnonymous && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
+                    <button type="button"
                       className={`hidden md:block p-2.5 rounded-full transition-all ${
                         useStreaming
                           ? "bg-accent/15 text-accent"
@@ -3198,7 +3198,7 @@ export default function Chat() {
               {/* Pass 5 (G24): Always-visible mic button for voice input */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <button type="button"
                     className={`p-2.5 rounded-full transition-all ${
                       voice.isListening
                         ? "bg-emerald-500/15 text-emerald-400 animate-pulse"
@@ -3222,7 +3222,7 @@ export default function Chat() {
               {/* Audio toggle — hidden on mobile to reduce toolbar clutter */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
+                  <button type="button"
                     data-tour="voice-toggle"
                     className={`hidden sm:block p-2.5 rounded-full transition-all ${
                       ttsEnabled
@@ -3305,7 +3305,7 @@ export default function Chat() {
               <span className="text-sm text-muted-foreground">Color:</span>
               <div className="flex gap-1.5">
                 {["#6366f1", "#f43f5e", "#10b981", "#f59e0b", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"].map(c => (
-                  <button
+                  <button type="button"
                     key={c}
                     className={`w-6 h-6 rounded-full border-2 transition-all ${
                       (editingFolder ? editingFolder.color : newFolderColor) === c ? "border-foreground scale-110" : "border-transparent"

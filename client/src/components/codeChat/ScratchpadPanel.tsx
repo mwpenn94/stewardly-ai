@@ -149,7 +149,7 @@ export default function ScratchpadPanel({
             {stats.chars.toLocaleString()}c · {stats.words}w · {stats.lines}L
           </Badge>
         </div>
-        <button
+        <button type="button"
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground"
           aria-label="Close scratchpad"

@@ -376,7 +376,7 @@ export default function Sensitivity() {
               {selectedCell && data.grid[selectedCell.yi] && (
                 <div className="mt-4 p-3 rounded-lg border border-accent/30 bg-accent/5">
                   <p className="text-xs font-medium mb-1">Selected Scenario</p>
-                  <div className="grid grid-cols-3 gap-3 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div>
                       <span className="text-muted-foreground">{xDef.label}:</span>{" "}
                       <span className="font-medium">{xDef.format(data.xValues[selectedCell.xi])}</span>

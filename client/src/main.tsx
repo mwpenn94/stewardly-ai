@@ -8,6 +8,7 @@ import superjson from "superjson";
 import { toast } from "sonner";
 import App from "./App";
 import { DisclosureProvider } from "@/contexts/DisclosureContext";
+import { ServiceStatusProvider } from "@/contexts/ServiceStatusContext";
 import { initErrorTracking } from "@/lib/errorTracking";
 import { initPerformanceMonitor } from "@/lib/performanceMonitor";
 import "./index.css";
@@ -192,7 +193,9 @@ createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
       <DisclosureProvider>
-        <App />
+        <ServiceStatusProvider>
+          <App />
+        </ServiceStatusProvider>
       </DisclosureProvider>
     </QueryClientProvider>
   </trpc.Provider>

@@ -30,6 +30,7 @@ export default function IntelligenceHub() {
   return (
     <AppShell title="Intelligence">
       <SEOHead title="Intelligence" description="AI-powered insights and intelligence dashboard" />
+      <div className="flex justify-end px-4 pt-2"><ShareButton contentType="intelligence" contentId="intelligence-report" contentTitle="Intelligence Report" variant="ghost" size="sm" /></div>
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">
@@ -123,6 +124,8 @@ function OverviewSection() {
         <CardHeader>
           <CardTitle className="text-base">Intelligence Feed</CardTitle>
           <CardDescription>Recent insights and predictions from your AI models</CardDescription>
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { DisclosureSection } from "@/components/DisclosureSection";
         </CardHeader>
         <CardContent className="space-y-3">
           <InsightItem

@@ -45,13 +45,13 @@ export default function ConsentBanner() {
             <a href="/privacy" className="text-accent hover:underline">Privacy Policy</a>.
             Your data is private by default.
           </p>
-          <button
+          <button type="button"
             onClick={dismiss}
             className="text-xs font-medium text-foreground bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
           >
             Got it
           </button>
-          <button
+          <button type="button"
             onClick={dismiss}
             className="text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Dismiss"

@@ -797,7 +797,7 @@ const params = useParams<{ moduleSlug?: string }>();
 
                   return (
                     <li key={opt.key}>
-                      <button
+                      <button type="button"
                         type="button"
                         disabled={revealed}
                         onClick={() => setSelectedKey(opt.key)}

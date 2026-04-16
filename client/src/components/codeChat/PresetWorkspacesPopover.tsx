@@ -114,7 +114,7 @@ export default function PresetWorkspacesPopover({
             <Button size="sm" onClick={() => setShowForm((v) => !v)}>
               <Plus className="w-3 h-3 mr-1" /> Save current
             </Button>
-            <button
+            <button type="button"
               onClick={onClose}
               aria-label="Close"
               className="text-muted-foreground hover:text-foreground ml-2"
@@ -243,14 +243,14 @@ export default function PresetWorkspacesPopover({
                       </div>
                       {!preset.builtin && (
                         <>
-                          <button
+                          <button type="button"
                             onClick={() => startEdit(preset)}
                             className="text-muted-foreground hover:text-foreground"
                             aria-label={`Edit ${preset.name}`}
                           >
                             <Pencil className="w-3 h-3" />
                           </button>
-                          <button
+                          <button type="button"
                             onClick={() => onChange(removePreset(presets, preset.id))}
                             className="text-muted-foreground hover:text-destructive"
                             aria-label={`Delete ${preset.name}`}

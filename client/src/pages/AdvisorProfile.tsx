@@ -88,12 +88,12 @@ export default function AdvisorProfile() {
           </div>
           <h3 className="text-sm font-semibold pt-2">Regulatory</h3>
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            <a href="#" className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={e => { e.preventDefault(); toast.info("BrokerCheck link coming soon"); }}>
+            <button type="button" className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => toast.info("BrokerCheck link coming soon")}>
               <ExternalLink className="h-3 w-3" /> FINRA BrokerCheck
-            </a>
-            <a href="#" className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={e => { e.preventDefault(); toast.info("SEC link coming soon"); }}>
+            </button>
+            <button type="button" className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => toast.info("SEC link coming soon")}>
               <ExternalLink className="h-3 w-3" /> SEC IAPD
-            </a>
+            </button>
           </div>
         </CardContent>
       </Card>

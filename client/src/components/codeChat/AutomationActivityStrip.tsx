@@ -143,7 +143,7 @@ export default function AutomationActivityStrip({
           )}
         </div>
         <div className="ml-auto flex items-center gap-1">
-          <button
+          <button type="button"
             onClick={clear}
             className="text-[9px] text-muted-foreground hover:text-foreground"
             aria-label="Clear activity log"
@@ -151,7 +151,7 @@ export default function AutomationActivityStrip({
           >
             clear
           </button>
-          <button
+          <button type="button"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
             aria-label="Close browser activity"

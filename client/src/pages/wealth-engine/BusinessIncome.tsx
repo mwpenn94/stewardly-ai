@@ -162,7 +162,7 @@ export default function BusinessIncome() {
                   <Label className="text-xs text-muted-foreground">Role</Label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-1.5 mt-1">
                     {(rolesQ.data ?? []).slice(0, 9).map((r: any) => (
-                      <button key={r.key} onClick={() => setRole(r.key)}
+                      <button type="button" key={r.key} onClick={() => setRole(r.key)}
                         className={`text-[10px] py-1.5 rounded border transition-all ${role === r.key ? "bg-accent/10 border-accent/30 text-accent" : "bg-card/40 border-border/50 text-muted-foreground"}`}>
                         {r.name?.split(" ")[0] || r.key}
                       </button>
@@ -245,7 +245,7 @@ export default function BusinessIncome() {
                               </div>
                             ))}
                           </div>
-                          <div className="grid grid-cols-3 gap-1.5 mt-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 mt-2">
                             <div className="p-2 rounded bg-card/60 border border-border/30 text-center">
                               <p className="text-[9px] text-muted-foreground uppercase">Daily</p>
                               <p className="text-sm font-mono font-semibold">{funnel.daily?.approaches ?? "—"}</p>
@@ -292,7 +292,7 @@ export default function BusinessIncome() {
                 <CardHeader className="pb-3"><CardTitle className="text-sm">Quick Presets</CardTitle></CardHeader>
                 <CardContent className="space-y-1.5">
                   {presetsQ.data.map((p: any) => (
-                    <button key={p.key} onClick={() => {
+                    <button type="button" key={p.key} onClick={() => {
                       setRole(p.strategy.role || "new");
                       if (p.strategy.team?.length) setTeamSize(p.strategy.team.length);
                     }}

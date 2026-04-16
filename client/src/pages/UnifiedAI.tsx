@@ -42,6 +42,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import ServiceDegradedFallback from "@/components/ServiceDegradedFallback";
 
 // Lazy-load the 3 mode panels to keep initial bundle small
 const ChatPanel = lazy(() => import("./Chat"));
@@ -197,7 +198,7 @@ function ModeHeader({
             return (
               <Tooltip key={mode.key}>
                 <TooltipTrigger asChild>
-                  <button
+                  <button type="button"
                     onClick={() => onModeChange(mode.key)}
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
@@ -416,6 +417,11 @@ export default function UnifiedAI() {
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setIsZenMode(false); }}
         />
       )}
+
+      {/* Service degradation notice for LLM-dependent features */}
+      <ServiceDegradedFallback serviceId="llm" degradedMessage="AI responses may be slower or unavailable. Your conversations are preserved.">
+        <></>
+      </ServiceDegradedFallback>
 
       {/* Mode panels — keep all mounted for context preservation */}
       <div className="flex-1 overflow-hidden relative">

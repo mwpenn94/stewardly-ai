@@ -163,7 +163,7 @@ export default function FairnessTestDashboard() {
                   </div>
                 )}
                 {runs.map((run: any) => (
-                  <button
+                  <button type="button"
                     key={run.id}
                     onClick={() => setSelectedRunId(run.id)}
                     className={`w-full text-left p-3 rounded-lg border transition-colors ${
@@ -289,7 +289,7 @@ export default function FairnessTestDashboard() {
                   <h3 className="text-xs font-semibold mt-4">Individual Results ({details.results?.length || 0})</h3>
                   {details.results?.map((result: any) => (
                     <div key={result.id} className="rounded-lg border border-border bg-card overflow-hidden">
-                      <button
+                      <button type="button"
                         onClick={() => toggleResult(result.id)}
                         className="w-full p-3 flex items-center justify-between hover:bg-muted/30 transition-colors"
                       >

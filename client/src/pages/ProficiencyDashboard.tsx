@@ -17,6 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { DisclosureSection } from "@/components/DisclosureSection";
 
 // ─── Layer Visual Config ──────────────────────────────────────────────────
 const LAYER_CONFIG: Record<string, { icon: React.ReactNode; color: string; bgColor: string; borderColor: string }> = {
@@ -96,6 +98,7 @@ export default function ProficiencyDashboard() {
   return (
     <AppShell title="My Progress">
       <SEOHead title="My Progress" description="Track your learning progress and proficiency" />
+      <div className="flex justify-end px-4 pt-2"><ShareButton contentType="proficiency" contentId="proficiency-report" contentTitle="Proficiency Report" variant="ghost" size="sm" /></div>
     <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-card/80 backdrop-blur-xl border-b border-border relative overflow-hidden">
@@ -204,7 +207,7 @@ export default function ProficiencyDashboard() {
                   <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Recommended Next Steps</h4>
                   <div className="space-y-2">
                     {ins.nextSteps.map((step, i) => (
-                      <button
+                      <button type="button"
                         key={i}
                         onClick={() => {
                           if (step.action.includes("Create an account") || step.action.includes("Sign in")) {

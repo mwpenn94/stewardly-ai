@@ -117,7 +117,7 @@ export function VoiceOnboardingCoach() {
               </p>
             </div>
           </div>
-          <button
+          <button type="button"
             type="button"
             onClick={() => dismiss(true)}
             aria-label="Dismiss voice tour"
@@ -169,14 +169,14 @@ export function VoiceOnboardingCoach() {
         </ul>
 
         <div className="mt-4 flex items-center justify-between gap-2">
-          <button
+          <button type="button"
             type="button"
             onClick={() => dismiss(false)}
             className="text-[11px] text-muted-foreground hover:text-foreground"
           >
             Maybe later
           </button>
-          <button
+          <button type="button"
             type="button"
             onClick={() => {
               dismiss(true);

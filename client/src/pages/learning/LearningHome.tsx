@@ -481,7 +481,7 @@ function ToolCardWithTrackPicker({ icon, title, description, tracks, buildHref }
           <div className="w-full mt-1 space-y-1 text-left" onClick={(e) => e.stopPropagation()}>
             {tracks.map(t => (
               <Link key={t.slug} href={buildHref(t.slug)}>
-                <button className="w-full text-left px-2 py-1.5 rounded-md text-xs hover:bg-secondary/60 transition-colors truncate">
+                <button type="button" className="w-full text-left px-2 py-1.5 rounded-md text-xs hover:bg-secondary/60 transition-colors truncate">
                   {t.emoji && <span className="mr-1">{t.emoji}</span>}
                   {t.name}
                 </button>

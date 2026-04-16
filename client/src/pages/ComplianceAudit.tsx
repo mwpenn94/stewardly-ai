@@ -42,6 +42,9 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { DisclosureSection } from "@/components/DisclosureSection";
+import { ExportDataButton } from "@/components/ExportDataButton";
 
 type SeverityKey = "info" | "success" | "warning" | "critical";
 
@@ -107,6 +110,7 @@ export default function ComplianceAudit() {
     <AppShell title="Compliance Audit">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Compliance Audit" description="Audit trail and regulatory compliance dashboard" />
+      <div className="flex justify-end px-4 pt-2"><ShareButton contentType="compliance" contentId="compliance-audit" contentTitle="Compliance Audit" variant="ghost" size="sm" /></div>
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -122,14 +126,18 @@ export default function ComplianceAudit() {
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled
-          title="CSV export is not yet wired — see REMAINING_ITEMS.md"
-        >
-          <Download className="h-3.5 w-3.5 mr-1" /> Export Report
-        </Button>
+        <ExportDataButton
+          data={(filtered ?? []).map((r: any) => ({
+            date: r.createdAt ? new Date(r.createdAt).toLocaleString() : "—",
+            type: r.contentType ?? "—",
+            status: r.status ?? "—",
+            score: r.complianceScore ?? "—",
+            issues: Array.isArray(r.flaggedIssues) ? r.flaggedIssues.join("; ") : "—",
+          }))}
+          filename="compliance-audit"
+          columns={["date", "type", "status", "score", "issues"]}
+          headers={["Date", "Content Type", "Status", "Score", "Flagged Issues"]}
+        />
       </div>
 
       {/* Dashboard tiles — now driven by real stats */}

@@ -351,14 +351,14 @@ export default function OrgBrandingEditor() {
             <div className="flex items-center gap-2">
               {showPreview && (
                 <div className="flex items-center border border-border rounded-lg overflow-hidden mr-2">
-                  <button
+                  <button type="button"
                     className={`p-1.5 ${previewDevice === "desktop" ? "bg-muted" : "hover:bg-muted/50"} transition-colors`}
                     onClick={() => setPreviewDevice("desktop")}
                     aria-label="Desktop preview"
                   >
                     <Monitor className="w-3.5 h-3.5" />
                   </button>
-                  <button
+                  <button type="button"
                     className={`p-1.5 ${previewDevice === "mobile" ? "bg-muted" : "hover:bg-muted/50"} transition-colors`}
                     onClick={() => setPreviewDevice("mobile")}
                     aria-label="Mobile preview"
@@ -533,7 +533,7 @@ export default function OrgBrandingEditor() {
                   <CardContent>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                       {BG_PATTERNS.map((p) => (
-                        <button key={p.value}
+                        <button type="button" key={p.value}
                           className={`p-3 rounded-xl border text-center transition-all ${backgroundPattern === p.value ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-border/80"}`}
                           onClick={() => setBackgroundPattern(p.value)}>
                           <div className="text-sm font-medium">{p.label}</div>

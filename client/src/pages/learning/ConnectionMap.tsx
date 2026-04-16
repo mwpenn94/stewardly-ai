@@ -300,7 +300,7 @@ export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
                 </div>
                 <h3 className="font-heading text-sm font-semibold">{selectedNode.term}</h3>
               </div>
-              <button onClick={() => setSelectedNode(null)} className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground cursor-pointer">
+              <button type="button" onClick={() => setSelectedNode(null)} className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -310,7 +310,7 @@ export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
                 <div className="text-[10px] text-muted-foreground/50 uppercase tracking-widest mb-1">Connected to</div>
                 <div className="space-y-1">
                   {selectedConnections.slice(0, 5).map(c => (
-                    <button key={c.node!.id} onClick={() => setSelectedNode(c.node!)}
+                    <button type="button" key={c.node!.id} onClick={() => setSelectedNode(c.node!)}
                       className="w-full flex items-center gap-2 px-2 py-1 rounded text-left text-xs text-muted-foreground hover:text-foreground hover:bg-card/80 cursor-pointer">
                       <div className="w-2 h-2 rounded-full flex-none" style={{ backgroundColor: getColor(c.node!.discipline) }} />
                       <span className="truncate">{c.node!.term}</span>
@@ -319,7 +319,7 @@ export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
                 </div>
               </div>
             )}
-            <button onClick={() => audio.play({ id: `concept-${selectedNode.id}`, type: "definition", title: selectedNode.term, script: selectedNode.audioScript || `${selectedNode.term}. ${selectedNode.definition}` })}
+            <button type="button" onClick={() => audio.play({ id: `concept-${selectedNode.id}`, type: "definition", title: selectedNode.term, script: selectedNode.audioScript || `${selectedNode.term}. ${selectedNode.definition}` })}
               className="flex items-center gap-1 text-xs text-primary cursor-pointer hover:underline">
               <Volume2 className="w-3 h-3" /> Listen
             </button>

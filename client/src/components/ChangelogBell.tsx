@@ -277,7 +277,7 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
                     {!entry.isRead && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button
+                          <button type="button"
                             className="mt-1 p-1.5 rounded hover:bg-muted shrink-0"
                             aria-label="Mark as read"
                             onClick={() => isGuest ? markGuestRead(entry.id) : markReadMutation.mutate({ changelogId: entry.id, via: "changelog_page" })}
@@ -309,7 +309,7 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
 
   // ── Bell button ────────────────────────────────────────────────
   const bellButton = (
-    <button
+    <button type="button"
       ref={bellRef}
       onClick={handleToggle}
       className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${

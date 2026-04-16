@@ -35,6 +35,9 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { SEOHead } from "@/components/SEOHead";
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { DisclosureSection } from "@/components/DisclosureSection";
+import ServiceDegradedFallback from "@/components/ServiceDegradedFallback";
 import {
   Sparkles, Calculator, PiggyBank, Shield, TrendingUp, Building2,
   Scale, Heart, GraduationCap, HandCoins, DollarSign, Stethoscope,
@@ -105,7 +108,7 @@ const GROW_TOOLS: EngineTool[] = [
 function EngineCard({ tool }: { tool: EngineTool }) {
   const [, navigate] = useLocation();
   return (
-    <button
+    <button type="button"
       onClick={() => navigate(tool.path)}
       className="card-lift group relative text-left rounded-xl border border-border/60 bg-card/60 p-3 hover:border-accent/40 transition-colors"
     >
@@ -521,12 +524,18 @@ export default function WealthEngineHub() {
   return (
     <AppShell title="Wealth Engine">
       <SEOHead title="Wealth Engine" description="Unified wealth planning, protection, and growth engine" />
+      <div className="flex justify-end px-4 pt-2"><ShareButton contentType="wealth-engine" contentId="wealth-analysis" contentTitle="Wealth Analysis" variant="ghost" size="sm" /></div>
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
+        <ServiceDegradedFallback serviceId="llm" degradedMessage="AI-powered analysis may be slower or unavailable. Calculator tools still work normally.">
+          <></>
+        </ServiceDegradedFallback>
         <HubHero role={user?.role} />
 
         <Tier0ScoreStrip />
 
-        <InlineQuickBundle />
+        <DisclosureSection minLevel={2} label="Quick Bundle Calculator" showTeaser>
+          <InlineQuickBundle />
+        </DisclosureSection>
 
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="grid grid-cols-2 sm:grid-cols-4 max-w-md">

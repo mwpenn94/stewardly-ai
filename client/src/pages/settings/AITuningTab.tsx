@@ -256,7 +256,7 @@ function UserPreferencesEditor() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {THINKING_DEPTH_OPTIONS.map((opt) => (
-              <button
+              <button type="button"
                 key={opt.value}
                 onClick={() => setThinkingDepth(opt.value)}
                 className={`p-2.5 rounded-lg border text-left transition-all ${
@@ -328,7 +328,7 @@ function UserPreferencesEditor() {
               <Label className="text-xs font-medium mb-1.5 block">Context Window</Label>
               <div className="flex gap-1.5">
                 {CONTEXT_DEPTH_OPTIONS.map((opt) => (
-                  <button
+                  <button type="button"
                     key={opt.value}
                     onClick={() => setContextDepth(opt.value)}
                     className={`flex-1 px-2 py-1.5 rounded-md text-center transition-all ${
@@ -649,7 +649,7 @@ function OrganizationEditor() {
               {approvedCategories.map((cat, i) => (
                 <Badge key={i} variant="outline" className="text-[10px] gap-1">
                   {cat}
-                  <button onClick={() => setApprovedCategories(prev => prev.filter((_, j) => j !== i))} className="hover:text-destructive">
+                  <button type="button" onClick={() => setApprovedCategories(prev => prev.filter((_, j) => j !== i))} className="hover:text-destructive">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </Badge>
@@ -681,7 +681,7 @@ function OrganizationEditor() {
               {prohibitedTopics.map((topic, i) => (
                 <Badge key={i} variant="outline" className="text-[10px] gap-1 border-destructive/30 text-destructive">
                   {topic}
-                  <button onClick={() => setProhibitedTopics(prev => prev.filter((_, j) => j !== i))} className="hover:text-destructive">
+                  <button type="button" onClick={() => setProhibitedTopics(prev => prev.filter((_, j) => j !== i))} className="hover:text-destructive">
                     <X className="w-2.5 h-2.5" />
                   </button>
                 </Badge>
@@ -893,7 +893,7 @@ export default function AITuningTab() {
       {/* Layer tab navigation */}
       <div className="flex gap-1 mb-5 overflow-x-auto pb-1" role="tablist" aria-label="AI tuning layers">
         {LAYER_TABS.filter(t => visibleTabs.includes(t.id)).map((tab) => (
-          <button
+          <button type="button"
             key={tab.id}
             role="tab"
             aria-selected={activeTab === tab.id}

@@ -182,7 +182,7 @@ export default function BCP() {
             { id: "health" as const, label: "System Health", icon: <Activity className="w-3.5 h-3.5" /> },
             { id: "errors" as const, label: "Error Log", icon: <AlertTriangle className="w-3.5 h-3.5" /> },
           ].map(tab => (
-            <button
+            <button type="button"
               key={tab.id}
               onClick={() => setActiveSection(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${

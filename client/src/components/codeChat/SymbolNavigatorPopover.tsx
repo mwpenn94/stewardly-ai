@@ -124,7 +124,7 @@ export default function SymbolNavigatorPopover({
             className="border-0 bg-transparent focus-visible:ring-0 text-sm"
             aria-label="Symbol search query"
           />
-          <button
+          <button type="button"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground shrink-0"
             aria-label="Close symbol navigator"
@@ -167,7 +167,7 @@ export default function SymbolNavigatorPopover({
                 const isActive = idx === activeIdx;
                 return (
                   <li key={`${m.path}:${m.line}:${m.name}`}>
-                    <button
+                    <button type="button"
                       type="button"
                       onClick={() => handleSelect(idx)}
                       onMouseEnter={() => setActiveIdx(idx)}

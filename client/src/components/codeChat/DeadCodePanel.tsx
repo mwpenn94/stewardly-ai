@@ -146,7 +146,7 @@ export default function DeadCodePanel() {
             return (
               <Card key={group.path}>
                 <CardContent className="p-0">
-                  <button
+                  <button type="button"
                     type="button"
                     onClick={() => toggleExpanded(group.path)}
                     className="w-full text-left p-3 hover:bg-muted/40 flex items-center gap-3"
@@ -167,7 +167,7 @@ export default function DeadCodePanel() {
                   {isExpanded && (
                     <div className="divide-y divide-border/30 border-t border-border/40">
                       {group.entries.map((entry) => (
-                        <button
+                        <button type="button"
                           key={`${entry.path}:${entry.line}:${entry.name}`}
                           type="button"
                           onClick={() => openFile(entry.path, entry.line)}
@@ -207,7 +207,7 @@ export default function DeadCodePanel() {
           </CardHeader>
           <CardContent className="p-0 divide-y divide-border/40">
             {orphanFiles.slice(0, 30).map((path) => (
-              <button
+              <button type="button"
                 key={path}
                 type="button"
                 onClick={() => openFile(path, 1)}

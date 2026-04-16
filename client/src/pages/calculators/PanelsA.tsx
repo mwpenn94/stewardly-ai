@@ -183,9 +183,9 @@ export function ProfilePanel(p: PanelProps) {
             <div className="text-center py-6">
               <p className="text-sm text-muted-foreground mb-3">Enter your income and net worth above to see your financial health score.</p>
               <div className="inline-flex gap-2">
-                <button className="text-xs text-primary hover:underline" onClick={() => document.getElementById('income')?.focus()}>Set Income</button>
+                <button type="button" className="text-xs text-primary hover:underline" onClick={() => document.getElementById('income')?.focus()}>Set Income</button>
                 <span className="text-muted-foreground">·</span>
-                <button className="text-xs text-primary hover:underline" onClick={() => document.getElementById('nw')?.focus()}>Set Net Worth</button>
+                <button type="button" className="text-xs text-primary hover:underline" onClick={() => document.getElementById('nw')?.focus()}>Set Net Worth</button>
               </div>
             </div>
           ) : (

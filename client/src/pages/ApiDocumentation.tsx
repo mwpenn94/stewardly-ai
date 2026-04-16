@@ -208,7 +208,7 @@ export default function ApiDocumentation() {
                     return (
                       <Card key={ep.name} className="transition-all hover:border-accent/30">
                         <CardContent className="p-0">
-                          <button
+                          <button type="button"
                             className="w-full text-left p-4 flex items-center gap-3"
                             onClick={() => setExpandedEndpoint(isExpanded ? null : ep.name)}
                           >

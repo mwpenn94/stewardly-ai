@@ -28,7 +28,7 @@ function VideoEmbed({ embed }: { embed: MediaEmbed }) {
   return (
     <div className="relative rounded-lg overflow-hidden bg-black/20 border border-border/40">
       {!loaded && (
-        <button
+        <button type="button"
           onClick={() => setLoaded(true)}
           className="flex items-center gap-2 w-full p-3 hover:bg-white/5 transition-colors"
         >
@@ -85,7 +85,7 @@ function ImageEmbed({ embed }: { embed: MediaEmbed }) {
       </div>
       {expanded && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setExpanded(false)}>
-          <button className="absolute top-4 right-4 text-white/70 hover:text-white" onClick={() => setExpanded(false)}>
+          <button type="button" className="absolute top-4 right-4 text-white/70 hover:text-white" onClick={() => setExpanded(false)}>
             <X className="w-6 h-6" />
           </button>
           <img loading="lazy" src={embed.source} alt={embed.title} className="max-w-full max-h-full object-contain" />

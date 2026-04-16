@@ -438,13 +438,13 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
 
           {/* Overlay controls */}
           <div className="absolute top-3 right-3 flex gap-1.5">
-            <button
+            <button type="button"
               onClick={() => setExpanded(!expanded)}
               className="p-2.5 rounded-lg bg-black/50 hover:bg-black/70 text-white transition-colors"
             >
               {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
-            <button
+            <button type="button"
               onClick={() => setShowPreview(false)}
               className="p-2.5 rounded-lg bg-black/50 hover:bg-black/70 text-white transition-colors"
             >
@@ -467,7 +467,7 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
 
       {/* Hidden preview toggle */}
       {!showPreview && (
-        <button
+        <button type="button"
           onClick={() => setShowPreview(true)}
           className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground bg-secondary/30 rounded-t-xl transition-colors"
         >

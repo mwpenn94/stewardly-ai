@@ -251,7 +251,7 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
 
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <button onClick={handleBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground cursor-pointer mb-6">
+        <button type="button" onClick={handleBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground cursor-pointer mb-6">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
@@ -261,7 +261,7 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Choose a Case Study</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {availableCases.map((c) => (
-                <button
+                <button type="button"
                   key={c.id}
                   onClick={() => { setSelectedCaseId(c.id); restart(); }}
                   className={`text-left p-3 rounded-lg border transition-colors cursor-pointer ${
@@ -367,7 +367,7 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
             <h2 className="text-base font-medium text-foreground leading-relaxed mb-6">{currentDecision.prompt}</h2>
             <div className="space-y-2">
               {currentDecision.options.map(option => (
-                <button key={option.key} onClick={() => handleSelect(option)}
+                <button type="button" key={option.key} onClick={() => handleSelect(option)}
                   className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card/40 hover:border-primary/30 hover:bg-card/70 text-left cursor-pointer transition-all">
                   <span className="w-7 h-7 rounded-lg bg-card border border-border flex items-center justify-center text-xs font-semibold text-muted-foreground flex-none">{option.key}</span>
                   <span className="text-sm text-foreground">{option.text}</span>

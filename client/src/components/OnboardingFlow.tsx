@@ -290,7 +290,7 @@ export default function OnboardingFlow({
           <PersonaIcon className="w-4 h-4" />
           <span>{PERSONA_LABELS[persona]} Setup</span>
         </div>
-        <button
+        <button type="button"
           type="button"
           onClick={onSkipAll}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"

@@ -157,7 +157,7 @@ export default function ImportGraphPanel() {
                           <span className="text-muted-foreground/60">
                             {fi + 1}.
                           </span>
-                          <button
+                          <button type="button"
                             type="button"
                             onClick={() => setPath(f)}
                             className="truncate hover:text-accent hover:underline text-left"
@@ -186,7 +186,7 @@ export default function ImportGraphPanel() {
               <ul className="divide-y divide-border/20 max-h-64 overflow-y-auto">
                 {(hotQuery.data?.hot ?? []).map((entry) => (
                   <li key={entry.path}>
-                    <button
+                    <button type="button"
                       type="button"
                       onClick={() => setPath(entry.path)}
                       className="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-[10px] hover:bg-secondary/20 text-left"
@@ -240,7 +240,7 @@ export default function ImportGraphPanel() {
                   <ul className="divide-y divide-border/20 max-h-40 overflow-y-auto">
                     {deps.imports.map((dep) => (
                       <li key={dep}>
-                        <button
+                        <button type="button"
                           type="button"
                           onClick={() => setPath(dep)}
                           className="w-full flex items-center gap-2 px-3 py-1.5 text-[10px] hover:bg-secondary/20 text-left font-mono"
@@ -267,7 +267,7 @@ export default function ImportGraphPanel() {
                   <ul className="divide-y divide-border/20 max-h-40 overflow-y-auto">
                     {deps.importedBy.map((dep) => (
                       <li key={dep}>
-                        <button
+                        <button type="button"
                           type="button"
                           onClick={() => setPath(dep)}
                           className="w-full flex items-center gap-2 px-3 py-1.5 text-[10px] hover:bg-secondary/20 text-left font-mono"

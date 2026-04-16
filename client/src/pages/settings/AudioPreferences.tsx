@@ -127,7 +127,7 @@ export default function AudioPreferences({ preferences, onSave, voices, isLoadin
         <div className="space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {voiceList.map(voice => (
-              <button key={voice.id}
+              <button type="button" key={voice.id}
                 onClick={() => update("voiceId", voice.id)}
                 className={`p-3 rounded-xl border text-left cursor-pointer transition-colors
                   ${prefs.voiceId === voice.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/20"}`}>
@@ -162,7 +162,7 @@ export default function AudioPreferences({ preferences, onSave, voices, isLoadin
             <label className="text-sm">Pitch</label>
             <div className="flex gap-2 mt-2">
               {["low", "default", "high"].map(p => (
-                <button key={p} onClick={() => update("pitch", p)}
+                <button type="button" key={p} onClick={() => update("pitch", p)}
                   className={`flex-1 px-3 py-1.5 rounded-lg text-sm border cursor-pointer transition-colors capitalize
                     ${prefs.pitch === p ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
                   {p}
@@ -204,7 +204,7 @@ export default function AudioPreferences({ preferences, onSave, voices, isLoadin
             <div className="text-sm mb-2">Detail level</div>
             <div className="flex gap-2">
               {(["concise", "standard", "detailed"] as const).map(level => (
-                <button key={level} onClick={() => update("verbosityLevel", level)}
+                <button type="button" key={level} onClick={() => update("verbosityLevel", level)}
                   className={`flex-1 px-3 py-2 rounded-lg text-sm border cursor-pointer transition-colors
                     ${prefs.verbosityLevel === level ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
                   <div className="font-medium capitalize">{level}</div>

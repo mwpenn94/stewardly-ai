@@ -104,7 +104,7 @@ export default function SettingsHub() {
           <Settings2 className="w-4 h-4 text-accent shrink-0" />
           <h1 className="text-sm font-semibold truncate">Settings</h1>
           {/* Mobile tab selector */}
-          <button
+          <button type="button"
             className="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-lg bg-card border border-border text-xs md:hidden"
             onClick={() => setMobileNavOpen(!mobileNavOpen)}
           >
@@ -127,7 +127,7 @@ export default function SettingsHub() {
             {TABS.map((tab) => {
               const tabRequiresAuth = !isAuthenticated && !ANONYMOUS_TABS.includes(tab.id);
               return (
-                <button
+                <button type="button"
                   key={tab.id}
                   role="tab"
                   aria-selected={activeTab === tab.id}

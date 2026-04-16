@@ -77,7 +77,7 @@ export default function MyWork({ items = [], isLoading = false }: MyWorkProps) {
           const config = STATUS_CONFIG[status];
           const count = items.filter((i) => i.status === status).length;
           return (
-            <button key={status} onClick={() => setFilter(filter === status ? "all" : status)}
+            <button type="button" key={status} onClick={() => setFilter(filter === status ? "all" : status)}
               className={`flex flex-col items-center py-2 px-1 rounded-lg border cursor-pointer transition-colors
                 ${filter === status ? "border-primary bg-primary/5" : "border-border hover:border-primary/20"}`}>
               <span className={`text-lg font-heading font-bold ${config.color}`}>{count}</span>
@@ -98,7 +98,7 @@ export default function MyWork({ items = [], isLoading = false }: MyWorkProps) {
                 const typeConf = TYPE_CONFIG[item.type];
                 const statusConf = STATUS_CONFIG[item.status];
                 return (
-                  <button key={item.id} onClick={() => navigate(item.href)}
+                  <button type="button" key={item.id} onClick={() => navigate(item.href)}
                     className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-card/80 transition-colors cursor-pointer text-left group">
                     <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${statusConf.bgColor} flex-none`}>
                       <typeConf.icon className={`w-4 h-4 ${statusConf.color}`} />

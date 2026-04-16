@@ -83,7 +83,7 @@ export default function SubagentsPopover({
             )}
           </div>
           <div className="flex items-center gap-1">
-            <button
+            <button type="button"
               onClick={() => reload.mutate()}
               disabled={reload.isPending}
               className="text-muted-foreground hover:text-foreground disabled:opacity-50"
@@ -94,7 +94,7 @@ export default function SubagentsPopover({
                 className={`h-4 w-4 ${reload.isPending ? "animate-spin" : ""}`}
               />
             </button>
-            <button
+            <button type="button"
               onClick={onClose}
               className="text-muted-foreground hover:text-foreground"
               aria-label="Close subagents"
@@ -200,7 +200,7 @@ export default function SubagentsPopover({
                       : "border-border/40 bg-background/40"
                   }`}
                 >
-                  <button
+                  <button type="button"
                     type="button"
                     onClick={() => {
                       onPick(isActive ? null : a.slug);

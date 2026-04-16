@@ -77,7 +77,7 @@ export default function BranchComparison({
                   <Streamdown>{branch.response}</Streamdown>
                 </div>
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
-                  <button
+                  <button type="button"
                     onClick={() => setExpandedBranch(isExpanded ? null : branch.id)}
                     className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
                   >

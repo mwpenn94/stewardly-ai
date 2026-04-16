@@ -140,7 +140,7 @@ export default function WorkspaceSearchPanel() {
                     ? facets.grep
                     : facets.todos);
               return (
-                <button
+                <button type="button"
                   key={k}
                   type="button"
                   onClick={() => toggleKind(k)}
@@ -190,7 +190,7 @@ export default function WorkspaceSearchPanel() {
             {results.map((r, idx) => {
               const style = KIND_STYLE[r.kind as ResultKind];
               return (
-                <button
+                <button type="button"
                   key={`${r.kind}:${r.path}:${r.line}:${idx}`}
                   type="button"
                   onClick={() => openFileAt(r.path, r.line)}

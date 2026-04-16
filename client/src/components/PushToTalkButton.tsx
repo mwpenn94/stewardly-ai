@@ -147,7 +147,7 @@ export function PushToTalkButton({
 
   return (
     <div className={cn("inline-flex items-center gap-2", className)}>
-      <button
+      <button type="button"
         type="button"
         role="button"
         aria-pressed={ptt.isActive}

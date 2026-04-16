@@ -145,7 +145,7 @@ export default function EnvInspectorPanel() {
             </label>
           </div>
           <div className="flex flex-wrap gap-1.5 text-[11px]">
-            <button
+            <button type="button"
               type="button"
               onClick={() => setCategory("all")}
               className={`px-2 py-0.5 rounded-full border transition ${
@@ -160,7 +160,7 @@ export default function EnvInspectorPanel() {
               const count = byCategory?.[cat] ?? 0;
               if (count === 0) return null;
               return (
-                <button
+                <button type="button"
                   key={cat}
                   type="button"
                   onClick={() => setCategory(cat)}

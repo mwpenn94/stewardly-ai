@@ -293,7 +293,7 @@ export default function KnowledgeBaseTab() {
             <p className="text-[10px] font-medium text-muted-foreground mb-1.5 uppercase tracking-wider">Visibility</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {VISIBILITY_OPTIONS.map(v => (
-                <button
+                <button type="button"
                   key={v.value}
                   onClick={() => setVisibility(v.value)}
                   className={`text-left p-2 rounded-lg border transition-all text-xs ${

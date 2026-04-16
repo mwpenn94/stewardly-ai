@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
+import { ExportDataButton } from "@/components/ExportDataButton";
 import { ArrowLeft, CheckCircle2, XCircle, Clock, Scale } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useMemo, useEffect, useCallback } from "react";
@@ -173,6 +174,19 @@ export default function EstatePlanning() {
             <p className="text-sm text-muted-foreground">Interactive estate tax analysis, document review, and beneficiary planning</p>
           </div>
         </div>
+        <ExportDataButton
+          data={[{
+            grossEstate: String(totalEstate),
+            estateTax: String(currentTax.estateTax),
+            netToHeirs: String(totalEstate - currentTax.estateTax),
+            exemption: String(currentTax.exemption),
+            headroom: String(currentTax.headroom),
+          }]}
+          filename="estate-planning"
+          columns={["grossEstate", "estateTax", "netToHeirs", "exemption", "headroom"]}
+          headers={["Gross Estate", "Estate Tax", "Net to Heirs", "Exemption", "Headroom"]}
+          compact
+        />
       </div>
 
       {/* ─── Inputs ────────────────────────────────────────── */}
@@ -265,7 +279,7 @@ export default function EstatePlanning() {
               <CardContent>
                 <div className="overflow-x-auto -mx-2 px-2">
                 <div className="min-w-[420px] space-y-1">
-                  <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
                     <span>Age</span>
                     <span className="text-right">Estate Value</span>
                     <span className="text-right">Tax (Current)</span>
@@ -273,7 +287,7 @@ export default function EstatePlanning() {
                     <span className="text-right">Delta</span>
                   </div>
                   {growthProjection.map(row => (
-                    <div key={row.year} className="grid grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0">
+                    <div key={row.year} className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0">
                       <span className="font-mono">{row.age}</span>
                       <span className="text-right font-mono">{fmt(row.estate)}</span>
                       <span className={`text-right font-mono ${row.tax === 0 ? "text-emerald-400" : "text-red-400"}`}>{fmt(row.tax)}</span>

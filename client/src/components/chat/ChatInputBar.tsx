@@ -108,7 +108,7 @@ export function ChatInputBar({
               <div key={i} className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-3 py-1 text-xs">
                 <Paperclip className="w-3 h-3 text-muted-foreground" />
                 <span className="truncate max-w-[100px]">{file.name}</span>
-                <button className="hover:text-destructive" onClick={() => removeAttachment(i)}>&times;</button>
+                <button type="button" className="hover:text-destructive" onClick={() => removeAttachment(i)}>&times;</button>
               </div>
             ))}
           </div>
@@ -166,7 +166,7 @@ export function ChatInputBar({
           <div className="relative" data-tour="context-buttons">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
+                <button type="button"
                   className={`p-2.5 rounded-full transition-all ${
                     showAddMenu ? "bg-accent/20 text-accent rotate-45" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
                   }`}
@@ -182,21 +182,21 @@ export function ChatInputBar({
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} />
                 <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-48 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                  <button
+                  <button type="button"
                     className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
                     onClick={() => { fileInputRef.current?.click(); setShowAddMenu(false); }}
                   >
                     <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>Attach file</span>
                   </button>
-                  <button
+                  <button type="button"
                     className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
                     onClick={() => { imageInputRef.current?.click(); setShowAddMenu(false); }}
                   >
                     <Image className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>Attach image</span>
                   </button>
-                  <button
+                  <button type="button"
                     className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors ${visualPending ? "opacity-50" : ""}`}
                     disabled={visualPending}
                     onClick={async () => {
@@ -210,7 +210,7 @@ export function ChatInputBar({
                     <span>{visualPending ? "Generating..." : "Generate visual"}</span>
                   </button>
                   <div className="h-px bg-border my-0.5" />
-                  <button
+                  <button type="button"
                     className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-colors ${
                       liveSessionMode === "screen" ? "bg-red-500/10 text-red-400" : "hover:bg-secondary/60"
                     }`}
@@ -219,7 +219,7 @@ export function ChatInputBar({
                     <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>{liveSessionMode === "screen" ? "End screen share" : "Go live — Screen"}</span>
                   </button>
-                  <button
+                  <button type="button"
                     className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-colors ${
                       liveSessionMode === "camera" ? "bg-red-500/10 text-red-400" : "hover:bg-secondary/60"
                     }`}
@@ -235,7 +235,7 @@ export function ChatInputBar({
 
           {/* Mode dropdown */}
           <div className="relative" data-tour="focus-mode">
-            <button
+            <button type="button"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium bg-secondary/40 text-foreground hover:bg-secondary/60 border border-border transition-all"
               onClick={() => setShowModeMenu(!showModeMenu)}
             >
@@ -250,7 +250,7 @@ export function ChatInputBar({
                 <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-52 animate-in fade-in slide-in-from-bottom-2 duration-150">
                   <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Focus</div>
                   {focusOptions.map(opt => (
-                    <button
+                    <button type="button"
                       key={opt.value}
                       className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
                         selectedFocus.includes(opt.value) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
@@ -267,7 +267,7 @@ export function ChatInputBar({
                       <div className="h-px bg-border my-1" />
                       <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Advisory Mode</div>
                       {availableModes.map(opt => (
-                        <button
+                        <button type="button"
                           key={opt.value}
                           className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
                             mode === opt.value ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
@@ -291,7 +291,7 @@ export function ChatInputBar({
           {/* Audio toggle */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <button type="button"
                 data-tour="voice-toggle"
                 className={`p-2.5 rounded-full transition-all ${
                   ttsEnabled

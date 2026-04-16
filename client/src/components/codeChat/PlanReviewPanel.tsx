@@ -274,7 +274,7 @@ export default function PlanReviewPanel({
               {/* Per-step controls — only in draft */}
               {canEdit && !isEditing && (
                 <div className="flex items-center gap-0.5 opacity-0 group-hover/step:opacity-100 transition-opacity shrink-0">
-                  <button
+                  <button type="button"
                     type="button"
                     className="p-1 rounded hover:bg-accent/10 text-muted-foreground hover:text-foreground"
                     onClick={() => onChange(reorderStep(plan, step.id, "up"))}
@@ -284,7 +284,7 @@ export default function PlanReviewPanel({
                   >
                     <ArrowUp className="h-3 w-3" />
                   </button>
-                  <button
+                  <button type="button"
                     type="button"
                     className="p-1 rounded hover:bg-accent/10 text-muted-foreground hover:text-foreground"
                     onClick={() => onChange(reorderStep(plan, step.id, "down"))}
@@ -294,7 +294,7 @@ export default function PlanReviewPanel({
                   >
                     <ArrowDown className="h-3 w-3" />
                   </button>
-                  <button
+                  <button type="button"
                     type="button"
                     className="p-1 rounded hover:bg-accent/10 text-muted-foreground hover:text-foreground"
                     onClick={() => startEdit(step)}
@@ -303,7 +303,7 @@ export default function PlanReviewPanel({
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
-                  <button
+                  <button type="button"
                     type="button"
                     className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
                     onClick={() => onChange(removeStep(plan, step.id))}
@@ -316,7 +316,7 @@ export default function PlanReviewPanel({
               )}
               {canEdit && isEditing && (
                 <div className="flex items-center gap-0.5 shrink-0">
-                  <button
+                  <button type="button"
                     type="button"
                     className="p-1 rounded hover:bg-emerald-500/10 text-emerald-500"
                     onClick={commitEdit}
@@ -325,7 +325,7 @@ export default function PlanReviewPanel({
                   >
                     <Check className="h-3 w-3" />
                   </button>
-                  <button
+                  <button type="button"
                     type="button"
                     className="p-1 rounded hover:bg-destructive/10 text-destructive"
                     onClick={() => setEditingId(null)}

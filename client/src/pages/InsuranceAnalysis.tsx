@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
+import { ExportDataButton } from "@/components/ExportDataButton";
 import { ArrowLeft, Shield, Heart, Home, Car, Umbrella, Plus, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useMemo, useEffect } from "react";
@@ -221,6 +222,19 @@ export default function InsuranceAnalysis() {
             <p className="text-sm text-muted-foreground">DIME-method needs analysis and coverage gap identification</p>
           </div>
         </div>
+        <ExportDataButton
+          data={[{
+            coverageScore: String(coverageScore),
+            lifeInsuranceNeed: String(dime.total),
+            debtCoverage: String(dime.debt),
+            incomeCoverage: String(dime.income),
+            mortgageCoverage: String(dime.mortgage),
+            educationCoverage: String(dime.education),
+          }]}
+          filename="insurance-analysis"
+          columns={["coverageScore", "lifeInsuranceNeed", "debtCoverage", "incomeCoverage", "mortgageCoverage", "educationCoverage"]}
+          headers={["Coverage Score", "Life Insurance Need", "Debt Coverage", "Income Coverage", "Mortgage Coverage", "Education Coverage"]}
+        />
       </div>
 
       {/* ─── Summary Stats ─────────────────────────────────── */}

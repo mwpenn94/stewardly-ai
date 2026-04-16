@@ -615,7 +615,7 @@ export default function StrategyComparisonPage() {
                             ? " Your plan withstands most historical conditions but has some stress scenarios."
                             : " Consider adjusting savings rate or horizon — plan has meaningful downside risk."}
                         </p>
-                        <div className="grid grid-cols-3 gap-3 pt-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                           <div>
                             <p className="text-[10px] text-muted-foreground/70 uppercase">Best Case</p>
                             <p className="text-sm font-semibold text-emerald-400">{formatCurrency(backtest.data.best?.final ?? 0)}</p>
@@ -639,7 +639,7 @@ export default function StrategyComparisonPage() {
                 {/* Multi-Strategy Stress Comparison */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <button
+                    <button type="button"
                       className="flex items-center gap-2 text-sm font-semibold hover:text-accent transition-colors"
                       onClick={() => setShowMultiStress(s => !s)}
                       aria-label="Toggle multi-strategy stress comparison"
@@ -963,7 +963,7 @@ export default function StrategyComparisonPage() {
                 { icon: Grid3X3, label: "What-If Grid", href: "/wealth-engine/what-if", desc: "Sweep parameters with a heat map" },
                 { icon: BookOpen, label: "Reference Hub", href: "/wealth-engine/references", desc: "Products, benchmarks, methodology" },
               ].map(tool => (
-                <button key={tool.href} type="button" onClick={() => navigate(tool.href)} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left">
+                <button type="button" key={tool.href} type="button" onClick={() => navigate(tool.href)} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left">
                   <tool.icon className="h-4 w-4 text-accent flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{tool.label}</p>

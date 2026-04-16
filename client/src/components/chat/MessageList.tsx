@@ -103,27 +103,27 @@ export function MessageList({
                   {msg.id && (
                     <div className="flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
                       <Tooltip><TooltipTrigger asChild>
-                        <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => onFeedback(msg.id!, "up")}>
+                        <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => onFeedback(msg.id!, "up")}>
                           <ThumbsUp className="w-4 h-4" />
                         </button>
                       </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Good response</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild>
-                        <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => onFeedback(msg.id!, "down")}>
+                        <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => onFeedback(msg.id!, "down")}>
                           <ThumbsDown className="w-4 h-4" />
                         </button>
                       </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Bad response</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild>
-                        <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => onCopy(msg.content)}>
+                        <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => onCopy(msg.content)}>
                           <Copy className="w-4 h-4" />
                         </button>
                       </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Copy</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild>
-                        <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => onSpeak(msg.content)}>
+                        <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => onSpeak(msg.content)}>
                           <Volume2 className="w-4 h-4" />
                         </button>
                       </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Read aloud</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild>
-                        <button className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => {
+                        <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => {
                           const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
                           if (lastUserMsg) onRegenerate(lastUserMsg.content);
                         }}>
@@ -131,7 +131,7 @@ export function MessageList({
                         </button>
                       </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Regenerate</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild>
-                        <button
+                        <button type="button"
                           className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-purple-400 transition-colors"
                           onClick={() => onGenerateInfographic(msg.content)}
                           disabled={visualPending}

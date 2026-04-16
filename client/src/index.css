@@ -839,3 +839,61 @@ body.color-blind-mode [role="button"][aria-disabled="true"] {
 .contain-layout {
   contain: layout style;
 }
+
+/* ── Pass 68: Touch & Accessibility Enhancements ── */
+
+/* Touch-manipulation for all interactive elements — prevents 300ms tap delay */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[role="tab"],
+[role="menuitem"],
+[role="link"],
+[tabindex] {
+  touch-action: manipulation;
+}
+
+/* Minimum touch target size for mobile (WCAG 2.5.5 Target Size) */
+@media (pointer: coarse) {
+  button,
+  a,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Reduced motion support for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Enhanced focus-visible ring for keyboard users */
+:focus-visible {
+  outline: 2px solid oklch(0.546 0.245 262.881);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* High contrast mode support */
+@media (forced-colors: active) {
+  .border-border {
+    border-color: ButtonText;
+  }
+  .bg-primary {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+}

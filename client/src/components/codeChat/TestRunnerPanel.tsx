@@ -155,7 +155,7 @@ export default function TestRunnerPanel() {
               const style = STATUS_STYLE[s];
               const active = activeStatuses.has(s);
               return (
-                <button
+                <button type="button"
                   key={s}
                   type="button"
                   onClick={() => toggleStatus(s)}
@@ -236,7 +236,7 @@ export default function TestRunnerPanel() {
             return (
               <Card key={f.path}>
                 <CardContent className="p-0">
-                  <button
+                  <button type="button"
                     type="button"
                     onClick={() => toggleExpanded(f.path)}
                     className="w-full text-left p-3 hover:bg-muted/50 flex items-center gap-3"

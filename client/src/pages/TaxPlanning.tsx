@@ -17,6 +17,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { PlanningCrossNav } from "@/components/PlanningCrossNav";
+import { ExportDataButton } from "@/components/ExportDataButton";
 import { projectTaxClientSide, type ClientTaxResult } from "@/lib/planningCalculations";
 import { ArrowLeft, Calculator, Loader2, Play, AlertTriangle } from "lucide-react";
 import { useLocation } from "wouter";
@@ -191,6 +192,17 @@ export default function TaxPlanning() {
           {isLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Play className="h-4 w-4 mr-1" />}
           Run Analysis
         </Button>
+        {result && <ExportDataButton
+          data={[{
+            effectiveRate: result.effectiveRate?.toFixed(2) ?? "",
+            totalTax: result.totalTax?.toFixed(2) ?? "",
+            afterTaxIncome: result.afterTaxIncome?.toFixed(2) ?? "",
+            marginalRate: result.marginalBracket ?? "",
+          }]}
+          filename="tax-planning"
+          columns={["effectiveRate", "totalTax", "afterTaxIncome", "marginalRate"]}
+          headers={["Effective Rate %", "Total Tax", "After-Tax Income", "Marginal Rate"]}
+        />}
       </div>
 
       {/* ─── Fallback indicator ────────────────────────────── */}
@@ -372,7 +384,7 @@ export default function TaxPlanning() {
                     {Array.isArray(multiYearResult.years ?? multiYearResult) ? (
                       <div className="overflow-x-auto -mx-2 px-2">
                       <div className="min-w-[420px] space-y-2">
-                        <div className="grid grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs text-muted-foreground border-b border-border pb-2 mb-2">
                           <span>Year</span>
                           <span className="text-right">Income</span>
                           <span className="text-right">Federal</span>
@@ -380,7 +392,7 @@ export default function TaxPlanning() {
                           <span className="text-right">Total</span>
                         </div>
                         {((multiYearResult.years ?? multiYearResult) as any[]).map((yr: any, i: number) => (
-                          <div key={i} className="grid grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0">
+                          <div key={i} className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-sm py-1 border-b border-border/30 last:border-0">
                             <span className="font-mono">{yr.year ?? new Date().getFullYear() + i}</span>
                             <span className="text-right font-mono">{fmt(yr.grossIncome ?? yr.totalIncome ?? 0)}</span>
                             <span className="text-right font-mono">{fmt(yr.federalTax ?? 0)}</span>

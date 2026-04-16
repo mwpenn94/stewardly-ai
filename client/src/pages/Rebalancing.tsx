@@ -39,6 +39,9 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { ExportDataButton } from "@/components/ExportDataButton";
+import { DisclosureSection } from "@/components/DisclosureSection";
 
 interface HoldingRow {
   id: string;
@@ -197,6 +200,7 @@ export default function RebalancingPage() {
         title="Rebalancing · Stewardly"
         description="Portfolio drift preview with cash-neutral trade proposals and optional tax-aware sell ordering."
       />
+      <div className="flex justify-end px-4 pt-2"><ShareButton contentType="rebalancing" contentId="rebalancing-plan" contentTitle="Rebalancing Plan" variant="ghost" size="sm" /></div>
       <a
         href="#rebalancing-main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-foreground"
@@ -218,6 +222,21 @@ export default function RebalancingPage() {
             trade proposals, and optional tax-aware sell ordering. Pure
             compute — no data is saved.
           </p>
+          {result && result.trades.length > 0 && (
+            <ExportDataButton
+              data={result.trades.map((t: any) => ({
+                ticker: t.ticker,
+                action: t.action,
+                shares: String(t.shares),
+                value: String(t.value),
+                driftPct: String(t.driftPct),
+              }))}
+              filename="rebalancing-trades"
+              columns={["ticker", "action", "shares", "value", "driftPct"]}
+              headers={["Ticker", "Action", "Shares", "Value", "Drift %"]}
+              compact
+            />
+          )}
         </header>
 
         {/* ── Holdings + targets form ─────────────────────────────── */}
@@ -389,6 +408,7 @@ export default function RebalancingPage() {
         </div>
 
         {/* ── Options ─────────────────────────────────────────────── */}
+        <DisclosureSection minLevel={3} label="Advanced Rebalancing Options" showTeaser>
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -456,7 +476,7 @@ export default function RebalancingPage() {
             </div>
           </CardContent>
         </Card>
-
+        </DisclosureSection>
         {/* ── Results ─────────────────────────────────────────────── */}
         <div
           role="status"

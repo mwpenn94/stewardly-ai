@@ -146,7 +146,7 @@ export default function FindReferencesPopover({
           <Button size="sm" onClick={handleSubmit} disabled={draftQuery.trim().length < 2}>
             Find
           </Button>
-          <button
+          <button type="button"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
             aria-label="Close"
@@ -158,7 +158,7 @@ export default function FindReferencesPopover({
         <div className="flex items-center gap-2 px-4 py-2 border-b border-border/40 text-xs">
           <div className="flex gap-1">
             {(["all", "import", "definition", "call", "property", "reference"] as const).map((k) => (
-              <button
+              <button type="button"
                 key={k}
                 type="button"
                 onClick={() => setKindFilter(k)}
@@ -250,7 +250,7 @@ export default function FindReferencesPopover({
                         key={group.path}
                         className="border border-border/40 rounded overflow-hidden"
                       >
-                        <button
+                        <button type="button"
                           type="button"
                           onClick={() => toggleFile(group.path)}
                           className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/30 transition-colors text-left"
@@ -271,7 +271,7 @@ export default function FindReferencesPopover({
                         {isOpen && (
                           <div className="border-t border-border/20 bg-background/40">
                             {group.hits.map((h, i) => (
-                              <button
+                              <button type="button"
                                 key={`${h.line}-${h.column}-${i}`}
                                 type="button"
                                 onClick={() => handleJump(group.path, h.line, h.column)}

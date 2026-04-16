@@ -135,7 +135,7 @@ export default function WorkspaceBookmarksPopover({
               {bookmarks.length}
             </Badge>
           </div>
-          <button
+          <button type="button"
             onClick={onClose}
             aria-label="Close"
             className="text-muted-foreground hover:text-foreground"
@@ -175,7 +175,7 @@ export default function WorkspaceBookmarksPopover({
           <div className="flex items-center justify-between">
             <div className="flex gap-1">
               {COLORS.map((c) => (
-                <button
+                <button type="button"
                   key={c}
                   type="button"
                   onClick={() => setDraftColor(c)}
@@ -253,7 +253,7 @@ export default function WorkspaceBookmarksPopover({
                           />
                           <div className="flex gap-1">
                             {COLORS.map((c) => (
-                              <button
+                              <button type="button"
                                 key={c}
                                 type="button"
                                 onClick={() =>
@@ -274,7 +274,7 @@ export default function WorkspaceBookmarksPopover({
                           </div>
                         </div>
                       ) : (
-                        <button
+                        <button type="button"
                           type="button"
                           className="flex-1 min-w-0 text-left"
                           onClick={() => handleOpen(b)}
@@ -305,14 +305,14 @@ export default function WorkspaceBookmarksPopover({
                           </>
                         ) : (
                           <>
-                            <button
+                            <button type="button"
                               onClick={() => startEdit(b)}
                               aria-label="Edit bookmark"
                               className="text-muted-foreground hover:text-foreground"
                             >
                               <Pencil className="w-3 h-3" />
                             </button>
-                            <button
+                            <button type="button"
                               onClick={() => onChange(removeBookmark(bookmarks, b.id))}
                               aria-label="Delete bookmark"
                               className="text-muted-foreground hover:text-destructive"

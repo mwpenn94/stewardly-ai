@@ -143,7 +143,7 @@ export default function PlatformGuide() {
           {sections
             .filter(s => !search || s.label.toLowerCase().includes(search.toLowerCase()))
             .map(s => (
-              <button
+              <button type="button"
                 key={s.id}
                 role="tab"
                 aria-selected={activeTab === s.id}

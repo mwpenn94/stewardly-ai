@@ -38,7 +38,7 @@ export function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setCo
         {conv.pinned ? <Pin className="w-3.5 h-3.5 shrink-0 text-accent" /> : <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />}
         <span className="truncate flex-1">{conv.title || "New Conversation"}</span>
         <DropdownMenuTrigger asChild>
-          <button
+          <button type="button"
             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-foreground"
             onClick={(e) => e.stopPropagation()}
           >
@@ -108,7 +108,7 @@ export function SortableConvItem(props: ConvItemProps & { conv: { id: number } }
       <ConvItem
         {...props}
         dragHandle={
-          <button {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 transition-opacity p-0.5 -ml-1" onClick={(e) => e.stopPropagation()}>
+          <button type="button" {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 transition-opacity p-0.5 -ml-1" onClick={(e) => e.stopPropagation()}>
             <GripVertical className="w-3 h-3" />
           </button>
         }

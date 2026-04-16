@@ -13,6 +13,7 @@ import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { CommandPalette } from "./components/CommandPalette";
 import { VoiceOnboardingCoach } from "./components/VoiceOnboardingCoach";
 import { ScrollToTop } from "./components/ScrollToTop";
+import ServiceStatusBanner from "./components/ServiceStatusBanner";
 import { OnboardingTour, useOnboardingTour } from "./components/OnboardingTour";
 import { AuthProvider } from "./contexts/AuthContext";
 // GlobalFooter removed permanently per user request (redundant nav)
@@ -380,6 +381,7 @@ function AppContent() {
       <GlobalVoiceButton />
       <OfflineBanner />
       <GuestBanner />
+      <ServiceStatusBanner />
       <Router />
       <ConsentBanner />
       {/* GlobalFooter removed permanently — user requested no footer nav */}

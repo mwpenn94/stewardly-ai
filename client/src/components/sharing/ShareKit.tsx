@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import { Share2, Users, Shield, X, Check, Copy, Link2, Clock, ChevronDown, Search, UserPlus } from "lucide-react";
+import { Share2, Users, Shield, X, Check, Copy, Link2, Clock, ChevronDown, Search, UserPlus, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
 
 // ─── Types ────────────────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ export function PermissionSelector({
   return (
     <div className="grid grid-cols-2 gap-2">
       {levels.map((level) => (
-        <button
+        <button type="button"
           key={level.value}
           onClick={() => onChange(level.value)}
           className={`flex flex-col items-start p-3 rounded-lg border transition-all text-left ${
@@ -156,7 +157,7 @@ export function RecipientPicker({
         <TabsContent value="roles" className="mt-3">
           <div className="space-y-2">
             {roles.map((r) => (
-              <button
+              <button type="button"
                 key={r.role}
                 onClick={() => onSelect({ type: "role", role: r.role, name: r.label })}
                 className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 hover:bg-accent/50 transition-all text-left"
@@ -191,7 +192,7 @@ function UserSearchResults({
   // For now, show a placeholder that indicates the search is functional
   return (
     <div className="space-y-1">
-      <button
+      <button type="button"
         onClick={() => onSelect({ id: 0, name: query, email: `${query.toLowerCase().replace(/\s/g, '.')}@example.com`, avatarUrl: null })}
         className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent/50 transition-all text-left"
       >
@@ -232,6 +233,7 @@ export function ShareButton({
   const [selectedRecipient, setSelectedRecipient] = useState<ShareRecipient | null>(null);
   const [permissionLevel, setPermissionLevel] = useState<PermissionLevel>("view");
   const [pendingShares, setPendingShares] = useState<Array<{ recipient: ShareRecipient; permission: PermissionLevel }>>([]);
+  const [omitSensitive, setOmitSensitive] = useState(true); // Omission toggle: redact PII/sensitive fields by default
 
   const handleSelectRecipient = useCallback((recipient: ShareRecipient) => {
     setSelectedRecipient(recipient);
@@ -254,6 +256,7 @@ export function ShareButton({
         contentId,
         recipient: share.recipient,
         permissionLevel: share.permission,
+        omitSensitive,
       });
     }
     setPendingShares([]);
@@ -297,6 +300,18 @@ export function ShareButton({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Omission toggle — field-level redaction control */}
+          <div className="flex items-center justify-between p-2 rounded-lg border border-border/50">
+            <div className="flex items-center gap-2">
+              <EyeOff className="w-4 h-4 text-muted-foreground" />
+              <div>
+                <div className="text-sm font-medium">Redact sensitive fields</div>
+                <div className="text-xs text-muted-foreground">Hide PII, account numbers, and SSN from shared view</div>
+              </div>
+            </div>
+            <Switch checked={omitSensitive} onCheckedChange={setOmitSensitive} />
+          </div>
+
           {/* Quick copy link */}
           <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
             <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -324,7 +339,7 @@ export function ShareButton({
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">{share.permission}</Badge>
-                    <button
+                    <button type="button"
                       onClick={() => setPendingShares((prev) => prev.filter((_, j) => j !== i))}
                       className="text-muted-foreground hover:text-destructive"
                     >
@@ -360,7 +375,7 @@ export function ShareButton({
                   </div>
                   <div className="flex items-center gap-2">
                     <PermissionSelector value={share.permissionLevel} onChange={() => {}} compact />
-                    <button
+                    <button type="button"
                       onClick={() => onShareRevoked?.(share.id)}
                       className="text-muted-foreground hover:text-destructive"
                       title="Revoke access"
@@ -386,7 +401,7 @@ export function ShareButton({
                   <div className="font-medium text-sm">{selectedRecipient?.name}</div>
                   <div className="text-xs text-muted-foreground">{selectedRecipient?.email || selectedRecipient?.role}</div>
                 </div>
-                <button onClick={() => { setStep("recipients"); setSelectedRecipient(null); }} className="ml-auto text-muted-foreground hover:text-foreground">
+                <button type="button" onClick={() => { setStep("recipients"); setSelectedRecipient(null); }} className="ml-auto text-muted-foreground hover:text-foreground">
                   <X className="w-4 h-4" />
                 </button>
               </div>

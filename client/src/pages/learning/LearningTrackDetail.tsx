@@ -342,7 +342,7 @@ function ChapterRow({
 
   return (
     <li className="border rounded-md">
-      <button
+      <button type="button"
         type="button"
         onClick={onToggle}
         className="w-full text-left p-3 flex items-center justify-between hover:bg-muted/40"

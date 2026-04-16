@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,8 +31,8 @@ export default function AdminFeaturePermissions() {
   const [filterLayer, setFilterLayer] = useState("all");
   const [filterDisclosure, setFilterDisclosure] = useState("all");
 
-  const { data: registry } = trpc.sharing.getFeatureRegistry.useQuery();
-  const { data: myPerms } = trpc.sharing.getMyPermissions.useQuery();
+  const { data: registry, error: registryError } = trpc.sharing.getFeatureRegistry.useQuery();
+  const { data: myPerms, error: permsError } = trpc.sharing.getMyPermissions.useQuery();
 
   const features = useMemo(() => {
     if (!registry) return [];
@@ -66,6 +65,7 @@ export default function AdminFeaturePermissions() {
 
   return (
     <div className="space-y-6">
+      <QueryErrorBanner error={registryError || permsError} />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

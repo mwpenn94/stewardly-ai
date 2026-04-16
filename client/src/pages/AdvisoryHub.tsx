@@ -15,13 +15,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { navigateToChat } from "@/lib/navigateToChat";
-import {
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
+import {
   Package, Briefcase, Lightbulb, Search, Filter,
   Star, TrendingUp, Shield, FileText, Calculator, DollarSign,
   Building2, Scale, ChevronRight, Loader2, Eye, Plus,
   CheckCircle2, Clock, AlertTriangle, BarChart3,
 } from "lucide-react";
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { DisclosureSection } from "@/components/DisclosureSection";
 
 export default function AdvisoryHub() {
   const { isAuthenticated } = useAuth();
@@ -36,6 +38,7 @@ export default function AdvisoryHub() {
   return (
     <AppShell title="Advisory">
       <SEOHead title="Advisory" description="Advisory tools and client management" />
+      <div className="flex justify-end px-4 pt-2"><ShareButton contentType="advisory" contentId="advisory-hub" contentTitle="Advisory Report" variant="ghost" size="sm" /></div>
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">

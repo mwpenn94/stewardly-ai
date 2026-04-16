@@ -285,7 +285,7 @@ export default function ChatGreetingV2({
           </div>
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-3">
             {resumeConversations.map((conv) => (
-              <button key={conv.id} type="button" onClick={() => onResumeConversation(conv.id)}
+              <button type="button" key={conv.id} type="button" onClick={() => onResumeConversation(conv.id)}
                 className="group flex items-start gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:shadow-md hover:shadow-accent/5 hover:border-accent/20 focus-visible:ring-2 focus-visible:ring-ring">
                 <div className="shrink-0 mt-0.5 rounded-lg bg-accent/10 p-1.5"><MessageSquare className="w-3.5 h-3.5 text-accent" /></div>
                 <div className="min-w-0 flex-1">
@@ -304,7 +304,7 @@ export default function ChatGreetingV2({
       {/* Pass 3: Proactive Insight Card */}
       {topInsight && isAuthenticated && (
         <motion.div className="w-full" initial="hidden" animate="visible" variants={variant} custom={2.5}>
-          <button type="button"
+          <button type="button" type="button"
             onClick={() => onSuggestionClick(topInsight.title ? `Tell me more about: ${topInsight.title}` : `Explain this insight: ${topInsight.content.substring(0, 100)}`)}
             className="w-full flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-left transition-all hover:bg-amber-500/10 hover:border-amber-500/30 focus-visible:ring-2 focus-visible:ring-ring">
             <div className="shrink-0 rounded-lg bg-amber-500/10 p-2"><Lightbulb className="w-4 h-4 text-amber-500" /></div>
@@ -326,7 +326,7 @@ export default function ChatGreetingV2({
       {/* Suggestion chips */}
       <motion.div className="flex flex-wrap items-center justify-center gap-2 max-w-lg" initial="hidden" animate="visible" variants={variant} custom={3}>
         {suggestions.map((text) => (
-          <button key={text} type="button" onClick={() => onSuggestionClick(text)}
+          <button type="button" key={text} type="button" onClick={() => onSuggestionClick(text)}
             className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm text-foreground/80 hover:bg-accent/10 hover:border-accent/30 hover:text-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring">
             <Sparkles className="w-3 h-3 text-accent shrink-0" />{text}
           </button>

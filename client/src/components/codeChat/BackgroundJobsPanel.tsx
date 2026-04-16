@@ -194,7 +194,7 @@ function JobRow({
 
   return (
     <div className="border border-border/40 rounded">
-      <button
+      <button type="button"
         className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-secondary/20"
         onClick={onToggle}
       >

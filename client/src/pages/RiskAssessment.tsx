@@ -231,7 +231,7 @@ export default function RiskAssessment() {
                     </div>
                     <div className="grid grid-cols-1 gap-1.5">
                       {q.options.map(opt => (
-                        <button
+                        <button type="button"
                           key={opt.score}
                           className={`text-left text-sm px-3 py-2 rounded-md border transition-colors ${
                             answers[q.id] === opt.score

@@ -120,7 +120,7 @@ export default function QuickQuoteHubPage() {
             <div className="flex items-center gap-2">
               <ScopePicker scope={scope} onChange={setScope} />
               <LocalePicker />
-              <button
+              <button type="button"
                 type="button"
                 onClick={() => setTimelineOpen(true)}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-accent/40 hover:text-accent transition-colors"
@@ -135,7 +135,7 @@ export default function QuickQuoteHubPage() {
                 )}
               </button>
               {scope !== "user" && (
-                <button
+                <button type="button"
                   type="button"
                   onClick={() => setLibraryOpen(true)}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-accent/40 hover:text-accent transition-colors"
@@ -257,7 +257,7 @@ function ScopePicker({
       className="inline-flex rounded-md border border-border/60 p-0.5 text-xs"
     >
       {scopes.map((s) => (
-        <button
+        <button type="button"
           key={s}
           type="button"
           role="radio"
@@ -317,7 +317,7 @@ function QuoteTile({
         <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
           {entry.description}
         </p>
-        <button
+        <button type="button"
           type="button"
           onClick={onOpen}
           disabled={!entry.shipped}

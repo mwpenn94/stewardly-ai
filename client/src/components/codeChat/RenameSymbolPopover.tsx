@@ -129,7 +129,7 @@ export default function RenameSymbolPopover({
               </Badge>
             )}
           </div>
-          <button
+          <button type="button"
             onClick={onClose}
             aria-label="Close"
             className="text-muted-foreground hover:text-foreground"

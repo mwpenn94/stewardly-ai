@@ -607,7 +607,7 @@ export default function Help() {
               const isOpen = expandedGuide.has(si);
               return (
                 <Card key={si} className="overflow-hidden">
-                  <button
+                  <button type="button"
                     onClick={() => toggleGuideSection(si)}
                     className="w-full flex items-start gap-3 p-4 text-left hover:bg-secondary/20 transition-colors"
                   >
@@ -693,7 +693,7 @@ export default function Help() {
 
             {/* Category filters */}
             <div className="flex flex-wrap gap-2 justify-center">
-              <button
+              <button type="button"
                 onClick={() => setActiveCategory(null)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
                   !activeCategory
@@ -704,7 +704,7 @@ export default function Help() {
                 All Topics
               </button>
               {CATEGORIES.map(cat => (
-                <button
+                <button type="button"
                   key={cat}
                   onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
@@ -733,7 +733,7 @@ export default function Help() {
                   const isExpanded = expandedItems.has(globalIndex);
                   return (
                     <Card key={globalIndex} className="overflow-hidden">
-                      <button
+                      <button type="button"
                         onClick={() => toggleExpand(globalIndex)}
                         className="w-full flex items-start gap-3 p-4 text-left hover:bg-secondary/20 transition-colors"
                       >

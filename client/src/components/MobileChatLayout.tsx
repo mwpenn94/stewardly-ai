@@ -72,10 +72,10 @@ export default function MobileChatLayout({
   return (
     <div className="flex flex-col h-[100dvh] bg-background">
       <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card/80 backdrop-blur-sm flex-none">
-        <button onClick={() => setSidebarOpen(true)} className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer" aria-label="Open conversations">
+        <button type="button" onClick={() => setSidebarOpen(true)} className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer" aria-label="Open conversations">
           <Menu className="w-5 h-5" />
         </button>
-        <button onClick={() => setOptionsOpen(true)} className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-card/60 text-sm cursor-pointer">
+        <button type="button" onClick={() => setOptionsOpen(true)} className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-card/60 text-sm cursor-pointer">
           <span>{activeFocus?.emoji}</span>
           <span className="text-muted-foreground">{activeFocus?.label}</span>
           <span className="text-border mx-1">·</span>
@@ -94,7 +94,7 @@ export default function MobileChatLayout({
         <div className="flex items-end gap-2">
           <Sheet open={optionsOpen} onOpenChange={setOptionsOpen}>
             <SheetTrigger asChild>
-              <button className="flex items-center justify-center w-10 h-10 rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex-none" aria-label="Chat options">
+              <button type="button" className="flex items-center justify-center w-10 h-10 rounded-xl border border-border bg-card/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex-none" aria-label="Chat options">
                 <SlidersHorizontal className="w-4 h-4" />
               </button>
             </SheetTrigger>
@@ -105,7 +105,7 @@ export default function MobileChatLayout({
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Focus</label>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {FOCUS_MODES.map((mode) => (
-                      <button key={mode.key} onClick={() => onFocusModeChange(mode.key)}
+                      <button type="button" key={mode.key} onClick={() => onFocusModeChange(mode.key)}
                         className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border cursor-pointer transition-colors
                           ${focusMode === mode.key ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
                         <span>{mode.emoji}</span>{mode.label}
@@ -117,7 +117,7 @@ export default function MobileChatLayout({
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Mode</label>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     {CHAT_MODES.map((mode) => (
-                      <button key={mode.key} onClick={() => onChatModeChange(mode.key)}
+                      <button type="button" key={mode.key} onClick={() => onChatModeChange(mode.key)}
                         className={`flex items-center gap-2 px-3 py-3 rounded-lg text-sm border cursor-pointer transition-colors text-left
                           ${chatMode === mode.key ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
                         <mode.icon className="w-4 h-4 flex-none" />
@@ -142,7 +142,7 @@ export default function MobileChatLayout({
               className="w-full resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 max-h-[120px]"
               disabled={isStreaming} />
           </div>
-          <button onClick={onSend} disabled={!inputValue.trim() || isStreaming}
+          <button type="button" onClick={onSend} disabled={!inputValue.trim() || isStreaming}
             className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-opacity flex-none" aria-label="Send message">
             <Send className="w-4 h-4" />
           </button>

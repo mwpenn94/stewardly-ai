@@ -69,7 +69,7 @@ export default function EditHistoryPopover({
         className="relative w-full max-w-xl max-h-[85vh] overflow-auto rounded-xl border border-border/60 bg-card p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
+        <button type="button"
           onClick={onClose}
           className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
           aria-label="Close edit history"
@@ -209,7 +209,7 @@ export default function EditHistoryPopover({
                       </span>
                     </span>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button
+                      <button type="button"
                         type="button"
                         className="text-[10px] px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/30"
                         onClick={() => onRevert(entry)}
@@ -217,7 +217,7 @@ export default function EditHistoryPopover({
                       >
                         Revert to before
                       </button>
-                      <button
+                      <button type="button"
                         type="button"
                         className="text-muted-foreground hover:text-destructive p-0.5"
                         onClick={() => onDrop(entry.id)}

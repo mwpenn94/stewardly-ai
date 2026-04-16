@@ -328,7 +328,7 @@ export default function FindReplacePanel() {
                         onCheckedChange={() => toggleFile(file.path)}
                         aria-label={`Select ${file.path}`}
                       />
-                      <button
+                      <button type="button"
                         type="button"
                         onClick={() =>
                           window.dispatchEvent(

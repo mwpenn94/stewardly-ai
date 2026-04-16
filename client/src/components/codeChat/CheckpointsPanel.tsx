@@ -308,7 +308,7 @@ export default function CheckpointsPanel() {
                   {cp.paths.length > 0 && (
                     <div className="flex flex-wrap gap-1 text-[11px] font-mono">
                       {cp.paths.slice(0, 6).map((p) => (
-                        <button
+                        <button type="button"
                           key={p}
                           type="button"
                           onClick={() =>

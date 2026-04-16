@@ -149,7 +149,7 @@ export function ChatSidebar({
                 autoFocus
               />
               {searchQuery && (
-                <button className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => setSearchQuery("")}>
+                <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2" onClick={() => setSearchQuery("")}>
                   <X className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
               )}
@@ -157,7 +157,7 @@ export function ChatSidebar({
             {searchQuery && searchResults?.data && (
               <div className="mt-1 max-h-48 overflow-y-auto">
                 {(Array.isArray(searchResults.data) ? searchResults.data : []).map((r: any) => (
-                  <button
+                  <button type="button"
                     key={r.id}
                     className="w-full text-left px-2 py-1.5 text-xs hover:bg-secondary/50 rounded-md truncate"
                     onClick={() => { setConversationId(r.id); navigate(`/chat/${r.id}`); setSearchOpen(false); setSearchQuery(""); setSidebarOpen(false); }}
@@ -202,7 +202,7 @@ export function ChatSidebar({
             {/* Folders */}
             {groupedConversations.folderGroups.map(fg => (
               <div key={fg.id} className="mb-1">
-                <button
+                <button type="button"
                   className="flex items-center gap-1.5 w-full px-3 py-1.5 text-xs hover:bg-secondary/30 transition-colors group"
                   onClick={() => toggleFolderExpand(fg.id)}
                 >
@@ -210,7 +210,7 @@ export function ChatSidebar({
                   <FolderOpen className="w-3.5 h-3.5" style={{ color: fg.color }} />
                   <span className="truncate flex-1 text-left">{fg.name}</span>
                   <span className="text-[10px] text-muted-foreground/50">{fg.conversations.length}</span>
-                  <button
+                  <button type="button"
                     className="opacity-0 group-hover:opacity-100 p-0.5"
                     onClick={(e) => { e.stopPropagation(); onOpenFolderDialog({ id: fg.id, name: fg.name, color: fg.color }); }}
                   >
@@ -261,7 +261,7 @@ export function ChatSidebar({
             )}
 
             {/* Create folder button */}
-            <button
+            <button type="button"
               className="flex items-center gap-2 w-full px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors mt-1"
               onClick={() => onOpenFolderDialog()}
             >
@@ -274,7 +274,7 @@ export function ChatSidebar({
         {!sidebarCollapsed && (
           <div className="border-t border-border py-2 px-2 space-y-0.5 max-h-[40vh] overflow-y-auto">
             {/* Tools section */}
-            <button
+            <button type="button"
               className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/30 rounded-md transition-colors"
               onClick={() => setToolsExpanded(!toolsExpanded)}
             >
@@ -282,7 +282,7 @@ export function ChatSidebar({
               <span className="font-medium">Tools & Features</span>
             </button>
             {toolsExpanded && toolsNav.filter(n => hasMinRole(userRole, n.minRole)).map(n => (
-              <button
+              <button type="button"
                 key={n.href}
                 className="flex items-center gap-2 w-full px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/30 rounded-md transition-colors"
                 onClick={() => { navigate(n.href); setSidebarOpen(false); }}
@@ -294,7 +294,7 @@ export function ChatSidebar({
             {/* Admin section */}
             {adminNav.some(n => hasMinRole(userRole, n.minRole)) && (
               <>
-                <button
+                <button type="button"
                   className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/30 rounded-md transition-colors"
                   onClick={() => setAdminExpanded(!adminExpanded)}
                 >
@@ -302,7 +302,7 @@ export function ChatSidebar({
                   <span className="font-medium">Admin</span>
                 </button>
                 {adminExpanded && adminNav.filter(n => hasMinRole(userRole, n.minRole)).map(n => (
-                  <button
+                  <button type="button"
                     key={n.href}
                     className="flex items-center gap-2 w-full px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/30 rounded-md transition-colors"
                     onClick={() => { navigate(n.href); setSidebarOpen(false); }}
@@ -315,13 +315,13 @@ export function ChatSidebar({
 
             {/* Bottom links */}
             <div className="pt-1 border-t border-border mt-1 space-y-0.5">
-              <button
+              <button type="button"
                 className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/30 rounded-md transition-colors"
                 onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
               >
                 <Settings className="w-3.5 h-3.5" /> Settings
               </button>
-              <button
+              <button type="button"
                 className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/30 rounded-md transition-colors"
                 onClick={() => { navigate("/help"); setSidebarOpen(false); }}
               >
@@ -357,7 +357,7 @@ function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setConversat
         {conv.pinned ? <Pin className="w-3.5 h-3.5 shrink-0 text-accent" /> : <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />}
         <span className="truncate flex-1">{conv.title || "New Conversation"}</span>
         <DropdownMenuTrigger asChild>
-          <button
+          <button type="button"
             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-foreground"
             onClick={(e) => e.stopPropagation()}
           >
@@ -428,7 +428,7 @@ function SortableConvItem(props: Parameters<typeof ConvItem>[0] & { conv: { id: 
       <ConvItem
         {...props}
         dragHandle={
-          <button {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 transition-opacity p-0.5 -ml-1" onClick={(e) => e.stopPropagation()}>
+          <button type="button" {...listeners} className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 transition-opacity p-0.5 -ml-1" onClick={(e) => e.stopPropagation()}>
             <GripVertical className="w-3 h-3" />
           </button>
         }

@@ -122,7 +122,7 @@ export default function NpmInspectorPanel() {
             <div className="flex flex-wrap gap-1.5 text-[11px]">
               <span className="text-muted-foreground">Severity:</span>
               {(["all", "major", "minor", "patch"] as const).map((s) => (
-                <button
+                <button type="button"
                   key={s}
                   type="button"
                   onClick={() => setOutdatedFilter(s as any)}
@@ -141,7 +141,7 @@ export default function NpmInspectorPanel() {
             <div className="flex flex-wrap gap-1.5 text-[11px]">
               <span className="text-muted-foreground">Min audit severity:</span>
               {(["critical", "high", "moderate", "low", "info"] as VulnSeverity[]).map((s) => (
-                <button
+                <button type="button"
                   key={s}
                   type="button"
                   onClick={() => setMinSeverity(s)}

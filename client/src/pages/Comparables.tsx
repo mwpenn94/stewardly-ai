@@ -170,6 +170,7 @@ export default function ComparablesPage() {
         title="Comparables · Stewardly"
         description="Competitive gap dashboard — how Stewardly compares to other advisor AI and wealth platforms."
       />
+      <div className="flex justify-end px-4 pt-2"><ShareButton contentType="comparables" contentId="comparables-analysis" contentTitle="Comparables Analysis" variant="ghost" size="sm" /></div>
       {/* Pass 8 accessibility audit: skip link + aria-live status region
           for data loading. Pairs with the existing tabIndex={-1} main. */}
       <a
@@ -200,6 +201,8 @@ export default function ComparablesPage() {
               How Stewardly compares to the best existing and planned apps in
               the financial advisory space — scored on an 18-feature rubric
               drawn from the comprehensive platform guide.
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { DisclosureSection } from "@/components/DisclosureSection";
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -444,7 +447,7 @@ export default function ComparablesPage() {
                           <td className="py-2">
                             <div className="flex flex-wrap gap-1">
                               {row.leaders.map((l) => (
-                                <button
+                                <button type="button"
                                   key={l.app.id}
                                   type="button"
                                   onClick={() => setSelectedId(l.app.id)}
@@ -541,7 +544,7 @@ export default function ComparablesPage() {
                         appRows.find((r) => r.app.id === app.id)
                           ?.beatsStewardlyOn ?? 0;
                       return (
-                        <button
+                        <button type="button"
                           key={app.id}
                           type="button"
                           onClick={() => setSelectedId(app.id)}

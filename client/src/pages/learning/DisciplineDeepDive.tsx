@@ -234,7 +234,7 @@ export default function DisciplineDeepDive() {
         {/* Tab bar */}
         <div className="flex gap-1 border-b" role="tablist" aria-label="Deep dive sections">
           {tabs.map((tab) => (
-            <button
+            <button type="button"
               key={tab.key}
               type="button"
               role="tab"
@@ -415,7 +415,7 @@ function DefinitionsTab({
         <div className="flex items-center justify-center gap-1">
           <span className="text-xs text-muted-foreground mr-2">Confidence:</span>
           {[1, 2, 3, 4, 5].map((s) => (
-            <button
+            <button type="button"
               key={s}
               type="button"
               onClick={(e) => { e.stopPropagation(); rateConfidence(s); }}

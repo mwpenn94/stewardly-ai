@@ -226,7 +226,7 @@ export default function PRDrafterPanel() {
               </CardHeader>
               <CardContent className="p-0 divide-y divide-border/40">
                 {draft.fileMap.slice(0, 40).map((entry) => (
-                  <button
+                  <button type="button"
                     key={entry.path}
                     type="button"
                     onClick={() =>

@@ -13,13 +13,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { navigateToChat } from "@/lib/navigateToChat";
-import {
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
+import {
   Users, Calendar, Mail, Search, Filter, Plus,
   UserPlus, Video, Phone, MessageSquare, Clock, Star,
   Building2, Loader2, ChevronRight, Globe, MapPin,
   Send, FileText, BarChart3, Eye,
 } from "lucide-react";
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { DisclosureSection } from "@/components/DisclosureSection";
 
 export default function RelationshipsHub() {
   const { isAuthenticated } = useAuth();
@@ -34,6 +36,7 @@ export default function RelationshipsHub() {
   return (
     <AppShell title="Relationships">
       <SEOHead title="Relationships" description="Professional network, meetings, and outreach campaigns" />
+      <div className="flex justify-end px-4 pt-2"><ShareButton contentType="relationships" contentId="relationships-report" contentTitle="Relationships Report" variant="ghost" size="sm" /></div>
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -138,7 +141,7 @@ function NetworkSection({ searchQuery }: { searchQuery: string }) {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {coiCategories.map((cat) => (
-              <button key={cat.role} type="button" className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer text-left" onClick={() => navigateToChat(cat.prompt)} aria-label={`Explore ${cat.role}`}>
+              <button type="button" key={cat.role} type="button" className="p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer text-left" onClick={() => navigateToChat(cat.prompt)} aria-label={`Explore ${cat.role}`}>
                 <cat.icon className="h-4 w-4 text-muted-foreground mb-1" />
                 <div className="text-sm font-medium">{cat.role}</div>
                 <div className="text-xs text-muted-foreground">Explore →</div>

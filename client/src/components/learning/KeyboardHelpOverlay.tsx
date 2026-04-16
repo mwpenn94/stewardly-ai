@@ -99,7 +99,7 @@ export function KeyboardHelpOverlay({ shortcuts, title = "Keyboard shortcuts" }:
                 {title}
               </h2>
             </div>
-            <button
+            <button type="button"
               type="button"
               onClick={() => setOpen(false)}
               className="text-muted-foreground hover:text-foreground"

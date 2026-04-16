@@ -24,6 +24,8 @@ import {
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { IntelligenceStatusWidget } from "@/components/IntelligenceStatusWidget";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { DisclosureSection } from "@/components/DisclosureSection";
 
 export default function OperationsHub() {
   const { isAuthenticated } = useAuth();
@@ -43,6 +45,7 @@ export default function OperationsHub() {
   return (
     <AppShell title="Operations">
       <SEOHead title="Operations" description="Active tasks, agents, compliance, and audit history" />
+      <div className="flex justify-end px-4 pt-2"><ShareButton contentType="operations" contentId="operations-report" contentTitle="Operations Report" variant="ghost" size="sm" /></div>
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">

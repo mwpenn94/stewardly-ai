@@ -24,6 +24,7 @@ import { recordPageVisit } from "@/hooks/useRecentPages";
 // skip-link, persona sidebar, bottom-banner).
 import { Menu, Keyboard } from "lucide-react";
 import { MarketTicker } from "@/components/MarketTicker";
+import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -270,6 +271,7 @@ export default function AppShell({ children, title }: AppShellProps) {
           aria-label="Main content"
           aria-busy={globalBusy ? true : undefined}
         >
+          <PageBreadcrumb className="px-4 pt-3 pb-1" />
           {children}
         </main>
 

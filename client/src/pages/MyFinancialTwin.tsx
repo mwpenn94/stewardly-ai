@@ -193,7 +193,7 @@ function MyFinancialTwinView({
 
       {/* Financial Snapshot */}
       <div className="mb-6">
-        <button onClick={() => setShowSnapshot(!showSnapshot)}
+        <button type="button" onClick={() => setShowSnapshot(!showSnapshot)}
           className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-widest mb-2 px-1 cursor-pointer hover:text-foreground transition-colors w-full">
           {showSnapshot ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
           Financial Snapshot
@@ -222,7 +222,7 @@ function MyFinancialTwinView({
                 <div className="text-sm text-foreground">{insight.text}</div>
                 <div className="text-[10px] text-muted-foreground mt-1">From {insight.source} · {new Date(insight.date).toLocaleDateString()}</div>
               </div>
-              <button onClick={() => onDeleteInsight?.(insight.id)}
+              <button type="button" onClick={() => onDeleteInsight?.(insight.id)}
                 className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground/30 hover:text-destructive cursor-pointer transition-colors flex-none">
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -233,7 +233,7 @@ function MyFinancialTwinView({
 
       {/* Privacy Controls */}
       <div className="p-4 rounded-xl border border-border bg-card/40">
-        <button onClick={() => setVisibilityExpanded(!visibilityExpanded)} className="flex items-center justify-between w-full cursor-pointer">
+        <button type="button" onClick={() => setVisibilityExpanded(!visibilityExpanded)} className="flex items-center justify-between w-full cursor-pointer">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium">Privacy: {data.visibility}</span>
@@ -243,7 +243,7 @@ function MyFinancialTwinView({
         {visibilityExpanded && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 space-y-2">
             {(["private", "professional", "management", "admin"] as const).map(level => (
-              <button key={level} onClick={() => { onVisibilityChange?.(level); sendFeedback("client.visibility_changed", { level }); }}
+              <button type="button" key={level} onClick={() => { onVisibilityChange?.(level); sendFeedback("client.visibility_changed", { level }); }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer transition-colors text-left
                   ${data.visibility === level ? "border-primary bg-primary/5" : "border-border hover:border-primary/20"}`}>
                 <div className="flex-1">

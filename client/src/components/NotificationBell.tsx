@@ -207,7 +207,7 @@ export function NotificationBell({
       {/* Filter Tabs */}
       {notifications.length > 0 && (
         <div className="flex items-center gap-1 px-3 py-2 border-b border-border overflow-x-auto shrink-0">
-          <button
+          <button type="button"
             className={`text-[10px] px-2 py-1 rounded-full whitespace-nowrap transition-colors ${
               !filter ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
@@ -218,7 +218,7 @@ export function NotificationBell({
           {Object.entries(typeCountMap).map(([type, count]) => {
             const config = TYPE_CONFIG[type];
             return (
-              <button
+              <button type="button"
                 key={type}
                 className={`text-[10px] px-2 py-1 rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${
                   filter === type ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -250,7 +250,7 @@ export function NotificationBell({
               const priorityClass = PRIORITY_COLORS[notification.priority] || PRIORITY_COLORS.medium;
 
               return (
-                <button
+                <button type="button"
                   key={notification.id}
                   className={`w-full text-left px-4 py-3 transition-colors hover:bg-muted/50 ${
                     isUnread ? "bg-primary/[0.03]" : ""
@@ -319,7 +319,7 @@ export function NotificationBell({
           <span className="text-[10px] text-muted-foreground">
             {notifications.length} notification{notifications.length !== 1 ? "s" : ""}
           </span>
-          <button
+          <button type="button"
             className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
             onClick={onClear}
           >

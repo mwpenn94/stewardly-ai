@@ -277,7 +277,7 @@ export default function ReferenceHub() {
                 <h3 className="text-sm font-medium mb-2">Decade Averages</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
                   {decadeAverages.map((d) => (
-                    <button
+                    <button type="button"
                       key={d.decade}
                       className={`p-2 rounded-md border text-left transition-all hover:border-accent/50 ${decadeFilter === d.decade.replace("s", "") + "s" ? "border-accent bg-accent/5" : "bg-secondary/50"}`}
                       onClick={() => setDecadeFilter(decadeFilter === d.decade ? "all" : d.decade)}

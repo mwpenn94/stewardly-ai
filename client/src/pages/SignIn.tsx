@@ -189,7 +189,7 @@ export default function SignIn() {
                   className="bg-background/50 border-border/50 h-10 pr-10"
                   autoComplete={mode === "signup" ? "new-password" : "current-password"}
                 />
-                <button
+                <button type="button"
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
@@ -239,7 +239,7 @@ export default function SignIn() {
             {mode === "signin" ? (
               <>
                 New here?{" "}
-                <button
+                <button type="button"
                   onClick={() => { setMode("signup"); setError(""); }}
                   className="text-accent hover:text-accent/80 font-medium transition-colors"
                 >
@@ -249,7 +249,7 @@ export default function SignIn() {
             ) : (
               <>
                 Already have an account?{" "}
-                <button
+                <button type="button"
                   onClick={() => { setMode("signin"); setError(""); }}
                   className="text-accent hover:text-accent/80 font-medium transition-colors"
                 >
@@ -258,7 +258,7 @@ export default function SignIn() {
               </>
             )}
           </p>
-          <button
+          <button type="button"
             onClick={() => navigate("/")}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
           >

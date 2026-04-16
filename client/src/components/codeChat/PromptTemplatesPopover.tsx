@@ -141,7 +141,7 @@ export default function PromptTemplatesPopover({
         className="relative w-full max-w-2xl max-h-[85vh] overflow-auto rounded-xl border border-border/60 bg-card p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
+        <button type="button"
           onClick={onClose}
           className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
           aria-label="Close templates"
@@ -163,7 +163,7 @@ export default function PromptTemplatesPopover({
               <div className="text-[10px] uppercase tracking-wide text-amber-500">
                 Fill in variables for "{pendingTemplate.name}"
               </div>
-              <button
+              <button type="button"
                 type="button"
                 onClick={() => {
                   setPendingTemplate(null);
@@ -307,7 +307,7 @@ export default function PromptTemplatesPopover({
                 className="flex items-start gap-2 px-3 py-2 rounded border border-border/40 hover:bg-secondary/20 transition-colors"
               >
                 <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
-                <button
+                <button type="button"
                   type="button"
                   className="flex-1 text-left min-w-0"
                   onClick={() => handleSelectTemplate(t)}
@@ -340,7 +340,7 @@ export default function PromptTemplatesPopover({
                   </div>
                 </button>
                 {!t.builtin && (
-                  <button
+                  <button type="button"
                     type="button"
                     onClick={() => handleDelete(t.id)}
                     className="text-muted-foreground hover:text-destructive"
@@ -396,7 +396,7 @@ export default function PromptTemplatesPopover({
                 }
               }}
             />
-            <button
+            <button type="button"
               type="button"
               className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
               onClick={() => importInputRef.current?.click()}
@@ -405,7 +405,7 @@ export default function PromptTemplatesPopover({
               <Upload className="h-3 w-3" /> Import
             </button>
             {templates.some((t) => !t.builtin) && (
-              <button
+              <button type="button"
                 type="button"
                 className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
                 onClick={() => {

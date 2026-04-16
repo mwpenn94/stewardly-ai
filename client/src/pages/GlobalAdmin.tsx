@@ -200,7 +200,7 @@ export default function GlobalAdmin() {
               { name: "Webhooks", path: "/admin/webhooks", icon: Globe },
               { name: "Reports", path: "/admin/platform-reports", icon: BarChart3 },
             ].map((tool) => (
-              <button
+              <button type="button"
                 key={tool.path}
                 onClick={() => navigate(tool.path)}
                 className="card-lift p-3 rounded-lg border border-border bg-card/60 hover:bg-secondary/40 transition-colors text-left text-xs font-medium flex items-center gap-2.5 group"

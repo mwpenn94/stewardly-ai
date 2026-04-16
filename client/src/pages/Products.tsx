@@ -134,7 +134,7 @@ export default function Products() {
               className="pl-10 bg-card border-border h-10"
             />
             {search && (
-              <button className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
+              <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setSearch("")}>
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             )}
@@ -142,7 +142,7 @@ export default function Products() {
 
           {/* Category chips */}
           <div className="flex gap-1.5 overflow-x-auto pb-1">
-            <button
+            <button type="button"
               onClick={() => setActiveCategory(null)}
               className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border ${
                 !activeCategory
@@ -156,7 +156,7 @@ export default function Products() {
               const meta = CATEGORY_META[cat] || { icon: <Package className="w-3 h-3" />, label: cat, color: "text-muted-foreground" };
               const count = allProducts.filter(p => p.category === cat).length;
               return (
-                <button
+                <button type="button"
                   key={cat}
                   onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border ${

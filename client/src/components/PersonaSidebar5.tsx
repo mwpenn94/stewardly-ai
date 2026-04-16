@@ -246,7 +246,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
   const NavBtn = ({ item }: { item: NavItem }) => {
     const active = isActive(item);
     return (
-      <button
+      <button type="button"
         onClick={() => { navigate(item.path); onNavigate?.(); }}
         aria-current={active ? "page" : undefined}
         aria-label={item.label}
@@ -277,11 +277,11 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         )}
         <div className="flex items-center gap-0.5">
           {!collapsed && (
-            <button onClick={onNewChat} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label="New chat">
+            <button type="button" onClick={onNewChat} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label="New chat">
               <Plus className="w-4 h-4" />
             </button>
           )}
-          <button onClick={onCollapse} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          <button type="button" onClick={onCollapse} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
             {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </button>
         </div>
@@ -289,7 +289,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
 
       {!collapsed && (
         <div className="px-2 py-1.5 flex-none">
-          <button onClick={onSearch} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-primary/20 cursor-pointer transition-colors">
+          <button type="button" onClick={onSearch} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-primary/20 cursor-pointer transition-colors">
             <Search className="w-3.5 h-3.5" />
             <span>Search</span>
             <kbd className="ml-auto text-[9px] px-1 py-0.5 rounded bg-card border border-border/60">⌘K</kbd>
@@ -306,7 +306,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
               {collapsed ? (
                 <Label>{layer.label}</Label>
               ) : canCollapse ? (
-                <button
+                <button type="button"
                   onClick={() => toggleLayer(layer.key)}
                   className="w-full flex items-center justify-between px-2.5 pt-3.5 pb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] select-none cursor-pointer hover:text-muted-foreground transition-colors"
                   aria-expanded={!layerCollapsed}
@@ -340,7 +340,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
 
         {!collapsed && conversations.length > 0 && (
           <section aria-label="Recent conversations" className="mt-3 pt-2 border-t border-border/40">
-            <button
+            <button type="button"
               onClick={() => setShowConvos(!showConvos)}
               className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] cursor-pointer hover:text-muted-foreground transition-colors w-full select-none"
             >
@@ -353,7 +353,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
                   <div key={g.label}>
                     <div className="px-2.5 py-1 text-[9px] text-muted-foreground/35 select-none">{g.label}</div>
                     {g.items.map(c => (
-                      <button
+                      <button type="button"
                         key={c.id}
                         onClick={() => { navigate(`/chat/${c.id}`); onNavigate?.(); }}
                         className={`w-full flex items-center gap-1.5 px-2.5 py-[6px] rounded-lg cursor-pointer transition-colors text-[12px] text-left truncate

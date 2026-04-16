@@ -54,7 +54,7 @@ export function QueryErrorBanner({ query, label = "data", className = "" }: Prop
           Retry
         </Button>
       )}
-      <button
+      <button type="button"
         onClick={() => setDismissed(true)}
         className="text-muted-foreground hover:text-foreground"
         aria-label="Dismiss error"

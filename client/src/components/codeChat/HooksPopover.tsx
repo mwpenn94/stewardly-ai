@@ -178,7 +178,7 @@ export default function HooksPopover({
               {summary.enabled}/{summary.total} active
             </Badge>
           </div>
-          <button
+          <button type="button"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
             aria-label="Close hooks"
@@ -204,7 +204,7 @@ export default function HooksPopover({
               seed:
             </span>
             {EXAMPLES.map((ex) => (
-              <button
+              <button type="button"
                 key={ex.label}
                 type="button"
                 onClick={() => handleSeedFromExample(ex)}
@@ -285,7 +285,7 @@ export default function HooksPopover({
 
         {/* Filter chips */}
         <div className="flex items-center gap-1.5 px-5 py-2 border-b border-border/30 overflow-x-auto shrink-0">
-          <button
+          <button type="button"
             type="button"
             className={`px-2 py-0.5 rounded-full text-[10px] border transition-colors ${
               filter === "all"
@@ -298,7 +298,7 @@ export default function HooksPopover({
             all ({summary.total})
           </button>
           {EVENTS.map((e) => (
-            <button
+            <button type="button"
               key={e}
               type="button"
               className={`px-2 py-0.5 rounded-full text-[10px] border whitespace-nowrap transition-colors ${
@@ -332,7 +332,7 @@ export default function HooksPopover({
                   }`}
                 >
                   <div className="flex items-start gap-2 px-3 py-2">
-                    <button
+                    <button type="button"
                       type="button"
                       onClick={() => onChange(toggleHook(hooks, h.id))}
                       className={`h-4 w-4 rounded border shrink-0 mt-0.5 flex items-center justify-center ${
@@ -369,7 +369,7 @@ export default function HooksPopover({
                         </p>
                       )}
                     </div>
-                    <button
+                    <button type="button"
                       type="button"
                       onClick={() => onChange(removeHook(hooks, h.id))}
                       className="text-muted-foreground hover:text-destructive shrink-0"

@@ -345,7 +345,7 @@ export default function Workflows() {
                 const status = activeWorkflow.stepStatuses[i];
                 return (
                   <div key={step.id} className="flex items-center">
-                    <button
+                    <button type="button"
                       onClick={() => setExpandedStep(expandedStep === i ? null : i)}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                         status === "completed"
@@ -416,7 +416,7 @@ export default function Workflows() {
                       "border-border/30 bg-card/30"
                     }`}
                   >
-                    <button
+                    <button type="button"
                       className="w-full flex items-center gap-3 p-4"
                       onClick={() => setExpandedStep(isExpanded ? null : i)}
                     >
@@ -500,7 +500,7 @@ export default function Workflows() {
             {/* Category Filter */}
             <div className="flex gap-2">
               {categories.map(cat => (
-                <button
+                <button type="button"
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${
@@ -527,7 +527,7 @@ export default function Workflows() {
                     const completed = wf.stepStatuses.filter(s => s === "completed").length;
                     const pct = Math.round((completed / template.steps.length) * 100);
                     return (
-                      <Card key={idx} className="bg-card/50 hover:border-accent/30 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => { setActiveWorkflow(wf); setExpandedStep(wf.currentStep); } onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => { setActiveWorkflow(wf); setExpandedStep(wf.currentStep);)(); } }}}>
+                      <Card key={idx} className="bg-card/50 hover:border-accent/30 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => { setActiveWorkflow(wf); setExpandedStep(wf.currentStep); }} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveWorkflow(wf); setExpandedStep(wf.currentStep); } }}>
                         <CardContent className="pt-4">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-semibold">{template.name}</h4>

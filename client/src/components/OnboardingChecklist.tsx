@@ -129,7 +129,7 @@ export default function OnboardingChecklist({
                     : "bg-secondary/20"
               }`}
             >
-              <button
+              <button type="button"
                 className="mt-0.5 shrink-0"
                 onClick={() => {
                   if (!step.completed) {

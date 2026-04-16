@@ -145,7 +145,7 @@ export default function TodoMarkerPanel() {
               const selected = selectedKinds.includes(kind);
               const count = data?.byKind[kind] ?? 0;
               return (
-                <button
+                <button type="button"
                   key={kind}
                   type="button"
                   onClick={() => toggleKind(kind)}
@@ -162,7 +162,7 @@ export default function TodoMarkerPanel() {
               );
             })}
             {selectedKinds.length > 0 && (
-              <button
+              <button type="button"
                 type="button"
                 onClick={() => setSelectedKinds([])}
                 className="text-[10px] text-muted-foreground hover:text-foreground underline"
@@ -180,7 +180,7 @@ export default function TodoMarkerPanel() {
                   <div className="text-muted-foreground font-medium mb-1">By author</div>
                   <div className="space-y-0.5">
                     {data.topAuthors.slice(0, 5).map((a) => (
-                      <button
+                      <button type="button"
                         key={a.author}
                         type="button"
                         onClick={() => setAuthor(a.author === author ? null : a.author)}
@@ -229,7 +229,7 @@ export default function TodoMarkerPanel() {
                 const Icon = style.Icon;
                 return (
                   <li key={`${marker.path}:${marker.line}:${idx}`}>
-                    <button
+                    <button type="button"
                       type="button"
                       onClick={() => openFile(marker.path, marker.line)}
                       className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-secondary/20 transition-colors"

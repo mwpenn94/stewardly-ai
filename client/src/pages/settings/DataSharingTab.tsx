@@ -153,7 +153,7 @@ export default function DataSharingTab() {
                 return (
                   <div key={granteeId} className="border border-border rounded-lg overflow-hidden">
                     {/* Grantee header */}
-                    <button
+                    <button type="button"
                       className="w-full flex items-center justify-between p-3 hover:bg-accent/5 transition-colors"
                       onClick={() => setExpandedGrantee(isExpanded ? null : granteeId)}
                     >

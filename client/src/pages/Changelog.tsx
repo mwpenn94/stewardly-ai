@@ -108,7 +108,7 @@ export default function Changelog() {
 
                     <Card className={`overflow-hidden transition-all ${isLatest ? "border-accent/30" : ""}`}>
                       {/* Release header — clickable */}
-                      <button
+                      <button type="button"
                         onClick={() => toggle(release.version)}
                         className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-secondary/20 transition-colors"
                       >

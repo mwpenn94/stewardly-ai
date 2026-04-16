@@ -198,7 +198,7 @@ export default function ClientOnboarding() {
           const isComplete = step > s.id;
           const isCurrent = step === s.id;
           return (
-            <button
+            <button type="button"
               key={s.id}
               onClick={() => { if (isComplete) setStep(s.id); }}
               disabled={!isComplete && !isCurrent}
@@ -259,7 +259,7 @@ export default function ClientOnboarding() {
                 <Label className="text-xs">Street Address</Label>
                 <Input value={personal.address} onChange={e => updatePersonal("address", e.target.value)} placeholder="123 Main St" />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label className="text-xs">City</Label>
                   <Input value={personal.city} onChange={e => updatePersonal("city", e.target.value)} placeholder="Denver" />

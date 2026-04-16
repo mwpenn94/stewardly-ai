@@ -123,7 +123,7 @@ function TreeNode({
 }) {
   if (node.type === "file") {
     return (
-      <button
+      <button type="button"
         type="button"
         onClick={() => onFileClick(node.path)}
         className="flex items-center gap-1.5 w-full px-2 py-1 hover:bg-secondary/30 text-[11px] font-mono text-left"
@@ -141,7 +141,7 @@ function TreeNode({
   return (
     <div>
       {!isRoot && (
-        <button
+        <button type="button"
           type="button"
           onClick={() => onToggle(node.path)}
           className="flex items-center gap-1.5 w-full px-2 py-1 hover:bg-secondary/30 text-[11px] font-mono text-left"

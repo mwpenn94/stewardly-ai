@@ -613,7 +613,7 @@ function QuestionView({
             const showWrong = revealed && isSelected && !isCorrect;
             return (
               <li key={i}>
-                <button
+                <button type="button"
                   type="button"
                   disabled={revealed}
                   onClick={() => onSelect(i)}

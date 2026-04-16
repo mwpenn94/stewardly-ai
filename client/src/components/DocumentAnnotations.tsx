@@ -81,7 +81,7 @@ export default function DocumentAnnotations({ documentId }: Props) {
       <div className="space-y-2">
         <div className="flex gap-1 flex-wrap">
           {Object.entries(TYPE_META).filter(([k]) => k !== "ai_insight").map(([key, meta]) => (
-            <button
+            <button type="button"
               key={key}
               onClick={() => setNewType(key)}
               className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-medium transition-all ${

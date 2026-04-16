@@ -13,6 +13,7 @@ import { useState, useMemo, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import DOMPurify from "dompurify";
 import { toast } from "sonner";
 import {
   Mail,
@@ -421,7 +422,7 @@ function CampaignEditor({
                 </CardTitle>
               </CardHeader>
               <CardContent className="prose prose-sm dark:prose-invert max-w-none">
-                <div dangerouslySetInnerHTML={{ __html: bodyHtml.replace(/\{\{(\w+)\}\}/g, (_, k) => `[${k}]`) }} />
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(bodyHtml.replace(/\{\{(\w+)\}\}/g, (_, k) => `[${k}]`)) }} />
               </CardContent>
             </Card>
           )}
@@ -888,7 +889,7 @@ function CampaignDetail({
                 <div
                   className="prose prose-sm dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{
-                    __html: c.bodyHtml.replace(/\{\{(\w+)\}\}/g, (_, k) => `<span class="text-primary font-medium">[${k}]</span>`),
+                    __html: DOMPurify.sanitize(c.bodyHtml.replace(/\{\{(\w+)\}\}/g, (_, k) => `<span class="text-primary font-medium">[${k}]</span>`)),
                   }}
                 />
               </div>

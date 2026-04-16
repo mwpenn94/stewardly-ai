@@ -209,7 +209,7 @@ export function AIChatBox({
               {suggestedPrompts && suggestedPrompts.length > 0 && (
                 <div className="flex max-w-2xl flex-wrap justify-center gap-2">
                   {suggestedPrompts.map((prompt, index) => (
-                    <button
+                    <button type="button"
                       key={index}
                       onClick={() => onSendMessage(prompt)}
                       disabled={isLoading}

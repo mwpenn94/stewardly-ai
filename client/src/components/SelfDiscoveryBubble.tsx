@@ -80,7 +80,7 @@ export function SelfDiscoveryBubble({
             {config.label}
           </span>
           <div className="flex-1" />
-          <button
+          <button type="button"
             onClick={onDismiss}
             className="p-1 rounded-md hover:bg-muted/50 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
             aria-label="Dismiss suggestion"
@@ -90,7 +90,7 @@ export function SelfDiscoveryBubble({
         </div>
 
         {/* Query — clickable */}
-        <button
+        <button type="button"
           onClick={onAccept}
           className="w-full text-left group px-4 py-2.5 flex items-center gap-3 hover:bg-primary/[0.03] transition-colors"
         >
@@ -103,7 +103,7 @@ export function SelfDiscoveryBubble({
         {/* Expandable details */}
         {(reasoning || relatedFeatures.length > 0) && (
           <div className="px-4 pb-2">
-            <button
+            <button type="button"
               onClick={() => setShowDetails(!showDetails)}
               className="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
             >

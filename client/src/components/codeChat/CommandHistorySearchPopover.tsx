@@ -91,7 +91,7 @@ export default function CommandHistorySearchPopover({
             placeholder="Reverse-search command history…"
             className="h-8 text-sm border-0 bg-transparent focus-visible:ring-0 shadow-none px-0"
           />
-          <button
+          <button type="button"
             type="button"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground shrink-0"

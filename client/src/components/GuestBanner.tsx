@@ -47,7 +47,7 @@ export function GuestBanner() {
             <LogIn className="w-3.5 h-3.5" />
             Sign In
           </Button>
-          <button
+          <button type="button"
             onClick={() => {
               setDismissed(true);
               sessionStorage.setItem("guest-banner-dismissed", "true");

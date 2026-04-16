@@ -89,14 +89,14 @@ export default function ConsentGate({ children }: ConsentGateProps) {
           />
           <label htmlFor="agree" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
             I have read and agree to the{" "}
-            <button
+            <button type="button"
               onClick={() => navigate("/terms")}
               className="text-primary underline underline-offset-2 hover:text-primary/80"
             >
               Terms of Service
             </button>{" "}
             and{" "}
-            <button
+            <button type="button"
               onClick={() => navigate("/terms")}
               className="text-primary underline underline-offset-2 hover:text-primary/80"
             >

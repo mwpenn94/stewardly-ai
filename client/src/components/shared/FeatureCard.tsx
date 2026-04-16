@@ -30,7 +30,7 @@ export function FeatureCard({
   compact = false,
 }: FeatureCardProps) {
   return (
-    <button
+    <button type="button"
       type="button"
       onClick={onClick}
       className={cn(

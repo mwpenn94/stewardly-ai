@@ -199,7 +199,7 @@ export default function GitStatusPanel() {
                 const isSelected = selectedPath === entry.path;
                 return (
                   <li key={entry.path}>
-                    <button
+                    <button type="button"
                       type="button"
                       onClick={() => {
                         setSelectedPath(entry.path);

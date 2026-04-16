@@ -165,7 +165,7 @@ export default function LicenseScannerPanel() {
             </select>
           </div>
           <div className="flex flex-wrap gap-1.5 text-[11px]">
-            <button
+            <button type="button"
               type="button"
               onClick={() => setCategory("all")}
               className={`px-2 py-0.5 rounded-full border transition ${
@@ -180,7 +180,7 @@ export default function LicenseScannerPanel() {
               const count = summary?.byCategory[cat] ?? 0;
               if (count === 0) return null;
               return (
-                <button
+                <button type="button"
                   key={cat}
                   type="button"
                   onClick={() => setCategory(cat)}

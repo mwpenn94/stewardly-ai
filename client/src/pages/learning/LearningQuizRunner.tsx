@@ -312,7 +312,7 @@ export default function LearningQuizRunner() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                     Question order
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <Button
                       variant={mode === "shuffle" ? "default" : "outline"}
                       size="sm"
@@ -436,7 +436,7 @@ export default function LearningQuizRunner() {
                     const showWrong = revealed && isSelected && !isCorrect;
                     return (
                       <li key={i}>
-                        <button
+                        <button type="button"
                           type="button"
                           disabled={revealed}
                           onClick={() => setSelected(i)}

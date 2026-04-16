@@ -550,7 +550,7 @@ export default function TeamBuilder() {
                           </div>
                           <Progress value={targetPct * 100} className="h-1.5" />
                           {row.backPlan && (
-                            <div className="grid grid-cols-5 gap-2 text-[10px] text-muted-foreground">
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[10px] text-muted-foreground">
                               <div>Approaches: <span className="text-foreground font-medium">{row.backPlan.daily?.approaches ?? "—"}/day</span></div>
                               <div>Sets: <span className="text-foreground font-medium">{row.backPlan.daily?.sets ?? "—"}/day</span></div>
                               <div>Held: <span className="text-foreground font-medium">{row.backPlan.daily?.held ?? "—"}/day</span></div>

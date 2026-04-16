@@ -338,7 +338,7 @@ function QuizCard({ data, title }: { data: any; title: string }) {
         <p className="text-sm font-medium">{data.question}</p>
         <div className="space-y-1.5">
           {data.options?.map((opt: string, i: number) => (
-            <button
+            <button type="button"
               key={i}
               onClick={() => { if (!revealed) setSelected(i); }}
               className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${

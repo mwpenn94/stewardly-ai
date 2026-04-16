@@ -99,7 +99,7 @@ export default function SessionAnalyticsPopover({
               Session analytics
             </h2>
           </div>
-          <button
+          <button type="button"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
             aria-label="Close analytics"
@@ -178,7 +178,7 @@ export default function SessionAnalyticsPopover({
                 <Clock className="h-3 w-3" /> Top expensive turns
               </div>
               {analytics.topTurns.map((turn, idx) => (
-                <button
+                <button type="button"
                   key={turn.messageId}
                   type="button"
                   className="w-full flex items-start justify-between gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-secondary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"

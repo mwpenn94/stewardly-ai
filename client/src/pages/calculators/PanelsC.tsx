@@ -708,7 +708,7 @@ export function ActionPlanPanel(p: PanelProps) {
                       ))}
                     </ul>
                     {hasMore && (
-                      <button
+                      <button type="button"
                         className="text-[10px] text-primary hover:underline mt-1"
                         onClick={() => {
                           const next = new Set<number>(p.expandedPhases || new Set<number>());

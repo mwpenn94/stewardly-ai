@@ -167,7 +167,7 @@ export default function IncomeStreamBreakdown({ results, title = "Income Stream 
             <p className="text-[10px] text-muted-foreground mb-2">Income Growth Over Time</p>
             <div className="flex items-end gap-[3px] h-20">
               {stackedBars.map((bar) => (
-                <button
+                <button type="button"
                   key={bar.year}
                   type="button"
                   className="flex-1 flex flex-col-reverse rounded-t-sm overflow-hidden cursor-pointer transition-opacity hover:opacity-80 border-0 bg-transparent p-0"

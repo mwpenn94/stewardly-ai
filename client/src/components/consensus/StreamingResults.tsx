@@ -196,7 +196,7 @@ function ModelCard({
 
         {state.status === "complete" && state.content && (
           <>
-            <button
+            <button type="button"
               type="button"
               className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
               onClick={() => setExpanded((v) => !v)}

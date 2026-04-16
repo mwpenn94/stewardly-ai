@@ -113,7 +113,7 @@ export function RefTip({ text, refId }: { text: string; refId?: string }) {
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button type="button" className="inline-flex items-center align-middle ml-0.5 text-muted-foreground/50 hover:text-primary transition-colors" aria-label="Source info">
+          <button type="button" type="button" className="inline-flex items-center align-middle ml-0.5 text-muted-foreground/50 hover:text-primary transition-colors" aria-label="Source info">
             <Info className="w-3 h-3" />
           </button>
         </TooltipTrigger>
@@ -140,7 +140,7 @@ export function PillarTooltip({ pillar }: { pillar: string }) {
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button type="button" className="inline-flex items-center align-middle ml-1 text-muted-foreground/40 hover:text-primary transition-colors" aria-label={`${pillar} pillar explanation`}>
+          <button type="button" type="button" className="inline-flex items-center align-middle ml-1 text-muted-foreground/40 hover:text-primary transition-colors" aria-label={`${pillar} pillar explanation`}>
             <Info className="w-3 h-3" />
           </button>
         </TooltipTrigger>
@@ -363,7 +363,7 @@ export function ExportPDFButton({ title, subtitle, clientName }: { title: string
     }
   };
   return (
-    <button
+    <button type="button"
       onClick={handleExport}
       disabled={exporting}
       className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded border border-border hover:border-primary/30 disabled:opacity-50"

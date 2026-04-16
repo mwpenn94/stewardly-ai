@@ -62,7 +62,7 @@ export default function KeyboardShortcutsOverlay({
         className="relative w-full max-w-2xl max-h-[80vh] overflow-auto rounded-xl border border-border/60 bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
+        <button type="button"
           onClick={onClose}
           className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
           aria-label="Close shortcuts overlay"

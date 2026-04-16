@@ -45,11 +45,11 @@ export default function ContextualAd({ ad, onDismiss, onClickThrough, className 
         <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Sponsored</span>
         <span className="text-foreground/80">{ad.content}</span>
         {ad.ctaUrl && (
-          <button onClick={handleClick} className="text-primary hover:underline font-medium whitespace-nowrap">
+          <button type="button" onClick={handleClick} className="text-primary hover:underline font-medium whitespace-nowrap">
             {ad.ctaText || "Learn more"} →
           </button>
         )}
-        <button onClick={handleDismiss} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="Dismiss ad">
+        <button type="button" onClick={handleDismiss} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="Dismiss ad">
           <X className="w-3 h-3" />
         </button>
       </div>
@@ -66,7 +66,7 @@ export default function ContextualAd({ ad, onDismiss, onClickThrough, className 
             {ad.type === "product_recommendation" ? "Recommended" : "Sponsored"} · {ad.advertiser}
           </span>
         </div>
-        <button
+        <button type="button"
           onClick={handleDismiss}
           className="text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Dismiss sponsored content"
@@ -79,7 +79,7 @@ export default function ContextualAd({ ad, onDismiss, onClickThrough, className 
       <div className="p-3">
         <p className="text-xs text-foreground/80 leading-relaxed">{ad.content}</p>
         {ad.ctaUrl && (
-          <button
+          <button type="button"
             onClick={handleClick}
             className="mt-2 flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
           >

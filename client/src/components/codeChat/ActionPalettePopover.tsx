@@ -113,7 +113,7 @@ export default function ActionPalettePopover({
             className="border-0 bg-transparent focus-visible:ring-0 text-sm"
             aria-label="Action palette search"
           />
-          <button
+          <button type="button"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground shrink-0"
             aria-label="Close palette"
@@ -196,7 +196,7 @@ function PaletteRow({
 }) {
   return (
     <li>
-      <button
+      <button type="button"
         type="button"
         onClick={onSelect}
         onMouseEnter={onHover}

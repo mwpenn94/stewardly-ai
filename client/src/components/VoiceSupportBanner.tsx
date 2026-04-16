@@ -11,7 +11,7 @@
  * Accessibility:
  * - `role="status"` + `aria-live="polite"` so SR users hear the fallback
  *   instructions once.
- * - The dismiss button is a real `<button>` with `aria-label`.
+ * - The dismiss button is a real `<button type="button">` with `aria-label`.
  * - Text is not color-alone — the icon + bolded label convey meaning for
  *   users on hostile color palettes.
  */
@@ -105,7 +105,7 @@ export function VoiceSupportBanner({
         <div className="mt-1 text-xs text-muted-foreground">{caps.recoveryHint}</div>
       </div>
       {dismissible && (
-        <button
+        <button type="button"
           type="button"
           onClick={onDismiss}
           className="shrink-0 rounded p-1 text-muted-foreground hover:bg-secondary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"

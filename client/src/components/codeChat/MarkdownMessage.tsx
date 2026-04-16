@@ -126,7 +126,7 @@ function CodeBlock({
         <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-mono">
           {normalizedLang === "text" ? (language ?? "code") : normalizedLang}
         </span>
-        <button
+        <button type="button"
           type="button"
           onClick={onCopy}
           className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"

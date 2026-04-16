@@ -59,7 +59,7 @@ export function ProgressiveMessage({
           <div className="prose-chat text-sm">
             <p className="text-foreground/90 leading-relaxed">{summary}</p>
           </div>
-          <button
+          <button type="button"
             onClick={() => setExpanded(true)}
             className="flex items-center gap-1 mt-2 text-xs text-accent hover:text-accent/80 transition-colors"
           >
@@ -73,7 +73,7 @@ export function ProgressiveMessage({
             <Streamdown>{content}</Streamdown>
           </div>
           {isLong && !isLatest && (
-            <button
+            <button type="button"
               onClick={() => setExpanded(false)}
               className="flex items-center gap-1 mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -85,7 +85,7 @@ export function ProgressiveMessage({
       )}
 
       {/* Copy button — visible on hover */}
-      <button
+      <button type="button"
         onClick={handleCopy}
         className="absolute top-0 right-0 p-2 rounded-md opacity-0 group-hover:opacity-100 transition-opacity bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground"
         title="Copy response"

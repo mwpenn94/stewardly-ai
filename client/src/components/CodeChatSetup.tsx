@@ -151,7 +151,7 @@ export default function CodeChatSetup({
         </p>
 
         {/* OAuth option */}
-        <button
+        <button type="button"
           type="button"
           onClick={() => {
             setConnectionMethod("oauth");
@@ -180,7 +180,7 @@ export default function CodeChatSetup({
         </button>
 
         {/* API key option */}
-        <button
+        <button type="button"
           type="button"
           onClick={() => setConnectionMethod("apikey")}
           className={`w-full flex items-start gap-4 rounded-xl border p-4 text-left transition-colors ${
@@ -248,7 +248,7 @@ export default function CodeChatSetup({
           {repos.map((repo) => {
             const selected = selectedRepos.includes(repo);
             return (
-              <button
+              <button type="button"
                 key={repo}
                 type="button"
                 onClick={() => toggleRepo(repo)}
@@ -301,7 +301,7 @@ export default function CodeChatSetup({
           </div>
 
           {/* Write -- toggleable */}
-          <button
+          <button type="button"
             type="button"
             onClick={() => setWriteEnabled((v) => !v)}
             className={`w-full flex items-center gap-4 rounded-lg border p-4 text-left transition-colors ${
@@ -333,7 +333,7 @@ export default function CodeChatSetup({
           </button>
 
           {/* Execute -- toggleable */}
-          <button
+          <button type="button"
             type="button"
             onClick={() => setExecuteEnabled((v) => !v)}
             className={`w-full flex items-center gap-4 rounded-lg border p-4 text-left transition-colors ${
@@ -384,7 +384,7 @@ export default function CodeChatSetup({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-heading text-xl">Code Chat Setup</h2>
-        <button
+        <button type="button"
           type="button"
           onClick={onCancel}
           className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"

@@ -1004,7 +1004,7 @@ export default function Calculators() {
                 <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-2 mb-1" id={`nav-group-${section.group.toLowerCase().replace(/\s+/g, '-')}`}>{section.group}</p>
                 <div role="list" aria-labelledby={`nav-group-${section.group.toLowerCase().replace(/\s+/g, '-')}`}>
                   {section.items.map(item => (
-                    <button key={item.id} role="listitem" onClick={() => { setActivePanel(item.id); setCalcSidebarOpen(false); }}
+                    <button type="button" key={item.id} role="listitem" onClick={() => { setActivePanel(item.id); setCalcSidebarOpen(false); }}
                       aria-label={`Navigate to ${item.label} panel`}
                       aria-current={activePanel === item.id ? 'page' : undefined}
                       tabIndex={0}
@@ -1037,7 +1037,7 @@ export default function Calculators() {
             <span className="text-[10px] text-muted-foreground/50">
               {sessionsQuery.data?.length || 0}/10 slots
             </span>
-            <button onClick={handleExportPdf} className="text-[10px] text-muted-foreground/50 hover:text-primary transition-colors" title="Print Report">
+            <button type="button" onClick={handleExportPdf} className="text-[10px] text-muted-foreground/50 hover:text-primary transition-colors" title="Print Report">
               Print
             </button>
           </div>
@@ -1136,7 +1136,7 @@ export default function Calculators() {
                 <p className="text-sm font-medium text-foreground mb-1">Welcome to the Unified Wealth Engine</p>
                 <p className="text-xs text-muted-foreground">Start by entering your client profile, then explore each planning domain. All calculations update in real-time. Use Save/Load to manage multiple client scenarios, and Export to generate reports.</p>
               </div>
-              <button onClick={() => { setShowWelcome(false); try { localStorage.setItem('wb-welcome-dismissed', 'true'); } catch {} }}
+              <button type="button" onClick={() => { setShowWelcome(false); try { localStorage.setItem('wb-welcome-dismissed', 'true'); } catch {} }}
                 className="text-muted-foreground hover:text-foreground transition-colors">
                 <X className="w-4 h-4" />
               </button>

@@ -114,7 +114,7 @@ export function ReasoningChain(props: ReasoningChainProps) {
 
   return (
     <div className="mt-1.5">
-      <button
+      <button type="button"
         onClick={() => setExpanded(!expanded)}
         className={`flex items-center gap-1.5 text-[10px] px-2 py-1 rounded-md transition-all hover:bg-secondary/60 ${
           expanded ? "bg-secondary/40" : ""

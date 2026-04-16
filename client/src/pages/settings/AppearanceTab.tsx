@@ -118,7 +118,7 @@ export default function AppearanceTab() {
             ).map((opt) => {
               const active = preference === opt.id;
               return (
-                <button
+                <button type="button"
                   key={opt.id}
                   type="button"
                   role="radio"
@@ -163,7 +163,7 @@ export default function AppearanceTab() {
             {FONT_SIZES.map((fs) => {
               const active = settings.fontScale === fs.value;
               return (
-                <button
+                <button type="button"
                   key={fs.value}
                   type="button"
                   role="radio"
@@ -204,7 +204,7 @@ export default function AppearanceTab() {
             {CHAT_DENSITIES.map((d) => {
               const active = settings.chatDensity === d.value;
               return (
-                <button
+                <button type="button"
                   key={d.value}
                   type="button"
                   role="radio"
@@ -240,7 +240,7 @@ export default function AppearanceTab() {
             {COLOR_BLIND_MODES.map((m) => {
               const active = settings.colorBlindMode === m.value;
               return (
-                <button
+                <button type="button"
                   key={m.value}
                   type="button"
                   role="radio"
@@ -378,7 +378,7 @@ function DisclosureLevelPicker() {
   return (
     <div className="space-y-2" role="radiogroup" aria-label="Feature complexity level">
       {levels.map(l => (
-        <button
+        <button type="button"
           key={l.value}
           type="button"
           role="radio"

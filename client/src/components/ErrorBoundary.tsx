@@ -156,7 +156,7 @@ class ErrorBoundary extends Component<Props, State> {
               </div>
             )}
 
-            <button
+            <button type="button"
               onClick={() => window.location.reload()}
               autoFocus
               className={cn(

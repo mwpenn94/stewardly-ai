@@ -230,7 +230,7 @@ export default function SnippetLibraryPopover({
             <Button size="sm" onClick={() => setShowForm((v) => !v)}>
               <Plus className="w-3 h-3 mr-1" /> New
             </Button>
-            <button
+            <button type="button"
               onClick={onClose}
               aria-label="Close"
               className="text-muted-foreground hover:text-foreground ml-2"
@@ -267,7 +267,7 @@ export default function SnippetLibraryPopover({
             {tagsList.map((tag) => {
               const active = tagFilter.includes(tag);
               return (
-                <button
+                <button type="button"
                   key={tag}
                   type="button"
                   onClick={() => toggleTagFilter(tag)}

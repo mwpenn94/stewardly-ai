@@ -436,7 +436,7 @@ function CompanySelector({
       <CardContent className="space-y-3">
         <div className="grid grid-cols-1 gap-1.5">
           {COMPANIES.map(c => (
-            <button
+            <button type="button"
               key={c.key}
               onClick={() => setCompanyKey(c.key as CompanyKeyType)}
               className={`text-left px-3 py-2 rounded-md border text-xs transition-colors ${

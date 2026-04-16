@@ -126,9 +126,9 @@ const HOW_IT_WORKS = [
 ] as const;
 
 const TRUST_STATS = [
-  { value: "352", label: "Database tables" },
-  { value: "3,215", label: "Passing tests" },
-  { value: "78", label: "API endpoints" },
+  { value: "352+", label: "Database tables" },
+  { value: "8,800+", label: "Passing tests" },
+  { value: "128+", label: "API endpoints" },
   { value: "0", label: "TypeScript errors" },
 ] as const;
 
@@ -203,7 +203,7 @@ export default function NewLanding() {
               variant="outline"
               size="lg"
               className="gap-2 text-base"
-              onClick={() => navigate("/sign-in")}
+              onClick={() => navigate("/signin")}
             >
               Sign in
             </Button>
