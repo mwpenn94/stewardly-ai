@@ -168,7 +168,7 @@ export default function SymbolNavigatorPopover({
                 return (
                   <li key={`${m.path}:${m.line}:${m.name}`}>
                     <button type="button"
-                      type="button"
+                      
                       onClick={() => handleSelect(idx)}
                       onMouseEnter={() => setActiveIdx(idx)}
                       className={`w-full flex items-start gap-3 px-4 py-2 text-left transition-colors ${

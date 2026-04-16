@@ -5061,3 +5061,10 @@
 - [x] Restore QueryErrorBanner import in AdminFeaturePermissions
 - [x] Verify all 90 novel angles checked (security, accessibility, performance, SEO, UX, architecture, code quality)
 - [x] All 8850 tests passing across 358 test files (0 failures after fix)
+
+## Publish Fix — Duplicate JSX Attributes
+- [x] Fix 97 duplicate type="button" attributes across 50 files (caused by Pass 68 button-type script)
+- [x] Fix duplicate autoComplete="email" in SignIn.tsx
+- [x] Fix 3 files importing non-existent @/hooks/use-toast (convert to sonner)
+- [x] Verify production build succeeds (vite build + esbuild)
+- [x] All tests still passing

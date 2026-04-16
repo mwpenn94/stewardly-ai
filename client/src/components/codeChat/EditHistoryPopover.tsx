@@ -210,7 +210,7 @@ export default function EditHistoryPopover({
                     </span>
                     <div className="flex items-center gap-1 shrink-0">
                       <button type="button"
-                        type="button"
+                        
                         className="text-[10px] px-1.5 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/30"
                         onClick={() => onRevert(entry)}
                         aria-label={`Revert ${entry.path} to before this edit`}
@@ -218,7 +218,7 @@ export default function EditHistoryPopover({
                         Revert to before
                       </button>
                       <button type="button"
-                        type="button"
+                        
                         className="text-muted-foreground hover:text-destructive p-0.5"
                         onClick={() => onDrop(entry.id)}
                         aria-label="Drop this entry from history"

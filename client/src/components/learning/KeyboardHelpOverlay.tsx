@@ -100,7 +100,7 @@ export function KeyboardHelpOverlay({ shortcuts, title = "Keyboard shortcuts" }:
               </h2>
             </div>
             <button type="button"
-              type="button"
+              
               onClick={() => setOpen(false)}
               className="text-muted-foreground hover:text-foreground"
               aria-label="Close keyboard help"

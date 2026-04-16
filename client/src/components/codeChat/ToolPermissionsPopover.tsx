@@ -213,14 +213,14 @@ export default function ToolPermissionsPopover({
 
         <div className="mt-4 pt-3 border-t border-border/30 flex items-center justify-between text-[10px]">
           <button type="button"
-            type="button"
+            
             className="text-muted-foreground hover:text-foreground"
             onClick={() => onChange(DEFAULT_ENABLED_TOOLS)}
           >
             Reset to defaults
           </button>
           <button type="button"
-            type="button"
+            
             className="text-muted-foreground hover:text-foreground"
             onClick={() =>
               onChange(

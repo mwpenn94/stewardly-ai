@@ -552,7 +552,7 @@ function QuestionCard({
             return (
               <li key={i}>
                 <button type="button"
-                  type="button"
+                  
                   disabled={revealed}
                   onClick={() => onSelect(i)}
                   aria-label={`Option ${String.fromCharCode(65 + i)}`}

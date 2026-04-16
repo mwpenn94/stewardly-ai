@@ -118,7 +118,7 @@ export function VoiceOnboardingCoach() {
             </div>
           </div>
           <button type="button"
-            type="button"
+            
             onClick={() => dismiss(true)}
             aria-label="Dismiss voice tour"
             className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
@@ -170,14 +170,14 @@ export function VoiceOnboardingCoach() {
 
         <div className="mt-4 flex items-center justify-between gap-2">
           <button type="button"
-            type="button"
+            
             onClick={() => dismiss(false)}
             className="text-[11px] text-muted-foreground hover:text-foreground"
           >
             Maybe later
           </button>
           <button type="button"
-            type="button"
+            
             onClick={() => {
               dismiss(true);
               // Fire a hands-free toggle so the user experiences it.

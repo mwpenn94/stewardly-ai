@@ -329,7 +329,7 @@ export default function FindReplacePanel() {
                         aria-label={`Select ${file.path}`}
                       />
                       <button type="button"
-                        type="button"
+                        
                         onClick={() =>
                           window.dispatchEvent(
                             new CustomEvent("codechat-open-file", {

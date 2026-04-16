@@ -152,7 +152,7 @@ export default function CodeChatSetup({
 
         {/* OAuth option */}
         <button type="button"
-          type="button"
+          
           onClick={() => {
             setConnectionMethod("oauth");
             setApiKeyError(null);
@@ -181,7 +181,7 @@ export default function CodeChatSetup({
 
         {/* API key option */}
         <button type="button"
-          type="button"
+          
           onClick={() => setConnectionMethod("apikey")}
           className={`w-full flex items-start gap-4 rounded-xl border p-4 text-left transition-colors ${
             connectionMethod === "apikey"
@@ -250,7 +250,6 @@ export default function CodeChatSetup({
             return (
               <button type="button"
                 key={repo}
-                type="button"
                 onClick={() => toggleRepo(repo)}
                 className={`w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors ${
                   selected
@@ -302,7 +301,7 @@ export default function CodeChatSetup({
 
           {/* Write -- toggleable */}
           <button type="button"
-            type="button"
+            
             onClick={() => setWriteEnabled((v) => !v)}
             className={`w-full flex items-center gap-4 rounded-lg border p-4 text-left transition-colors ${
               writeEnabled
@@ -334,7 +333,7 @@ export default function CodeChatSetup({
 
           {/* Execute -- toggleable */}
           <button type="button"
-            type="button"
+            
             onClick={() => setExecuteEnabled((v) => !v)}
             className={`w-full flex items-center gap-4 rounded-lg border p-4 text-left transition-colors ${
               executeEnabled
@@ -385,7 +384,7 @@ export default function CodeChatSetup({
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-heading text-xl">Code Chat Setup</h2>
         <button type="button"
-          type="button"
+          
           onClick={onCancel}
           className="rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
           aria-label="Cancel setup"

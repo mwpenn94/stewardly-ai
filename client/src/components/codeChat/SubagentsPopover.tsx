@@ -201,7 +201,7 @@ export default function SubagentsPopover({
                   }`}
                 >
                   <button type="button"
-                    type="button"
+                    
                     onClick={() => {
                       onPick(isActive ? null : a.slug);
                       onClose();

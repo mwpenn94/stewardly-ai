@@ -200,7 +200,7 @@ export function LifeEventsBanner({
           </Badge>
         </div>
         <button type="button"
-          type="button"
+          
           onClick={handleAcknowledge}
           className="text-[10px] text-muted-foreground hover:text-accent transition-colors"
           aria-label="Acknowledge all life events and update baseline"
@@ -275,7 +275,7 @@ function EventCard({
             Open <ArrowRight className="w-3 h-3 ml-1" />
           </Button>
           <button type="button"
-            type="button"
+            
             onClick={onDismiss}
             className="text-[9px] text-muted-foreground hover:text-foreground"
             aria-label={`Dismiss ${event.title}`}

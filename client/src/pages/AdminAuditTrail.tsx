@@ -14,7 +14,7 @@ import {
   Shield, Share2, Lock, Unlock, UserCheck, UserX, RefreshCw,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 
@@ -29,7 +29,7 @@ const ACTION_CONFIG: Record<string, { label: string; color: string; icon: typeof
 };
 
 export default function AdminAuditTrail() {
-  const { toast } = useToast();
+
   const [search, setSearch] = useState("");
   const [filterAction, setFilterAction] = useState("all");
   const [expandedEntry, setExpandedEntry] = useState<number | null>(null);
@@ -74,7 +74,7 @@ export default function AdminAuditTrail() {
 
   const handleExport = () => {
     if (!filtered.length) {
-      toast({ title: "Nothing to export", variant: "destructive" });
+      toast.error("Nothing to export");
       return;
     }
     const headers = ["Timestamp", "Action", "Feature", "Actor", "Target", "Previous", "New", "Reason"];
@@ -96,7 +96,7 @@ export default function AdminAuditTrail() {
     a.download = `audit-trail-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast({ title: "Exported", description: `${filtered.length} entries exported to CSV` });
+    toast.success(`Exported ${filtered.length} entries to CSV`);
   };
 
   return (

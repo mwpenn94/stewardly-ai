@@ -113,7 +113,7 @@ export function RefTip({ text, refId }: { text: string; refId?: string }) {
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button type="button" type="button" className="inline-flex items-center align-middle ml-0.5 text-muted-foreground/50 hover:text-primary transition-colors" aria-label="Source info">
+          <button type="button" className="inline-flex items-center align-middle ml-0.5 text-muted-foreground/50 hover:text-primary transition-colors" aria-label="Source info">
             <Info className="w-3 h-3" />
           </button>
         </TooltipTrigger>
@@ -140,7 +140,7 @@ export function PillarTooltip({ pillar }: { pillar: string }) {
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button type="button" type="button" className="inline-flex items-center align-middle ml-1 text-muted-foreground/40 hover:text-primary transition-colors" aria-label={`${pillar} pillar explanation`}>
+          <button type="button" className="inline-flex items-center align-middle ml-1 text-muted-foreground/40 hover:text-primary transition-colors" aria-label={`${pillar} pillar explanation`}>
             <Info className="w-3 h-3" />
           </button>
         </TooltipTrigger>

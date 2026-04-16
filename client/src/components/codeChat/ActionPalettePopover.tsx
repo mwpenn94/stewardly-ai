@@ -197,7 +197,7 @@ function PaletteRow({
   return (
     <li>
       <button type="button"
-        type="button"
+        
         onClick={onSelect}
         onMouseEnter={onHover}
         className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-left transition-colors ${

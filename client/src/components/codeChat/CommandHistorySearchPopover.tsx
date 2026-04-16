@@ -92,7 +92,7 @@ export default function CommandHistorySearchPopover({
             className="h-8 text-sm border-0 bg-transparent focus-visible:ring-0 shadow-none px-0"
           />
           <button type="button"
-            type="button"
+            
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground shrink-0"
             aria-label="Close"

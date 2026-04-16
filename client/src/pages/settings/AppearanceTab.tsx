@@ -120,7 +120,6 @@ export default function AppearanceTab() {
               return (
                 <button type="button"
                   key={opt.id}
-                  type="button"
                   role="radio"
                   aria-checked={active}
                   aria-label={`${opt.label} theme — ${opt.desc}`}
@@ -165,7 +164,6 @@ export default function AppearanceTab() {
               return (
                 <button type="button"
                   key={fs.value}
-                  type="button"
                   role="radio"
                   aria-checked={active}
                   aria-label={`${fs.label} font size, ${fs.pct}`}
@@ -206,7 +204,6 @@ export default function AppearanceTab() {
               return (
                 <button type="button"
                   key={d.value}
-                  type="button"
                   role="radio"
                   aria-checked={active}
                   aria-label={`${d.label} chat density — ${d.desc}`}
@@ -242,7 +239,6 @@ export default function AppearanceTab() {
               return (
                 <button type="button"
                   key={m.value}
-                  type="button"
                   role="radio"
                   aria-checked={active}
                   aria-label={`${m.label} — ${m.desc}`}
@@ -380,7 +376,6 @@ function DisclosureLevelPicker() {
       {levels.map(l => (
         <button type="button"
           key={l.value}
-          type="button"
           role="radio"
           aria-checked={level === l.value}
           disabled={l.value > maxLevel}

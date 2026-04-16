@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Shield, Lock, Unlock, Eye, Users, Building2, Search, Filter, ChevronRight, History, Clock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 
 const LAYER_COLORS: Record<string, string> = {
@@ -26,7 +26,7 @@ const DISCLOSURE_LABELS: Record<number, string> = {
 };
 
 export default function AdminFeaturePermissions() {
-  const { toast } = useToast();
+
   const [search, setSearch] = useState("");
   const [filterLayer, setFilterLayer] = useState("all");
   const [filterDisclosure, setFilterDisclosure] = useState("all");

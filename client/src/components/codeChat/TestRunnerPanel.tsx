@@ -157,7 +157,6 @@ export default function TestRunnerPanel() {
               return (
                 <button type="button"
                   key={s}
-                  type="button"
                   onClick={() => toggleStatus(s)}
                   aria-pressed={active}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition capitalize ${
@@ -237,7 +236,7 @@ export default function TestRunnerPanel() {
               <Card key={f.path}>
                 <CardContent className="p-0">
                   <button type="button"
-                    type="button"
+                    
                     onClick={() => toggleExpanded(f.path)}
                     className="w-full text-left p-3 hover:bg-muted/50 flex items-center gap-3"
                   >

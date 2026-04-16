@@ -169,7 +169,6 @@ export default function IncomeStreamBreakdown({ results, title = "Income Stream 
               {stackedBars.map((bar) => (
                 <button type="button"
                   key={bar.year}
-                  type="button"
                   className="flex-1 flex flex-col-reverse rounded-t-sm overflow-hidden cursor-pointer transition-opacity hover:opacity-80 border-0 bg-transparent p-0"
                   style={{ height: `${bar.heightPct}%` }}
                   onClick={() => setSelectedYear(bar.year)}

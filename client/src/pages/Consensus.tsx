@@ -198,7 +198,6 @@ export default function ConsensusPage() {
                 {DEFAULT_MODELS.map((m) => (
                   <button type="button"
                     key={m.id}
-                    type="button"
                     onClick={() => toggleModel(m.id)}
                     className={`px-3 py-1 text-xs rounded-full border ${
                       selectedModelIds.includes(m.id)
@@ -218,7 +217,7 @@ export default function ConsensusPage() {
                 <Label>Weight preset</Label>
                 <div className="flex flex-wrap gap-2">
                   <button type="button"
-                    type="button"
+                    
                     onClick={() => setSelectedPresetId("none")}
                     className={`px-3 py-1 text-xs rounded-full border ${
                       selectedPresetId === "none"
@@ -231,7 +230,6 @@ export default function ConsensusPage() {
                   {(presets.data.presets ?? []).map((p) => (
                     <button type="button"
                       key={`${p.id ?? p.name}`}
-                      type="button"
                       title={p.description}
                       onClick={() => setSelectedPresetId(p.id ?? "none")}
                       className={`px-3 py-1 text-xs rounded-full border ${

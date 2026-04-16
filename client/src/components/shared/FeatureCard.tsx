@@ -31,7 +31,7 @@ export function FeatureCard({
 }: FeatureCardProps) {
   return (
     <button type="button"
-      type="button"
+      
       onClick={onClick}
       className={cn(
         "group text-left w-full rounded-xl border border-border/60 bg-card/50 transition-all card-lift",

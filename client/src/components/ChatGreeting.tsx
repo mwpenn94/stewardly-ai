@@ -304,7 +304,7 @@ export default function ChatGreetingV2({
       {/* Pass 3: Proactive Insight Card */}
       {topInsight && isAuthenticated && (
         <motion.div className="w-full" initial="hidden" animate="visible" variants={variant} custom={2.5}>
-          <button type="button" type="button"
+          <button type="button"
             onClick={() => onSuggestionClick(topInsight.title ? `Tell me more about: ${topInsight.title}` : `Explain this insight: ${topInsight.content.substring(0, 100)}`)}
             className="w-full flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-left transition-all hover:bg-amber-500/10 hover:border-amber-500/30 focus-visible:ring-2 focus-visible:ring-ring">
             <div className="shrink-0 rounded-lg bg-amber-500/10 p-2"><Lightbulb className="w-4 h-4 text-amber-500" /></div>

@@ -386,7 +386,7 @@ export function CommandPalette() {
         </div>
         {voiceInput.isAvailable && (
           <button type="button"
-            type="button"
+            
             onMouseDown={(e) => { e.preventDefault(); voiceInput.start(); }}
             onTouchStart={(e) => { e.preventDefault(); voiceInput.start(); }}
             onMouseUp={() => voiceInput.release()}

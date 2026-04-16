@@ -228,7 +228,6 @@ export default function PRDrafterPanel() {
                 {draft.fileMap.slice(0, 40).map((entry) => (
                   <button type="button"
                     key={entry.path}
-                    type="button"
                     onClick={() =>
                       window.dispatchEvent(
                         new CustomEvent("codechat-open-file", {

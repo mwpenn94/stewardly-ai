@@ -206,7 +206,6 @@ export default function HooksPopover({
             {EXAMPLES.map((ex) => (
               <button type="button"
                 key={ex.label}
-                type="button"
                 onClick={() => handleSeedFromExample(ex)}
                 className="px-2 py-0.5 rounded-full text-[10px] border border-border text-muted-foreground hover:border-accent hover:text-accent transition-colors"
               >
@@ -286,7 +285,7 @@ export default function HooksPopover({
         {/* Filter chips */}
         <div className="flex items-center gap-1.5 px-5 py-2 border-b border-border/30 overflow-x-auto shrink-0">
           <button type="button"
-            type="button"
+            
             className={`px-2 py-0.5 rounded-full text-[10px] border transition-colors ${
               filter === "all"
                 ? "bg-accent/10 border-accent/40 text-accent"
@@ -300,7 +299,6 @@ export default function HooksPopover({
           {EVENTS.map((e) => (
             <button type="button"
               key={e}
-              type="button"
               className={`px-2 py-0.5 rounded-full text-[10px] border whitespace-nowrap transition-colors ${
                 filter === e
                   ? EVENT_STYLE[e]
@@ -333,7 +331,7 @@ export default function HooksPopover({
                 >
                   <div className="flex items-start gap-2 px-3 py-2">
                     <button type="button"
-                      type="button"
+                      
                       onClick={() => onChange(toggleHook(hooks, h.id))}
                       className={`h-4 w-4 rounded border shrink-0 mt-0.5 flex items-center justify-center ${
                         h.enabled
@@ -370,7 +368,7 @@ export default function HooksPopover({
                       )}
                     </div>
                     <button type="button"
-                      type="button"
+                      
                       onClick={() => onChange(removeHook(hooks, h.id))}
                       className="text-muted-foreground hover:text-destructive shrink-0"
                       aria-label="Delete hook"

@@ -142,7 +142,6 @@ export default function WorkspaceSearchPanel() {
               return (
                 <button type="button"
                   key={k}
-                  type="button"
                   onClick={() => toggleKind(k)}
                   aria-pressed={active}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition ${
@@ -192,7 +191,6 @@ export default function WorkspaceSearchPanel() {
               return (
                 <button type="button"
                   key={`${r.kind}:${r.path}:${r.line}:${idx}`}
-                  type="button"
                   onClick={() => openFileAt(r.path, r.line)}
                   className="w-full text-left p-3 hover:bg-muted/50 transition-colors block"
                 >

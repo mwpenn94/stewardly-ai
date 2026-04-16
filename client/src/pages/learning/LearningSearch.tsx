@@ -268,7 +268,6 @@ function ResultGroups({
             return (
               <button type="button"
                 key={`track-${r.id}`}
-                type="button"
                 className="w-full text-left p-3 border rounded-md hover:border-primary/50 transition-colors cursor-pointer"
                 onClick={() => {
                   if (meta?.slug) onNavigate(`/learning/tracks/${meta.slug}`);

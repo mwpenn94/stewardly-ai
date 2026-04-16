@@ -260,7 +260,7 @@ export default function CodeSnippetsPopover({ open, onClose, onInsert }: Props) 
           </div>
           <div className="flex flex-wrap gap-1.5 text-[11px]">
             <button type="button"
-              type="button"
+              
               onClick={() => setActiveCategory("all")}
               className={`px-2 py-0.5 rounded-full border transition ${
                 activeCategory === "all"
@@ -276,7 +276,6 @@ export default function CodeSnippetsPopover({ open, onClose, onInsert }: Props) 
               return (
                 <button type="button"
                   key={cat}
-                  type="button"
                   onClick={() => setActiveCategory(cat)}
                   className={`px-2 py-0.5 rounded-full border transition capitalize ${
                     activeCategory === cat

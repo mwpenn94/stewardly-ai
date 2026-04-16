@@ -124,7 +124,6 @@ export default function NpmInspectorPanel() {
               {(["all", "major", "minor", "patch"] as const).map((s) => (
                 <button type="button"
                   key={s}
-                  type="button"
                   onClick={() => setOutdatedFilter(s as any)}
                   className={`px-2 py-0.5 rounded-full border transition capitalize ${
                     outdatedFilter === s
@@ -143,7 +142,6 @@ export default function NpmInspectorPanel() {
               {(["critical", "high", "moderate", "low", "info"] as VulnSeverity[]).map((s) => (
                 <button type="button"
                   key={s}
-                  type="button"
                   onClick={() => setMinSeverity(s)}
                   className={`px-2 py-0.5 rounded-full border transition capitalize ${
                     minSeverity === s

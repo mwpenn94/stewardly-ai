@@ -449,7 +449,6 @@ import { DisclosureSection } from "@/components/DisclosureSection";
                               {row.leaders.map((l) => (
                                 <button type="button"
                                   key={l.app.id}
-                                  type="button"
                                   onClick={() => setSelectedId(l.app.id)}
                                   aria-label={`Open ${l.app.name} deep-dive — scored ${l.score} of 3 on ${row.axis.label}`}
                                   className="rounded border border-border/60 px-1.5 py-0.5 text-[11px] text-muted-foreground hover:border-accent hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -546,7 +545,6 @@ import { DisclosureSection } from "@/components/DisclosureSection";
                       return (
                         <button type="button"
                           key={app.id}
-                          type="button"
                           onClick={() => setSelectedId(app.id)}
                           aria-label={`Open ${app.name} deep-dive — ${total} total points, beats Stewardly on ${beats} axes, status ${app.status}`}
                           className="group flex flex-col gap-1 rounded-md border border-border bg-card p-3 text-left transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"

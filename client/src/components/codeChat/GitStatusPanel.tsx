@@ -200,7 +200,7 @@ export default function GitStatusPanel() {
                 return (
                   <li key={entry.path}>
                     <button type="button"
-                      type="button"
+                      
                       onClick={() => {
                         setSelectedPath(entry.path);
                         setSelectedStaged(entry.staged !== "unknown");

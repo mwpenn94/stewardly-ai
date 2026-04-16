@@ -269,7 +269,6 @@ export default function SnippetLibraryPopover({
               return (
                 <button type="button"
                   key={tag}
-                  type="button"
                   onClick={() => toggleTagFilter(tag)}
                   className={`px-2 py-0.5 rounded border text-[10px] ${
                     active

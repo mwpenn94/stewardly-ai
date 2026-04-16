@@ -294,7 +294,6 @@ export default function SessionsLibraryPopover({
                 return (
                   <button type="button"
                     key={`${hit.sessionId}-${hit.messageIndex}-${i}`}
-                    type="button"
                     className="w-full text-left px-2 py-1 rounded hover:bg-secondary/40 transition-colors"
                     onClick={() => {
                       if (!session) return;
@@ -341,7 +340,6 @@ export default function SessionsLibraryPopover({
               return (
                 <button type="button"
                   key={tag}
-                  type="button"
                   onClick={() => toggleTagFilter(tag)}
                   className={`text-[10px] px-2 py-0.5 rounded-full border font-mono transition-colors ${
                     active
@@ -356,7 +354,7 @@ export default function SessionsLibraryPopover({
             })}
             {activeTagFilter.length > 0 && (
               <button type="button"
-                type="button"
+                
                 onClick={() => setActiveTagFilter([])}
                 className="text-[10px] text-muted-foreground hover:text-foreground underline"
               >
@@ -400,7 +398,7 @@ export default function SessionsLibraryPopover({
                       }}
                     />
                     <button type="button"
-                      type="button"
+                      
                       onClick={() => handleRename(s.id)}
                       aria-label="Confirm rename"
                       className="text-emerald-500 hover:text-emerald-400"
@@ -408,7 +406,7 @@ export default function SessionsLibraryPopover({
                       <Check className="h-3 w-3" />
                     </button>
                     <button type="button"
-                      type="button"
+                      
                       onClick={() => setRenamingId(null)}
                       aria-label="Cancel rename"
                       className="text-muted-foreground hover:text-foreground"
@@ -419,7 +417,7 @@ export default function SessionsLibraryPopover({
                 ) : (
                   <>
                     <button type="button"
-                      type="button"
+                      
                       className="flex-1 text-left min-w-0"
                       onClick={() => {
                         onLoadSession(s);
@@ -436,7 +434,7 @@ export default function SessionsLibraryPopover({
                       </div>
                     </button>
                     <button type="button"
-                      type="button"
+                      
                       onClick={() => {
                         setRenamingId(s.id);
                         setRenameDraft(s.name);
@@ -447,7 +445,7 @@ export default function SessionsLibraryPopover({
                       <Pencil className="h-3 w-3" />
                     </button>
                     <button type="button"
-                      type="button"
+                      
                       onClick={() => {
                         setTagInputSessionId(
                           tagInputSessionId === s.id ? null : s.id,
@@ -461,7 +459,7 @@ export default function SessionsLibraryPopover({
                       <Tag className="h-3 w-3" />
                     </button>
                     <button type="button"
-                      type="button"
+                      
                       onClick={() => handleDelete(s.id)}
                       className="text-muted-foreground hover:text-destructive"
                       aria-label={`Delete ${s.name}`}
@@ -481,7 +479,7 @@ export default function SessionsLibraryPopover({
                       >
                         {tag}
                         <button type="button"
-                          type="button"
+                          
                           onClick={() => handleRemoveTag(s.id, tag)}
                           className="text-muted-foreground hover:text-destructive"
                           aria-label={`Remove tag ${tag}`}
@@ -508,7 +506,7 @@ export default function SessionsLibraryPopover({
                           }}
                         />
                         <button type="button"
-                          type="button"
+                          
                           onClick={() => handleAddTag(s.id, tagInputDraft)}
                           className="text-emerald-500 hover:text-emerald-400"
                           aria-label="Add tag"
@@ -566,7 +564,7 @@ export default function SessionsLibraryPopover({
               }}
             />
             <button type="button"
-              type="button"
+              
               className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
               onClick={() => importInputRef.current?.click()}
               aria-label="Import sessions from JSON file"
@@ -575,7 +573,7 @@ export default function SessionsLibraryPopover({
             </button>
             {library.sessions.length > 0 && (
               <button type="button"
-                type="button"
+                
                 className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
                 onClick={() => {
                   const payload = JSON.stringify(library, null, 2);

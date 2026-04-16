@@ -262,7 +262,6 @@ export default function ToolAuditPopover({
                       (v) => (
                         <button type="button"
                           key={v}
-                          type="button"
                           onClick={() => setDraftVerdict(v)}
                           className={`px-2 py-0.5 rounded border text-[10px] capitalize ${
                             draftVerdict === v ? VERDICT_STYLE[v] : "border-border text-muted-foreground"
@@ -330,7 +329,6 @@ export default function ToolAuditPopover({
                               (v) => (
                                 <button type="button"
                                   key={v}
-                                  type="button"
                                   onClick={() =>
                                     setEditDraft((d) => ({ ...d, verdict: v }))
                                   }
@@ -427,7 +425,6 @@ export default function ToolAuditPopover({
                     return (
                       <button type="button"
                         key={v}
-                        type="button"
                         onClick={() => setTrailFilter(v)}
                         className={`px-2 py-0.5 rounded border text-[10px] capitalize ${
                           trailFilter === v

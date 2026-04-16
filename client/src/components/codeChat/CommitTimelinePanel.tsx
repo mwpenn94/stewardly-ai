@@ -185,7 +185,7 @@ export default function CommitTimelinePanel() {
                   return (
                     <div key={commit.sha}>
                       <button type="button"
-                        type="button"
+                        
                         onClick={() => toggleExpanded(commit.sha)}
                         className="w-full text-left p-3 hover:bg-muted/40 flex items-start gap-3"
                       >

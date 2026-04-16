@@ -614,7 +614,7 @@ function QuestionView({
             return (
               <li key={i}>
                 <button type="button"
-                  type="button"
+                  
                   disabled={revealed}
                   onClick={() => onSelect(i)}
                   className={[

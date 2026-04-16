@@ -176,7 +176,6 @@ export default function DiagnosticsPanel() {
               return (
                 <button type="button"
                   key={s}
-                  type="button"
                   onClick={() => toggleSeverity(s)}
                   aria-pressed={active}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition ${
@@ -239,7 +238,7 @@ export default function DiagnosticsPanel() {
             <Card key={group.path}>
               <CardContent className="p-0">
                 <button type="button"
-                  type="button"
+                  
                   onClick={() => openFile(group.path, group.diagnostics[0]?.line ?? 1)}
                   className="w-full text-left p-3 border-b border-border/40 hover:bg-muted/50 flex items-center gap-3"
                 >
@@ -269,7 +268,6 @@ export default function DiagnosticsPanel() {
                     return (
                       <button type="button"
                         key={`${d.path}:${d.line}:${d.column}:${idx}`}
-                        type="button"
                         onClick={() => openFile(d.path, d.line)}
                         className="w-full text-left p-2.5 hover:bg-muted/50 flex items-start gap-2"
                       >

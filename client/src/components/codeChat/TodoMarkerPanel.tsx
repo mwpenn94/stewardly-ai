@@ -147,7 +147,6 @@ export default function TodoMarkerPanel() {
               return (
                 <button type="button"
                   key={kind}
-                  type="button"
                   onClick={() => toggleKind(kind)}
                   className={`px-2 py-0.5 rounded-full text-[10px] border transition-colors ${
                     selected
@@ -163,7 +162,7 @@ export default function TodoMarkerPanel() {
             })}
             {selectedKinds.length > 0 && (
               <button type="button"
-                type="button"
+                
                 onClick={() => setSelectedKinds([])}
                 className="text-[10px] text-muted-foreground hover:text-foreground underline"
               >
@@ -182,7 +181,6 @@ export default function TodoMarkerPanel() {
                     {data.topAuthors.slice(0, 5).map((a) => (
                       <button type="button"
                         key={a.author}
-                        type="button"
                         onClick={() => setAuthor(a.author === author ? null : a.author)}
                         className="w-full flex items-center justify-between gap-2 hover:bg-secondary/20 px-1 rounded"
                       >
@@ -230,7 +228,7 @@ export default function TodoMarkerPanel() {
                 return (
                   <li key={`${marker.path}:${marker.line}:${idx}`}>
                     <button type="button"
-                      type="button"
+                      
                       onClick={() => openFile(marker.path, marker.line)}
                       className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-secondary/20 transition-colors"
                     >

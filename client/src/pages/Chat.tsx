@@ -2139,7 +2139,7 @@ export default function Chat() {
               {sidebarCollapsed ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" type="button" className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)} aria-label="Expand sidebar">
+                    <button type="button" className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)} aria-label="Expand sidebar">
                       {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </button>
                   </TooltipTrigger>
@@ -2592,7 +2592,7 @@ export default function Chat() {
                   />
                   <div className="flex-1 leading-snug">{captionText}</div>
                   <button type="button"
-                    type="button"
+                    
                     onClick={() => setCaptionText("")}
                     className="shrink-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
                     aria-label="Dismiss caption"
@@ -2860,7 +2860,7 @@ export default function Chat() {
               {/* Mobile model picker — always visible on mobile so users can
                   switch models without needing the hidden More/Less toggle */}
               <button type="button"
-                type="button"
+                
                 onClick={() => setShowModelMenu(!showModelMenu)}
                 className={`md:hidden h-7 text-[10px] rounded-lg px-2 flex items-center gap-1 transition-all ${
                   isMultiModel
@@ -2916,7 +2916,7 @@ export default function Chat() {
               {/* Mode badge — desktop only (mobile users switch via Focus menu) */}
               {!advancedOpen && chatMode !== "single" && (
                 <button type="button"
-                  type="button"
+                  
                   onClick={() => setAdvancedOpen(true)}
                   className={`hidden md:inline-flex h-7 px-2 text-[10px] rounded-full border transition-colors ${
                     chatMode === "loop"
@@ -2933,7 +2933,7 @@ export default function Chat() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button type="button"
-                    type="button"
+                    
                     onClick={() => setAdvancedOpen((p) => !p)}
                     aria-label={advancedOpen ? "Hide advanced controls" : "Show advanced controls"}
                     aria-expanded={advancedOpen}

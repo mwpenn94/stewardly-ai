@@ -38,7 +38,7 @@ export function LocalePicker() {
   return (
     <>
       <button type="button"
-        type="button"
+        
         onClick={() => setOpen(true)}
         className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-accent/40 hover:text-accent transition-colors"
         aria-label={`Change locale (currently ${prefs.locale} / ${prefs.currency})`}
@@ -153,7 +153,7 @@ export function LocalePicker() {
 
               <div className="flex items-center justify-between pt-2 border-t border-border/60">
                 <button type="button"
-                  type="button"
+                  
                   onClick={resetPrefs}
                   className="text-xs text-muted-foreground hover:text-accent"
                 >

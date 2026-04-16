@@ -180,7 +180,6 @@ export default function SessionAnalyticsPopover({
               {analytics.topTurns.map((turn, idx) => (
                 <button type="button"
                   key={turn.messageId}
-                  type="button"
                   className="w-full flex items-start justify-between gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-secondary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                   onClick={() => {
                     onJumpToMessage?.(turn.messageId);

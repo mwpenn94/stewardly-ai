@@ -177,7 +177,6 @@ export default function WorkspaceBookmarksPopover({
               {COLORS.map((c) => (
                 <button type="button"
                   key={c}
-                  type="button"
                   onClick={() => setDraftColor(c)}
                   className={`w-5 h-5 rounded border ${
                     draftColor === c ? "border-accent" : "border-border"
@@ -255,7 +254,6 @@ export default function WorkspaceBookmarksPopover({
                             {COLORS.map((c) => (
                               <button type="button"
                                 key={c}
-                                type="button"
                                 onClick={() =>
                                   setEditPatch((p) => ({ ...p, color: c }))
                                 }
@@ -275,7 +273,7 @@ export default function WorkspaceBookmarksPopover({
                         </div>
                       ) : (
                         <button type="button"
-                          type="button"
+                          
                           className="flex-1 min-w-0 text-left"
                           onClick={() => handleOpen(b)}
                           title={`Open ${b.path}`}

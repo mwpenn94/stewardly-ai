@@ -14,7 +14,7 @@ import {
   Search, Code2, Lock, Globe, ChevronDown, ChevronRight,
   Copy, Check, BookOpen, Zap, Shield, Database,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 
@@ -82,7 +82,7 @@ const ROUTER_COLORS: Record<string, string> = {
 };
 
 export default function ApiDocumentation() {
-  const { toast } = useToast();
+
   const [search, setSearch] = useState("");
   const [filterRouter, setFilterRouter] = useState("all");
   const [filterAuth, setFilterAuth] = useState("all");
@@ -116,7 +116,7 @@ export default function ApiDocumentation() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: "Copied", description: "Code copied to clipboard" });
+    toast.success("Code copied to clipboard");
   };
 
   return (

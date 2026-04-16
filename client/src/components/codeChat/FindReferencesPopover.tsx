@@ -160,7 +160,6 @@ export default function FindReferencesPopover({
             {(["all", "import", "definition", "call", "property", "reference"] as const).map((k) => (
               <button type="button"
                 key={k}
-                type="button"
                 onClick={() => setKindFilter(k)}
                 className={`px-2 py-0.5 rounded border text-[10px] capitalize ${
                   kindFilter === k
@@ -251,7 +250,7 @@ export default function FindReferencesPopover({
                         className="border border-border/40 rounded overflow-hidden"
                       >
                         <button type="button"
-                          type="button"
+                          
                           onClick={() => toggleFile(group.path)}
                           className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/30 transition-colors text-left"
                         >
@@ -273,7 +272,6 @@ export default function FindReferencesPopover({
                             {group.hits.map((h, i) => (
                               <button type="button"
                                 key={`${h.line}-${h.column}-${i}`}
-                                type="button"
                                 onClick={() => handleJump(group.path, h.line, h.column)}
                                 className="w-full flex items-start gap-2 px-3 py-1 text-[11px] text-left hover:bg-secondary/20 border-t border-border/10 first:border-t-0"
                                 title={`Open ${group.path}:${h.line}:${h.column}`}

@@ -302,7 +302,6 @@ function GrepResultView({
           {group.matches.map((m, i) => (
             <button type="button"
               key={`${m.file}-${m.line}-${i}`}
-              type="button"
               className="w-full text-left flex items-start gap-2 px-2 py-1 text-[10px] font-mono hover:bg-secondary/40 transition-colors"
               onClick={() => {
                 window.dispatchEvent(
@@ -1232,7 +1231,7 @@ function CodeChatInterface() {
         </div>
         {messages.length > 0 && (
           <button type="button"
-            type="button"
+            
             onClick={() => {
               const current = budget.limitUSD === null ? "" : String(budget.limitUSD);
               const next = prompt(
@@ -1304,7 +1303,7 @@ function CodeChatInterface() {
         <div className="flex md:hidden items-center gap-1.5">
           {messages.length > 0 && (
             <button type="button"
-              type="button"
+              
               onClick={() => {
                 if (confirm("Clear conversation?")) {
                   loadMessages([]);
@@ -1319,7 +1318,7 @@ function CodeChatInterface() {
             </button>
           )}
           <button type="button"
-            type="button"
+            
             onClick={() => setSessionsOpen(true)}
             className="p-1.5 rounded text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Saved sessions"
@@ -1328,7 +1327,7 @@ function CodeChatInterface() {
           </button>
           <div className="relative">
             <button type="button"
-              type="button"
+              
               onClick={() => setMobileMenuOpen((v) => !v)}
               className={`p-1.5 rounded transition-colors ${mobileMenuOpen ? "bg-accent/12 text-accent" : "text-muted-foreground hover:text-foreground"}`}
               aria-label="More actions"
@@ -1667,7 +1666,7 @@ function CodeChatInterface() {
                   return (
                     <li key={msg.id}>
                       <button type="button"
-                        type="button"
+                        
                         onClick={() => scrollToMessage(msg.id)}
                         className="w-full text-left px-3 py-2 hover:bg-secondary/30 transition-colors"
                       >
@@ -1824,7 +1823,7 @@ function CodeChatInterface() {
                   })()}
                   <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button type="button"
-                      type="button"
+                      
                       className="hover:text-foreground transition-colors p-1 rounded"
                       aria-label="Copy response"
                       onClick={async () => {
@@ -1839,7 +1838,7 @@ function CodeChatInterface() {
                       <Copy className="w-3 h-3" />
                     </button>
                     <button type="button"
-                      type="button"
+                      
                       className="hover:text-foreground transition-colors p-1 rounded"
                       aria-label="Export message as markdown"
                       onClick={() => {
@@ -1852,7 +1851,7 @@ function CodeChatInterface() {
                       <Download className="w-3 h-3" />
                     </button>
                     <button type="button"
-                      type="button"
+                      
                       className="hover:text-foreground transition-colors p-1 rounded"
                       aria-label="Fork conversation from this message"
                       title="Fork — save as new session trimmed here"
@@ -1861,7 +1860,7 @@ function CodeChatInterface() {
                       <GitFork className="w-3 h-3" />
                     </button>
                     <button type="button"
-                      type="button"
+                      
                       className={`transition-colors p-1 rounded ${
                         isBookmarked(bookmarks, msg.id)
                           ? "text-amber-400"
@@ -1885,7 +1884,7 @@ function CodeChatInterface() {
                       />
                     </button>
                     <button type="button"
-                      type="button"
+                      
                       className={`transition-colors p-1 rounded ${
                         getReaction(reactions, msg.id) === "up"
                           ? "text-emerald-500"
@@ -1899,7 +1898,7 @@ function CodeChatInterface() {
                       <ThumbsUp className="w-3 h-3" />
                     </button>
                     <button type="button"
-                      type="button"
+                      
                       className={`transition-colors p-1 rounded ${
                         getReaction(reactions, msg.id) === "down"
                           ? "text-destructive"
@@ -1914,7 +1913,7 @@ function CodeChatInterface() {
                     </button>
                     {isLastAssistant && (
                       <button type="button"
-                        type="button"
+                        
                         className="hover:text-foreground transition-colors p-1 rounded"
                         aria-label="Regenerate response"
                         onClick={async () => {
@@ -1968,7 +1967,7 @@ function CodeChatInterface() {
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <button type="button"
-              type="button"
+              
               className="px-2 py-0.5 rounded border border-destructive/40 text-destructive hover:bg-destructive/12 transition-colors"
               onClick={async () => {
                 const ok = await regenerateLast({
@@ -1986,7 +1985,7 @@ function CodeChatInterface() {
               Retry
             </button>
             <button type="button"
-              type="button"
+              
               className="px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setLastErrorBanner(null)}
               aria-label="Dismiss error"
@@ -2012,7 +2011,7 @@ function CodeChatInterface() {
               >
                 <span className="truncate">{path}</span>
                 <button type="button"
-                  type="button"
+                  
                   onClick={() => handleUnpin(path)}
                   className="text-muted-foreground hover:text-destructive shrink-0"
                   aria-label={`Unpin ${path}`}
@@ -2222,7 +2221,7 @@ function CodeChatInterface() {
                     return (
                       <li key={msg.id}>
                         <button type="button"
-                          type="button"
+                          
                           className="w-full flex items-start gap-2 px-3 py-2 rounded border border-border/40 hover:bg-secondary/20 transition-colors text-left"
                           onClick={() => {
                             scrollToMessage(msg.id);
@@ -2240,7 +2239,7 @@ function CodeChatInterface() {
                             </div>
                           </div>
                           <button type="button"
-                            type="button"
+                            
                             className="text-muted-foreground hover:text-destructive shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();

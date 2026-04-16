@@ -146,7 +146,7 @@ export default function EnvInspectorPanel() {
           </div>
           <div className="flex flex-wrap gap-1.5 text-[11px]">
             <button type="button"
-              type="button"
+              
               onClick={() => setCategory("all")}
               className={`px-2 py-0.5 rounded-full border transition ${
                 category === "all"
@@ -162,7 +162,6 @@ export default function EnvInspectorPanel() {
               return (
                 <button type="button"
                   key={cat}
-                  type="button"
                   onClick={() => setCategory(cat)}
                   className={`px-2 py-0.5 rounded-full border transition ${
                     category === cat

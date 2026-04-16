@@ -127,7 +127,7 @@ function CodeBlock({
           {normalizedLang === "text" ? (language ?? "code") : normalizedLang}
         </span>
         <button type="button"
-          type="button"
+          
           onClick={onCopy}
           className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Copy code"

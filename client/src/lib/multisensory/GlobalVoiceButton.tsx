@@ -58,7 +58,7 @@ export function GlobalVoiceButton() {
 
   return (
     <button type="button"
-      type="button"
+      
       onClick={toggle}
       aria-pressed={active}
       aria-label={

@@ -236,7 +236,6 @@ export default function DisciplineDeepDive() {
           {tabs.map((tab) => (
             <button type="button"
               key={tab.key}
-              type="button"
               role="tab"
               aria-selected={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
@@ -417,7 +416,6 @@ function DefinitionsTab({
           {[1, 2, 3, 4, 5].map((s) => (
             <button type="button"
               key={s}
-              type="button"
               onClick={(e) => { e.stopPropagation(); rateConfidence(s); }}
               className="cursor-pointer p-0.5"
             >

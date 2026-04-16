@@ -437,7 +437,7 @@ export default function LearningQuizRunner() {
                     return (
                       <li key={i}>
                         <button type="button"
-                          type="button"
+                          
                           disabled={revealed}
                           onClick={() => setSelected(i)}
                           className={[

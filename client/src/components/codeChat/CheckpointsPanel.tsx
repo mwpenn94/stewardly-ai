@@ -310,7 +310,6 @@ export default function CheckpointsPanel() {
                       {cp.paths.slice(0, 6).map((p) => (
                         <button type="button"
                           key={p}
-                          type="button"
                           onClick={() =>
                             window.dispatchEvent(
                               new CustomEvent("codechat-open-file", {
