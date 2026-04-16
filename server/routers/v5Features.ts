@@ -117,6 +117,11 @@ export const financialHealthRouter = router({
       await saveHealthScore(ctx.user.id, result);
       return result;
     }),
+  // Pass 45 (C3): Tier 0 instant score endpoint
+  latest: protectedProcedure.query(async ({ ctx }) => {
+    const { getLatestHealthScore } = await import("../financialHealthScore");
+    return getLatestHealthScore(ctx.user.id);
+  }),
 });
 
 // ─── CLIENT SEGMENTATION ROUTER ─────────────────────────────────

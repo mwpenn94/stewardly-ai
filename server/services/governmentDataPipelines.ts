@@ -849,9 +849,207 @@ async function fetchFINRAData(): Promise<PipelineResult> {
   }
 }
 
+// ─── Treasury Fiscal Data Pipeline ─────────────────────────────────────
+async function fetchTreasuryFiscalData(): Promise<PipelineResult> {
+  const start = Date.now();
+  try {
+    const dataPoints: FetchedDataPoint[] = [];
+    const errors: string[] = [];
+
+    // 1. Exchange rates
+    try {
+      const resp = await fetch(
+        "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/rates_of_exchange?sort=-record_date&page[size]=10&fields=country_currency_desc,exchange_rate,record_date",
+        { signal: AbortSignal.timeout(15000) },
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        for (const row of (data?.data || []).slice(0, 5)) {
+          dataPoints.push({
+            key: `treasury_fx_${row.country_currency_desc?.replace(/\s+/g, "_").toLowerCase() || "unknown"}`,
+            label: `Exchange Rate: ${row.country_currency_desc}`,
+            value: row.exchange_rate,
+            date: row.record_date || new Date().toISOString().split("T")[0],
+            unit: "per USD",
+            category: "treasury_exchange_rates",
+          });
+        }
+      }
+    } catch (e: any) { errors.push(`Treasury FX: ${e.message}`); }
+
+    // 2. National debt
+    try {
+      const resp = await fetch(
+        "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny?sort=-record_date&page[size]=1",
+        { signal: AbortSignal.timeout(15000) },
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const row = data?.data?.[0];
+        if (row) {
+          const totalDebt = parseFloat(row.tot_pub_debt_out_amt);
+          dataPoints.push({
+            key: "treasury_national_debt",
+            label: "U.S. National Debt (Total Public Debt Outstanding)",
+            value: totalDebt >= 1e12 ? `$${(totalDebt / 1e12).toFixed(2)}T` : `$${(totalDebt / 1e9).toFixed(1)}B`,
+            date: row.record_date,
+            unit: "USD",
+            category: "treasury_debt",
+          });
+        }
+      }
+    } catch (e: any) { errors.push(`Treasury debt: ${e.message}`); }
+
+    // 3. Average interest rates on Treasury securities
+    try {
+      const resp = await fetch(
+        "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?sort=-record_date&page[size]=5&filter=security_desc:eq:Treasury Bills,security_desc:eq:Treasury Notes,security_desc:eq:Treasury Bonds",
+        { signal: AbortSignal.timeout(15000) },
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        for (const row of (data?.data || [])) {
+          dataPoints.push({
+            key: `treasury_avg_rate_${row.security_desc?.replace(/\s+/g, "_").toLowerCase() || "unknown"}`,
+            label: `Avg Interest Rate: ${row.security_desc}`,
+            value: `${row.avg_interest_rate_amt}%`,
+            date: row.record_date,
+            unit: "%",
+            category: "treasury_rates",
+          });
+        }
+      }
+    } catch (e: any) { errors.push(`Treasury rates: ${e.message}`); }
+
+    const stored = await storeDataPoints("treasury-fiscal", dataPoints);
+    if (stored === 0 && errors.length > 0) {
+      return { pipeline: "Treasury Fiscal", providerSlug: "treasury-fiscal", status: "error", recordsFetched: 0, error: errors.join("; "), duration: Date.now() - start };
+    }
+    return { pipeline: "Treasury Fiscal", providerSlug: "treasury-fiscal", status: "success", recordsFetched: stored, duration: Date.now() - start };
+  } catch (err: any) {
+    return { pipeline: "Treasury Fiscal", providerSlug: "treasury-fiscal", status: "error", recordsFetched: 0, error: err.message, duration: Date.now() - start };
+  }
+}
+
+// ─── GLEIF LEI Pipeline ────────────────────────────────────────────────
+async function fetchGLEIFData(): Promise<PipelineResult> {
+  const start = Date.now();
+  try {
+    const dataPoints: FetchedDataPoint[] = [];
+    const errors: string[] = [];
+
+    // Fetch LEI statistics and sample records
+    try {
+      const resp = await fetch(
+        "https://api.gleif.org/api/v1/lei-records?page[size]=5&filter[entity.registeredAs]=*&sort=-entity.legalName",
+        { headers: { Accept: "application/vnd.api+json" }, signal: AbortSignal.timeout(15000) },
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const total = data?.meta?.pagination?.total;
+        if (total) {
+          dataPoints.push({
+            key: "gleif_total_lei_records",
+            label: "Total LEI Records (Global)",
+            value: total >= 1e6 ? `${(total / 1e6).toFixed(1)}M` : String(total),
+            date: new Date().toISOString().split("T")[0],
+            unit: "entities",
+            category: "gleif_lei",
+          });
+        }
+      }
+    } catch (e: any) { errors.push(`GLEIF records: ${e.message}`); }
+
+    // Fetch US-specific LEI count
+    try {
+      const resp = await fetch(
+        "https://api.gleif.org/api/v1/lei-records?page[size]=1&filter[entity.legalAddress.country]=US",
+        { headers: { Accept: "application/vnd.api+json" }, signal: AbortSignal.timeout(15000) },
+      );
+      if (resp.ok) {
+        const data = await resp.json();
+        const usTotal = data?.meta?.pagination?.total;
+        if (usTotal) {
+          dataPoints.push({
+            key: "gleif_us_lei_count",
+            label: "U.S. LEI Records",
+            value: usTotal >= 1e3 ? `${(usTotal / 1e3).toFixed(1)}K` : String(usTotal),
+            date: new Date().toISOString().split("T")[0],
+            unit: "entities",
+            category: "gleif_lei",
+          });
+        }
+      }
+    } catch (e: any) { errors.push(`GLEIF US: ${e.message}`); }
+
+    const stored = await storeDataPoints("gleif", dataPoints);
+    if (stored === 0 && errors.length > 0) {
+      return { pipeline: "GLEIF", providerSlug: "gleif", status: "error", recordsFetched: 0, error: errors.join("; "), duration: Date.now() - start };
+    }
+    return { pipeline: "GLEIF", providerSlug: "gleif", status: "success", recordsFetched: stored, duration: Date.now() - start };
+  } catch (err: any) {
+    return { pipeline: "GLEIF", providerSlug: "gleif", status: "error", recordsFetched: 0, error: err.message, duration: Date.now() - start };
+  }
+}
+
+// ─── World Bank Pipeline ───────────────────────────────────────────────
+async function fetchWorldBankData(): Promise<PipelineResult> {
+  const start = Date.now();
+  try {
+    const dataPoints: FetchedDataPoint[] = [];
+    const errors: string[] = [];
+
+    const indicators = [
+      { id: "NY.GDP.MKTP.CD", label: "World GDP (Current USD)", category: "worldbank_gdp" },
+      { id: "NY.GDP.MKTP.KD.ZG", label: "World GDP Growth Rate", category: "worldbank_growth" },
+      { id: "FP.CPI.TOTL.ZG", label: "World Inflation Rate (CPI)", category: "worldbank_inflation" },
+      { id: "SL.UEM.TOTL.ZS", label: "World Unemployment Rate", category: "worldbank_employment" },
+      { id: "BX.KLT.DINV.CD.WD", label: "Foreign Direct Investment (Net Inflows)", category: "worldbank_fdi" },
+    ];
+
+    for (const ind of indicators) {
+      try {
+        const resp = await fetch(
+          `https://api.worldbank.org/v2/country/WLD/indicator/${ind.id}?format=json&per_page=3&date=2020:2025`,
+          { signal: AbortSignal.timeout(15000) },
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          const records = data?.[1];
+          if (Array.isArray(records) && records.length > 0) {
+            const latest = records.find((r: any) => r.value != null) || records[0];
+            if (latest?.value != null) {
+              const val = latest.value;
+              const displayVal = ind.id.includes("ZG") || ind.id.includes("ZS")
+                ? `${val.toFixed(1)}%`
+                : val >= 1e12 ? `$${(val / 1e12).toFixed(1)}T` : val >= 1e9 ? `$${(val / 1e9).toFixed(1)}B` : String(val);
+              dataPoints.push({
+                key: `worldbank_${ind.id.toLowerCase().replace(/\./g, "_")}`,
+                label: ind.label,
+                value: displayVal,
+                date: latest.date || new Date().toISOString().split("T")[0],
+                unit: ind.id.includes("ZG") || ind.id.includes("ZS") ? "%" : "USD",
+                category: ind.category,
+              });
+            }
+          }
+        }
+      } catch (e: any) { errors.push(`WB ${ind.id}: ${e.message}`); }
+    }
+
+    const stored = await storeDataPoints("world-bank", dataPoints);
+    if (stored === 0 && errors.length > 0) {
+      return { pipeline: "World Bank", providerSlug: "world-bank", status: "error", recordsFetched: 0, error: errors.join("; "), duration: Date.now() - start };
+    }
+    return { pipeline: "World Bank", providerSlug: "world-bank", status: "success", recordsFetched: stored, duration: Date.now() - start };
+  } catch (err: any) {
+    return { pipeline: "World Bank", providerSlug: "world-bank", status: "error", recordsFetched: 0, error: err.message, duration: Date.now() - start };
+  }
+}
+
 // ─── Run All Pipelines ──────────────────────────────────────────────────
 export async function runAllDataPipelines(): Promise<PipelineResult[]> {
-  logger.info( { operation: "dataPipelines" },"[DataPipelines] Starting all data pipelines (6 providers)...");
+  logger.info( { operation: "dataPipelines" },"[DataPipelines] Starting all data pipelines (9 providers)...");
   
   const results = await Promise.allSettled([
     fetchBLSData(),
@@ -860,11 +1058,14 @@ export async function runAllDataPipelines(): Promise<PipelineResult[]> {
     fetchCensusData(),
     fetchSECEdgarData(),
     fetchFINRAData(),
+    fetchTreasuryFiscalData(),
+    fetchGLEIFData(),
+    fetchWorldBankData(),
   ]);
 
   const finalResults = results.map((r, i) => {
-    const names = ["BLS", "FRED", "BEA", "Census", "SEC EDGAR", "FINRA BrokerCheck"];
-    const slugs = ["bls", "fred", "bea", "census-bureau", "sec-edgar", "finra-brokercheck"];
+    const names = ["BLS", "FRED", "BEA", "Census", "SEC EDGAR", "FINRA BrokerCheck", "Treasury Fiscal", "GLEIF", "World Bank"];
+    const slugs = ["bls", "fred", "bea", "census-bureau", "sec-edgar", "finra-brokercheck", "treasury-fiscal", "gleif", "world-bank"];
     if (r.status === "fulfilled") return r.value;
     return {
       pipeline: names[i],
@@ -902,6 +1103,9 @@ export async function runSinglePipeline(providerSlug: string): Promise<PipelineR
     "census-bureau": fetchCensusData,
     "sec-edgar": fetchSECEdgarData,
     "finra-brokercheck": fetchFINRAData,
+    "treasury-fiscal": fetchTreasuryFiscalData,
+    "gleif": fetchGLEIFData,
+    "world-bank": fetchWorldBankData,
   };
 
   const fetcher = pipelineMap[providerSlug];
@@ -1030,6 +1234,45 @@ export async function getEconomicDataSummary(): Promise<string> {
     }
   }
 
+  // Treasury Fiscal Data Section
+  const treasuryData = await db.select().from(enrichmentCache)
+    .where(eq(enrichmentCache.providerSlug, "treasury-fiscal"));
+  if (treasuryData.length > 0) {
+    sections.push("\n### U.S. Treasury Fiscal Data");
+    for (const entry of treasuryData) {
+      const d = entry.resultJson as any;
+      if (d?.label && d?.value) {
+        sections.push(`- ${d.label}: ${d.value}${d.unit ? ` ${d.unit}` : ""} (as of ${d.date})`);
+      }
+    }
+  }
+
+  // GLEIF Section
+  const gleifData = await db.select().from(enrichmentCache)
+    .where(eq(enrichmentCache.providerSlug, "gleif"));
+  if (gleifData.length > 0) {
+    sections.push("\n### GLEIF (Legal Entity Identifiers)");
+    for (const entry of gleifData) {
+      const d = entry.resultJson as any;
+      if (d?.label && d?.value) {
+        sections.push(`- ${d.label}: ${d.value} (as of ${d.date})`);
+      }
+    }
+  }
+
+  // World Bank Section
+  const worldBankData = await db.select().from(enrichmentCache)
+    .where(eq(enrichmentCache.providerSlug, "world-bank"));
+  if (worldBankData.length > 0) {
+    sections.push("\n### World Bank Open Data");
+    for (const entry of worldBankData) {
+      const d = entry.resultJson as any;
+      if (d?.label && d?.value) {
+        sections.push(`- ${d.label}: ${d.value}${d.unit ? ` ${d.unit}` : ""} (as of ${d.date})`);
+      }
+    }
+  }
+
   if (sections.length === 0) return "";
-  return `## Live Economic & Financial Data (Government Sources)\n${sections.join("\n")}`;
+  return `## Live Economic & Financial Data (Government & International Sources)\n${sections.join("\n")}`;
 }

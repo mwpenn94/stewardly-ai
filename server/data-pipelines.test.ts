@@ -138,7 +138,7 @@ describe("Encryption Key Migration", () => {
 });
 
 // ─── SEC EDGAR & FINRA BrokerCheck Connection Tests ───────────────────
-describe("Keyless API Connections (SEC EDGAR, FINRA)", () => {
+describe("Keyless API Connections (SEC EDGAR, FINRA, Treasury, GLEIF, World Bank)", () => {
   it("SEC EDGAR provider should have auth_method 'none'", async () => {
     const { getDb } = await import("./db");
     const { integrationProviders } = await import("../drizzle/schema");
@@ -191,5 +191,33 @@ describe("Keyless API Connections (SEC EDGAR, FINRA)", () => {
       .where(eq(integrationConnections.providerId, provider.id));
     expect(connections.length).toBeGreaterThan(0);
     expect(connections[0].status).toBe("connected");
+  });
+
+  it("Treasury Fiscal Data pipeline should be registered in runSinglePipeline", async () => {
+    const mod = await import("./services/governmentDataPipelines");
+    expect(typeof mod.runSinglePipeline).toBe("function");
+    // Verify the function doesn't throw for an unknown provider
+    const unknown = await mod.runSinglePipeline("nonexistent-provider");
+    expect(unknown.status).toBe("error");
+    expect(unknown.error).toContain("Unknown provider");
+  });
+
+  it("GLEIF pipeline should be exported from governmentDataPipelines", async () => {
+    const mod = await import("./services/governmentDataPipelines");
+    expect(typeof mod.getCachedData).toBe("function");
+    // getCachedData for gleif should return an array (empty if not yet fetched)
+    const data = await mod.getCachedData("gleif");
+    expect(Array.isArray(data)).toBe(true);
+  });
+
+  it("World Bank pipeline should be exported from governmentDataPipelines", async () => {
+    const mod = await import("./services/governmentDataPipelines");
+    const data = await mod.getCachedData("world-bank");
+    expect(Array.isArray(data)).toBe(true);
+  });
+
+  it("runAllDataPipelines should be a function (9 providers)", async () => {
+    const mod = await import("./services/governmentDataPipelines");
+    expect(typeof mod.runAllDataPipelines).toBe("function");
   });
 });

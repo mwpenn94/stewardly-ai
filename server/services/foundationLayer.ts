@@ -546,6 +546,9 @@ export async function seedRateProfiles(): Promise<number> {
     { provider: "smsit", domain: "tool-it.smsit.ai", currentRpm: 10, staticMaximum: 30, dailyBudget: 1000, isGovernment: false, notes: "RAAS plans from $9/mo" },
     { provider: "bridgeft", domain: "api.bridgeft.com", currentRpm: 10, staticMaximum: 60, dailyBudget: 5000, isGovernment: false, notes: "Partnership required" },
     { provider: "canopy-connect", domain: "api.usecanopy.com", currentRpm: 5, staticMaximum: 20, dailyBudget: 200, isGovernment: false, notes: "Free sandbox; paid production" },
+    { provider: "treasury-fiscal", domain: "api.fiscaldata.treasury.gov", currentRpm: 30, staticMaximum: 60, dailyBudget: 10000, isGovernment: true, notes: "No rate limits; free public API" },
+    { provider: "gleif", domain: "api.gleif.org", currentRpm: 30, staticMaximum: 60, dailyBudget: 5000, isGovernment: false, notes: "60 req/min; free public API" },
+    { provider: "world-bank", domain: "api.worldbank.org", currentRpm: 30, staticMaximum: 60, dailyBudget: 10000, isGovernment: false, notes: "No rate limits; free public API" },
   ];
 
   let seeded = 0;
@@ -580,6 +583,11 @@ export async function seedFreshnessRegistry(): Promise<number> {
     { provider: "sec-edgar", dataCategory: "filings", refreshIntervalHours: 24 },
     { provider: "sec-edgar", dataCategory: "form_adv", refreshIntervalHours: 24 },
     { provider: "finra-brokercheck", dataCategory: "advisor_registrations", refreshIntervalHours: 24 },
+    { provider: "treasury-fiscal", dataCategory: "exchange_rates", refreshIntervalHours: 24 },
+    { provider: "treasury-fiscal", dataCategory: "national_debt", refreshIntervalHours: 24 },
+    { provider: "gleif", dataCategory: "lei_records", refreshIntervalHours: 168 }, // Weekly
+    { provider: "world-bank", dataCategory: "gdp_global", refreshIntervalHours: 720 }, // Monthly
+    { provider: "world-bank", dataCategory: "inflation_global", refreshIntervalHours: 720 },
   ];
 
   let seeded = 0;

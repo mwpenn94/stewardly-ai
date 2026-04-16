@@ -55,6 +55,8 @@ export interface ReActConfig {
   executeTool: (toolName: string, args: Record<string, unknown>) => Promise<string>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accepts Drizzle DB instance
   db?: any;
+  /** Optional progress callback invoked after each ReAct step completes. */
+  onProgress?: (step: ReActTrace, iteration: number, maxIterations: number) => void;
 }
 
 export interface ReActTrace {
@@ -255,6 +257,9 @@ export async function executeReActLoop(config: ReActConfig): Promise<ReActResult
 
       // Log to DB
       await logTrace(db, sessionId, trace);
+
+      // Notify caller of progress
+      config.onProgress?.(trace, iteration, maxIterations);
     }
 
     const stepDuration = Date.now() - stepStart;

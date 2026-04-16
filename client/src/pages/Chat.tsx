@@ -34,7 +34,7 @@ import {
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Calendar, Brain, Shield,
   Copy, RefreshCw, Zap, Scale, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, ChevronRight, Phone,
-  LogIn, GitBranch,
+  LogIn, GitBranch, Pencil,
 } from "lucide-react";
 import { ReasoningChain } from "@/components/ReasoningChain";
 import { LiveSession } from "@/components/LiveSession";
@@ -2272,8 +2272,39 @@ export default function Chat() {
                   )}
                   <div className={`max-w-[85%]`}>
                     {msg.role === "user" ? (
-                      <div className="bg-accent/15 rounded-2xl rounded-tr-sm px-4 py-2.5">
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <div className="relative group/user-msg">
+                        <div className="bg-accent/15 rounded-2xl rounded-tr-sm px-4 py-2.5">
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                        {/* Edit & resend button — appears on hover */}
+                        <div className="absolute -bottom-2 right-2 opacity-0 group-hover/user-msg:opacity-100 transition-opacity flex gap-0.5">
+                          <Tooltip><TooltipTrigger asChild>
+                            <button
+                              className="p-1 rounded bg-secondary/80 backdrop-blur-sm text-muted-foreground hover:text-foreground transition-colors"
+                              aria-label="Edit and resend"
+                              onClick={() => {
+                                setInput(msg.content);
+                                // Truncate messages to before this user message so the edit replaces it
+                                setMessages(prev => prev.slice(0, i));
+                                // Focus the input
+                                const textarea = document.querySelector('textarea[placeholder]') as HTMLTextAreaElement;
+                                if (textarea) { textarea.focus(); textarea.setSelectionRange(textarea.value.length, textarea.value.length); }
+                                toast.info("Edit your message and resend");
+                              }}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Edit & resend</TooltipContent></Tooltip>
+                          <Tooltip><TooltipTrigger asChild>
+                            <button
+                              className="p-1 rounded bg-secondary/80 backdrop-blur-sm text-muted-foreground hover:text-foreground transition-colors"
+                              aria-label="Copy message"
+                              onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Copy</TooltipContent></Tooltip>
+                        </div>
                       </div>
                     ) : (
                       <div>

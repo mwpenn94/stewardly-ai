@@ -113,6 +113,39 @@ const PROVIDER_TEST_CONFIGS: Record<string, ProviderTestConfig> = {
     }),
     dataDescription: "Broker/advisor background checks and disciplinary history",
   },
+  "treasury-fiscal": {
+    buildTestRequest: () => ({
+      url: "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/rates_of_exchange?page[size]=1&sort=-record_date",
+      opts: { signal: AbortSignal.timeout(15000) },
+    }),
+    validateResponse: (_text, status) => ({
+      healthy: status === 200,
+      message: status === 200 ? "Treasury Fiscal Data responding — exchange rates available" : `HTTP ${status}`,
+    }),
+    dataDescription: "Treasury exchange rates, national debt, and interest rates on securities",
+  },
+  "gleif": {
+    buildTestRequest: () => ({
+      url: "https://api.gleif.org/api/v1/lei-records?page[size]=1",
+      opts: { signal: AbortSignal.timeout(15000) },
+    }),
+    validateResponse: (_text, status) => ({
+      healthy: status === 200,
+      message: status === 200 ? "GLEIF API responding — LEI lookup available" : `HTTP ${status}`,
+    }),
+    dataDescription: "Legal Entity Identifier (LEI) records and ownership chains",
+  },
+  "world-bank": {
+    buildTestRequest: () => ({
+      url: "https://api.worldbank.org/v2/country/US/indicator/NY.GDP.MKTP.CD?format=json&per_page=1&date=2023",
+      opts: { signal: AbortSignal.timeout(15000) },
+    }),
+    validateResponse: (_text, status) => ({
+      healthy: status === 200,
+      message: status === 200 ? "World Bank API responding — global indicators available" : `HTTP ${status}`,
+    }),
+    dataDescription: "Global economic indicators: GDP, inflation, unemployment across 200+ countries",
+  },
 };
 
 // ─── Health Check Runner ──────────────────────────────────────────────────

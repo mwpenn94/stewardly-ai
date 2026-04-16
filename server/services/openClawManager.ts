@@ -201,7 +201,8 @@ async function logAgentAction(
 }
 
 async function executeAgent(agentId: number, userId: number, config: AgentConfig): Promise<void> {
-  const { contextualLLM } = await import("../shared/stewardlyWiring");
+  const { contextualLLM, executeReActLoop } = await import("../shared/stewardlyWiring");
+  const { executeAITool, ALL_AI_TOOLS } = await import("../aiToolCalling");
   const startedAt = Date.now();
 
   let context = "";
@@ -220,11 +221,37 @@ async function executeAgent(agentId: number, userId: number, config: AgentConfig
   }
 
   try {
-    const response = await contextualLLM({
-      userId, contextType: "analysis" as any, model: config.model,
-      messages: [{ role: "user", content: `${config.instructions}\n\nAgent: ${config.type}\n${context}\n\nExecute and provide findings.` }],
+    // ── Multi-step ReAct loop with tool calling ──────────────────
+    // Agents now use the same ReAct loop as the main chat, giving
+    // them access to all 43 AI tools (calculators, models, wealth
+    // engine, search, blueprints) for autonomous multi-step reasoning.
+    const reactResult = await executeReActLoop({
+      messages: [
+        { role: "system" as const, content: `You are an autonomous agent named "${config.name}" of type "${config.type}". ${config.description || ""}\n\nYou have access to financial calculators, wealth engine simulations, risk models, and search tools. Use them proactively to gather data and produce thorough findings.${context}` },
+        { role: "user" as const, content: `${config.instructions}\n\nExecute your task and provide comprehensive findings. Use available tools to gather data, run calculations, and validate your analysis.` },
+      ],
+      userId,
+      tools: ALL_AI_TOOLS,
+      maxIterations: 8,
+      model: config.model,
+      contextualLLM,
+      executeTool: async (toolName: string, args: any) => {
+        return executeAITool(toolName, args);
+      },
+      db: await getDb(),
+      onProgress: async (step, iteration, maxIterations) => {
+        // Log each ReAct step as an agent_action so the UI can poll for live progress
+        try {
+          await logAgentAction(agentId, userId, {
+            actionType: `step:${iteration}/${maxIterations}${step.toolName ? `:${step.toolName}` : ""}`,
+            dataAccessed: step.toolName || undefined,
+            dataModified: step.thought?.slice(0, 500) || undefined,
+            durationMs: step.durationMs,
+          });
+        } catch { /* best-effort progress logging */ }
+      },
     });
-    const result = response.choices?.[0]?.message?.content || "";
+    const result = reactResult.response || "";
     const durationMs = Date.now() - startedAt;
 
     if (config.complianceAware && result) {

@@ -6,7 +6,7 @@
  * Desktop: collapsible sidebar, Mobile: left-edge drawer (Sheet)
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
   MessageSquare, FileText, BarChart3, Volume2,
@@ -184,10 +184,43 @@ interface SidebarInnerProps {
 function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conversations, onNavigate }: SidebarInnerProps) {
   const [location, navigate] = useLocation();
   const [showConvos, setShowConvos] = useState(true);
+  // Pass 44 (C2 Mobile Stability): collapsible layer sections.
+  // Layers with 5+ items start collapsed (except the one containing the active route).
+  // "person" layer always starts expanded since it's the primary nav.
+  const [collapsedLayers, setCollapsedLayers] = useState<Record<string, boolean>>({});
   const roleLevel = ROLE_LEVEL[role];
   const convoGroups = useMemo(() => groupConvos(conversations), [conversations]);
 
   const visibleLayers = PERSONA_LAYERS.filter(l => roleLevel >= ROLE_LEVEL[l.minRole]);
+
+  const toggleLayer = useCallback((key: string) => {
+    setCollapsedLayers(prev => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  // Auto-expand the layer containing the active route
+  const activeLayerKey = useMemo(() => {
+    for (const layer of visibleLayers) {
+      for (const item of layer.items) {
+        if (item.match.some(p => location === p || location.startsWith(p + "/"))) {
+          return layer.key;
+        }
+      }
+    }
+    return null;
+  }, [visibleLayers, location]);
+
+  const isLayerCollapsed = useCallback((layer: PersonaLayer) => {
+    // Never collapse in icon-only mode
+    if (collapsed) return false;
+    // "person" layer always expanded
+    if (layer.key === "person") return false;
+    // Layer containing active route always expanded
+    if (layer.key === activeLayerKey) return false;
+    // Explicit user toggle takes precedence
+    if (collapsedLayers[layer.key] !== undefined) return collapsedLayers[layer.key];
+    // Default: collapse layers with 8+ items when there are 3+ visible layers
+    return layer.items.length >= 8 && visibleLayers.length >= 3;
+  }, [collapsed, activeLayerKey, collapsedLayers, visibleLayers]);
 
   const isActive = (item: NavItem) =>
     item.match.some(p => location === p || location.startsWith(p + "/"));
@@ -244,14 +277,39 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
       )}
 
       <nav aria-label="Main navigation" role="navigation" className="flex-1 overflow-y-auto px-1.5 pb-2">
-        {visibleLayers.map(layer => (
-          <div key={layer.key}>
-            <Label>{layer.label}</Label>
-            <div className="space-y-[1px]">
-              {layer.items.map(item => <NavBtn key={item.path} item={item} />)}
+        {visibleLayers.map(layer => {
+          const layerCollapsed = isLayerCollapsed(layer);
+          const canCollapse = !collapsed && layer.key !== "person" && layer.items.length >= 5;
+          return (
+            <div key={layer.key}>
+              {collapsed ? (
+                <Label>{layer.label}</Label>
+              ) : canCollapse ? (
+                <button
+                  onClick={() => toggleLayer(layer.key)}
+                  className="w-full flex items-center justify-between px-2.5 pt-3.5 pb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] select-none cursor-pointer hover:text-muted-foreground transition-colors"
+                  aria-expanded={!layerCollapsed}
+                  aria-label={`${layer.label} section`}
+                >
+                  <span>{layer.label}</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${layerCollapsed ? "-rotate-90" : ""}`} />
+                </button>
+              ) : (
+                <Label>{layer.label}</Label>
+              )}
+              {!layerCollapsed && (
+                <div className="space-y-[1px]">
+                  {layer.items.map(item => <NavBtn key={item.path} item={item} />)}
+                </div>
+              )}
+              {layerCollapsed && (
+                <div className="px-2.5 py-1 text-[11px] text-muted-foreground/30 select-none">
+                  {layer.items.length} items
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {roleLevel >= ROLE_LEVEL.user && (
           <div className="mt-2 pt-2 border-t border-border/40">

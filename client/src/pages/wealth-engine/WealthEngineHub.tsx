@@ -39,8 +39,9 @@ import {
   Sparkles, Calculator, PiggyBank, Shield, TrendingUp, Building2,
   Scale, Heart, GraduationCap, HandCoins, DollarSign, Stethoscope,
   BarChart3, Loader2, ArrowRight, Users, Target, FileText,
-  Briefcase, Rocket, ShieldCheck, Workflow, Zap,
+  Briefcase, Rocket, ShieldCheck, Workflow, Zap, Gauge,
 } from "lucide-react";
+import Tier0InstantCard from "@/components/wealth-engine/Tier0InstantCard";
 
 const fmt = (n: number) => {
   if (!Number.isFinite(n)) return "—";
@@ -387,6 +388,69 @@ function StatChip({ label, value, accent }: { label: string; value: string; acce
   );
 }
 
+// ─── TIER 0 INSTANT SCORES ──────────────────────────────────────────
+// Pass 45 (C3 Progressive Disclosure): Zillow-zestimate-style instant
+// scores across key domains. <200ms load, one-thumb mobile zone.
+function Tier0ScoreStrip() {
+  const healthQ = trpc.financialHealth.latest.useQuery(undefined, {
+    staleTime: 60_000,
+    retry: false,
+  });
+  const h = healthQ.data;
+  const total = h ? (h as any).totalScore ?? null : null;
+  const spend = h ? (h as any).spendScore ?? null : null;
+  const save = h ? (h as any).saveScore ?? null : null;
+  const borrow = h ? (h as any).borrowScore ?? null : null;
+  const plan = h ? (h as any).planScore ?? null : null;
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+      <Tier0InstantCard
+        title="Financial Health"
+        score={total}
+        maxScore={100}
+        subtitle={total != null ? `Spend ${spend}/25 · Save ${save}/25 · Borrow ${borrow}/25 · Plan ${plan}/25` : "Calculate your score"}
+        configureHref="/financial-twin"
+        configureLabel="View"
+        icon={<Gauge className="w-5 h-5 text-muted-foreground" />}
+        loading={healthQ.isLoading}
+      />
+      <Tier0InstantCard
+        title="Retirement"
+        score={null}
+        subtitle="Run projection"
+        configureHref="/wealth-engine/retirement"
+        configureLabel="Plan"
+        icon={<PiggyBank className="w-5 h-5 text-amber-400" />}
+      />
+      <Tier0InstantCard
+        title="Protection"
+        score={null}
+        subtitle="12-dimension gap analysis"
+        configureHref="/protection-score"
+        configureLabel="Score"
+        icon={<ShieldCheck className="w-5 h-5 text-emerald-400" />}
+      />
+      <Tier0InstantCard
+        title="Tax Impact"
+        score={null}
+        subtitle="Bracket + Roth analysis"
+        configureHref="/tax-planning"
+        configureLabel="Analyze"
+        icon={<DollarSign className="w-5 h-5 text-violet-400" />}
+      />
+      <Tier0InstantCard
+        title="Estate Plan"
+        score={null}
+        subtitle="Documents + trusts"
+        configureHref="/estate"
+        configureLabel="Review"
+        icon={<Briefcase className="w-5 h-5 text-blue-400" />}
+      />
+    </div>
+  );
+}
+
 // ─── HERO ───────────────────────────────────────────────────────────
 function HubHero({ role }: { role: string | undefined }) {
   const [, navigate] = useLocation();
@@ -459,6 +523,8 @@ export default function WealthEngineHub() {
       <SEOHead title="Wealth Engine" description="Unified wealth planning, protection, and growth engine" />
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
         <HubHero role={user?.role} />
+
+        <Tier0ScoreStrip />
 
         <InlineQuickBundle />
 

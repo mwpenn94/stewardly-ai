@@ -183,6 +183,22 @@ const PROVIDERS = [
     freeTierLimit: "Unlimited",
   },
   {
+    id: uuid(), slug: "treasury-fiscal", name: "U.S. Treasury Fiscal Data", description: "Treasury exchange rates, national debt, average interest rates on Treasury securities. Zero-cost government API.", category: "government" as const,
+    ownershipTier: "platform" as const, authMethod: "none" as const,
+    baseUrl: "https://api.fiscaldata.treasury.gov/services/api/fiscal_service",
+    docsUrl: "https://fiscaldata.treasury.gov/api-documentation/",
+    freeTierDescription: "Completely free. No API key required. No rate limits.",
+    freeTierLimit: "Unlimited",
+  },
+  {
+    id: uuid(), slug: "world-bank", name: "World Bank Open Data", description: "Global economic indicators: GDP, inflation, unemployment, FDI. 200+ countries, 60+ years of data. Zero-cost international source.", category: "government" as const,
+    ownershipTier: "platform" as const, authMethod: "none" as const,
+    baseUrl: "https://api.worldbank.org/v2",
+    docsUrl: "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392",
+    freeTierDescription: "Completely free. No API key required. No rate limits.",
+    freeTierLimit: "Unlimited",
+  },
+  {
     id: uuid(), slug: "openfigi", name: "OpenFIGI", description: "Financial Instrument Global Identifier (FIGI) mapping service. FIGI-to-ticker, CUSIP, ISIN resolution for instrument identification.", category: "enrichment" as const,
     ownershipTier: "platform" as const, authMethod: "api_key" as const,
     baseUrl: "https://api.openfigi.com",

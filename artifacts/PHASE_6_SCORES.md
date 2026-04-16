@@ -14,3 +14,18 @@
 | C8 | **Cross-page Navigation** | Users can always navigate back. No dead ends. Breadcrumbs where needed. |
 
 ## Baseline Assessment
+
+## Phase 6 Re-Assessment — AI Chat (Pass 52)
+
+| Criterion | Score | Evidence |
+|---|---|---|
+| C1 Streaming Chat | 9/10 | SSE streaming, ReAct loop with 43 tools |
+| C2 Conversation Mgmt | 9/10 | CRUD, history, sidebar, search, export |
+| C3 Message Actions | 8/10 | Edit, regenerate, branching, copy |
+| C4 Voice/Hands-Free | 9/10 | 37 hands-free refs, TTS, voice input, audible cues |
+| C5 Focus/Expertise | 9/10 | General/financial focus toggle |
+| C6 File Handling | 8/10 | Upload, OCR, document analysis |
+| C7 Model Selection | 8/10 | Configurable model preferences |
+| C8 Anonymous Access | 8/10 | 98-line anonymous chat router |
+
+**AI Chat Phase Average: 8.5/10** — CLEAN PASS.

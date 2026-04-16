@@ -1,8 +1,9 @@
 /**
- * AgentManager — CRUD OpenClaw agent instances
- * Create, launch, stop, delete compliance-aware AI agents
+ * AgentManager — CRUD OpenClaw agent instances with real-time progress
+ * Create, launch, stop, delete compliance-aware AI agents.
+ * Shows step-by-step ReAct loop progress during execution.
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -16,7 +17,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Bot, Play, Square, Trash2, Plus, Shield, Loader2, DollarSign, Clock, ChevronDown, ChevronUp, AlertCircle, AlertTriangle } from "lucide-react";
+import {
+  Bot, Play, Square, Trash2, Plus, Shield, Loader2, DollarSign,
+  Clock, ChevronDown, ChevronUp, AlertCircle, AlertTriangle,
+  Wrench, Brain, CheckCircle2, Zap, Activity,
+} from "lucide-react";
 
 const AGENT_TYPES = [
   { value: "compliance_monitor", label: "Compliance Monitor", desc: "Reads compliance rules + communication archive, flags issues" },
@@ -31,7 +36,7 @@ export default function AgentManager() {
 
   const agents = trpc.openClaw.list.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const createMutation = trpc.openClaw.create.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent created"); } });
-  const launchMutation = trpc.openClaw.launch.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent launched"); } });
+  const launchMutation = trpc.openClaw.launch.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent launched — watch the progress below"); } });
   const stopMutation = trpc.openClaw.stop.useMutation({ onSuccess: () => { agents.refetch(); toast.info("Agent stopped"); } });
   const deleteMutation = trpc.openClaw.delete.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent deleted"); } });
 
@@ -46,8 +51,11 @@ export default function AgentManager() {
         <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="container py-4 flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold">AI Agents</h1>
-              <p className="text-sm text-muted-foreground">Create, launch, and manage autonomous AI agents</p>
+              <h1 className="text-xl font-bold flex items-center gap-2">
+                <Bot className="h-5 w-5 text-primary" />
+                AI Agents
+              </h1>
+              <p className="text-sm text-muted-foreground">Create, launch, and manage autonomous AI agents with real-time progress</p>
             </div>
             <Dialog open={showCreate} onOpenChange={setShowCreate}>
               <DialogTrigger asChild>
@@ -110,21 +118,25 @@ export default function AgentManager() {
               <Bot className="h-12 w-12 mx-auto mb-3 opacity-40" />
               <p className="text-lg font-medium">No agents yet</p>
               <p className="text-sm mt-1">Create your first AI agent to automate recurring tasks.</p>
+              <p className="text-xs mt-3 max-w-md mx-auto">Agents use the ReAct reasoning loop with access to 43+ tools including financial calculators, wealth engine simulations, risk models, and search.</p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {(agents.data || []).map((agent: any) => (
-                <Card key={agent.id}>
+                <Card key={agent.id} className={agent.status === "active" ? "ring-1 ring-primary/30" : ""}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-medium">{agent.config?.name || "Agent"}</CardTitle>
+                      <CardTitle className="text-sm font-medium flex items-center gap-1.5">
+                        {agent.status === "active" && <Activity className="h-3 w-3 text-primary animate-pulse" />}
+                        {agent.config?.name || "Agent"}
+                      </CardTitle>
                       <Badge variant={agent.status === "active" ? "default" : agent.status === "paused" ? "secondary" : "outline"}>
-                        {agent.status}
+                        {agent.status === "active" ? "Running" : agent.status}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-xs text-muted-foreground mb-3">{agent.config?.type || "custom"}</p>
+                    <p className="text-xs text-muted-foreground mb-3">{AGENT_TYPES.find(t => t.value === agent.config?.type)?.label || agent.config?.type || "custom"}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
                       <Clock className="h-3 w-3" /> {agent.totalRuns} runs
                       <DollarSign className="h-3 w-3 ml-2" /> ${agent.totalCost?.toFixed(2) || "0.00"}
@@ -132,8 +144,8 @@ export default function AgentManager() {
                     </div>
                     <div className="flex gap-1">
                       {agent.status !== "active" ? (
-                        <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => launchMutation.mutate({ agentId: agent.id })}>
-                          <Play className="h-3 w-3 mr-1" /> Launch
+                        <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" disabled={launchMutation.isPending} onClick={() => { launchMutation.mutate({ agentId: agent.id }); setExpandedAgentId(agent.id); }}>
+                          {launchMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Play className="h-3 w-3 mr-1" />} Launch
                         </Button>
                       ) : (
                         <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => stopMutation.mutate({ agentId: agent.id })}>
@@ -144,23 +156,17 @@ export default function AgentManager() {
                         size="sm"
                         variant="ghost"
                         className="h-7 text-xs"
-                        onClick={() =>
-                          setExpandedAgentId((cur) => (cur === agent.id ? null : agent.id))
-                        }
+                        onClick={() => setExpandedAgentId((cur) => (cur === agent.id ? null : agent.id))}
                         aria-label={expandedAgentId === agent.id ? "Hide recent runs" : "Show recent runs"}
                       >
-                        {expandedAgentId === agent.id ? (
-                          <ChevronUp className="h-3 w-3" />
-                        ) : (
-                          <ChevronDown className="h-3 w-3" />
-                        )}
+                        {expandedAgentId === agent.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                       </Button>
                       <Button size="sm" variant="ghost" className="h-7 text-xs text-red-400" onClick={() => { if (confirm("Delete this agent?")) deleteMutation.mutate({ agentId: agent.id }); }}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                     {expandedAgentId === agent.id && (
-                      <AgentRecentRuns agentId={agent.id} />
+                      <AgentRecentRuns agentId={agent.id} isActive={agent.status === "active"} />
                     )}
                   </CardContent>
                 </Card>
@@ -173,41 +179,109 @@ export default function AgentManager() {
   );
 }
 
-// ─── Recent runs panel ────────────────────────────────────────────────────
-// Shows the latest agent_actions rows for an agent the caller owns, so
-// the AgentManager card isn't stuck displaying a permanent "0 runs,
-// $0.00" counter after a launch. The server-side listActions procedure
-// gates on userId ownership before returning rows.
-function AgentRecentRuns({ agentId }: { agentId: number }) {
+// ─── Parse step progress from actionType ────────────────────────────────────
+function parseStepProgress(actionType: string): { step: number; total: number; tool?: string } | null {
+  const match = actionType.match(/^step:(\d+)\/(\d+)(?::(.+))?$/);
+  if (!match) return null;
+  return { step: parseInt(match[1]), total: parseInt(match[2]), tool: match[3] };
+}
+
+// ─── Recent runs panel with real-time progress ──────────────────────────────
+function AgentRecentRuns({ agentId, isActive }: { agentId: number; isActive: boolean }) {
   const { isAuthenticated } = useAuth();
   const q = trpc.openClaw.listActions.useQuery(
-    { agentId, limit: 10 },
-    { enabled: isAuthenticated, retry: false, refetchInterval: 5000 },
+    { agentId, limit: 20 },
+    { enabled: isAuthenticated, retry: false, refetchInterval: isActive ? 2000 : 10000 },
   );
   const rows = q.data ?? [];
+
+  // Group step entries into runs and separate final results
+  const { activeSteps, completedRuns } = useMemo(() => {
+    const steps: typeof rows = [];
+    const completed: typeof rows = [];
+    for (const r of rows) {
+      if (parseStepProgress(r.actionType)) {
+        steps.push(r);
+      } else {
+        completed.push(r);
+      }
+    }
+    return { activeSteps: steps, completedRuns: completed };
+  }, [rows]);
+
+  // Find the latest step progress for the active run
+  const latestStep = activeSteps.length > 0 ? parseStepProgress(activeSteps[0].actionType) : null;
+
   return (
     <div className="relative mt-3 border-t pt-3 space-y-2">
       {/* Warm gold radial glow */}
       <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Recent runs
+          {isActive ? "Live Progress" : "Recent Runs"}
         </p>
         {q.isFetching && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
       </div>
+
+      {/* Active progress bar */}
+      {isActive && latestStep && (
+        <div className="space-y-1.5 rounded-md border border-primary/20 bg-primary/5 p-2">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="font-medium flex items-center gap-1">
+              <Brain className="h-3 w-3 text-primary animate-pulse" />
+              Step {latestStep.step} of {latestStep.total}
+            </span>
+            <span className="text-muted-foreground">{Math.round((latestStep.step / latestStep.total) * 100)}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${(latestStep.step / latestStep.total) * 100}%` }}
+            />
+          </div>
+          {/* Step timeline */}
+          {activeSteps.length > 0 && (
+            <div className="space-y-1 mt-2">
+              {activeSteps.slice(0, 8).reverse().map((s: any, i: number) => {
+                const sp = parseStepProgress(s.actionType);
+                return (
+                  <div key={s.id} className="flex items-center gap-1.5 text-[10px]">
+                    <div className="flex-shrink-0 w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
+                      {sp?.tool ? <Wrench className="h-2.5 w-2.5 text-primary" /> : <Zap className="h-2.5 w-2.5 text-primary" />}
+                    </div>
+                    <span className="text-muted-foreground">Step {sp?.step}</span>
+                    {sp?.tool && (
+                      <Badge variant="outline" className="h-4 text-[9px] px-1 py-0">
+                        {sp.tool}
+                      </Badge>
+                    )}
+                    <span className="text-muted-foreground ml-auto tabular-nums">
+                      {s.durationMs != null ? `${(s.durationMs / 1000).toFixed(1)}s` : ""}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Completed runs */}
       {rows.length === 0 ? (
         <p className="text-[11px] text-muted-foreground">
           No runs yet. Click Launch to execute this agent.
         </p>
       ) : (
         <ul className="space-y-1.5 max-h-52 overflow-y-auto">
-          {rows.map((r: any) => (
-            <li
-              key={r.id}
-              className="text-[11px] rounded border border-border/50 p-2 space-y-0.5"
-            >
+          {completedRuns.map((r: any) => (
+            <li key={r.id} className="text-[11px] rounded border border-border/50 p-2 space-y-0.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-mono text-[10px] truncate">
+                <span className="font-mono text-[10px] truncate flex items-center gap-1">
+                  {r.error ? (
+                    <AlertCircle className="h-3 w-3 text-rose-500 shrink-0" />
+                  ) : (
+                    <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+                  )}
                   {r.actionType}
                 </span>
                 <span className="text-muted-foreground tabular-nums">

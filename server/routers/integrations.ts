@@ -283,6 +283,18 @@ export const integrationsRouter = router({
             // FINRA BrokerCheck is free, no key needed
             testUrl = "https://api.brokercheck.finra.org/search/individual?query=test&start=0&rows=1";
             break;
+          case "treasury-fiscal":
+            // US Treasury Fiscal Data API — free, no key needed
+            testUrl = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/rates_of_exchange?page[size]=1";
+            break;
+          case "gleif":
+            // GLEIF LEI lookup — free, no key needed
+            testUrl = "https://api.gleif.org/api/v1/lei-records?page[size]=1";
+            break;
+          case "world-bank":
+            // World Bank Open Data — free, no key needed
+            testUrl = "https://api.worldbank.org/v2/country/US/indicator/NY.GDP.MKTP.CD?format=json&per_page=1";
+            break;
           case "smsit":
             testUrl = "https://tool-it.smsit.ai/api/user";
             headers["Authorization"] = `Bearer ${apiKey}`;
