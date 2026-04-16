@@ -15,6 +15,7 @@ import { useState, useMemo } from "react";
 import { DisclosureSection } from "@/components/DisclosureSection";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { useLocation } from "wouter";
+import { ShareButton } from "@/components/sharing/ShareKit";
 
 const WATCHLIST = [
   { symbol: "SPY", name: "S&P 500 ETF" },
@@ -73,7 +74,8 @@ export default function MarketData() {
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <BarChart3 className="w-5 h-5 text-accent relative" />
         <h1 className="text-lg font-semibold relative">Market Data</h1>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <ShareButton contentType="market-view" contentId="watchlist" title="Market Watchlist" />
           <Button variant="ghost" size="icon" aria-label="Refresh market data" onClick={() => quotesQuery.refetch()} disabled={quotesQuery.isFetching}>
             <RefreshCw className={`w-4 h-4 ${quotesQuery.isFetching ? "animate-spin" : ""}`} />
           </Button>

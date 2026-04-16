@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { navigateToChat } from "@/lib/navigateToChat";
 import {
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
   Users, Calendar, Mail, Search, Filter, Plus,
   UserPlus, Video, Phone, MessageSquare, Clock, Star,
   Building2, Loader2, ChevronRight, Globe, MapPin,

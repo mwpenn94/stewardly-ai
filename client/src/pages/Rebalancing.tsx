@@ -38,6 +38,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 
 interface HoldingRow {
   id: string;

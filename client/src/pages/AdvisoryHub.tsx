@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { navigateToChat } from "@/lib/navigateToChat";
 import {
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
   Package, Briefcase, Lightbulb, Search, Filter,
   Star, TrendingUp, Shield, FileText, Calculator, DollarSign,
   Building2, Scale, ChevronRight, Loader2, Eye, Plus,
@@ -129,7 +130,7 @@ function ProductsSection({ searchQuery }: { searchQuery: string }) {
       {/* Category Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {categories.map((cat) => (
-          <Card key={cat.name} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => navigateToChat(cat.prompt, "financial")}>
+          <Card key={cat.name} className="cursor-pointer hover:bg-muted/30 transition-colors" role="button" tabIndex={0} onClick={() => navigateToChat(cat.prompt, "financial")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigateToChat(cat.prompt, "financial"))(); } }}>
             <CardContent className="p-4 flex items-center gap-3">
               <cat.icon className={`h-5 w-5 ${cat.color}`} />
               <div>

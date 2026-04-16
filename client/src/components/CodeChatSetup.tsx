@@ -201,7 +201,7 @@ export default function CodeChatSetup({
             {connectionMethod === "apikey" && (
               <div className="mt-3" onClick={(e) => e.stopPropagation()}>
                 <Input
-                  type="password"
+                  type="password" autoComplete="current-password"
                   placeholder="sk-..."
                   value={apiKey}
                   onChange={(e) => {

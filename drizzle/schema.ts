@@ -6637,3 +6637,94 @@ export const billingEvents = mysqlTable("billing_events", {
 
 export type BillingEvent = typeof billingEvents.$inferSelect;
 export type InsertBillingEvent = typeof billingEvents.$inferInsert;
+
+// ─── FEATURE PERMISSIONS (Per-user feature access control) ──────────────────
+// DB table: feature_permissions
+export const featurePermissions = mysqlTable("feature_permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  orgId: int("org_id"),
+  roleScope: mysqlEnum("role_scope", ["user", "advisor", "manager", "admin", "org_default"]),
+  featureId: varchar("feature_id", { length: 100 }).notNull(),
+  enabled: mysqlBoolean("enabled").default(true).notNull(),
+  disclosureCeiling: int("disclosure_ceiling").default(4).notNull(),
+  grantedBy: int("granted_by"),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_feature_permissions_user_id").on(table.userId),
+  orgIdIdx: index("idx_feature_permissions_org_id").on(table.orgId),
+  featureIdIdx: index("idx_feature_permissions_feature_id").on(table.featureId),
+}));
+export type FeaturePermission = typeof featurePermissions.$inferSelect;
+export type InsertFeaturePermission = typeof featurePermissions.$inferInsert;
+
+// ─── PERMISSION AUDIT LOG (Compliance-grade change tracking) ────────────────
+// DB table: permission_audit_log
+export const permissionAuditLog = mysqlTable("permission_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  actorId: int("actor_id").notNull(),
+  targetUserId: int("target_user_id"),
+  targetOrgId: int("target_org_id"),
+  actionType: varchar("action_type", { length: 50 }).notNull(),
+  featureId: varchar("feature_id", { length: 100 }),
+  previousValue: text("previous_value"),
+  newValue: text("new_value"),
+  reason: text("reason"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  actorIdIdx: index("idx_perm_audit_actor_id").on(table.actorId),
+  targetUserIdIdx: index("idx_perm_audit_target_user_id").on(table.targetUserId),
+  actionTypeIdx: index("idx_perm_audit_action_type").on(table.actionType),
+  createdAtIdx: index("idx_perm_audit_created_at").on(table.createdAt),
+}));
+export type PermissionAuditLogEntry = typeof permissionAuditLog.$inferSelect;
+export type InsertPermissionAuditLogEntry = typeof permissionAuditLog.$inferInsert;
+
+// ─── CONTENT SHARES (Universal sharing for any content type) ────────────────
+// DB table: content_shares
+export const contentShares = mysqlTable("content_shares", {
+  id: int("id").autoincrement().primaryKey(),
+  contentType: varchar("content_type", { length: 50 }).notNull(),
+  contentId: varchar("content_id", { length: 100 }).notNull(),
+  ownerId: int("owner_id").notNull(),
+  sharedWithUserId: int("shared_with_user_id"),
+  sharedWithOrgId: int("shared_with_org_id"),
+  sharedWithRole: mysqlEnum("shared_with_role", ["user", "advisor", "manager", "admin"]),
+  permissionLevel: mysqlEnum("permission_level", ["view", "comment", "edit", "admin"]).default("view").notNull(),
+  expiresAt: timestamp("expires_at"),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  contentIdx: index("idx_content_shares_content").on(table.contentType, table.contentId),
+  ownerIdIdx: index("idx_content_shares_owner_id").on(table.ownerId),
+  sharedWithUserIdx: index("idx_content_shares_shared_with_user").on(table.sharedWithUserId),
+  sharedWithOrgIdx: index("idx_content_shares_shared_with_org").on(table.sharedWithOrgId),
+}));
+export type ContentShare = typeof contentShares.$inferSelect;
+export type InsertContentShare = typeof contentShares.$inferInsert;
+
+// ─── VIEW SHARES (Saved view configurations shared with users) ──────────────
+// DB table: view_shares
+export const viewShares = mysqlTable("view_shares", {
+  id: int("id").autoincrement().primaryKey(),
+  viewName: varchar("view_name", { length: 200 }).notNull(),
+  viewType: varchar("view_type", { length: 50 }).notNull(),
+  viewConfig: json("view_config").notNull(),
+  ownerId: int("owner_id").notNull(),
+  sharedWithUserId: int("shared_with_user_id"),
+  sharedWithOrgId: int("shared_with_org_id"),
+  sharedWithRole: mysqlEnum("shared_with_role", ["user", "advisor", "manager", "admin"]),
+  permissionLevel: mysqlEnum("permission_level", ["view", "edit"]).default("view").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  ownerIdIdx: index("idx_view_shares_owner_id").on(table.ownerId),
+  sharedWithUserIdx: index("idx_view_shares_shared_with_user").on(table.sharedWithUserId),
+  viewTypeIdx: index("idx_view_shares_view_type").on(table.viewType),
+}));
+export type ViewShare = typeof viewShares.$inferSelect;
+export type InsertViewShare = typeof viewShares.$inferInsert;

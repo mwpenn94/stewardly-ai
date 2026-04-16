@@ -88,7 +88,7 @@ function ImageEmbed({ embed }: { embed: MediaEmbed }) {
           <button className="absolute top-4 right-4 text-white/70 hover:text-white" onClick={() => setExpanded(false)}>
             <X className="w-6 h-6" />
           </button>
-          <img src={embed.source} alt={embed.title} className="max-w-full max-h-full object-contain" />
+          <img loading="lazy" src={embed.source} alt={embed.title} className="max-w-full max-h-full object-contain" />
         </div>
       )}
     </>
@@ -123,7 +123,7 @@ function ShoppingEmbed({ embed }: { embed: MediaEmbed }) {
       className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:bg-muted/50 transition-colors"
     >
       {embed.thumbnailUrl ? (
-        <img src={embed.thumbnailUrl} alt={embed.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+        <img loading="lazy" src={embed.thumbnailUrl} alt={embed.title} className="w-12 h-12 rounded-lg object-cover shrink-0" />
       ) : (
         <div className="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
           <ShoppingCart className="w-5 h-5 text-green-400" />

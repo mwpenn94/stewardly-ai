@@ -18,6 +18,7 @@ import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
 import type { FinancialProfile } from "@/stores/financialProfile";
 import { SEOHead } from "@/components/SEOHead";
+import { ShareButton } from "@/components/sharing/ShareKit";
 import { useDisclosureGate } from "@/components/DisclosureSection";
 
 // ─── Monte Carlo Simulation ────────────────────────────────────────────
@@ -121,6 +122,7 @@ export default function FinancialPlanning() {
             <p className="text-xs text-muted-foreground">Monte Carlo projections, Social Security optimization, Roth analysis, and goal tracking</p>
           </div>
         </div>
+        <ShareButton contentType="financial-plan" contentId="user-plan" title="Financial Plan" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">

@@ -779,7 +779,7 @@ function CampaignDetail({
                   <Label htmlFor="recipient-email">Email Address</Label>
                   <Input
                     id="recipient-email"
-                    type="email"
+                    type="email" autoComplete="email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder="client@example.com"

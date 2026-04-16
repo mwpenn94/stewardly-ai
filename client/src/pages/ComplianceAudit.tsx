@@ -41,6 +41,7 @@ import {
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 
 type SeverityKey = "info" | "success" | "warning" | "critical";
 

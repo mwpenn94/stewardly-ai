@@ -514,38 +514,40 @@ export const improvementEngineRouter = router({
         input.layer, input.direction, metrics, input.targetId
       );
 
-      // Store metrics snapshot
-      for (const [key, value] of Object.entries(metrics)) {
-        if (typeof value === "number") {
-          await db.insert(layerMetrics).values({
-            layer: input.layer,
-            targetId: input.targetId,
-            metricName: `${input.direction}_${key}`,
-            metricValue: value,
-            period: "snapshot",
-            recordedAt: now,
-            createdAt: now,
-          });
-        }
+      // Store metrics snapshot (batch insert — Pass 61 N+1 fix)
+      const metricRows = Object.entries(metrics)
+        .filter(([, v]) => typeof v === "number")
+        .map(([key, value]) => ({
+          layer: input.layer,
+          targetId: input.targetId,
+          metricName: `${input.direction}_${key}`,
+          metricValue: value as number,
+          period: "snapshot" as const,
+          recordedAt: now,
+          createdAt: now,
+        }));
+      if (metricRows.length > 0) {
+        await db.insert(layerMetrics).values(metricRows);
       }
 
-      // Create improvement actions from recommendations
-      for (const rec of (analysis.recommendations || [])) {
-        await db.insert(improvementActions).values({
-          auditId: audit.id,
-          layer: input.layer,
-          direction: input.direction,
-          actionType: rec.actionType || "recommend",
-          category: rec.category || "general",
-          title: rec.title,
-          description: rec.description,
-          implementationPlan: rec.description,
-          priority: rec.priority || "medium",
-          estimatedImpact: rec.estimatedImpact,
-          status: rec.autoImplementable ? "implementing" : "proposed",
-          createdAt: now,
-          updatedAt: now,
-        });
+      // Create improvement actions from recommendations (batch insert — Pass 61 N+1 fix)
+      const actionRows = (analysis.recommendations || []).map((rec: any) => ({
+        auditId: audit.id,
+        layer: input.layer,
+        direction: input.direction,
+        actionType: rec.actionType || "recommend",
+        category: rec.category || "general",
+        title: rec.title,
+        description: rec.description,
+        implementationPlan: rec.description,
+        priority: rec.priority || "medium",
+        estimatedImpact: rec.estimatedImpact,
+        status: rec.autoImplementable ? "implementing" : "proposed",
+        createdAt: now,
+        updatedAt: now,
+      }));
+      if (actionRows.length > 0) {
+        await db.insert(improvementActions).values(actionRows);
       }
 
       // Try auto-implementing safe actions
@@ -635,22 +637,24 @@ export const improvementEngineRouter = router({
           input.layer, direction, metrics, input.targetId
         );
 
-        for (const rec of (analysis.recommendations || [])) {
-          await db.insert(improvementActions).values({
-            auditId: audit.id,
-            layer: input.layer,
-            direction,
-            actionType: rec.actionType || "recommend",
-            category: rec.category || "general",
-            title: rec.title,
-            description: rec.description,
-            implementationPlan: rec.description,
-            priority: rec.priority || "medium",
-            estimatedImpact: rec.estimatedImpact,
-            status: rec.autoImplementable ? "implementing" : "proposed",
-            createdAt: now,
-            updatedAt: now,
-          });
+        // Batch insert recommendations (Pass 61 N+1 fix)
+        const dirActionRows = (analysis.recommendations || []).map((rec: any) => ({
+          auditId: audit.id,
+          layer: input.layer,
+          direction,
+          actionType: rec.actionType || "recommend",
+          category: rec.category || "general",
+          title: rec.title,
+          description: rec.description,
+          implementationPlan: rec.description,
+          priority: rec.priority || "medium",
+          estimatedImpact: rec.estimatedImpact,
+          status: rec.autoImplementable ? "implementing" : "proposed",
+          createdAt: now,
+          updatedAt: now,
+        }));
+        if (dirActionRows.length > 0) {
+          await db.insert(improvementActions).values(dirActionRows);
         }
 
         await db.update(layerAudits).set({

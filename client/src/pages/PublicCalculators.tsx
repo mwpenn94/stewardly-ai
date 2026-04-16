@@ -216,7 +216,7 @@ export default function PublicCalculators() {
           { icon: Heart, title: "Medicare Costs", desc: "Estimate IRMAA surcharges", href: "/medicare" },
           { icon: TrendingUp, title: "Social Security", desc: "Optimize claiming strategy", href: "/social-security" },
         ].map(c => (
-          <Card key={c.title} className="cursor-pointer hover:border-primary/30 transition-colors" onClick={() => navigate(c.href)}>
+          <Card key={c.title} className="cursor-pointer hover:border-primary/30 transition-colors" role="button" tabIndex={0} onClick={() => navigate(c.href)} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigate(c.href))(); } }}>
             <CardContent className="p-4 flex items-center gap-3">
               <c.icon className="h-8 w-8 text-primary/60" />
               <div>

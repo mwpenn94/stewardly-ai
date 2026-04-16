@@ -59,7 +59,7 @@ export function MessageList({
         <div key={msg.id || i} className={`group/msg flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
           {msg.role === "assistant" && (
             <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 mt-0.5 ${ttsIsSpeaking && i === messages.length - 1 ? "avatar-talking" : ""} ${avatarUrl ? "" : "bg-accent/10"}`}>
-              {avatarUrl ? <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
+              {avatarUrl ? <img loading="lazy" src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
             </div>
           )}
           <div className="max-w-[85%]">
@@ -84,7 +84,7 @@ export function MessageList({
                   />
                   {msg.metadata?.imageUrl && (
                     <div className="mt-3 rounded-xl overflow-hidden border border-border max-w-md">
-                      <img src={msg.metadata.imageUrl} alt="AI generated visual" className="w-full h-auto" />
+                      <img loading="lazy" src={msg.metadata.imageUrl} alt="AI generated visual" className="w-full h-auto" />
                     </div>
                   )}
                 </div>
@@ -156,7 +156,7 @@ export function MessageList({
       {isStreaming && (
         <div className="flex gap-3">
           <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${avatarUrl ? "" : "bg-accent/10"}`}>
-            {avatarUrl ? <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
+            {avatarUrl ? <img loading="lazy" src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
           </div>
           <div className="flex items-center gap-1.5 px-3 py-2">
             <div className="w-1.5 h-1.5 rounded-full bg-accent typing-dot" />

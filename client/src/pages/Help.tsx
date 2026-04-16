@@ -919,7 +919,7 @@ export default function Help() {
 
             {/* Quick links */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Card className="hover:border-accent/30 transition-colors cursor-pointer" onClick={() => navigate("/chat")}>
+              <Card className="hover:border-accent/30 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => navigate("/chat")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigate("/chat"))(); } }}>
                 <CardContent className="p-4 flex items-center gap-3">
                   <MessageSquare className="w-5 h-5 text-accent shrink-0" />
                   <div>
@@ -928,7 +928,7 @@ export default function Help() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover:border-accent/30 transition-colors cursor-pointer" onClick={() => navigate("/settings/guest-prefs")}>
+              <Card className="hover:border-accent/30 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => navigate("/settings/guest-prefs")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigate("/settings/guest-prefs"))(); } }}>
                 <CardContent className="p-4 flex items-center gap-3">
                   <Sparkles className="w-5 h-5 text-accent shrink-0" />
                   <div>
@@ -937,7 +937,7 @@ export default function Help() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover:border-accent/30 transition-colors cursor-pointer" onClick={() => navigate("/settings/ai-tuning")}>
+              <Card className="hover:border-accent/30 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => navigate("/settings/ai-tuning")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigate("/settings/ai-tuning"))(); } }}>
                 <CardContent className="p-4 flex items-center gap-3">
                   <Brain className="w-5 h-5 text-accent shrink-0" />
                   <div>

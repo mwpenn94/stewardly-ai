@@ -482,6 +482,21 @@ async function startServer() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
+      onError: ({ path, error, type }) => {
+        // Structured error logging for all tRPC errors (Pass 61)
+        if (error.code === "INTERNAL_SERVER_ERROR") {
+          logger.error(
+            { operation: "trpc.error", path, type, code: error.code, stack: error.stack },
+            `[tRPC] Internal error on ${type} ${path}: ${error.message}`
+          );
+          captureException(error);
+        } else if (error.code !== "UNAUTHORIZED" && error.code !== "NOT_FOUND") {
+          logger.warn(
+            { operation: "trpc.error", path, type, code: error.code },
+            `[tRPC] ${error.code} on ${type} ${path}: ${error.message}`
+          );
+        }
+      },
     })
   );
 

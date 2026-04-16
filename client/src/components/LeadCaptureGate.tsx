@@ -96,7 +96,7 @@ export function LeadCaptureGate({
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="gate-email">Email</Label>
-                <Input id="gate-email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
+                <Input id="gate-email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
               </div>
               <div className="flex items-start gap-2">
                 <Checkbox id="gate-consent" checked={consent} onCheckedChange={v => setConsent(!!v)} className="mt-0.5" />

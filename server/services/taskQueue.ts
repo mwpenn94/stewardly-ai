@@ -18,8 +18,8 @@ import { logger } from "../_core/logger";
 import { getDb } from "../db";
 import { agentTasks } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
-
-const log = logger.child({ module: "taskQueue" });
+import { sendNotification, getIO } from "./websocketNotifications";
+const log = logger.child({ module: "taskQueue" });;
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -166,6 +166,36 @@ export function getQueueStats() {
 
 // ─── Internal Processing ──────────────────────────────────────────────────
 
+/**
+ * Emit task progress to the user via WebSocket.
+ * Throttled to avoid flooding the client with updates.
+ */
+const lastEmitTime = new Map<string, number>();
+const EMIT_THROTTLE_MS = 250; // max 4 updates/sec per task
+
+function emitTaskProgress(task: TaskState) {
+  const now = Date.now();
+  const lastTime = lastEmitTime.get(task.id) ?? 0;
+  // Always emit for terminal states, throttle for progress updates
+  const isTerminal = ["completed", "failed", "cancelled"].includes(task.status);
+  if (!isTerminal && now - lastTime < EMIT_THROTTLE_MS) return;
+  lastEmitTime.set(task.id, now);
+  if (isTerminal) lastEmitTime.delete(task.id);
+
+  const io = getIO();
+  if (!io) return;
+
+  io.to(`user:${task.userId}`).emit("task:progress", {
+    id: task.id,
+    type: task.type,
+    status: task.status,
+    progress: task.progress,
+    progressMessage: task.progressMessage,
+    error: task.error,
+    result: isTerminal ? task.result : undefined,
+  });
+}
+
 function processQueue() {
   if (runningCount >= MAX_CONCURRENT_GLOBAL) return;
 
@@ -228,6 +258,8 @@ async function executeTask(task: TaskState) {
       (progress, message) => {
         task.progress = Math.min(100, Math.max(0, progress));
         task.progressMessage = message;
+        // Push real-time progress via WebSocket
+        emitTaskProgress(task);
       },
       controller.signal
     );
@@ -238,6 +270,15 @@ async function executeTask(task: TaskState) {
     task.result = result;
     task.completedAt = Date.now();
     log.info({ taskId: task.id, durationMs: task.completedAt - (task.startedAt ?? 0) }, "Task completed");
+    emitTaskProgress(task);
+    // Send completion notification
+    sendNotification(task.userId, {
+      type: "system",
+      priority: "medium",
+      title: "Task Complete",
+      body: `Task "${task.type}" completed successfully.`,
+      metadata: { taskId: task.id, taskType: task.type },
+    });
   } catch (err: any) {
     if (controller.signal.aborted) {
       task.status = "cancelled";
@@ -254,6 +295,16 @@ async function executeTask(task: TaskState) {
     }
     task.completedAt = Date.now();
     log.error({ taskId: task.id, error: err.message }, "Task failed");
+    emitTaskProgress(task);
+    if (task.status === "failed") {
+      sendNotification(task.userId, {
+        type: "alert",
+        priority: "high",
+        title: "Task Failed",
+        body: `Task "${task.type}" failed: ${task.error || "Unknown error"}`,
+        metadata: { taskId: task.id, taskType: task.type },
+      });
+    }
   } finally {
     clearTimeout(timeoutId);
     abortControllers.delete(task.id);

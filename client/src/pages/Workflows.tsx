@@ -527,7 +527,7 @@ export default function Workflows() {
                     const completed = wf.stepStatuses.filter(s => s === "completed").length;
                     const pct = Math.round((completed / template.steps.length) * 100);
                     return (
-                      <Card key={idx} className="bg-card/50 hover:border-accent/30 transition-colors cursor-pointer" onClick={() => { setActiveWorkflow(wf); setExpandedStep(wf.currentStep); }}>
+                      <Card key={idx} className="bg-card/50 hover:border-accent/30 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => { setActiveWorkflow(wf); setExpandedStep(wf.currentStep); } onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => { setActiveWorkflow(wf); setExpandedStep(wf.currentStep);)(); } }}}>
                         <CardContent className="pt-4">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-semibold">{template.name}</h4>

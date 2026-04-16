@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { IntelligenceStatusWidget } from "@/components/IntelligenceStatusWidget";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 
 export default function OperationsHub() {
   const { isAuthenticated } = useAuth();

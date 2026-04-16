@@ -49,15 +49,16 @@ export const fairnessRouter = router({
     const existing = await db.select().from(fairnessTestPrompts).limit(1);
     if (existing.length > 0) return { seeded: false, message: "Prompts already exist" };
 
-    for (const p of DEFAULT_PROMPTS) {
-      await db.insert(fairnessTestPrompts).values({
+    // Batch insert all prompts (Pass 61 N+1 fix)
+    await db.insert(fairnessTestPrompts).values(
+      DEFAULT_PROMPTS.map(p => ({
         demographic: p.demographic,
         category: p.category,
         promptText: p.promptText,
         expectedBehavior: p.expectedBehavior,
         createdAt: now,
-      });
-    }
+      }))
+    );
     return { seeded: true, count: DEFAULT_PROMPTS.length };
   }),
 

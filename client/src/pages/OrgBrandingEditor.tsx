@@ -219,7 +219,7 @@ export default function OrgBrandingEditor() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {logoUrl ? (
-              <img src={logoUrl} alt={orgName} className="h-9 w-auto" onError={(e) => (e.currentTarget.style.display = "none")} />
+              <img loading="lazy" src={logoUrl} alt={orgName} className="h-9 w-auto" onError={(e) => (e.currentTarget.style.display = "none")} />
             ) : (
               <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg"
                 style={{ background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})` }}>
@@ -255,7 +255,7 @@ export default function OrgBrandingEditor() {
             {/* Hero image */}
             {heroImageUrl && (
               <div className="max-w-3xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-border/30">
-                <img src={heroImageUrl} alt="Hero" className="w-full h-auto" onError={(e) => (e.currentTarget.style.display = "none")} />
+                <img loading="lazy" src={heroImageUrl} alt="Hero" className="w-full h-auto" onError={(e) => (e.currentTarget.style.display = "none")} />
               </div>
             )}
 
@@ -596,7 +596,7 @@ export default function OrgBrandingEditor() {
                       placeholder="https://example.com/logo.png" />
                     {logoUrl && (
                       <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-                        <img src={logoUrl} alt="Logo preview" className="h-12 w-auto" onError={(e) => (e.currentTarget.style.display = "none")} />
+                        <img loading="lazy" src={logoUrl} alt="Logo preview" className="h-12 w-auto" onError={(e) => (e.currentTarget.style.display = "none")} />
                         <span className="text-xs text-muted-foreground">Logo preview</span>
                       </div>
                     )}
@@ -613,7 +613,7 @@ export default function OrgBrandingEditor() {
                       placeholder="https://example.com/hero-screenshot.png" />
                     {heroImageUrl && (
                       <div className="rounded-xl overflow-hidden border border-border shadow-lg">
-                        <img src={heroImageUrl} alt="Hero preview" className="w-full h-auto max-h-64 object-cover"
+                        <img loading="lazy" src={heroImageUrl} alt="Hero preview" className="w-full h-auto max-h-64 object-cover"
                           onError={(e) => (e.currentTarget.style.display = "none")} />
                       </div>
                     )}
@@ -630,7 +630,7 @@ export default function OrgBrandingEditor() {
                       placeholder="https://example.com/favicon.ico" />
                     {faviconUrl && (
                       <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                        <img src={faviconUrl} alt="Favicon" className="w-6 h-6" onError={(e) => (e.currentTarget.style.display = "none")} />
+                        <img loading="lazy" src={faviconUrl} alt="Favicon" className="w-6 h-6" onError={(e) => (e.currentTarget.style.display = "none")} />
                         <span className="text-xs text-muted-foreground">Favicon preview (16x16 or 32x32 recommended)</span>
                       </div>
                     )}

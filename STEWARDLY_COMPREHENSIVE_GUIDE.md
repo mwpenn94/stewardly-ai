@@ -1,6 +1,6 @@
 # Stewardly AI — Comprehensive Platform Guide
 
-**Version:** 3.3 | **Date:** April 7, 2026 | **Status:** Production  
+**Version:** 4.0 | **Date:** April 16, 2026 | **Status:** Production  
 **Domains:** stewardly.manus.space, wealthai-gakeferp.manus.space
 
 ---
@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with 220,000+ lines of code across 1,000+ source files, 352 database tables (351 schema defs + the new `workflow_instances` from pass 61), 78 tRPC API routers, and 3,215 automated tests across 123 test files (3,103 passing in local dev; 14 pre-existing env-dependent files clear in the deployed environment with DB + env vars present). It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with **389,000+ lines of code** across **1,531 source files**, **365 database tables**, **99 tRPC API routers**, and **8,695+ automated tests** across **372 test files** (all passing). The platform has undergone **61 recursive optimization passes** covering depth, adversarial, landscape, and convergence verification. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -38,22 +38,23 @@ The system is built on a modern TypeScript full-stack architecture with 220,000+
 
 | Metric | Count |
 |--------|-------|
-| Total lines of code | 220,000+ |
-| Source files (non-test) | 1,000+ |
-| Test files | 191 |
-| Total tests | 4,719 (4,596 passing in local dev; 18 pre-existing env-dependent files clear in deployed env) |
-| Database tables | 356 (353 + 3 audio system tables from pass 120) |
-| tRPC routers | 78 (75 files + 3 mounted webhook routers from pass 46) |
-| Frontend pages | 131 (119 + 9 pass 120 + 3 calculator UI pages) |
-| Custom components | 142 |
+| Total lines of code | 389,000+ |
+| Source files (non-test) | 1,531 |
+| Test files | 372 |
+| Total tests | 8,695+ (all passing) |
+| Database tables | 365 |
+| tRPC routers | 99 |
+| Frontend pages/routes | 149 |
+| Custom components | 180+ |
 | UI primitives (shadcn) | 53 |
-| Custom hooks | 17 |
-| Server services | 259 |
-| Router modules | 78 (+ main routers.ts) |
-| Shared modules | 12 (intelligence, config, streaming, engine, guardrails, telemetry, events, tenant, MCP) |
-| Business domains | 15 (PII, verification, CRM, propensity, lead engine, import, enrichment, scraping, reporting, planning, premium finance, SMS-iT, SEO, email, monitoring) |
-| NPM dependencies | 88 |
-| Dev dependencies | 28 |
+| Custom hooks | 25+ |
+| Server services | 300+ |
+| Router modules | 99 (+ main routers.ts) |
+| Shared modules | 15+ (intelligence, config, streaming, engine, guardrails, telemetry, events, tenant, MCP, stewardlyWiring, exponential) |
+| Business domains | 20+ (PII, verification, CRM, propensity, lead engine, import, enrichment, scraping, reporting, planning, premium finance, SMS-iT, SEO, email, monitoring, fairness, task queue, agentic execution, workflow) |
+| NPM dependencies | 95+ |
+| Dev dependencies | 30+ |
+| Recursive optimization passes | 61 |
 
 ### 2.3 Directory Structure
 
@@ -101,7 +102,7 @@ wealthbridge-ai/
 │   ├── db.ts                 # Query helpers (896 lines)
 │   └── storage.ts            # S3 file storage
 ├── drizzle/
-│   └── schema.ts             # 270 tables (5,206 lines)
+│   └── schema.ts             # 365 tables (10,000+ lines)
 ├── shared/                   # Client-server shared types
 └── migrations/               # SQL migration history
 ```
@@ -212,7 +213,7 @@ The sidebar navigation adapts based on the user's role using a hierarchy system:
 
 ### 4.3 Route Map
 
-The application defines 45+ active routes and 20+ redirect routes for backward compatibility:
+The application defines **149 active routes** and 20+ redirect routes for backward compatibility:
 
 **Public Routes (no auth required):**
 
@@ -246,6 +247,59 @@ The application defines 45+ active routes and 20+ redirect routes for backward c
 | `/admin/intelligence` | AdminIntelligenceDashboard | admin | AI system monitoring |
 | `/admin/fairness` | FairnessTestDashboard | admin | Bias testing dashboard |
 | `/admin/knowledge` | KnowledgeAdmin | admin | Knowledge base management |
+| `/admin/api-keys` | AdminApiKeys | admin | API key management |
+| `/admin/audit-trail` | AdminAuditTrail | admin | Permission audit trail viewer |
+| `/admin/billing` | AdminBilling | admin | Billing and subscription management |
+| `/admin/data-freshness` | DataFreshness | admin | Data pipeline freshness monitoring |
+| `/admin/feature-permissions` | AdminFeaturePermissions | admin | Feature permission management |
+| `/admin/improvement` | ImprovementEngine | admin | AI improvement engine |
+| `/admin/lead-sources` | AdminLeadSources | admin | Lead source management |
+| `/admin/platform-reports` | PlatformReports | admin | Platform analytics reports |
+| `/admin/rate-management` | RateManagement | admin | Rate and pricing management |
+| `/admin/system-health` | SystemHealth | admin | System health monitoring |
+| `/admin/team` | AdminTeam | admin | Team management |
+| `/admin/webhooks` | AdminWebhooks | admin | Webhook configuration |
+| `/api-docs` | ApiDocumentation | admin | API documentation catalog |
+| `/advisor/:id` | AdvisorProfile | advisor | Individual advisor profile |
+| `/client-dashboard` | ClientDashboard | user | Client financial dashboard |
+| `/client-onboarding` | ClientOnboarding | user | Client onboarding flow |
+| `/community` | Community | user | Community features |
+| `/compliance-audit` | ComplianceAudit | advisor | Compliance audit tools |
+| `/crm-sync` | CRMSync | advisor | CRM synchronization |
+| `/embed` | Embed | public | Embeddable widget |
+| `/embed/calculator` | EmbedCalculator | public | Embeddable calculator widget |
+| `/estate` | EstatePlanning | user | Estate planning tools |
+| `/financial-planning` | FinancialPlanning | user | Financial planning workspace |
+| `/financial-twin` | FinancialTwin | user | Digital financial twin view |
+| `/import` | Import | advisor | Data import tools |
+| `/income-projection` | IncomeProjection | user | Income projection calculator |
+| `/insurance-analysis` | InsuranceAnalysis | user | Insurance analysis tools |
+| `/leads` | Leads | advisor | Lead management |
+| `/leads/:id` | LeadDetail | advisor | Individual lead detail |
+| `/learning` | Learning | user | Learning center hub |
+| `/learning/achievements` | Achievements | user | Learning achievements |
+| `/learning/case/:caseId` | CaseStudy | user | Interactive case studies |
+| `/learning/connections` | Connections | user | Learning connections |
+| `/learning/discipline/:slug` | Discipline | user | Discipline-specific learning |
+| `/learning/exam/:moduleSlug` | Exam | user | Module examination |
+| `/learning/licenses` | Licenses | user | License tracking |
+| `/learning/review` | Review | user | Study review |
+| `/learning/search` | Search | user | Learning content search |
+| `/learning/studio` | Studio | user | Content creation studio |
+| `/learning/studio/:tab` | StudioTab | user | Studio sub-tab |
+| `/learning/tracks/:slug` | Track | user | Learning track detail |
+| `/learning/tracks/:slug/quiz` | Quiz | user | Track quiz |
+| `/learning/tracks/:slug/study` | Study | user | Track study mode |
+| `/medicare` | Medicare | user | Medicare planning |
+| `/my-work` | MyWork | user | Personal work queue |
+| `/protection-score` | ProtectionScore | user | Protection score calculator |
+| `/public-calculators` | PublicCalculators | public | Public calculator suite |
+| `/risk-assessment` | RiskAssessment | user | Risk assessment tools |
+| `/social-security` | SocialSecurity | user | Social Security planning |
+| `/tax-planning` | TaxPlanning | user | Tax planning tools |
+| `/unsubscribe` | Unsubscribe | public | Email unsubscribe |
+| `/welcome-landing` | WelcomeLanding | public | Welcome landing page |
+| `/workflows` | Workflows | advisor | Workflow management |
 
 **Settings Sub-Routes:**
 
@@ -263,6 +317,7 @@ The application defines 45+ active routes and 20+ redirect routes for backward c
 | `/settings/shortcuts` | ShortcutsTab | Keyboard shortcuts |
 | `/settings/suitability` | SuitabilityTab | Risk profile |
 | `/settings/guest` | GuestPreferencesTab | Guest mode settings |
+| `/settings/audio` | AudioTab | Audio and voice settings |
 
 ---
 

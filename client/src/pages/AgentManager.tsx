@@ -189,7 +189,7 @@ export default function AgentManager() {
             <TabsContent value="templates">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {TASK_TEMPLATES.map((t, i) => (
-                  <Card key={i} className="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all" onClick={() => applyTemplate(t)}>
+                  <Card key={i} className="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all" role="button" tabIndex={0} onClick={() => applyTemplate(t)} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => applyTemplate(t))(); } }}>
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <t.icon className="h-4 w-4 text-primary" />
@@ -254,7 +254,7 @@ function AgentCard({ agent, onSelect, onLaunch, onStop, isLaunching }: {
   const TypeIcon = typeInfo?.icon || Bot;
   return (
     <Card className={`group transition-all hover:ring-1 hover:ring-primary/20 ${agent.status === "active" ? "ring-1 ring-primary/30" : ""}`}>
-      <CardHeader className="pb-2 cursor-pointer" onClick={onSelect}>
+      <CardHeader className="pb-2 cursor-pointer" role="button" tabIndex={0} onClick={onSelect} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (onSelect)(); } }}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium flex items-center gap-1.5">
             {agent.status === "active" && <Activity className="h-3 w-3 text-primary animate-pulse" />}
@@ -498,8 +498,7 @@ function AgentDetailView({ agent, onBack, onLaunch, onStop, onDelete, onSelectRu
                     {completedRuns.map((r: any) => (
                       <div
                         key={r.id}
-                        className="rounded-lg border border-border/50 p-3 hover:border-primary/30 cursor-pointer transition-colors"
-                        onClick={() => onSelectRun(r.id)}
+                        className="rounded-lg border border-border/50 p-3 hover:border-primary/30 cursor-pointer transition-colors" role="button" tabIndex={0} onClick={() => onSelectRun(r.id)} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => onSelectRun(r.id))(); } }}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs font-medium flex items-center gap-1.5">

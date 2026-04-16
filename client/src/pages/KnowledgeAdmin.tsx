@@ -187,7 +187,7 @@ export default function KnowledgeAdmin() {
                             size="icon"
                             className="shrink-0 text-destructive"
                             aria-label="Delete article"
-                            onClick={() => deleteArticle.mutate({ id: article.id })}
+                            onClick={() => { if (confirm("Delete this article? This cannot be undone.")) deleteArticle.mutate({ id: article.id }); }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>

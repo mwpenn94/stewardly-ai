@@ -113,7 +113,7 @@ describe("agenticExecution Router — Structural Integrity", () => {
     expect(mod.agenticRouter._def).toBeDefined();
   });
 
-  it("has all 9 sub-routers", async () => {
+  it("has all 10 sub-routers", async () => {
     const { agenticRouter } = await import("./agenticExecution");
     const keys = Object.keys(agenticRouter._def.record);
     expect(keys).toContain("gate");
@@ -125,7 +125,8 @@ describe("agenticExecution Router — Structural Integrity", () => {
     expect(keys).toContain("premiumFinance");
     expect(keys).toContain("carrier");
     expect(keys).toContain("performance");
-    expect(keys.length).toBe(9);
+    expect(keys).toContain("taskQueue");
+    expect(keys.length).toBe(10);
   });
 
   it("gate sub-router is defined", async () => {

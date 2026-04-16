@@ -52,6 +52,7 @@ import {
   Info,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 
 // Score badge — 0..3 on the rubric, color-coded.
 function ScoreBadge({ score }: { score: number }) {

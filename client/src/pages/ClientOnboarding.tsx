@@ -240,11 +240,11 @@ export default function ClientOnboarding() {
                 </div>
                 <div>
                   <Label className="text-xs">Email <span className="text-destructive">*</span></Label>
-                  <Input type="email" value={personal.email} onChange={e => updatePersonal("email", e.target.value)} placeholder="john@example.com" />
+                  <Input type="email" autoComplete="email" value={personal.email} onChange={e => updatePersonal("email", e.target.value)} placeholder="john@example.com" />
                 </div>
                 <div>
                   <Label className="text-xs">Phone</Label>
-                  <Input type="tel" value={personal.phone} onChange={e => updatePersonal("phone", e.target.value)} placeholder="(555) 123-4567" />
+                  <Input type="tel" autoComplete="tel" value={personal.phone} onChange={e => updatePersonal("phone", e.target.value)} placeholder="(555) 123-4567" />
                 </div>
                 <div>
                   <Label className="text-xs">Date of Birth</Label>

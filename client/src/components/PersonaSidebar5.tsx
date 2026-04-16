@@ -134,6 +134,8 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "Knowledge Base", icon: BookOpen, path: "/admin/knowledge", match: ["/admin/knowledge"], disclosureLevel: 4 },
       { label: "Platform Guide", icon: BookOpen, path: "/admin/guide", match: ["/admin/guide"], disclosureLevel: 4 },
       { label: "Lead Sources", icon: Target, path: "/admin/lead-sources", match: ["/admin/lead-sources"], disclosureLevel: 4 },
+      { label: "API Docs", icon: BookOpen, path: "/api-docs", match: ["/api-docs"], disclosureLevel: 3 },
+      { label: "Audit Trail", icon: Shield, path: "/admin/audit-trail", match: ["/admin/audit-trail"], disclosureLevel: 4 },
     ],
   },
 ];

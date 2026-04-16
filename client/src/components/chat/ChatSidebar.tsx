@@ -405,7 +405,7 @@ function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setConversat
           </DropdownMenuSub>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteConversation(conv.id)}>
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => { if (confirm("Delete this conversation? This cannot be undone.")) handleDeleteConversation(conv.id); }}>
           <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
         </DropdownMenuItem>
       </DropdownMenuContent>

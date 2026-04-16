@@ -12,6 +12,7 @@ import { ContextualHelp } from "./components/ContextualHelp";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { CommandPalette } from "./components/CommandPalette";
 import { VoiceOnboardingCoach } from "./components/VoiceOnboardingCoach";
+import { ScrollToTop } from "./components/ScrollToTop";
 import { OnboardingTour, useOnboardingTour } from "./components/OnboardingTour";
 import { AuthProvider } from "./contexts/AuthContext";
 // GlobalFooter removed permanently per user request (redundant nav)
@@ -128,6 +129,7 @@ const AdminDataFreshness = lazy(() => import("./pages/AdminDataFreshness"));
 const AdminLeadSources = lazy(() => import("./pages/AdminLeadSources"));
 const AdminRateManagement = lazy(() => import("./pages/AdminRateManagement"));
 const AdminPlatformReports = lazy(() => import("./pages/AdminPlatformReports"));
+const AdminFeaturePermissions = lazy(() => import("./pages/AdminFeaturePermissions"));
 const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
 // EMBA Learning integration (April 2026)
 const LearningHome = lazy(() => import("./pages/learning/LearningHome"));
@@ -154,10 +156,13 @@ const ComparablesPage = lazy(() => import("./pages/Comparables"));
 const RebalancingPage = lazy(() => import("./pages/Rebalancing"));
 // Email Campaign (Pass 56 — full CRUD page)
 const EmailCampaign = lazy(() => import("./pages/EmailCampaign"));
+const ApiDocumentation = lazy(() => import("./pages/ApiDocumentation"));
+const AdminAuditTrail = lazy(() => import("./pages/AdminAuditTrail"));
 
 function Router() {
   return (
     <Suspense fallback={<PageSuspenseFallback />}>
+      <ScrollToTop />
       <Switch>
         {/* Public routes */}
         <Route path={"/"} component={Landing} />
@@ -258,6 +263,7 @@ function Router() {
         <Route path="/admin/lead-sources" component={AdminLeadSources} />
         <Route path="/admin/rate-management" component={AdminRateManagement} />
         <Route path="/admin/platform-reports" component={AdminPlatformReports} />
+        <Route path="/admin/feature-permissions" component={AdminFeaturePermissions} />
         <Route path="/client-dashboard" component={ClientDashboard} />
 
         {/* Pass 120+ new persona routes */}
@@ -339,6 +345,8 @@ function Router() {
         <Route path={"/marketplace"}><Redirect to="/advisory" /></Route>
         <Route path={"/coi-network"}><Redirect to="/relationships" /></Route>
         <Route path={"/email-campaigns"} component={EmailCampaign} />
+        <Route path={"/api-docs"} component={ApiDocumentation} />
+        <Route path={"/admin/audit-trail"} component={AdminAuditTrail} />
         <Route path={"/professionals"}><Redirect to="/relationships" /></Route>
 
         <Route path={"/404"} component={NotFound} />

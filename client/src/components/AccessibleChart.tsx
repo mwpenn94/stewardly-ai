@@ -56,8 +56,8 @@ export default function AccessibleChart({
       </div>
 
       {showTable ? (
-        <div aria-live="polite">
-          <table className="w-full text-sm border-collapse">
+        <div aria-live="polite" className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse min-w-[400px]">
             <thead>
               <tr>
                 <th className="text-left p-2 border-b">{xKey}</th>

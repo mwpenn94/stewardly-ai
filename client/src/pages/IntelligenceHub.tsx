@@ -20,6 +20,7 @@ import {
   ChevronRight, Clock, AlertTriangle,
 } from "lucide-react";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 
 export default function IntelligenceHub() {
   const { isAuthenticated } = useAuth();

@@ -471,7 +471,7 @@ function ToolCardWithTrackPicker({ icon, title, description, tracks, buildHref }
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <Card className="card-lift cursor-pointer h-full" onClick={() => setOpen(!open)}>
+    <Card className="card-lift cursor-pointer h-full" role="button" tabIndex={0} onClick={() => setOpen(!open)} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => setOpen(!open))(); } }}>
       <CardContent className="p-4 flex flex-col items-center text-center gap-2">
         {icon}
         <div className="text-sm font-medium">{title}</div>

@@ -47,7 +47,11 @@ const queryClient = new QueryClient({
       staleTime: 30_000,
       refetchOnWindowFocus: false,
     },
+    mutations: {
+      retry: false,
+    },
   },
+
 });
 
 /**

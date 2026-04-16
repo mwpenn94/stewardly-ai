@@ -125,15 +125,13 @@ export default function Community() {
           <div className="flex gap-2 flex-wrap">
             <Badge
               variant={category === "all" ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => setCategory("all")}
+              className="cursor-pointer" role="button" tabIndex={0} onClick={() => setCategory("all")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => setCategory("all"))(); } }}
             >All</Badge>
             {CATEGORIES.map(c => (
               <Badge
                 key={c}
                 variant={category === c ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => setCategory(c)}
+                className="cursor-pointer" role="button" tabIndex={0} onClick={() => setCategory(c)} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => setCategory(c))(); } }}
               >{c}</Badge>
             ))}
           </div>
@@ -159,7 +157,7 @@ export default function Community() {
                 return matchSearch && matchCat;
               })
               .map((post: any) => (
-                <Card key={post.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setSelectedPost(post.id)}>
+                <Card key={post.id} className="cursor-pointer hover:bg-muted/30 transition-colors" role="button" tabIndex={0} onClick={() => setSelectedPost(post.id)} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => setSelectedPost(post.id))(); } }}>
                   <CardContent className="py-4">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">

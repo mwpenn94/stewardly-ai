@@ -387,7 +387,7 @@ function ConnectDialog({
             <div>
               <label className="text-sm font-medium">Secret</label>
               <Input
-                type="password"
+                type="password" autoComplete="off"
                 placeholder="Plaid secret"
                 value={credentials.secret || ""}
                 onChange={e => setCredentials(prev => ({ ...prev, secret: e.target.value }))}

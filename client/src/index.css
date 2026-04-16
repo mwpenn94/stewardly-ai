@@ -391,6 +391,9 @@ body.color-blind-mode [role="button"][aria-disabled="true"] {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Pass 63: Mobile touch improvements */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     /* Warm vignette — gold warmth at corners for premium feel */
     background-image: radial-gradient(ellipse at 0% 0%, oklch(0.76 0.14 80 / 0.12) 0%, transparent 45%),
                       radial-gradient(ellipse at 100% 100%, oklch(0.76 0.14 80 / 0.08) 0%, transparent 45%),
@@ -823,4 +826,16 @@ body.color-blind-mode [role="button"][aria-disabled="true"] {
     background: #f0f0f0 !important;
     border: 1px solid #999 !important;
   }
+}
+
+/* ── Pass 65: Rendering Performance Utilities ── */
+/* content-visibility: auto skips rendering of off-screen content */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+/* CSS containment for heavy components */
+.contain-layout {
+  contain: layout style;
 }

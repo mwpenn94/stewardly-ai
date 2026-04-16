@@ -164,7 +164,7 @@ export default function SignIn() {
               </label>
               <Input
                 id="email"
-                type="email"
+                type="email" autoComplete="email"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError(""); }}
