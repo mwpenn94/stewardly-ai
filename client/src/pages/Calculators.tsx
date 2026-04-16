@@ -15,7 +15,8 @@ import {
   Calculator, CheckCircle2, Save, FolderOpen, Download, Trash2, Upload,
   Target, Layers, Package, Filter, Users, Megaphone, LayoutDashboard, Receipt,
   Flag, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu,
-  Briefcase, Gem, Handshake, CalendarRange, RotateCcw, X, Info
+  Briefcase, Gem, Handshake, CalendarRange, RotateCcw, X, Info,
+  PieChart, Landmark, Heart, Percent, Dice, FileCheck, Wallet, Gavel, CreditCard, Gift
 } from 'lucide-react';
 
 import {
@@ -34,6 +35,10 @@ import { AdvancedStrategiesPanel, BusinessClientPanel, TimelinePanel, PartnerPan
 import { IncomeStreamsPanel } from './calculators/PanelsF';
 import { CalcNarrator } from './calculators/CalcNarrator';
 import { MyPlanPanel, GDCBracketsPanel, ProductsPanel, SalesFunnelPanel, RecruitingPanel, ChannelsPanel, DashboardPanel, PnLPanel, GoalTrackerPanel, MonthlyProductionPanel, type PracticeProps } from './calculators/PanelsD';
+import { AUMOverrideCascadePanel, AUMPipelinePanel, AffiliatePipelinePanel } from './calculators/PanelsG';
+import { ProductionOptPanel, ChannelDiversPanel, MarketingROIPanel } from './calculators/PanelsH';
+import { BalanceSheetPanel, DebtManagementPanel, TrustEngineeringPanel, GovernanceIPSPanel, MonteCarloPanel, StockCompPanel } from './calculators/PanelsI';
+import { PremiumFinancingPanel, ILITTrustPanel, ExecCompPanel, CharitablePlanningPanel, DueDiligencePanel } from './calculators/PanelsJ';
 import {
   ROLE_DEFAULTS, calcWeightedGDC, calcProductionFunnel, calcTeamOverride,
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
@@ -46,11 +51,14 @@ import { SEOHead } from "@/components/SEOHead";
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
   'advanced' | 'bizclient' | 'costben' | 'compare' | 'summary' | 'timeline' | 'impl_timeline' | 'refs' |
   'myplan' | 'gdcbrackets' | 'products' | 'salesfunnel' | 'recruiting' | 'channels' | 'dashboard' | 'pnl' |
-  'goaltracker' | 'monthlyproduction' | 'partner' | 'income';
+  'goaltracker' | 'monthlyproduction' | 'partner' | 'income' |
+  'aumoverride' | 'aumpipeline' | 'affiliatepipeline' |
+  'prodopt' | 'chandivers' | 'mktgroi' |
+  'balancesheet' | 'debtmgmt' | 'trusteng' | 'governance' | 'montecarlo' | 'stockcomp' |
+  'premfin' | 'ilitrust' | 'execcomp' | 'charitable' | 'duediligence';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Practice Management', items: [
-    { id: 'profile', label: 'Client Profile', icon: <User className="w-4 h-4" /> },
     { id: 'myplan' as PanelId, label: 'My Plan', icon: <Target className="w-4 h-4" /> },
     { id: 'gdcbrackets' as PanelId, label: 'GDC Brackets', icon: <Layers className="w-4 h-4" /> },
     { id: 'products' as PanelId, label: 'Products', icon: <Package className="w-4 h-4" /> },
@@ -59,10 +67,17 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'channels' as PanelId, label: 'Channels', icon: <Megaphone className="w-4 h-4" /> },
     { id: 'dashboard' as PanelId, label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'pnl' as PanelId, label: 'P&L', icon: <Receipt className="w-4 h-4" /> },
+    { id: 'aumoverride' as PanelId, label: 'AUM Override', icon: <Layers className="w-4 h-4" /> },
+    { id: 'aumpipeline' as PanelId, label: 'AUM Pipeline', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'affiliatepipeline' as PanelId, label: 'Affiliate Pipeline', icon: <Handshake className="w-4 h-4" /> },
     { id: 'goaltracker' as PanelId, label: 'Goal Tracker', icon: <Flag className="w-4 h-4" /> },
     { id: 'monthlyproduction' as PanelId, label: 'Monthly Production', icon: <CalendarDays className="w-4 h-4" /> },
+    { id: 'prodopt' as PanelId, label: 'Production Optimization', icon: <Target className="w-4 h-4" /> },
+    { id: 'chandivers' as PanelId, label: 'Channel Diversification', icon: <PieChart className="w-4 h-4" /> },
+    { id: 'mktgroi' as PanelId, label: 'Marketing ROI', icon: <BarChart3 className="w-4 h-4" /> },
   ]},
   { group: 'Client Planning', items: [
+    { id: 'profile', label: 'Client Profile', icon: <User className="w-4 h-4" /> },
     { id: 'cash', label: 'Cash Flow', icon: <DollarSign className="w-4 h-4" /> },
     { id: 'retire', label: 'Retirement', icon: <Clock className="w-4 h-4" /> },
     { id: 'tax', label: 'Tax Planning', icon: <Building2 className="w-4 h-4" /> },
@@ -71,6 +86,12 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'protect', label: 'Protection', icon: <Shield className="w-4 h-4" /> },
     { id: 'bizclient', label: 'Business Client', icon: <Briefcase className="w-4 h-4" /> },
     { id: 'grow', label: 'Growth', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'balancesheet' as PanelId, label: 'Balance Sheet', icon: <Wallet className="w-4 h-4" /> },
+    { id: 'debtmgmt' as PanelId, label: 'Debt Management', icon: <CreditCard className="w-4 h-4" /> },
+    { id: 'trusteng' as PanelId, label: 'Trust Engineering', icon: <Gavel className="w-4 h-4" /> },
+    { id: 'governance' as PanelId, label: 'Governance / IPS', icon: <FileCheck className="w-4 h-4" /> },
+    { id: 'montecarlo' as PanelId, label: 'Monte Carlo', icon: <Dice className="w-4 h-4" /> },
+    { id: 'stockcomp' as PanelId, label: 'Stock-Based Comp', icon: <Percent className="w-4 h-4" /> },
   ]},
   { group: 'Advanced', items: [
     { id: 'advanced', label: 'Advanced Strategies', icon: <Gem className="w-4 h-4" /> },
@@ -81,9 +102,14 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'impl_timeline', label: 'Timeline', icon: <CalendarRange className="w-4 h-4" /> },
     { id: 'partner', label: 'Partner Earnings', icon: <Handshake className="w-4 h-4" /> },
     { id: 'income', label: 'Income Streams', icon: <DollarSign className="w-4 h-4" /> },
+    { id: 'premfin' as PanelId, label: 'Premium Financing', icon: <Landmark className="w-4 h-4" /> },
+    { id: 'ilitrust' as PanelId, label: 'ILIT / Trust Structuring', icon: <Gavel className="w-4 h-4" /> },
+    { id: 'execcomp' as PanelId, label: 'Executive Comp', icon: <Briefcase className="w-4 h-4" /> },
+    { id: 'charitable' as PanelId, label: 'Charitable Planning', icon: <Gift className="w-4 h-4" /> },
   ]},
-  { group: 'References', items: [
+  { group: 'References & Due Diligence', items: [
     { id: 'refs', label: 'References', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'duediligence' as PanelId, label: 'Due Diligence', icon: <FileCheck className="w-4 h-4" /> },
   ]},
 ];
 
@@ -1203,6 +1229,23 @@ export default function Calculators() {
           {activePanel === 'pnl' && <PnLPanel {...practiceProps} />}
           {activePanel === 'goaltracker' && <GoalTrackerPanel {...practiceProps} />}
           {activePanel === 'monthlyproduction' && <MonthlyProductionPanel {...practiceProps} />}
+          {activePanel === 'aumoverride' && <AUMOverrideCascadePanel />}
+          {activePanel === 'aumpipeline' && <AUMPipelinePanel />}
+          {activePanel === 'affiliatepipeline' && <AffiliatePipelinePanel />}
+          {activePanel === 'prodopt' && <ProductionOptPanel />}
+          {activePanel === 'chandivers' && <ChannelDiversPanel />}
+          {activePanel === 'mktgroi' && <MarketingROIPanel />}
+          {activePanel === 'balancesheet' && <BalanceSheetPanel nw={nw} savings={savings} retirement401k={retirement401k} mortgage={mortgage} debt={debt} />}
+          {activePanel === 'debtmgmt' && <DebtManagementPanel mortgage={mortgage} debt={debt} income={income} />}
+          {activePanel === 'trusteng' && <TrustEngineeringPanel grossEstate={grossEstate} exemption={exemption} />}
+          {activePanel === 'governance' && <GovernanceIPSPanel riskTolerance={riskTolerance} />}
+          {activePanel === 'montecarlo' && <MonteCarloPanel savings={savings} retirement401k={retirement401k} monthlySav={monthlySav} retireAge={retireAge} age={age} />}
+          {activePanel === 'stockcomp' && <StockCompPanel income={income} />}
+          {activePanel === 'premfin' && <PremiumFinancingPanel />}
+          {activePanel === 'ilitrust' && <ILITTrustPanel grossEstate={grossEstate} exemption={exemption} />}
+          {activePanel === 'execcomp' && <ExecCompPanel income={income} />}
+          {activePanel === 'charitable' && <CharitablePlanningPanel income={income} />}
+          {activePanel === 'duediligence' && <DueDiligencePanel />}
 
           {/* ═══ FINRA/SIPC COMPLIANCE DISCLAIMER ═══ */}
           <div className="mt-8 rounded-lg border border-border/50 bg-card/50 p-4 text-[10px] text-muted-foreground/60 leading-relaxed space-y-2">

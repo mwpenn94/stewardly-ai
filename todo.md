@@ -5232,3 +5232,30 @@
 - [x] ExportDataButton: Added to MyWork (work items export)
 - [x] ExportDataButton: Added to AdminAuditTrail (replaced custom CSV export with reusable component)
 - [x] 15/15 pass85-export-search tests passing
+
+## User Clarifications (Apr 16)
+- [ ] Affiliate production planning is BIDIRECTIONAL — help affiliates do their own production planning (pipeline, metrics, forecasting, ramp) not just recruit them
+- [ ] Phase 5: Incorporate stewardly-command-center repo (https://github.com/mwpenn94/stewardly-command-center) into this project
+
+## Phase 1 Immediate Fixes
+- [x] Remove stock ticker (MarketTicker) from AppShell
+- [x] Move Client Profile from Practice Management to Client Planning in Wealth Engine nav
+
+## Phase 3 — Wealth Engine Substantive Update
+- [ ] Gate 1: Structural inheritance from HTML v7.6 (100%)
+- [ ] Gate 2: Content parity — identical inputs produce identical outputs (100%)
+- [x] AUM override cascade — p² + p − 1/3 = 0 → 26.375% default, hierarchy viz, what-if modeling
+- [x] AUM pipeline funnel: prospects→discovery→proposal→agreement→onboarded→billing
+- [x] Affiliate pipeline funnel (for recruiting): identified→outreach→exploratory→MOU→active→strategic alliance
+- [x] Affiliate OWN production planning: pipeline, activity metrics, forecasting, ramp modeling from affiliate perspective
+- [x] Activity metrics dashboard per channel (calls/meetings/proposals/closes per period)
+- [x] Production forecasting from pipeline + historical conversion rates
+- [x] Ramp schedule modeling (12/24/36 month projected growth)
+- [x] Roll-up unification: all channels feed same totals, combined chart, P&L, GDC brackets (already in calcRollUp)
+- [x] Domain A: 3 practice management strategy surfaces (Production Optimization, Channel Diversification, Marketing ROI)
+- [x] Domain B: All P0 client planning approaches (Balance Sheet, Debt Management, Trust Engineering, Governance/IPS, Monte Carlo, Stock-Based Comp)
+- [x] Domain C: 4 advanced strategies (Premium Financing, ILIT/Trust, Executive Comp, Charitable Planning)
+- [x] Domain D: 25+ due diligence items across 5 categories, searchable/filterable with source citations
+- [x] Continuous improvement architecture — ROLE_DEFAULTS configurable per role, all inputs user-adjustable
+- [x] Save/load per role and team (calcSession router + localStorage auto-save)
+- [x] Numbers at appropriate whole unit of measure (fmt/fmtSm handle $K/$M/$B formatting)

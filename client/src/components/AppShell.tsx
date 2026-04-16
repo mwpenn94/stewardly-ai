@@ -23,7 +23,6 @@ import { recordPageVisit } from "@/hooks/useRecentPages";
 // imports only what it actually renders (mobile header, bottom tab bar,
 // skip-link, persona sidebar, bottom-banner).
 import { Menu, Keyboard } from "lucide-react";
-import { MarketTicker } from "@/components/MarketTicker";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useNotifications } from "@/contexts/NotificationContext";
@@ -268,8 +267,6 @@ export default function AppShell({ children, title }: AppShellProps) {
           />
         </header>
 
-        {/* Market ticker — visible at disclosure level 2+ */}
-        <MarketTicker />
 
         {/*
           Build Loop Pass 14 (G35 + G19): <main> landmark with
