@@ -5259,3 +5259,13 @@
 - [x] Continuous improvement architecture — ROLE_DEFAULTS configurable per role, all inputs user-adjustable
 - [x] Save/load per role and team (calcSession router + localStorage auto-save)
 - [x] Numbers at appropriate whole unit of measure (fmt/fmtSm handle $K/$M/$B formatting)
+
+## Phase 5 — Command Center Integration (from stewardly-command-center repo)
+- [x] EmailTemplateBuilder component — WYSIWYG with code/preview toggle, template library
+- [x] OutreachWorkflowBuilder component — visual step builder (email/SMS/call/wait/condition/task)
+- [x] DataPipelines page — integration status dashboard with pause/resume, metrics, search/filter
+- [x] OutreachAutomation page — multi-step outreach sequence management with CRUD, triggers, stats
+- [x] Integrated EmailTemplateBuilder into EmailCampaign page (replaced raw textarea)
+- [x] Added nav items: Email Campaigns, Marketing Assets, Data Pipelines, Outreach Automation
+- [x] Added routes in App.tsx for DataPipelines and OutreachAutomation
+- [x] 25 tests passing for Phase 5 command center integration

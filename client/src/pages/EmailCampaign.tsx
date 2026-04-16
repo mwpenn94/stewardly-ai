@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import DOMPurify from "dompurify";
+import EmailTemplateBuilder from "@/components/EmailTemplateBuilder";
 import { toast } from "sonner";
 import {
   Mail,
@@ -395,23 +396,22 @@ function CampaignEditor({
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <Label htmlFor="campaign-body">Email Body (HTML)</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1 text-xs"
-                onClick={() => setShowAiPanel(!showAiPanel)}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                AI Generate
-              </Button>
+              <Label htmlFor="campaign-body">Email Body</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1 text-xs"
+                  onClick={() => setShowAiPanel(!showAiPanel)}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI Generate
+                </Button>
+              </div>
             </div>
-            <Textarea
-              id="campaign-body"
+            <EmailTemplateBuilder
               value={bodyHtml}
-              onChange={(e) => setBodyHtml(e.target.value)}
-              placeholder="<h1>Hello {{recipientName}}</h1><p>Your quarterly review...</p>"
-              className="mt-1 min-h-[300px] font-mono text-sm"
+              onChange={setBodyHtml}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Use {"{{recipientName}}"}, {"{{recipientEmail}}"}, {"{{senderName}}"}, {"{{companyName}}"} for personalization.

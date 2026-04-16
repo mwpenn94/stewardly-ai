@@ -22,6 +22,7 @@ import {
   Heart, DollarSign, Target, Shield, BookOpen,
   Key, Webhook, Bot, Globe, Building2, GitMerge,
   LayoutDashboard, UserPlus, HeartPulse, Sparkles,
+  Mail, Database, FolderOpen,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -93,6 +94,10 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "Import Data", icon: Upload, path: "/import", match: ["/import"], disclosureLevel: 3 },
       { label: "Compliance", icon: ShieldCheck, path: "/compliance-audit", match: ["/compliance-audit"], disclosureLevel: 3 },
       { label: "CRM Sync", icon: RefreshCw, path: "/crm-sync", match: ["/crm-sync"], disclosureLevel: 3 },
+      { label: "Email Campaigns", icon: Mail, path: "/email-campaigns", match: ["/email-campaigns"], disclosureLevel: 3 },
+      { label: "Marketing Assets", icon: FolderOpen, path: "/marketing-assets", match: ["/marketing-assets"], disclosureLevel: 3 },
+      { label: "Data Pipelines", icon: Database, path: "/data-pipelines", match: ["/data-pipelines"], disclosureLevel: 3 },
+      { label: "Outreach Automation", icon: Zap, path: "/outreach-automation", match: ["/outreach-automation"], disclosureLevel: 3 },
       { label: "Market Data", icon: TrendingUp, path: "/market-data", match: ["/market-data"], disclosureLevel: 2 },
       { label: "Product Intelligence", icon: Lightbulb, path: "/product-intelligence", match: ["/product-intelligence"], disclosureLevel: 3 },
       { label: "Rebalancing", icon: Scale, path: "/rebalancing", match: ["/rebalancing"], disclosureLevel: 3 },
