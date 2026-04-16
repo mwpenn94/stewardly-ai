@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { navigateToChat } from "@/lib/navigateToChat";
-import { Plug, Search, RefreshCw, Activity, AlertTriangle, CheckCircle, XCircle, Settings2, ArrowLeft } from "lucide-react";
+import { Plug, Search, RefreshCw, Activity, AlertTriangle, CheckCircle, XCircle, Settings2, ArrowLeft, Loader2} from "lucide-react";
 import { Link } from "wouter";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
@@ -22,7 +22,7 @@ export default function AdminIntegrations() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("providers");
 
-  const providers = trpc.integrations.listProviders.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: providers, isLoading: _pageLoading } = trpc.integrations.listProviders.useQuery(undefined, { enabled: isAuthenticated });
   const connections = trpc.integrations.listConnections.useQuery(undefined, { enabled: isAuthenticated });
 
   const providerList = (providers.data as any)?.providers || providers.data || [];
@@ -39,6 +39,14 @@ export default function AdminIntegrations() {
       default: return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
     }
   };
+
+  if (_pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <AppShell title="Admin Integrations">

@@ -12,14 +12,15 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Shield, Target, AlertTriangle, CheckCircle, TrendingUp, BarChart3, FileText, Zap } from "lucide-react";
+import { Shield, Target, AlertTriangle, CheckCircle, TrendingUp, BarChart3, FileText, Zap, Loader2} from "lucide-react";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 
 export default function SuitabilityPanel() {
   const { isAuthenticated } = useAuth();
 
   const [tab, setTab] = useState("overview");
 
-  const suitability = trpc.suitability.get.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: suitability, isLoading: _pageLoading } = trpc.suitability.get.useQuery(undefined, { enabled: isAuthenticated });
   const products = trpc.products.list.useQuery(undefined, { enabled: isAuthenticated });
 
   const profile = suitability.data;
@@ -33,9 +34,18 @@ export default function SuitabilityPanel() {
   };
   const { score: riskScore, label: riskLabel, color: riskColor } = riskMap[riskTolerance] || riskMap.moderate;
 
+  if (_pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <AppShell title="Suitability">
       <SEOHead title="Suitability" description="Suitability assessment and questionnaire" />
+    <QueryErrorBanner query={suitability} label="suitability data" />
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>

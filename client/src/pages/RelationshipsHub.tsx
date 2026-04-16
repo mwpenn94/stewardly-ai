@@ -30,8 +30,16 @@ export default function RelationshipsHub() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Wire to real data where available
-  const leadsQ = trpc.leadPipeline.getPipeline.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const { data: leadsQ, isLoading: _pageLoading } = trpc.leadPipeline.getPipeline.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const leadCount = ((leadsQ.data as any)?.leads ?? []).length;
+
+  if (_pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <AppShell title="Relationships">

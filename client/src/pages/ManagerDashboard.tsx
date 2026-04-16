@@ -23,7 +23,7 @@ export default function ManagerDashboard() {
   const [selectedItem, setSelectedItem] = useState<number | null>(null);
   const utils = trpc.useUtils();
 
-  const reviewQueue = trpc.review.pending.useQuery(undefined, { enabled: !!user });
+  const { data: reviewQueue, isLoading: _pageLoading } = trpc.review.pending.useQuery(undefined, { enabled: !!user });
   const auditTrail = trpc.review.audit.useQuery({ limit: 50 }, { enabled: !!user });
   const feedbackStats = trpc.feedback.stats.useQuery(undefined, { enabled: !!user });
 
@@ -45,6 +45,14 @@ export default function ManagerDashboard() {
   const auditItems = auditTrail.data || [];
   const stats = feedbackStats.data || { total: 0, up: 0, down: 0 };
   const satisfactionRate = stats.total > 0 ? Math.round((stats.up / stats.total) * 100) : 0;
+
+  if (_pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <AppShell title="Manager Dashboard">

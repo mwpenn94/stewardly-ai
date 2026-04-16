@@ -83,7 +83,7 @@ export default function ConsensusPage() {
   const [selectedPresetId, setSelectedPresetId] = useState<number | "none">("none");
 
   const consensusStream = trpc.wealthEngine.consensusStream.useMutation({ onError: (e) => toast.error(e.message) });
-  const presets = trpc.wealthEngine.listWeightPresets.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: presets, isLoading: _pageLoading } = trpc.wealthEngine.listWeightPresets.useQuery(undefined, { enabled: isAuthenticated });
 
   // Round D2 — pre-flight cost estimate
   const costEstimate = trpc.wealthEngine.estimateConsensusCost.useQuery(
@@ -129,6 +129,14 @@ export default function ConsensusPage() {
       cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
     );
   };
+
+  if (_pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <AppShell title="Consensus">

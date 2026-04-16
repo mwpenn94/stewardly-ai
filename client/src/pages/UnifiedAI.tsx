@@ -1,16 +1,15 @@
 /**
- * UnifiedAI.tsx — AI Studio: Interactive AI command center
+ * UnifiedAI.tsx — AI Studio: True Unified AI Surface
  *
- * A fully functional hub that provides:
- * 1. Quick AI Chat — inline chat with streaming responses
- * 2. Model Configuration — preset management, model weights
- * 3. AI Tuning — quick access to personalization layers
- * 4. Usage Analytics — model usage stats and trends
- * 5. Quick Actions — launch agents, code chat, consensus queries
+ * Three interactive modes in ONE page:
+ * 1. Chat — Full streaming chat with markdown, suggestions, conversation history
+ * 2. Dev — Terminal-aesthetic code assistant (codeChat.chat ReAct loop with tool traces)
+ * 3. Auto — Agent management: create, launch, stop, monitor agents
  *
- * Navigation to full-page experiences (Chat, Code Chat, Agents) via links.
+ * This is the spec-compliant Phase 4 AI Studio — not a hub/dashboard,
+ * but a real interactive surface where users DO their AI work.
  */
-import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -19,94 +18,158 @@ import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   MessageSquare, Terminal, Bot, Sparkles, Send, Loader2, Plus,
-  Settings2, BarChart3, Brain, Zap, ArrowRight, ExternalLink,
-  Sliders, Save, Trash2, ChevronRight, Activity, TrendingUp,
-  Users, Shield, Building2, Eye, RefreshCw, Copy, Check,
-  Layers, Play, Target, Wand2, BookOpen, Scale,
+  Settings2, Brain, Zap, ExternalLink, Trash2,
+  Play, Square, Shield, ChevronDown, ChevronRight, Activity,
+  BarChart3, Clock, CheckCircle2, AlertTriangle,
+  Target, RefreshCw, X, History,
 } from "lucide-react";
 import { authFetch } from "@/lib/sessionToken";
 import ServiceDegradedFallback from "@/components/ServiceDegradedFallback";
 
 // ─── Types ─────────────────────────────────────────────────────────
-interface QuickMessage {
-  role: "user" | "assistant";
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: number;
 }
 
-// ─── Quick Chat Panel ──────────────────────────────────────────────
-function QuickChatPanel() {
-  const [messages, setMessages] = useState<QuickMessage[]>([]);
+interface DevMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: number;
+  traces?: Array<{
+    step: number;
+    thought?: string;
+    toolName?: string;
+    observation?: string;
+    durationMs?: number;
+  }>;
+  model?: string;
+  iterations?: number;
+  toolCallCount?: number;
+}
+
+// ─── Suggestion chips ──────────────────────────────────────────────
+const CHAT_SUGGESTIONS = [
+  "Explain my retirement readiness",
+  "What's the best strategy for tax-loss harvesting?",
+  "Compare IUL vs whole life insurance",
+  "Help me create a financial plan",
+];
+
+const DEV_SUGGESTIONS = [
+  "List all TypeScript files in the project",
+  "Find all TODO comments in the codebase",
+  "Show me the database schema",
+  "What routes are defined in App.tsx?",
+];
+
+const AGENT_TYPES = [
+  { value: "compliance_monitor", label: "Compliance Monitor", desc: "Flags compliance issues", icon: Shield },
+  { value: "lead_processor", label: "Lead Processor", desc: "Enriches and scores leads", icon: Target },
+  { value: "report_generator", label: "Report Generator", desc: "Generates periodic reports", icon: BarChart3 },
+  { value: "plan_analyzer", label: "Plan Analyzer", desc: "Analyzes business plans", icon: Activity },
+  { value: "custom", label: "Custom Agent", desc: "Define your own agent", icon: Sparkles },
+];
+
+const TASK_TEMPLATES = [
+  { name: "Monday Client Review", type: "report_generator" as const, instructions: "Review all active clients, check for upcoming RMD events, birthday milestones, policy renewals. Generate a prioritized action list." },
+  { name: "Compliance Audit Sweep", type: "compliance_monitor" as const, instructions: "Scan recent client communications and trade confirmations for compliance issues. Flag suitability concerns or documentation gaps." },
+  { name: "Lead Pipeline Analysis", type: "lead_processor" as const, instructions: "Review all leads, enrich with public data, score based on AUM potential and conversion likelihood, recommend next-best-action for top prospects." },
+  { name: "Tax Planning Opportunities", type: "plan_analyzer" as const, instructions: "Analyze each client's tax situation for Roth conversion opportunities, tax-loss harvesting candidates, and year-end planning actions." },
+];
+
+// ─── Unique ID helper ──────────────────────────────────────────────
+let _idCounter = 0;
+function uid() { return `msg-${Date.now()}-${++_idCounter}`; }
+
+// ════════════════════════════════════════════════════════════════════
+//  MODE 1: CHAT PANEL
+// ════════════════════════════════════════════════════════════════════
+const CONTEXT_TYPES = [
+  { value: "chat", label: "General" },
+  { value: "financial", label: "Financial" },
+  { value: "legal", label: "Legal" },
+  { value: "learning", label: "Learning" },
+  { value: "code", label: "Code" },
+  { value: "document", label: "Document" },
+] as const;
+
+function ChatPanel() {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [focus, setFocus] = useState<"general" | "financial" | "both">("both");
+  const [contextType, setContextType] = useState<string>("chat");
+  const [showHistory, setShowHistory] = useState(false);
+  const [activeConvId, setActiveConvId] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const convList = trpc.conversations.list.useQuery(undefined, { retry: false });
+  const convMessages = trpc.conversations.messages.useQuery(
+    { conversationId: activeConvId! },
+    { enabled: activeConvId != null }
+  );
+  const createConv = trpc.conversations.create.useMutation({
+    onSuccess: (data) => {
+      setActiveConvId(data.id);
+      convList.refetch();
+    },
+  });
+  // Load conversation messages when selected
+  useEffect(() => {
+    if (convMessages.data && activeConvId != null) {
+      const loaded: ChatMessage[] = convMessages.data.map((m: any) => ({
+        id: `conv-${m.id}`,
+        role: m.role as "user" | "assistant",
+        content: m.content,
+        timestamp: m.createdAt ? new Date(m.createdAt).getTime() : Date.now(),
+      }));
+      setMessages(loaded);
+    }
+  }, [convMessages.data, activeConvId]);
 
   const scrollToBottom = useCallback(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    });
   }, []);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+  useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
 
-  const handleSend = useCallback(async () => {
-    const text = input.trim();
-    if (!text || isStreaming) return;
-
-    const userMsg: QuickMessage = { role: "user", content: text, timestamp: Date.now() };
-    setMessages(prev => [...prev, userMsg]);
+  const handleSend = useCallback(async (text?: string) => {
+    const msg = (text ?? input).trim();
+    if (!msg || isStreaming) return;
     setInput("");
+
+    const userMsg: ChatMessage = { id: uid(), role: "user", content: msg, timestamp: Date.now() };
+    const assistantMsg: ChatMessage = { id: uid(), role: "assistant", content: "", timestamp: Date.now() };
+    setMessages(prev => [...prev, userMsg, assistantMsg]);
     setIsStreaming(true);
 
-    // Add placeholder assistant message
-    const assistantMsg: QuickMessage = { role: "assistant", content: "", timestamp: Date.now() };
-    setMessages(prev => [...prev, assistantMsg]);
+    const abort = new AbortController();
+    abortRef.current = abort;
 
     try {
-      abortRef.current = new AbortController();
+      const allMsgs = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
       const response = await authFetch("/api/chat/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            ...messages.filter(m => m.role === "user" || m.role === "assistant").map(m => ({
-              role: m.role,
-              content: m.content,
-            })),
-            { role: "user", content: text },
-          ],
-          contextType: focus === "financial" ? "financial" : "chat",
-        }),
-        signal: abortRef.current.signal,
+        body: JSON.stringify({ messages: allMsgs, contextType }),
+        signal: abort.signal,
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const reader = response.body?.getReader();
       if (!reader) throw new Error("No response body");
 
@@ -116,7 +179,6 @@ function QuickChatPanel() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         const chunk = decoder.decode(value, { stream: true });
         const lines = chunk.split("\n");
 
@@ -124,47 +186,55 @@ function QuickChatPanel() {
           if (!line.startsWith("data: ")) continue;
           const data = line.slice(6).trim();
           if (data === "[DONE]") continue;
-
           try {
             const parsed = JSON.parse(data);
             if (parsed.type === "token" && parsed.content) {
               fullContent += parsed.content;
               setMessages(prev => {
                 const updated = [...prev];
-                const last = updated[updated.length - 1];
-                if (last?.role === "assistant") {
-                  updated[updated.length - 1] = { ...last, content: fullContent };
-                }
+                updated[updated.length - 1] = { ...updated[updated.length - 1], content: fullContent };
                 return updated;
               });
             } else if (parsed.type === "error") {
               throw new Error(parsed.content || "AI error");
             }
-          } catch (parseErr: any) {
-            if (parseErr.message === "AI error") throw parseErr;
-            // Skip malformed SSE data
+          } catch (e) {
+            if ((e as Error).message?.includes("AI error")) throw e;
           }
         }
       }
-    } catch (err: any) {
-      if (err.name === "AbortError") return;
+
+      if (!fullContent) {
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { ...updated[updated.length - 1], content: "I couldn't generate a response. Please try again." };
+          return updated;
+        });
+      }
+    } catch (err) {
+      if ((err as Error).name === "AbortError") return;
+      const errMsg = (err as Error).message || "Connection error";
       setMessages(prev => {
         const updated = [...prev];
-        const last = updated[updated.length - 1];
-        if (last?.role === "assistant" && !last.content) {
-          updated[updated.length - 1] = {
-            ...last,
-            content: "Sorry, I couldn't process that request. Please try again or use the full Chat for a better experience.",
-          };
-        }
+        updated[updated.length - 1] = { ...updated[updated.length - 1], content: `Error: ${errMsg}` };
         return updated;
       });
-      toast.error("Failed to get AI response");
+      toast.error("Chat error: " + errMsg);
     } finally {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [input, isStreaming, focus]);
+  }, [input, isStreaming, messages, scrollToBottom]);
+
+  const handleStop = useCallback(() => {
+    abortRef.current?.abort();
+    setIsStreaming(false);
+  }, []);
+
+  const handleClear = useCallback(() => {
+    setMessages([]);
+    toast.success("Conversation cleared");
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -173,674 +243,769 @@ function QuickChatPanel() {
     }
   }, [handleSend]);
 
-  const handleStop = useCallback(() => {
-    abortRef.current?.abort();
-    setIsStreaming(false);
-  }, []);
-
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader className="pb-2 shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-accent" />
-            <CardTitle className="text-base">Quick Chat</CardTitle>
+    <div className="flex h-full">
+      {/* Conversation history sidebar */}
+      {showHistory && (
+        <div className="w-56 border-r border-border/50 flex flex-col shrink-0 bg-background/50">
+          <div className="p-2 border-b border-border/50 flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">History</span>
+            <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setActiveConvId(null); setMessages([]); createConv.mutate({ mode: "client" }); }}>
+              <Plus className="w-3 h-3" />
+            </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={focus} onValueChange={(v) => setFocus(v as any)}>
-              <SelectTrigger className="h-7 text-xs w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="both">All Focus</SelectItem>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="financial">Financial</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex-1 overflow-y-auto">
+            {(convList.data ?? []).map((c: any) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`w-full text-left px-3 py-2 text-xs truncate hover:bg-accent/10 transition-colors ${
+                  activeConvId === c.id ? "bg-accent/20 text-accent-foreground" : "text-muted-foreground"
+                }`}
+                onClick={() => setActiveConvId(c.id)}
+              >
+                {c.title || `Chat ${c.id}`}
+              </button>
+            ))}
+            {(convList.data ?? []).length === 0 && (
+              <p className="text-[10px] text-muted-foreground/50 text-center py-4">No saved conversations</p>
+            )}
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-2 overflow-hidden pb-3">
-        {/* Messages area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center gap-3 text-muted-foreground">
-              <Sparkles className="w-8 h-8 opacity-40" />
-              <div>
-                <p className="text-sm font-medium">Ask anything</p>
-                <p className="text-xs mt-1 max-w-[250px]">Quick questions, analysis, or financial guidance. For deeper conversations, use the full Chat.</p>
-              </div>
-              <div className="flex flex-wrap gap-1.5 justify-center mt-2">
-                {["What's my portfolio risk?", "Explain Roth conversion", "Market outlook"].map((q) => (
-                  <button
-                    type="button"
-                    key={q}
-                    onClick={() => { setInput(q); }}
-                    className="text-[11px] px-2.5 py-1 rounded-full border border-border/60 hover:bg-accent/10 hover:border-accent/30 transition-colors"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
+      )}
+      <div className="flex flex-col flex-1 min-w-0">
+      {/* Messages area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <MessageSquare className="w-12 h-12 text-muted-foreground/30 mb-4" />
+            <h3 className="text-lg font-medium text-foreground/80 mb-2">Start a conversation</h3>
+            <p className="text-sm text-muted-foreground mb-6 max-w-md">
+              Ask anything — financial planning, market analysis, insurance strategies, or general questions.
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center max-w-lg">
+              {CHAT_SUGGESTIONS.map(s => (
+                <Button
+                  key={s}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => handleSend(s)}
+                >
+                  {s}
+                </Button>
+              ))}
             </div>
-          )}
-          {messages.map((msg, i) => (
-            <div key={i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
+          </div>
+        ) : (
+          messages.map(msg => (
+            <div key={msg.id} className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}>
+              {msg.role === "assistant" && (
+                <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center shrink-0 mt-1">
+                  <Sparkles className="w-3.5 h-3.5 text-accent" />
+                </div>
+              )}
               <div className={cn(
-                "max-w-[85%] rounded-lg px-3 py-2 text-sm",
+                "max-w-[80%] rounded-xl px-4 py-2.5 text-sm",
                 msg.role === "user"
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-muted/50 text-foreground"
               )}>
-                {msg.role === "assistant" ? (
-                  msg.content ? (
+                {msg.role === "assistant" && msg.content ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
                     <Streamdown>{msg.content}</Streamdown>
-                  ) : (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      <span className="text-xs">Thinking...</span>
-                    </div>
-                  )
+                  </div>
+                ) : msg.role === "assistant" ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span className="text-xs">Thinking...</span>
+                  </div>
                 ) : (
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 )}
               </div>
             </div>
+          ))
+        )}
+        {isStreaming && (
+          <div className="flex justify-center">
+            <Button type="button" variant="outline" size="sm" onClick={handleStop} className="gap-1.5 text-xs">
+              <Square className="w-3 h-3" /> Stop
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Input area */}
+      <div className="border-t border-border/50 p-3 shrink-0">
+        <div className="flex items-center gap-1.5 mb-2">
+          <button
+            type="button"
+            className={`px-2 py-0.5 rounded text-[10px] transition-colors flex items-center gap-1 ${
+              showHistory ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+            }`}
+            onClick={() => setShowHistory(p => !p)}
+            aria-label="Toggle conversation history"
+          >
+            <History className="w-3 h-3" /> History
+          </button>
+          <span className="text-border">|</span>
+          <span className="text-[10px] text-muted-foreground">Context:</span>
+          {CONTEXT_TYPES.map(ct => (
+            <button
+              key={ct.value}
+              type="button"
+              className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                contextType === ct.value
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+              }`}
+              onClick={() => setContextType(ct.value)}
+            >
+              {ct.label}
+            </button>
           ))}
         </div>
-
-        {/* Input area */}
-        <div className="flex gap-2 items-end shrink-0">
+        <div className="flex gap-2 items-end">
           <Textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask a quick question..."
+            placeholder="Ask anything..."
             className="min-h-[40px] max-h-[120px] resize-none text-sm"
             rows={1}
             disabled={isStreaming}
           />
-          {isStreaming ? (
-            <Button size="sm" variant="outline" onClick={handleStop} className="shrink-0 h-10">
-              <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="flex flex-col gap-1">
+            <Button
+              type="button"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => handleSend()}
+              disabled={!input.trim() || isStreaming}
+            >
+              {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
-          ) : (
-            <Button size="sm" onClick={handleSend} disabled={!input.trim()} className="shrink-0 h-10">
-              <Send className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Model Presets Panel ───────────────────────────────────────────
-function ModelPresetsPanel() {
-  const perspectivesQuery = trpc.multiModel.perspectives.useQuery();
-  const presetsQuery = trpc.multiModel.presets.useQuery();
-  const userPresetsQuery = trpc.multiModel.listPresets.useQuery();
-  const saveMut = trpc.multiModel.savePreset.useMutation({
-    onSuccess: () => {
-      toast.success("Preset saved");
-      userPresetsQuery.refetch();
-      setShowCreate(false);
-    },
-    onError: () => toast.error("Failed to save preset"),
-  });
-  const deleteMut = trpc.multiModel.deletePreset.useMutation({
-    onSuccess: () => {
-      toast.success("Preset deleted");
-      userPresetsQuery.refetch();
-    },
-    onError: () => toast.error("Failed to delete preset"),
-  });
-
-  const [showCreate, setShowCreate] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newDesc, setNewDesc] = useState("");
-  const [selectedPerspectives, setSelectedPerspectives] = useState<string[]>([]);
-  const [weights, setWeights] = useState<Record<string, number>>({});
-
-  const perspectives = perspectivesQuery.data || [];
-  const builtInPresets = presetsQuery.data || [];
-  const userPresets = userPresetsQuery.data || [];
-
-  const togglePerspective = (id: string) => {
-    setSelectedPerspectives(prev =>
-      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
-    );
-    if (!weights[id]) {
-      setWeights(prev => ({ ...prev, [id]: 1.0 }));
-    }
-  };
-
-  const handleSave = () => {
-    if (!newName.trim() || selectedPerspectives.length === 0) {
-      toast.error("Name and at least one perspective required");
-      return;
-    }
-    saveMut.mutate({
-      name: newName,
-      description: newDesc || undefined,
-      perspectives: selectedPerspectives,
-      weights,
-    });
-  };
-
-  return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-2 shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-accent" />
-            <CardTitle className="text-base">Model Presets</CardTitle>
-          </div>
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowCreate(!showCreate)}>
-            <Plus className="w-3 h-3 mr-1" />
-            New
-          </Button>
-        </div>
-        <CardDescription className="text-xs">Configure how multiple AI models collaborate on your queries</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto space-y-3 pb-3">
-        {/* Create new preset */}
-        {showCreate && (
-          <div className="border border-accent/30 rounded-lg p-3 space-y-3 bg-accent/5">
-            <Input
-              placeholder="Preset name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className="h-8 text-sm"
-            />
-            <Input
-              placeholder="Description (optional)"
-              value={newDesc}
-              onChange={(e) => setNewDesc(e.target.value)}
-              className="h-8 text-sm"
-            />
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-muted-foreground">Perspectives</p>
-              <div className="flex flex-wrap gap-1.5">
-                {perspectives.map((p: any) => (
-                  <button
-                    type="button"
-                    key={p.id}
-                    onClick={() => togglePerspective(p.id)}
-                    className={cn(
-                      "text-[11px] px-2 py-0.5 rounded-full border transition-colors",
-                      selectedPerspectives.includes(p.id)
-                        ? "bg-accent text-accent-foreground border-accent"
-                        : "border-border hover:border-accent/50"
-                    )}
-                  >
-                    {p.name || p.id}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {selectedPerspectives.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Weights</p>
-                {selectedPerspectives.map((id) => (
-                  <div key={id} className="flex items-center gap-2">
-                    <span className="text-xs w-24 truncate">{id}</span>
-                    <Slider
-                      value={[weights[id] || 1.0]}
-                      onValueChange={([v]) => setWeights(prev => ({ ...prev, [id]: v }))}
-                      min={0}
-                      max={2}
-                      step={0.1}
-                      className="flex-1"
-                    />
-                    <span className="text-xs w-8 text-right">{(weights[id] || 1.0).toFixed(1)}</span>
-                  </div>
-                ))}
-              </div>
+            {messages.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={handleClear}>
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Clear conversation</TooltipContent>
+              </Tooltip>
             )}
-            <div className="flex gap-2">
-              <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={saveMut.isPending}>
-                {saveMut.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
-                Save
-              </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowCreate(false)}>
-                Cancel
-              </Button>
-            </div>
           </div>
-        )}
-
-        {/* Built-in presets */}
-        {builtInPresets.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Shield className="w-3 h-3" /> Built-in Presets
-            </p>
-            {builtInPresets.map((preset: any, i: number) => (
-              <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                <div>
-                  <p className="text-sm font-medium">{preset.name}</p>
-                  <p className="text-xs text-muted-foreground">{preset.description || `${preset.perspectives?.length || 0} perspectives`}</p>
-                </div>
-                <Badge variant="secondary" className="text-[10px]">Built-in</Badge>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* User presets */}
-        {userPresets.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Users className="w-3 h-3" /> Your Presets
-            </p>
-            {userPresets.map((preset: any) => (
-              <div key={preset.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group">
-                <div>
-                  <p className="text-sm font-medium">{preset.name}</p>
-                  <p className="text-xs text-muted-foreground">{preset.description || `${preset.perspectives?.length || 0} perspectives`}</p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-destructive"
-                  onClick={() => deleteMut.mutate({ id: preset.id })}
-                  aria-label={`Delete preset ${preset.name}`}
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {builtInPresets.length === 0 && userPresets.length === 0 && !showCreate && (
-          <div className="text-center text-muted-foreground py-6">
-            <Sliders className="w-6 h-6 mx-auto mb-2 opacity-40" />
-            <p className="text-xs">No presets yet. Create one to configure multi-model collaboration.</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+      </div>{/* close flex-col flex-1 */}
+    </div>
   );
 }
 
-// ─── Usage Analytics Panel ─────────────────────────────────────────
-function UsageAnalyticsPanel() {
-  const statsQuery = trpc.multiModel.usageStats.useQuery({ days: 30 });
-  const ratingsQuery = trpc.multiModel.ratingSummary.useQuery({ days: 30 });
+// ════════════════════════════════════════════════════════════════════
+//  MODE 2: DEV PANEL (Code Chat)
+// ════════════════════════════════════════════════════════════════════
+function DevPanel() {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<DevMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const stats = statsQuery.data || [];
-  const ratings = ratingsQuery.data || [];
+  const chatMutation = trpc.codeChat.chat.useMutation({
+    onSuccess: (data) => {
+      const assistantMsg: DevMessage = {
+        id: uid(),
+        role: "assistant",
+        content: data.response,
+        timestamp: Date.now(),
+        traces: data.traces,
+        model: data.model ?? undefined,
+        iterations: data.iterations,
+        toolCallCount: data.toolCallCount,
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+    },
+    onError: (err) => {
+      const errMsg: DevMessage = {
+        id: uid(),
+        role: "assistant",
+        content: `Error: ${err.message}`,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, errMsg]);
+      toast.error("Dev chat error: " + err.message);
+    },
+  });
+
+  const scrollToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    });
+  }, []);
+
+  useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
+
+  const handleSend = useCallback((text?: string) => {
+    const msg = (text ?? input).trim();
+    if (!msg || chatMutation.isPending) return;
+    setInput("");
+
+    const userMsg: DevMessage = { id: uid(), role: "user", content: msg, timestamp: Date.now() };
+    setMessages(prev => [...prev, userMsg]);
+
+    chatMutation.mutate({
+      message: msg,
+      allowMutations: user?.role === "admin",
+      maxIterations: 5,
+    });
+  }, [input, chatMutation, user?.role]);
+
+  const toggleTrace = useCallback((msgId: string) => {
+    setExpandedTraces(prev => {
+      const next = new Set(prev);
+      if (next.has(msgId)) next.delete(msgId);
+      else next.add(msgId);
+      return next;
+    });
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }, [handleSend]);
+
+  const handleClear = useCallback(() => {
+    setMessages([]);
+    toast.success("Dev session cleared");
+  }, []);
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-accent" />
-          <CardTitle className="text-base">AI Usage</CardTitle>
-        </div>
-        <CardDescription className="text-xs">Model usage and performance over the last 30 days</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto space-y-3 pb-3">
-        {statsQuery.isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-          </div>
-        ) : stats.length === 0 ? (
-          <div className="text-center text-muted-foreground py-6">
-            <Activity className="w-6 h-6 mx-auto mb-2 opacity-40" />
-            <p className="text-xs">No usage data yet. Start chatting to see analytics.</p>
-          </div>
-        ) : (
-          <>
-            {/* Summary stats */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="p-2 rounded-md bg-muted/30">
-                <p className="text-[11px] text-muted-foreground">Total Queries</p>
-                <p className="text-lg font-semibold">
-                  {stats.reduce((sum: number, s: any) => sum + (Number(s.totalQueries) || 0), 0)}
-                </p>
-              </div>
-              <div className="p-2 rounded-md bg-muted/30">
-                <p className="text-[11px] text-muted-foreground">Models Used</p>
-                <p className="text-lg font-semibold">{stats.length}</p>
-              </div>
-            </div>
-
-            {/* Per-model breakdown */}
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">By Model</p>
-              {stats.map((s: any, i: number) => (
-                <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                  <div>
-                    <p className="text-sm font-medium">{s.model || "Unknown"}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {Number(s.totalQueries) || 0} queries · {Number(s.avgInputTokens) || 0} avg tokens
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px]">
-                    {Number(s.totalQueries) || 0}
-                  </Badge>
-                </div>
+    <div className="flex flex-col h-full font-mono">
+      {/* Terminal-style messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-black/20">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <Terminal className="w-12 h-12 text-emerald-500/30 mb-4" />
+            <h3 className="text-lg font-medium text-foreground/80 mb-2 font-sans">Code Assistant</h3>
+            <p className="text-sm text-muted-foreground mb-6 max-w-md font-sans">
+              Explore the codebase, search for symbols, read files, and get AI-powered code analysis.
+              {user?.role === "admin" && " Admin mode: file writes and bash commands are available."}
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center max-w-lg">
+              {DEV_SUGGESTIONS.map(s => (
+                <Button
+                  key={s}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8 font-sans border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                  onClick={() => handleSend(s)}
+                >
+                  {s}
+                </Button>
               ))}
             </div>
-
-            {/* Ratings */}
-            {ratings.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Quality Ratings</p>
-                {ratings.map((r: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-                    <span className="text-sm">{r.model || "Unknown"}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium">{Number(r.avgRating)?.toFixed(1) || "—"}</span>
-                      <span className="text-[10px] text-muted-foreground">/ 5</span>
+          </div>
+        ) : (
+          messages.map(msg => (
+            <div key={msg.id} className="space-y-1">
+              {msg.role === "user" ? (
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-400 text-xs mt-0.5 shrink-0">$</span>
+                  <p className="text-sm text-emerald-300 whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* Tool traces */}
+                  {msg.traces && msg.traces.length > 0 && (
+                    <div className="ml-4">
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => toggleTrace(msg.id)}
+                      >
+                        {expandedTraces.has(msg.id) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                        <Activity className="w-3 h-3" />
+                        {msg.toolCallCount ?? msg.traces.length} tool call{(msg.toolCallCount ?? msg.traces.length) !== 1 ? "s" : ""}
+                        {msg.iterations ? ` · ${msg.iterations} iteration${msg.iterations !== 1 ? "s" : ""}` : ""}
+                      </button>
+                      {expandedTraces.has(msg.id) && (
+                        <div className="mt-2 space-y-2 border-l-2 border-emerald-500/20 pl-3">
+                          {msg.traces.map((trace, i) => (
+                            <div key={i} className="text-xs space-y-0.5">
+                              {trace.thought && (
+                                <p className="text-amber-400/80 italic">💭 {trace.thought}</p>
+                              )}
+                              {trace.toolName && (
+                                <div className="flex items-center gap-1.5">
+                                  <Badge variant="outline" className="text-[10px] h-4 border-emerald-500/30 text-emerald-400">
+                                    {trace.toolName}
+                                  </Badge>
+                                  {trace.durationMs != null && (
+                                    <span className="text-muted-foreground">{trace.durationMs}ms</span>
+                                  )}
+                                </div>
+                              )}
+                              {trace.observation && (
+                                <pre className="text-muted-foreground/70 text-[10px] max-h-24 overflow-y-auto whitespace-pre-wrap bg-black/30 rounded p-1.5">
+                                  {trace.observation.slice(0, 500)}{trace.observation.length > 500 ? "..." : ""}
+                                </pre>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                  )}
+                  {/* Response */}
+                  <div className="ml-4 text-sm text-foreground/90 prose prose-sm dark:prose-invert max-w-none prose-pre:bg-black/40 prose-pre:border prose-pre:border-emerald-500/20">
+                    <Streamdown>{msg.content}</Streamdown>
                   </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Quick Actions Panel ───────────────────────────────────────────
-function QuickActionsPanel() {
-  const [, navigate] = useLocation();
-
-  const actions = [
-    {
-      icon: MessageSquare,
-      label: "Full Chat",
-      desc: "Deep conversations with context, voice, and multi-model",
-      path: "/chat",
-      color: "text-blue-400",
-    },
-    {
-      icon: Terminal,
-      label: "Code Chat",
-      desc: "AI-powered code generation and editing",
-      path: "/code-chat",
-      color: "text-emerald-400",
-    },
-    {
-      icon: Bot,
-      label: "AI Agents",
-      desc: "Autonomous task execution and workflows",
-      path: "/agents",
-      color: "text-purple-400",
-    },
-    {
-      icon: Scale,
-      label: "Consensus Query",
-      desc: "Multi-model analysis for complex decisions",
-      path: "/chat?mode=consensus",
-      color: "text-amber-400",
-    },
-    {
-      icon: Brain,
-      label: "AI Tuning",
-      desc: "Personalize AI behavior across 5 layers",
-      path: "/settings/ai-tuning",
-      color: "text-pink-400",
-    },
-    {
-      icon: BookOpen,
-      label: "Knowledge Base",
-      desc: "Train your AI with documents and artifacts",
-      path: "/documents",
-      color: "text-cyan-400",
-    },
-    {
-      icon: TrendingUp,
-      label: "Wealth Engine",
-      desc: "AI-powered financial analysis and projections",
-      path: "/wealth-engine",
-      color: "text-green-400",
-    },
-    {
-      icon: Target,
-      label: "Workflows",
-      desc: "Automated multi-step AI workflows",
-      path: "/workflows",
-      color: "text-orange-400",
-    },
-  ];
-
-  return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-accent" />
-          <CardTitle className="text-base">Quick Actions</CardTitle>
-        </div>
-        <CardDescription className="text-xs">Jump to AI-powered features</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto pb-3">
-        <div className="grid grid-cols-1 gap-1.5">
-          {actions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <button
-                type="button"
-                key={action.path}
-                onClick={() => navigate(action.path)}
-                className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors text-left group"
-              >
-                <div className={cn("w-8 h-8 rounded-md flex items-center justify-center bg-muted/50 shrink-0", action.color)}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium group-hover:text-accent transition-colors">{action.label}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">{action.desc}</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-accent transition-colors shrink-0" />
-              </button>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── AI Config Preview ─────────────────────────────────────────────
-function AIConfigPreview() {
-  const configQuery = trpc.aiLayers.previewConfig.useQuery({}, {
-    retry: false,
-    staleTime: 60_000,
-  });
-
-  const config = configQuery.data?.config;
-
-  return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-2 shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-accent" />
-            <CardTitle className="text-base">AI Configuration</CardTitle>
-          </div>
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => configQuery.refetch()}>
-            <RefreshCw className={cn("w-3 h-3", configQuery.isFetching && "animate-spin")} />
-          </Button>
-        </div>
-        <CardDescription className="text-xs">Your resolved 5-layer AI settings</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto space-y-2 pb-3">
-        {configQuery.isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-          </div>
-        ) : configQuery.isError ? (
-          <div className="text-center text-muted-foreground py-6">
-            <Settings2 className="w-6 h-6 mx-auto mb-2 opacity-40" />
-            <p className="text-xs">Sign in to view your AI configuration</p>
-          </div>
-        ) : config ? (
-          <>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="p-2 rounded-md bg-muted/30 text-center">
-                <p className="text-[10px] text-muted-foreground">Tone</p>
-                <p className="text-xs font-medium capitalize">{config.toneStyle || "Professional"}</p>
-              </div>
-              <div className="p-2 rounded-md bg-muted/30 text-center">
-                <p className="text-[10px] text-muted-foreground">Format</p>
-                <p className="text-xs font-medium capitalize">{config.responseFormat || "Mixed"}</p>
-              </div>
-              <div className="p-2 rounded-md bg-muted/30 text-center">
-                <p className="text-[10px] text-muted-foreground">Length</p>
-                <p className="text-xs font-medium capitalize">{config.responseLength || "Standard"}</p>
-              </div>
-            </div>
-
-            <div className="p-2 rounded-md bg-muted/30">
-              <p className="text-[10px] text-muted-foreground mb-1">Temperature</p>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-accent"
-                    style={{ width: `${((config.temperature || 0.7) / 2) * 100}%` }}
-                  />
-                </div>
-                <span className="text-xs font-medium">{config.temperature?.toFixed(1) || "0.7"}</span>
-              </div>
-            </div>
-
-            {config.guardrails && config.guardrails.length > 0 && (
-              <div className="p-2 rounded-md bg-muted/30">
-                <p className="text-[10px] text-muted-foreground mb-1">Active Guardrails</p>
-                <div className="flex flex-wrap gap-1">
-                  {config.guardrails.slice(0, 5).map((g: string, i: number) => (
-                    <Badge key={i} variant="outline" className="text-[10px]">{g}</Badge>
-                  ))}
-                  {config.guardrails.length > 5 && (
-                    <Badge variant="secondary" className="text-[10px]">+{config.guardrails.length - 5}</Badge>
+                  {msg.model && (
+                    <div className="ml-4 flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <Brain className="w-3 h-3" />
+                      {msg.model}
+                    </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          ))
+        )}
+        {chatMutation.isPending && (
+          <div className="flex items-center gap-2 ml-4 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+            <span className="animate-pulse">Executing...</span>
+          </div>
+        )}
+      </div>
 
-            {config.promptOverlays && config.promptOverlays.length > 0 && (
-              <div className="p-2 rounded-md bg-muted/30">
-                <p className="text-[10px] text-muted-foreground mb-1">Active Layers</p>
-                <div className="flex flex-wrap gap-1">
-                  {config.promptOverlays.map((o: any, i: number) => (
-                    <Badge key={i} variant="secondary" className="text-[10px] capitalize">{o.layer}</Badge>
-                  ))}
-                </div>
-              </div>
+      {/* Terminal-style input */}
+      <div className="border-t border-emerald-500/20 p-3 shrink-0 bg-black/10">
+        <div className="flex gap-2 items-center">
+          <span className="text-emerald-400 text-sm shrink-0">$</span>
+          <Input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about the codebase..."
+            className="font-mono text-sm bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-emerald-300 placeholder:text-emerald-500/40"
+            disabled={chatMutation.isPending}
+          />
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-emerald-400 hover:bg-emerald-500/10"
+              onClick={() => handleSend()}
+              disabled={!input.trim() || chatMutation.isPending}
+            >
+              {chatMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+            {messages.length > 0 && (
+              <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={handleClear}>
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
             )}
-          </>
-        ) : null}
-      </CardContent>
-    </Card>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground ml-4">
+          <span>Tools: read_file, grep_search, list_directory, glob_files, find_symbol</span>
+          {user?.role === "admin" && <Badge variant="outline" className="text-[9px] h-3.5 border-amber-500/30 text-amber-400">Admin: write + bash enabled</Badge>}
+        </div>
+      </div>
+    </div>
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════
+//  MODE 3: AUTO PANEL (Agent Manager)
+// ════════════════════════════════════════════════════════════════════
+function AutoPanel() {
+  const { isAuthenticated } = useAuth();
+  const agents = trpc.openClaw.list.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const [showCreate, setShowCreate] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<number | null>(null);
+  const [form, setForm] = useState({
+    name: "", type: "compliance_monitor" as string, instructions: "", maxBudgetPerRun: 0.5, complianceAware: true,
+  });
+
+  const resetForm = useCallback(() => {
+    setForm({ name: "", type: "compliance_monitor", instructions: "", maxBudgetPerRun: 0.5, complianceAware: true });
+  }, []);
+
+  const createMutation = trpc.openClaw.create.useMutation({
+    onSuccess: () => { agents.refetch(); toast.success("Agent created"); setShowCreate(false); resetForm(); },
+    onError: (err) => toast.error("Failed to create agent: " + err.message),
+  });
+  const launchMutation = trpc.openClaw.launch.useMutation({
+    onSuccess: () => { agents.refetch(); toast.success("Agent launched"); },
+  });
+  const stopMutation = trpc.openClaw.stop.useMutation({
+    onSuccess: () => { agents.refetch(); toast.info("Agent stopped"); },
+  });
+  const deleteMutation = trpc.openClaw.delete.useMutation({
+    onSuccess: () => { agents.refetch(); toast.success("Agent deleted"); },
+  });
+
+  const applyTemplate = useCallback((t: typeof TASK_TEMPLATES[0]) => {
+    setForm({ name: t.name, type: t.type, instructions: t.instructions, maxBudgetPerRun: 0.5, complianceAware: true });
+    setShowCreate(true);
+  }, []);
+
+  const handleCreate = useCallback(() => {
+    if (!form.name.trim() || !form.instructions.trim()) {
+      toast.error("Name and instructions are required");
+      return;
+    }
+    createMutation.mutate({
+      name: form.name,
+      type: form.type as any,
+      instructions: form.instructions,
+      maxBudgetPerRun: form.maxBudgetPerRun,
+      complianceAware: form.complianceAware,
+    });
+  }, [form, createMutation]);
+
+  // Agent action log for selected agent
+  const actionsQuery = trpc.openClaw.listActions.useQuery(
+    { agentId: selectedAgent!, limit: 20 },
+    { enabled: selectedAgent != null }
+  );
+
+  const agentList = (agents.data ?? []) as any[];
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
+        {/* Empty state */}
+        {!showCreate && agentList.length === 0 && (
+          <div className="text-center py-8">
+            <Bot className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground/80 mb-2">No Agents Yet</h3>
+            <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+              Create autonomous agents to handle compliance monitoring, lead processing, report generation, and more.
+            </p>
+          </div>
+        )}
+
+        {/* Task templates */}
+        {!showCreate && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">Quick Start Templates</h3>
+              <Button type="button" size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setShowCreate(true)}>
+                <Plus className="w-3 h-3" /> Custom Agent
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {TASK_TEMPLATES.map(t => (
+                <button
+                  key={t.name}
+                  type="button"
+                  className="text-left p-3 rounded-lg border border-border/50 hover:border-accent/50 hover:bg-accent/5 transition-colors"
+                  onClick={() => applyTemplate(t)}
+                >
+                  <p className="text-sm font-medium">{t.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t.instructions}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Create form */}
+        {showCreate && (
+          <Card className="border-accent/30">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Create Agent</CardTitle>
+                <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setShowCreate(false); resetForm(); }}>
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Input
+                placeholder="Agent name"
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                className="text-sm"
+              />
+              <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
+                <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {AGENT_TYPES.map(t => (
+                    <SelectItem key={t.value} value={t.value}>
+                      <span className="flex items-center gap-2">
+                        <t.icon className="w-3.5 h-3.5" />
+                        {t.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Textarea
+                placeholder="Instructions — what should this agent do?"
+                value={form.instructions}
+                onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
+                className="text-sm min-h-[80px]"
+                rows={3}
+              />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={form.complianceAware}
+                    onCheckedChange={v => setForm(f => ({ ...f, complianceAware: v }))}
+                  />
+                  <span className="text-xs text-muted-foreground">Compliance-aware</span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleCreate}
+                  disabled={createMutation.isPending}
+                >
+                  {createMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                  Create
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Agent list */}
+        {agentList.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-muted-foreground">Your Agents</h3>
+            {agentList.map((agent: any) => (
+              <div
+                key={agent.id}
+                className={cn(
+                  "p-3 rounded-lg border transition-colors cursor-pointer",
+                  selectedAgent === agent.id
+                    ? "border-accent/50 bg-accent/5"
+                    : "border-border/50 hover:border-border"
+                )}
+                onClick={() => setSelectedAgent(selectedAgent === agent.id ? null : agent.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      agent.status === "running" ? "bg-emerald-500 animate-pulse" :
+                      agent.status === "idle" ? "bg-amber-500" :
+                      agent.status === "error" ? "bg-red-500" : "bg-muted-foreground/30"
+                    )} />
+                    <span className="text-sm font-medium">{agent.name}</span>
+                    <Badge variant="outline" className="text-[10px] h-4">{agent.type}</Badge>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {agent.status === "running" ? (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-red-400 hover:bg-red-500/10"
+                        onClick={e => { e.stopPropagation(); stopMutation.mutate({ agentId: agent.id }); }}
+                        disabled={stopMutation.isPending}
+                        aria-label={`Stop agent ${agent.name}`}
+                      >
+                        <Square className="w-3.5 h-3.5" />
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-emerald-400 hover:bg-emerald-500/10"
+                        onClick={e => { e.stopPropagation(); launchMutation.mutate({ agentId: agent.id }); }}
+                        disabled={launchMutation.isPending}
+                        aria-label={`Launch agent ${agent.name}`}
+                      >
+                        <Play className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-red-400"
+                      onClick={e => { e.stopPropagation(); deleteMutation.mutate({ agentId: agent.id }); }}
+                      disabled={deleteMutation.isPending}
+                      aria-label={`Delete agent ${agent.name}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                {agent.instructions && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{agent.instructions}</p>
+                )}
+
+                {/* Action log for selected agent */}
+                {selectedAgent === agent.id && (
+                  <div className="mt-3 pt-3 border-t border-border/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-muted-foreground">Recent Actions</span>
+                      <Button type="button" size="icon" variant="ghost" className="h-5 w-5" onClick={() => actionsQuery.refetch()} aria-label="Refresh actions">
+                        <RefreshCw className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    {actionsQuery.isLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Loading actions...
+                      </div>
+                    ) : (actionsQuery.data ?? []).length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic">No actions yet. Launch the agent to start.</p>
+                    ) : (
+                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                        {(actionsQuery.data as any[] ?? []).map((action: any) => (
+                          <div key={action.id} className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted/30">
+                            {action.status === "completed" ? <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" /> :
+                             action.status === "error" ? <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" /> :
+                             <Clock className="w-3 h-3 text-amber-500 shrink-0" />}
+                            <span className="truncate flex-1">{action.actionType || action.type || "Action"}</span>
+                            {action.durationMs && <span className="text-muted-foreground shrink-0">{action.durationMs}ms</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MAIN: UNIFIED AI STUDIO
+// ════════════════════════════════════════════════════════════════════
+type StudioMode = "chat" | "dev" | "auto";
+
 export default function UnifiedAI() {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState("studio");
+  const [mode, setMode] = useState<StudioMode>("chat");
+  const serviceHealth = trpc.system.serviceHealth.useQuery(undefined, { enabled: isAuthenticated, refetchInterval: 60_000, retry: false });
+
+  // Keyboard shortcuts for mode switching: Ctrl+1/2/3
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "1") { e.preventDefault(); setMode("chat"); }
+        else if (e.key === "2") { e.preventDefault(); setMode("dev"); }
+        else if (e.key === "3") { e.preventDefault(); setMode("auto"); }
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const modeConfig: Record<StudioMode, { label: string; icon: typeof MessageSquare; color: string; desc: string }> = {
+    chat: { label: "Chat", icon: MessageSquare, color: "text-blue-400", desc: "Streaming AI conversation" },
+    dev: { label: "Dev", icon: Terminal, color: "text-emerald-400", desc: "Code assistant with tool access" },
+    auto: { label: "Auto", icon: Bot, color: "text-purple-400", desc: "Autonomous agent management" },
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <SEOHead title="AI Studio" description="AI command center — chat, configure, and manage your AI experience" />
+      <SEOHead title="AI Studio" description="Unified AI surface — chat, code, and automate" />
 
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-accent" />
-          <h1 className="text-lg font-semibold">AI Studio</h1>
-          <Badge variant="secondary" className="text-[10px]">Beta</Badge>
+      {/* Header with mode tabs */}
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-b border-border/50 bg-background/80 backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-3">
+          {/* Mode tabs */}
+          <div className="flex items-center bg-muted/50 rounded-lg p-0.5">
+            {(Object.keys(modeConfig) as StudioMode[]).map(m => {
+              const cfg = modeConfig[m];
+              const Icon = cfg.icon;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                    mode === m
+                      ? "bg-background shadow-sm " + cfg.color
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={() => setMode(m)}
+                  aria-pressed={mode === m}
+                  title={`${cfg.label} (Ctrl+${m === "chat" ? "1" : m === "dev" ? "2" : "3"})`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden xs:inline">{cfg.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <span className="text-xs text-muted-foreground hidden sm:inline">{modeConfig[mode].desc}</span>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-1.5">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1.5 text-xs"
-                onClick={() => navigate("/chat")}
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Full Chat</span>
+              <Button type="button" size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => navigate("/chat")} aria-label="Open full Chat">
+                <ExternalLink className="w-3.5 h-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Open full-featured Chat experience</TooltipContent>
+            <TooltipContent>Open full Chat</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 gap-1.5 text-xs"
-                onClick={() => navigate("/settings/ai-tuning")}
-              >
+              <Button type="button" size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => navigate("/settings/ai-tuning")} aria-label="AI Settings">
                 <Settings2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">AI Settings</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Configure AI personalization layers</TooltipContent>
+            <TooltipContent>AI Settings</TooltipContent>
           </Tooltip>
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-4 pt-2 shrink-0">
-          <TabsList className="h-8">
-            <TabsTrigger value="studio" className="text-xs h-7 gap-1">
-              <Sparkles className="w-3 h-3" />
-              Studio
-            </TabsTrigger>
-            <TabsTrigger value="presets" className="text-xs h-7 gap-1">
-              <Sliders className="w-3 h-3" />
-              Presets
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-xs h-7 gap-1">
-              <BarChart3 className="w-3 h-3" />
-              Analytics
-            </TabsTrigger>
-          </TabsList>
+      {/* Mode content — all panels stay mounted to preserve conversation state */}
+      <div className="flex-1 overflow-hidden relative">
+        <div className={cn("absolute inset-0", mode === "chat" ? "z-10 visible" : "z-0 invisible")} role="tabpanel" aria-label="Chat mode" aria-hidden={mode !== "chat"}>
+          <ServiceDegradedFallback serviceId="llm" degradedMessage="AI chat may be slower or unavailable.">
+            <ChatPanel />
+          </ServiceDegradedFallback>
         </div>
+        <div className={cn("absolute inset-0", mode === "dev" ? "z-10 visible" : "z-0 invisible")} role="tabpanel" aria-label="Dev mode" aria-hidden={mode !== "dev"}>
+          <ServiceDegradedFallback serviceId="llm" degradedMessage="Code assistant may be slower or unavailable.">
+            <DevPanel />
+          </ServiceDegradedFallback>
+        </div>
+        <div className={cn("absolute inset-0", mode === "auto" ? "z-10 visible" : "z-0 invisible")} role="tabpanel" aria-label="Auto mode" aria-hidden={mode !== "auto"}>
+          <AutoPanel />
+        </div>
+      </div>
 
-        {/* Studio Tab — Main view with chat + actions */}
-        <TabsContent value="studio" className="flex-1 overflow-hidden mt-0 p-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
-            {/* Left: Quick Chat (takes 2 cols on large screens) */}
-            <div className="lg:col-span-2 min-h-0">
-              <ServiceDegradedFallback serviceId="llm" degradedMessage="AI chat may be slower or unavailable. Quick Actions and configuration still work normally.">
-                <QuickChatPanel />
-              </ServiceDegradedFallback>
-            </div>
-            {/* Right: Quick Actions + Config */}
-            <div className="flex flex-col gap-4 min-h-0 overflow-y-auto">
-              <QuickActionsPanel />
-              <AIConfigPreview />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Presets Tab */}
-        <TabsContent value="presets" className="flex-1 overflow-hidden mt-0 p-4">
-          <div className="h-full">
-            <ModelPresetsPanel />
-          </div>
-        </TabsContent>
-
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="flex-1 overflow-hidden mt-0 p-4">
-          <div className="h-full">
-            <UsageAnalyticsPanel />
-          </div>
-        </TabsContent>
-      </Tabs>
+      {/* Status bar */}
+      <div className="flex items-center justify-between px-3 sm:px-4 py-1 border-t border-border/30 bg-muted/30 text-[10px] text-muted-foreground shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <span className={cn("w-1.5 h-1.5 rounded-full", serviceHealth.data?.every((s: any) => s.status === "connected") ? "bg-emerald-500" : serviceHealth.isLoading ? "bg-amber-500 animate-pulse" : "bg-red-500")} />
+            {serviceHealth.data?.every((s: any) => s.status === "connected") ? "All services connected" : serviceHealth.isLoading ? "Checking..." : "Some services degraded"}
+          </span>
+        </div>
+        <div className="hidden sm:flex items-center gap-2 text-muted-foreground/60">
+          <kbd className="px-1 py-0.5 rounded bg-muted text-[9px]">Ctrl+1</kbd> Chat
+          <kbd className="px-1 py-0.5 rounded bg-muted text-[9px]">Ctrl+2</kbd> Dev
+          <kbd className="px-1 py-0.5 rounded bg-muted text-[9px]">Ctrl+3</kbd> Auto
+        </div>
+      </div>
     </div>
   );
 }

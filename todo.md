@@ -5088,3 +5088,16 @@
 - [x] Fix AdminFeaturePermissions QueryErrorBanner (re-added after accidental removal)
 - [x] Verify production build succeeds (vite + esbuild)
 - [x] All Pass 69 tests passing (16/16)
+
+## Pass 70 — Phase 4 AI Studio Overhaul (Spec Compliance)
+- [x] Rebuild UnifiedAI as true unified AI surface with 3 interactive modes (Chat/Dev/Auto)
+- [x] Mode 1 (Chat): SSE streaming, AbortController stop, Streamdown markdown, suggestion chips, context type selector
+- [x] Mode 2 (Dev): codeChat.chat tRPC mutation, expandable traces, tool call counts
+- [x] Mode 3 (Auto): openClaw CRUD, TASK_TEMPLATES, agent status indicators, action logs
+- [x] CSS visibility (absolute+visible/invisible) preserves state across mode switches
+- [x] Keyboard shortcuts Ctrl+1/2/3 for mode switching
+- [x] Conversation history sidebar with create/load/toggle
+- [x] Status bar with system.serviceHealth + keyboard hints
+- [x] role="tabpanel" and aria-labels on mode panels, ServiceDegradedFallback
+- [x] 25/25 pass70-aistudio tests passing
+- [x] Production build verified (vite + esbuild)

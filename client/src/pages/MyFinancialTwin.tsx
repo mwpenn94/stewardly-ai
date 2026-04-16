@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import {
   Fingerprint, Shield, Brain, ChevronRight, ChevronDown,
   Eye, EyeOff, Download, Trash2, Volume2, MessageSquare,
-  AlertCircle, CheckCircle2, Clock,
+  AlertCircle, CheckCircle2, Clock, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -20,6 +20,7 @@ import { useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import { SEOHead } from "@/components/SEOHead";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -278,6 +279,17 @@ export default function MyFinancialTwin() {
     enabled: isAuthenticated,
     retry: false,
   });
+
+  if (twinQ.isLoading) {
+    return (
+      <AppShell title="My Financial Twin">
+        <SEOHead title="My Financial Twin" description="Your personalized financial twin and insights" />
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AppShell>
+    );
+  }
 
   if (!isAuthenticated) {
     return (

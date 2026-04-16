@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { navigateToChat } from "@/lib/navigateToChat";
-import { Plug, Link2, Unlink, RefreshCw, CheckCircle, XCircle, Clock, ArrowLeft } from "lucide-react";
+import { Plug, Link2, Unlink, RefreshCw, CheckCircle, XCircle, Clock, ArrowLeft, Loader2} from "lucide-react";
 import { Link } from "wouter";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
@@ -20,7 +20,7 @@ export default function AdvisorIntegrations() {
 
   const [tab, setTab] = useState("my-connections");
 
-  const providers = trpc.integrations.listProviders.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: providers, isLoading: _pageLoading } = trpc.integrations.listProviders.useQuery(undefined, { enabled: isAuthenticated });
   const connections = trpc.integrations.listConnections.useQuery(undefined, { enabled: isAuthenticated });
 
   const providerList = (providers.data as any)?.providers || providers.data || [];
@@ -35,6 +35,14 @@ export default function AdvisorIntegrations() {
       default: return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" /> {status}</Badge>;
     }
   };
+
+  if (_pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <AppShell title="My Integrations">

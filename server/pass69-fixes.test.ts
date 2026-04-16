@@ -1,5 +1,6 @@
 /**
  * Pass 69 — Database Error Fix + AI Studio Rebuild Tests
+ * Updated for the new unified Chat/Dev/Auto mode architecture
  */
 import { describe, it, expect } from "vitest";
 import fs from "fs";
@@ -24,7 +25,6 @@ describe("Pass 69: Database Error Fix (query.getSQL)", () => {
     for (const file of files) {
       if (file.includes("node_modules") || file.includes(".test.")) continue;
       const content = fs.readFileSync(file, "utf-8");
-      // Check for the broken pattern: db.execute({ sql: ... })
       const matches = content.match(/db\.execute\(\s*\{\s*sql:/g);
       if (matches) {
         throw new Error(`Found broken db.execute pattern in ${file}`);
@@ -33,8 +33,8 @@ describe("Pass 69: Database Error Fix (query.getSQL)", () => {
   });
 });
 
-// ─── AI Studio Rebuild ──────────────────────────────────────────────
-describe("Pass 69: AI Studio (UnifiedAI) Rebuild", () => {
+// ─── AI Studio Rebuild (Unified Chat/Dev/Auto) ─────────────────────
+describe("Pass 69+70: AI Studio — Unified Surface", () => {
   const filePath = path.resolve("client/src/pages/UnifiedAI.tsx");
   let content: string;
 
@@ -44,89 +44,124 @@ describe("Pass 69: AI Studio (UnifiedAI) Rebuild", () => {
     expect(content.length).toBeGreaterThan(1000);
   });
 
-  it("should NOT embed full Chat/CodeChat/AgentManager pages", () => {
+  it("should NOT embed full standalone pages (Chat/CodeChat/AgentManager)", () => {
     content = content || fs.readFileSync(filePath, "utf-8");
-    // Should not import the full Chat page component
     expect(content).not.toMatch(/import\s+Chat\s+from/);
     expect(content).not.toMatch(/import\s+CodeChat\s+from/);
     expect(content).not.toMatch(/import\s+AgentManager\s+from/);
-    // Should not render h-screen inside the container
     expect(content).not.toMatch(/h-screen/);
   });
 
-  it("should have a QuickChatPanel with streaming support", () => {
+  // ─── Mode 1: Chat ─────────────────────────────────────────────
+  it("should have ChatPanel with streaming SSE support", () => {
     content = content || fs.readFileSync(filePath, "utf-8");
-    expect(content).toContain("QuickChatPanel");
+    expect(content).toContain("ChatPanel");
     expect(content).toContain("/api/chat/stream");
     expect(content).toContain("authFetch");
-    // Should parse SSE events correctly
     expect(content).toContain('parsed.type === "token"');
     expect(content).toContain("parsed.content");
   });
 
-  it("should have ModelPresetsPanel with CRUD operations", () => {
+  it("should have chat conversation history and clear functionality", () => {
     content = content || fs.readFileSync(filePath, "utf-8");
-    expect(content).toContain("ModelPresetsPanel");
-    expect(content).toContain("trpc.multiModel.perspectives");
-    expect(content).toContain("trpc.multiModel.presets");
-    expect(content).toContain("trpc.multiModel.listPresets");
-    expect(content).toContain("trpc.multiModel.savePreset");
-    expect(content).toContain("trpc.multiModel.deletePreset");
+    expect(content).toContain("handleClear");
+    expect(content).toContain("Conversation cleared");
+    expect(content).toContain("messages.map");
   });
 
-  it("should have UsageAnalyticsPanel with stats and ratings", () => {
+  it("should have chat suggestion chips for quick start", () => {
     content = content || fs.readFileSync(filePath, "utf-8");
-    expect(content).toContain("UsageAnalyticsPanel");
-    expect(content).toContain("trpc.multiModel.usageStats");
-    expect(content).toContain("trpc.multiModel.ratingSummary");
+    expect(content).toContain("CHAT_SUGGESTIONS");
+    expect(content).toContain("Start a conversation");
   });
 
-  it("should have QuickActionsPanel with navigation to all AI features", () => {
+  // ─── Mode 2: Dev ──────────────────────────────────────────────
+  it("should have DevPanel with codeChat.chat mutation (ReAct loop)", () => {
     content = content || fs.readFileSync(filePath, "utf-8");
-    expect(content).toContain("QuickActionsPanel");
-    // Should link to all major AI features
-    expect(content).toContain('"/chat"');
-    expect(content).toContain('"/code-chat"');
-    expect(content).toContain('"/agents"');
-    expect(content).toContain('"/documents"');
-    expect(content).toContain('"/wealth-engine"');
-    expect(content).toContain('"/workflows"');
+    expect(content).toContain("DevPanel");
+    expect(content).toContain("trpc.codeChat.chat.useMutation");
+    expect(content).toContain("allowMutations");
+    expect(content).toContain("maxIterations");
   });
 
-  it("should have AIConfigPreview showing resolved 5-layer config", () => {
+  it("should have terminal-style aesthetic for Dev mode", () => {
     content = content || fs.readFileSync(filePath, "utf-8");
-    expect(content).toContain("AIConfigPreview");
-    expect(content).toContain("trpc.aiLayers.previewConfig");
-    expect(content).toContain("toneStyle");
-    expect(content).toContain("responseFormat");
-    expect(content).toContain("temperature");
-    expect(content).toContain("guardrails");
+    expect(content).toContain("font-mono");
+    expect(content).toContain("emerald");
+    expect(content).toContain("Code Assistant");
   });
 
-  it("should have proper tabs: Studio, Presets, Analytics", () => {
+  it("should display tool traces with expand/collapse", () => {
     content = content || fs.readFileSync(filePath, "utf-8");
-    expect(content).toContain('"studio"');
-    expect(content).toContain('"presets"');
-    expect(content).toContain('"analytics"');
-    expect(content).toContain("TabsList");
-    expect(content).toContain("TabsContent");
+    expect(content).toContain("traces");
+    expect(content).toContain("expandedTraces");
+    expect(content).toContain("toggleTrace");
+    expect(content).toContain("toolName");
+    expect(content).toContain("observation");
   });
 
-  it("should use correct SSE parsing format matching Chat.tsx", () => {
+  it("should have Dev suggestion chips", () => {
     content = content || fs.readFileSync(filePath, "utf-8");
-    // Must parse type:"token" events, not raw token field
-    expect(content).toContain('parsed.type === "token"');
-    expect(content).toContain("parsed.content");
-    // Must NOT use the old format
-    expect(content).not.toMatch(/parsed\.token[^s]/);
+    expect(content).toContain("DEV_SUGGESTIONS");
+    expect(content).toContain("codebase");
   });
 
+  // ─── Mode 3: Auto ─────────────────────────────────────────────
+  it("should have AutoPanel with agent CRUD (openClaw)", () => {
+    content = content || fs.readFileSync(filePath, "utf-8");
+    expect(content).toContain("AutoPanel");
+    expect(content).toContain("trpc.openClaw.list");
+    expect(content).toContain("trpc.openClaw.create");
+    expect(content).toContain("trpc.openClaw.launch");
+    expect(content).toContain("trpc.openClaw.stop");
+    expect(content).toContain("trpc.openClaw.delete");
+  });
+
+  it("should have agent creation form with type selection", () => {
+    content = content || fs.readFileSync(filePath, "utf-8");
+    expect(content).toContain("AGENT_TYPES");
+    expect(content).toContain("compliance_monitor");
+    expect(content).toContain("lead_processor");
+    expect(content).toContain("report_generator");
+    expect(content).toContain("handleCreate");
+  });
+
+  it("should have task templates for quick agent creation", () => {
+    content = content || fs.readFileSync(filePath, "utf-8");
+    expect(content).toContain("TASK_TEMPLATES");
+    expect(content).toContain("Quick Start Templates");
+    expect(content).toContain("applyTemplate");
+  });
+
+  it("should show agent action log for selected agents", () => {
+    content = content || fs.readFileSync(filePath, "utf-8");
+    expect(content).toContain("trpc.openClaw.listActions");
+    expect(content).toContain("Recent Actions");
+    expect(content).toContain("selectedAgent");
+  });
+
+  // ─── Mode Switching ───────────────────────────────────────────
+  it("should have mode switching: chat, dev, auto", () => {
+    content = content || fs.readFileSync(filePath, "utf-8");
+    expect(content).toContain('"chat"');
+    expect(content).toContain('"dev"');
+    expect(content).toContain('"auto"');
+    expect(content).toContain("StudioMode");
+    expect(content).toContain("setMode");
+  });
+
+  it("should have mode tab buttons with distinct colors", () => {
+    content = content || fs.readFileSync(filePath, "utf-8");
+    expect(content).toContain("text-blue-400");
+    expect(content).toContain("text-emerald-400");
+    expect(content).toContain("text-purple-400");
+  });
+
+  // ─── Layout & Infrastructure ──────────────────────────────────
   it("should have proper layout without h-screen conflicts", () => {
     content = content || fs.readFileSync(filePath, "utf-8");
-    // Should use flex layout that fits within DashboardLayout
     expect(content).toContain("flex flex-col h-full");
     expect(content).toContain("overflow-hidden");
-    // Should NOT use h-screen which would conflict with parent layout
     expect(content).not.toContain("h-screen");
   });
 
@@ -136,14 +171,11 @@ describe("Pass 69: AI Studio (UnifiedAI) Rebuild", () => {
     expect(content).toContain('title="AI Studio"');
   });
 
-  it("should handle empty states gracefully", () => {
+  it("should use correct SSE parsing format matching Chat.tsx", () => {
     content = content || fs.readFileSync(filePath, "utf-8");
-    // Quick Chat empty state
-    expect(content).toContain("Ask anything");
-    // Presets empty state
-    expect(content).toContain("No presets yet");
-    // Analytics empty state
-    expect(content).toContain("No usage data yet");
+    expect(content).toContain('parsed.type === "token"');
+    expect(content).toContain("parsed.content");
+    expect(content).not.toMatch(/parsed\.token[^s]/);
   });
 
   it("should have abort/stop functionality for streaming", () => {
@@ -151,6 +183,27 @@ describe("Pass 69: AI Studio (UnifiedAI) Rebuild", () => {
     expect(content).toContain("AbortController");
     expect(content).toContain("handleStop");
     expect(content).toContain("abortRef");
+  });
+
+  it("should have ServiceDegradedFallback wrapping AI panels", () => {
+    content = content || fs.readFileSync(filePath, "utf-8");
+    expect(content).toContain("ServiceDegradedFallback");
+  });
+
+  it("should handle empty states for all modes", () => {
+    content = content || fs.readFileSync(filePath, "utf-8");
+    // Chat empty state
+    expect(content).toContain("Start a conversation");
+    // Dev empty state
+    expect(content).toContain("Code Assistant");
+    // Auto empty state
+    expect(content).toContain("No Agents Yet");
+  });
+
+  it("should have links to full-page experiences (Chat, Settings)", () => {
+    content = content || fs.readFileSync(filePath, "utf-8");
+    expect(content).toContain('"/chat"');
+    expect(content).toContain('"/settings/ai-tuning"');
   });
 });
 

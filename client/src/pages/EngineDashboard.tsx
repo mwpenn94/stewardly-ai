@@ -71,6 +71,14 @@ function SliderInput({ label, value, onChange, min, max, step = 1, suffix = "", 
   label: string; value: number; onChange: (v: number) => void;
   min: number; max: number; step?: number; suffix?: string; format?: (n: number) => string;
 }) {
+  if (_pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="relative space-y-1">
       {/* Warm gold radial glow */}
@@ -184,7 +192,7 @@ export default function EngineDashboard() {
   const bieSimulate = trpc.calculatorEngine.bieSimulate.useMutation({ onError: (e) => toast.error(e.message) });
 
   // tRPC queries for references
-  const { data: references } = trpc.calculatorEngine.productReferences.useQuery();
+  const { data: references, isLoading: _pageLoading } = trpc.calculatorEngine.productReferences.useQuery();
   const { data: benchmarks } = trpc.calculatorEngine.industryBenchmarks.useQuery();
   const { data: methodology } = trpc.calculatorEngine.methodology.useQuery();
 

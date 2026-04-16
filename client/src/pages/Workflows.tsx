@@ -145,7 +145,7 @@ export default function Workflows() {
     } catch { return []; }
   });
 
-  const instancesQ = trpc.workflow.listInstances.useQuery(undefined, {
+  const { data: instancesQ, isLoading: _pageLoading } = trpc.workflow.listInstances.useQuery(undefined, {
     // Don't hammer the server — rely on mutations to refresh.
     refetchOnWindowFocus: true,
     retry: false,
@@ -306,6 +306,14 @@ export default function Workflows() {
   const activeTemplate = activeWorkflow
     ? WORKFLOW_TEMPLATES.find(t => t.id === activeWorkflow.templateId)
     : null;
+
+  if (_pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <AppShell title="Workflows">

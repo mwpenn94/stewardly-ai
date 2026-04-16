@@ -60,7 +60,7 @@ export default function PassiveActions() {
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState("sources");
 
-  const { data: sourceData } = trpc.passiveActions.dataSources.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: sourceData, isLoading: _pageLoading } = trpc.passiveActions.dataSources.useQuery(undefined, { enabled: isAuthenticated });
   const { data: preferences, refetch: refetchPrefs } = trpc.passiveActions.preferences.useQuery(undefined, { enabled: isAuthenticated });
   const { data: stats, refetch: refetchStats } = trpc.passiveActions.stats.useQuery(undefined, { enabled: isAuthenticated });
   const { data: history } = trpc.passiveActions.history.useQuery({ limit: 50 }, { enabled: isAuthenticated });
@@ -142,6 +142,14 @@ export default function PassiveActions() {
   const getSourceEnabledCount = (sourceId: string, supportedActions: string[]) => {
     return supportedActions.filter((a) => isActionEnabled(sourceId, a)).length;
   };
+
+  if (_pageLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <AppShell title="Passive Actions">
