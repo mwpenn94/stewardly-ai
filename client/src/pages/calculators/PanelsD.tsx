@@ -455,8 +455,6 @@ export function MyPlanPanel(p: PracticeProps) {
                 </div>
               )}
             </div>
-          </>
-        )}
 
         {/* ─── SECTION 3e: Marketing Channels ─── */}
         <SectionHeader>3e. Marketing Channels — Target: {fmtSm(plan.channels.channel.target)}</SectionHeader>

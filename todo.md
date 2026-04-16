@@ -5283,3 +5283,8 @@
 - [x] Wire standalone AUM Override/Pipeline/Affiliate Pipeline panels to feed into unified My Plan totals
 - [x] Rich references for default splits per role (industry benchmarks)
 - [x] Unified income summary showing all channels → total projected income
+
+
+## Pass 90 — Fix PanelsD.tsx JSX Build Error
+- [x] Fix JSX tag mismatch in PanelsD.tsx (lines 458, 529-531) blocking production build
+- [x] Verify production build passes (vite build)
