@@ -69,6 +69,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SEOHead } from "@/components/SEOHead";
 
 // ─── Types ─────────────────────────────────────────────────────────
 type CampaignStatus = "draft" | "scheduled" | "sending" | "sent" | "paused" | "cancelled";
@@ -907,6 +908,8 @@ export default function EmailCampaign() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   return (
+    <>
+    <SEOHead title="Email Campaign" description="Create and manage email campaigns for client outreach." />
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
       {/* Page header */}
       {view === "list" && (
@@ -959,5 +962,6 @@ export default function EmailCampaign() {
         />
       )}
     </div>
+    </>
   );
 }

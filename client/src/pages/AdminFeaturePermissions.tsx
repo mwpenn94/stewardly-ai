@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Shield, Lock, Unlock, Eye, Users, Building2, Search, Filter, ChevronRight, History, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
+import { SEOHead } from "@/components/SEOHead";
 
 const LAYER_COLORS: Record<string, string> = {
   person: "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -64,6 +65,8 @@ export default function AdminFeaturePermissions() {
   }, [registry, myPerms]);
 
   return (
+      <>
+        <SEOHead title="Feature Permissions" description="Manage feature access and permissions across the platform." />
     <div className="space-y-6">
       <QueryErrorBanner error={registryError || permsError} />
       {/* Header */}
@@ -247,6 +250,7 @@ export default function AdminFeaturePermissions() {
       {/* Audit Trail */}
       <AuditTrailSection />
     </div>
+      </>
   );
 }
 

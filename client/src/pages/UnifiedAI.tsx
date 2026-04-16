@@ -1,467 +1,846 @@
 /**
- * UnifiedAI.tsx — Consolidated AI surface (Chat + Code + Agent)
+ * UnifiedAI.tsx — AI Studio: Interactive AI command center
  *
- * Per prompt v5 Phase 4: "One URL, one surface, one conversation thread."
- * Three modes accessible via progressive disclosure:
- *   Level 1 (default): Chat only (Claude.ai-like)
- *   Level 2: Chat + Code toggle
- *   Level 3: Chat + Code + Agent toggle
- *   Level 4: Full orchestration (multi-agent, scheduled, batch)
+ * A fully functional hub that provides:
+ * 1. Quick AI Chat — inline chat with streaming responses
+ * 2. Model Configuration — preset management, model weights
+ * 3. AI Tuning — quick access to personalization layers
+ * 4. Usage Analytics — model usage stats and trends
+ * 5. Quick Actions — launch agents, code chat, consensus queries
  *
- * Context carries across modes. Backend routers unchanged.
- *
- * Keyboard shortcuts:
- *   Ctrl+1 → Chat mode
- *   Ctrl+2 → Code mode (if level ≥ 2)
- *   Ctrl+3 → Agent mode (if level ≥ 3)
+ * Navigation to full-page experiences (Chat, Code Chat, Agents) via links.
  */
-import { useState, useCallback, useMemo, lazy, Suspense, useEffect, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  MessageSquare,
-  Terminal,
-  Bot,
-  ChevronDown,
-  Settings2,
-  Sparkles,
-  Keyboard,
-  Share2,
-  Maximize2,
-  Minimize2,
-} from "lucide-react";
+import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { Streamdown } from "streamdown";
+import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import {
+  MessageSquare, Terminal, Bot, Sparkles, Send, Loader2, Plus,
+  Settings2, BarChart3, Brain, Zap, ArrowRight, ExternalLink,
+  Sliders, Save, Trash2, ChevronRight, Activity, TrendingUp,
+  Users, Shield, Building2, Eye, RefreshCw, Copy, Check,
+  Layers, Play, Target, Wand2, BookOpen, Scale,
+} from "lucide-react";
+import { authFetch } from "@/lib/sessionToken";
 import ServiceDegradedFallback from "@/components/ServiceDegradedFallback";
 
-// Lazy-load the 3 mode panels to keep initial bundle small
-const ChatPanel = lazy(() => import("./Chat"));
-const CodeChatPanel = lazy(() => import("./CodeChat"));
-const AgentPanel = lazy(() => import("./AgentManager"));
-
 // ─── Types ─────────────────────────────────────────────────────────
-type AIMode = "chat" | "code" | "agent";
-
-interface ModeConfig {
-  key: AIMode;
-  label: string;
-  shortLabel: string;
-  icon: typeof MessageSquare;
-  description: string;
-  minLevel: number;
-  badge?: string;
-  shortcut: string;
+interface QuickMessage {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: number;
 }
 
-const MODE_CONFIGS: ModeConfig[] = [
-  {
-    key: "chat",
-    label: "Chat",
-    shortLabel: "Chat",
-    icon: MessageSquare,
-    description: "Conversational AI — questions, analysis, reasoning",
-    minLevel: 1,
-    shortcut: "Ctrl+1",
-  },
-  {
-    key: "code",
-    label: "Code",
-    shortLabel: "Code",
-    icon: Terminal,
-    description: "Code generation, editing, multi-file operations",
-    minLevel: 2,
-    badge: "Dev",
-    shortcut: "Ctrl+2",
-  },
-  {
-    key: "agent",
-    label: "Agent",
-    shortLabel: "Agent",
-    icon: Bot,
-    description: "Autonomous task execution — browser, code, workflows",
-    minLevel: 3,
-    badge: "Auto",
-    shortcut: "Ctrl+3",
-  },
-];
+// ─── Quick Chat Panel ──────────────────────────────────────────────
+function QuickChatPanel() {
+  const [messages, setMessages] = useState<QuickMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [focus, setFocus] = useState<"general" | "financial" | "both">("both");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-// ─── Progressive Disclosure Level ──────────────────────────────────
-function useAIDisclosureLevel(): [number, (level: number) => void] {
-  const [level, setLevel] = useState<number>(() => {
-    try {
-      const stored = localStorage.getItem("ai_disclosure_level");
-      return stored ? parseInt(stored, 10) : 1;
-    } catch {
-      return 1;
-    }
-  });
-
-  const updateLevel = useCallback((newLevel: number) => {
-    const clamped = Math.max(1, Math.min(4, newLevel));
-    setLevel(clamped);
-    try {
-      localStorage.setItem("ai_disclosure_level", String(clamped));
-    } catch {
-      // silent
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, []);
 
-  return [level, updateLevel];
-}
-
-// ─── Keyboard Shortcuts ────────────────────────────────────────────
-function useModeSwitchShortcuts(
-  disclosureLevel: number,
-  onModeChange: (mode: AIMode) => void,
-) {
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (!e.ctrlKey && !e.metaKey) return;
-      if (e.shiftKey || e.altKey) return;
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
-      const modeMap: Record<string, AIMode> = { "1": "chat", "2": "code", "3": "agent" };
-      const mode = modeMap[e.key];
-      if (!mode) return;
+  const handleSend = useCallback(async () => {
+    const text = input.trim();
+    if (!text || isStreaming) return;
 
-      const config = MODE_CONFIGS.find((m) => m.key === mode);
-      if (!config || config.minLevel > disclosureLevel) return;
+    const userMsg: QuickMessage = { role: "user", content: text, timestamp: Date.now() };
+    setMessages(prev => [...prev, userMsg]);
+    setInput("");
+    setIsStreaming(true);
 
-      e.preventDefault();
-      onModeChange(mode);
+    // Add placeholder assistant message
+    const assistantMsg: QuickMessage = { role: "assistant", content: "", timestamp: Date.now() };
+    setMessages(prev => [...prev, assistantMsg]);
+
+    try {
+      abortRef.current = new AbortController();
+      const response = await authFetch("/api/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            ...messages.filter(m => m.role === "user" || m.role === "assistant").map(m => ({
+              role: m.role,
+              content: m.content,
+            })),
+            { role: "user", content: text },
+          ],
+          contextType: focus === "financial" ? "financial" : "chat",
+        }),
+        signal: abortRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "token" && parsed.content) {
+              fullContent += parsed.content;
+              setMessages(prev => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last?.role === "assistant") {
+                  updated[updated.length - 1] = { ...last, content: fullContent };
+                }
+                return updated;
+              });
+            } else if (parsed.type === "error") {
+              throw new Error(parsed.content || "AI error");
+            }
+          } catch (parseErr: any) {
+            if (parseErr.message === "AI error") throw parseErr;
+            // Skip malformed SSE data
+          }
+        }
+      }
+    } catch (err: any) {
+      if (err.name === "AbortError") return;
+      setMessages(prev => {
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        if (last?.role === "assistant" && !last.content) {
+          updated[updated.length - 1] = {
+            ...last,
+            content: "Sorry, I couldn't process that request. Please try again or use the full Chat for a better experience.",
+          };
+        }
+        return updated;
+      });
+      toast.error("Failed to get AI response");
+    } finally {
+      setIsStreaming(false);
+      abortRef.current = null;
     }
+  }, [input, isStreaming, focus]);
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [disclosureLevel, onModeChange]);
-}
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }, [handleSend]);
 
-// ─── Context Sharing Indicator ─────────────────────────────────────
-function ContextIndicator({ activeMode }: { activeMode: AIMode }) {
-  const otherModes = MODE_CONFIGS.filter((m) => m.key !== activeMode);
+  const handleStop = useCallback(() => {
+    abortRef.current?.abort();
+    setIsStreaming(false);
+  }, []);
+
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground/60 px-2">
-          <Share2 className="w-3 h-3" />
-          <span className="hidden md:inline">Context shared</span>
+    <Card className="flex flex-col h-full">
+      <CardHeader className="pb-2 shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-accent" />
+            <CardTitle className="text-base">Quick Chat</CardTitle>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={focus} onValueChange={(v) => setFocus(v as any)}>
+              <SelectTrigger className="h-7 text-xs w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="both">All Focus</SelectItem>
+                <SelectItem value="general">General</SelectItem>
+                <SelectItem value="financial">Financial</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="max-w-xs">
-        <p className="text-xs">
-          Conversation context is shared across all AI modes. Switching modes
-          preserves your current thread — {otherModes.map((m) => m.label).join(" and ")}{" "}
-          can reference what you discussed in {MODE_CONFIGS.find((m) => m.key === activeMode)?.label}.
-        </p>
-      </TooltipContent>
-    </Tooltip>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col gap-2 overflow-hidden pb-3">
+        {/* Messages area */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center gap-3 text-muted-foreground">
+              <Sparkles className="w-8 h-8 opacity-40" />
+              <div>
+                <p className="text-sm font-medium">Ask anything</p>
+                <p className="text-xs mt-1 max-w-[250px]">Quick questions, analysis, or financial guidance. For deeper conversations, use the full Chat.</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5 justify-center mt-2">
+                {["What's my portfolio risk?", "Explain Roth conversion", "Market outlook"].map((q) => (
+                  <button
+                    type="button"
+                    key={q}
+                    onClick={() => { setInput(q); }}
+                    className="text-[11px] px-2.5 py-1 rounded-full border border-border/60 hover:bg-accent/10 hover:border-accent/30 transition-colors"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
+              <div className={cn(
+                "max-w-[85%] rounded-lg px-3 py-2 text-sm",
+                msg.role === "user"
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-muted/50 text-foreground"
+              )}>
+                {msg.role === "assistant" ? (
+                  msg.content ? (
+                    <Streamdown>{msg.content}</Streamdown>
+                  ) : (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span className="text-xs">Thinking...</span>
+                    </div>
+                  )
+                ) : (
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Input area */}
+        <div className="flex gap-2 items-end shrink-0">
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask a quick question..."
+            className="min-h-[40px] max-h-[120px] resize-none text-sm"
+            rows={1}
+            disabled={isStreaming}
+          />
+          {isStreaming ? (
+            <Button size="sm" variant="outline" onClick={handleStop} className="shrink-0 h-10">
+              <Loader2 className="w-4 h-4 animate-spin" />
+            </Button>
+          ) : (
+            <Button size="sm" onClick={handleSend} disabled={!input.trim()} className="shrink-0 h-10">
+              <Send className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// ─── Mode Indicator Header ─────────────────────────────────────────
-function ModeHeader({
-  activeMode,
-  onModeChange,
-  disclosureLevel,
-  onLevelChange,
-  visibleModes,
-  isZenMode,
-  onToggleZen,
-}: {
-  activeMode: AIMode;
-  onModeChange: (mode: AIMode) => void;
-  disclosureLevel: number;
-  onLevelChange: (level: number) => void;
-  visibleModes: ModeConfig[];
-  isZenMode: boolean;
-  onToggleZen: () => void;
-}) {
-  const activeConfig = MODE_CONFIGS.find((m) => m.key === activeMode)!;
+// ─── Model Presets Panel ───────────────────────────────────────────
+function ModelPresetsPanel() {
+  const perspectivesQuery = trpc.multiModel.perspectives.useQuery();
+  const presetsQuery = trpc.multiModel.presets.useQuery();
+  const userPresetsQuery = trpc.multiModel.listPresets.useQuery();
+  const saveMut = trpc.multiModel.savePreset.useMutation({
+    onSuccess: () => {
+      toast.success("Preset saved");
+      userPresetsQuery.refetch();
+      setShowCreate(false);
+    },
+    onError: () => toast.error("Failed to save preset"),
+  });
+  const deleteMut = trpc.multiModel.deletePreset.useMutation({
+    onSuccess: () => {
+      toast.success("Preset deleted");
+      userPresetsQuery.refetch();
+    },
+    onError: () => toast.error("Failed to delete preset"),
+  });
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [selectedPerspectives, setSelectedPerspectives] = useState<string[]>([]);
+  const [weights, setWeights] = useState<Record<string, number>>({});
+
+  const perspectives = perspectivesQuery.data || [];
+  const builtInPresets = presetsQuery.data || [];
+  const userPresets = userPresetsQuery.data || [];
+
+  const togglePerspective = (id: string) => {
+    setSelectedPerspectives(prev =>
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+    );
+    if (!weights[id]) {
+      setWeights(prev => ({ ...prev, [id]: 1.0 }));
+    }
+  };
+
+  const handleSave = () => {
+    if (!newName.trim() || selectedPerspectives.length === 0) {
+      toast.error("Name and at least one perspective required");
+      return;
+    }
+    saveMut.mutate({
+      name: newName,
+      description: newDesc || undefined,
+      perspectives: selectedPerspectives,
+      weights,
+    });
+  };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50 bg-background/80 backdrop-blur-sm shrink-0">
-      {/* Mode tabs — only show if more than 1 mode visible */}
-      {visibleModes.length > 1 ? (
-        <div className="flex items-center gap-0.5 bg-muted/50 rounded-lg p-0.5">
-          {visibleModes.map((mode) => {
-            const Icon = mode.icon;
-            const isActive = mode.key === activeMode;
-            return (
-              <Tooltip key={mode.key}>
-                <TooltipTrigger asChild>
-                  <button type="button"
-                    onClick={() => onModeChange(mode.key)}
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-2 shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sliders className="w-4 h-4 text-accent" />
+            <CardTitle className="text-base">Model Presets</CardTitle>
+          </div>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowCreate(!showCreate)}>
+            <Plus className="w-3 h-3 mr-1" />
+            New
+          </Button>
+        </div>
+        <CardDescription className="text-xs">Configure how multiple AI models collaborate on your queries</CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 overflow-y-auto space-y-3 pb-3">
+        {/* Create new preset */}
+        {showCreate && (
+          <div className="border border-accent/30 rounded-lg p-3 space-y-3 bg-accent/5">
+            <Input
+              placeholder="Preset name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className="h-8 text-sm"
+            />
+            <Input
+              placeholder="Description (optional)"
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
+              className="h-8 text-sm"
+            />
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Perspectives</p>
+              <div className="flex flex-wrap gap-1.5">
+                {perspectives.map((p: any) => (
+                  <button
+                    type="button"
+                    key={p.id}
+                    onClick={() => togglePerspective(p.id)}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200",
-                      isActive
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                      "text-[11px] px-2 py-0.5 rounded-full border transition-colors",
+                      selectedPerspectives.includes(p.id)
+                        ? "bg-accent text-accent-foreground border-accent"
+                        : "border-border hover:border-accent/50"
                     )}
-                    aria-label={`Switch to ${mode.label} mode (${mode.shortcut})`}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span className="hidden sm:inline">{mode.shortLabel}</span>
-                    {mode.badge && !isActive && (
-                      <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                        {mode.badge}
-                      </Badge>
-                    )}
+                    {p.name || p.id}
                   </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p className="font-medium">{mode.label}</p>
-                  <p className="text-xs text-muted-foreground">{mode.description}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    <Keyboard className="w-3 h-3 inline mr-1" />
-                    {mode.shortcut}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
+                ))}
+              </div>
+            </div>
+            {selectedPerspectives.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Weights</p>
+                {selectedPerspectives.map((id) => (
+                  <div key={id} className="flex items-center gap-2">
+                    <span className="text-xs w-24 truncate">{id}</span>
+                    <Slider
+                      value={[weights[id] || 1.0]}
+                      onValueChange={([v]) => setWeights(prev => ({ ...prev, [id]: v }))}
+                      min={0}
+                      max={2}
+                      step={0.1}
+                      className="flex-1"
+                    />
+                    <span className="text-xs w-8 text-right">{(weights[id] || 1.0).toFixed(1)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={saveMut.isPending}>
+                {saveMut.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowCreate(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Built-in presets */}
+        {builtInPresets.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <Shield className="w-3 h-3" /> Built-in Presets
+            </p>
+            {builtInPresets.map((preset: any, i: number) => (
+              <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div>
+                  <p className="text-sm font-medium">{preset.name}</p>
+                  <p className="text-xs text-muted-foreground">{preset.description || `${preset.perspectives?.length || 0} perspectives`}</p>
+                </div>
+                <Badge variant="secondary" className="text-[10px]">Built-in</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* User presets */}
+        {userPresets.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <Users className="w-3 h-3" /> Your Presets
+            </p>
+            {userPresets.map((preset: any) => (
+              <div key={preset.id} className="flex items-center justify-between p-2 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors group">
+                <div>
+                  <p className="text-sm font-medium">{preset.name}</p>
+                  <p className="text-xs text-muted-foreground">{preset.description || `${preset.perspectives?.length || 0} perspectives`}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-destructive"
+                  onClick={() => deleteMut.mutate({ id: preset.id })}
+                  aria-label={`Delete preset ${preset.name}`}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {builtInPresets.length === 0 && userPresets.length === 0 && !showCreate && (
+          <div className="text-center text-muted-foreground py-6">
+            <Sliders className="w-6 h-6 mx-auto mb-2 opacity-40" />
+            <p className="text-xs">No presets yet. Create one to configure multi-model collaboration.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Usage Analytics Panel ─────────────────────────────────────────
+function UsageAnalyticsPanel() {
+  const statsQuery = trpc.multiModel.usageStats.useQuery({ days: 30 });
+  const ratingsQuery = trpc.multiModel.ratingSummary.useQuery({ days: 30 });
+
+  const stats = statsQuery.data || [];
+  const ratings = ratingsQuery.data || [];
+
+  return (
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-accent" />
+          <CardTitle className="text-base">AI Usage</CardTitle>
+        </div>
+        <CardDescription className="text-xs">Model usage and performance over the last 30 days</CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 overflow-y-auto space-y-3 pb-3">
+        {statsQuery.isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : stats.length === 0 ? (
+          <div className="text-center text-muted-foreground py-6">
+            <Activity className="w-6 h-6 mx-auto mb-2 opacity-40" />
+            <p className="text-xs">No usage data yet. Start chatting to see analytics.</p>
+          </div>
+        ) : (
+          <>
+            {/* Summary stats */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2 rounded-md bg-muted/30">
+                <p className="text-[11px] text-muted-foreground">Total Queries</p>
+                <p className="text-lg font-semibold">
+                  {stats.reduce((sum: number, s: any) => sum + (Number(s.totalQueries) || 0), 0)}
+                </p>
+              </div>
+              <div className="p-2 rounded-md bg-muted/30">
+                <p className="text-[11px] text-muted-foreground">Models Used</p>
+                <p className="text-lg font-semibold">{stats.length}</p>
+              </div>
+            </div>
+
+            {/* Per-model breakdown */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">By Model</p>
+              {stats.map((s: any, i: number) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                  <div>
+                    <p className="text-sm font-medium">{s.model || "Unknown"}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {Number(s.totalQueries) || 0} queries · {Number(s.avgInputTokens) || 0} avg tokens
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px]">
+                    {Number(s.totalQueries) || 0}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+
+            {/* Ratings */}
+            {ratings.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Quality Ratings</p>
+                {ratings.map((r: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+                    <span className="text-sm">{r.model || "Unknown"}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium">{Number(r.avgRating)?.toFixed(1) || "—"}</span>
+                      <span className="text-[10px] text-muted-foreground">/ 5</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Quick Actions Panel ───────────────────────────────────────────
+function QuickActionsPanel() {
+  const [, navigate] = useLocation();
+
+  const actions = [
+    {
+      icon: MessageSquare,
+      label: "Full Chat",
+      desc: "Deep conversations with context, voice, and multi-model",
+      path: "/chat",
+      color: "text-blue-400",
+    },
+    {
+      icon: Terminal,
+      label: "Code Chat",
+      desc: "AI-powered code generation and editing",
+      path: "/code-chat",
+      color: "text-emerald-400",
+    },
+    {
+      icon: Bot,
+      label: "AI Agents",
+      desc: "Autonomous task execution and workflows",
+      path: "/agents",
+      color: "text-purple-400",
+    },
+    {
+      icon: Scale,
+      label: "Consensus Query",
+      desc: "Multi-model analysis for complex decisions",
+      path: "/chat?mode=consensus",
+      color: "text-amber-400",
+    },
+    {
+      icon: Brain,
+      label: "AI Tuning",
+      desc: "Personalize AI behavior across 5 layers",
+      path: "/settings/ai-tuning",
+      color: "text-pink-400",
+    },
+    {
+      icon: BookOpen,
+      label: "Knowledge Base",
+      desc: "Train your AI with documents and artifacts",
+      path: "/documents",
+      color: "text-cyan-400",
+    },
+    {
+      icon: TrendingUp,
+      label: "Wealth Engine",
+      desc: "AI-powered financial analysis and projections",
+      path: "/wealth-engine",
+      color: "text-green-400",
+    },
+    {
+      icon: Target,
+      label: "Workflows",
+      desc: "Automated multi-step AI workflows",
+      path: "/workflows",
+      color: "text-orange-400",
+    },
+  ];
+
+  return (
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-accent" />
+          <CardTitle className="text-base">Quick Actions</CardTitle>
+        </div>
+        <CardDescription className="text-xs">Jump to AI-powered features</CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 overflow-y-auto pb-3">
+        <div className="grid grid-cols-1 gap-1.5">
+          {actions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <button
+                type="button"
+                key={action.path}
+                onClick={() => navigate(action.path)}
+                className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+              >
+                <div className={cn("w-8 h-8 rounded-md flex items-center justify-center bg-muted/50 shrink-0", action.color)}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium group-hover:text-accent transition-colors">{action.label}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{action.desc}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-accent transition-colors shrink-0" />
+              </button>
             );
           })}
         </div>
-      ) : (
-        <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-          <activeConfig.icon className="w-4 h-4" />
-          <span>{activeConfig.label}</span>
-        </div>
-      )}
-
-      {/* Context sharing indicator */}
-      {visibleModes.length > 1 && <ContextIndicator activeMode={activeMode} />}
-
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Zen mode toggle */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground"
-            onClick={onToggleZen}
-            aria-label={isZenMode ? "Exit zen mode" : "Enter zen mode"}
-          >
-            {isZenMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          <p className="text-xs">{isZenMode ? "Exit zen mode" : "Zen mode — hide header"}</p>
-        </TooltipContent>
-      </Tooltip>
-
-      {/* Disclosure level control */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground">
-            <Settings2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Level {disclosureLevel}</span>
-            <ChevronDown className="w-3 h-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel className="text-xs text-muted-foreground">
-            AI Capability Level
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {[
-            { level: 1, label: "Essential", desc: "Chat only — clean, focused" },
-            { level: 2, label: "Developer", desc: "Chat + Code tools" },
-            { level: 3, label: "Power User", desc: "Chat + Code + Agent" },
-            { level: 4, label: "Full Access", desc: "All modes + orchestration" },
-          ].map((opt) => (
-            <DropdownMenuItem
-              key={opt.level}
-              onClick={() => onLevelChange(opt.level)}
-              className={cn(
-                "flex flex-col items-start gap-0.5",
-                disclosureLevel === opt.level && "bg-accent"
-              )}
-            >
-              <span className="font-medium text-sm">
-                {opt.label}
-                {disclosureLevel === opt.level && (
-                  <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 h-4">
-                    Active
-                  </Badge>
-                )}
-              </span>
-              <span className="text-xs text-muted-foreground">{opt.desc}</span>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// ─── Loading Fallback ──────────────────────────────────────────────
-function ModeSkeleton({ mode }: { mode: AIMode }) {
+// ─── AI Config Preview ─────────────────────────────────────────────
+function AIConfigPreview() {
+  const configQuery = trpc.aiLayers.previewConfig.useQuery({}, {
+    retry: false,
+    staleTime: 60_000,
+  });
+
+  const config = configQuery.data?.config;
+
   return (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3 text-muted-foreground">
-        <Sparkles className="w-8 h-8 animate-pulse" />
-        <p className="text-sm">
-          Loading {mode === "chat" ? "Chat" : mode === "code" ? "Code" : "Agent"} mode...
-        </p>
-      </div>
-    </div>
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-2 shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-accent" />
+            <CardTitle className="text-base">AI Configuration</CardTitle>
+          </div>
+          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => configQuery.refetch()}>
+            <RefreshCw className={cn("w-3 h-3", configQuery.isFetching && "animate-spin")} />
+          </Button>
+        </div>
+        <CardDescription className="text-xs">Your resolved 5-layer AI settings</CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 overflow-y-auto space-y-2 pb-3">
+        {configQuery.isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : configQuery.isError ? (
+          <div className="text-center text-muted-foreground py-6">
+            <Settings2 className="w-6 h-6 mx-auto mb-2 opacity-40" />
+            <p className="text-xs">Sign in to view your AI configuration</p>
+          </div>
+        ) : config ? (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2 rounded-md bg-muted/30 text-center">
+                <p className="text-[10px] text-muted-foreground">Tone</p>
+                <p className="text-xs font-medium capitalize">{config.toneStyle || "Professional"}</p>
+              </div>
+              <div className="p-2 rounded-md bg-muted/30 text-center">
+                <p className="text-[10px] text-muted-foreground">Format</p>
+                <p className="text-xs font-medium capitalize">{config.responseFormat || "Mixed"}</p>
+              </div>
+              <div className="p-2 rounded-md bg-muted/30 text-center">
+                <p className="text-[10px] text-muted-foreground">Length</p>
+                <p className="text-xs font-medium capitalize">{config.responseLength || "Standard"}</p>
+              </div>
+            </div>
+
+            <div className="p-2 rounded-md bg-muted/30">
+              <p className="text-[10px] text-muted-foreground mb-1">Temperature</p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-accent"
+                    style={{ width: `${((config.temperature || 0.7) / 2) * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs font-medium">{config.temperature?.toFixed(1) || "0.7"}</span>
+              </div>
+            </div>
+
+            {config.guardrails && config.guardrails.length > 0 && (
+              <div className="p-2 rounded-md bg-muted/30">
+                <p className="text-[10px] text-muted-foreground mb-1">Active Guardrails</p>
+                <div className="flex flex-wrap gap-1">
+                  {config.guardrails.slice(0, 5).map((g: string, i: number) => (
+                    <Badge key={i} variant="outline" className="text-[10px]">{g}</Badge>
+                  ))}
+                  {config.guardrails.length > 5 && (
+                    <Badge variant="secondary" className="text-[10px]">+{config.guardrails.length - 5}</Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {config.promptOverlays && config.promptOverlays.length > 0 && (
+              <div className="p-2 rounded-md bg-muted/30">
+                <p className="text-[10px] text-muted-foreground mb-1">Active Layers</p>
+                <div className="flex flex-wrap gap-1">
+                  {config.promptOverlays.map((o: any, i: number) => (
+                    <Badge key={i} variant="secondary" className="text-[10px] capitalize">{o.layer}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 
 // ─── Main Component ────────────────────────────────────────────────
 export default function UnifiedAI() {
-  const { user } = useAuth();
-  const [activeMode, setActiveMode] = useState<AIMode>("chat");
-  const [disclosureLevel, setDisclosureLevel] = useAIDisclosureLevel();
-  const [isZenMode, setIsZenMode] = useState(false);
-
-  // Auto-detect disclosure level from user role
-  useEffect(() => {
-    if (!user) return;
-    const role = (user as any).role || "user";
-    // Auto-suggest higher level for power users, but don't override manual setting
-    const stored = localStorage.getItem("ai_disclosure_level_manual");
-    if (stored) return; // User has manually set level, respect it
-    if (role === "admin") setDisclosureLevel(4);
-    else if (role === "manager") setDisclosureLevel(3);
-    else if (role === "advisor") setDisclosureLevel(2);
-  }, [user, setDisclosureLevel]);
-
-  // Filter visible modes by disclosure level
-  const visibleModes = useMemo(
-    () => MODE_CONFIGS.filter((m) => m.minLevel <= disclosureLevel),
-    [disclosureLevel]
-  );
-
-  // Handle mode change with validation
-  const handleModeChange = useCallback(
-    (mode: AIMode) => {
-      const config = MODE_CONFIGS.find((m) => m.key === mode);
-      if (!config || config.minLevel > disclosureLevel) {
-        toast.info(`Increase your AI level to access ${config?.label || mode} mode`);
-        return;
-      }
-      setActiveMode(mode);
-    },
-    [disclosureLevel]
-  );
-
-  // Handle disclosure level change
-  const handleLevelChange = useCallback(
-    (level: number) => {
-      setDisclosureLevel(level);
-      localStorage.setItem("ai_disclosure_level_manual", "true");
-      // If current mode is no longer visible, switch to chat
-      const modeConfig = MODE_CONFIGS.find((m) => m.key === activeMode);
-      if (modeConfig && modeConfig.minLevel > level) {
-        setActiveMode("chat");
-      }
-      toast.success(`AI level set to ${level}`);
-    },
-    [activeMode, setDisclosureLevel]
-  );
-
-  // Toggle zen mode (hide header for focused work)
-  const handleToggleZen = useCallback(() => {
-    setIsZenMode((prev) => !prev);
-  }, []);
-
-  // Register keyboard shortcuts
-  useModeSwitchShortcuts(disclosureLevel, handleModeChange);
-
-  // Escape key exits zen mode
-  useEffect(() => {
-    if (!isZenMode) return;
-    function handleEsc(e: KeyboardEvent) {
-      if (e.key === "Escape") setIsZenMode(false);
-    }
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [isZenMode]);
+  const { user, isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState("studio");
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Mode indicator header — hidden in zen mode */}
-      {!isZenMode && (
-        <ModeHeader
-          activeMode={activeMode}
-          onModeChange={handleModeChange}
-          disclosureLevel={disclosureLevel}
-          onLevelChange={handleLevelChange}
-          visibleModes={visibleModes}
-          isZenMode={isZenMode}
-          onToggleZen={handleToggleZen}
-        />
-      )}
+      <SEOHead title="AI Studio" description="AI command center — chat, configure, and manage your AI experience" />
 
-      {/* Zen mode minimal indicator — shows a thin bar to exit */}
-      {isZenMode && (
-        <div
-          className="h-1 bg-primary/20 hover:bg-primary/40 cursor-pointer transition-colors shrink-0"
-          onClick={() => setIsZenMode(false)}
-          title="Click to exit zen mode (or press Escape)"
-          role="button"
-          aria-label="Exit zen mode"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setIsZenMode(false); }}
-        />
-      )}
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 bg-background/80 backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-accent" />
+          <h1 className="text-lg font-semibold">AI Studio</h1>
+          <Badge variant="secondary" className="text-[10px]">Beta</Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 text-xs"
+                onClick={() => navigate("/chat")}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Full Chat</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Open full-featured Chat experience</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 text-xs"
+                onClick={() => navigate("/settings/ai-tuning")}
+              >
+                <Settings2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">AI Settings</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Configure AI personalization layers</TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
 
-      {/* Service degradation notice for LLM-dependent features */}
-      <ServiceDegradedFallback serviceId="llm" degradedMessage="AI responses may be slower or unavailable. Your conversations are preserved.">
-        <></>
-      </ServiceDegradedFallback>
-
-      {/* Mode panels — keep all mounted for context preservation */}
-      <div className="flex-1 overflow-hidden relative">
-        <div
-          className={cn(
-            "absolute inset-0 transition-opacity duration-200",
-            activeMode === "chat" ? "z-10 opacity-100" : "z-0 pointer-events-none opacity-0"
-          )}
-        >
-          <Suspense fallback={<ModeSkeleton mode="chat" />}>
-            <ChatPanel />
-          </Suspense>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+        <div className="px-4 pt-2 shrink-0">
+          <TabsList className="h-8">
+            <TabsTrigger value="studio" className="text-xs h-7 gap-1">
+              <Sparkles className="w-3 h-3" />
+              Studio
+            </TabsTrigger>
+            <TabsTrigger value="presets" className="text-xs h-7 gap-1">
+              <Sliders className="w-3 h-3" />
+              Presets
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs h-7 gap-1">
+              <BarChart3 className="w-3 h-3" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
         </div>
 
-        {disclosureLevel >= 2 && (
-          <div
-            className={cn(
-              "absolute inset-0 transition-opacity duration-200",
-              activeMode === "code" ? "z-10 opacity-100" : "z-0 pointer-events-none opacity-0"
-            )}
-          >
-            <Suspense fallback={<ModeSkeleton mode="code" />}>
-              <CodeChatPanel />
-            </Suspense>
+        {/* Studio Tab — Main view with chat + actions */}
+        <TabsContent value="studio" className="flex-1 overflow-hidden mt-0 p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
+            {/* Left: Quick Chat (takes 2 cols on large screens) */}
+            <div className="lg:col-span-2 min-h-0">
+              <ServiceDegradedFallback serviceId="llm" degradedMessage="AI chat may be slower or unavailable. Quick Actions and configuration still work normally.">
+                <QuickChatPanel />
+              </ServiceDegradedFallback>
+            </div>
+            {/* Right: Quick Actions + Config */}
+            <div className="flex flex-col gap-4 min-h-0 overflow-y-auto">
+              <QuickActionsPanel />
+              <AIConfigPreview />
+            </div>
           </div>
-        )}
+        </TabsContent>
 
-        {disclosureLevel >= 3 && (
-          <div
-            className={cn(
-              "absolute inset-0 transition-opacity duration-200",
-              activeMode === "agent" ? "z-10 opacity-100" : "z-0 pointer-events-none opacity-0"
-            )}
-          >
-            <Suspense fallback={<ModeSkeleton mode="agent" />}>
-              <AgentPanel />
-            </Suspense>
+        {/* Presets Tab */}
+        <TabsContent value="presets" className="flex-1 overflow-hidden mt-0 p-4">
+          <div className="h-full">
+            <ModelPresetsPanel />
           </div>
-        )}
-      </div>
+        </TabsContent>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="flex-1 overflow-hidden mt-0 p-4">
+          <div className="h-full">
+            <UsageAnalyticsPanel />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

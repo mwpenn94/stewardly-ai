@@ -11,6 +11,7 @@
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useEffect } from "react";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function Landing() {
   const [, navigate] = useLocation();

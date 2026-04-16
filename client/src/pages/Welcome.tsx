@@ -3,6 +3,7 @@ import { Lock, Shield, TrendingUp, Brain, BarChart3, Rocket, FileText, Monitor, 
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useEffect } from "react";
+import { SEOHead } from "@/components/SEOHead";
 
 /**
  * Welcome page — the full marketing landing page.
@@ -33,7 +34,9 @@ export default function Welcome() {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <>
+      <SEOHead title="Getting Started" description="Welcome to Stewardly. Set up your profile and start your personalized financial journey." />
+      <div className="min-h-screen bg-background overflow-hidden">
       {/* Pass 100 Stewardship Gold: background glows use semantic tokens
           (accent = gold, chart-2 = emerald, chart-5 = purple) so the
           mesh harmonizes with the gold identity instead of the old
@@ -230,5 +233,6 @@ export default function Welcome() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

@@ -40,6 +40,7 @@ import {
   PRODUCTS as BIE_PRODUCTS, getBracket,
   type RoleId, type TeamMember, type RecruitTrack,
 } from './calculators/practiceEngine';
+import { SEOHead } from "@/components/SEOHead";
 
 /* ═══ PANEL TYPE DEFINITIONS ═══ */
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
@@ -970,6 +971,8 @@ export default function Calculators() {
 
   /* ═══ RENDER ═══ */
   return (
+      <>
+        <SEOHead title="Financial Calculators" description="Comprehensive financial planning calculators including retirement, insurance, and investment tools." />
     <AppShell title="Wealth Engine">
     <div className="flex min-h-full bg-background relative">
       {/* ─── MOBILE SIDEBAR OVERLAY ─── */}
@@ -1261,5 +1264,6 @@ export default function Calculators() {
       </Dialog>
     </div>
     </AppShell>
+      </>
   );
 }

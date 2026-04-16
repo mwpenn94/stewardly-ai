@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { SEOHead } from "@/components/SEOHead";
 
 // ── Copy-to-clipboard helper ──────────────────────────────────────────
 function CopyBlock({ code, language = "typescript" }: { code: string; language?: string }) {
@@ -26,6 +27,8 @@ function CopyBlock({ code, language = "typescript" }: { code: string; language?:
     setTimeout(() => setCopied(false), 2000);
   };
   return (
+      <>
+        <SEOHead title="Platform Guide" description="Step-by-step guide to getting the most out of Stewardly's AI-powered financial platform." />
     <div className="relative group">
       <pre className="bg-sidebar rounded-lg p-4 overflow-x-auto text-sm font-mono text-muted-foreground border border-border">
         <code>{code}</code>
@@ -39,6 +42,7 @@ function CopyBlock({ code, language = "typescript" }: { code: string; language?:
         {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
       </Button>
     </div>
+      </>
   );
 }
 

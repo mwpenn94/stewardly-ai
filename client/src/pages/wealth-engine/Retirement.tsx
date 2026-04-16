@@ -588,7 +588,7 @@ export default function RetirementPage() {
                 { icon: Grid3X3, label: "What-If Grid", href: "/wealth-engine/what-if", desc: "Sweep parameters with a heat map" },
                 { icon: BookOpen, label: "Reference Hub", href: "/wealth-engine/references", desc: "Products, benchmarks, methodology" },
               ].map(tool => (
-                <button type="button" key={tool.href} type="button" onClick={() => navigate(tool.href)} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left">
+                <button type="button" key={tool.href}  onClick={() => navigate(tool.href)} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left">
                   <tool.icon className="h-4 w-4 text-accent flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{tool.label}</p>

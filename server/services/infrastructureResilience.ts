@@ -3,7 +3,7 @@
  * Carrier Integration (4B.3) + Paper Trading (4B.4)
  */
 import { requireDb } from "../db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import crypto from "crypto";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -32,7 +32,7 @@ export async function checkSystemHealth(): Promise<HealthStatus[]> {
   try {
     const db = await requireDb();
     const dbStart = Date.now();
-    await db.execute({ sql: "SELECT 1", params: [] } as any);
+    await db.execute(sql`SELECT 1`);
     checks.push({ service: "database", status: "healthy", latencyMs: Date.now() - dbStart, lastChecked: Date.now() });
   } catch (e: any) {
     checks.push({ service: "database", status: "down", latencyMs: Date.now() - start, lastChecked: Date.now(), details: e.message });
