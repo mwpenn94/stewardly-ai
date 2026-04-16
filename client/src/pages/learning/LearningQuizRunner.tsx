@@ -242,8 +242,7 @@ export default function LearningQuizRunner() {
               <p className="font-medium">No practice questions yet</p>
               <p className="text-sm text-muted-foreground">
                 Admins can import questions from{" "}
-                <Link href="/learning/studio">
-                  <a className="underline">Content Studio</a>
+                <Link href="/learning/studio" className="underline">Content Studio
                 </Link>
                 .
               </p>

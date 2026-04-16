@@ -157,6 +157,7 @@ const ComparablesPage = lazy(() => import("./pages/Comparables"));
 const RebalancingPage = lazy(() => import("./pages/Rebalancing"));
 // Email Campaign (Pass 56 — full CRUD page)
 const EmailCampaign = lazy(() => import("./pages/EmailCampaign"));
+const MarketingAssets = lazy(() => import("./pages/MarketingAssets"));
 const ApiDocumentation = lazy(() => import("./pages/ApiDocumentation"));
 const AdminAuditTrail = lazy(() => import("./pages/AdminAuditTrail"));
 
@@ -346,6 +347,7 @@ function Router() {
         <Route path={"/marketplace"}><Redirect to="/advisory" /></Route>
         <Route path={"/coi-network"}><Redirect to="/relationships" /></Route>
         <Route path={"/email-campaigns"} component={EmailCampaign} />
+        <Route path={"/marketing-assets"} component={MarketingAssets} />
         <Route path={"/api-docs"} component={ApiDocumentation} />
         <Route path={"/admin/audit-trail"} component={AdminAuditTrail} />
         <Route path={"/professionals"}><Redirect to="/relationships" /></Route>

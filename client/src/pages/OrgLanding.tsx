@@ -5,6 +5,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import DOMPurify from "dompurify";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function OrgLanding() {
   const [, navigate] = useLocation();
@@ -143,6 +144,7 @@ export default function OrgLanding() {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden" style={{ fontFamily: `'${fontFamily}', sans-serif` }}>
+      <SEOHead title={`${orgName} — Financial Intelligence`} description={subtitle} />
       {/* Inject custom CSS */}
       {customCss && <style dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(customCss, { ALLOWED_TAGS: [], KEEP_CONTENT: true }) }} />}
 

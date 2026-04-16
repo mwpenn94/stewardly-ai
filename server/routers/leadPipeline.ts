@@ -48,6 +48,18 @@ export const leadPipelineRouter = router({
       return { success: true };
     }),
 
+  bulkUpdateStatus: protectedProcedure
+    .input(z.object({ leadIds: z.array(z.number()).min(1).max(100), status: z.string() }))
+    .mutation(async ({ input }) => {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const { leadPipeline } = await import("../../drizzle/schema");
+      const { inArray } = await import("drizzle-orm");
+      await db.update(leadPipeline).set({ status: input.status as any, updatedAt: new Date() }).where(inArray(leadPipeline.id, input.leadIds));
+      return { success: true, count: input.leadIds.length };
+    }),
+
   sourcePerformance: adminProcedure.query(async () => {
     const { getDb } = await import("../db");
     const db = await getDb();

@@ -155,7 +155,7 @@ export const creditBureauRouter = router({
   }),
 });
 
-// ─── CRM Adapter Router ─────────────────────────────────────────────────
+// ─// ─── CRM Adapter Router ─────────────────────────────────────────────
 export const crmRouter = router({
   sync: adminProcedure
     .input(z.object({
@@ -166,4 +166,28 @@ export const crmRouter = router({
       const { syncCRM } = await import("../services/crmAdapter");
       return syncCRM(input.provider, {}, input.direction);
     }),
+
+  syncHistory: adminProcedure.query(async () => {
+    const { getDb } = await import("../db");
+    const db = await getDb();
+    if (!db) return [];
+    const { crmSyncLog } = await import("../../drizzle/schema");
+    const { desc } = await import("drizzle-orm");
+    return db.select().from(crmSyncLog).orderBy(desc(crmSyncLog.createdAt)).limit(50);
+  }),
+
+  providers: adminProcedure.query(async () => {
+    const { getDb } = await import("../db");
+    const db = await getDb();
+    if (!db) return [];
+    const { crmSyncLog } = await import("../../drizzle/schema");
+    const { sql } = await import("drizzle-orm");
+    const rows = await db.select({
+      provider: crmSyncLog.crmProvider,
+      lastStatus: crmSyncLog.status,
+      lastSync: sql<string>`MAX(${crmSyncLog.createdAt})`,
+      totalSynced: sql<number>`COALESCE(SUM(${crmSyncLog.recordsSynced}), 0)`,
+    }).from(crmSyncLog).groupBy(crmSyncLog.crmProvider);
+    return rows;
+  }),
 });

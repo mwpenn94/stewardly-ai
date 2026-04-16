@@ -14,7 +14,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useFocusOnRouteChange } from "@/hooks/useFocusOnRouteChange";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { recordPageVisit } from "@/hooks/useRecentPages";
 // Build Loop Pass 9 (G56): the old nav import block, ICON_MAP, getIcon,
@@ -25,6 +25,10 @@ import { recordPageVisit } from "@/hooks/useRecentPages";
 import { Menu, Keyboard } from "lucide-react";
 import { MarketTicker } from "@/components/MarketTicker";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
+import { NotificationBell } from "@/components/NotificationBell";
+import { useNotifications } from "@/contexts/NotificationContext";
+import { useOnboardingNotifications } from "@/components/OnboardingNotifications";
+import ChangelogBell from "@/components/ChangelogBell";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -197,6 +201,12 @@ export default function AppShell({ children, title }: AppShellProps) {
   // Deleted outright in Pass 9.
 
 
+  // ── Notification state (shared between mobile header + desktop bell) ──
+  const { notifications: wsNotifications, unreadCount: wsUnreadCount, connected: wsConnected, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
+  const { notifications: onboardingNotifs, unreadCount: onboardingUnread } = useOnboardingNotifications();
+  const allNotifications = useMemo(() => [...onboardingNotifs, ...wsNotifications], [onboardingNotifs, wsNotifications]);
+  const totalUnread = wsUnreadCount + onboardingUnread;
+
   return (
     <div className="h-screen flex bg-background overflow-hidden">
       {/* Pass 91 (Target 7 / WCAG 2.4.1): skip-to-content link.
@@ -246,7 +256,16 @@ export default function AppShell({ children, title }: AppShellProps) {
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
             <Menu className="w-5 h-5" />
           </Button>
-          {title && <span className="text-sm font-medium truncate ml-2">{title}</span>}
+          {title && <span className="text-sm font-medium truncate ml-2 flex-1">{title}</span>}
+          <NotificationBell
+            notifications={allNotifications}
+            unreadCount={totalUnread}
+            connected={wsConnected}
+            onMarkAsRead={markAsRead}
+            onMarkAllAsRead={markAllAsRead}
+            onClear={clearNotifications}
+            onNavigate={(href) => { navigate(href); setMobileOpen(false); }}
+          />
         </header>
 
         {/* Market ticker — visible at disclosure level 2+ */}
@@ -277,6 +296,20 @@ export default function AppShell({ children, title }: AppShellProps) {
 
         {/* Mobile bottom tab bar removed permanently — user requested no footer nav.
             Navigation is handled by the sidebar (hamburger menu on mobile). */}
+
+        {/* Desktop notification bell — fixed top-right, visible on lg+ screens */}
+        <div className="hidden lg:flex fixed top-3 right-4 z-50 items-center gap-1">
+          <NotificationBell
+            notifications={allNotifications}
+            unreadCount={totalUnread}
+            connected={wsConnected}
+            onMarkAsRead={markAsRead}
+            onMarkAllAsRead={markAllAsRead}
+            onClear={clearNotifications}
+            onNavigate={(href) => navigate(href)}
+          />
+          <ChangelogBell collapsed={collapsed} />
+        </div>
 
         {/* Persistent compliance disclaimer + keyboard shortcut hint */}
         <footer className="shrink-0 border-t border-border/30 px-4 py-1.5 flex items-center justify-between gap-4">

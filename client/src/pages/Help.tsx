@@ -295,6 +295,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       { name: "Licensed Review Queue", desc: "Review queue for AI-generated financial advice requiring licensed professional approval.", route: "/operations" },
       { name: "BCP (Business Continuity)", desc: "Business continuity planning dashboard with disaster recovery procedures.", route: "/admin/bcp" },
       { name: "Email Campaigns", desc: "AI-generated email campaigns with audience segmentation, scheduling, and performance tracking.", route: "/email-campaigns" },
+      { name: "Content Library", desc: "Marketing templates and content assets for client communications — review reminders, market updates, onboarding, and more.", route: "/marketing-assets" },
       { name: "Carrier Connector", desc: "Connect to insurance carriers for application submission and status tracking.", route: "/carrier-connector" },
     ],
   },

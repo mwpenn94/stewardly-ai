@@ -1,13 +1,10 @@
 /**
- * CRMSync — CRM integration dashboard (pass 72 partial wire).
+ * CRMSync — CRM integration dashboard.
  *
- * Pass 72: the `crm.sync` tRPC mutation exists and calls `syncCRM()`
- * from `server/services/crmAdapter.ts` — so the "Sync Now" button is
- * fully wired to real Wealthbox / Salesforce / Redtail sync. The
- * provider status cards + field mappings + sync history panels
- * still render mock data because no backend for sync history /
- * connection status exists yet. A single honest banner explains
- * which parts of the page are live vs mock.
+ * Wired to:
+ * - crm.sync mutation (real Wealthbox/Salesforce/Redtail sync)
+ * - crm.syncHistory query (real sync log from crm_sync_log table)
+ * - crm.providers query (aggregated provider status from sync log)
  */
 import { useState } from "react";
 import { SEOHead } from "@/components/SEOHead";
@@ -17,31 +14,32 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, Clock, Database, ArrowLeftRight, Settings2, History, Info } from "lucide-react";
+import { ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, Clock, Database, ArrowLeftRight, Settings2, History, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 
-// Sync history remains a design preview until a sync_history table
-// exists — the backend only has a pull/push trigger at the moment.
-const SYNC_HISTORY = [
-  { id: 1, time: "2026-04-05 09:30", direction: "pull", records: 45, errors: 0, duration: "12s" },
-  { id: 2, time: "2026-04-05 08:00", direction: "push", records: 12, errors: 1, duration: "8s" },
-  { id: 3, time: "2026-04-04 18:00", direction: "pull", records: 38, errors: 0, duration: "10s" },
-  { id: 4, time: "2026-04-04 12:00", direction: "full", records: 230, errors: 3, duration: "45s" },
-];
-
 export default function CRMSync() {
-  const { isAuthenticated } = useAuth();
-
+  const { isAuthenticated, user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [, navigate] = useLocation();
   const [autoSync, setAutoSync] = useState(true);
   const [provider, setProvider] = useState<"wealthbox" | "salesforce" | "redtail">("wealthbox");
   const [direction, setDirection] = useState<"pull" | "push" | "bidirectional">("pull");
 
-  // Pass 72: real sync call.
+  const utils = trpc.useUtils();
+
+  const syncHistory = trpc.crm.syncHistory.useQuery(undefined, {
+    enabled: isAuthenticated && isAdmin,
+  });
+
+  const providers = trpc.crm.providers.useQuery(undefined, {
+    enabled: isAuthenticated && isAdmin,
+  });
+
   const syncMut = trpc.crm.sync.useMutation({
     onSuccess: (r) => {
       const contacts = r?.contactsSynced ?? 0;
@@ -52,6 +50,8 @@ export default function CRMSync() {
           `${activities} activit${activities === 1 ? "y" : "ies"}` +
           (errorCount > 0 ? `, ${errorCount} error${errorCount === 1 ? "" : "s"}` : ""),
       );
+      utils.crm.syncHistory.invalidate();
+      utils.crm.providers.invalidate();
     },
     onError: (e) => toast.error(`Sync failed: ${e.message}`),
   });
@@ -59,6 +59,19 @@ export default function CRMSync() {
   const handleSync = () => {
     syncMut.mutate({ provider, direction });
   };
+
+  const historyRows = (syncHistory.data ?? []) as any[];
+  const providerRows = (providers.data ?? []) as any[];
+
+  // Derive provider cards from real data, with fallback display
+  const providerMap: Record<string, { status: string; lastSync: string; totalSynced: number }> = {};
+  for (const p of providerRows) {
+    providerMap[p.provider] = {
+      status: p.lastStatus ?? "unknown",
+      lastSync: p.lastSync ? new Date(p.lastSync).toLocaleString() : "Never",
+      totalSynced: Number(p.totalSynced) || 0,
+    };
+  }
 
   return (
     <AppShell title="CRM Sync">
@@ -99,51 +112,34 @@ export default function CRMSync() {
         </div>
       </div>
 
-      {/* Pass 72: banner clarifying live vs mock surfaces on this page */}
-      <Card className="border-accent/40 bg-accent/5">
-        <CardContent className="py-3 flex items-start gap-2 text-amber-600 dark:text-accent text-sm">
-          <Info className="w-4 h-4 mt-0.5 shrink-0" />
-          <div>
-            <strong className="font-semibold">Sync Now is live</strong> — it will trigger a real sync with your selected CRM provider.
-            <br />
-            <strong className="font-semibold">Provider status cards and sync history below are preview data</strong>{" "}
-            — live sync history tracking is coming soon.
-          </div>
-        </CardContent>
-      </Card>
+      <QueryErrorBanner query={syncHistory} label="sync history" />
 
-      {/* Status cards */}
+      {/* Provider status cards — derived from real sync log data */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm font-medium">Wealthbox</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Connected • Last sync 30m ago</p>
-            <p className="text-lg font-bold mt-1">1,247 contacts</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-4 w-4 text-amber-400" />
-              <span className="text-sm font-medium">Redtail</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Credentials expiring in 5 days</p>
-            <p className="text-lg font-bold mt-1">892 contacts</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Database className="h-4 w-4 text-blue-400" />
-              <span className="text-sm font-medium">Stewardly</span>
-            </div>
-            <p className="text-xs text-muted-foreground">Primary data store</p>
-            <p className="text-lg font-bold mt-1">2,139 total</p>
-          </CardContent>
-        </Card>
+        {(["wealthbox", "salesforce", "redtail"] as const).map((prov) => {
+          const info = providerMap[prov];
+          const statusIcon = info?.status === "completed"
+            ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            : info?.status === "failed"
+            ? <AlertTriangle className="h-4 w-4 text-red-400" />
+            : <Database className="h-4 w-4 text-muted-foreground" />;
+          return (
+            <Card key={prov}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  {statusIcon}
+                  <span className="text-sm font-medium capitalize">{prov}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {info ? `Last sync: ${info.lastSync}` : "No syncs recorded"}
+                </p>
+                <p className="text-lg font-bold mt-1">
+                  {info ? `${info.totalSynced} records` : "—"}
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Tabs defaultValue="settings">
@@ -208,26 +204,43 @@ export default function CRMSync() {
         <TabsContent value="history" className="mt-4">
           <Card>
             <CardContent className="p-4">
-              <div className="space-y-3">
-                {SYNC_HISTORY.map(h => (
-                  <div key={h.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm">{h.records} records • {h.direction}</p>
-                        <p className="text-xs text-muted-foreground">{h.time} • {h.duration}</p>
+              {syncHistory.isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : historyRows.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <History className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No sync history yet. Run your first sync to see results here.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {historyRows.map((h: any) => (
+                    <div key={h.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm">
+                            {h.recordsSynced ?? 0} records • {h.direction} • {h.crmProvider}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {h.createdAt ? new Date(h.createdAt).toLocaleString() : "—"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {h.status === "failed" ? (
+                          <Badge variant="outline" className="text-xs text-red-400 border-red-500/30">Failed</Badge>
+                        ) : h.status === "completed" ? (
+                          <Badge variant="outline" className="text-xs text-emerald-400 border-emerald-500/30">Clean</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-amber-400 border-amber-500/30">{h.status}</Badge>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {h.errors > 0 ? (
-                        <Badge variant="outline" className="text-xs text-amber-400 border-amber-500/30">{h.errors} errors</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs text-emerald-400 border-emerald-500/30">Clean</Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

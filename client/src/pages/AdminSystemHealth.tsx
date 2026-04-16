@@ -40,6 +40,7 @@ import {
   XCircle,
   Zap,
   Play,
+  Server,
 } from "lucide-react";
 
 // Deployment categories — the scheduler doesn't carry a category field,
@@ -130,6 +131,10 @@ export default function AdminSystemHealth() {
 
   const status = trpc.integrations.getSchedulerStatus.useQuery(undefined, {
     refetchInterval: 10_000, // 10s live refresh while the page is open
+    retry: false,
+  });
+  const healthChecks = trpc.remainingOrphans.healthChecks.list.useQuery(undefined, {
+    enabled: !!user && user.role === "admin",
     retry: false,
   });
   const trigger = trpc.integrations.triggerSchedulerJob.useMutation({
@@ -291,6 +296,38 @@ export default function AdminSystemHealth() {
                   {cat} ({count})
                 </Badge>
               ))}
+          </div>
+        )}
+
+        {/* Provider Health Checks */}
+        {healthChecks.data && healthChecks.data.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2"><Server className="w-5 h-5" /> Provider Health</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {healthChecks.data.map((check: any) => {
+                const statusColor = check.status === "healthy" ? "text-emerald-500" : check.status === "degraded" ? "text-amber-500" : "text-red-500";
+                const StatusIcon = check.status === "healthy" ? CheckCircle2 : check.status === "degraded" ? AlertTriangle : XCircle;
+                return (
+                  <Card key={check.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <StatusIcon className={`w-4 h-4 ${statusColor}`} />
+                          <span className="text-sm font-medium">{check.providerName}</span>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] capitalize">{check.status ?? "unknown"}</Badge>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        <div>Type: <span className="font-mono">{check.checkType}</span></div>
+                        {check.responseTimeMs != null && <div>Response: <span className="font-mono">{check.responseTimeMs}ms</span></div>}
+                        {check.consecutiveFailures > 0 && <div className="text-red-400">Failures: {check.consecutiveFailures}</div>}
+                        {check.lastCheckedAt && <div>Last: {new Date(check.lastCheckedAt).toLocaleString()}</div>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         )}
 

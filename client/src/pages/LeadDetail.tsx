@@ -1,6 +1,8 @@
 /**
  * LeadDetail — Detailed view for a single lead with activity timeline,
  * AI insights, contact info, and action buttons.
+ *
+ * Pass 77: Wired to real leadPipeline.getPipeline data instead of DEMO_LEAD.
  */
 import { SEOHead } from "@/components/SEOHead";
 import { PropensityGauge } from "@/components/PropensityGauge";
@@ -11,33 +13,71 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Mail, Phone, Calendar, MapPin, DollarSign, FileText, MessageSquare, Clock } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Calendar, MapPin, DollarSign, FileText, MessageSquare, Clock, Loader2 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
-
-const DEMO_LEAD = {
-  id: 1, name: "Sarah Johnson", email: "sarah.johnson@example.com", phone: "555-0187",
-  address: "123 Wealth Ave, San Francisco, CA 94105", dob: "1985-03-15",
-  ssn_last4: "4829", source: "Referral", stage: "qualified", score: 87,
-  aum: 1250000, accountType: "Individual", riskTolerance: "Moderate",
-  notes: "Interested in retirement planning and estate strategy. Referred by James Wilson.",
-  activities: [
-    { date: "2026-04-03", type: "call", desc: "Initial discovery call — 30 min" },
-    { date: "2026-04-01", type: "email", desc: "Sent financial planning brochure" },
-    { date: "2026-03-28", type: "meeting", desc: "Coffee meeting at downtown office" },
-    { date: "2026-03-25", type: "note", desc: "Referral received from James Wilson" },
-  ],
-};
+import { trpc } from "@/lib/trpc";
+import { useMemo, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw } from "lucide-react";
 
 export default function LeadDetail() {
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
+  const leadId = Number(params.id);
+
+  // Fetch pipeline data and find the specific lead
+  const utils = trpc.useUtils();
+  const { data: pipeline, isLoading, error } = trpc.leadPipeline.getPipeline.useQuery();
+  const lead = useMemo(() => {
+    if (!pipeline) return null;
+    return pipeline.find((l: any) => l.id === leadId) ?? null;
+  }, [pipeline, leadId]);
+
+  const LIFECYCLE_STAGES = ["new","enriched","scored","qualified","assigned","contacted","meeting","proposal","converted","disqualified","dormant"] as const;
+  const updateStatus = trpc.leadPipeline.updateStatus.useMutation({
+    onSuccess: () => { utils.leadPipeline.getPipeline.invalidate(); toast.success("Status updated"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  if (isLoading) {
+    return (
+      <AppShell title="Lead Detail">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (error || !lead) {
+    return (
+      <AppShell title="Lead Detail">
+        <div className="container max-w-5xl py-8 text-center space-y-4">
+          <SEOHead title="Lead Not Found" description="Lead detail view" />
+          <p className="text-muted-foreground">{error ? "Failed to load lead data." : "Lead not found."}</p>
+          <Button variant="outline" onClick={() => navigate("/leads")}>
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back to Pipeline
+          </Button>
+        </div>
+      </AppShell>
+    );
+  }
+
+  const name = lead.name ?? "Unknown";
+  const email = lead.email ?? "";
+  const phone = lead.phone ?? "";
+  const source = lead.source ?? "Direct";
+  const stage = lead.status ?? lead.stage ?? "new";
+  const score = lead.propensityScore ?? lead.score ?? 0;
+  const aum = lead.estimatedAum ?? lead.aum ?? 0;
+  const notes = lead.notes ?? "";
 
   return (
     <AppShell title="Lead Detail">
     <div className="container max-w-5xl py-8 space-y-6">
-      <SEOHead title={`Lead: ${DEMO_LEAD.name}`} description="Lead detail view" />
+      <SEOHead title={`Lead: ${name}`} description="Lead detail view" />
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -46,10 +86,21 @@ export default function LeadDetail() {
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{DEMO_LEAD.name}</h1>
+              <h1 className="text-2xl font-bold">{name}</h1>
               <VerificationBadge status="verified" label="KYC" />
             </div>
-            <p className="text-sm text-muted-foreground">{DEMO_LEAD.source} • {DEMO_LEAD.stage}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">{source} &bull;</p>
+              <Select value={stage} onValueChange={(v) => updateStatus.mutate({ leadId, status: v })}>
+                <SelectTrigger className="h-7 w-auto text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LIFECYCLE_STAGES.map(s => <SelectItem key={s} value={s}><span className="capitalize">{s}</span></SelectItem>)}
+                </SelectContent>
+              </Select>
+              {updateStatus.isPending && <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -79,65 +130,47 @@ export default function LeadDetail() {
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Contact Information</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /> {DEMO_LEAD.email}</div>
-                  <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {DEMO_LEAD.phone}</div>
-                  <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /> {DEMO_LEAD.address}</div>
-                  <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> DOB: {DEMO_LEAD.dob}</div>
-                  <PiiMaskedField value={DEMO_LEAD.ssn_last4} label="SSN" copyable allowReveal />
+                  {email && <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /> {email}</div>}
+                  {phone && <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> {phone}</div>}
+                  {lead.city && <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /> {lead.city}{lead.state ? `, ${lead.state}` : ""}</div>}
+                  {lead.dateOfBirth && <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /> DOB: {new Date(lead.dateOfBirth).toLocaleDateString()}</div>}
+                  {lead.ssnLast4 && <PiiMaskedField value={lead.ssnLast4} label="SSN" copyable allowReveal />}
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Financial Profile</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                  <div><p className="text-xs text-muted-foreground">AUM</p><p className="font-semibold">${(DEMO_LEAD.aum / 1000000).toFixed(2)}M</p></div>
-                  <div><p className="text-xs text-muted-foreground">Account Type</p><p className="font-semibold">{DEMO_LEAD.accountType}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Risk Tolerance</p><p className="font-semibold">{DEMO_LEAD.riskTolerance}</p></div>
-                  <div><p className="text-xs text-muted-foreground">Source</p><p className="font-semibold">{DEMO_LEAD.source}</p></div>
+                  <div><p className="text-xs text-muted-foreground">AUM</p><p className="font-semibold">${aum >= 1000000 ? `${(aum / 1000000).toFixed(2)}M` : `${(aum / 1000).toFixed(0)}K`}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Account Type</p><p className="font-semibold">{lead.accountType ?? "Individual"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Risk Tolerance</p><p className="font-semibold">{lead.riskTolerance ?? "Moderate"}</p></div>
+                  <div><p className="text-xs text-muted-foreground">Source</p><p className="font-semibold">{source}</p></div>
                 </CardContent>
               </Card>
 
               <CalculatorInsight
                 title="Retirement Gap Analysis"
-                summary="Based on current AUM and age, Sarah may have a $340K retirement gap by age 65 under moderate growth assumptions."
-                detail="Recommend increasing monthly contributions by $1,200 or shifting 15% allocation to growth equities. A Roth conversion ladder could also improve tax efficiency in retirement."
-                severity="warning"
+                summary={`Based on current AUM of $${aum >= 1000000 ? `${(aum / 1000000).toFixed(1)}M` : `${(aum / 1000).toFixed(0)}K`}, ${name.split(" ")[0]} may benefit from a comprehensive retirement projection.`}
+                detail="Recommend running a full retirement analysis to identify potential gaps and optimize contribution strategy."
+                severity="info"
                 actionLabel="Run Full Analysis"
                 onAction={() => navigate("/chat")}
               />
 
-              {DEMO_LEAD.notes && (
+              {notes && (
                 <Card>
                   <CardHeader className="pb-2"><CardTitle className="text-sm">Notes</CardTitle></CardHeader>
-                  <CardContent><p className="text-sm text-muted-foreground">{DEMO_LEAD.notes}</p></CardContent>
+                  <CardContent><p className="text-sm text-muted-foreground">{notes}</p></CardContent>
                 </Card>
               )}
             </TabsContent>
 
             <TabsContent value="activity" className="mt-4">
               <Card>
-                <CardContent className="p-4">
-                  <div className="space-y-4">
-                    {DEMO_LEAD.activities.map((a, i) => (
-                      <div key={i} className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center">
-                            {a.type === "call" ? <Phone className="h-3.5 w-3.5" /> :
-                             a.type === "email" ? <Mail className="h-3.5 w-3.5" /> :
-                             a.type === "meeting" ? <Calendar className="h-3.5 w-3.5" /> :
-                             <FileText className="h-3.5 w-3.5" />}
-                          </div>
-                          {i < DEMO_LEAD.activities.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
-                        </div>
-                        <div className="pb-4">
-                          <p className="text-sm font-medium">{a.desc}</p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> {a.date}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Activity timeline will populate as interactions are logged.</p>
+                  <p className="text-xs mt-1">Lead created {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : "recently"}</p>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -160,8 +193,8 @@ export default function LeadDetail() {
         <div className="space-y-4">
           <Card>
             <CardContent className="p-4 flex flex-col items-center">
-              <PropensityGauge score={DEMO_LEAD.score} label="Propensity Score" size="lg" />
-              <Badge variant="outline" className="mt-2 capitalize">{DEMO_LEAD.stage}</Badge>
+              <PropensityGauge score={score} label="Propensity Score" size="lg" />
+              <Badge variant="outline" className="mt-2 capitalize">{stage}</Badge>
             </CardContent>
           </Card>
 

@@ -2172,8 +2172,31 @@ import { finalOrphansRouter } from "./routers/finalOrphans";
 import { billingRouter } from "./stripe/billingRouter";
 import { videoConferencingRouter } from "./routers/videoConferencing";
 
+const clientErrorsRouter = router({
+  report: publicProcedure
+    .input(z.object({
+      message: z.string().max(2000),
+      stack: z.string().max(5000).optional(),
+      componentStack: z.string().max(5000).optional(),
+      url: z.string().max(500).optional(),
+      userAgent: z.string().max(500).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      logger.error("[ClientError]", {
+        message: input.message,
+        stack: input.stack?.slice(0, 500),
+        componentStack: input.componentStack?.slice(0, 500),
+        url: input.url,
+        userId: ctx.user?.id,
+        userAgent: input.userAgent?.slice(0, 200),
+      });
+      return { received: true };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
+  clientErrors: clientErrorsRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

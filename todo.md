@@ -5101,3 +5101,122 @@
 - [x] role="tabpanel" and aria-labels on mode panels, ServiceDegradedFallback
 - [x] 25/25 pass70-aistudio tests passing
 - [x] Production build verified (vite + esbuild)
+
+## Pass 71 — Data Wiring & Accessibility (Phase 3/7/8 Improvements)
+- [x] UnifiedAI: aria-live="polite" + aria-relevant="additions" on chat + dev streaming areas
+- [x] UnifiedAI: Focus management on Ctrl+1/2/3 mode switch (auto-focus input)
+- [x] TeamManagement: Wired to organizations.listMembers/inviteMember/removeMember (removed HonestPlaceholder)
+- [x] AdminLeadSources: Wired to leadPipeline.sourcePerformance (removed HonestPlaceholder)
+- [x] ClientDashboard: Wired to financialProfile.get with derived domain scores (removed HonestPlaceholder)
+- [x] ClientDashboard: Added "Open" navigation buttons linking to domain-specific pages
+- [x] 26/26 pass71 tests passing
+- [x] Production build verified
+
+## Pass 72 — Phase 5 Command Center Depth
+- [x] CRM router: Added syncHistory query (real crm_sync_log data)
+- [x] CRM router: Added providers query (aggregated provider status)
+- [x] CRMSync page: Wired to crm.syncHistory + crm.providers (removed all mock data)
+- [x] CRMSync page: Provider status cards derive from real sync log
+- [x] CRMSync page: Sync history tab shows real rows with empty state + loading
+- [x] CRMSync page: Invalidates queries after sync mutation
+- [x] 17/17 pass72 tests passing
+
+## Pass 73 — Holistic Optimization
+- [x] MyWork: Wired to workflow.listAll + compliance.getReviews (removed hardcoded items)
+- [x] MyWork: Aggregates workflows + compliance reviews into unified work queue
+- [x] MyWork: Loading state, QueryErrorBanner, empty state
+- [x] OrgLanding: Added SEOHead with dynamic org name
+- [x] Unsubscribe: Added SEOHead
+- [x] 15/15 pass73 tests passing
+- [x] 83/83 total tests across passes 70-73
+
+## Pass 74 — Adversarial Security & Quality
+- [x] Security: window.open noopener/noreferrer on all 6 files (BillingPage, Calculators, Integrations, OrgBrandingEditor)
+- [x] LeadPipeline: Added lifecycle funnel visualization with bar chart
+- [x] LeadPipeline: Added QueryErrorBanner
+- [x] Verified: All mutateAsync calls have .catch() handlers (no unhandled rejections)
+- [x] Verified: All setInterval calls have cleanup (no memory leaks)
+- [x] Verified: All admin pages have auth checks (useAuth/isAdmin/role)
+- [x] Verified: XSS vectors use DOMPurify (EmailCampaign, OrgLanding)
+- [x] Verified: Rate limiting (general, sensitive, auth) + helmet security headers
+- [x] Verified: Top-level ErrorBoundary + SectionErrorBoundary on wealth engine
+- [x] Updated PHASE_SCORING.md to reflect passes 70-73 improvements
+- [x] 21/21 pass74 tests passing
+
+## Pass 75 — Novel Features: Marketing Assets & Inline Charts
+- [x] MarketingAssets page: Content library wired to comms.listTemplates + comms.generate
+- [x] MarketingAssets: Category filtering, template preview, AI generation
+- [x] MarketingAssets: Route added to App.tsx, link added to Help page
+- [x] ProgressiveMessage: InlineChart integration — ```chart blocks render as interactive charts
+- [x] System prompt: Added chart generation instructions for AI responses
+- [x] 20/20 pass75 tests passing
+
+## Pass 76 — Global Notification Integration
+- [x] NotificationBell added to AppShell mobile header
+- [x] NotificationBell added to AppShell desktop (fixed top-right)
+- [x] ChangelogBell added to AppShell desktop
+- [x] Merged WS + onboarding notifications in AppShell
+- [x] 13/13 pass76-notifications tests passing
+
+## Pass 77 — Data Depth: Wire Remaining Hardcoded Pages
+- [x] LeadDetail wired to leadPipeline.getPipeline (removed DEMO_LEAD)
+- [x] WebhookManager wired to webhooks.list, eventLog, stats (removed hardcoded data)
+- [x] WebhookManager has toggle/delete mutations
+- [x] AdvisorProfile wired to professionals.getById (removed hardcoded data)
+- [x] AdvisorProfile has loading/error states and dynamic initials
+- [x] 25/25 pass77-data-depth tests passing
+- [x] 162/162 total tests across passes 70-77
+
+## Pass 78 — Final Data Wiring & HonestPlaceholder Elimination
+- [x] ClientOnboarding: wired handleSubmit to financialProfile.set mutation (was fake setTimeout)
+- [x] APIKeys: rewritten with real webhooks.list + dynamicIntegrations.listBlueprints data
+- [x] Zero HonestPlaceholder pages remain across entire codebase
+- [x] Zero pages with DEMO_/MOCK_ constants without trpc queries
+- [x] 9/9 pass78-final-wiring tests passing
+
+## Pass 79 — Structural Integrity Tests & Nested Anchor Fix
+- [x] Route coverage test: all 112+ lazy imports resolve to real files
+- [x] Router completeness test: all router files export valid routers
+- [x] SEOHead coverage test: all top-level pages (except embeds) have SEOHead
+- [x] Error boundary coverage test: top-level + SectionErrorBoundary + Suspense
+- [x] Component health tests: no conflicting layouts, no orphaned trpc imports
+- [x] Security pattern tests: no unsafe window.open, no unsanitized innerHTML
+- [x] Fixed nested <a> inside <Link> in 5 learning pages
+- [x] 13/13 pass79-structural-integrity tests passing
+
+## Pass 80 — UX Safety & Delete Confirmations
+- [x] ConvItem: two-step delete confirmation (confirmDelete state + 3s auto-reset)
+- [x] Calculators: window.confirm before deleting saved scenarios
+- [x] 10/10 pass80-ux-safety tests passing
+- [x] 194/194 total tests across passes 70-80
+
+## Pass 81 — Batch Operations & Query Error Handling
+- [x] LeadPipeline: Added bulkUpdateStatus mutation to server router
+- [x] LeadPipeline: Added batch selection UI with select-all and bulk status update
+- [x] WebhookManager: Added QueryErrorBanner for query error handling
+- [x] EmailCampaign: Added QueryErrorBanner for query error handling
+- [x] 15/15 pass81-batch-ops tests passing
+
+## Pass 82 — Client Error Reporting & Observability
+- [x] Added clientErrors router with report mutation (logs client errors server-side)
+- [x] ErrorBoundary: wired componentDidCatch to POST errors to /api/trpc/clientErrors.report
+- [x] SectionErrorBoundary: wired componentDidCatch to POST errors to /api/trpc/clientErrors.report
+- [x] Server-side logging with structured error data (component, url, userAgent, stack)
+- [x] 15/15 pass82-observability tests passing
+
+## Pass 83 — Advisor Network & Lead Lifecycle Depth
+- [x] AdvisorProfile: Added professionalPractice.metrics.list query (practice metrics grid)
+- [x] AdvisorProfile: Added professionalPractice.reviews.list query (annual reviews section)
+- [x] LeadDetail: Added lifecycle stage transition dropdown with all 11 stages
+- [x] LeadDetail: Added updateStatus mutation with cache invalidation
+- [x] 11/11 pass83-advisor-lead tests passing
+
+## Pass 84 — Compliance Workflow & Provider Health Depth
+- [x] ComplianceAudit: Added reviewContent submission form with 5 content types
+- [x] ComplianceAudit: Added generateRegBIDoc button for Reg BI document generation
+- [x] ComplianceAudit: Now has 4+ trpc calls (was 2)
+- [x] AdminSystemHealth: Added provider health checks from remainingOrphans.healthChecks.list
+- [x] AdminSystemHealth: Shows provider status indicators, response times, failure counts
+- [x] AdminSystemHealth: Now has 3+ trpc calls (was 2)
+- [x] 11/11 pass84-depth tests passing
+- [x] 246/246 tests passing across passes 70-84

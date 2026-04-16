@@ -156,8 +156,7 @@ export default function LearningTrackDetail() {
               <p className="text-sm text-muted-foreground">
                 No exam track with slug <code>{slug}</code>. An admin can
                 import content from{" "}
-                <Link href="/learning/studio">
-                  <a className="underline">Content Studio</a>
+                <Link href="/learning/studio" className="underline">Content Studio
                 </Link>
                 .
               </p>
@@ -414,8 +413,7 @@ function EmptyChapters() {
       </p>
       <p className="text-xs text-muted-foreground">
         Admins can import content from{" "}
-        <Link href="/learning/studio">
-          <a className="underline">Content Studio</a>
+        <Link href="/learning/studio" className="underline">Content Studio
         </Link>{" "}
         (click "Import from GitHub").
       </p>

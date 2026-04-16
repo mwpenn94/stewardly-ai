@@ -1,3 +1,10 @@
+/**
+ * ConvItem — Single conversation row with context menu.
+ *
+ * Pass 80: Added two-step delete confirmation to prevent accidental deletion.
+ * First click shows "Confirm delete?" in red, second click actually deletes.
+ */
+import { useState, useEffect } from "react";
 import {
   Database, Download, FileText, FolderOpen, GripVertical,
   MessageSquare, MoreHorizontal, Pin, Trash2
@@ -26,8 +33,18 @@ interface ConvItemProps {
 
 export function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setConversationId,
   handleDeleteConversation, togglePinMutation, moveToFolderMutation, handleExportConversation, folders, indent, dragHandle }: ConvItemProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Reset confirmation when dropdown closes
+  useEffect(() => {
+    if (confirmDelete) {
+      const timer = setTimeout(() => setConfirmDelete(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [confirmDelete]);
+
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => { if (!open) setConfirmDelete(false); }}>
       <div
         className={`group flex items-center gap-2 ${indent ? "pl-6 pr-3" : "px-3"} py-2 rounded-lg text-sm cursor-pointer transition-colors ${
           conv.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-foreground"
@@ -86,9 +103,21 @@ export function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setCo
           </DropdownMenuSub>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteConversation(conv.id)}>
-          <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
-        </DropdownMenuItem>
+        {confirmDelete ? (
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive bg-destructive/10 font-medium"
+            onClick={() => { handleDeleteConversation(conv.id); setConfirmDelete(false); }}
+          >
+            <Trash2 className="w-3.5 h-3.5 mr-2" /> Confirm delete?
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={(e) => { e.preventDefault(); setConfirmDelete(true); }}
+          >
+            <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

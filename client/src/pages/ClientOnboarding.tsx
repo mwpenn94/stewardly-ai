@@ -152,19 +152,34 @@ export default function ClientOnboarding() {
     return vals.reduce((a, b) => a + b, 0) / vals.length;
   }, [riskAnswers]);
 
+  const profileMut = trpc.financialProfile.set.useMutation({
+    onSuccess: () => {
+      toast.success("Client onboarded successfully! Their Financial Twin profile has been initialized.");
+      navigate("/clients");
+    },
+    onError: (err) => toast.error(`Onboarding failed: ${err.message}`),
+  });
+
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
     try {
-      // In a real implementation, this would call a tRPC mutation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast.success("Client onboarded successfully! Their Financial Twin profile has been initialized.");
-      navigate("/clients");
-    } catch (err: any) {
-      toast.error(`Onboarding failed: ${err.message}`);
+      const patch: Record<string, unknown> = {};
+      if (financial.annualIncome) patch.income = Number(financial.annualIncome.replace(/[^0-9.]/g, "")) || 0;
+      if (financial.netWorth) patch.netWorth = Number(financial.netWorth.replace(/[^0-9.]/g, "")) || 0;
+      if (financial.dependents) patch.dependents = Number(financial.dependents) || 0;
+      if (financial.retirementGoalAge) patch.retirementAge = Number(financial.retirementGoalAge) || 65;
+      if (financial.monthlyExpenses) patch.monthlySavings = Number(financial.monthlyExpenses.replace(/[^0-9.]/g, "")) || 0;
+      if (personal.state) patch.stateOfResidence = personal.state;
+      if (financial.employmentStatus === "Business Owner" || financial.employmentStatus === "Self-Employed") {
+        patch.isBizOwner = true;
+      }
+      await profileMut.mutateAsync({ patch, source: "user" });
+    } catch {
+      // error handled by mutation onError
     } finally {
       setSubmitting(false);
     }
-  }, [navigate]);
+  }, [navigate, financial, personal, profileMut]);
 
   const updatePersonal = (field: keyof PersonalInfo, value: string) =>
     setPersonal(prev => ({ ...prev, [field]: value }));

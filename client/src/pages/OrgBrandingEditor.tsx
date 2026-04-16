@@ -372,7 +372,7 @@ export default function OrgBrandingEditor() {
                 {showPreview ? "Editor" : "Preview"}
               </Button>
               {orgSlug && (
-                <Button variant="outline" size="sm" onClick={() => window.open(`/org/${orgSlug}`, "_blank")}>
+                <Button variant="outline" size="sm" onClick={() => window.open(`/org/${orgSlug}`, "_blank", "noopener,noreferrer")}>
                   <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
                   Live
                 </Button>

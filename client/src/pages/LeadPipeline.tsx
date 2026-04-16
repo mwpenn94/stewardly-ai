@@ -20,14 +20,15 @@
  *     mutation is built; the "Add Lead" button navigates to
  *     `/import` (the real data ingestion flow).
  */
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import { LeadCard } from "@/components/LeadCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Search, Plus, LayoutGrid, List, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, Plus, LayoutGrid, List, Loader2, TrendingUp, CheckSquare, Square, X } from "lucide-react";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -80,6 +81,20 @@ export default function LeadPipeline() {
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const batchMode = selectedIds.size > 0;
+
+  const toggleSelect = useCallback((id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(filtered.map((l: any) => l.id)));
+  }, [filtered]);
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
   const pipelineQ = trpc.leadPipeline.getPipeline.useQuery(
     { limit: 200 },
@@ -88,6 +103,14 @@ export default function LeadPipeline() {
   const updateStatusMut = trpc.leadPipeline.updateStatus.useMutation({
     onSuccess: () => {
       toast.success("Lead updated");
+      utils.leadPipeline.getPipeline.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const bulkUpdateMut = trpc.leadPipeline.bulkUpdateStatus.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Updated ${data.count} leads`);
+      clearSelection();
       utils.leadPipeline.getPipeline.invalidate();
     },
     onError: (e) => toast.error(e.message),
@@ -151,6 +174,26 @@ export default function LeadPipeline() {
         </div>
       </div>
 
+      {/* Batch action bar */}
+      {batchMode && (
+        <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/30 rounded-lg animate-in slide-in-from-top-2">
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <Select onValueChange={(status) => bulkUpdateMut.mutate({ leadIds: Array.from(selectedIds), status })}>
+            <SelectTrigger className="w-44 h-8 text-xs">
+              <SelectValue placeholder="Bulk change status…" />
+            </SelectTrigger>
+            <SelectContent>
+              {KANBAN_COLUMNS.flatMap(c => c.statuses).map(s => (
+                <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="ghost" size="sm" className="h-8 ml-auto" onClick={clearSelection}>
+            <X className="h-3.5 w-3.5 mr-1" /> Clear
+          </Button>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-0 sm:min-w-[200px] max-w-sm">
@@ -170,6 +213,12 @@ export default function LeadPipeline() {
             ))}
           </SelectContent>
         </Select>
+        {view === "list" && filtered.length > 0 && (
+          <Button variant="outline" size="sm" className="h-9 gap-1.5" onClick={batchMode ? clearSelection : selectAll}>
+            {batchMode ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+            {batchMode ? "Deselect" : "Select All"}
+          </Button>
+        )}
         <div className="flex border rounded-md">
           <Button
             variant={view === "kanban" ? "secondary" : "ghost"}
@@ -189,6 +238,37 @@ export default function LeadPipeline() {
           </Button>
         </div>
       </div>
+
+      {/* Lifecycle Funnel Summary */}
+      {!pipelineQ.isLoading && leads.length > 0 && (() => {
+        const funnelStages = KANBAN_COLUMNS.filter(c => c.id !== "lost");
+        const maxCount = Math.max(...funnelStages.map(s => byColumn[s.id]?.length ?? 0), 1);
+        return (
+          <div className="border rounded-lg p-4 bg-card/50 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <TrendingUp className="h-4 w-4" /> Pipeline Funnel
+            </div>
+            <div className="flex items-end gap-1 h-16">
+              {funnelStages.map((col) => {
+                const count = byColumn[col.id]?.length ?? 0;
+                const pct = Math.max((count / maxCount) * 100, 4);
+                return (
+                  <div key={col.id} className="flex-1 flex flex-col items-center gap-1">
+                    <span className="text-xs font-medium">{count}</span>
+                    <div
+                      className="w-full rounded-t bg-primary/60 transition-all"
+                      style={{ height: `${pct}%`, minHeight: 2 }}
+                    />
+                    <span className="text-[9px] text-muted-foreground truncate w-full text-center">{col.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      <QueryErrorBanner query={pipelineQ} label="lead pipeline" />
 
       {pipelineQ.isLoading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
@@ -242,23 +322,35 @@ export default function LeadPipeline() {
       ) : (
         <div className="space-y-2">
           {filtered.map((lead: any) => (
-            <LeadCard
-              key={lead.id}
-              id={lead.id}
-              name={formatName(lead)}
-              source={sourceLabel(lead)}
-              stage={lead.status ?? "new"}
-              score={scoreFor(lead)}
-              verified={!!lead.enrichmentData}
-              onClick={() => navigate(`/leads/${lead.id}`)}
-              onQuickAction={(action) => {
-                if (action === "Mark contacted") {
-                  updateStatusMut.mutate({ leadId: lead.id, status: "contacted" });
-                } else {
-                  toast.info(`${action} action for ${formatName(lead)}`);
-                }
-              }}
-            />
+            <div key={lead.id} className="flex items-start gap-2">
+              <button
+                className={`mt-3 flex-shrink-0 w-5 h-5 rounded border transition-colors ${
+                  selectedIds.has(lead.id) ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30 hover:border-primary/50'
+                }`}
+                onClick={() => toggleSelect(lead.id)}
+                aria-label={selectedIds.has(lead.id) ? `Deselect ${formatName(lead)}` : `Select ${formatName(lead)}`}
+              >
+                {selectedIds.has(lead.id) && <CheckSquare className="w-full h-full p-0.5" />}
+              </button>
+              <div className="flex-1 min-w-0">
+                <LeadCard
+                  id={lead.id}
+                  name={formatName(lead)}
+                  source={sourceLabel(lead)}
+                  stage={lead.status ?? "new"}
+                  score={scoreFor(lead)}
+                  verified={!!lead.enrichmentData}
+                  onClick={() => navigate(`/leads/${lead.id}`)}
+                  onQuickAction={(action) => {
+                    if (action === "Mark contacted") {
+                      updateStatusMut.mutate({ leadId: lead.id, status: "contacted" });
+                    } else {
+                      toast.info(`${action} action for ${formatName(lead)}`);
+                    }
+                  }}
+                />
+              </div>
+            </div>
           ))}
         </div>
       )}

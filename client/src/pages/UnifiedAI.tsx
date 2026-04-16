@@ -275,7 +275,7 @@ function ChatPanel() {
       )}
       <div className="flex flex-col flex-1 min-w-0">
       {/* Messages area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-4" aria-live="polite" aria-relevant="additions">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <MessageSquare className="w-12 h-12 text-muted-foreground/30 mb-4" />
@@ -488,7 +488,7 @@ function DevPanel() {
   return (
     <div className="flex flex-col h-full font-mono">
       {/* Terminal-style messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-black/20">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-black/20" aria-live="polite" aria-relevant="additions">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Terminal className="w-12 h-12 text-emerald-500/30 mb-4" />
@@ -905,8 +905,8 @@ export default function UnifiedAI() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
-        if (e.key === "1") { e.preventDefault(); setMode("chat"); }
-        else if (e.key === "2") { e.preventDefault(); setMode("dev"); }
+        if (e.key === "1") { e.preventDefault(); setMode("chat"); requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('[aria-label="Chat mode"] textarea')?.focus()); }
+        else if (e.key === "2") { e.preventDefault(); setMode("dev"); requestAnimationFrame(() => document.querySelector<HTMLInputElement>('[aria-label="Dev mode"] input')?.focus()); }
         else if (e.key === "3") { e.preventDefault(); setMode("auto"); }
       }
     };

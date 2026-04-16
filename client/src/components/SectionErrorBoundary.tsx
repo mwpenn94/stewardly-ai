@@ -57,6 +57,20 @@ export class SectionErrorBoundary extends Component<Props, State> {
       error,
       info.componentStack
     );
+    // Report to server for observability (best-effort)
+    try {
+      fetch("/api/trpc/clientErrors.report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ json: {
+          message: `[${this.props.sectionName || "Section"}] ${error?.message?.slice(0, 1800)}`,
+          stack: error?.stack?.slice(0, 5000),
+          componentStack: info?.componentStack?.slice(0, 5000),
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+        }}),
+      }).catch(() => {});
+    } catch { /* ignore */ }
   }
 
   handleRetry = () => {

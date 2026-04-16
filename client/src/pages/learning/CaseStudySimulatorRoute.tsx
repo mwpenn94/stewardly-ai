@@ -143,8 +143,7 @@ export default function CaseStudySimulatorRoute() {
         <p className="text-[11px] text-muted-foreground">
           Case studies are a curated set of scenario drills. To add your own,
           head to{" "}
-          <Link href="/learning/studio">
-            <a className="underline">Content Studio</a>
+          <Link href="/learning/studio" className="underline">Content Studio
           </Link>
           .
         </p>

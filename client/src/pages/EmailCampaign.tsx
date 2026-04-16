@@ -70,6 +70,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SEOHead } from "@/components/SEOHead";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 
 // ─── Types ─────────────────────────────────────────────────────────
 type CampaignStatus = "draft" | "scheduled" | "sending" | "sent" | "paused" | "cancelled";
@@ -123,7 +124,8 @@ function CampaignList({
   onCreate: () => void;
   onEdit: (id: number) => void;
 }) {
-  const { data: campaigns, isLoading } = trpc.emailCampaign.list.useQuery();
+  const campaignsQ = trpc.emailCampaign.list.useQuery();
+  const { data: campaigns, isLoading } = campaignsQ;
   const utils = trpc.useUtils();
   const deleteMut = trpc.emailCampaign.delete.useMutation({
     onSuccess: () => {
@@ -134,6 +136,9 @@ function CampaignList({
   });
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
+  if (campaignsQ.isError) {
+    return <QueryErrorBanner query={campaignsQ} label="campaigns" />;
+  }
   if (isLoading) {
     return (
       <div className="space-y-3">

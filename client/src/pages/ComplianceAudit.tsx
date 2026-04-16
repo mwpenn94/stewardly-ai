@@ -16,7 +16,7 @@
  *   - Export Report button hidden for now (no CSV export proc yet),
  *     with a clarifying tooltip instead of a toast that misleads
  */
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import { FinancialScoreCard } from "@/components/FinancialScoreCard";
 import AppShell from "@/components/AppShell";
@@ -86,6 +86,32 @@ export default function ComplianceAudit() {
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "clean" | "flagged" | "pending" | "reviewed">("all");
+  const [reviewContent, setReviewContent] = useState("");
+  const [reviewType, setReviewType] = useState<"chat_response" | "email" | "report" | "marketing" | "recommendation">("chat_response");
+  const [showReviewForm, setShowReviewForm] = useState(false);
+
+  const utils = trpc.useUtils();
+  const reviewMutation = trpc.compliance.reviewContent.useMutation({
+    onSuccess: () => {
+      utils.compliance.getReviews.invalidate();
+      utils.compliance.getDashboardStats.invalidate();
+      setReviewContent("");
+      setShowReviewForm(false);
+      import("sonner").then(m => m.toast.success("Content submitted for compliance review"));
+    },
+    onError: (e) => import("sonner").then(m => m.toast.error(e.message)),
+  });
+  const regBIMutation = trpc.compliance.generateRegBIDoc.useMutation({
+    onSuccess: (data) => {
+      import("sonner").then(m => m.toast.success("Reg BI document generated"));
+    },
+    onError: (e) => import("sonner").then(m => m.toast.error(e.message)),
+  });
+
+  const handleSubmitReview = useCallback(() => {
+    if (!reviewContent.trim()) return;
+    reviewMutation.mutate({ content: reviewContent, contentType: reviewType });
+  }, [reviewContent, reviewType, reviewMutation]);
 
   const statsQ = trpc.compliance.getDashboardStats.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const reviewsQ = trpc.compliance.getReviews.useQuery(
@@ -126,7 +152,11 @@ export default function ComplianceAudit() {
             </p>
           </div>
         </div>
-        <ExportDataButton
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setShowReviewForm(!showReviewForm)}>
+            <Shield className="h-3.5 w-3.5 mr-1" /> {showReviewForm ? "Hide Form" : "Review Content"}
+          </Button>
+          <ExportDataButton
           data={(filtered ?? []).map((r: any) => ({
             date: r.createdAt ? new Date(r.createdAt).toLocaleString() : "—",
             type: r.contentType ?? "—",
@@ -166,7 +196,48 @@ export default function ComplianceAudit() {
           format="number"
           icon={XCircle}
         />
+        </div>
       </div>
+
+      {/* Submit Content for Review */}
+      {showReviewForm && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <h3 className="text-sm font-medium">Submit Content for Compliance Review</h3>
+            <div className="flex items-center gap-2">
+              <Select value={reviewType} onValueChange={(v: any) => setReviewType(v)}>
+                <SelectTrigger className="w-48 h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="chat_response">Chat Response</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="report">Report</SelectItem>
+                  <SelectItem value="marketing">Marketing</SelectItem>
+                  <SelectItem value="recommendation">Recommendation</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button size="sm" variant="outline" onClick={() => regBIMutation.mutate({ clientProfile: "Current user profile", recommendation: "General portfolio review" })} disabled={regBIMutation.isPending}>
+                {regBIMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
+                Generate Reg BI Doc
+              </Button>
+            </div>
+            <textarea
+              className="w-full min-h-[100px] p-3 text-sm rounded-md border border-border bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Paste content to review for compliance..."
+              value={reviewContent}
+              onChange={(e) => setReviewContent(e.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setShowReviewForm(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleSubmitReview} disabled={!reviewContent.trim() || reviewMutation.isPending}>
+                {reviewMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Shield className="h-3 w-3 mr-1" />}
+                Submit for Review
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-3">

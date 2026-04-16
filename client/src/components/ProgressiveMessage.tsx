@@ -1,6 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import { Streamdown } from "streamdown";
-import { ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Check, BarChart3 } from "lucide-react";
+import { parseChartBlocks } from "./InlineChart";
+
+const InlineChart = lazy(() => import("./InlineChart"));
 
 interface ProgressiveMessageProps {
   content: string;
@@ -32,6 +35,46 @@ function wordCount(text: string): number {
   return text.split(/\s+/).filter(Boolean).length;
 }
 
+/**
+ * Render message content with inline chart support.
+ * Splits content on [CHART:N] placeholders and interleaves
+ * Streamdown markdown with InlineChart components.
+ */
+function RichContent({ text, charts }: { text: string; charts: ReturnType<typeof parseChartBlocks>["charts"] }) {
+  if (charts.length === 0) {
+    return <Streamdown>{text}</Streamdown>;
+  }
+
+  // Split on [CHART:N] placeholders
+  const parts = text.split(/\[CHART:(\d+)\]/);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (i % 2 === 1) {
+          // This is a chart index
+          const chartIdx = parseInt(part, 10);
+          const chartData = charts[chartIdx];
+          if (chartData) {
+            return (
+              <Suspense key={`chart-${i}`} fallback={
+                <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
+                  <BarChart3 className="w-4 h-4 animate-pulse" /> Loading chart...
+                </div>
+              }>
+                <InlineChart data={chartData} className="my-3" />
+              </Suspense>
+            );
+          }
+          return null;
+        }
+        // Regular text part
+        if (!part.trim()) return null;
+        return <Streamdown key={`text-${i}`}>{part}</Streamdown>;
+      })}
+    </>
+  );
+}
+
 export function ProgressiveMessage({
   content,
   threshold = 300,
@@ -43,6 +86,9 @@ export function ProgressiveMessage({
   const words = useMemo(() => wordCount(content), [content]);
   const isLong = words > threshold;
   const { summary } = useMemo(() => extractSummary(content), [content]);
+
+  // Parse chart blocks from content
+  const { text: cleanedText, charts } = useMemo(() => parseChartBlocks(content), [content]);
 
   const shouldCollapse = isLong && !isLatest && !expanded;
 
@@ -58,6 +104,11 @@ export function ProgressiveMessage({
         <div>
           <div className="prose-chat text-sm">
             <p className="text-foreground/90 leading-relaxed">{summary}</p>
+            {charts.length > 0 && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-accent/70 ml-1">
+                <BarChart3 className="w-3 h-3" /> {charts.length} chart{charts.length > 1 ? "s" : ""}
+              </span>
+            )}
           </div>
           <button type="button"
             onClick={() => setExpanded(true)}
@@ -70,7 +121,7 @@ export function ProgressiveMessage({
       ) : (
         <div>
           <div className="prose-chat text-sm">
-            <Streamdown>{content}</Streamdown>
+            <RichContent text={cleanedText} charts={charts} />
           </div>
           {isLong && !isLatest && (
             <button type="button"

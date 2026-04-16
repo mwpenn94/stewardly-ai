@@ -225,8 +225,7 @@ export default function LearningFlashcardStudy() {
               <p className="font-medium">No flashcards yet</p>
               <p className="text-sm text-muted-foreground">
                 Admins can import flashcards from{" "}
-                <Link href="/learning/studio">
-                  <a className="underline">Content Studio</a>
+                <Link href="/learning/studio" className="underline">Content Studio
                 </Link>
                 .
               </p>

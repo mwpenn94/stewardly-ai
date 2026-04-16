@@ -200,8 +200,7 @@ export default function LearningSearch() {
               </p>
               <p className="text-xs text-muted-foreground">
                 Admins can import more content from{" "}
-                <Link href="/learning/studio">
-                  <a className="underline">Content Studio</a>
+                <Link href="/learning/studio" className="underline">Content Studio
                 </Link>
                 .
               </p>

@@ -43,9 +43,22 @@ class ErrorBoundary extends Component<Props, State> {
     } catch {
       /* ignore — non-critical */
     }
-    // Log to console for devs + any observability pipeline. In prod
-    // this would route through the error-tracking client.
+    // Log to console for devs + any observability pipeline.
     console.error("[ErrorBoundary] caught error:", error, info);
+    // Report to server for observability (best-effort, fire-and-forget)
+    try {
+      fetch("/api/trpc/clientErrors.report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ json: {
+          message: error?.message?.slice(0, 2000) ?? "Unknown error",
+          stack: error?.stack?.slice(0, 5000),
+          componentStack: info?.componentStack?.slice(0, 5000),
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+        }}),
+      }).catch(() => {/* ignore — best-effort */});
+    } catch { /* ignore */ }
   }
 
   componentDidUpdate(_: Props, prevState: State) {

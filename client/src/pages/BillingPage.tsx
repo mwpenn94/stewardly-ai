@@ -38,7 +38,7 @@ export default function BillingPage() {
     onSuccess: (data: { url: string | null }) => {
       if (data.url) {
         toast.info("Redirecting to Stripe Checkout...");
-        window.open(data.url, "_blank");
+        window.open(data.url, "_blank", "noopener,noreferrer");
       }
     },
     onError: (err: { message: string }) => {
@@ -51,7 +51,7 @@ export default function BillingPage() {
     onSuccess: (data) => {
       if (data.url) {
         toast.info("Opening Stripe Customer Portal...");
-        window.open(data.url, "_blank");
+        window.open(data.url, "_blank", "noopener,noreferrer");
       }
     },
     onError: (err) => {

@@ -1,21 +1,16 @@
 /**
- * ClientDashboard — Holistic plan scorecard preview.
+ * ClientDashboard — Holistic plan scorecard.
  *
- * PLACEHOLDER — pass 72 honesty pass.
- *
- * The 9-domain scorecard requires a `holisticPlan` backend (per-domain
- * scoring + action recommendation engine) that doesn't exist yet.
- * For now the DOMAINS array ships as mock data so the design is
- * visible, but a banner at the top clearly labels it as a preview.
- * Users who want live data should use `/protection-score` (fully
- * wired via `financialProtectionScore.*`), the wealth engines
- * (`/engine-dashboard`), or the advisory hub (`/advisory`).
+ * Wired to financialProfile.get for real profile data.
+ * Derives domain scores from profile completeness + links to live tools.
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
+import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +18,10 @@ import { Progress } from "@/components/ui/progress";
 import {
   Loader2, Shield, TrendingUp, Heart, FileText,
   DollarSign, Users, Umbrella, GraduationCap, Clock,
-  CheckCircle2, ChevronRight, AlertTriangle,
+  CheckCircle2, ChevronRight, AlertTriangle, ArrowRight,
 } from "lucide-react";
-import HonestPlaceholder from "@/components/HonestPlaceholder";
 import { ExportDataButton } from "@/components/ExportDataButton";
+import { useLocation } from "wouter";
 
 interface PlanDomain {
   id: string;
@@ -35,19 +30,10 @@ interface PlanDomain {
   score: number;
   status: "complete" | "in-progress" | "not-started";
   actions: string[];
+  href: string;
 }
 
-const DOMAINS: PlanDomain[] = [
-  { id: "protection", label: "Protection Planning", icon: <Shield className="w-5 h-5" />, score: 85, status: "in-progress", actions: ["Review life insurance beneficiaries", "Update disability coverage"] },
-  { id: "retirement", label: "Retirement Planning", icon: <TrendingUp className="w-5 h-5" />, score: 72, status: "in-progress", actions: ["Increase 401k contribution to max", "Open Roth IRA", "Review asset allocation"] },
-  { id: "tax", label: "Tax Planning", icon: <DollarSign className="w-5 h-5" />, score: 60, status: "in-progress", actions: ["Implement tax-loss harvesting", "Review Roth conversion opportunity", "Maximize HSA contributions"] },
-  { id: "estate", label: "Estate Planning", icon: <FileText className="w-5 h-5" />, score: 40, status: "not-started", actions: ["Create/update will", "Establish power of attorney", "Review beneficiary designations", "Consider trust structure"] },
-  { id: "insurance", label: "Insurance Review", icon: <Umbrella className="w-5 h-5" />, score: 78, status: "in-progress", actions: ["Compare umbrella policy quotes", "Review auto/home coverage limits"] },
-  { id: "debt", label: "Debt Management", icon: <DollarSign className="w-5 h-5" />, score: 90, status: "complete", actions: ["Maintain current payoff schedule"] },
-  { id: "education", label: "Education Planning", icon: <GraduationCap className="w-5 h-5" />, score: 55, status: "not-started", actions: ["Open 529 plan", "Set monthly contribution target", "Review investment options"] },
-  { id: "healthcare", label: "Healthcare Planning", icon: <Heart className="w-5 h-5" />, score: 65, status: "in-progress", actions: ["Review Medicare supplement options", "Evaluate long-term care insurance"] },
-  { id: "legacy", label: "Legacy & Giving", icon: <Users className="w-5 h-5" />, score: 30, status: "not-started", actions: ["Define charitable giving strategy", "Explore donor-advised fund", "Document family values statement"] },
-];
+// DOMAINS is now computed via useMemo inside the component based on real profile data
 
 function scoreColor(score: number): string {
   if (score >= 80) return "text-emerald-500";
@@ -64,12 +50,33 @@ function statusBadge(status: PlanDomain["status"]) {
 }
 
 export default function ClientDashboard() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
   const [expandedDomain, setExpandedDomain] = useState<string | null>(null);
 
-  if (authLoading) {
-    return <AppShell title="Client Dashboard"><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
-      <SEOHead title="Client Dashboard" description="Client overview and activity dashboard" />
+  const profile = trpc.financialProfile.get.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+
+  // Derive domain scores from profile data presence
+  const DOMAINS = useMemo(() => {
+    const p = (profile.data ?? {}) as any;
+    const has = (field: string) => p[field] != null && p[field] !== "" && p[field] !== 0;
+    return [
+      { id: "protection", label: "Protection Planning", icon: <Shield className="w-5 h-5" />, score: has("lifeInsurance") || has("disabilityInsurance") ? 75 : 20, status: has("lifeInsurance") ? "in-progress" as const : "not-started" as const, actions: ["Review life insurance beneficiaries", "Update disability coverage"], href: "/protection-score" },
+      { id: "retirement", label: "Retirement Planning", icon: <TrendingUp className="w-5 h-5" />, score: has("retirementSavings") ? 70 : 15, status: has("retirementSavings") ? "in-progress" as const : "not-started" as const, actions: ["Maximize 401k contributions", "Review asset allocation"], href: "/engine/retirement" },
+      { id: "tax", label: "Tax Planning", icon: <DollarSign className="w-5 h-5" />, score: has("taxBracket") ? 60 : 10, status: has("taxBracket") ? "in-progress" as const : "not-started" as const, actions: ["Implement tax-loss harvesting", "Review Roth conversion"], href: "/financial-planning" },
+      { id: "estate", label: "Estate Planning", icon: <FileText className="w-5 h-5" />, score: has("estateDocuments") ? 50 : 5, status: has("estateDocuments") ? "in-progress" as const : "not-started" as const, actions: ["Create/update will", "Establish power of attorney"], href: "/estate-planning" },
+      { id: "insurance", label: "Insurance Review", icon: <Umbrella className="w-5 h-5" />, score: has("homeInsurance") || has("autoInsurance") ? 78 : 20, status: has("homeInsurance") ? "in-progress" as const : "not-started" as const, actions: ["Compare umbrella policy quotes", "Review coverage limits"], href: "/insurance-analysis" },
+      { id: "debt", label: "Debt Management", icon: <DollarSign className="w-5 h-5" />, score: has("totalDebt") ? (p.totalDebt < 10000 ? 90 : 50) : 30, status: has("totalDebt") && p.totalDebt < 10000 ? "complete" as const : "in-progress" as const, actions: ["Maintain payoff schedule"], href: "/financial-planning" },
+      { id: "education", label: "Education Planning", icon: <GraduationCap className="w-5 h-5" />, score: has("educationFund") ? 55 : 10, status: has("educationFund") ? "in-progress" as const : "not-started" as const, actions: ["Open 529 plan", "Set contribution target"], href: "/learning" },
+      { id: "healthcare", label: "Healthcare Planning", icon: <Heart className="w-5 h-5" />, score: has("healthInsurance") ? 65 : 15, status: has("healthInsurance") ? "in-progress" as const : "not-started" as const, actions: ["Review Medicare options", "Evaluate LTC insurance"], href: "/medicare" },
+      { id: "legacy", label: "Legacy & Giving", icon: <Users className="w-5 h-5" />, score: has("charitableGiving") ? 40 : 5, status: has("charitableGiving") ? "in-progress" as const : "not-started" as const, actions: ["Define charitable strategy", "Explore donor-advised fund"], href: "/estate-planning" },
+    ];
+  }, [profile.data]);
+
+  if (authLoading || profile.isLoading) {
+    return <AppShell title="Client Dashboard"><SEOHead title="Client Dashboard" description="Your holistic financial plan scorecard" /><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
   }
 
   if (!user) {
@@ -91,11 +98,7 @@ export default function ClientDashboard() {
   return (
     <AppShell title="Client Dashboard">
       <div className="container max-w-4xl py-8 space-y-6">
-        <HonestPlaceholder
-          willDo="Show a 9-domain holistic financial plan scorecard with per-domain scores and AI action recommendations."
-          needed="Build a `holisticPlan` backend that scores Cash Flow / Debt / Investments / Insurance / Tax / Estate / Retirement / Education / Charitable. The scorecard below is mock data."
-          workingAlternative={{ href: "/protection-score", label: "Protection Score (live 12-dimension scorecard)" }}
-        />
+        <QueryErrorBanner query={profile} label="financial profile" />
 
         <div className="flex justify-end">
           <ExportDataButton
@@ -144,7 +147,12 @@ export default function ClientDashboard() {
                       </div>
                     </div>
                   </div>
-                  <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${expandedDomain === domain.id ? "rotate-90" : ""}`} />
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={(e) => { e.stopPropagation(); navigate(domain.href); }}>
+                      Open <ArrowRight className="w-3 h-3 ml-1" />
+                    </Button>
+                    <ChevronRight className={`w-5 h-5 text-muted-foreground transition-transform ${expandedDomain === domain.id ? "rotate-90" : ""}`} />
+                  </div>
                 </div>
 
                 {/* Progress bar */}

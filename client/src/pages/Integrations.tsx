@@ -519,7 +519,7 @@ function SnapTradeConnectDialog({
   const getPortalUrl = trpc.integrations.snapTradeGetPortalUrl.useMutation({
     onSuccess: (data) => {
       // Open Connection Portal in new window
-      window.open(data.redirectUrl, "_blank", "width=500,height=700");
+      window.open(data.redirectUrl, "_blank", "noopener,noreferrer,width=500,height=700");
       onOpenChange(false);
       toast.success("Connection Portal opened — complete the brokerage connection in the new window.");
     },
@@ -629,7 +629,7 @@ function SnapTradeBrokerageSection() {
   });
   const getPortalUrl = trpc.integrations.snapTradeGetPortalUrl.useMutation({
     onSuccess: (data) => {
-      window.open(data.redirectUrl, "_blank", "width=500,height=700");
+      window.open(data.redirectUrl, "_blank", "noopener,noreferrer,width=500,height=700");
       toast.success("Connection Portal opened — complete the brokerage connection in the new window.");
       setPortalLoading(false);
     },
