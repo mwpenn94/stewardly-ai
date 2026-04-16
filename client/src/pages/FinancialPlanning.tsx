@@ -18,6 +18,7 @@ import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
 import type { FinancialProfile } from "@/stores/financialProfile";
 import { SEOHead } from "@/components/SEOHead";
+import { useDisclosureGate } from "@/components/DisclosureSection";
 
 // ─── Monte Carlo Simulation ────────────────────────────────────────────
 function runMonteCarlo(params: {
@@ -102,6 +103,7 @@ export default function FinancialPlanning() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("retirement");
+  const showRoth = useDisclosureGate(3); // Roth Conversion is an advanced feature
 
   return (
     <AppShell title="Financial Planning">
@@ -123,10 +125,10 @@ export default function FinancialPlanning() {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="retirement" className="gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> Retirement</TabsTrigger>
             <TabsTrigger value="social-security" className="gap-1.5"><Shield className="w-3.5 h-3.5" /> Social Security</TabsTrigger>
-            <TabsTrigger value="roth" className="gap-1.5"><Percent className="w-3.5 h-3.5" /> Roth Conversion</TabsTrigger>
+            {showRoth && <TabsTrigger value="roth" className="gap-1.5"><Percent className="w-3.5 h-3.5" /> Roth Conversion</TabsTrigger>}
             <TabsTrigger value="goals" className="gap-1.5"><Target className="w-3.5 h-3.5" /> Goals</TabsTrigger>
           </TabsList>
 

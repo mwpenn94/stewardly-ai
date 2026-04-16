@@ -12,6 +12,7 @@ import {
   RefreshCw, Loader2, DollarSign, Activity,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { DisclosureSection } from "@/components/DisclosureSection";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { useLocation } from "wouter";
 
@@ -182,7 +183,8 @@ export default function MarketData() {
           </div>
         </div>
 
-        {/* DataBank Global Indicators */}
+        {/* DataBank Global Indicators — Level 2+ */}
+        <DisclosureSection minLevel={2} label="Global Economic Indicators" showTeaser>
         <div>
           <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Global Economic Indicators (World Bank DataBank)</h2>
           <Card>
@@ -211,6 +213,7 @@ export default function MarketData() {
             </CardContent>
           </Card>
         </div>
+        </DisclosureSection>
 
         <p className="text-xs text-muted-foreground text-center">
           Market data via Yahoo Finance. Global indicators via World Bank DataBank. Prices may be delayed. Not investment advice.

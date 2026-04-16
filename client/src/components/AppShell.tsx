@@ -23,6 +23,7 @@ import { recordPageVisit } from "@/hooks/useRecentPages";
 // imports only what it actually renders (mobile header, bottom tab bar,
 // skip-link, persona sidebar, bottom-banner).
 import { Menu, Keyboard } from "lucide-react";
+import { MarketTicker } from "@/components/MarketTicker";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -238,7 +239,7 @@ export default function AppShell({ children, title }: AppShellProps) {
         */}
         <header
           role="banner"
-          className="lg:hidden flex items-center h-12 px-3 shrink-0 border-b border-border/50 bg-card/30 backdrop-blur-sm"
+          className="lg:hidden flex items-center h-14 px-3 shrink-0 border-b border-border/50 bg-card/30 backdrop-blur-sm safe-area-top"
           aria-label={title || "Page header"}
         >
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
@@ -246,6 +247,9 @@ export default function AppShell({ children, title }: AppShellProps) {
           </Button>
           {title && <span className="text-sm font-medium truncate ml-2">{title}</span>}
         </header>
+
+        {/* Market ticker — visible at disclosure level 2+ */}
+        <MarketTicker />
 
         {/*
           Build Loop Pass 14 (G35 + G19): <main> landmark with
@@ -261,7 +265,7 @@ export default function AppShell({ children, title }: AppShellProps) {
         */}
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto"
+          className="flex-1 overflow-y-auto overflow-x-hidden"
           tabIndex={-1}
           aria-label="Main content"
           aria-busy={globalBusy ? true : undefined}

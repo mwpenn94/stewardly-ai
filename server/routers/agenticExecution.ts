@@ -772,6 +772,57 @@ const performanceRouter = router({
     }),
 });
 
+// ─── Task Queue Router ─────────────────────────────────────────────────────
+import {
+  enqueueTask, getTaskState, getUserTasks, cancelTask, getQueueStats,
+} from "../services/taskQueue";
+
+const taskQueueRouter = router({
+  /** Enqueue a new async task */
+  enqueue: protectedProcedure
+    .input(z.object({
+      type: z.string().min(1),
+      payload: z.record(z.unknown()).default({}),
+      priority: z.enum(["low", "normal", "high", "critical"]).default("normal"),
+    }))
+    .mutation(({ ctx, input }) => {
+      const taskId = enqueueTask({
+        type: input.type,
+        userId: ctx.user.id,
+        payload: input.payload,
+        priority: input.priority,
+      });
+      return { taskId };
+    }),
+
+  /** Get task status */
+  status: protectedProcedure
+    .input(z.object({ taskId: z.string() }))
+    .query(({ input }) => {
+      return getTaskState(input.taskId) ?? null;
+    }),
+
+  /** List user's tasks */
+  myTasks: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+    .query(({ ctx, input }) => {
+      return getUserTasks(ctx.user.id, input?.limit ?? 20);
+    }),
+
+  /** Cancel a task */
+  cancel: protectedProcedure
+    .input(z.object({ taskId: z.string() }))
+    .mutation(({ ctx, input }) => {
+      const success = cancelTask(input.taskId, ctx.user.id);
+      return { success };
+    }),
+
+  /** Queue stats */
+  stats: protectedProcedure.query(() => {
+    return getQueueStats();
+  }),
+});
+
 // ─── Combined Agentic Execution Router ─────────────────────────────────────
 export const agenticRouter = router({
   gate: gateRouter,
@@ -783,4 +834,5 @@ export const agenticRouter = router({
   premiumFinance: premiumFinanceRouter,
   carrier: carrierRouter,
   performance: performanceRouter,
+  taskQueue: taskQueueRouter,
 });

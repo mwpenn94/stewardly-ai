@@ -156,6 +156,7 @@ export default function AgentManager() {
             <TabsList className="mb-4">
               <TabsTrigger value="agents" className="gap-1"><Bot className="h-3 w-3" /> My Agents</TabsTrigger>
               <TabsTrigger value="templates" className="gap-1"><Sparkles className="h-3 w-3" /> Templates</TabsTrigger>
+              <TabsTrigger value="tasks" className="gap-1"><Activity className="h-3 w-3" /> Task Queue</TabsTrigger>
             </TabsList>
 
             <TabsContent value="agents">
@@ -204,6 +205,10 @@ export default function AgentManager() {
                   </Card>
                 ))}
               </div>
+            </TabsContent>
+
+            <TabsContent value="tasks">
+              <TaskQueuePanel />
             </TabsContent>
           </Tabs>
         </div>
@@ -751,6 +756,148 @@ function RunDetailView({ agentId, runActionId, onBack }: {
           </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Task Queue Panel ──────────────────────────────────────────────────────
+function TaskQueuePanel() {
+  const myTasks = trpc.agentic.taskQueue.myTasks.useQuery();
+  const stats = trpc.agentic.taskQueue.stats.useQuery();
+  const enqueueMut = trpc.agentic.taskQueue.enqueue.useMutation({
+    onSuccess: () => { myTasks.refetch(); stats.refetch(); toast.success("Task enqueued"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const cancelMut = trpc.agentic.taskQueue.cancel.useMutation({
+    onSuccess: () => { myTasks.refetch(); stats.refetch(); toast.success("Task cancelled"); },
+  });
+
+  const QUICK_TASKS = [
+    { type: "data_analysis", label: "Data Analysis", icon: BarChart3, desc: "Analyze connected data sources" },
+    { type: "report_generation", label: "Generate Report", icon: FileText, desc: "Create a comprehensive financial report" },
+    { type: "crm_sync", label: "CRM Sync", icon: RefreshCw, desc: "Sync contacts with connected CRM" },
+    { type: "portfolio_rebalance", label: "Portfolio Rebalance", icon: Target, desc: "Analyze and suggest rebalancing trades" },
+  ];
+
+  const statusColor = (s: string) => {
+    switch (s) {
+      case "completed": return "text-green-500";
+      case "running": return "text-blue-500";
+      case "failed": return "text-rose-500";
+      case "cancelled": return "text-amber-500";
+      default: return "text-muted-foreground";
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Stats bar */}
+      {stats.data && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { label: "Pending", value: stats.data.pending, color: "text-amber-500" },
+            { label: "Running", value: stats.data.running, color: "text-blue-500" },
+            { label: "Completed", value: stats.data.completed, color: "text-green-500" },
+            { label: "Failed", value: stats.data.failed, color: "text-rose-500" },
+            { label: "Concurrency", value: `${stats.data.globalConcurrency}/${stats.data.maxGlobalConcurrency}`, color: "text-muted-foreground" },
+          ].map((s) => (
+            <Card key={s.label} className="p-3">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</p>
+              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Quick task buttons */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Quick Tasks</CardTitle>
+          <CardDescription className="text-xs">Launch common background tasks</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {QUICK_TASKS.map((t) => (
+              <Button
+                key={t.type}
+                variant="outline"
+                className="h-auto py-3 flex-col gap-1.5"
+                disabled={enqueueMut.isPending}
+                onClick={() => enqueueMut.mutate({ type: t.type, payload: {} })}
+              >
+                <t.icon className="h-5 w-5 text-primary" />
+                <span className="text-xs font-medium">{t.label}</span>
+                <span className="text-[10px] text-muted-foreground">{t.desc}</span>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Task list */}
+      <Card>
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-sm font-medium">My Tasks</CardTitle>
+            <CardDescription className="text-xs">Background task history and progress</CardDescription>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => myTasks.refetch()}>
+            <RefreshCw className={`h-3.5 w-3.5 ${myTasks.isFetching ? "animate-spin" : ""}`} />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {myTasks.isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : (myTasks.data || []).length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Activity className="h-10 w-10 mx-auto mb-2 opacity-40" />
+              <p className="text-sm">No tasks yet. Launch a quick task above.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {(myTasks.data || []).map((task: any) => (
+                <div key={task.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-muted/20">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium">{task.type.replace(/_/g, " ")}</span>
+                      <Badge variant="outline" className={`text-[10px] ${statusColor(task.status)}`}>
+                        {task.status}
+                      </Badge>
+                      {task.priority !== "normal" && (
+                        <Badge variant="secondary" className="text-[10px]">{task.priority}</Badge>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{task.progressMessage}</p>
+                    {task.status === "running" && (
+                      <div className="mt-1.5 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all duration-500"
+                          style={{ width: `${task.progress}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(task.createdAt).toLocaleTimeString()}
+                    </span>
+                    {(task.status === "pending" || task.status === "running") && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => cancelMut.mutate({ taskId: task.id })}
+                      >
+                        <Square className="h-3 w-3 text-rose-500" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

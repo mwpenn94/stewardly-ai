@@ -8,7 +8,13 @@ import superjson from "superjson";
 import { toast } from "sonner";
 import App from "./App";
 import { DisclosureProvider } from "@/contexts/DisclosureContext";
+import { initErrorTracking } from "@/lib/errorTracking";
+import { initPerformanceMonitor } from "@/lib/performanceMonitor";
 import "./index.css";
+
+// Initialize global error tracking & performance monitoring
+initErrorTracking();
+initPerformanceMonitor();
 
 /** Detect transient "server restarting" errors where the HTML fallback is returned instead of JSON */
 const isTransientServerRestart = (error: unknown): boolean => {

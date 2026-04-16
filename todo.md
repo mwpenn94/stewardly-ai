@@ -4840,3 +4840,42 @@
 ### Accessibility Improvements
 - [x] Added aria-current to NavBtn in PersonaSidebar5
 - [x] Keyboard navigation improvements across sidebar
+
+## Pass 58 — Mobile, Email Delivery, Performance Monitoring, CRM Verification
+
+### Mobile Improvements
+- [x] Mobile sidebar larger touch targets (44px), quick-access section
+- [x] Mobile header improvements — larger menu button, safe-area-top for iPhone notch
+- [x] Overflow-x-hidden on main content area to prevent horizontal scroll
+
+### Progressive Disclosure Per-Surface
+- [x] DisclosureSection reusable component for per-surface progressive disclosure
+- [x] Integrated into FinancialPlanning (Roth Conversion tab gated at level 3)
+- [x] Integrated into MarketData (DataBank section gated at level 2)
+- [x] Integrated into Integrations (API Keys section gated at level 3)
+
+### Market Ticker
+- [x] MarketTicker component with live data (SPY, QQQ, DIA, IWM, GLD, TLT)
+- [x] Integrated into AppShell between header and main content
+
+### Error Tracking & Performance
+- [x] Global error tracking service with backend reporting (errorTracking.ts)
+- [x] system.logClientErrors tRPC procedure for receiving client error reports
+- [x] Web Vitals performance monitor (LCP, FID, CLS, INP, TTFB)
+- [x] RetryableQuery component for graceful error recovery
+
+### Email Delivery
+- [x] Multi-provider email delivery service (Resend free tier + in-app fallback)
+- [x] Wired into sendCampaign function with automatic failover
+- [x] Rate limiting per provider (100/day Resend, unlimited in-app)
+
+### Task Queue
+- [x] Async task queue service for agent background tasks
+- [x] Task Queue panel in AgentManager with quick-task buttons
+
+### CRM Verification
+- [x] GHL client verified (325 lines, v1 Bearer + v2 OAuth2, HMAC webhook)
+- [x] Wealthbox client verified (79 lines, REST API)
+- [x] Redtail client verified (61 lines, REST API)
+- [x] SMS-iT adapter verified (60 lines, TCPA compliance)
+- [x] 40 new CRM/integration tests passing

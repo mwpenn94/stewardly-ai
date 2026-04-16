@@ -183,9 +183,11 @@ interface SidebarInnerProps {
   onSearch: () => void;
   conversations: Conversation[];
   onNavigate?: () => void;
+  /** True when rendered inside the mobile Sheet drawer */
+  isMobile?: boolean;
 }
 
-function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conversations, onNavigate }: SidebarInnerProps) {
+function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conversations, onNavigate, isMobile = false }: SidebarInnerProps) {
   const [location, navigate] = useLocation();
   const [showConvos, setShowConvos] = useState(true);
   // Pass 44 (C2 Mobile Stability): collapsible layer sections.
@@ -246,7 +248,8 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         onClick={() => { navigate(item.path); onNavigate?.(); }}
         aria-current={active ? "page" : undefined}
         aria-label={item.label}
-        className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg cursor-pointer transition-colors text-[13px] leading-tight focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none
+        className={`w-full flex items-center gap-2.5 px-2.5 rounded-lg cursor-pointer transition-colors leading-tight focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none
+          ${isMobile ? "py-[10px] text-[14px] min-h-[44px]" : "py-[7px] text-[13px]"}
           ${active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-card/40"}
           ${collapsed ? "justify-center px-1.5" : ""}`}
         title={collapsed ? item.label : undefined}
@@ -401,7 +404,7 @@ export default function PersonaSidebar5({
         <Sheet open={mobileOpen} onOpenChange={onMobileChange}>
           <SheetContent side="left" className="w-[280px] p-0">
             <VisuallyHidden asChild><SheetTitle>Navigation</SheetTitle></VisuallyHidden>
-            <SidebarInner {...inner} collapsed={false} onNavigate={() => onMobileChange(false)} />
+            <SidebarInner {...inner} collapsed={false} onNavigate={() => onMobileChange(false)} isMobile />
           </SheetContent>
         </Sheet>
       )}

@@ -743,7 +743,24 @@ body.color-blind-mode [role="button"][aria-disabled="true"] {
   animation: mic-pulse 1.5s ease-in-out infinite;
 }
 
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker-scroll 30s linear infinite;
+  will-change: transform;
+}
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+
 /* ═══ MOBILE SAFE AREAS ═══ */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .safe-bottom,
   .safe-area-bottom {

@@ -20,6 +20,7 @@ import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { DisclosureSection } from "@/components/DisclosureSection";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 type Provider = {
@@ -1486,7 +1487,8 @@ export default function Integrations() {
         <SnapTradeBrokerageSection />
       </SectionErrorBoundary>
 
-      {/* Premium Finance Rates / SOFR Dashboard */}
+      {/* Premium Finance Rates / SOFR Dashboard — Level 3+ */}
+      <DisclosureSection minLevel={3} label="Premium Finance Rates / SOFR Dashboard" showTeaser>
       <SectionErrorBoundary
         sectionName="Premium Finance Rates"
         onRetry={() => {
@@ -1496,8 +1498,10 @@ export default function Integrations() {
       >
         <SOFRDashboard />
       </SectionErrorBoundary>
+      </DisclosureSection>
 
-      {/* CRM Sync Status Panel */}
+      {/* CRM Sync Status Panel — Level 3+ */}
+      <DisclosureSection minLevel={3} label="CRM Sync Status" showTeaser>
       <SectionErrorBoundary
         sectionName="CRM Sync"
         onRetry={() => {
@@ -1507,6 +1511,7 @@ export default function Integrations() {
       >
         <CRMSyncPanel />
       </SectionErrorBoundary>
+      </DisclosureSection>
 
       {/* My Connections — Sync History */}
       {connectedCount > 0 && (

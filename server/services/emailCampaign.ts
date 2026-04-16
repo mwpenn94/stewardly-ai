@@ -9,6 +9,7 @@ import { emailCampaigns, emailSends, users } from "../../drizzle/schema";
 import { eq, and, sql, count, inArray, like } from "drizzle-orm";
 import { contextualLLM } from "../shared/stewardlyWiring";
 import { sendNotification } from "./websocketNotifications";
+import { sendEmail } from "./email/emailDelivery";
 
 // ─── Template Engine ─────────────────────────────────────────────────────
 interface TemplateVars {
@@ -233,7 +234,17 @@ export async function sendCampaign(campaignId: number, userId: number) {
         recipientEmail: recipient.recipientEmail,
       });
 
-      // Deliver as in-app notification (no external email)
+      // Try email delivery first, fall back to in-app notification
+      const deliveryResult = await sendEmail({
+        to: recipient.recipientEmail,
+        subject: campaign.subject,
+        html: personalizedHtml,
+        text: htmlToPlainText(personalizedHtml),
+        tags: ["campaign", campaign.name],
+        metadata: { campaignId: String(campaignId) },
+      });
+
+      // Also send in-app notification as a backup
       try {
         sendNotification(recipient.recipientEmail, {
           type: "system",
@@ -243,7 +254,7 @@ export async function sendCampaign(campaignId: number, userId: number) {
           metadata: { source: "emailCampaign", campaignId, campaignName: campaign.name },
         });
       } catch { /* in-app delivery best-effort */ }
-      const sent = true; // in-app delivery is fire-and-forget
+      const sent = deliveryResult.success;
 
       if (sent) {
         await db.update(emailSends)
