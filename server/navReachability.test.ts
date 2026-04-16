@@ -129,6 +129,7 @@ const EXEMPT_ROUTES = new Set<string>([
   "/income-projection",
   "/client-onboarding",
   // Wrappers / drawers
+  "/ai",
   "/ai-settings",
   "/suitability",
   "/changelog",

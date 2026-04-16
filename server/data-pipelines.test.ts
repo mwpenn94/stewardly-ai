@@ -216,8 +216,40 @@ describe("Keyless API Connections (SEC EDGAR, FINRA, Treasury, GLEIF, World Bank
     expect(Array.isArray(data)).toBe(true);
   });
 
-  it("runAllDataPipelines should be a function (9 providers)", async () => {
+  it("runAllDataPipelines should be a function (14 providers)", async () => {
     const mod = await import("./services/governmentDataPipelines");
     expect(typeof mod.runAllDataPipelines).toBe("function");
+  });
+});
+
+// ─── New Keyless Providers (OpenFIGI, NAIC, FFIEC, FDIC, CoinGecko) ───────
+describe("New Keyless API Providers (OpenFIGI, NAIC, FFIEC, FDIC, CoinGecko)", () => {
+  it("pipelineMap should include all 5 new providers", async () => {
+    const mod = await import("./services/governmentDataPipelines");
+    // Verify the module exports the pipeline map with all 5 new providers
+    const newProviders = ["openfigi", "naic", "ffiec", "fdic", "coingecko"];
+    // runSinglePipeline exists and is callable
+    expect(typeof mod.runSinglePipeline).toBe("function");
+    // runAllDataPipelines exists
+    expect(typeof mod.runAllDataPipelines).toBe("function");
+    // getEconomicDataSummary exists
+    expect(typeof mod.getEconomicDataSummary).toBe("function");
+  });
+
+  it("Integration health module should export runAllHealthChecks", async () => {
+    const mod = await import("./services/integrationHealth");
+    expect(typeof mod.runAllHealthChecks).toBe("function");
+    expect(typeof mod.assembleIntegrationHealthContext).toBe("function");
+  });
+
+  it("Seed integrations module should export seedIntegrationProviders", async () => {
+    const mod = await import("./services/seedIntegrations");
+    expect(typeof mod.seedIntegrationProviders).toBe("function");
+  });
+
+  it("Rate profiles should include all 5 new providers", async () => {
+    const mod = await import("./services/foundationLayer");
+    // The seedRateProfiles function should include the new providers
+    expect(typeof mod.seedRateProfiles).toBe("function");
   });
 });

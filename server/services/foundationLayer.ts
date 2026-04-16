@@ -549,6 +549,13 @@ export async function seedRateProfiles(): Promise<number> {
     { provider: "treasury-fiscal", domain: "api.fiscaldata.treasury.gov", currentRpm: 30, staticMaximum: 60, dailyBudget: 10000, isGovernment: true, notes: "No rate limits; free public API" },
     { provider: "gleif", domain: "api.gleif.org", currentRpm: 30, staticMaximum: 60, dailyBudget: 5000, isGovernment: false, notes: "60 req/min; free public API" },
     { provider: "world-bank", domain: "api.worldbank.org", currentRpm: 30, staticMaximum: 60, dailyBudget: 10000, isGovernment: false, notes: "No rate limits; free public API" },
+    { provider: "openfigi", domain: "api.openfigi.com", currentRpm: 25, staticMaximum: 250, dailyBudget: 5000, isGovernment: false, notes: "25 req/min without key, 250 with free key" },
+    { provider: "naic", domain: "content.naic.org", currentRpm: 10, staticMaximum: 30, dailyBudget: 1000, isGovernment: false, notes: "Public website; be respectful with scraping" },
+    { provider: "ffiec", domain: "ffiec.cfpb.gov", currentRpm: 30, staticMaximum: 60, dailyBudget: 5000, isGovernment: true, notes: "Free public API; no documented rate limits" },
+    { provider: "fdic", domain: "banks.data.fdic.gov", currentRpm: 30, staticMaximum: 60, dailyBudget: 10000, isGovernment: true, notes: "Free public API; no documented rate limits" },
+    { provider: "coingecko", domain: "api.coingecko.com", currentRpm: 10, staticMaximum: 30, dailyBudget: 5000, isGovernment: false, notes: "10-30 req/min free tier; no key required" },
+    { provider: "imf", domain: "www.imf.org", currentRpm: 10, staticMaximum: 60, dailyBudget: 10000, isGovernment: true, notes: "No key required; public API; WEO data updates quarterly" },
+    { provider: "exchangerate-api", domain: "open.er-api.com", currentRpm: 30, staticMaximum: 60, dailyBudget: 1500, isGovernment: false, notes: "Free open endpoint; 1500 req/month; no key required" },
   ];
 
   let seeded = 0;
@@ -588,6 +595,22 @@ export async function seedFreshnessRegistry(): Promise<number> {
     { provider: "gleif", dataCategory: "lei_records", refreshIntervalHours: 168 }, // Weekly
     { provider: "world-bank", dataCategory: "gdp_global", refreshIntervalHours: 720 }, // Monthly
     { provider: "world-bank", dataCategory: "inflation_global", refreshIntervalHours: 720 },
+    { provider: "openfigi", dataCategory: "figi_mappings", refreshIntervalHours: 168 }, // Weekly
+    { provider: "naic", dataCategory: "carrier_data", refreshIntervalHours: 720 }, // Monthly
+    { provider: "ffiec", dataCategory: "hmda_data", refreshIntervalHours: 720 }, // Monthly
+    { provider: "ffiec", dataCategory: "geocode_service", refreshIntervalHours: 720 },
+    { provider: "fdic", dataCategory: "bank_financials", refreshIntervalHours: 720 }, // Monthly
+    { provider: "fdic", dataCategory: "failed_banks", refreshIntervalHours: 168 }, // Weekly
+    { provider: "coingecko", dataCategory: "crypto_prices", refreshIntervalHours: 1 }, // Hourly
+    { provider: "coingecko", dataCategory: "crypto_global", refreshIntervalHours: 4 }, // 4 hours
+    { provider: "imf", dataCategory: "global_gdp", refreshIntervalHours: 24 }, // Daily (WEO quarterly)
+    { provider: "imf", dataCategory: "global_inflation", refreshIntervalHours: 24 }, // Daily
+    { provider: "imf", dataCategory: "global_trade", refreshIntervalHours: 24 }, // Daily
+    { provider: "imf", dataCategory: "imf_sdr", refreshIntervalHours: 24 }, // Daily
+    { provider: "exchangerate-api", dataCategory: "fx_rates", refreshIntervalHours: 6 }, // 6 hours
+    { provider: "exchangerate-api", dataCategory: "fx_rates_inverse", refreshIntervalHours: 6 }, // 6 hours
+    { provider: "exchangerate-api", dataCategory: "fx_cross_rates", refreshIntervalHours: 6 }, // 6 hours
+    { provider: "exchangerate-api", dataCategory: "fx_indices", refreshIntervalHours: 6 }, // 6 hours
   ];
 
   let seeded = 0;

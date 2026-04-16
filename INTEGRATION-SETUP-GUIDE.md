@@ -95,6 +95,8 @@ These integrations are fully verified and operational:
 | **GHL** | ⏳ Separate component | User has existing account to import |
 | **GLEIF/OpenFIGI** | ✅ Free | No credentials needed |
 | **SEC EDGAR/FINRA** | ✅ Free | No credentials needed |
+| **IMF DataMapper** | ✅ Free | No credentials needed — WEO data for 190+ countries |
+| **ExchangeRate-API** | ✅ Free | No credentials needed — 160+ currency pairs, DXY proxy |
 
 ---
 

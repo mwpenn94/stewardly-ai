@@ -257,6 +257,34 @@ export async function registerPlatformJobs(apiKeys: {
     });
   }
 
+  // IMF — keyless, runs every 24 hours (WEO data updates quarterly)
+  registerJob({
+    id: "platform-imf",
+    name: "IMF World Economic Outlook",
+    intervalMs: 24 * 60 * 60 * 1000, // 24 hours
+    handler: async () => {
+      const govPipelines = await import("./governmentDataPipelines");
+      const r = await govPipelines.runSinglePipeline("imf");
+      return { success: r.status === "success", recordsProcessed: r.recordsFetched, errors: r.error ? [r.error] : [], duration: r.duration };
+    },
+    enabled: true,
+    tier: "platform",
+  });
+
+  // ExchangeRate-API — keyless, runs every 6 hours (rates update daily)
+  registerJob({
+    id: "platform-exchangerate",
+    name: "Exchange Rate Data",
+    intervalMs: 6 * 60 * 60 * 1000, // 6 hours
+    handler: async () => {
+      const govPipelines = await import("./governmentDataPipelines");
+      const r = await govPipelines.runSinglePipeline("exchangerate-api");
+      return { success: r.status === "success", recordsProcessed: r.recordsFetched, errors: r.error ? [r.error] : [], duration: r.duration };
+    },
+    enabled: true,
+    tier: "platform",
+  });
+
   // Insight cache refresh — runs every 15 minutes
   registerJob({
     id: "platform-insight-refresh",

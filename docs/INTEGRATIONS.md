@@ -13,6 +13,22 @@
 | LinkedIn OAuth | Authentication | partial | OAuth2 client_id/secret | Configured but needs testing |
 | Daily.co | Video conferencing | partial | API key | Configured; needs UI integration |
 | Deepgram | Speech-to-text | partial | API key | Configured; needs UI integration |
+| FRED | Economic data | match | API key | Live pipeline; 6h cron refresh |
+| BLS | Labor statistics | match | API key | Live pipeline; 24h cron refresh |
+| BEA | Economic analysis | match | API key | Live pipeline; 7d cron refresh |
+| Census Bureau | Demographics | match | API key | Live pipeline; 30d cron refresh |
+| SEC EDGAR | Company filings | match | None (keyless) | Live pipeline; 12h cron refresh |
+| FINRA BrokerCheck | Advisor data | match | None (keyless) | Live pipeline; 24h cron refresh |
+| Treasury Fiscal | Fiscal data | match | None (keyless) | Live pipeline; 24h cron refresh |
+| GLEIF | Legal entity IDs | match | None (keyless) | Live pipeline; weekly refresh |
+| World Bank | Global indicators | match | None (keyless) | Live pipeline; monthly refresh |
+| OpenFIGI | Instrument IDs | match | None (keyless) | Live pipeline; weekly refresh |
+| NAIC | Insurance carriers | match | None (keyless) | Live pipeline; monthly refresh |
+| FFIEC | Banking/mortgage | match | None (keyless) | Live pipeline; monthly refresh |
+| FDIC BankFind | Bank financials | match | None (keyless) | Live pipeline; monthly refresh |
+| CoinGecko | Crypto markets | match | None (keyless) | Live pipeline; hourly refresh |
+| IMF DataMapper | Global economics | match | None (keyless) | WEO data for 190+ countries; 24h cron |
+| ExchangeRate-API | FX rates | match | None (keyless) | 160+ currencies, DXY proxy; 6h cron |
 
 ## Dynamic Integration Framework
 

@@ -58,6 +58,7 @@ const WeHolisticComparison = lazy(() => import("./pages/wealth-engine/HolisticCo
 const WeWealthEngineHub = lazy(() => import("./pages/wealth-engine/WealthEngineHub"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
+const UnifiedAI = lazy(() => import("./pages/UnifiedAI"));
 // Consensus (Round C3 — multi-model consensus stream UI)
 const ConsensusPage = lazy(() => import("./pages/Consensus"));
 // Engine Dashboard (parallel main-branch effort: UWE/BIE/HE visualization at /engine-dashboard)
@@ -151,6 +152,8 @@ const AudioPreferences = lazy(() => import("./pages/settings/AudioPreferences"))
 const ComparablesPage = lazy(() => import("./pages/Comparables"));
 // Rebalancing — portfolio drift preview (hybrid build loop, pass 3)
 const RebalancingPage = lazy(() => import("./pages/Rebalancing"));
+// Email Campaign (Pass 56 — full CRUD page)
+const EmailCampaign = lazy(() => import("./pages/EmailCampaign"));
 
 function Router() {
   return (
@@ -185,7 +188,9 @@ function Router() {
         <Route path={"/wealth-engine/quick-quote-hub"}>{() => <SectionErrorBoundary sectionName="Quick Quote Hub"><WeQuickQuoteHub /></SectionErrorBoundary>}</Route>
         <Route path={"/wealth-engine/holistic-comparison"}>{() => <SectionErrorBoundary sectionName="Holistic Comparison"><WeHolisticComparison /></SectionErrorBoundary>}</Route>
         <Route path={"/wealth-engine"}>{() => <SectionErrorBoundary sectionName="Wealth Engine"><WeWealthEngineHub /></SectionErrorBoundary>}</Route>
-        {/* Code Chat (admin foundation) */}
+        {/* Unified AI Surface (Chat + Code + Agent) */}
+        <Route path={"/ai"} component={UnifiedAI} />
+        {/* Code Chat (admin foundation — also accessible standalone) */}
         <Route path={"/code-chat"} component={CodeChatPage} />
         {/* Consensus (Round C — multi-model consensus stream) */}
         <Route path={"/consensus"} component={ConsensusPage} />
@@ -333,7 +338,7 @@ function Router() {
         <Route path={"/premium-finance"}><Redirect to="/advisory" /></Route>
         <Route path={"/marketplace"}><Redirect to="/advisory" /></Route>
         <Route path={"/coi-network"}><Redirect to="/relationships" /></Route>
-        <Route path={"/email-campaigns"}><Redirect to="/relationships" /></Route>
+        <Route path={"/email-campaigns"} component={EmailCampaign} />
         <Route path={"/professionals"}><Redirect to="/relationships" /></Route>
 
         <Route path={"/404"} component={NotFound} />

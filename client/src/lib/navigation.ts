@@ -148,6 +148,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Target", label: "Lead Pipeline", href: "/leads", minRole: "advisor", section: "relationships" },
   { iconName: "RefreshCw", label: "CRM Sync", href: "/crm-sync", minRole: "advisor", section: "relationships" },
   { iconName: "ShieldCheck", label: "Compliance Audit", href: "/compliance-audit", minRole: "advisor", section: "relationships" },
+  { iconName: "Mail", label: "Email Campaigns", href: "/email-campaigns", minRole: "advisor", section: "relationships" },
   { iconName: "FileText", label: "Documents", href: "/settings/knowledge", minRole: "user", section: "relationships" },
   { iconName: "Link2", label: "Integrations", href: "/integrations", minRole: "user", section: "relationships" },
   { iconName: "Plug", label: "Dynamic Integrations", href: "/dynamic-integrations", minRole: "advisor", section: "relationships" },

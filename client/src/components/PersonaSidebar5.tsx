@@ -51,6 +51,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "People",
     minRole: "guest",
     items: [
+      { label: "AI Studio", icon: Sparkles, path: "/ai", match: ["/ai"] },
       { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat"] },
       { label: "Code Chat", icon: Terminal, path: "/code-chat", match: ["/code-chat"] },
       { label: "Documents", icon: FileText, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },

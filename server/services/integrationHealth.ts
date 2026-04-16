@@ -146,6 +146,66 @@ const PROVIDER_TEST_CONFIGS: Record<string, ProviderTestConfig> = {
     }),
     dataDescription: "Global economic indicators: GDP, inflation, unemployment across 200+ countries",
   },
+  "openfigi": {
+    buildTestRequest: () => ({
+      url: "https://api.openfigi.com/v3/mapping",
+      opts: {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([{ idType: "TICKER", idValue: "AAPL", exchCode: "US" }]),
+        signal: AbortSignal.timeout(15000),
+      },
+    }),
+    validateResponse: (_text, status) => ({
+      healthy: status === 200,
+      message: status === 200 ? "OpenFIGI responding — FIGI mapping available" : `HTTP ${status}`,
+    }),
+    dataDescription: "Financial Instrument Global Identifier (FIGI) mapping: ticker-to-FIGI, CUSIP, ISIN resolution",
+  },
+  "naic": {
+    buildTestRequest: () => ({
+      url: "https://content.naic.org/",
+      opts: { signal: AbortSignal.timeout(15000) },
+    }),
+    validateResponse: (_text, status) => ({
+      healthy: status === 200,
+      message: status === 200 ? "NAIC website responding — carrier data available" : `HTTP ${status}`,
+    }),
+    dataDescription: "Insurance carrier financial data, consumer complaint ratios, regulatory information",
+  },
+  "ffiec": {
+    buildTestRequest: () => ({
+      url: "https://ffiec.cfpb.gov/v2/data-browser-api/view/nationwide/aggregations?actions_taken=1&years=2022",
+      opts: { signal: AbortSignal.timeout(15000) },
+    }),
+    validateResponse: (_text, status) => ({
+      healthy: status === 200,
+      message: status === 200 ? "FFIEC HMDA API responding — mortgage data available" : `HTTP ${status}`,
+    }),
+    dataDescription: "Bank financial data, CRA ratings, HMDA mortgage data, census tract demographics",
+  },
+  "fdic": {
+    buildTestRequest: () => ({
+      url: "https://banks.data.fdic.gov/api/financials?filters=REPDTE%3A20231231&fields=REPNM,ASSET&sort_by=ASSET&sort_order=DESC&limit=1",
+      opts: { signal: AbortSignal.timeout(15000) },
+    }),
+    validateResponse: (_text, status) => ({
+      healthy: status === 200,
+      message: status === 200 ? "FDIC BankFind responding — institution data available" : `HTTP ${status}`,
+    }),
+    dataDescription: "FDIC-insured institution financials, failed banks, branch locations",
+  },
+  "coingecko": {
+    buildTestRequest: () => ({
+      url: "https://api.coingecko.com/api/v3/ping",
+      opts: { signal: AbortSignal.timeout(15000) },
+    }),
+    validateResponse: (text, status) => ({
+      healthy: status === 200 && text.includes("gecko_says"),
+      message: status === 200 ? "CoinGecko responding — crypto market data available" : `HTTP ${status}`,
+    }),
+    dataDescription: "Cryptocurrency prices, market caps, 24h changes, global market stats",
+  },
 };
 
 // ─── Health Check Runner ──────────────────────────────────────────────────

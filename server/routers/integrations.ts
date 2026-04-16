@@ -295,6 +295,34 @@ export const integrationsRouter = router({
             // World Bank Open Data — free, no key needed
             testUrl = "https://api.worldbank.org/v2/country/US/indicator/NY.GDP.MKTP.CD?format=json&per_page=1";
             break;
+          case "openfigi":
+            // OpenFIGI — free with optional API key
+            testUrl = "https://api.openfigi.com/v3/mapping";
+            headers["Content-Type"] = "application/json";
+            if (apiKey) headers["X-OPENFIGI-APIKEY"] = apiKey;
+            fetchOpts = {
+              method: "POST",
+              headers,
+              body: JSON.stringify([{ idType: "TICKER", idValue: "AAPL", exchCode: "US" }]),
+              signal: AbortSignal.timeout(10000),
+            };
+            break;
+          case "naic":
+            // NAIC — free public website
+            testUrl = "https://content.naic.org/";
+            break;
+          case "ffiec":
+            // FFIEC — free public API (HMDA Data Browser)
+            testUrl = "https://ffiec.cfpb.gov/v2/data-browser-api/view/nationwide/aggregations?actions_taken=1&years=2022";
+            break;
+          case "fdic":
+            // FDIC BankFind — free public API
+            testUrl = "https://banks.data.fdic.gov/api/financials?filters=REPDTE%3A20231231&fields=REPNM,ASSET&sort_by=ASSET&sort_order=DESC&limit=1";
+            break;
+          case "coingecko":
+            // CoinGecko — free public API
+            testUrl = "https://api.coingecko.com/api/v3/ping";
+            break;
           case "smsit":
             testUrl = "https://tool-it.smsit.ai/api/user";
             headers["Authorization"] = `Bearer ${apiKey}`;

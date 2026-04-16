@@ -224,6 +224,38 @@ const PROVIDERS = [
     freeTierLimit: "Unlimited",
   },
   {
+    id: uuid(), slug: "fdic", name: "FDIC BankFind", description: "FDIC-insured institution data: bank financials, failed banks, branch locations, historical data. Foundational for banking analysis and institution verification.", category: "regulatory" as const,
+    ownershipTier: "platform" as const, authMethod: "none" as const,
+    baseUrl: "https://banks.data.fdic.gov/api",
+    docsUrl: "https://banks.data.fdic.gov/docs/",
+    freeTierDescription: "Completely free. No API key required. Public access to all FDIC data.",
+    freeTierLimit: "Unlimited",
+  },
+  {
+    id: uuid(), slug: "coingecko", name: "CoinGecko", description: "Cryptocurrency market data: prices, market caps, 24h changes, global stats. Covers 10,000+ coins. Essential for digital asset allocation surfaces.", category: "enrichment" as const,
+    ownershipTier: "platform" as const, authMethod: "none" as const,
+    baseUrl: "https://api.coingecko.com/api/v3",
+    docsUrl: "https://docs.coingecko.com/reference/introduction",
+    freeTierDescription: "Free public API. No key required. 10-30 req/min rate limit.",
+    freeTierLimit: "10-30 req/min",
+  },
+  {
+    id: uuid(), slug: "imf", name: "IMF DataMapper", description: "International Monetary Fund World Economic Outlook data: global GDP growth, inflation rates, current account balances for 190+ countries. Essential for international financial planning.", category: "enrichment" as const,
+    ownershipTier: "platform" as const, authMethod: "none" as const,
+    baseUrl: "https://www.imf.org/external/datamapper/api/v1",
+    docsUrl: "https://www.imf.org/external/datamapper/api/help",
+    freeTierDescription: "Completely free. No API key required. Public access to all IMF WEO data.",
+    freeTierLimit: "Unlimited",
+  },
+  {
+    id: uuid(), slug: "exchangerate-api", name: "ExchangeRate-API", description: "Real-time and historical foreign exchange rates for 160+ currencies. USD, EUR, GBP base rates with cross-rate calculations and DXY proxy index.", category: "enrichment" as const,
+    ownershipTier: "platform" as const, authMethod: "none" as const,
+    baseUrl: "https://open.er-api.com/v6",
+    docsUrl: "https://www.exchangerate-api.com/docs/overview",
+    freeTierDescription: "Free open access endpoint. No API key required. 1,500 requests/month.",
+    freeTierLimit: "1,500 req/month",
+  },
+  {
     // Pass 77: GitHub is the first "developer tool" integration and
     // underpins the Code Chat self-update flow. It lives in the
     // `middleware` category alongside n8n because the enum doesn't
