@@ -17,6 +17,7 @@ import { eq, and } from "drizzle-orm";
 import { decryptCredentials } from "./encryption";
 import crypto from "crypto";
 import { logger } from "../_core/logger";
+import { getCircuitState, recordCircuitFailure, recordCircuitSuccess } from "./errorHandling";
 
 const uuid = () => crypto.randomUUID();
 
@@ -1593,26 +1594,47 @@ async function fetchExchangeRateData(): Promise<PipelineResult> {
 }
 
 // ─── Run All Pipelines ──────────────────────────────────────────────────
+/** Wrap a pipeline fetcher with circuit breaker logic */
+async function withCircuitBreaker(slug: string, fetcher: () => Promise<PipelineResult>): Promise<PipelineResult> {
+  const state = getCircuitState(`pipeline:${slug}`);
+  if (state === "open") {
+    logger.warn({ operation: "dataPipelines" }, `[DataPipelines] Circuit OPEN for ${slug} — skipping`);
+    return { pipeline: slug, providerSlug: slug, status: "error", recordsFetched: 0, error: "Circuit breaker open — too many recent failures", duration: 0 };
+  }
+  try {
+    const result = await fetcher();
+    if (result.status === "success") {
+      recordCircuitSuccess(`pipeline:${slug}`);
+    } else {
+      recordCircuitFailure(`pipeline:${slug}`);
+    }
+    return result;
+  } catch (err: any) {
+    recordCircuitFailure(`pipeline:${slug}`);
+    return { pipeline: slug, providerSlug: slug, status: "error", recordsFetched: 0, error: err.message, duration: 0 };
+  }
+}
+
 export async function runAllDataPipelines(): Promise<PipelineResult[]> {
-  logger.info( { operation: "dataPipelines" },"[DataPipelines] Starting all data pipelines (16 providers)...");
+  logger.info( { operation: "dataPipelines" },"[DataPipelines] Starting all data pipelines (16 providers) with circuit breakers...");
   
   const results = await Promise.allSettled([
-    fetchBLSData(),
-    fetchFREDData(),
-    fetchBEAData(),
-    fetchCensusData(),
-    fetchSECEdgarData(),
-    fetchFINRAData(),
-    fetchTreasuryFiscalData(),
-    fetchGLEIFData(),
-    fetchWorldBankData(),
-    fetchOpenFIGIData(),
-    fetchNAICData(),
-    fetchFFIECData(),
-    fetchFDICData(),
-    fetchCoinGeckoData(),
-    fetchIMFData(),
-    fetchExchangeRateData(),
+    withCircuitBreaker("bls", fetchBLSData),
+    withCircuitBreaker("fred", fetchFREDData),
+    withCircuitBreaker("bea", fetchBEAData),
+    withCircuitBreaker("census-bureau", fetchCensusData),
+    withCircuitBreaker("sec-edgar", fetchSECEdgarData),
+    withCircuitBreaker("finra-brokercheck", fetchFINRAData),
+    withCircuitBreaker("treasury-fiscal", fetchTreasuryFiscalData),
+    withCircuitBreaker("gleif", fetchGLEIFData),
+    withCircuitBreaker("world-bank", fetchWorldBankData),
+    withCircuitBreaker("openfigi", fetchOpenFIGIData),
+    withCircuitBreaker("naic", fetchNAICData),
+    withCircuitBreaker("ffiec", fetchFFIECData),
+    withCircuitBreaker("fdic", fetchFDICData),
+    withCircuitBreaker("coingecko", fetchCoinGeckoData),
+    withCircuitBreaker("imf", fetchIMFData),
+    withCircuitBreaker("exchangerate-api", fetchExchangeRateData),
   ]);
 
   const finalResults = results.map((r, i) => {
@@ -1671,7 +1693,7 @@ export async function runSinglePipeline(providerSlug: string): Promise<PipelineR
   if (!fetcher) {
     return { pipeline: providerSlug, providerSlug, status: "error", recordsFetched: 0, error: "Unknown provider", duration: 0 };
   }
-  const result = await fetcher();
+  const result = await withCircuitBreaker(providerSlug, fetcher);
   
   // Update connection sync status
   try {

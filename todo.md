@@ -4800,3 +4800,43 @@
 ### Tests
 - [x] 15 new tests: IMF pipeline, ExchangeRate pipeline, seed integrations, foundation layer, cron manager, DXY proxy, UnifiedAI route, EmailCampaign page
 - [x] All 15 tests passing
+
+## Pass 57 — Circuit Breaker Integration, DataBank Enrichment, Progressive Disclosure, Plaid Wiring
+
+### Circuit Breaker Integration
+- [x] Wired circuit breaker into all 16 data pipeline runners (withCircuitBreaker wrapper)
+- [x] Pipeline failures auto-open circuit after 5 consecutive failures
+- [x] Circuit auto-resets to half-open after 30s cooldown
+- [x] runSinglePipeline also uses circuit breaker
+- [x] 11 new circuit breaker integration tests passing
+
+### DataBank Enrichment Service
+- [x] Created databankEnrichment.ts with World Bank indicator search via Manus Data API
+- [x] 12 key financial indicators (GDP, CPI, unemployment, FDI, debt/GDP, etc.)
+- [x] getFinancialIndicatorContext() for AI context injection
+- [x] batchGetIndicatorDetails() with concurrency-limited parallel fetching
+- [x] Added market.searchIndicators and market.getIndicatorContext tRPC procedures
+- [x] Added DataBank Global Indicators section to MarketData page
+- [x] 11 new DataBank tests passing
+
+### Progressive Disclosure System
+- [x] Created DisclosureContext.tsx with 4 levels (Essential/Standard/Advanced/Expert)
+- [x] Annotated all 30+ nav items with disclosure levels
+- [x] Integrated disclosure filtering into PersonaSidebar5
+- [x] Added disclosure level control to AppearanceTab settings
+- [x] 17 new disclosure tests passing
+
+### Plaid Integration
+- [x] Created plaidService.ts with link token creation and account sync
+- [x] Created server/routers/plaid.ts with full tRPC procedures
+- [x] Wired PlaidLinkButton into Integrations page
+- [x] 8 new Plaid tests passing
+
+### Client Onboarding Enhancement
+- [x] Enhanced ClientOnboarding.tsx with form state management and validation
+- [x] Multi-step wizard with progress tracking
+- [x] Backend persistence via tRPC mutations
+
+### Accessibility Improvements
+- [x] Added aria-current to NavBtn in PersonaSidebar5
+- [x] Keyboard navigation improvements across sidebar

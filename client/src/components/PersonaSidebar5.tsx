@@ -7,6 +7,7 @@
  */
 
 import { useState, useMemo, useCallback } from "react";
+import { useDisclosure } from "@/contexts/DisclosureContext";
 import { useLocation } from "wouter";
 import {
   MessageSquare, FileText, BarChart3, Volume2,
@@ -32,6 +33,8 @@ export interface NavItem {
   icon: any;
   path: string;
   match: string[];
+  /** Minimum progressive disclosure level (1-4). Default 1 = always visible. */
+  disclosureLevel?: 1 | 2 | 3 | 4;
 }
 
 export interface PersonaLayer {
@@ -51,12 +54,12 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "People",
     minRole: "guest",
     items: [
-      { label: "AI Studio", icon: Sparkles, path: "/ai", match: ["/ai"] },
+      { label: "AI Studio", icon: Sparkles, path: "/ai", match: ["/ai"], disclosureLevel: 2 },
       { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat"] },
-      { label: "Code Chat", icon: Terminal, path: "/code-chat", match: ["/code-chat"] },
+      { label: "Code Chat", icon: Terminal, path: "/code-chat", match: ["/code-chat"], disclosureLevel: 4 },
       { label: "Documents", icon: FileText, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },
-      { label: "My Progress", icon: BarChart3, path: "/proficiency", match: ["/proficiency"] },
-      { label: "Audio", icon: Volume2, path: "/settings/audio", match: ["/settings/audio"] },
+      { label: "My Progress", icon: BarChart3, path: "/proficiency", match: ["/proficiency"], disclosureLevel: 2 },
+      { label: "Audio", icon: Volume2, path: "/settings/audio", match: ["/settings/audio"], disclosureLevel: 2 },
     ],
   },
   {
@@ -65,16 +68,16 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "user",
     items: [
       { label: "My Financial Twin", icon: Fingerprint, path: "/financial-twin", match: ["/financial-twin"] },
-      { label: "Insights", icon: Star, path: "/intelligence-hub", match: ["/intelligence-hub", "/insights"] },
+      { label: "Insights", icon: Star, path: "/intelligence-hub", match: ["/intelligence-hub", "/insights"], disclosureLevel: 2 },
       { label: "Suitability", icon: ClipboardList, path: "/settings/suitability", match: ["/settings/suitability", "/suitability"] },
-      { label: "Operations", icon: Zap, path: "/operations", match: ["/operations"] },
-      { label: "Workflows", icon: GitBranch, path: "/workflows", match: ["/workflows"] },
-      { label: "Client Onboarding", icon: UserPlus, path: "/client-onboarding", match: ["/client-onboarding"] },
-      { label: "Wealth Engine", icon: Calculator, path: "/calculators", match: ["/calculators", "/wealth-engine", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score"] },
-      { label: "Passive Actions", icon: RefreshCw, path: "/passive-actions", match: ["/passive-actions"] },
-      { label: "Products", icon: Package, path: "/products", match: ["/products"] },
-      { label: "Integrations", icon: Link2, path: "/integrations", match: ["/integrations"] },
-      { label: "Community", icon: Users, path: "/community", match: ["/community"] },
+      { label: "Operations", icon: Zap, path: "/operations", match: ["/operations"], disclosureLevel: 2 },
+      { label: "Workflows", icon: GitBranch, path: "/workflows", match: ["/workflows"], disclosureLevel: 3 },
+      { label: "Client Onboarding", icon: UserPlus, path: "/client-onboarding", match: ["/client-onboarding"], disclosureLevel: 2 },
+      { label: "Wealth Engine", icon: Calculator, path: "/calculators", match: ["/calculators", "/wealth-engine", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score"], disclosureLevel: 2 },
+      { label: "Passive Actions", icon: RefreshCw, path: "/passive-actions", match: ["/passive-actions"], disclosureLevel: 3 },
+      { label: "Products", icon: Package, path: "/products", match: ["/products"], disclosureLevel: 2 },
+      { label: "Integrations", icon: Link2, path: "/integrations", match: ["/integrations"], disclosureLevel: 2 },
+      { label: "Community", icon: Users, path: "/community", match: ["/community"], disclosureLevel: 3 },
     ],
   },
   {
@@ -85,16 +88,16 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "My Work", icon: Briefcase, path: "/my-work", match: ["/my-work"] },
       { label: "Advisory", icon: Package, path: "/advisory", match: ["/advisory", "/advisory-execution"] },
       { label: "Clients", icon: Users, path: "/relationships", match: ["/relationships", "/portal", "/client-dashboard"] },
-      { label: "Insurance & Apps", icon: FileCheck, path: "/insurance-applications", match: ["/insurance-applications", "/carrier-connector", "/suitability-panel"] },
-      { label: "Lead Pipeline", icon: Target, path: "/leads", match: ["/leads"] },
-      { label: "Import Data", icon: Upload, path: "/import", match: ["/import"] },
-      { label: "Compliance", icon: ShieldCheck, path: "/compliance-audit", match: ["/compliance-audit"] },
-      { label: "CRM Sync", icon: RefreshCw, path: "/crm-sync", match: ["/crm-sync"] },
-      { label: "Market Data", icon: TrendingUp, path: "/market-data", match: ["/market-data"] },
-      { label: "Product Intelligence", icon: Lightbulb, path: "/product-intelligence", match: ["/product-intelligence"] },
-      { label: "Rebalancing", icon: Scale, path: "/rebalancing", match: ["/rebalancing"] },
-      { label: "Dynamic Integrations", icon: Plug, path: "/dynamic-integrations", match: ["/dynamic-integrations"] },
-      { label: "Integration Health", icon: HeartPulse, path: "/integration-health", match: ["/integration-health"] },
+      { label: "Insurance & Apps", icon: FileCheck, path: "/insurance-applications", match: ["/insurance-applications", "/carrier-connector", "/suitability-panel"], disclosureLevel: 3 },
+      { label: "Lead Pipeline", icon: Target, path: "/leads", match: ["/leads"], disclosureLevel: 3 },
+      { label: "Import Data", icon: Upload, path: "/import", match: ["/import"], disclosureLevel: 3 },
+      { label: "Compliance", icon: ShieldCheck, path: "/compliance-audit", match: ["/compliance-audit"], disclosureLevel: 3 },
+      { label: "CRM Sync", icon: RefreshCw, path: "/crm-sync", match: ["/crm-sync"], disclosureLevel: 3 },
+      { label: "Market Data", icon: TrendingUp, path: "/market-data", match: ["/market-data"], disclosureLevel: 2 },
+      { label: "Product Intelligence", icon: Lightbulb, path: "/product-intelligence", match: ["/product-intelligence"], disclosureLevel: 3 },
+      { label: "Rebalancing", icon: Scale, path: "/rebalancing", match: ["/rebalancing"], disclosureLevel: 3 },
+      { label: "Dynamic Integrations", icon: Plug, path: "/dynamic-integrations", match: ["/dynamic-integrations"], disclosureLevel: 4 },
+      { label: "Integration Health", icon: HeartPulse, path: "/integration-health", match: ["/integration-health"], disclosureLevel: 3 },
     ],
   },
   {
@@ -111,26 +114,26 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "Stewards",
     minRole: "admin",
     items: [
-      { label: "Platform Admin", icon: Cog, path: "/admin", match: ["/admin"] },
-      { label: "AI Agents", icon: Bot, path: "/agents", match: ["/agents"] },
-      { label: "Consensus", icon: GitMerge, path: "/consensus", match: ["/consensus"] },
-      { label: "AI Intelligence", icon: Brain, path: "/admin/intelligence", match: ["/admin/intelligence"] },
-      { label: "Improvement", icon: Zap, path: "/admin/improvement", match: ["/admin/improvement"] },
-      { label: "Improvement Engine", icon: Activity, path: "/admin/improvement-engine", match: ["/admin/improvement-engine", "/improvement"] },
-      { label: "System Health", icon: Activity, path: "/admin/system-health", match: ["/admin/system-health"] },
-      { label: "Data Freshness", icon: Activity, path: "/admin/data-freshness", match: ["/admin/data-freshness"] },
-      { label: "Rate Management", icon: TrendingUp, path: "/admin/rate-management", match: ["/admin/rate-management"] },
-      { label: "Billing", icon: CreditCard, path: "/admin/billing", match: ["/admin/billing"] },
-      { label: "API Keys", icon: Key, path: "/admin/api-keys", match: ["/admin/api-keys"] },
-      { label: "Webhooks", icon: Webhook, path: "/admin/webhooks", match: ["/admin/webhooks"] },
-      { label: "Team", icon: Users, path: "/admin/team", match: ["/admin/team"] },
-      { label: "BCP Dashboard", icon: ShieldCheck, path: "/admin/bcp", match: ["/admin/bcp"] },
-      { label: "Fairness Audit", icon: Scale, path: "/admin/fairness", match: ["/admin/fairness"] },
-      { label: "Comparables", icon: Compass, path: "/comparables", match: ["/comparables"] },
-      { label: "Platform Reports", icon: FileText, path: "/admin/platform-reports", match: ["/admin/platform-reports"] },
-      { label: "Knowledge Base", icon: BookOpen, path: "/admin/knowledge", match: ["/admin/knowledge"] },
-      { label: "Platform Guide", icon: BookOpen, path: "/admin/guide", match: ["/admin/guide"] },
-      { label: "Lead Sources", icon: Target, path: "/admin/lead-sources", match: ["/admin/lead-sources"] },
+      { label: "Platform Admin", icon: Cog, path: "/admin", match: ["/admin"], disclosureLevel: 4 },
+      { label: "AI Agents", icon: Bot, path: "/agents", match: ["/agents"], disclosureLevel: 4 },
+      { label: "Consensus", icon: GitMerge, path: "/consensus", match: ["/consensus"], disclosureLevel: 4 },
+      { label: "AI Intelligence", icon: Brain, path: "/admin/intelligence", match: ["/admin/intelligence"], disclosureLevel: 4 },
+      { label: "Improvement", icon: Zap, path: "/admin/improvement", match: ["/admin/improvement"], disclosureLevel: 4 },
+      { label: "Improvement Engine", icon: Activity, path: "/admin/improvement-engine", match: ["/admin/improvement-engine", "/improvement"], disclosureLevel: 4 },
+      { label: "System Health", icon: Activity, path: "/admin/system-health", match: ["/admin/system-health"], disclosureLevel: 4 },
+      { label: "Data Freshness", icon: Activity, path: "/admin/data-freshness", match: ["/admin/data-freshness"], disclosureLevel: 4 },
+      { label: "Rate Management", icon: TrendingUp, path: "/admin/rate-management", match: ["/admin/rate-management"], disclosureLevel: 4 },
+      { label: "Billing", icon: CreditCard, path: "/admin/billing", match: ["/admin/billing"], disclosureLevel: 4 },
+      { label: "API Keys", icon: Key, path: "/admin/api-keys", match: ["/admin/api-keys"], disclosureLevel: 4 },
+      { label: "Webhooks", icon: Webhook, path: "/admin/webhooks", match: ["/admin/webhooks"], disclosureLevel: 4 },
+      { label: "Team", icon: Users, path: "/admin/team", match: ["/admin/team"], disclosureLevel: 4 },
+      { label: "BCP Dashboard", icon: ShieldCheck, path: "/admin/bcp", match: ["/admin/bcp"], disclosureLevel: 4 },
+      { label: "Fairness Audit", icon: Scale, path: "/admin/fairness", match: ["/admin/fairness"], disclosureLevel: 4 },
+      { label: "Comparables", icon: Compass, path: "/comparables", match: ["/comparables"], disclosureLevel: 3 },
+      { label: "Platform Reports", icon: FileText, path: "/admin/platform-reports", match: ["/admin/platform-reports"], disclosureLevel: 4 },
+      { label: "Knowledge Base", icon: BookOpen, path: "/admin/knowledge", match: ["/admin/knowledge"], disclosureLevel: 4 },
+      { label: "Platform Guide", icon: BookOpen, path: "/admin/guide", match: ["/admin/guide"], disclosureLevel: 4 },
+      { label: "Lead Sources", icon: Target, path: "/admin/lead-sources", match: ["/admin/lead-sources"], disclosureLevel: 4 },
     ],
   },
 ];
@@ -191,8 +194,18 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
   const [collapsedLayers, setCollapsedLayers] = useState<Record<string, boolean>>({});
   const roleLevel = ROLE_LEVEL[role];
   const convoGroups = useMemo(() => groupConvos(conversations), [conversations]);
+  const { level: disclosureLevel } = useDisclosure();
 
-  const visibleLayers = PERSONA_LAYERS.filter(l => roleLevel >= ROLE_LEVEL[l.minRole]);
+  // Filter layers by role AND then filter items within each layer by disclosure level
+  const visibleLayers = useMemo(() => {
+    return PERSONA_LAYERS
+      .filter(l => roleLevel >= ROLE_LEVEL[l.minRole])
+      .map(l => ({
+        ...l,
+        items: l.items.filter(item => (item.disclosureLevel ?? 1) <= disclosureLevel),
+      }))
+      .filter(l => l.items.length > 0);
+  }, [roleLevel, disclosureLevel]);
 
   const toggleLayer = useCallback((key: string) => {
     setCollapsedLayers(prev => ({ ...prev, [key]: !prev[key] }));
@@ -231,7 +244,9 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
     return (
       <button
         onClick={() => { navigate(item.path); onNavigate?.(); }}
-        className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg cursor-pointer transition-colors text-[13px] leading-tight
+        aria-current={active ? "page" : undefined}
+        aria-label={item.label}
+        className={`w-full flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg cursor-pointer transition-colors text-[13px] leading-tight focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none
           ${active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-card/40"}
           ${collapsed ? "justify-center px-1.5" : ""}`}
         title={collapsed ? item.label : undefined}

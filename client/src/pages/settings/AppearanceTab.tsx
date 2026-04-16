@@ -31,8 +31,10 @@ import {
   MessageSquare,
   Eye,
   Accessibility,
+  Layers,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useDisclosure } from "@/contexts/DisclosureContext";
 import type {
   ChatDensity,
   ColorBlindMode,
@@ -332,6 +334,22 @@ export default function AppearanceTab() {
         </CardContent>
       </Card>
 
+      {/* Progressive Disclosure Level */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Layers className="w-4 h-4 text-accent" aria-hidden="true" />
+            Feature Complexity
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Control how many features are visible in the sidebar. Start simple and unlock more as you grow.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <DisclosureLevelPicker />
+        </CardContent>
+      </Card>
+
       <Card className="border-accent/20 bg-accent/5">
         <CardContent className="pt-4 pb-4">
           <div className="flex items-start gap-2">
@@ -344,6 +362,51 @@ export default function AppearanceTab() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+/** Disclosure Level Picker — inline component for the Appearance tab */
+function DisclosureLevelPicker() {
+  const { level, setLevel, maxLevel } = useDisclosure();
+  const levels: { value: 1 | 2 | 3 | 4; label: string; desc: string; color: string }[] = [
+    { value: 1, label: "Essential", desc: "Chat, Financial Twin, Documents", color: "bg-emerald-500" },
+    { value: 2, label: "Standard", desc: "+ Wealth Engine, Products, Market Data", color: "bg-blue-500" },
+    { value: 3, label: "Professional", desc: "+ Advisory, CRM, Compliance, Insurance", color: "bg-amber-500" },
+    { value: 4, label: "Expert", desc: "Full platform — Admin, AI Agents, Dev tools", color: "bg-purple-500" },
+  ];
+  return (
+    <div className="space-y-2" role="radiogroup" aria-label="Feature complexity level">
+      {levels.map(l => (
+        <button
+          key={l.value}
+          type="button"
+          role="radio"
+          aria-checked={level === l.value}
+          disabled={l.value > maxLevel}
+          onClick={() => setLevel(l.value)}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all text-left cursor-pointer
+            ${level === l.value
+              ? "border-accent bg-accent/10 ring-1 ring-accent/20"
+              : l.value > maxLevel
+                ? "border-border/30 opacity-40 cursor-not-allowed"
+                : "border-border/50 hover:border-accent/30 hover:bg-card/50"
+            }`}
+        >
+          <div className={`w-2.5 h-2.5 rounded-full ${l.color} ${level === l.value ? "ring-2 ring-offset-1 ring-offset-background" : "opacity-50"}`} />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium">{l.label}</div>
+            <div className="text-[11px] text-muted-foreground truncate">{l.desc}</div>
+          </div>
+          {level === l.value && (
+            <div className="text-[10px] font-medium text-accent bg-accent/10 px-1.5 py-0.5 rounded">Active</div>
+          )}
+        </button>
+      ))}
+      <p className="text-[10px] text-muted-foreground mt-2">
+        Changes take effect immediately. The sidebar will show/hide features based on your selection.
+        You can always access hidden features via the Command Palette (Ctrl+K).
+      </p>
     </div>
   );
 }

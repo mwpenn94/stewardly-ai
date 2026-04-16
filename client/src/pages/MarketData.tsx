@@ -182,8 +182,38 @@ export default function MarketData() {
           </div>
         </div>
 
+        {/* DataBank Global Indicators */}
+        <div>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Global Economic Indicators (World Bank DataBank)</h2>
+          <Card>
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {[
+                  { code: "NY.GDP.MKTP.CD", name: "GDP (current US$)", icon: "$" },
+                  { code: "FP.CPI.TOTL.ZG", name: "Inflation (CPI)", icon: "%" },
+                  { code: "SL.UEM.TOTL.ZS", name: "Unemployment", icon: "%" },
+                  { code: "NY.GDP.MKTP.KD.ZG", name: "GDP Growth", icon: "%" },
+                  { code: "GC.DOD.TOTL.GD.ZS", name: "Govt Debt/GDP", icon: "%" },
+                  { code: "FR.INR.RINR", name: "Real Interest Rate", icon: "%" },
+                  { code: "CM.MKT.LCAP.GD.ZS", name: "Market Cap/GDP", icon: "%" },
+                  { code: "BX.KLT.DINV.CD.WD", name: "FDI Inflows", icon: "$" },
+                ].map(ind => (
+                  <div key={ind.code} className="p-3 rounded-lg border border-border/50 bg-card/50 hover:bg-accent/5 transition-colors">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{ind.icon}</span>
+                      <span className="text-xs font-medium truncate">{ind.name}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-mono truncate">{ind.code}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">World Bank Development Indicators available for AI-powered analysis. Ask the AI assistant about any indicator for detailed country comparisons.</p>
+            </CardContent>
+          </Card>
+        </div>
+
         <p className="text-xs text-muted-foreground text-center">
-          Data via Yahoo Finance. Prices may be delayed. Not investment advice.
+          Market data via Yahoo Finance. Global indicators via World Bank DataBank. Prices may be delayed. Not investment advice.
         </p>
       </div>
       </SectionErrorBoundary>

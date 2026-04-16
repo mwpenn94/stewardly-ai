@@ -87,6 +87,7 @@ import { portfolioLedgerRouter } from "./routers/portfolioLedger";
 import { estateRouter } from "./routers/estate";
 import { reportsFiduciaryRouter } from "./routers/reportsFiduciary";
 import { dynamicIntegrationsRouter } from "./routers/dynamicIntegrations";
+import { plaidRouter } from "./routers/plaid";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -2070,6 +2071,19 @@ const marketRouter = router({
         return data?.finance?.result ?? null;
       } catch { return null; }
     }),
+  // DataBank indicator search
+  searchIndicators: protectedProcedure
+    .input(z.object({ query: z.string().min(1).max(100), pageSize: z.number().min(1).max(50).default(10) }))
+    .query(async ({ input }) => {
+      const { searchIndicators } = await import("./services/databankEnrichment");
+      return searchIndicators(input.query, input.pageSize);
+    }),
+  // Get financial indicator context for AI
+  getIndicatorContext: protectedProcedure
+    .query(async () => {
+      const { getFinancialIndicatorContext } = await import("./services/databankEnrichment");
+      return { context: await getFinancialIndicatorContext() };
+    }),
 });
 
 // ─── MAIN ROUTER ──────────────────────────────────────────────────
@@ -2323,6 +2337,7 @@ export const appRouter = router({
   finalOrphans: finalOrphansRouter,
   billing: billingRouter,
   videoConferencing: videoConferencingRouter,
+  plaid: plaidRouter,
 });
 
 export type AppRouter = typeof appRouter;

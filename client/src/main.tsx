@@ -7,6 +7,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import { toast } from "sonner";
 import App from "./App";
+import { DisclosureProvider } from "@/contexts/DisclosureContext";
 import "./index.css";
 
 /** Detect transient "server restarting" errors where the HTML fallback is returned instead of JSON */
@@ -180,7 +181,9 @@ const trpcClient = trpc.createClient({
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <DisclosureProvider>
+        <App />
+      </DisclosureProvider>
     </QueryClientProvider>
   </trpc.Provider>
 );

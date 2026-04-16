@@ -1160,15 +1160,7 @@ function ClientAccountConnections() {
                   </div>
                 </div>
               ) : !isConnected ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => toast.info(`${acct.name} Link flow coming soon. Your organization admin needs to complete the setup first.`)}
-                >
-                  <Link2 className="h-3.5 w-3.5 mr-1.5" />
-                  {acct.key === "plaid" ? "Link Bank Account" : "Connect Insurance Policies"}
-                </Button>
+                <PlaidLinkButton accountKey={acct.key} />
               ) : null}
 
               <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t">
@@ -1564,5 +1556,45 @@ export default function Integrations() {
       </div>{/* close container */}
     </div>
     </AppShell>
+  );
+}
+
+// ─── Plaid Link Button (Pass 57) ──────────────────────────────────────
+function PlaidLinkButton({ accountKey }: { accountKey: string }) {
+  const createLinkToken = trpc.plaid.createLinkToken.useMutation();
+  const [loading, setLoading] = useState(false);
+
+  const handleLink = async () => {
+    if (accountKey !== "plaid") {
+      toast.info("Canopy Connect integration coming soon.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await createLinkToken.mutateAsync({});
+      if (result.mock) {
+        toast.info("Plaid is in mock mode. Sandbox credentials are configured — use user_good / pass_good to test.");
+      }
+      // In production, you'd load the Plaid Link SDK here with the token
+      // For now, show the link token for testing
+      toast.success(`Plaid Link token created. ${result.mock ? "(Mock mode)" : "Ready to connect."} Token: ${result.linkToken.substring(0, 20)}...`);
+    } catch (err: any) {
+      toast.error(`Failed to create Plaid link: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="w-full"
+      onClick={handleLink}
+      disabled={loading}
+    >
+      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Link2 className="h-3.5 w-3.5 mr-1.5" />}
+      {accountKey === "plaid" ? "Link Bank Account" : "Connect Insurance Policies"}
+    </Button>
   );
 }
