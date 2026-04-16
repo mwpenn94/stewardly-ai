@@ -16,7 +16,7 @@ import {
   Target, Layers, Package, Filter, Users, Megaphone, LayoutDashboard, Receipt,
   Flag, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu,
   Briefcase, Gem, Handshake, CalendarRange, RotateCcw, X, Info,
-  PieChart, Landmark, Heart, Percent, Dice, FileCheck, Wallet, Gavel, CreditCard, Gift
+  PieChart, Landmark, Heart, Percent, Dices, FileCheck, Wallet, Gavel, CreditCard, Gift
 } from 'lucide-react';
 
 import {
@@ -90,7 +90,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'debtmgmt' as PanelId, label: 'Debt Management', icon: <CreditCard className="w-4 h-4" /> },
     { id: 'trusteng' as PanelId, label: 'Trust Engineering', icon: <Gavel className="w-4 h-4" /> },
     { id: 'governance' as PanelId, label: 'Governance / IPS', icon: <FileCheck className="w-4 h-4" /> },
-    { id: 'montecarlo' as PanelId, label: 'Monte Carlo', icon: <Dice className="w-4 h-4" /> },
+    { id: 'montecarlo' as PanelId, label: 'Monte Carlo', icon: <Dices className="w-4 h-4" /> },
     { id: 'stockcomp' as PanelId, label: 'Stock-Based Comp', icon: <Percent className="w-4 h-4" /> },
   ]},
   { group: 'Advanced', items: [

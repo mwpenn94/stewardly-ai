@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info, Wallet, CreditCard, Gavel, FileCheck, Dice, Percent, Plus, Trash2, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { Info, Wallet, CreditCard, Gavel, FileCheck, Dices, Percent, Plus, Trash2, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { fmt, pct } from './engine';
 
 /* ─── Shared input helper ─── */
@@ -575,7 +575,7 @@ export function MonteCarloPanel({ savings, retirement401k, monthlySav, retireAge
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Dice className="w-5 h-5 text-purple-400" /> Monte Carlo Simulation
+            <Dices className="w-5 h-5 text-purple-400" /> Monte Carlo Simulation
             <Tooltip><TooltipTrigger><Info className="w-4 h-4 text-muted-foreground" /></TooltipTrigger>
               <TooltipContent className="max-w-xs">Run probability-weighted scenario analysis for retirement outcomes. Simulates thousands of market scenarios to estimate success probability.</TooltipContent>
             </Tooltip>
