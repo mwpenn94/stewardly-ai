@@ -893,4 +893,237 @@ export function calcChannelEconomics(params: {
   });
 }
 
+/* ═══ SENSITIVITY ANALYSIS ═══ */
+
+export interface SensitivityVariable {
+  key: string;
+  label: string;
+  baseValue: number;
+  unit: string; // '$', '%', '#'
+}
+
+export interface SensitivityResult {
+  variable: SensitivityVariable;
+  /** Projected income at each variation level */
+  variations: { pctChange: number; newValue: number; projected: number; delta: number }[];
+  /** Absolute range of impact (max projected - min projected) */
+  impactRange: number;
+}
+
+/** Run sensitivity analysis: vary each key variable ±10/25/50% and compute projected income */
+export function calcSensitivity(baseParams: Parameters<typeof calcUnifiedIncomePlan>[0]): SensitivityResult[] {
+  const baseResult = calcUnifiedIncomePlan(baseParams);
+  const baseProjected = baseResult.totalProjected;
+  const pctLevels = [-50, -25, -10, 10, 25, 50];
+
+  // Define variables to test
+  const variables: { key: string; label: string; getValue: () => number; unit: string;
+    apply: (params: typeof baseParams, newVal: number) => typeof baseParams }[] = [
+    {
+      key: 'closeRate', label: 'Close Rate (pl%)', unit: '%',
+      getValue: () => baseParams.funnelRates.pl,
+      apply: (p, v) => ({ ...p, funnelRates: { ...p.funnelRates, pl: Math.max(1, Math.min(100, v)) } }),
+    },
+    {
+      key: 'showRate', label: 'Show Rate (sh%)', unit: '%',
+      getValue: () => baseParams.funnelRates.sh,
+      apply: (p, v) => ({ ...p, funnelRates: { ...p.funnelRates, sh: Math.max(1, Math.min(100, v)) } }),
+    },
+    {
+      key: 'avgGDC', label: 'Avg Case Size ($)', unit: '$',
+      getValue: () => baseParams.avgGDC,
+      apply: (p, v) => ({ ...p, avgGDC: Math.max(100, v) }),
+    },
+    {
+      key: 'aumTrailPct', label: 'AUM Trail %', unit: '%',
+      getValue: () => baseParams.aumTrailPct,
+      apply: (p, v) => ({ ...p, aumTrailPct: Math.max(0.01, v) }),
+    },
+    {
+      key: 'aumExisting', label: 'AUM Book ($)', unit: '$',
+      getValue: () => baseParams.aumExisting,
+      apply: (p, v) => ({ ...p, aumExisting: Math.max(0, v) }),
+    },
+    {
+      key: 'affAvgProdA', label: 'Affiliate Avg Prod (A)', unit: '$',
+      getValue: () => baseParams.affAvgProd.a,
+      apply: (p, v) => ({ ...p, affAvgProd: { ...p.affAvgProd, a: Math.max(0, v) } }),
+    },
+    {
+      key: 'overrideRate', label: 'Override Rate %', unit: '%',
+      getValue: () => baseParams.overrideRate,
+      apply: (p, v) => ({ ...p, overrideRate: Math.max(0, Math.min(100, v)) }),
+    },
+    {
+      key: 'teamAvgGDC', label: 'Team Avg GDC ($)', unit: '$',
+      getValue: () => baseParams.teamAvgGDC,
+      apply: (p, v) => ({ ...p, teamAvgGDC: Math.max(0, v) }),
+    },
+  ];
+
+  return variables.map(v => {
+    const baseVal = v.getValue();
+    if (baseVal === 0) {
+      return {
+        variable: { key: v.key, label: v.label, baseValue: baseVal, unit: v.unit },
+        variations: pctLevels.map(pct => ({ pctChange: pct, newValue: 0, projected: baseProjected, delta: 0 })),
+        impactRange: 0,
+      };
+    }
+    const variations = pctLevels.map(pctChange => {
+      const newValue = Math.round(baseVal * (1 + pctChange / 100) * 100) / 100;
+      const modParams = v.apply({ ...baseParams }, newValue);
+      const result = calcUnifiedIncomePlan(modParams);
+      return { pctChange, newValue, projected: result.totalProjected, delta: result.totalProjected - baseProjected };
+    });
+    const projections = variations.map(vr => vr.projected);
+    const impactRange = Math.max(...projections) - Math.min(...projections);
+    return {
+      variable: { key: v.key, label: v.label, baseValue: baseVal, unit: v.unit },
+      variations,
+      impactRange,
+    };
+  }).sort((a, b) => b.impactRange - a.impactRange); // Sort by most impactful first
+}
+
+/* ═══ TIME-PHASED PROJECTIONS ═══ */
+
+// Industry seasonal factors for insurance/financial services (monthly, Jan=0)
+// Source: LIMRA annual sales surveys, Cerulli quarterly flow data
+const SEASONAL_FACTORS = [
+  0.85, 0.80, 0.95, 1.05, 1.00, 0.90,  // Jan-Jun: slow start, spring push
+  0.85, 0.80, 1.10, 1.15, 1.20, 1.35,  // Jul-Dec: summer lull, Q4 surge
+];
+
+// Ramp curves by role (multiplier for month 1-12, representing how quickly production ramps)
+const RAMP_CURVES: Record<string, number[]> = {
+  new:  [0.10, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.80, 0.85, 0.90, 1.00],
+  mid:  [0.50, 0.55, 0.65, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.00, 1.00, 1.00],
+  snr:  [0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+  mgr:  [0.80, 0.85, 0.90, 0.95, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+  rvp:  [0.85, 0.90, 0.95, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+  svp:  [0.90, 0.95, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+  ceo:  [0.95, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+};
+
+export interface MonthlyProjection {
+  month: number;        // 1-12
+  label: string;        // "Jan", "Feb", etc.
+  /** Per-channel monthly income */
+  gdc: number;
+  aum: number;
+  affiliate: number;
+  override: number;
+  channel: number;
+  /** Totals */
+  monthlyTotal: number;
+  cumulativeTotal: number;
+  /** Target pacing */
+  linearTarget: number;       // Where you should be if income were even
+  cumulativeTarget: number;
+  onPace: boolean;
+  /** Factors applied */
+  seasonalFactor: number;
+  rampFactor: number;
+}
+
+export interface TimePhasedResult {
+  monthly: MonthlyProjection[];
+  quarterly: { q: number; label: string; total: number; target: number; gap: number }[];
+  milestones: { label: string; amount: number; expectedMonth: number | null; monthLabel: string }[];
+  annualTotal: number;
+  annualTarget: number;
+}
+
+export function calcTimePhasedProjections(params: {
+  targetIncome: number;
+  plan: ReturnType<typeof calcUnifiedIncomePlan>;
+  role: RoleId;
+  enabledChannels: EnabledChannels;
+  startMonth?: number; // 0=Jan, 1=Feb, ... 11=Dec. Default: current month
+}): TimePhasedResult {
+  const { targetIncome, plan, role, enabledChannels } = params;
+  const startMonth = params.startMonth ?? new Date().getMonth();
+  const ramp = RAMP_CURVES[role] || RAMP_CURVES.mid;
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Annual projections per channel
+  const annGDC = enabledChannels.gdc ? plan.channels.gdc.projected : 0;
+  const annAUM = enabledChannels.aum ? plan.channels.aum.detail.projectedIncome : 0;
+  const annAff = enabledChannels.affiliate ? plan.channels.affiliate.totalProjected : 0;
+  const annOvr = enabledChannels.override ? plan.channels.override.detail.projectedIncome : 0;
+  const annCh = enabledChannels.channel ? plan.channels.channel.detail.projectedAnnualRevenue : 0;
+  const annTotal = annGDC + annAUM + annAff + annOvr + annCh;
+
+  // Build monthly projections
+  let cumulative = 0;
+  const monthly: MonthlyProjection[] = [];
+  for (let i = 0; i < 12; i++) {
+    const calMonth = (startMonth + i) % 12;
+    const sf = SEASONAL_FACTORS[calMonth];
+    const rf = ramp[i];
+    const combined = sf * rf;
+
+    // Distribute annual income across months using combined factor
+    // Normalize so factors sum to 12 (one year)
+    const gdcMo = Math.round(annGDC / 12 * combined);
+    const aumMo = Math.round(annAUM / 12 * combined);
+    const affMo = Math.round(annAff / 12 * combined);
+    const ovrMo = Math.round(annOvr / 12 * combined);
+    const chMo = Math.round(annCh / 12 * combined);
+    const moTotal = gdcMo + aumMo + affMo + ovrMo + chMo;
+    cumulative += moTotal;
+
+    const linearTarget = Math.round(targetIncome / 12);
+    const cumulativeTarget = Math.round(targetIncome * (i + 1) / 12);
+
+    monthly.push({
+      month: i + 1,
+      label: monthNames[calMonth],
+      gdc: gdcMo, aum: aumMo, affiliate: affMo, override: ovrMo, channel: chMo,
+      monthlyTotal: moTotal,
+      cumulativeTotal: cumulative,
+      linearTarget,
+      cumulativeTarget,
+      onPace: cumulative >= cumulativeTarget,
+      seasonalFactor: sf,
+      rampFactor: rf,
+    });
+  }
+
+  // Quarterly roll-up
+  const quarterly = [0, 1, 2, 3].map(q => {
+    const qMonths = monthly.slice(q * 3, q * 3 + 3);
+    const total = qMonths.reduce((s, m) => s + m.monthlyTotal, 0);
+    const target = Math.round(targetIncome / 4);
+    return { q: q + 1, label: `Q${q + 1}`, total, target, gap: Math.max(0, target - total) };
+  });
+
+  // Milestones
+  const milestoneAmounts = [
+    { label: '25% of Target', amount: Math.round(targetIncome * 0.25) },
+    { label: '50% of Target', amount: Math.round(targetIncome * 0.50) },
+    { label: '75% of Target', amount: Math.round(targetIncome * 0.75) },
+    { label: '100% of Target', amount: targetIncome },
+    { label: 'Break Even (COGS)', amount: Math.round(targetIncome * 0.3) }, // Approximate break-even
+  ];
+  const milestones = milestoneAmounts.map(m => {
+    const hitMonth = monthly.find(mo => mo.cumulativeTotal >= m.amount);
+    return {
+      label: m.label,
+      amount: m.amount,
+      expectedMonth: hitMonth ? hitMonth.month : null,
+      monthLabel: hitMonth ? hitMonth.label : 'Beyond 12mo',
+    };
+  });
+
+  return {
+    monthly,
+    quarterly,
+    milestones,
+    annualTotal: cumulative,
+    annualTarget: targetIncome,
+  };
+}
+
 export { fmt, fmtSm, pct };

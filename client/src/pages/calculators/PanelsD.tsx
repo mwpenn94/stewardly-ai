@@ -21,10 +21,11 @@ import {
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
   calcTrackFunnel, blendSources, buildMonthlyProduction, calcGoalProgress,
   fmt, fmtSm, pct,
-  calcUnifiedIncomePlan, calcChannelEconomics, AFF_RATES, CHANNEL_BENCHMARKS,
-  type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels, type ChannelEconomics,
+  calcUnifiedIncomePlan, calcChannelEconomics, calcSensitivity, calcTimePhasedProjections, AFF_RATES, CHANNEL_BENCHMARKS,
+  type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels, type ChannelEconomics, type SensitivityResult, type TimePhasedResult,
 } from './practiceEngine';
 import { KPI, RefTip } from './shared';
+import { exportToExcel, exportToPDF, type ExportPlanData } from './exportPlan';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid, Area, AreaChart,
@@ -199,6 +200,43 @@ export function MyPlanPanel(p: PracticeProps) {
     p.targetGDC, p.wbPct, p.bracketOverride,
     avgGDC, p.funnelRates, p.months, p.aumExisting, p.aumNew, p.aumTrailPct,
     p.affCounts, p.affAvgProd, p.teamMembers.length, p.teamAvgGDC, p.overrideRate, p.channelSpend]);
+
+  // Economics (lifted to component level for export access)
+  const economics = useMemo(() => calcChannelEconomics({
+    enabledChannels: p.enabledChannels,
+    projections: {
+      gdc: plan.channels.gdc.projected,
+      aum: plan.channels.aum.detail.projectedIncome,
+      affiliate: plan.channels.affiliate.totalProjected,
+      override: plan.channels.override.detail.projectedIncome,
+      channel: plan.channels.channel.detail.projectedAnnualRevenue,
+    },
+    cacOverrides: p.cacOverrides,
+    cogsOverrides: p.cogsOverrides,
+  }), [plan, p.enabledChannels, p.cacOverrides, p.cogsOverrides]);
+
+  // Sensitivity (lifted to component level for export access)
+  const sensitivity = useMemo(() => calcSensitivity({
+    targetIncome: p.targetIncome, splits: p.incomeSplits, role: p.role,
+    enabledChannels: p.enabledChannels,
+    targetGDC: p.targetGDC, wbPct: p.wbPct, bracketOverride: p.bracketOverride,
+    avgGDC, funnelRates: p.funnelRates, months: p.months,
+    aumExisting: p.aumExisting, aumNew: p.aumNew, aumTrailPct: p.aumTrailPct,
+    affCounts: p.affCounts, affAvgProd: p.affAvgProd,
+    teamSize: p.teamMembers.length, teamAvgGDC: p.teamAvgGDC, overrideRate: p.overrideRate,
+    channelSpend: p.channelSpend,
+  }), [p.targetIncome, p.incomeSplits, p.role, p.enabledChannels,
+    p.targetGDC, p.wbPct, p.bracketOverride, avgGDC, p.funnelRates, p.months,
+    p.aumExisting, p.aumNew, p.aumTrailPct, p.affCounts, p.affAvgProd,
+    p.teamMembers.length, p.teamAvgGDC, p.overrideRate, p.channelSpend]);
+
+  // Time-phased projections (lifted to component level for export access)
+  const timePhased = useMemo(() => calcTimePhasedProjections({
+    targetIncome: p.targetIncome,
+    plan,
+    role: p.role,
+    enabledChannels: p.enabledChannels,
+  }), [p.targetIncome, plan, p.role, p.enabledChannels]);
 
   /** Forward cascade helper: when target income changes, push proportional targets to ALL channels */
   const forwardCascade = (newTarget: number) => {
@@ -450,6 +488,22 @@ export function MyPlanPanel(p: PracticeProps) {
             {plan.onTrack ? '✓ On Track' : `Gap: ${fmtSm(plan.totalGap)}`}
           </Badge>
           <RefTip text="Unified income planning: set a target income, allocate across channels, and the engine calculates what's needed in each channel to hit your goal. Defaults based on role-specific industry benchmarks." refId="commission" />
+          <div className="ml-auto flex gap-1">
+            <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+              const exportData: ExportPlanData = {
+                role: p.role, targetIncome: p.targetIncome, incomeSplits: p.incomeSplits,
+                enabledChannels: p.enabledChannels, plan, economics, sensitivity,
+              };
+              exportToPDF(exportData);
+            }}>PDF</Button>
+            <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+              const exportData: ExportPlanData = {
+                role: p.role, targetIncome: p.targetIncome, incomeSplits: p.incomeSplits,
+                enabledChannels: p.enabledChannels, plan, economics, sensitivity,
+              };
+              exportToExcel(exportData);
+            }}>Excel</Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -830,21 +884,7 @@ export function MyPlanPanel(p: PracticeProps) {
           )}
         </div>
 
-        {(() => {
-          const economics = calcChannelEconomics({
-            enabledChannels: p.enabledChannels,
-            projections: {
-              gdc: plan.channels.gdc.projected,
-              aum: plan.channels.aum.detail.projectedIncome,
-              affiliate: plan.channels.affiliate.totalProjected,
-              override: plan.channels.override.detail.projectedIncome,
-              channel: plan.channels.channel.detail.projectedAnnualRevenue,
-            },
-            cacOverrides: p.cacOverrides,
-            cogsOverrides: p.cogsOverrides,
-          });
-          if (economics.length === 0) return <p className="text-[10px] text-muted-foreground italic">Enable at least one channel to see economics.</p>;
-          return (
+        {economics.length === 0 ? <p className="text-[10px] text-muted-foreground italic">Enable at least one channel to see economics.</p> : (
             <>
               <DataTable
                 headers={['Channel', 'Revenue', 'CAC', 'COGS', 'Margin', 'ROI', 'LTV', 'LTV:CAC', 'Payback']}
@@ -889,8 +929,7 @@ export function MyPlanPanel(p: PracticeProps) {
                 </div>
               </details>
             </>
-          );
-        })()}
+          )}
 
         <Separator />
 
@@ -898,6 +937,20 @@ export function MyPlanPanel(p: PracticeProps) {
         <SectionHeader>6. Scenario Comparison</SectionHeader>
         <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Save your current plan as a named scenario, then compare multiple configurations side-by-side to evaluate different strategies.</p>
         <ScenarioManager p={p} plan={plan} funnel={funnel} />
+
+        <Separator />
+
+        {/* ─── SECTION 7: What-If Sensitivity Analysis ─── */}
+        <SectionHeader>7. What-If Sensitivity Analysis</SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Stress-test your plan by seeing how changes in key assumptions impact projected income. Variables sorted by impact magnitude.</p>
+        <SensitivityPanel sensitivity={sensitivity} plan={plan} targetIncome={p.targetIncome} />
+
+        <Separator />
+
+        {/* ─── SECTION 8: Time-Phased Projections ─── */}
+        <SectionHeader>8. Time-Phased Projections</SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Monthly and quarterly income ramp with seasonal adjustments and milestone tracking. Ramp curve based on your role ({HIER_NAMES[p.role]}).</p>
+        <TimePhasedPanel timePhased={timePhased} targetIncome={p.targetIncome} enabledChannels={p.enabledChannels} />
 
       </CardContent>
     </Card>
@@ -1093,6 +1146,266 @@ function ScenarioManager({ p, plan, funnel }: { p: PracticeProps; plan: ReturnTy
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SENSITIVITY PANEL — What-If Tornado + Stress Test
+   ═══════════════════════════════════════════════════════════════ */
+function SensitivityPanel({ sensitivity, plan, targetIncome }: { sensitivity: SensitivityResult[]; plan: ReturnType<typeof calcUnifiedIncomePlan>; targetIncome: number }) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  // Filter to only variables with non-zero impact
+  const active = sensitivity.filter(s => s.impactRange > 0);
+  const maxRange = active.length > 0 ? active[0].impactRange : 1;
+
+  const baseProjected = plan.totalProjected;
+
+  // Get pessimistic (-25%) and optimistic (+25%) from the top 3 most impactful variables
+  const pessimistic = active.slice(0, 3).reduce((sum, s) => {
+    const v = s.variations.find(v => v.pctChange === -25);
+    return sum + (v ? v.delta : 0);
+  }, baseProjected);
+  const optimistic = active.slice(0, 3).reduce((sum, s) => {
+    const v = s.variations.find(v => v.pctChange === 25);
+    return sum + (v ? v.delta : 0);
+  }, baseProjected);
+
+  return (
+    <div className="space-y-3">
+      {/* Stress Test Summary */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2 text-center">
+          <div className="text-[9px] text-red-400 uppercase tracking-wider">Pessimistic</div>
+          <div className="text-sm font-bold text-red-400">{fmtSm(pessimistic)}</div>
+          <div className="text-[9px] text-muted-foreground">{pessimistic < baseProjected ? '' : '+'}{fmtSm(pessimistic - baseProjected)}</div>
+        </div>
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 text-center">
+          <div className="text-[9px] text-blue-400 uppercase tracking-wider">Base Case</div>
+          <div className="text-sm font-bold text-blue-400">{fmtSm(baseProjected)}</div>
+          <div className="text-[9px] text-muted-foreground">Current plan</div>
+        </div>
+        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2 text-center">
+          <div className="text-[9px] text-green-400 uppercase tracking-wider">Optimistic</div>
+          <div className="text-sm font-bold text-green-400">{fmtSm(optimistic)}</div>
+          <div className="text-[9px] text-muted-foreground">+{fmtSm(optimistic - baseProjected)}</div>
+        </div>
+      </div>
+
+      {/* Tornado Chart */}
+      {active.length > 0 && (
+        <div>
+          <div className="text-[10px] font-bold text-muted-foreground mb-2">Impact Tornado (sorted by influence)</div>
+          <div className="space-y-1.5">
+            {active.slice(0, 6).map(s => {
+              const downVar = s.variations.find(v => v.pctChange === -25);
+              const upVar = s.variations.find(v => v.pctChange === 25);
+              const downDelta = downVar ? downVar.delta : 0;
+              const upDelta = upVar ? upVar.delta : 0;
+              const barWidthDown = maxRange > 0 ? Math.abs(downDelta) / maxRange * 100 : 0;
+              const barWidthUp = maxRange > 0 ? Math.abs(upDelta) / maxRange * 100 : 0;
+
+              return (
+                <div key={s.variable.key} className="flex items-center gap-2">
+                  <div className="w-32 text-[10px] text-right text-muted-foreground truncate" title={s.variable.label}>
+                    {s.variable.label}
+                  </div>
+                  <div className="flex-1 flex items-center h-5">
+                    {/* Negative bar (left) */}
+                    <div className="flex-1 flex justify-end">
+                      <div className="h-4 rounded-l bg-red-500/60 transition-all" style={{ width: `${Math.min(barWidthDown, 100)}%` }} />
+                    </div>
+                    {/* Center line */}
+                    <div className="w-px h-5 bg-muted-foreground/30" />
+                    {/* Positive bar (right) */}
+                    <div className="flex-1">
+                      <div className="h-4 rounded-r bg-green-500/60 transition-all" style={{ width: `${Math.min(barWidthUp, 100)}%` }} />
+                    </div>
+                  </div>
+                  <div className="w-20 text-[9px] text-muted-foreground">
+                    {fmtSm(downDelta)} / +{fmtSm(upDelta)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex justify-between text-[8px] text-muted-foreground/50 mt-1 px-32">
+            <span>\u2190 -25% worse</span>
+            <span>+25% better \u2192</span>
+          </div>
+        </div>
+      )}
+
+      {/* Detailed table */}
+      <details open={showDetails} onToggle={(e) => setShowDetails((e.target as HTMLDetailsElement).open)}>
+        <summary className="text-[10px] text-primary cursor-pointer hover:underline">Detailed sensitivity table</summary>
+        <div className="mt-2">
+          <DataTable
+            headers={['Variable', 'Base', '-50%', '-25%', '-10%', '+10%', '+25%', '+50%', 'Range']}
+            rows={active.map(s => [
+              s.variable.label,
+              s.variable.unit === '$' ? fmtSm(s.variable.baseValue) : s.variable.baseValue + (s.variable.unit === '%' ? '%' : ''),
+              ...s.variations.map(v => {
+                const color = v.delta > 0 ? 'text-green-400' : v.delta < 0 ? 'text-red-400' : 'text-muted-foreground';
+                return <span className={color}>{v.delta >= 0 ? '+' : ''}{fmtSm(v.delta)}</span>;
+              }),
+              <span className="font-semibold">{fmtSm(s.impactRange)}</span>,
+            ])}
+          />
+        </div>
+      </details>
+
+      <div className="text-[9px] text-muted-foreground/60 italic">
+        Sensitivity varies each assumption \u00b110/25/50% while holding others constant. Stress test uses \u00b125% on top 3 most impactful variables combined.
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TIME-PHASED PANEL — Monthly/Quarterly Projections + Milestones
+   ═══════════════════════════════════════════════════════════════ */
+function TimePhasedPanel({ timePhased, targetIncome, enabledChannels }: { timePhased: TimePhasedResult; targetIncome: number; enabledChannels: EnabledChannels }) {
+  const [view, setView] = useState<'monthly' | 'quarterly'>('monthly');
+  const { monthly, quarterly, milestones, annualTotal, annualTarget } = timePhased;
+
+  // Chart data for cumulative progress
+  const chartData = monthly.map(m => ({
+    name: m.label,
+    projected: m.cumulativeTotal,
+    target: m.cumulativeTarget,
+    monthly: m.monthlyTotal,
+  }));
+
+  // Channel stacked bar data
+  const channelBarData = monthly.map(m => ({
+    name: m.label,
+    ...(enabledChannels.gdc ? { GDC: m.gdc } : {}),
+    ...(enabledChannels.aum ? { AUM: m.aum } : {}),
+    ...(enabledChannels.affiliate ? { Affiliate: m.affiliate } : {}),
+    ...(enabledChannels.override ? { Override: m.override } : {}),
+    ...(enabledChannels.channel ? { Marketing: m.channel } : {}),
+    target: Math.round(targetIncome / 12),
+  }));
+
+  const channelColors: Record<string, string> = {
+    GDC: '#3b82f6', AUM: '#10b981', Affiliate: '#f59e0b', Override: '#a855f7', Marketing: '#ec4899',
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* View toggle */}
+      <div className="flex gap-1">
+        <Button variant={view === 'monthly' ? 'default' : 'outline'} size="sm" className="text-[10px] h-6" onClick={() => setView('monthly')}>Monthly</Button>
+        <Button variant={view === 'quarterly' ? 'default' : 'outline'} size="sm" className="text-[10px] h-6" onClick={() => setView('quarterly')}>Quarterly</Button>
+      </div>
+
+      {/* Cumulative Progress Chart */}
+      <div className="h-48 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#888' }} />
+            <YAxis tick={{ fontSize: 9, fill: '#888' }} tickFormatter={(v: number) => v >= 1000 ? `$${Math.round(v/1000)}k` : `$${v}`} />
+            <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 }} />
+            <Area type="monotone" dataKey="target" stroke="#666" fill="rgba(100,100,100,0.1)" strokeDasharray="5 5" name="Target Pace" />
+            <Area type="monotone" dataKey="projected" stroke="#3b82f6" fill="rgba(59,130,246,0.15)" name="Cumulative Projected" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Channel Stacked Bar Chart */}
+      <div className="h-40 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={channelBarData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#888' }} />
+            <YAxis tick={{ fontSize: 9, fill: '#888' }} tickFormatter={(v: number) => v >= 1000 ? `$${Math.round(v/1000)}k` : `$${v}`} />
+            <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 11 }} />
+            {Object.entries(channelColors).filter(([k]) => channelBarData[0]?.[k as keyof typeof channelBarData[0]] !== undefined).map(([k, c]) => (
+              <Bar key={k} dataKey={k} stackId="channels" fill={c} />
+            ))}
+            <Line type="monotone" dataKey="target" stroke="#ef4444" strokeDasharray="3 3" dot={false} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {view === 'monthly' ? (
+        <DataTable
+          headers={['Month', 'GDC', 'AUM', 'Aff', 'Ovr', 'Mkt', 'Total', 'Cumulative', 'Target', 'Pace']}
+          rows={monthly.map(m => [
+            <span key={m.label} className="font-semibold">{m.label}</span>,
+            enabledChannels.gdc ? fmtSm(m.gdc) : <span className="text-muted-foreground/40">—</span>,
+            enabledChannels.aum ? fmtSm(m.aum) : <span className="text-muted-foreground/40">—</span>,
+            enabledChannels.affiliate ? fmtSm(m.affiliate) : <span className="text-muted-foreground/40">—</span>,
+            enabledChannels.override ? fmtSm(m.override) : <span className="text-muted-foreground/40">—</span>,
+            enabledChannels.channel ? fmtSm(m.channel) : <span className="text-muted-foreground/40">—</span>,
+            <span key={`t-${m.month}`} className="font-semibold">{fmtSm(m.monthlyTotal)}</span>,
+            <span key={`c-${m.month}`} className={m.onPace ? 'text-green-400' : 'text-amber-400'}>{fmtSm(m.cumulativeTotal)}</span>,
+            fmtSm(m.cumulativeTarget),
+            m.onPace
+              ? <Badge key={`p-${m.month}`} variant="outline" className="text-[8px] text-green-400 border-green-400/30">✓ On Pace</Badge>
+              : <Badge key={`p-${m.month}`} variant="outline" className="text-[8px] text-amber-400 border-amber-400/30">↓ Behind</Badge>,
+          ])}
+        />
+      ) : (
+        <DataTable
+          headers={['Quarter', 'Projected', 'Target', 'Gap', 'Status']}
+          rows={quarterly.map(q => [
+            <span key={q.label} className="font-bold">{q.label}</span>,
+            <span key={`p-${q.q}`} className="font-semibold">{fmtSm(q.total)}</span>,
+            fmtSm(q.target),
+            q.gap > 0 ? <span className="text-red-400">{fmtSm(q.gap)}</span> : <span className="text-green-400">On Track</span>,
+            q.total >= q.target
+              ? <Badge variant="outline" className="text-[8px] text-green-400 border-green-400/30">✓</Badge>
+              : <Badge variant="outline" className="text-[8px] text-amber-400 border-amber-400/30">{Math.round(q.total / q.target * 100)}%</Badge>,
+          ])}
+        />
+      )}
+
+      {/* Milestones */}
+      <details>
+        <summary className="text-[10px] text-primary cursor-pointer hover:underline font-semibold">Milestone Tracker</summary>
+        <div className="mt-2 space-y-1">
+          {milestones.map((m, i) => (
+            <div key={i} className="flex items-center gap-2 text-[10px]">
+              <div className={`w-2 h-2 rounded-full ${m.expectedMonth ? 'bg-green-400' : 'bg-red-400'}`} />
+              <span className="font-semibold w-32">{m.label}</span>
+              <span className="text-muted-foreground">{fmtSm(m.amount)}</span>
+              <span className="text-muted-foreground">→</span>
+              <span className={m.expectedMonth ? 'text-green-400' : 'text-red-400'}>
+                {m.expectedMonth ? `Month ${m.expectedMonth} (${m.monthLabel})` : 'Not reached in 12 months'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </details>
+
+      {/* Seasonal & Ramp Factors */}
+      <details>
+        <summary className="text-[10px] text-primary cursor-pointer hover:underline font-semibold">Seasonal & Ramp Factors</summary>
+        <div className="mt-2">
+          <DataTable
+            headers={['Month', 'Seasonal', 'Ramp', 'Combined']}
+            rows={monthly.map(m => [
+              m.label,
+              <span key={`s-${m.month}`} className={m.seasonalFactor >= 1 ? 'text-green-400' : 'text-amber-400'}>{(m.seasonalFactor * 100).toFixed(0)}%</span>,
+              <span key={`r-${m.month}`} className={m.rampFactor >= 0.9 ? 'text-green-400' : m.rampFactor >= 0.5 ? 'text-amber-400' : 'text-red-400'}>{(m.rampFactor * 100).toFixed(0)}%</span>,
+              <span key={`c-${m.month}`} className="font-semibold">{(m.seasonalFactor * m.rampFactor * 100).toFixed(0)}%</span>,
+            ])}
+          />
+          <p className="text-[9px] text-muted-foreground/60 italic mt-1">Seasonal factors: LIMRA annual sales surveys. Ramp curve: industry-typical for your role level.</p>
+        </div>
+      </details>
+
+      {/* Annual Summary KPIs */}
+      <div className="flex flex-wrap gap-2">
+        <KPI label="Annual Projected" value={fmtSm(annualTotal)} variant={annualTotal >= annualTarget ? 'grn' : 'red'} />
+        <KPI label="Annual Target" value={fmtSm(annualTarget)} variant="blu" />
+        <KPI label="Annual Gap" value={annualTotal >= annualTarget ? 'On Track' : fmtSm(annualTarget - annualTotal)} variant={annualTotal >= annualTarget ? 'grn' : 'red'} />
+        <KPI label="Best Quarter" value={(() => { const best = [...quarterly].sort((a,b) => b.total - a.total)[0]; return best ? `${best.label} (${fmtSm(best.total)})` : '—'; })()} variant="gld" />
+      </div>
     </div>
   );
 }
