@@ -161,6 +161,7 @@ export const TOOLS_NAV: NavItemDef[] = [
 
   // ── LEARNING — EMBA tracks, licenses, content authoring
   { iconName: "GraduationCap", label: "Learning", href: "/learning", minRole: "user", section: "learning" },
+  { iconName: "Brain", label: "Study Buddy", href: "/learning/study-buddy", minRole: "user", section: "learning" },
   { iconName: "Shield", label: "Licenses", href: "/learning/licenses", minRole: "user", section: "learning" },
   { iconName: "Award", label: "Achievements", href: "/learning/achievements", minRole: "user", section: "learning" },
   { iconName: "GitBranch", label: "Concept Map", href: "/learning/connections", minRole: "user", section: "learning" },

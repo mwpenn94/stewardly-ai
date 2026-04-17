@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { usePlaidLink } from "react-plaid-link";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -1564,12 +1565,15 @@ export default function Integrations() {
   );
 }
 
-// ─── Plaid Link Button (Pass 57) ──────────────────────────────────────
+// ─── Plaid Link Button (Pass 103 — Full react-plaid-link integration) ──────
 function PlaidLinkButton({ accountKey }: { accountKey: string }) {
   const createLinkToken = trpc.plaid.createLinkToken.useMutation();
+  const exchangeToken = trpc.plaid.exchangeToken.useMutation();
+  const [linkToken, setLinkToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [linked, setLinked] = useState(false);
 
-  const handleLink = async () => {
+  const initLink = useCallback(async () => {
     if (accountKey !== "plaid") {
       toast.info("Canopy Connect integration coming soon.");
       return;
@@ -1578,28 +1582,77 @@ function PlaidLinkButton({ accountKey }: { accountKey: string }) {
     try {
       const result = await createLinkToken.mutateAsync({});
       if (result.mock) {
-        toast.info("Plaid is in mock mode. Sandbox credentials are configured — use user_good / pass_good to test.");
+        toast.info("Plaid sandbox mode — use user_good / pass_good to test.");
       }
-      // In production, you'd load the Plaid Link SDK here with the token
-      // For now, show the link token for testing
-      toast.success(`Plaid Link token created. ${result.mock ? "(Mock mode)" : "Ready to connect."} Token: ${result.linkToken.substring(0, 20)}...`);
+      setLinkToken(result.linkToken);
     } catch (err: any) {
       toast.error(`Failed to create Plaid link: ${err.message}`);
-    } finally {
       setLoading(false);
     }
-  };
+  }, [accountKey]);
+
+  const handleSuccess = useCallback(async (publicToken: string, metadata: any) => {
+    try {
+      const result = await exchangeToken.mutateAsync({ publicToken });
+      setLinked(true);
+      toast.success(
+        `Bank account linked successfully! ${result.mock ? "(Sandbox mode)" : ""}` +
+        ` Item: ${result.itemId.substring(0, 12)}…`
+      );
+      sessionStorage.setItem("plaid_access_token", result.accessToken);
+      sessionStorage.setItem("plaid_item_id", result.itemId);
+    } catch (err: any) {
+      toast.error(`Failed to link account: ${err.message}`);
+    } finally {
+      setLoading(false);
+      setLinkToken(null);
+    }
+  }, []);
+
+  if (linkToken) {
+    return <PlaidLinkOpener linkToken={linkToken} onSuccess={handleSuccess} onExit={() => { setLoading(false); setLinkToken(null); }} />;
+  }
 
   return (
     <Button
       size="sm"
-      variant="outline"
-      className="w-full"
-      onClick={handleLink}
-      disabled={loading}
+      variant={linked ? "default" : "outline"}
+      className={`w-full ${linked ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
+      onClick={initLink}
+      disabled={loading || linked}
     >
-      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Link2 className="h-3.5 w-3.5 mr-1.5" />}
-      {accountKey === "plaid" ? "Link Bank Account" : "Connect Insurance Policies"}
+      {loading ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+      ) : linked ? (
+        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+      ) : (
+        <Link2 className="h-3.5 w-3.5 mr-1.5" />
+      )}
+      {linked ? "Account Linked" : accountKey === "plaid" ? "Link Bank Account" : "Connect Insurance Policies"}
+    </Button>
+  );
+}
+
+// ─── Plaid Link Opener (uses react-plaid-link hook) ──────────────────────────
+function PlaidLinkOpener({ linkToken, onSuccess, onExit }: {
+  linkToken: string;
+  onSuccess: (publicToken: string, metadata: any) => void;
+  onExit: () => void;
+}) {
+  const { open, ready } = usePlaidLink({
+    token: linkToken,
+    onSuccess: (publicToken, metadata) => onSuccess(publicToken, metadata),
+    onExit: () => onExit(),
+  });
+
+  useEffect(() => {
+    if (ready) open();
+  }, [ready, open]);
+
+  return (
+    <Button size="sm" variant="outline" className="w-full" disabled>
+      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+      Opening Plaid Link…
     </Button>
   );
 }

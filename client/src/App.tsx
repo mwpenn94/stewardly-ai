@@ -150,6 +150,7 @@ const DisciplineDeepDive = lazy(() => import("./pages/learning/DisciplineDeepDiv
 const CaseStudySimulator = lazy(() => import("./pages/learning/CaseStudySimulator"));
 const AchievementSystem = lazy(() => import("./pages/learning/AchievementSystem"));
 const ConnectionMap = lazy(() => import("./pages/learning/ConnectionMap"));
+const StudyBuddy = lazy(() => import("./pages/learning/StudyBuddy"));
 const AudioPreferences = lazy(() => import("./pages/settings/AudioPreferences"));
 // Comparables — competitive gap dashboard (hybrid build loop, pass 1)
 const ComparablesPage = lazy(() => import("./pages/Comparables"));
@@ -292,6 +293,7 @@ function Router() {
         <Route path="/learning/case/:caseId">{() => <CaseStudySimulator />}</Route>
         <Route path="/learning/connections">{() => <ConnectionMap />}</Route>
         <Route path="/learning/achievements">{() => <AchievementSystem />}</Route>
+        <Route path="/learning/study-buddy" component={StudyBuddy} />
 
         {/* Consolidated Hub Pages */}
         {/* Comparables — competitive gap dashboard (hybrid build loop pass 1) */}
