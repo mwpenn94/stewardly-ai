@@ -5380,3 +5380,10 @@
 - [x] Total: 95 tests across 5 test files (passes 89, 91-95), all passing
 - [x] Production build verified (45s, no errors)
 - [x] Recursive convergence: 3 consecutive clean passes confirmed — CONVERGED
+
+## Pass 96 — Drag-to-Rebalance, Cascade Audit Trail, Scenario Diff
+- [x] Drag-to-rebalance splits: visual drag handle on split column to drag percentages between channels
+- [x] Cross-cascade audit trail: log each cascade action (what changed, what was adjusted) with undo capability
+- [x] Scenario diff with cross-cascade: highlight which channels diverged due to different cascade paths
+- [x] Pass 96 vitest tests: 25 tests covering dragRebalanceSplit, createAuditEntry, calcScenarioDiff
+- [x] Recursive convergence: 3/3 clean passes, 149 tests across 7 files, build verified (40s)

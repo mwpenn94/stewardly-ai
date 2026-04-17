@@ -23,7 +23,9 @@ import {
   fmt, fmtSm, pct,
   calcUnifiedIncomePlan, calcChannelEconomics, calcSensitivity, calcTimePhasedProjections, AFF_RATES, CHANNEL_BENCHMARKS,
   backSolveChannelTarget, backSolveChannelProjected, autoBalanceSplits, calcChannelBalances, CHANNEL_KEYS,
+  dragRebalanceSplit, createAuditEntry, calcScenarioDiff,
   type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels, type ChannelEconomics, type SensitivityResult, type TimePhasedResult, type BackSolveResult, type ChannelBalance,
+  type CascadeAuditEntry, type CascadeInputSnapshot, type CascadeDirection, type ScenarioDiffResult,
 } from './practiceEngine';
 import { KPI, RefTip } from './shared';
 import { exportToExcel, exportToPDF, type ExportPlanData } from './exportPlan';
@@ -155,9 +157,32 @@ const SPLIT_COLORS: Record<string, string> = {
   override: '#8b5cf6', channel: '#ec4899',
 };
 
-function SplitSlider({ label, value, onChange, color, targetAmount }: {
-  label: string; value: number; onChange: (v: number) => void; color: string; targetAmount: number;
+function SplitSlider({ label, value, onChange, onDrag, color, targetAmount }: {
+  label: string; value: number; onChange: (v: number) => void; onDrag?: (v: number) => void; color: string; targetAmount: number;
 }) {
+  const [dragging, setDragging] = useState(false);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!onDrag) return;
+    const bar = e.currentTarget;
+    bar.setPointerCapture(e.pointerId);
+    setDragging(true);
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(100, Math.round((e.clientX - rect.left) / rect.width * 100)));
+    onDrag(pct);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging || !onDrag) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(100, Math.round((e.clientX - rect.left) / rect.width * 100)));
+    onDrag(pct);
+  };
+
+  const handlePointerUp = () => {
+    setDragging(false);
+  };
+
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-[11px]">
@@ -168,8 +193,21 @@ function SplitSlider({ label, value, onChange, color, targetAmount }: {
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
+        <div
+          className={`flex-1 h-3 bg-muted/30 rounded-full overflow-hidden relative ${onDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          title={onDrag ? 'Drag to rebalance — other channels adjust proportionally' : undefined}
+        >
           <div className="h-full rounded-full transition-all" style={{ width: `${value}%`, backgroundColor: color }} />
+          {onDrag && (
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-3 h-5 rounded-sm border-2 bg-background shadow-md"
+              style={{ left: `calc(${value}% - 6px)`, borderColor: color }}
+            />
+          )}
         </div>
         <Input type="number" value={value} onChange={e => onChange(Math.max(0, Math.min(100, +e.target.value || 0)))}
           className="h-6 w-14 text-[10px] text-right" />
@@ -429,6 +467,58 @@ export function MyPlanPanel(p: PracticeProps) {
 
   // Channel balances for cross-cascade visibility
   const channelBalances = useMemo(() => calcChannelBalances(plan, p.enabledChannels), [plan, p.enabledChannels]);
+
+  // ─── PASS 96: Cascade Audit Trail ───
+  const [auditTrail, setAuditTrail] = useState<CascadeAuditEntry[]>([]);
+  const MAX_AUDIT = 50;
+
+  const captureSnapshot = useCallback((): CascadeInputSnapshot => ({
+    targetIncome: p.targetIncome,
+    incomeSplits: { ...p.incomeSplits },
+    enabledChannels: { ...p.enabledChannels },
+    targetGDC: p.targetGDC,
+    aumExisting: p.aumExisting,
+    aumNew: p.aumNew,
+    affCounts: { ...p.affCounts },
+    teamAvgGDC: p.teamAvgGDC,
+    channelSpend: { ...p.channelSpend },
+  }), [p.targetIncome, p.incomeSplits, p.enabledChannels, p.targetGDC, p.aumExisting, p.aumNew, p.affCounts, p.teamAvgGDC, p.channelSpend]);
+
+  const addAuditEntry = useCallback((entry: CascadeAuditEntry) => {
+    setAuditTrail(prev => [entry, ...prev].slice(0, MAX_AUDIT));
+  }, []);
+
+  const undoAuditEntry = useCallback((entry: CascadeAuditEntry) => {
+    const snap = entry.prevInputs;
+    p.setTargetIncome(snap.targetIncome);
+    p.setIncomeSplits(snap.incomeSplits);
+    p.setEnabledChannels(snap.enabledChannels);
+    p.setTargetGDC(snap.targetGDC);
+    p.setAumExisting(snap.aumExisting);
+    p.setAumNew(snap.aumNew);
+    p.setAffCounts(snap.affCounts);
+    p.setTeamAvgGDC(snap.teamAvgGDC);
+    p.setChannelSpend(snap.channelSpend);
+    // Remove this entry and all entries after it
+    setAuditTrail(prev => prev.filter(e => e.id < entry.id));
+  }, []);
+
+  // ─── PASS 96: Drag-to-Rebalance handler ───
+  const handleSplitDrag = useCallback((ch: keyof EnabledChannels, newPct: number) => {
+    const snapshot = captureSnapshot();
+    const oldPct = p.incomeSplits[ch];
+    const newSplits = dragRebalanceSplit(ch, newPct, p.incomeSplits, p.enabledChannels);
+    p.setIncomeSplits(newSplits);
+    cascadeChannel(ch, newSplits[ch]);
+    addAuditEntry(createAuditEntry(
+      'split-drag',
+      `Dragged ${SPLIT_LABELS[ch]} split from ${oldPct}% to ${newSplits[ch]}%`,
+      ch,
+      [{ field: 'split', from: oldPct, to: newSplits[ch], channel: ch }],
+      snapshot.incomeSplits,
+      snapshot,
+    ));
+  }, [p.incomeSplits, p.enabledChannels, captureSnapshot, addAuditEntry]);
 
   /** Toggle a channel on/off with smart split redistribution */
   const toggleChannel = (ch: keyof typeof p.enabledChannels) => {
@@ -690,6 +780,7 @@ export function MyPlanPanel(p: PracticeProps) {
                 {p.enabledChannels[k] && (
                   <SplitSlider label={SPLIT_LABELS[k]} value={p.incomeSplits[k]} color={SPLIT_COLORS[k]}
                     targetAmount={Math.round(p.targetIncome * p.incomeSplits[k] / 100)}
+                    onDrag={v => handleSplitDrag(k, v)}
                     onChange={v => {
                       const next = { ...p.incomeSplits, [k]: v };
                       p.setIncomeSplits(next);
@@ -925,6 +1016,42 @@ export function MyPlanPanel(p: PracticeProps) {
             </div>
           )}
         </div>
+
+        {/* ─── SECTION 4b: Cascade Audit Trail ─── */}
+        {auditTrail.length > 0 && (
+          <details className="mt-2">
+            <summary className="text-[10px] font-semibold text-primary cursor-pointer">Cascade Audit Trail ({auditTrail.length} actions)</summary>
+            <div className="mt-2 max-h-48 overflow-y-auto space-y-1">
+              {auditTrail.map(entry => {
+                const dirIcon = entry.direction === 'roll-down' ? '↓' : entry.direction === 'roll-up' ? '↑' : entry.direction === 'auto-balance' ? '⇄' : entry.direction === 'split-drag' ? '↔' : entry.direction === 'sync' ? '⟳' : '⚡';
+                const dirColor = entry.direction === 'roll-down' ? 'text-amber-400' : entry.direction === 'roll-up' ? 'text-green-400' : entry.direction === 'auto-balance' ? 'text-blue-400' : entry.direction === 'split-drag' ? 'text-purple-400' : 'text-primary';
+                return (
+                  <div key={entry.id} className="flex items-start gap-2 bg-muted/20 rounded p-1.5 text-[10px]">
+                    <span className={`font-bold ${dirColor} shrink-0`}>{dirIcon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold truncate">{entry.trigger}</div>
+                      <div className="text-muted-foreground">
+                        {entry.changes.slice(0, 3).map((c, i) => (
+                          <span key={i}>{c.field}: {typeof c.from === 'number' ? fmtSm(c.from) : c.from} → {typeof c.to === 'number' ? fmtSm(c.to) : c.to}{i < Math.min(2, entry.changes.length - 1) ? ' | ' : ''}</span>
+                        ))}
+                        {entry.changes.length > 3 && <span> +{entry.changes.length - 3} more</span>}
+                      </div>
+                      <div className="text-[8px] text-muted-foreground/60">{new Date(entry.timestamp).toLocaleTimeString()}</div>
+                    </div>
+                    <button
+                      className="text-[9px] px-1.5 py-0.5 rounded border border-red-400/30 text-red-400 hover:bg-red-400/10 transition-colors shrink-0"
+                      onClick={() => undoAuditEntry(entry)}
+                      title="Undo this action and all subsequent actions"
+                    >Undo</button>
+                  </div>
+                );
+              })}
+            </div>
+            {auditTrail.length > 0 && (
+              <Button variant="ghost" size="sm" className="text-[9px] h-5 mt-1 text-muted-foreground" onClick={() => setAuditTrail([])}>Clear Audit Trail</Button>
+            )}
+          </details>
+        )}
 
         <Separator />
 
@@ -1374,8 +1501,98 @@ function ScenarioManager({ p, plan, funnel }: { p: PracticeProps; plan: ReturnTy
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* ─── PASS 96: Scenario Diff with Cross-Cascade Highlighting ─── */}
+          <ScenarioDiffPanel scenarios={scenarios} />
         </div>
       )}
+    </div>
+  );
+}
+
+function ScenarioDiffPanel({ scenarios }: { scenarios: SavedScenario[] }) {
+  const diff = useMemo(() => calcScenarioDiff(scenarios), [scenarios]);
+  const [showAll, setShowAll] = useState(false);
+
+  if (diff.fields.length === 0) return null;
+
+  const displayFields = showAll ? diff.fields : diff.fields.filter(f => f.divergent);
+
+  return (
+    <div className="mt-4 bg-muted/20 rounded-lg p-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[11px] font-bold text-primary">Cross-Cascade Diff Analysis</div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-[9px] text-blue-400 border-blue-400/30">
+            {diff.similarityScore}% Similar
+          </Badge>
+          <Badge variant="outline" className={`text-[9px] ${diff.cascadeDrivenCount > 0 ? 'text-purple-400 border-purple-400/30' : 'text-muted-foreground'}`}>
+            {diff.cascadeDrivenCount} cascade-driven
+          </Badge>
+        </div>
+      </div>
+      <p className="text-[9px] text-muted-foreground mb-2">
+        {diff.divergentCount} of {diff.fields.length} fields diverge. Fields highlighted in <span className="text-amber-400">amber</span> are direct input differences; fields in <span className="text-purple-400">purple</span> diverged due to different cascade paths.
+      </p>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-[10px] border-collapse">
+          <thead>
+            <tr className="bg-muted/40">
+              <th className="px-2 py-1 text-left font-semibold">Field</th>
+              <th className="px-2 py-1 text-center font-semibold">Type</th>
+              {scenarios.map(s => (
+                <th key={s.name} className="px-2 py-1 text-right font-semibold">{s.name.length > 12 ? s.name.slice(0, 12) + '\u2026' : s.name}</th>
+              ))}
+              <th className="px-2 py-1 text-right font-semibold">Divergence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayFields.map(f => {
+              const typeColor = f.divergenceType === 'cascade' ? 'text-purple-400' : f.divergenceType === 'input' ? 'text-amber-400' : 'text-muted-foreground';
+              const rowBg = f.divergenceType === 'cascade' ? 'bg-purple-400/5' : f.divergent ? 'bg-amber-400/5' : '';
+              return (
+                <tr key={f.field} className={`border-b border-border/20 ${rowBg}`}>
+                  <td className="px-2 py-1">
+                    <span className={f.divergent ? 'font-semibold' : 'text-muted-foreground'}>{f.label}</span>
+                    {f.channel && <span className="ml-1 text-[8px]" style={{ color: SPLIT_COLORS[f.channel] }}>●</span>}
+                  </td>
+                  <td className={`px-2 py-1 text-center ${typeColor}`}>
+                    {f.divergenceType === 'cascade' ? '↓↑ Cascade' : f.divergenceType === 'input' ? '✎ Input' : '✓'}
+                  </td>
+                  {f.values.map((v, i) => (
+                    <td key={i} className="px-2 py-1 text-right font-mono">
+                      {typeof v === 'number' ? fmtSm(v) : v}
+                    </td>
+                  ))}
+                  <td className="px-2 py-1 text-right">
+                    {f.divergent ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <div className="w-12 h-1.5 bg-muted/30 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${Math.min(100, f.divergenceMagnitude)}%`, backgroundColor: f.divergenceType === 'cascade' ? '#a78bfa' : '#fbbf24' }} />
+                        </div>
+                        <span className="text-[8px] text-muted-foreground">{f.divergenceMagnitude}%</span>
+                      </div>
+                    ) : (
+                      <span className="text-green-400 text-[8px]">✓</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex items-center gap-2 mt-2">
+        <Button variant="ghost" size="sm" className="text-[9px] h-5" onClick={() => setShowAll(!showAll)}>
+          {showAll ? 'Show Divergent Only' : `Show All ${diff.fields.length} Fields`}
+        </Button>
+        <div className="flex gap-2 text-[8px] text-muted-foreground">
+          <span>● <span className="text-amber-400">Input</span> = user changed</span>
+          <span>● <span className="text-purple-400">Cascade</span> = auto-propagated</span>
+        </div>
+      </div>
     </div>
   );
 }

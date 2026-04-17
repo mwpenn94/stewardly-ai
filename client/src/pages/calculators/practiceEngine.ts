@@ -1317,4 +1317,206 @@ export function calcChannelBalances(plan: UnifiedIncomePlan, enabledChannels: En
   }));
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   PASS 96 — CROSS-CASCADE AUDIT TRAIL
+   ═══════════════════════════════════════════════════════════════ */
+
+export type CascadeDirection = 'roll-down' | 'roll-up' | 'auto-balance' | 'sync' | 'toggle' | 'split-drag';
+
+export interface CascadeAuditEntry {
+  id: number;
+  timestamp: number;
+  direction: CascadeDirection;
+  trigger: string;          // human-readable description of what the user did
+  channel: keyof EnabledChannels | 'all';
+  changes: CascadeChange[];
+  /** Snapshot of splits before this action (for undo) */
+  prevSplits: IncomeSplits;
+  /** Snapshot of key inputs before this action (for undo) */
+  prevInputs: CascadeInputSnapshot;
+}
+
+export interface CascadeChange {
+  field: string;
+  from: number | string;
+  to: number | string;
+  channel?: keyof EnabledChannels;
+}
+
+export interface CascadeInputSnapshot {
+  targetIncome: number;
+  incomeSplits: IncomeSplits;
+  enabledChannels: EnabledChannels;
+  targetGDC: number;
+  aumExisting: number;
+  aumNew: number;
+  affCounts: { a: number; b: number; c: number; d: number };
+  teamAvgGDC: number;
+  channelSpend: Record<string, number>;
+}
+
+let _auditIdCounter = 0;
+
+export function createAuditEntry(
+  direction: CascadeDirection,
+  trigger: string,
+  channel: keyof EnabledChannels | 'all',
+  changes: CascadeChange[],
+  prevSplits: IncomeSplits,
+  prevInputs: CascadeInputSnapshot,
+): CascadeAuditEntry {
+  return {
+    id: ++_auditIdCounter,
+    timestamp: Date.now(),
+    direction,
+    trigger,
+    channel,
+    changes,
+    prevSplits,
+    prevInputs,
+  };
+}
+
+export function resetAuditCounter(): void {
+  _auditIdCounter = 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PASS 96 — SCENARIO DIFF WITH CROSS-CASCADE HIGHLIGHTING
+   ═══════════════════════════════════════════════════════════════ */
+
+export interface ScenarioDiffField {
+  field: string;
+  label: string;
+  channel?: keyof EnabledChannels;
+  values: (number | string)[];
+  /** true if values diverge across scenarios */
+  divergent: boolean;
+  /** magnitude of divergence as % of max value (0-100) */
+  divergenceMagnitude: number;
+  /** 'cascade' if the divergence is likely caused by different cascade paths */
+  divergenceType: 'input' | 'cascade' | 'identical';
+}
+
+export interface ScenarioDiffResult {
+  fields: ScenarioDiffField[];
+  /** Number of fields that diverge */
+  divergentCount: number;
+  /** Number of fields where divergence is cascade-driven */
+  cascadeDrivenCount: number;
+  /** Overall similarity score 0-100 */
+  similarityScore: number;
+}
+
+/** Input fields that the user directly controls */
+const INPUT_FIELDS = new Set([
+  'targetIncome', 'role', 'targetGDC', 'aumExisting', 'aumNew', 'aumTrailPct', 'overrideRate',
+]);
+
+/** Fields that are computed via cascade from inputs */
+const CASCADE_FIELDS = new Set([
+  'gdc_split', 'aum_split', 'affiliate_split', 'override_split', 'channel_split',
+  'gdc_projected', 'aum_projected', 'affiliate_projected', 'override_projected', 'channel_projected',
+  'totalProjected', 'totalGap',
+]);
+
+export function calcScenarioDiff(scenarios: {
+  name: string;
+  targetIncome: number;
+  incomeSplits: IncomeSplits;
+  enabledChannels: EnabledChannels;
+  role: RoleId;
+  targetGDC: number;
+  aumExisting: number;
+  aumNew: number;
+  aumTrailPct: number;
+  overrideRate: number;
+  totalProjected: number;
+  totalGap: number;
+  channelProjections: { gdc: number; aum: number; affiliate: number; override: number; channel: number };
+}[]): ScenarioDiffResult {
+  if (scenarios.length < 2) {
+    return { fields: [], divergentCount: 0, cascadeDrivenCount: 0, similarityScore: 100 };
+  }
+
+  const fieldDefs: { field: string; label: string; channel?: keyof EnabledChannels; extract: (s: typeof scenarios[0]) => number | string }[] = [
+    { field: 'targetIncome', label: 'Target Income', extract: s => s.targetIncome },
+    { field: 'role', label: 'Role', extract: s => s.role },
+    { field: 'targetGDC', label: 'GDC Target', extract: s => s.targetGDC },
+    { field: 'aumExisting', label: 'AUM Book', extract: s => s.aumExisting },
+    { field: 'aumNew', label: 'New AUM/Year', extract: s => s.aumNew },
+    { field: 'aumTrailPct', label: 'Trail %', extract: s => s.aumTrailPct },
+    { field: 'overrideRate', label: 'Override Rate', extract: s => s.overrideRate },
+    { field: 'gdc_split', label: 'GDC Split %', channel: 'gdc', extract: s => s.incomeSplits.gdc },
+    { field: 'aum_split', label: 'AUM Split %', channel: 'aum', extract: s => s.incomeSplits.aum },
+    { field: 'affiliate_split', label: 'Affiliate Split %', channel: 'affiliate', extract: s => s.incomeSplits.affiliate },
+    { field: 'override_split', label: 'Override Split %', channel: 'override', extract: s => s.incomeSplits.override },
+    { field: 'channel_split', label: 'Marketing Split %', channel: 'channel', extract: s => s.incomeSplits.channel },
+    { field: 'gdc_projected', label: 'GDC Projected', channel: 'gdc', extract: s => s.channelProjections.gdc },
+    { field: 'aum_projected', label: 'AUM Projected', channel: 'aum', extract: s => s.channelProjections.aum },
+    { field: 'affiliate_projected', label: 'Affiliate Projected', channel: 'affiliate', extract: s => s.channelProjections.affiliate },
+    { field: 'override_projected', label: 'Override Projected', channel: 'override', extract: s => s.channelProjections.override },
+    { field: 'channel_projected', label: 'Marketing Projected', channel: 'channel', extract: s => s.channelProjections.channel },
+    { field: 'totalProjected', label: 'Total Projected', extract: s => s.totalProjected },
+    { field: 'totalGap', label: 'Total Gap', extract: s => s.totalGap },
+  ];
+
+  const fields: ScenarioDiffField[] = fieldDefs.map(fd => {
+    const values = scenarios.map(s => fd.extract(s));
+    const allSame = values.every(v => v === values[0]);
+    let divergenceMagnitude = 0;
+    if (!allSame) {
+      const nums = values.filter(v => typeof v === 'number') as number[];
+      if (nums.length >= 2) {
+        const maxVal = Math.max(...nums.map(Math.abs));
+        const range = Math.max(...nums) - Math.min(...nums);
+        divergenceMagnitude = maxVal > 0 ? Math.round(range / maxVal * 100) : 0;
+      } else {
+        divergenceMagnitude = 100; // string values that differ
+      }
+    }
+
+    // Determine if divergence is input-driven or cascade-driven
+    let divergenceType: 'input' | 'cascade' | 'identical' = 'identical';
+    if (!allSame) {
+      divergenceType = INPUT_FIELDS.has(fd.field) ? 'input' : CASCADE_FIELDS.has(fd.field) ? 'cascade' : 'input';
+    }
+
+    return {
+      field: fd.field,
+      label: fd.label,
+      channel: fd.channel,
+      values,
+      divergent: !allSame,
+      divergenceMagnitude,
+      divergenceType,
+    };
+  });
+
+  const divergentCount = fields.filter(f => f.divergent).length;
+  const cascadeDrivenCount = fields.filter(f => f.divergenceType === 'cascade').length;
+  const similarityScore = Math.round((1 - divergentCount / fields.length) * 100);
+
+  return { fields, divergentCount, cascadeDrivenCount, similarityScore };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PASS 96 — DRAG-TO-REBALANCE HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Calculate new splits when dragging a channel's split bar.
+ * Redistributes the delta proportionally among other enabled channels.
+ * Returns new splits that always sum to 100.
+ */
+export function dragRebalanceSplit(
+  ch: keyof EnabledChannels,
+  newPct: number,
+  currentSplits: IncomeSplits,
+  enabledChannels: EnabledChannels,
+): IncomeSplits {
+  const clamped = Math.max(0, Math.min(100, Math.round(newPct)));
+  return redistributeSplits(ch, clamped, currentSplits, enabledChannels);
+}
+
 export { fmt, fmtSm, pct };
