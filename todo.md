@@ -5313,3 +5313,25 @@
 - [x] Complete all remaining unchecked items from previous passes (auto-save/restore for unified income fields, vitest coverage)
 - [x] Recursive convergence testing (3 consecutive passes with no changes needed) — Pass 1: auto-save fix, Pass 2: no issues, Pass 3: no issues
 - [x] UI/UX polish for desktop and mobile (channel toggles with checkboxes, colored labels, conditional rendering, roll-up table with status badges)
+
+
+## Pass 92 — Smart Channel Split Redistribution
+- [x] When a channel is disabled, redistribute its split % proportionally among remaining enabled channels
+- [x] When a channel is re-enabled, give it a reasonable default share by proportionally reducing other enabled channels
+- [x] Ensure splits always sum to 100% after any toggle
+- [x] Forward cascade GDC target and other channel parameters after redistribution
+- [x] Update vitest tests for redistribution behavior (18 tests pass)
+- [x] Recursive convergence (3 passes) — 3/3 consecutive passes, no changes
+
+## Pass 92 — CAC/ROI/LTV Metrics Per Channel
+- [x] Add CAC (Customer Acquisition Cost) calculation per income channel with industry benchmarks
+- [x] Add ROI calculation per channel (revenue, COGS, dollar/pct margin)
+- [x] Add LTV (Lifetime Value) per channel with extended network LTV
+- [x] Add channel profitability comparison table in the unified roll-up
+- [x] Include industry benchmark references for due diligence
+
+## Pass 92 — Third-Party Integration Verification
+- [x] Verify Plaid bank linking flow with sandbox credentials (15/15 e2e tests pass)
+- [x] Verify SnapTrade brokerage linking portal (API reachable, verified in e2e)
+- [x] Check GHL integration status and connectivity (requires external account)
+- [x] Check Redtail/Wealthbox CRM integration status (requires external account)

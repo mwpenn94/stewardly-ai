@@ -21,8 +21,8 @@ import {
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
   calcTrackFunnel, blendSources, buildMonthlyProduction, calcGoalProgress,
   fmt, fmtSm, pct,
-  calcUnifiedIncomePlan,
-  type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels,
+  calcUnifiedIncomePlan, calcChannelEconomics,
+  type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels, type ChannelEconomics,
 } from './practiceEngine';
 import { KPI, RefTip } from './shared';
 import {
@@ -209,10 +209,66 @@ export function MyPlanPanel(p: PracticeProps) {
     // We update the target display but don't force AUM book changes
   };
 
-  /** Toggle a channel on/off */
+  /** Toggle a channel on/off with smart split redistribution */
   const toggleChannel = (ch: keyof typeof p.enabledChannels) => {
-    const next = { ...p.enabledChannels, [ch]: !p.enabledChannels[ch] };
-    p.setEnabledChannels(next);
+    const wasEnabled = p.enabledChannels[ch];
+    const nextEnabled = { ...p.enabledChannels, [ch]: !wasEnabled };
+    const keys: (keyof typeof p.enabledChannels)[] = ['gdc', 'aum', 'affiliate', 'override', 'channel'];
+    const nextSplits = { ...p.incomeSplits };
+
+    if (wasEnabled) {
+      /* ── DISABLING a channel: redistribute its % proportionally among remaining enabled ── */
+      const freedPct = nextSplits[ch];
+      nextSplits[ch] = 0;
+      const remainingKeys = keys.filter(k => k !== ch && nextEnabled[k]);
+      const remainingSum = remainingKeys.reduce((s, k) => s + nextSplits[k], 0);
+      if (remainingKeys.length > 0 && remainingSum > 0) {
+        // Proportional redistribution
+        let distributed = 0;
+        remainingKeys.forEach((k, i) => {
+          if (i === remainingKeys.length - 1) {
+            nextSplits[k] += (freedPct - distributed); // remainder to last to ensure sum = 100
+          } else {
+            const share = Math.round(freedPct * (nextSplits[k] / remainingSum));
+            nextSplits[k] += share;
+            distributed += share;
+          }
+        });
+      } else if (remainingKeys.length > 0) {
+        // All remaining are at 0% — split evenly
+        const even = Math.floor(freedPct / remainingKeys.length);
+        remainingKeys.forEach((k, i) => {
+          nextSplits[k] = i === remainingKeys.length - 1 ? freedPct - even * (remainingKeys.length - 1) : even;
+        });
+      }
+    } else {
+      /* ── ENABLING a channel: give it its role-default share, reduce others proportionally ── */
+      const roleDefault = (ROLE_DEFAULTS[p.role] || ROLE_DEFAULTS.new).incomeSplits[ch];
+      // Use role default or 10% if role default is 0
+      const newShare = roleDefault > 0 ? roleDefault : 10;
+      const enabledKeys = keys.filter(k => k !== ch && nextEnabled[k]);
+      const currentSum = enabledKeys.reduce((s, k) => s + nextSplits[k], 0);
+      if (currentSum > 0) {
+        // Proportionally reduce existing enabled channels to make room
+        const scaleFactor = Math.max(0, (currentSum - newShare)) / currentSum;
+        let allocated = 0;
+        enabledKeys.forEach((k, i) => {
+          if (i === enabledKeys.length - 1) {
+            nextSplits[k] = Math.max(0, currentSum - newShare - allocated);
+          } else {
+            const reduced = Math.round(nextSplits[k] * scaleFactor);
+            nextSplits[k] = reduced;
+            allocated += reduced;
+          }
+        });
+      }
+      nextSplits[ch] = newShare;
+    }
+
+    p.setEnabledChannels(nextEnabled);
+    p.setIncomeSplits(nextSplits);
+    // Forward cascade: update GDC target from new split
+    p.setTargetGDC(Math.round(p.targetIncome * nextSplits.gdc / 100));
   };
 
   const overrideInc = p.teamMembers.length > 0 ? teamOvr.total : recSummary.tOvr;
@@ -559,6 +615,73 @@ export function MyPlanPanel(p: PracticeProps) {
             <KPI label="Monthly Projected" value={fmtSm(Math.round(plan.totalProjected / 12))} variant="blu" />
           </div>
         </div>
+
+        <Separator />
+
+        {/* ─── SECTION 5: Channel Economics — CAC / ROI / LTV ─── */}
+        <SectionHeader>5. Channel Economics — CAC / ROI / LTV
+          <RefTip text="Industry benchmarks from LIMRA, Cerulli, McKinsey Insurance Practice, Kitces Research (2024). CAC = Customer Acquisition Cost, ROI = Return on Investment, LTV = Lifetime Value. Extended Network LTV includes a 1.3× referral multiplier." refId="economics" />
+        </SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Profitability analysis per channel using industry benchmarks. Hover over reference icons for source citations.</p>
+        {(() => {
+          const economics = calcChannelEconomics({
+            enabledChannels: p.enabledChannels,
+            projections: {
+              gdc: plan.channels.gdc.projected,
+              aum: plan.channels.aum.detail.projectedIncome,
+              affiliate: plan.channels.affiliate.totalProjected,
+              override: plan.channels.override.detail.projectedIncome,
+              channel: plan.channels.channel.detail.projectedAnnualRevenue,
+            },
+          });
+          if (economics.length === 0) return <p className="text-[10px] text-muted-foreground italic">Enable at least one channel to see economics.</p>;
+          return (
+            <>
+              <DataTable
+                headers={['Channel', 'Revenue', 'CAC', 'COGS', 'Margin', 'ROI', 'LTV', 'LTV:CAC', 'Payback']}
+                rows={economics.map(e => [
+                  <span key={e.channel} style={{ color: SPLIT_COLORS[e.channel] }} className="font-semibold">{e.label}</span>,
+                  fmtSm(e.annualRevenue),
+                  fmtSm(e.cac),
+                  <span key={`cg-${e.channel}`} className="text-muted-foreground">{fmtSm(e.cogsDollar)} ({e.cogsPct}%)</span>,
+                  <span key={`mg-${e.channel}`} className={e.grossMarginPct >= 50 ? 'text-green-400' : 'text-amber-400'}>{fmtSm(e.grossMarginDollar)} ({e.grossMarginPct}%)</span>,
+                  <span key={`roi-${e.channel}`} className={e.roiPct >= 100 ? 'text-green-400 font-semibold' : e.roiPct >= 0 ? 'text-amber-400' : 'text-red-400'}>{e.roiPct}%</span>,
+                  fmtSm(e.clientLTV),
+                  <span key={`ltv-${e.channel}`} className={e.ltvCacRatio >= 3 ? 'text-green-400 font-semibold' : e.ltvCacRatio >= 1 ? 'text-amber-400' : 'text-red-400'}>{e.ltvCacRatio}×</span>,
+                  <span key={`pb-${e.channel}`} className="text-muted-foreground">{e.paybackMonths < 999 ? e.paybackMonths + ' mo' : '—'}</span>,
+                ])}
+              />
+              <details className="mt-2">
+                <summary className="text-[10px] font-semibold text-primary cursor-pointer">Extended Economics & Benchmarks</summary>
+                <div className="mt-2 space-y-2">
+                  <DataTable
+                    headers={['Channel', 'Ext Network LTV', 'Best-in-Class CAC', 'Your CAC', 'Efficiency', 'Source']}
+                    rows={economics.map(e => [
+                      <span key={e.channel} style={{ color: SPLIT_COLORS[e.channel] }} className="font-semibold">{e.label}</span>,
+                      fmtSm(e.extendedNetworkLTV),
+                      fmtSm(e.bestInClassCAC),
+                      fmtSm(e.cac),
+                      <Badge key={`eff-${e.channel}`} variant="outline" className={`text-[9px] ${
+                        e.cacEfficiency === 'Above Avg' ? 'text-green-400 border-green-400/30' :
+                        e.cacEfficiency === 'Average' ? 'text-amber-400 border-amber-400/30' :
+                        'text-red-400 border-red-400/30'
+                      }`}>{e.cacEfficiency}</Badge>,
+                      <span key={`ref-${e.channel}`} className="text-[9px] text-muted-foreground max-w-[200px] truncate" title={e.ref}>{e.ref.split(';')[0]}</span>,
+                    ])}
+                  />
+                  {/* Roll-up totals */}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <KPI label="Total Revenue" value={fmtSm(economics.reduce((s, e) => s + e.annualRevenue, 0))} variant="grn" />
+                    <KPI label="Total COGS" value={fmtSm(economics.reduce((s, e) => s + e.cogsDollar, 0))} variant="red" />
+                    <KPI label="Total Margin" value={fmtSm(economics.reduce((s, e) => s + e.grossMarginDollar, 0))} variant="grn" />
+                    <KPI label="Avg LTV:CAC" value={(() => { const avg = economics.length > 0 ? economics.reduce((s, e) => s + e.ltvCacRatio, 0) / economics.length : 0; return avg.toFixed(1) + '×'; })()} variant={(() => { const avg = economics.length > 0 ? economics.reduce((s, e) => s + e.ltvCacRatio, 0) / economics.length : 0; return avg >= 3 ? 'grn' : avg >= 1 ? 'gld' : 'red'; })()} />
+                    <KPI label="Avg Payback" value={(() => { const valid = economics.filter(e => e.paybackMonths < 999); return valid.length > 0 ? Math.round(valid.reduce((s, e) => s + e.paybackMonths, 0) / valid.length) + ' mo' : '—'; })()} variant="blu" />
+                  </div>
+                </div>
+              </details>
+            </>
+          );
+        })()}
 
       </CardContent>
     </Card>

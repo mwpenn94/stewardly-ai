@@ -750,4 +750,144 @@ export function calcBackFromChannels(params: {
   return params.gdcProjected + params.aumProjected + params.affProjected + params.ovrProjected + params.chProjected;
 }
 
+/* ═══ CHANNEL ECONOMICS — CAC / ROI / LTV ═══ */
+
+/** Industry benchmark data per income channel.
+ *  Sources: LIMRA, Cerulli, McKinsey Insurance Practice, Kitces Research.
+ *  Values represent reasonable mid-market benchmarks for financial services. */
+export interface ChannelBenchmark {
+  label: string;
+  /** Avg cost to acquire one client/relationship in this channel */
+  cac: number;
+  /** COGS as % of revenue (commissions, platform fees, compliance, etc.) */
+  cogsPct: number;
+  /** Average annual revenue per client/relationship */
+  avgRevenuePerClient: number;
+  /** Client retention rate year-over-year */
+  retentionRate: number;
+  /** Average client lifetime in years */
+  avgLifetimeYears: number;
+  /** Industry best-in-class CAC for comparison */
+  bestInClassCAC: number;
+  /** Reference note for due diligence */
+  ref: string;
+}
+
+export const CHANNEL_BENCHMARKS: Record<string, ChannelBenchmark> = {
+  gdc: {
+    label: 'GDC Production',
+    cac: 1200, cogsPct: 35, avgRevenuePerClient: 3500, retentionRate: 0.82,
+    avgLifetimeYears: 8, bestInClassCAC: 600,
+    ref: 'LIMRA 2024 Distribution Economics; avg advisor client acquisition cost $800–$1,500. COGS includes carrier splits, E&O, compliance.',
+  },
+  aum: {
+    label: 'AUM/Advisory',
+    cac: 3500, cogsPct: 25, avgRevenuePerClient: 5000, retentionRate: 0.93,
+    avgLifetimeYears: 12, bestInClassCAC: 1500,
+    ref: 'Cerulli 2024 RIA Benchmarking; avg AUM client CAC $2,500–$5,000. Higher retention = higher LTV. COGS: custodian fees, tech stack, compliance.',
+  },
+  affiliate: {
+    label: 'Affiliates',
+    cac: 2000, cogsPct: 40, avgRevenuePerClient: 2500, retentionRate: 0.70,
+    avgLifetimeYears: 5, bestInClassCAC: 800,
+    ref: 'McKinsey Insurance Distribution 2024; affiliate onboarding cost $1,500–$3,000. Higher COGS due to split arrangements. Retention varies by affiliate tier.',
+  },
+  override: {
+    label: 'Team Override',
+    cac: 5000, cogsPct: 15, avgRevenuePerClient: 8000, retentionRate: 0.75,
+    avgLifetimeYears: 6, bestInClassCAC: 2500,
+    ref: 'GAMA International 2024; team member recruitment cost $3,000–$8,000 including training. Low COGS (override is margin). Retention = agent retention rate.',
+  },
+  channel: {
+    label: 'Marketing Channels',
+    cac: 800, cogsPct: 45, avgRevenuePerClient: 2000, retentionRate: 0.65,
+    avgLifetimeYears: 4, bestInClassCAC: 300,
+    ref: 'Kitces Research 2024; digital marketing CAC $400–$1,200 for financial services. Higher COGS due to ad spend, content creation, tech. Lower retention than referral channels.',
+  },
+};
+
+/** Per-channel economics result */
+export interface ChannelEconomics {
+  channel: string;
+  label: string;
+  /* Revenue & costs */
+  annualRevenue: number;
+  cac: number;
+  cogsDollar: number;
+  cogsPct: number;
+  grossMarginDollar: number;
+  grossMarginPct: number;
+  /* ROI */
+  roi: number; // (revenue - COGS) / CAC as ratio
+  roiPct: number; // as percentage
+  /* LTV */
+  clientLTV: number; // single client lifetime value
+  extendedNetworkLTV: number; // LTV including referral multiplier
+  ltvCacRatio: number; // LTV / CAC
+  /* Payback */
+  paybackMonths: number; // months to recover CAC
+  /* Benchmarks */
+  bestInClassCAC: number;
+  cacEfficiency: string; // 'Above Avg' | 'Average' | 'Below Avg'
+  ref: string;
+}
+
+/** Calculate economics for all enabled channels */
+export function calcChannelEconomics(params: {
+  enabledChannels: EnabledChannels;
+  projections: {
+    gdc: number; aum: number; affiliate: number; override: number; channel: number;
+  };
+  /** Optional user overrides for CAC per channel */
+  cacOverrides?: Partial<Record<string, number>>;
+  /** Referral multiplier for extended network LTV (default 1.3) */
+  referralMultiplier?: number;
+}): ChannelEconomics[] {
+  const { enabledChannels, projections, cacOverrides = {}, referralMultiplier = 1.3 } = params;
+  const keys: (keyof EnabledChannels)[] = ['gdc', 'aum', 'affiliate', 'override', 'channel'];
+
+  return keys.filter(k => enabledChannels[k]).map(k => {
+    const bm = CHANNEL_BENCHMARKS[k];
+    const revenue = projections[k];
+    const cac = cacOverrides[k] ?? bm.cac;
+    const cogsDollar = Math.round(revenue * bm.cogsPct / 100);
+    const grossMargin = revenue - cogsDollar;
+    const grossMarginPct = revenue > 0 ? Math.round(grossMargin / revenue * 100) : 0;
+
+    // Estimate number of clients from revenue / avg revenue per client
+    const estClients = bm.avgRevenuePerClient > 0 ? Math.max(1, Math.round(revenue / bm.avgRevenuePerClient)) : 1;
+    const totalCAC = cac * estClients;
+
+    // ROI = (Revenue - COGS - Total CAC) / Total CAC
+    const roiDollar = revenue - cogsDollar - totalCAC;
+    const roi = totalCAC > 0 ? roiDollar / totalCAC : 0;
+    const roiPct = Math.round(roi * 100);
+
+    // LTV = avg revenue per client × avg lifetime × retention factor
+    // Geometric series: sum = r * (1 - ret^years) / (1 - ret)
+    const ret = bm.retentionRate;
+    const years = bm.avgLifetimeYears;
+    const retentionFactor = ret < 1 ? (1 - Math.pow(ret, years)) / (1 - ret) : years;
+    const clientLTV = Math.round(bm.avgRevenuePerClient * retentionFactor * (1 - bm.cogsPct / 100));
+    const extendedNetworkLTV = Math.round(clientLTV * referralMultiplier);
+    const ltvCacRatio = cac > 0 ? Math.round(clientLTV / cac * 10) / 10 : 0;
+
+    // Payback: months to recover CAC from monthly net margin
+    const monthlyNet = grossMargin / 12;
+    const paybackMonths = monthlyNet > 0 ? Math.round(cac / monthlyNet * estClients) : 999;
+
+    // CAC efficiency vs benchmark
+    const cacEfficiency = cac <= bm.bestInClassCAC ? 'Above Avg' : cac <= bm.cac ? 'Average' : 'Below Avg';
+
+    return {
+      channel: k, label: bm.label,
+      annualRevenue: revenue, cac, cogsDollar, cogsPct: bm.cogsPct,
+      grossMarginDollar: grossMargin, grossMarginPct,
+      roi, roiPct, clientLTV, extendedNetworkLTV, ltvCacRatio,
+      paybackMonths: Math.min(paybackMonths, 999),
+      bestInClassCAC: bm.bestInClassCAC, cacEfficiency, ref: bm.ref,
+    };
+  });
+}
+
 export { fmt, fmtSm, pct };
