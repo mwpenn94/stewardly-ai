@@ -16,7 +16,7 @@ import {
   Target, Layers, Package, Filter, Users, Megaphone, LayoutDashboard, Receipt,
   Flag, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu,
   Briefcase, Gem, Handshake, CalendarRange, RotateCcw, X, Info,
-  PieChart, Landmark, Heart, Percent, Dices, FileCheck, Wallet, Gavel, CreditCard, Gift
+  PieChart, Landmark, Heart, Percent, Dices, FileCheck, Wallet, Gavel, CreditCard, Gift, Share2
 } from 'lucide-react';
 
 import {
@@ -46,6 +46,7 @@ import {
   type RoleId, type TeamMember, type RecruitTrack,
 } from './calculators/practiceEngine';
 import { SEOHead } from "@/components/SEOHead";
+import { ShareButton } from "@/components/sharing/ShareKit";
 
 /* ═══ PANEL TYPE DEFINITIONS ═══ */
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
@@ -1200,6 +1201,7 @@ export default function Calculators() {
               }} className="text-xs gap-1 h-7 text-red-400 hover:text-red-300" aria-label="Reset all inputs to defaults">
                 <RotateCcw className="w-3 h-3" /> <span className="hidden sm:inline">Reset</span>
               </Button>
+              <ShareButton contentType="calculator" contentId={activeSessionId || 'unsaved'} contentTitle={`WealthBridge Calculator — ${clientName || 'Session'}`} variant="outline" size="sm" className="text-xs gap-1 h-7" />
             </div>
           </div>
 

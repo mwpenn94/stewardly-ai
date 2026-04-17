@@ -132,7 +132,7 @@ export function RetirementPanel(p: PanelProps) {
         </CardHeader>
         <CardContent>
           <Tabs value={retireMethod} onValueChange={v => setRetireMethod(v as any)}>
-            <TabsList className="grid grid-cols-4 mb-4">
+            <TabsList className="grid grid-cols-2 sm:grid-cols-4 mb-4">
               <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
               <TabsTrigger value="buckets" className="text-xs">Bucket</TabsTrigger>
               <TabsTrigger value="floor" className="text-xs">Floor-Upside</TabsTrigger>

@@ -1976,7 +1976,7 @@ function SensitivityPanel({ sensitivity, plan, targetIncome }: { sensitivity: Se
   return (
     <div className="space-y-3">
       {/* Stress Test Summary */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2 text-center">
           <div className="text-[9px] text-red-400 uppercase tracking-wider">Pessimistic</div>
           <div className="text-sm font-bold text-red-400">{fmtSm(pessimistic)}</div>
@@ -3714,7 +3714,7 @@ function PlanningHorizonViz({ points, targetIncome }: { points: PlanningHorizonP
       {hoveredPoint && (
         <div className="bg-card border border-border rounded-lg p-2 text-[10px]">
           <div className="font-bold mb-1">Month {hoveredPoint.month} {hoveredPoint.milestone && `— ${hoveredPoint.milestone}`}</div>
-          <div className="grid grid-cols-3 gap-1">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
             <span>GDC: {fmtSm(hoveredPoint.gdc)}</span>
             <span>AUM: {fmtSm(hoveredPoint.aum)}</span>
             <span>Affiliate: {fmtSm(hoveredPoint.affiliate)}</span>
@@ -3809,7 +3809,7 @@ function UnifiedPnLSection({ plan, economics, taxRate, opExPct }: {
       </div>
 
       {/* Channel Breakdown */}
-      <div className="grid grid-cols-5 gap-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
         {pnl.channelBreakdown.map(ch => (
           <div key={ch.channel} className="bg-card/30 rounded p-2 text-center border border-border/30">
             <div className="text-[8px] text-muted-foreground">{ch.channel}</div>
@@ -3933,7 +3933,7 @@ function RollUpChartSection({ points, targetIncome }: {
       </div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="bg-card/30 rounded p-2 text-center border border-border/30">
           <div className="text-[8px] text-muted-foreground">Total Projected</div>
           <div className="text-[11px] font-bold text-blue-400 tabular-nums">{fmtSm(chartData.totals.reduce((s, v) => s + v, 0))}</div>

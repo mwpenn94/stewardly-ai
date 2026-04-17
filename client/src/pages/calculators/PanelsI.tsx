@@ -489,7 +489,7 @@ export function GovernanceIPSPanel({ riskTolerance }: GovernanceProps) {
           {/* Suggested vs Current */}
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
             <h4 className="text-sm font-semibold text-blue-400 mb-2">Suggested Allocation for "{riskTolerance}" Risk Profile</h4>
-            <div className="grid grid-cols-4 gap-2 text-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
               <div>Equity: {suggestedAlloc.equity}%</div>
               <div>Fixed: {suggestedAlloc.fixed}%</div>
               <div>Alt: {suggestedAlloc.alt}%</div>
@@ -607,7 +607,7 @@ export function MonteCarloPanel({ savings, retirement401k, monthlySav, retireAge
           {/* Percentile Distribution */}
           <div>
             <h4 className="text-sm font-semibold mb-3">Portfolio Value Distribution at End of Retirement</h4>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
               {[
                 { label: '10th %ile', value: results.p10, color: 'text-red-400' },
                 { label: '25th %ile', value: results.p25, color: 'text-amber-400' },

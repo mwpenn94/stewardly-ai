@@ -123,7 +123,7 @@ export function ProductionOptPanel() {
           {/* Conversion Rates */}
           <div>
             <h4 className="text-sm font-semibold mb-3">Conversion Rates</h4>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <N label="Call → Meeting" value={Math.round(callToMeeting * 100)} onChange={v => setCallToMeeting(v / 100)} suffix="%" min={0} max={100} />
               <N label="Meeting → Proposal" value={Math.round(meetingToProposal * 100)} onChange={v => setMeetingToProposal(v / 100)} suffix="%" min={0} max={100} />
               <N label="Proposal → Close" value={Math.round(proposalToClose * 100)} onChange={v => setProposalToClose(v / 100)} suffix="%" min={0} max={100} />
@@ -710,7 +710,7 @@ export function PnLBusinessEconomicsPanel() {
           {/* Below the Line */}
           <div>
             <h4 className="text-sm font-semibold mb-3">Below the Line</h4>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <N label="Interest Expense" value={interestExpense} onChange={setInterestExpense} prefix="$" />
               <N label="Dep. & Amort." value={depAmort} onChange={setDepAmort} prefix="$" />
               <N label="Tax Rate" value={taxRate} onChange={setTaxRate} suffix="%" min={0} max={50} />
