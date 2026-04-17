@@ -14,6 +14,7 @@ import {
   Activity, Box, GitBranch, Terminal, Eye, Sparkles, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
+import { SEOHead } from "@/components/SEOHead";
 
 /* ─── Capability Registry ─── */
 interface Capability {
@@ -142,6 +143,7 @@ export default function ManusNextDashboard() {
 
   return (
     <div className="container max-w-6xl py-8 space-y-6">
+      <SEOHead title="Manus-Next" description="Platform capability validation dashboard" />
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">

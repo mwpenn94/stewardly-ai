@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { CalendarCheck, FileText, History, Plus, Trash2, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { SEOHead } from "@/components/SEOHead";
 
 interface GoalEntry { goalName: string; targetAmount: number; currentAmount: number; targetDate: string; onTrack: boolean; }
 interface InsuranceEntry { type: string; provider: string; coverage: number; premium: number; expirationDate: string; adequate: boolean; }
@@ -62,6 +63,7 @@ export default function AnnualReview() {
 
   return (
     <div className="container max-w-5xl py-8 space-y-6">
+      <SEOHead title="Annual Review" description="Generate comprehensive annual financial reviews" />
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <CalendarCheck className="h-8 w-8 text-primary" /> Annual Financial Review

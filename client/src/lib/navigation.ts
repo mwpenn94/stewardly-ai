@@ -174,6 +174,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "RefreshCw", label: "Due Review", href: "/learning/review", minRole: "user", section: "learning" },
   { iconName: "Search", label: "Search Content", href: "/learning/search", minRole: "user", section: "learning" },
   { iconName: "Sparkles", label: "Content Studio", href: "/learning/studio", minRole: "advisor", section: "learning" },
+  { iconName: "Compass", label: "Sovereign Study", href: "/sovereign-study", minRole: "user", section: "learning" },
 ];
 
 // ─── ADMIN section ───────────────────────────────────────────────────────────
@@ -203,6 +204,9 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "Shield", label: "BCP Dashboard", href: "/admin/bcp", minRole: "admin" },
   { iconName: "Scale", label: "Fairness Audit", href: "/admin/fairness", minRole: "admin" },
   { iconName: "Sparkles", label: "Manus-Next", href: "/manus-next", minRole: "admin" },
+  { iconName: "Workflow", label: "Workflow Automation", href: "/workflow-automation", minRole: "admin" },
+  { iconName: "Layers", label: "Enrichment Engine", href: "/enrichment-admin", minRole: "admin" },
+  { iconName: "Gauge", label: "Portal Analytics", href: "/portal-analytics", minRole: "admin" },
   { iconName: "Link2", label: "Admin Integrations", href: "/admin/integrations", minRole: "admin" },
   { iconName: "BookOpen", label: "Knowledge Base", href: "/admin/knowledge", minRole: "admin" },
   { iconName: "Shield", label: "Feature Permissions", href: "/admin/feature-permissions", minRole: "admin" },

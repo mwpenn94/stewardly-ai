@@ -151,6 +151,9 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Key: <Shield className="w-4 h-4" />,
   Webhook: <Zap className="w-4 h-4" />,
   GitMerge: <GitBranch className="w-4 h-4" />,
+  Workflow: <Activity className="w-4 h-4" />,
+  Layers: <LayoutGrid className="w-4 h-4" />,
+  Gauge: <BarChart3 className="w-4 h-4" />,
 };
 
 function iconFor(name?: string): React.ReactNode {

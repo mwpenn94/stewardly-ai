@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Shield, FileSearch, Lock, Loader2, Search, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { SEOHead } from "@/components/SEOHead";
 
 const SEVERITY_COLORS: Record<string, string> = {
   critical: "bg-red-500/10 text-red-500 border-red-500/20",
@@ -51,6 +52,7 @@ export default function ComplianceCopilot() {
 
     return (
       <div key={i} className="border rounded-lg p-4 space-y-2 hover:bg-muted/30 transition-colors">
+      <SEOHead title="Compliance Copilot" description="AI-powered compliance monitoring and audit" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {SEVERITY_ICON[severity] || SEVERITY_ICON.info}

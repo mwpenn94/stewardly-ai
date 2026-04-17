@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Calculator, TrendingDown, RefreshCw, DollarSign, Loader2, BarChart3, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { SEOHead } from "@/components/SEOHead";
 
 const FILING_STATUSES = [
   { value: "single", label: "Single" },
@@ -71,6 +72,7 @@ export default function TaxProjector() {
 
   return (
     <div className="container max-w-5xl py-8 space-y-6">
+      <SEOHead title="Tax Projector" description="Multi-year tax projection and Roth conversion analysis" />
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Calculator className="h-8 w-8 text-primary" /> Tax Projector

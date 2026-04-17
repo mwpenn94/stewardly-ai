@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, History, RefreshCw, Loader2, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import { SEOHead } from "@/components/SEOHead";
 
 export default function PremiumFinanceRates() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export default function PremiumFinanceRates() {
 
   return (
     <div className="container max-w-5xl py-8 space-y-6">
+      <SEOHead title="Premium Finance Rates" description="Premium finance rate analysis and history" />
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <TrendingUp className="h-8 w-8 text-primary" /> Premium Finance Rates

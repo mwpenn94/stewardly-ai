@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, TrendingUp, Clock, History, ArrowRight, DollarSign, Users, BarChart3, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { SEOHead } from "@/components/SEOHead";
 
 const EXIT_PATHS = [
   { value: "sale", label: "Third-Party Sale" },
@@ -67,6 +68,7 @@ export default function BusinessExit() {
 
   return (
     <div className="container max-w-5xl py-8 space-y-6">
+      <SEOHead title="Business Exit Planning" description="Business exit strategy analysis and planning" />
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Building2 className="h-8 w-8 text-primary" /> Business Exit Planner

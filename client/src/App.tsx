@@ -170,6 +170,10 @@ const ComplianceCopilot = lazy(() => import("./pages/ComplianceCopilot"));
 const TaxProjector = lazy(() => import("./pages/TaxProjector"));
 const PremiumFinanceRates = lazy(() => import("./pages/PremiumFinanceRates"));
 const ManusNextDashboard = lazy(() => import("./pages/ManusNextDashboard"));
+const WorkflowAutomation = lazy(() => import("./pages/WorkflowAutomation"));
+const EnrichmentAdmin = lazy(() => import("./pages/EnrichmentAdmin"));
+const PortalAnalytics = lazy(() => import("./pages/PortalAnalytics"));
+const SovereignStudy = lazy(() => import("./pages/SovereignStudy"));
 
 function Router() {
   return (
@@ -370,6 +374,10 @@ function Router() {
         <Route path={"/tax-projector"} component={TaxProjector} />
         <Route path={"/premium-finance-rates"} component={PremiumFinanceRates} />
         <Route path={"/manus-next"} component={ManusNextDashboard} />
+        <Route path={"/workflow-automation"} component={WorkflowAutomation} />
+        <Route path={"/enrichment-admin"} component={EnrichmentAdmin} />
+        <Route path={"/portal-analytics"} component={PortalAnalytics} />
+        <Route path={"/sovereign-study"} component={SovereignStudy} />
         <Route path={"/professionals"}><Redirect to="/relationships" /></Route>
 
         <Route path={"/404"} component={NotFound} />
