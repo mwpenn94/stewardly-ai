@@ -2005,10 +2005,13 @@ export interface RollUpChartData {
 
 /** Generate combined chart data from time-phased projections */
 export function calcRollUpChartData(
-  points: TimePhasedPoint[],
+  points: MonthlyProjection[],
   targetIncome: number,
   viewMode: 'monthly' | 'quarterly' | 'annual' = 'monthly'
 ): RollUpChartData {
+  if (!points || points.length === 0) {
+    return { labels: [], datasets: [], totals: [], targetLine: [] };
+  }
   if (viewMode === 'quarterly') {
     const quarters: { label: string; gdc: number; aum: number; affiliate: number; override: number; channel: number }[] = [];
     for (let q = 0; q < Math.ceil(points.length / 3); q++) {

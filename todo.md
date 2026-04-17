@@ -5893,3 +5893,5 @@
 - [x] Fix Wealth Engine crash: 'Cannot access auditTrail before initialization' — moved useEffect after declarations in PanelsD.tsx
 - [x] Audit all pages for similar TDZ/initialization errors — found 3 false positives (different scopes), PanelsD.tsx was the only real issue
 - [x] Playwright-verified all 10 critical pages load without crashes
+- [ ] Fix Calculators crash: 'Cannot read properties of undefined (reading length)' — null-safety audit across entire Wealth Engine
+- [x] Fix Calculators 'Cannot read properties of undefined (reading length)' — timePhased.points changed to timePhased.monthly, added null guard in calcRollUpChartData

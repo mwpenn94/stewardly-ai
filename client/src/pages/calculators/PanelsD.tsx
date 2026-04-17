@@ -1465,7 +1465,7 @@ export function MyPlanPanel(p: PracticeProps) {
           <Badge variant="outline" className="ml-2 text-[9px]">Combined</Badge>
         </SectionHeader>
         <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Stacked channel revenue over time with target line overlay. Toggle monthly/quarterly/annual views.</p>
-        <RollUpChartSection points={timePhased.points} targetIncome={p.targetIncome} />
+        <RollUpChartSection points={timePhased.monthly} targetIncome={p.targetIncome} />
         </>}
 
       </CardContent>
