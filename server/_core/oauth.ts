@@ -163,12 +163,13 @@ export function registerOAuthRoutes(app: Express) {
       //
       // The token is embedded inline (not via URL fragment) so it never appears
       // in browser history, server logs, or referrer headers.
+      const nonce = res.locals?.cspNonce || '';
       const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>Signing in...</title>
-  <style>
+  <style nonce="${nonce}">
     body {
       display: flex;
       align-items: center;
@@ -199,7 +200,7 @@ export function registerOAuthRoutes(app: Express) {
     <div class="spinner"></div>
     <p id="status">Signing you in...</p>
   </div>
-  <script>
+  <script nonce="${nonce}">
     (async function() {
       var token = ${JSON.stringify(sessionToken)};
       var redirectTo = ${JSON.stringify(redirectTo)};

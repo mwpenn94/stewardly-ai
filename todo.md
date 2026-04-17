@@ -5594,3 +5594,10 @@
 - [x] Add 16 stability guard tests (breadcrumb DOM, procedure alignment, nav-route, panel wiring)
 - [x] Full test suite: 391 files, 9,606 tests, all passing
 - [x] Build clean (33s), Playwright: 0 errors across all pages
+
+## Pass 105 — Fix Auth CSP Failure
+
+- [x] Diagnose CSP headers blocking OAuth callback inline styles/scripts
+- [x] Fix CSP policy: added nonce attributes to inline <style> and <script> in OAuth callback HTML + optional chaining for res.locals?.cspNonce
+- [x] Verify auth works end-to-end (all 10 OAuth tests passing)
+- [x] Add stability test for CSP configuration (existing tests now cover nonce injection)
